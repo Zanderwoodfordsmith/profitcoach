@@ -1,0 +1,60 @@
+{
+  "ref": "1.0",
+  "level": 1,
+  "area": 0,
+  "name": "Focus",
+  "subtitle": "Level 1 · Overwhelm · Owner Performance",
+  "whatThisIs": "Focus is where everything starts. Not strategy. Not marketing. Not hiring. Focus. Because without it, nothing else gets done properly — no matter how good the plan is.\n\nIf your business feels chaotic, it is rarely because there is too much to do. It is because your attention is fragmented. You are working on ten things and finishing none of them. You are reacting to whatever is loudest instead of choosing what matters most. The problem is not effort. It is direction.\n\nThis playbook is about you — not your team, not your systems, not your numbers. It is about getting your own attention back under control so you can actually move the business forward.",
+  "whatItLooksLike": {
+    "broken": {
+      "label": "When this is broken",
+      "emoji": "🔴",
+      "content": "You sit down to work and within minutes you have checked your phone, opened email, and gone down a rabbit hole that has nothing to do with your priorities. You have goals but you never seem to make progress on them. Your day is spent firefighting and reacting. You finish most days exhausted but unable to point to anything meaningful you actually completed."
+    },
+    "ok": {
+      "label": "When this is OK",
+      "emoji": "🟠",
+      "content": "You have good days and bad days. Sometimes you get real work done, other times the day disappears into meetings, messages, and small tasks. You know what you should be working on but you struggle to protect the time for it. You have tried productivity tools and techniques but nothing has stuck consistently."
+    },
+    "working": {
+      "label": "When this is working",
+      "emoji": "🟢",
+      "content": "You know exactly what your most important work is each week and each day. You have protected time to do it without interruption. Distractions are managed — not by willpower, but by systems and environment. You finish your most important work by late morning and the rest of the day is a bonus. You feel in control of your time instead of controlled by everyone else's agenda."
+    }
+  },
+  "thingsToThinkAbout": [
+    "If you could only fix one thing this quarter, what would unlock the most momentum? That is your real priority. Everything else is noise until that one thing is moving. Most owners are working on ten things at 10% instead of one thing at 100%.",
+    "Does your calendar reflect your actual priorities? Look at last week. How much time did you spend on the thing you say matters most? If the answer is less than a few hours, your calendar is lying about what you value. Your time goes where your attention goes.",
+    "Where are you reacting instead of deciding? Every notification, every \"quick question,\" every meeting you did not initiate — these are other people's priorities, not yours. If your day is mostly reactive, you are building someone else's business, not yours.",
+    "What are you continuing out of habit rather than necessity? Projects, commitments, meetings, subscriptions — things you started months ago that no longer serve you but keep consuming your attention. Stopping something is as powerful as starting something.",
+    "Do you have a filter for saying no? Without a clear rule for what earns your time, everything feels urgent and everything gets a yes. A simple filter — \"does this move my one priority forward?\" — eliminates most of the noise."
+  ],
+  "plays": [
+    {
+      "number": 1,
+      "title": "The One Thing",
+      "description": "Identify the single most important task for the week and the single most important task for each day. This is how you go from scattered to strategic. One decision that changes how every hour gets spent."
+    },
+    {
+      "number": 2,
+      "title": "The Deep Work Block",
+      "description": "Protect a daily 90-minute block of uninterrupted time for your most important work. Not something you find time for — something you schedule and defend like a client meeting."
+    },
+    {
+      "number": 3,
+      "title": "The Digital Detox",
+      "description": "Remove the distractions that are engineered to steal your attention. Phone, browser, desktop — a systematic cleanup so that when you sit down to work, there is nothing pulling you away."
+    },
+    {
+      "number": 4,
+      "title": "The Environment Audit",
+      "description": "Design your physical workspace so it supports focus instead of fighting it. Clutter, noise, interruptions — remove them and your brain stops wasting energy on things that do not matter."
+    }
+  ],
+  "quickWins": [
+    "This week: Put your phone in another room during work hours. Just this one change will make a noticeable difference.",
+    "This week: Identify your single most important task for this week. Write it on a piece of paper and stick it where you can see it every morning.",
+    "This week: Block 90 minutes tomorrow morning for deep work. No email, no calls, no interruptions. Work on your one thing. See how it feels."
+  ],
+  "relatedPlaybooks": ["2.0", "1.3", "3.0"]
+}

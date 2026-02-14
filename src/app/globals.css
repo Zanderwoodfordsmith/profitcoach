@@ -1,8 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+
+  /* BOSS Dashboard colors */
+  --boss-foundation: #a21caf;
+  --boss-vision: #0c5290;
+  --boss-velocity: #42a1ee;
+  --boss-value: #1ca0c2;
+  --boss-pastel-red: #f4c7c3;
+  --boss-pastel-amber: #fce8b2;
+  --boss-pastel-green: #b7e1cd;
+  --boss-level-1: #edb4ba;
+  --boss-level-2: #f2d2b8;
+  --boss-level-3: #f7e5b5;
+  --boss-level-4: #badfae;
+  --boss-level-5: #b5d0ed;
+  --boss-grid-border: #6d737a;
+
+  /* Landing page — navy & teal, light theme */
+  --landing-navy: #0c5290;
+  --landing-teal: #0d9488;
+  --landing-bg: #fafafa;
 }
 
 @theme inline {
@@ -12,15 +32,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
