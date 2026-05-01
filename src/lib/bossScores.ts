@@ -13,6 +13,14 @@ export type PillarScores = {
   value: number;
 };
 
+export type LevelScore = { level: number; sum: number; percent: number };
+export type PillarScoresWithFoundation = {
+  foundation: number;
+  vision: number;
+  velocity: number;
+  value: number;
+};
+
 export type ScoreBreakdown = {
   green: number;
   amber: number;
@@ -74,6 +82,39 @@ export function computePillarScores(
     else if (p.area >= 7 && p.area <= 9) value += v;
   }
   return { vision, velocity, value };
+}
+
+/** Per-level scores: level 1–5, each has 10 playbooks (max 20). Order: 1 = Overwhelm … 5 = Owner. */
+export function computeLevelScores(
+  scores: AnswersMap | null | undefined
+): LevelScore[] {
+  const result: LevelScore[] = [];
+  for (let level = 1; level <= 5; level++) {
+    let sum = 0;
+    for (const p of PLAYBOOKS) {
+      if (p.level !== level) continue;
+      const v = scores?.[p.ref];
+      if (v === 0 || v === 1 || v === 2) sum += v;
+    }
+    result.push({ level, sum, percent: Math.round((sum / 20) * 100) });
+  }
+  return result;
+}
+
+/** Pillar scores including Foundation (area 0 only, max 10). */
+export function computePillarScoresWithFoundation(
+  scores: AnswersMap | null | undefined
+): PillarScoresWithFoundation {
+  const pillars = computePillarScores(scores);
+  let foundation = 0;
+  if (scores) {
+    for (const p of PLAYBOOKS) {
+      if (p.area !== 0) continue;
+      const v = scores[p.ref];
+      if (v === 0 || v === 1 || v === 2) foundation += v;
+    }
+  }
+  return { foundation, ...pillars };
 }
 
 export function computeScoreBreakdown(

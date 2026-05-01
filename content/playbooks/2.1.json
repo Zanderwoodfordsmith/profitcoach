@@ -1,0 +1,205 @@
+{
+  "ref": "2.1",
+  "level": 2,
+  "area": 1,
+  "name": "Goals",
+  "subtitle": "Level 2 · Overworked · Aligned Vision",
+  "whatThisIs": "Goals turn intention into action. Without them, you are working hard but not necessarily making progress. You are busy but not building. You may have a vague sense of where you want to go, but no measurable way to know if you are getting there.\n\nThis playbook is about translating your ambition into specific, measurable targets that actually drive decision-making. It covers both business and personal goals, because if the business is not funding the life you want, something needs to change.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have ambitions and ideas but no clear targets or deadlines. You know roughly what you want but could not write down what success looks like in twelve months. You set goals at New Year then forget about them. You are working harder than ever but struggle to see measurable progress towards anything meaningful."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some goals written down but they are either too vague or you rarely review them. You know what you want to achieve this year but have not broken it into quarterly milestones. Personal and business goals feel disconnected, you are building a business that does not support the life you actually want."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have clear, measurable twelve-month outcomes for both business and personal life. These are broken into quarterly targets with specific milestones. You review progress monthly and adjust course when needed. Your business goals align with your personal goals, the business is funding the life you are designing, not consuming it."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What must be true by this time next year? Not what you hope might happen, what absolutely must be different for you to feel the year was successful. This is your North Star, the outcome that everything else serves.",
+    "Are you tracking activity or results? There is a difference between \"I will post on social media five times a week\" and \"I will generate fifty qualified leads per month.\" One measures effort, the other measures outcome. Guess which drives better decisions.",
+    "Is your business funding the life you actually want? Many business owners build successful businesses that trap them in lifestyles they never chose. Your business goals should serve your personal goals, not replace them.",
+    "How often do you formally assess whether you are winning? Monthly goal reviews are not overhead, they are the difference between drifting and driving. If you are not reviewing, you are not really committed."
+  ],
+  "actionsIntro": "When you open this playbook in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Write down your single most important twelve-month outcome for the business. Make it specific enough that a stranger could measure whether you achieved it.",
+    "This week: List three personal outcomes you want this year. Check whether your current business goals support or conflict with them.",
+    "This week: Pick one goal you set months ago but never review. Block thirty minutes to assess where you stand and what needs to change."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.1",
+      "description": ""
+    },
+    {
+      "ref": "2.3",
+      "description": ""
+    },
+    {
+      "ref": "3.3",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "5.0",
+      "description": ""
+    }
+  ],
+  "actions": [
+    {
+      "number": 1,
+      "title": "Twelve-Month Outcomes",
+      "description": "Twelve-Month Outcomes",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Define clear, specific, measurable outcomes for both your business and your personal life over the next twelve months. Not vague hopes. Not a list of things to try. Concrete results that a stranger could measure and confirm whether you achieved them."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Without specific outcomes, you default to \"busy.\" You work hard, things happen, but twelve months later you cannot point to what actually changed. Twelve-month outcomes give you a filter for every decision: \"Does this move me toward my outcomes or away from them?\" They also make it obvious when you are off track - early enough to do something about it, not in December when it is too late."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Block 45-60 minutes of uninterrupted time. Bring your BOSS diagnostic results if you have them. Work through the business outcomes first, then personal. The two must connect.\n\n---"
+        },
+        {
+          "title": "Business Outcomes",
+          "content": "- [ ] Write down the single most important business outcome for the next 12 months. Make it specific: \"Increase revenue from £350K to £500K\" not \"grow the business.\"\n- [ ] Add 2-3 supporting outcomes that would need to be true for the main outcome to happen (e.g., \"Launch second service line generating £5K/month by September\", \"Hire a sales person by June who is generating leads independently by August\")\n- [ ] For each outcome, define the measurement: how will you know you have achieved it? What number, milestone, or observable change proves success?\n- [ ] ⚡ Quick Win: Write your #1 outcome on a card and put it where you see it every day - desk, bathroom mirror, phone wallpaper. Visibility drives focus.\n- [ ] Pressure-test each outcome: Is it ambitious enough to matter? Is it realistic enough to be achievable? Would you be genuinely proud if you hit it?"
+        },
+        {
+          "title": "Personal Outcomes",
+          "content": "- [ ] Write down 3 personal outcomes for the next 12 months across different areas: health, relationships, lifestyle, or personal growth\n- [ ] For each, define what measurable success looks like (e.g., \"Exercise 4x per week consistently for 6+ months\" not \"get fitter\")\n- [ ] Check alignment: does each personal outcome support or conflict with your business outcomes? If your business goal requires 70-hour weeks and your personal goal is more family time, something needs to change.\n- [ ] Identify any personal outcome that the business should be funding or enabling (e.g., \"Take 4 weeks of proper holiday\" requires the business to function without you)"
+        },
+        {
+          "title": "Alignment Check",
+          "content": "- [ ] Read your business and personal outcomes together. Do they paint a picture of a life you actually want, or just a bigger business?\n- [ ] Identify conflicts: where does achieving one outcome make another harder? Resolve the tension now, not later.\n- [ ] Share your outcomes with someone who will hold you accountable: coach, partner, business partner, or mentor\n- [ ] Set a calendar reminder to review these outcomes on the first of every month\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A maximum of 4-5 specific, measurable business outcomes for the next 12 months\n- 3 personal outcomes that align with your business direction\n- Clear measurement criteria for each outcome\n- Conflicts between business and personal goals identified and addressed\n- A visible reminder system and monthly review commitment"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This is foundational for the entire coaching engagement. Without clear outcomes, every session risks becoming reactive problem-solving. Do this in the first or second session. The most common issue: clients write outcomes that are too vague (\"improve marketing\") or too numerous (a list of 15 goals). Push for specificity and force them to choose their top 3-5. If they cannot prioritise, that is a signal that purpose and strategy work (from Level 1) may need revisiting. The personal outcomes section often surfaces the real motivation behind their business goals - pay attention to what they say here."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Quarterly Breakdown",
+      "description": "Quarterly Breakdown",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Take your twelve-month outcomes and break them into four quarterly milestones. Each quarter should have clear targets that, if hit, confirm you are on track for the annual goal. This turns \"what I want in a year\" into \"what I need to achieve in the next 90 days.\""
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Twelve months is too long to wait before checking progress. By the time you realise you are off track, you have lost months you cannot get back. Quarterly milestones create natural checkpoints where you can celebrate wins, catch problems, and adjust your approach. They also make big goals feel manageable - you are not trying to grow revenue by £150K this year, you are trying to add £35-40K this quarter."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Start with your Twelve-Month Outcomes (Action 1). For each one, work backwards: if the goal is X by month 12, what needs to be true at month 9? Month 6? Month 3? Then fill in the detail for this quarter.\n\n---"
+        },
+        {
+          "title": "Quarterly Milestone Mapping",
+          "content": "### For Each Twelve-Month Outcome:\n\n- [ ] Write the annual outcome at the top of a page\n- [ ] Define the Q4 milestone (month 10-12): what does \"nearly there\" look like?\n- [ ] Define the Q3 milestone (month 7-9): what does \"well on track\" look like?\n- [ ] Define the Q2 milestone (month 4-6): what does \"building momentum\" look like?\n- [ ] Define the Q1 milestone (month 1-3): what does \"started and moving\" look like?\n- [ ] Check the progression: does each quarter build logically on the previous one?\n\n### This Quarter Deep Dive\n\n- [ ] ⚡ Quick Win: For your #1 outcome, write down the single most important thing that must happen THIS QUARTER to stay on track\n- [ ] List 3-5 specific targets for this quarter with numbers attached (revenue, leads, hires, products launched, etc.)\n- [ ] For each target, identify the key activities that will drive it. What do you need to DO to make the number happen?\n- [ ] Identify dependencies: what needs to happen first before other targets become possible?\n- [ ] Identify risks: what could derail this quarter's targets? What is your plan B?\n\n### Connect to Weekly Action\n\n- [ ] For each quarterly target, identify what needs to happen this month\n- [ ] For this month's priorities, identify what needs to happen this week\n- [ ] Set a weekly review question: \"Am I on track for this quarter's milestones based on what I achieved this week?\"\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Each twelve-month outcome broken into 4 quarterly milestones\n- This quarter's milestones detailed with specific targets and activities\n- A clear line from annual goals to quarterly milestones to monthly priorities to weekly actions\n- Dependencies and risks identified for the current quarter\n- A weekly self-check that keeps you accountable to the quarterly pace"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This is where goals become real or stay theoretical. The biggest mistake clients make: setting quarterly milestones that are front-loaded with easy wins and back-loaded with the hard work. Challenge this - if the difficult stuff is all in Q3 and Q4, they will not do it. Also watch for clients who set the annual goal and then make Q1 targets that are clearly insufficient to stay on pace. If the annual revenue goal requires £150K of growth and Q1 only targets £15K, the maths does not work. Use this exercise at the start of each quarter to reset milestones based on actual progress."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Leading Indicators",
+      "description": "Leading Indicators",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Identify the metrics that predict whether you will hit your goals before the results come in. Leading indicators are the activities and early signals that tell you if you are on track this week, rather than waiting until quarter-end to find out you missed."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Most business owners only track lagging indicators: revenue, profit, customer count. These tell you what already happened. By the time revenue drops, the problem started weeks or months ago. Leading indicators give you early warning. If your goal is 10 new clients per quarter and you track weekly sales calls, you will know by week 3 if you are on pace - not at the end of week 12 when it is too late to fix."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Take your quarterly targets (from Action 2) and for each one, identify 1-2 leading indicators that predict the result. Then set up simple tracking.\n\n---"
+        },
+        {
+          "title": "Identify Your Leading Indicators",
+          "content": "### For Each Quarterly Target:\n\n- [ ] Write the target (the lagging indicator): e.g., \"10 new clients this quarter\"\n- [ ] Ask: what activity, if done consistently, would make this result almost inevitable? That is your leading indicator.\n- [ ] ⚡ Quick Win: Pick your single most important quarterly target and identify one number you can track THIS WEEK that predicts success\n- [ ] Set a weekly target for each leading indicator (e.g., \"15 outreach calls per week\" or \"3 proposals sent per week\")\n\n### Common Leading vs. Lagging Pairs\n\nUse this table to find your leading indicators:\n\n- [ ] **Revenue goal** - Leading: proposals sent, sales calls booked, pipeline value, leads generated\n- [ ] **Customer growth** - Leading: enquiries received, consultations held, trial sign-ups, referral requests made\n- [ ] **Profit improvement** - Leading: cost reviews completed, pricing changes implemented, upsell conversations held\n- [ ] **Team development** - Leading: training sessions delivered, one-to-ones held, feedback conversations completed\n- [ ] **Process improvement** - Leading: processes documented, audits completed, tools implemented"
+        },
+        {
+          "title": "Set Up Tracking",
+          "content": "- [ ] Create a simple weekly tracker (spreadsheet, notebook, or whiteboard) with your 3-5 leading indicators\n- [ ] Set weekly targets for each indicator\n- [ ] Record actuals every Friday during your weekly review\n- [ ] Add a traffic light: Green (on or above target), Amber (within 20% of target), Red (more than 20% below target)\n- [ ] For any indicator in Red for 2+ consecutive weeks, diagnose the cause and adjust"
+        },
+        {
+          "title": "Use the Data",
+          "content": "- [ ] Review leading indicators weekly, not monthly - the whole point is early warning\n- [ ] When a leading indicator drops, investigate immediately: is it a capacity issue, a motivation issue, or a priority issue?\n- [ ] When leading indicators are consistently green but the lagging result is not following, your indicator might be wrong - reassess the connection\n- [ ] Share your leading indicators with your coach or accountability partner so they can challenge you when numbers slip\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- 1-2 leading indicators identified for each quarterly target\n- Weekly targets set for each leading indicator\n- A simple tracking system that takes less than 5 minutes per week to update\n- Early warning when goals are at risk, with enough time to course-correct\n- Confidence that you are on track (or clear evidence that you are not) every single week"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Leading indicators are one of the most powerful coaching tools you have. They shift the conversation from \"how did last month go?\" (too late) to \"are you on track this week?\" (actionable). The most common mistake: choosing indicators that are too easy to game. \"Number of emails sent\" is easy to hit but does not predict revenue. \"Number of proposals sent to qualified prospects\" is harder but much more predictive. Push clients toward indicators that measure quality activity, not just volume. Review indicators quarterly and change them if they are not predicting the result."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Monthly Review Rhythm",
+      "description": "Monthly Review Rhythm",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Install a simple monthly review process that takes 30-45 minutes and keeps you connected to your goals. This is not a big strategic retreat. It is a focused check-in: What did I achieve? Am I on track? What needs to change? Done consistently, it is the difference between drifting through the year and driving toward your outcomes."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Goals without reviews are just wishes. The monthly review creates a forcing function: once a month, you sit down and honestly assess whether your actions are producing results. It catches drift early (before a bad month turns into a bad quarter), celebrates progress (which fuels motivation), and forces adjustments (which keeps you relevant to changing circumstances). Most business owners who set goals and miss them did not fail at execution - they failed at review."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Schedule a recurring 45-minute block on the last Friday of every month. Protect it like a client meeting. Work through the review framework below.\n\n---"
+        },
+        {
+          "title": "Setup",
+          "content": "- [ ] ⚡ Quick Win: Open your calendar now and block \"Monthly Review\" on the last Friday of each month for the next 12 months. Recurring, non-negotiable.\n- [ ] Gather your materials before each review: your twelve-month outcomes (Action 1), quarterly milestones (Action 2), leading indicators tracker (Action 3), and last month's review if you have one\n- [ ] Choose a location that feels different from your normal workspace - a quiet room, a coffee shop, or even a park bench with a notebook"
+        },
+        {
+          "title": "The Monthly Review Framework (30-45 Minutes)",
+          "content": "### Part 1: Score the Month (10 minutes)\n\n- [ ] Review each quarterly milestone: are you on track, ahead, or behind based on this month's progress?\n- [ ] Rate the month 1-10 on overall progress toward your outcomes\n- [ ] List your top 3 wins from the month - what went right that you should celebrate or repeat?\n- [ ] List the top 3 misses - what did not happen that should have?\n\n### Part 2: Diagnose (10 minutes)\n\n- [ ] For each miss: was it a priority issue (wrong focus), a capacity issue (not enough time/resource), or an execution issue (knew what to do, did not do it)?\n- [ ] Review your leading indicators: what do they tell you about next month's likely results?\n- [ ] Identify one thing you should START doing next month\n- [ ] Identify one thing you should STOP doing next month\n- [ ] Identify one thing you should CONTINUE doing because it is working\n\n### Part 3: Plan Next Month (10 minutes)\n\n- [ ] Set your top 3 priorities for next month based on what the quarterly milestones require\n- [ ] For each priority, define one specific action you will take in week 1\n- [ ] Identify any decisions you have been avoiding that need to be made this month\n- [ ] Update your leading indicator targets if circumstances have changed\n- [ ] Set your monthly review date for next month (should already be in the calendar)\n\n### Part 4: Personal Check (5 minutes)\n\n- [ ] Review your personal outcomes: how did this month serve or hinder your personal goals?\n- [ ] Rate your energy, motivation, and satisfaction for the month (1-5 each)\n- [ ] If any personal scores are consistently below 3, flag this as something to address - the business should fund the life you want, not consume it\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A consistent monthly rhythm that keeps you connected to your goals\n- Early detection of drift before it becomes a serious problem\n- A record of wins and progress that builds confidence over time\n- Clear monthly priorities that tie directly to quarterly and annual outcomes\n- A simple, repeatable process that takes less than an hour and makes the rest of the month more focused"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "The monthly review is your most reliable coaching anchor point. If the client does this consistently, the coaching sessions become dramatically more productive because they arrive knowing where they stand. The biggest risk: clients skip it when they are busy (the exact moment they need it most). Build accountability by asking \"When is your monthly review this month?\" in every session. If they miss one, do it together in the coaching session - they will feel the value and be less likely to skip the next one. Over time, the review notes become a powerful record of progress that you can reference when clients feel stuck or discouraged."
+        }
+      ]
+    }
+  ]
+}

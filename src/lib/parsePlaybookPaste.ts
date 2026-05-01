@@ -4,8 +4,8 @@
  */
 
 import type {
-  PlayItem,
-  PlaySection,
+  ActionItem,
+  ActionSection,
   RelatedPlaybookItem,
   WhatItLooksLikeItem,
 } from "./playbookContentTypes";
@@ -19,9 +19,9 @@ export type ParsedPlaybookForm = Partial<{
     working: WhatItLooksLikeItem;
   };
   thingsToThinkAbout: string[];
-  playsIntro: string;
-  plays: PlayItem[];
-  playsSections: PlaySection[];
+  actionsIntro: string;
+  actions: ActionItem[];
+  actionSections: ActionSection[];
   quickWins: string[];
   relatedPlaybooks: RelatedPlaybookItem[];
 }>;
@@ -31,21 +31,32 @@ const SECTION_HEADERS = [
   "What It Looks Like",
   "Things to Think About",
   "The Plays Inside This Playbook",
+  "The Actions Inside This Playbook",
   "Quick Wins",
   "Related Playbooks",
 ] as const;
 
+function escHeader(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Match `What This Is` or `## What This Is` / `## **What This Is**` (markdown exports). */
 function getSectionContent(text: string, header: string): string | null {
-  const escaped = header.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const otherHeaders = SECTION_HEADERS.filter((h) => h !== header)
-    .map((h) => h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|");
+  const h = escHeader(header);
+  const otherHeaders = SECTION_HEADERS.filter((x) => x !== header).map(escHeader).join("|");
   const re = new RegExp(
-    `(?:^|\\n)\\s*${escaped}\\s*\\n([\\s\\S]*?)(?=\\n\\s*(?:${otherHeaders})\\s*\\n|$)`,
+    `(?:^|\\n)\\s*(?:##\\s+)?(?:\\*\\*)?${h}(?:\\*\\*)?\\s*\\n([\\s\\S]*?)(?=\\n\\s*(?:##\\s+)?(?:\\*\\*)?(?:${otherHeaders})(?:\\*\\*)?\\s*\\n|$)`,
     "i"
   );
   const match = text.match(re);
   return match ? match[1].trim() : null;
+}
+
+function getPlaysOrActionsSection(text: string): string | null {
+  return (
+    getSectionContent(text, "The Actions Inside This Playbook") ??
+    getSectionContent(text, "The Plays Inside This Playbook")
+  );
 }
 
 function parseWhatItLooksLike(section: string): ParsedPlaybookForm["whatItLooksLike"] | null {
@@ -93,51 +104,128 @@ function splitIntoItems(text: string): string[] {
 
 /** Play N: Title — Description (accepts em dash or hyphen) */
 const PLAY_LINE_RE = /^Play\s+(\d+):\s*(.+?)\s+[—\-]\s*(.+)$/;
+/** **Play N: Title** (description may follow on subsequent lines) */
+const PLAY_BOLD_LINE_RE = /^\*\*Play\s+(\d+):\s*(.+?)\*\*\s*$/;
+
+function flushPendingIntoSections(
+  pending: string[],
+  sections: ActionSection[],
+  actionsIntro: { value: string }
+) {
+  if (pending.length === 0) return;
+  let title = "";
+  let desc = "";
+  if (pending.length >= 3) {
+    actionsIntro.value = pending.slice(0, -2).join("\n").trim();
+    title = pending[pending.length - 2] ?? "";
+    desc = pending[pending.length - 1] ?? "";
+  } else if (pending.length === 2) {
+    title = pending[0] ?? "";
+    desc = pending[1] ?? "";
+  } else {
+    title = pending[0] ?? "";
+  }
+  sections.push({
+    title,
+    description: desc,
+    actions: [],
+  });
+}
 
 function parsePlaysSection(section: string): {
-  playsIntro?: string;
-  plays?: PlayItem[];
-  playsSections?: PlaySection[];
+  actionsIntro?: string;
+  actions?: ActionItem[];
+  actionSections?: ActionSection[];
 } | null {
   if (!section.trim()) return null;
 
-  const lines = section.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = section.split(/\n/).map((l) => l.trim());
   if (lines.length === 0) return null;
 
-  const sections: PlaySection[] = [];
-  let playsIntro = "";
+  const sections: ActionSection[] = [];
+  const actionsIntroHolder = { value: "" };
   let pending: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    const playMatch = line.match(PLAY_LINE_RE);
+    const line = lines[i]!;
+    if (!line) continue;
 
-    if (playMatch) {
+    if (line.startsWith("###")) {
       if (pending.length > 0) {
-        let title = "";
-        let desc = "";
-        if (pending.length >= 3) {
-          playsIntro = pending.slice(0, -2).join("\n").trim();
-          title = pending[pending.length - 2] ?? "";
-          desc = pending[pending.length - 1] ?? "";
-        } else if (pending.length === 2) {
-          title = pending[0] ?? "";
-          desc = pending[1] ?? "";
+        if (sections.length === 0) {
+          actionsIntroHolder.value = pending.join("\n").trim();
         } else {
-          title = pending[0] ?? "";
+          const last = sections[sections.length - 1]!;
+          last.description = [last.description, pending.join("\n").trim()]
+            .filter(Boolean)
+            .join("\n\n");
         }
-        sections.push({
-          title,
-          description: desc,
-          plays: [],
-        });
         pending = [];
-      } else if (sections.length === 0) {
-        sections.push({ title: "", description: "", plays: [] });
+      }
+      const title = line.replace(/^###+\s*/, "").replace(/\*\*/g, "").trim();
+      sections.push({ title, description: "", actions: [] });
+      continue;
+    }
+
+    const boldMatch = line.match(PLAY_BOLD_LINE_RE);
+    if (boldMatch) {
+      if (pending.length > 0) {
+        if (sections.length === 0) {
+          actionsIntroHolder.value = pending.join("\n").trim();
+        } else {
+          const last = sections[sections.length - 1]!;
+          last.description = [last.description, pending.join("\n").trim()]
+            .filter(Boolean)
+            .join("\n\n");
+        }
+        pending = [];
+      }
+      if (sections.length === 0) {
+        sections.push({ title: "", description: "", actions: [] });
       }
 
-      const last = sections[sections.length - 1];
-      last.plays.push({
+      const last = sections[sections.length - 1]!;
+      const num = parseInt(boldMatch[1], 10);
+      const titlePart = boldMatch[2].trim();
+      const descParts: string[] = [];
+      let j = i + 1;
+      while (
+        j < lines.length &&
+        lines[j] &&
+        !PLAY_BOLD_LINE_RE.test(lines[j]!) &&
+        !PLAY_LINE_RE.test(lines[j]!) &&
+        !lines[j]!.startsWith("###")
+      ) {
+        descParts.push(lines[j]!);
+        j++;
+      }
+      i = j - 1;
+      last.actions.push({
+        number: num,
+        title: titlePart,
+        description: descParts.join("\n\n").trim() || titlePart,
+      });
+      continue;
+    }
+
+    const playMatch = line.match(PLAY_LINE_RE);
+    if (playMatch) {
+      if (pending.length > 0) {
+        if (sections.length === 0) {
+          flushPendingIntoSections(pending, sections, actionsIntroHolder);
+        } else {
+          const last = sections[sections.length - 1]!;
+          last.description = [last.description, pending.join("\n").trim()]
+            .filter(Boolean)
+            .join("\n\n");
+        }
+        pending = [];
+      } else if (sections.length === 0) {
+        sections.push({ title: "", description: "", actions: [] });
+      }
+
+      const last = sections[sections.length - 1]!;
+      last.actions.push({
         number: parseInt(playMatch[1], 10),
         title: playMatch[2].trim(),
         description: playMatch[3].trim(),
@@ -148,20 +236,31 @@ function parsePlaysSection(section: string): {
   }
 
   if (sections.length === 0) {
-    return pending.length > 0 ? { playsIntro: pending.join("\n").trim() } : null;
+    return pending.length > 0 ? { actionsIntro: pending.join("\n").trim() } : null;
   }
 
-  const hasSections = sections.length > 1 || (sections.length === 1 && sections[0].title);
-  if (hasSections) {
+  if (pending.length > 0) {
+    if (sections.length === 0) {
+      actionsIntroHolder.value = pending.join("\n").trim();
+    } else {
+      const last = sections[sections.length - 1]!;
+      last.description = [last.description, pending.join("\n").trim()].filter(Boolean).join("\n\n");
+    }
+  }
+
+  const actionsIntro = actionsIntroHolder.value;
+  const hasRealSections =
+    sections.length > 1 || (sections.length === 1 && Boolean(sections[0]!.title));
+  if (hasRealSections) {
     return {
-      playsIntro: playsIntro || undefined,
-      playsSections: sections,
+      actionsIntro: actionsIntro || undefined,
+      actionSections: sections,
     };
   }
 
   return {
-    playsIntro: playsIntro || undefined,
-    plays: sections.flatMap((s) => s.plays),
+    actionsIntro: actionsIntro || undefined,
+    actions: sections.flatMap((s) => s.actions),
   };
 }
 
@@ -197,13 +296,13 @@ export function parsePastedPlaybookContent(text: string): ParsedPlaybookForm {
     if (items.length > 0) result.thingsToThinkAbout = items;
   }
 
-  const playsRaw = getSectionContent(text, "The Plays Inside This Playbook");
+  const playsRaw = getPlaysOrActionsSection(text);
   if (playsRaw) {
     const parsed = parsePlaysSection(playsRaw);
     if (parsed) {
-      if (parsed.playsIntro) result.playsIntro = parsed.playsIntro;
-      if (parsed.plays) result.plays = parsed.plays;
-      if (parsed.playsSections) result.playsSections = parsed.playsSections;
+      if (parsed.actionsIntro) result.actionsIntro = parsed.actionsIntro;
+      if (parsed.actions) result.actions = parsed.actions;
+      if (parsed.actionSections) result.actionSections = parsed.actionSections;
     }
   }
 

@@ -1,6 +1,6 @@
 /**
  * Derive playbook tab status (done | in_progress | not_started) from content.
- * Overview is derived from whatThisIs/plays; Client/Coaches default to not_started
+ * Overview is derived from whatThisIs/actions; Client/Coaches default to not_started
  * until we have content for those tabs.
  */
 
@@ -19,7 +19,9 @@ export type PlaybookTabStats = {
 
 function deriveOverviewStatus(content: PlaybookContent): TabStatus {
   const hasWhatThisIs = (content.whatThisIs?.trim().length ?? 0) > 100;
-  const hasPlays = (content.plays?.length ?? 0) > 0;
+  const hasActions =
+    (content.actions?.length ?? 0) > 0 ||
+    (content.actionSections?.some((s) => (s.actions?.length ?? 0) > 0) ?? false);
   const hasWhatItLooksLike =
     content.whatItLooksLike?.broken?.content?.trim() ||
     content.whatItLooksLike?.ok?.content?.trim() ||
@@ -27,8 +29,8 @@ function deriveOverviewStatus(content: PlaybookContent): TabStatus {
   const hasThings = (content.thingsToThinkAbout?.length ?? 0) > 0;
   const hasQuickWins = (content.quickWins?.length ?? 0) > 0;
 
-  if (hasWhatThisIs && hasPlays && hasWhatItLooksLike) return "done";
-  if (hasWhatThisIs || hasPlays || hasThings || hasQuickWins) return "in_progress";
+  if (hasWhatThisIs && hasActions && hasWhatItLooksLike) return "done";
+  if (hasWhatThisIs || hasActions || hasThings || hasQuickWins) return "in_progress";
   return "not_started";
 }
 

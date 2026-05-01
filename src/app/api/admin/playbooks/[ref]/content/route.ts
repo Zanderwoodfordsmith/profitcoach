@@ -4,13 +4,13 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getPlaybookMeta } from "@/lib/bossData";
 import { loadPlaybookContentWithDb } from "@/lib/playbookContent";
 import type {
+  ActionItem,
+  ActionSection,
   PlaybookContent,
-  PlayItem,
-  PlaySection,
   RelatedPlaybookItem,
   WhatItLooksLikeItem,
 } from "@/lib/playbookContentTypes";
-import { normalizeRelatedPlaybooks } from "@/lib/playbookContentTypes";
+import { normalizeRelatedPlaybooks, serializeActionSectionsForDb } from "@/lib/playbookContentTypes";
 
 type Body = {
   whatThisIs?: string;
@@ -20,9 +20,13 @@ type Body = {
     working?: Partial<WhatItLooksLikeItem>;
   };
   thingsToThinkAbout?: string[];
-  plays?: PlayItem[];
+  actions?: ActionItem[];
+  actionsIntro?: string;
+  actionSections?: ActionSection[];
+  /** Legacy keys from older admin clients */
+  plays?: ActionItem[];
   playsIntro?: string;
-  playsSections?: PlaySection[];
+  playsSections?: ActionSection[] | Array<{ title?: string; description?: string; plays?: ActionItem[]; actions?: ActionItem[] }>;
   quickWins?: string[];
   relatedPlaybooks?: (string | RelatedPlaybookItem)[];
 };
@@ -55,9 +59,9 @@ export async function PATCH(
     what_this_is: string | null;
     what_it_looks_like: Record<string, unknown> | null;
     things_to_think_about: string[] | null;
-    plays: PlayItem[] | null;
+    plays: ActionItem[] | null;
     plays_intro: string | null;
-    plays_sections: PlaySection[] | null;
+    plays_sections: ActionSection[] | null;
     quick_wins: string[] | null;
     related_playbooks: string[] | null;
   } | null;
@@ -87,9 +91,21 @@ export async function PATCH(
         working: { label: "When this is working", emoji: "🟢", content: "" },
       };
   const thingsToThinkAbout = body.thingsToThinkAbout ?? existingRow?.things_to_think_about ?? [];
-  const plays = body.plays ?? existingRow?.plays ?? [];
-  const playsIntro = body.playsIntro !== undefined ? body.playsIntro : (existingRow?.plays_intro ?? "");
-  const playsSections = body.playsSections ?? existingRow?.plays_sections ?? [];
+  const actions = body.actions ?? body.plays ?? existingRow?.plays ?? [];
+  const actionsIntro =
+    body.actionsIntro !== undefined
+      ? body.actionsIntro
+      : body.playsIntro !== undefined
+        ? body.playsIntro
+        : (existingRow?.plays_intro ?? "");
+  const actionSectionsRaw = body.actionSections ?? body.playsSections ?? existingRow?.plays_sections ?? [];
+  const actionSectionsForDb = Array.isArray(actionSectionsRaw)
+    ? actionSectionsRaw.map((s) => ({
+        title: s.title ?? "",
+        description: s.description ?? "",
+        actions: (s as ActionSection).actions ?? (s as { plays?: ActionItem[] }).plays ?? [],
+      }))
+    : [];
   const quickWins = body.quickWins ?? existingRow?.quick_wins ?? [];
   const relatedPlaybooks = normalizeRelatedPlaybooks(
     body.relatedPlaybooks ?? existingRow?.related_playbooks ?? []
@@ -100,9 +116,9 @@ export async function PATCH(
     what_this_is: whatThisIs,
     what_it_looks_like: whatItLooksLike,
     things_to_think_about: thingsToThinkAbout,
-    plays,
-    plays_intro: playsIntro || null,
-    plays_sections: playsSections.length ? playsSections : [],
+    plays: actions,
+    plays_intro: actionsIntro || null,
+    plays_sections: actionSectionsForDb.length ? serializeActionSectionsForDb(actionSectionsForDb) : [],
     quick_wins: quickWins,
     related_playbooks: relatedPlaybooks.map((r) => ({ ref: r.ref, description: r.description ?? "" })),
     updated_at: new Date().toISOString(),
@@ -119,6 +135,6 @@ export async function PATCH(
     );
   }
 
-  const content = await loadPlaybookContentWithDb(ref);
+  const content = (await loadPlaybookContentWithDb(ref)) as PlaybookContent | null;
   return NextResponse.json(content);
 }

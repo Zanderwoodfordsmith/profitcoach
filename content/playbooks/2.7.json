@@ -1,0 +1,220 @@
+{
+  "ref": "2.7",
+  "level": 2,
+  "area": 7,
+  "name": "Bookkeeping",
+  "subtitle": "Level 2 · Overworked · Financials & Metrics",
+  "whatThisIs": "Your books are the foundation of every business decision you make. When they are current and accurate, you can see what is actually happening. When they are messy or behind, every decision is a guess.\n\nBookkeeping is not glamorous. It does not directly bring in revenue or delight customers. But it creates the clarity that makes everything else possible. Good books tell you whether you are making money, what you can afford to spend, and whether your business model is working.\n\nThis playbook is about getting your financial records organised, current, and trustworthy so you can run your business on facts instead of hope.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Your books are weeks or months behind. You have no idea what your actual profit was last month because the numbers are not ready yet. Personal and business expenses are mixed together in ways that make your accountant cry. You make financial decisions based on your bank balance instead of your P\\&L. Tax season is a scramble to find receipts and figure out what happened."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "Your bookkeeping gets done but it takes forever to get the numbers. There are usually discrepancies between your records and bank statements that take time to figure out. You get basic reports but they often raise more questions than they answer. You know roughly how you are doing but not precisely enough to make confident decisions."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your books are current within a week of month-end. Bank reconciliations happen monthly and discrepancies are rare and quickly resolved. Personal and business finances are completely separate. You get clean P\\&L and balance sheet reports that you understand and trust. Financial decisions are made based on accurate data, not bank balances or gut feel."
+    }
+  },
+  "thingsToThinkAbout": [
+    "How current are your financial records right now? If someone asked you for last month's P\\&L today, how quickly could you produce it? The gap between \"month-end\" and \"numbers ready\" is a measure of how much you are flying blind. A week is good. A month is dangerous.",
+    "Are your bank accounts talking to your books? Monthly reconciliation is not optional bookkeeping admin — it is quality control. If your records do not match your bank statements, one of them is wrong. Finding out which one (and why) prevents small errors from becoming big problems.",
+    "Can you draw a clear line between personal and business money? Mixed finances are not just messy — they create tax complications, legal risks, and decision-making confusion. If you cannot instantly tell what belongs to the business and what belongs to you, that line needs fixing.",
+    "Are your invoices creating clean data or adding to the mess? Inconsistent invoicing creates inconsistent records. When invoice formats, payment terms, and descriptions vary every time, your books become harder to read and your cash flow becomes harder to predict.",
+    "Do you know what questions your numbers should answer? Books are not just for compliance — they are for decisions. Can you quickly see which products are profitable? Which months are strongest? Where money is going? If your reports do not help you run the business, they are not doing their job."
+  ],
+  "quickWins": [
+    "This week: Open your accounting software and check the date of the last entry. If it is more than two weeks old, block time this Friday to catch up. Current books start with current data.",
+    "This week: Separate one thing that is currently mixed. Move your business banking to a dedicated business account, or get a separate business credit card. One separation is better than none.",
+    "This week: Run a P\\&L report for last month. Even if the numbers are not perfect, look at it and ask: does this help me understand my business or raise more questions? That tells you how much work needs doing."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.7",
+      "description": ""
+    },
+    {
+      "ref": "1.4",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "1.8",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Current Records System",
+          "description": "Get your bookkeeping current and keep it current. Whether you do it yourself or hire someone, establish the rhythm that keeps your numbers fresh and your decisions informed.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Get your bookkeeping current and keep it current. Whether you do it yourself, use a bookkeeper, or rely on software, establish a rhythm that ensures your financial records are never more than 1-2 weeks behind reality. Current books are the foundation of every good business decision."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Outdated books mean outdated decisions. If your last entry is 6 weeks old, you are running your business blind - spending money you may not have, pricing based on margins you have not checked, and missing problems that accurate numbers would have caught weeks ago. Getting current is a one-time effort. Staying current is a weekly habit that takes 30 minutes and saves hours of panic at month-end and tax time."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Assess where your records stand today, catch up if needed, then establish the weekly rhythm that keeps them current going forward.\n\n---"
+            },
+            {
+              "title": "Assess Current State",
+              "content": "- [ ] Open your accounting software (Xero, QuickBooks, FreeAgent, etc.) or your records\n- [ ] Check the date of the last entry. How far behind are you?\n- [ ] ⚡ Quick Win: If you are less than 2 weeks behind, block 1 hour today to catch up completely. If you are months behind, book a half-day this week or brief your bookkeeper.\n- [ ] Check if bank feeds are connected and pulling transactions automatically (if not, set this up - it cuts data entry by 80%)"
+            },
+            {
+              "title": "Catch-Up Plan (If Needed)",
+              "content": "- [ ] Gather all receipts, invoices, and bank statements for the period you are behind\n- [ ] Process transactions in chronological order: categorise each one properly\n- [ ] Do not rush the catch-up by dumping everything into \"miscellaneous\" - take the time to categorise correctly\n- [ ] If you are more than 3 months behind and cannot face doing it yourself, hire a bookkeeper for a one-time catch-up (typically £200-500)\n- [ ] Once caught up, set the date: \"From today, records will never be more than 2 weeks old\""
+            },
+            {
+              "title": "The Weekly Rhythm",
+              "content": "- [ ] Block 30 minutes every week (same day, same time) for bookkeeping. Friday afternoon or Monday morning works well.\n- [ ] Each week:\n  - Review and categorise new transactions from bank feeds\n  - Enter any cash transactions or expenses not captured automatically\n  - Check that all invoices sent this week are recorded\n  - File or scan any paper receipts\n  - Glance at the bank balance vs. your records - do they roughly match?\n- [ ] Set a calendar reminder so the weekly session becomes automatic\n- [ ] If someone else does your bookkeeping, set an expectation: records current within 7 days of month-end"
+            },
+            {
+              "title": "Choose Your System",
+              "content": "- [ ] If you do not have accounting software yet, choose one: Xero, QuickBooks, or FreeAgent are the three most common for UK SMEs\n- [ ] Connect your bank accounts for automatic transaction feeds\n- [ ] Set up recurring transactions (rent, subscriptions, salaries) so they auto-categorise\n- [ ] If you spend more than 2 hours per week on bookkeeping, consider hiring a part-time bookkeeper (typical cost: £150-300/month for a small business)\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Financial records current within 1-2 weeks of real time\n- A weekly bookkeeping rhythm established and protected\n- Bank feeds connected for automatic transaction capture\n- Clean, categorised records that produce useful reports\n- The confidence to make financial decisions based on accurate, up-to-date data"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Getting current is the hardest part. Many clients have a backlog they have been avoiding for months, which creates shame and avoidance that makes the problem worse. Be non-judgmental and practical: \"Let's just get it done. How far behind are we?\" If the backlog is significant, strongly recommend hiring a bookkeeper for the catch-up rather than letting it block progress. Once current, the weekly rhythm is easy to maintain. The key accountability question each session: \"Are your books current?\" If not, it needs addressing before other financial work (cash flow forecasting, cost control, pricing) can produce reliable results."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Monthly Reconciliation Process",
+          "description": "Build a simple monthly process to make sure your books match your bank accounts. Catch errors early before they compound into bigger problems.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple monthly process to make sure your books match your bank accounts. Reconciliation means comparing what your accounting software says happened with what your bank says happened, then finding and fixing any differences. Do this every month, within the first week of the following month."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Unreconciled books are unreliable books. A missed transaction, a duplicate entry, or an incorrect categorisation might be small on its own, but these errors compound over time. After 6 months of unreconciled books, your P&L could be thousands of pounds off reality. Monthly reconciliation catches errors when they are small and easy to fix, gives you confidence that your numbers are trustworthy, and keeps your accountant happy at year-end."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set a monthly reconciliation date and work through the checklist below. Most accounting software has a built-in reconciliation tool that makes this straightforward.\n\n---"
+            },
+            {
+              "title": "Monthly Reconciliation Checklist",
+              "content": "### Preparation (5 minutes)\n\n- [ ] ⚡ Quick Win: Set a recurring calendar event for the 5th of each month: \"Monthly Bank Reconciliation.\" Thirty minutes. Non-negotiable.\n- [ ] Download or access your bank statements for the previous month (all business accounts)\n- [ ] Open your accounting software's reconciliation tool\n\n### Reconcile Each Account (15-30 minutes)\n\n- [ ] Start with your main business current account\n- [ ] Compare the opening balance in your software with the bank's opening balance - they should match\n- [ ] Work through each transaction: does your software match the bank? Tick off matched items.\n- [ ] Investigate unmatched items:\n  - Transaction in the bank but not in your software? It needs entering and categorising.\n  - Transaction in your software but not in the bank? It may not have cleared yet, or it may be an error.\n  - Amounts that do not match? Check for data entry errors (transposed digits are the most common cause)\n- [ ] Check the closing balance: your software and bank should show the same number once all items are reconciled\n- [ ] Repeat for any additional accounts (savings, credit cards, PayPal, etc.)\n\n### Resolve Issues (10-15 minutes)\n\n- [ ] Enter any missing transactions\n- [ ] Correct any miscategorised items (wrong account, wrong category)\n- [ ] Note any recurring issues (same type of error each month) and fix the root cause\n- [ ] If you cannot resolve a discrepancy, flag it for your bookkeeper or accountant rather than leaving it\n\n### Close the Month\n\n- [ ] Confirm all accounts are reconciled and balanced\n- [ ] Run a quick P&L report for the month - does the profit/loss figure look reasonable?\n- [ ] Note anything unusual: \"Revenue was £X below average because...\" or \"Expenses spiked because of one-off purchase\"\n- [ ] Save/lock the period if your software supports it (prevents accidental changes to reconciled months)\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Books reconciled to the bank every month, within the first week\n- Errors caught and corrected while they are small\n- Confidence that your financial reports are accurate and trustworthy\n- Year-end accounting becomes simple because every month was already clean\n- A 30-minute monthly habit that prevents hours of painful catch-up"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Reconciliation is where many clients disengage because it feels like \"accounting admin.\" Reframe: it is quality control on the numbers you use to make every financial decision. If they have a bookkeeper, this should be the bookkeeper's job - but the owner should still review the reconciliation summary monthly. The most common issue: transactions that appear in the bank but were never entered. These are often direct debits, automatic payments, or small card transactions that slip through. Bank feeds in modern accounting software have largely solved this, so if the client is entering transactions manually, push them to connect their bank feeds."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Business & Personal Separation",
+          "description": "Draw clear lines between business and personal finances. Separate accounts, separate cards, separate everything. This protects you legally and makes your numbers infinitely cleaner.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Draw clear lines between business and personal finances. Separate accounts, separate cards, separate everything. Mixed finances create tax complications, legal risks, and decision-making confusion. This action gets them properly separated so your numbers are clean and your business is protected."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "When personal and business money mix, three things go wrong. First, your business numbers become unreliable - you cannot tell what the business actually costs to run when your personal Amazon orders are mixed in. Second, you create tax headaches - your accountant has to untangle every mixed transaction, which costs you money and time. Third, you create legal risk - if your business is a limited company, mixing finances can pierce the corporate veil and put your personal assets at risk. Clean separation solves all three."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Audit your current separation, fix the gaps, and establish rules going forward.\n\n---"
+            },
+            {
+              "title": "Separation Audit",
+              "content": "- [ ] ⚡ Quick Win: Open your business bank statement from last month. Highlight any personal purchases. If there are more than 2-3, separation is needed.\n- [ ] Check: do you have a dedicated business bank account? (If not, this is step one)\n- [ ] Check: do you have a separate business credit/debit card?\n- [ ] Check: are all business subscriptions paid from the business account?\n- [ ] Check: are all personal subscriptions paid from your personal account?\n- [ ] Check: does your personal spending ever go through the business account?\n- [ ] Check: does business spending ever go through your personal account?"
+            },
+            {
+              "title": "Set Up Proper Separation",
+              "content": "- [ ] **Business bank account:** If you do not have one, open a dedicated business account this week. Most banks offer free business current accounts. Move all business transactions to this account.\n- [ ] **Business card:** Get a separate debit or credit card for all business purchases. This alone eliminates most mixing.\n- [ ] **Salary/drawings:** Set up a regular transfer from business to personal account (salary if limited company, drawings if sole trader). This is your \"pay.\" Do not dip into the business account for personal spending.\n- [ ] **Subscriptions audit:** List every recurring payment. Move business subscriptions to the business account and personal subscriptions to your personal account.\n- [ ] **Expense process:** If you ever pay for a business expense personally (unavoidable sometimes), create a simple expense claim process: receipt, amount, purpose, reimbursement from business account within the week."
+            },
+            {
+              "title": "Ongoing Rules",
+              "content": "- [ ] **Rule 1:** All business income goes into the business account. No exceptions.\n- [ ] **Rule 2:** All business expenses come from the business account. No exceptions.\n- [ ] **Rule 3:** Personal spending never goes through the business account.\n- [ ] **Rule 4:** If you pay business expenses personally, reimburse yourself promptly with a clear paper trail.\n- [ ] **Rule 5:** Review separation monthly during your reconciliation (Action 2) - catch any slip-ups immediately.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Complete separation between business and personal finances\n- A dedicated business bank account and card for all business transactions\n- A regular salary/drawings process for paying yourself\n- Cleaner books, simpler tax returns, and reduced accountant fees\n- Legal protection maintained through proper financial separation"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is non-negotiable for any client with a limited company - mixed finances create genuine legal risk. For sole traders, it is less legally critical but just as important for clarity. The most common resistance: \"It is easier to just use one account.\" It is easier in the moment but creates 10x more work at year-end. For clients who are deeply mixed, do not try to fix the history - just draw a line from today. \"From this date forward, everything is separate.\" The bookkeeper or accountant can untangle the past. Focus coaching on the going-forward discipline."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Clean Chart of Accounts",
+          "description": "Organise your income and expense categories so your reports actually make sense. Every transaction should have an obvious home that helps you understand what is happening in your business.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Organise your income and expense categories so your financial reports actually make sense. A chart of accounts is the list of categories your accounting software uses to classify every transaction. When it is clean, your P&L tells a clear story. When it is messy, your P&L raises more questions than it answers."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses end up with a chart of accounts that grew organically - categories added on the fly, duplicate categories, a massive \"miscellaneous\" or \"general expenses\" bucket, and income categories that do not match how the business actually earns money. The result: financial reports that are technically accurate but practically useless. You cannot see which revenue streams are growing, which costs are creeping, or where profit is being made and lost. A clean chart of accounts turns your P&L from a confusing document into a decision-making tool."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review your current chart of accounts, simplify and reorganise, then set rules to keep it clean.\n\n---"
+            },
+            {
+              "title": "Review Current State",
+              "content": "- [ ] Open your accounting software and look at your chart of accounts (the full list of income, expense, and other categories)\n- [ ] Run a P&L for last month and review: can you understand what each line means? Are there categories with no transactions, or catch-all categories with too many?\n- [ ] ⚡ Quick Win: Find your \"miscellaneous\" or \"general expenses\" category. If it has more than 5% of total expenses in it, those transactions need proper homes.\n- [ ] List any categories that are duplicates or so similar they should be merged\n- [ ] List any categories that are too broad (e.g., \"Marketing\" when you need to see the difference between ads, content, and events)"
+            },
+            {
+              "title": "Design Your Clean Structure",
+              "content": "### Income Categories\n\n- [ ] Create one category for each distinct revenue stream (match the streams you identified in 2.2 Revenue Stream Analysis)\n- [ ] Keep it to 3-7 income categories. Too few and you lose visibility; too many and reports become noisy.\n- [ ] Example: \"Consulting Revenue\", \"Training Revenue\", \"Product Sales\", \"Recurring Subscriptions\"\n\n### Cost of Sales (Direct Costs)\n\n- [ ] Create categories for costs directly tied to delivering your service/product\n- [ ] These costs should increase when you sell more: subcontractors, materials, direct labour, commissions\n- [ ] Separating cost of sales from overhead expenses lets you calculate gross margin\n\n### Operating Expenses\n\n- [ ] Group expenses into logical categories. A good starting structure for most SMEs:\n  - Premises (rent, utilities, rates, maintenance)\n  - Team (salaries, NI, pension, training, recruitment)\n  - Marketing (advertising, content, events, subscriptions)\n  - Technology (software, hosting, hardware, IT support)\n  - Professional services (accounting, legal, consulting)\n  - Travel and entertainment\n  - Insurance\n  - Finance costs (bank charges, interest, merchant fees)\n  - Office and admin (stationery, postage, cleaning)\n- [ ] Aim for 10-15 expense categories total. Enough detail to spot trends, not so much that every report is overwhelming."
+            },
+            {
+              "title": "Clean Up and Maintain",
+              "content": "- [ ] Merge duplicate categories\n- [ ] Recategorise transactions currently sitting in miscellaneous or catch-all categories\n- [ ] Delete any categories with zero transactions in the last 12 months\n- [ ] Set a rule: before creating a new category, ask \"does this fit in an existing one?\" New categories should be rare.\n- [ ] Brief anyone who does your bookkeeping on the new structure so they categorise consistently\n- [ ] Review the chart of accounts every 6 months to ensure it still matches how the business operates\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clean, logical chart of accounts with 3-7 income categories and 10-15 expense categories\n- Financial reports that tell a clear story about where money comes from and where it goes\n- The ability to track revenue by stream and expenses by function\n- Gross margin visibility (by separating cost of sales from overhead)\n- A structure that stays clean because the rules prevent drift"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is unsexy but essential work. Clients often resist it because it feels like accounting rather than business building. Reframe: \"Your P&L is only as useful as the categories it uses. Right now it is like a map with the wrong labels.\" The biggest value: being able to see gross margin by revenue stream. Many clients discover that their most popular service has the worst margin once direct costs are properly separated. Work with the client's accountant or bookkeeper on this if possible - they will appreciate the effort and it ensures the structure works for tax reporting too."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

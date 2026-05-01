@@ -1,0 +1,216 @@
+{
+  "ref": "4.7",
+  "level": 4,
+  "area": 7,
+  "name": "Dashboards & Reporting",
+  "subtitle": "Level 4 · Overseer · Financials & Metrics",
+  "whatThisIs": "Visibility protects performance. When you cannot see the business clearly, problems hide until they become crises. When you can see everything at a glance, you catch issues early and make decisions based on facts, not feelings.\n\nThis playbook is about building the dashboards, scorecards, and reports that give you complete visibility into business health. Not just numbers for the sake of numbers — the right metrics, presented clearly, that help you lead without having to dig into spreadsheets every time someone asks \"how are we doing?\"\n\nThis sits at Level 4 because you need working systems and a team before dashboards become essential. If you are still doing everything yourself, you already know what is broken. When you are leading through others, visibility becomes survival.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You get surprised by problems that have been building for weeks. You ask \"how are we doing?\" and nobody can answer without spending an hour pulling numbers from different systems. You make decisions based on gut feel because the data is either missing, wrong, or impossible to access. Monthly financials arrive weeks after month-end and by then it is too late to change anything."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some reports but they are manual, inconsistent, or take too long to produce. Key metrics exist but they are scattered across different places and you have to hunt for them. Your team knows the numbers exist but they do not check them regularly. You react to trends after they have already changed direction."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You can assess the health of your business in under five minutes every morning. Key metrics are automatically collected and presented in clean, visual dashboards. Your team refers to the numbers when making decisions and can spot problems before they escalate. You review trends weekly and adjust quickly. Exception alerts flag anomalies so nothing falls through the cracks. You lead with confidence because you see everything clearly."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Can you assess business performance in under five minutes? That is the test of good dashboard design. If it takes longer than that to see where you stand, your dashboards are either too complex or measuring the wrong things.",
+    "Do your metrics tie back to your strategic intent? Every number you track should connect to something you are trying to achieve. If a metric does not drive a decision, it is clutter. Ruthless focus on what matters versus what is interesting to know.",
+    "Is your data collection automatic or manual? Manual reporting dies the moment you get busy. If someone has to remember to update a spreadsheet, it will be wrong within a month. Automation turns reporting from a chore into a competitive advantage.",
+    "Would your team make different decisions if they saw the numbers daily? The best dashboards change behaviour, not just inform. If your numbers exist in a vacuum, they are not working. They should drive action at every level.",
+    "Do you spot problems while you can still fix them? The purpose of tracking is not historical record-keeping — it is early warning. Trends matter more than snapshots. Exception reporting matters more than routine updates."
+  ],
+  "quickWins": [
+    "This week: Pick your five most important business metrics — the ones that would change how you run the business if they moved significantly. Write them down and check where you can find each one today.",
+    "This week: Set up one simple automated report that saves you time. Even if it is just a weekly email with key numbers from your accounting system, automation starts building the habit.",
+    "This week: Look at your key metrics from the last 12 weeks. Identify one clear trend — up, down, or flat. Ask yourself what decision that trend should drive."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "4.4",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    },
+    {
+      "ref": "3.8",
+      "description": ""
+    },
+    {
+      "ref": "4.1",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Executive Dashboard Design",
+          "description": "Build a single-screen view of the business that answers \"are we winning?\" in seconds. Revenue, profit, cash, customers, team — the vital signs that matter most to the owner.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a single-screen view of your business that answers \"are we winning?\" in under 30 seconds. This is your CEO cockpit - the one page you check every morning before doing anything else. It covers revenue, profit, cash, customers, and team vital signs. Nothing more.\n\nThe goal is not to track everything. The goal is to track the right things so you can spot problems early and make faster decisions."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners either look at nothing (flying blind) or look at too much (drowning in data). Neither helps. An executive dashboard gives you the critical numbers in one place so you stop guessing and start knowing. When something goes wrong, you see it in days, not months. When something goes right, you can double down immediately."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the checklist below to decide what belongs on your dashboard, then build it using whatever tool you already have. A spreadsheet works fine. Don't buy software until the habit is established.\n\n---"
+            },
+            {
+              "title": "Dashboard Design Checklist",
+              "content": "- [ ] **Pick your dashboard tool** - Google Sheets, Excel, Notion, or your accounting software's built-in dashboards. Use what you already know. Fancy tools don't help if nobody opens them.\n- [ ] ⚡ Quick Win: **Write down the 3 questions you ask yourself every Monday** - These reveal what actually matters to you. \"Did we hit target?\" \"How much cash do we have?\" \"Are clients happy?\" Your dashboard should answer these instantly.\n- [ ] **Choose your revenue metrics (pick 2-3)** - Revenue this month vs target, revenue vs same month last year, recurring revenue vs one-off. Don't track all of them. Pick the ones that tell you most.\n- [ ] **Choose your profit metric** - Gross profit margin or net profit margin. One number. If it's dropping, you investigate. If it's stable or rising, you move on.\n- [ ] **Add your cash position** - Cash in bank right now, plus projected cash in 4 weeks. Link this to your 13-week forecast if you have one.\n- [ ] **Choose your customer metrics (pick 2-3)** - Active clients, new clients this month, client churn rate, average revenue per client, or NPS. Pick the ones that would keep you up at night if they moved in the wrong direction.\n- [ ] **Add one team vital sign** - Team capacity, open roles, or a simple \"team health\" rating. Just one. You're not building an HR dashboard here.\n- [ ] **Choose one leading indicator** - Something that predicts next month's results. Pipeline value, proposals sent, discovery calls booked, or website enquiries. Leading indicators give you time to act.\n- [ ] **Set a target or benchmark for every metric** - A number without context is useless. Every metric needs a target, a previous period comparison, or an industry benchmark next to it.\n- [ ] **Use traffic light colours** - Green (on track), amber (watch it), red (act now). Visual signals mean you can scan the whole dashboard in seconds.\n- [ ] **Remove anything that doesn't trigger a decision** - If a metric being high or low wouldn't change what you do this week, it doesn't belong on your executive dashboard. Be ruthless.\n- [ ] **Build the first version** - Get all your chosen metrics onto one screen. It will be rough. That's fine. A working ugly dashboard beats a beautiful one that never gets built.\n- [ ] ⚡ Quick Win: **Set it as your browser homepage or phone wallpaper** - Make it impossible to avoid. The best dashboard is the one you actually look at.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You can answer \"how is the business doing?\" in 30 seconds flat\n- Problems show up in days, not months\n- You stop relying on gut feel for major decisions\n- Team meetings start with facts, not opinions\n- You spend less time buried in spreadsheets because the important stuff is already visible"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Start with fewer metrics, not more. Most owners want to track 20 things. Push them to pick 8-10 maximum. If it doesn't fit on one screen, it's too much. The first version will be wrong - that's expected. After 2-3 weeks of use, they'll know exactly which metrics they actually look at and which ones they skip. Refine then. The biggest risk is overdesign. Get something live in the first session, then improve it over time."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Department Scorecards",
+          "description": "Create focused dashboards for each area of the business so team members can see their performance and take ownership of their results. Sales, operations, marketing, finance — each gets their own scorecard.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a focused dashboard for each key area of your business - sales, operations, marketing, and finance - so the people running those areas can see their own performance without waiting for you to tell them. Each scorecard should answer: \"Is my area performing? Where do I need to focus?\"\n\nThis is about pushing visibility down. When team members can see their own numbers, they take ownership. When they can't, everything flows back to you."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your executive dashboard tells you how the whole business is doing. Department scorecards tell each team how their area is doing. Without them, the only person who knows whether marketing is working is you. The only person who knows whether operations is on track is you. That's not leadership, that's bottleneck creation. Scorecards create ownership, accountability, and faster decisions at every level."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pick the department that needs visibility most urgently (usually sales or operations). Build that scorecard first. Then repeat for other areas. Don't try to build all four at once.\n\n---"
+            },
+            {
+              "title": "Step 1: Choose Your Departments",
+              "content": "- [ ] **List the 3-5 key areas of your business** - Common ones: Sales, Marketing, Operations/Fulfilment, Finance. Yours might be different. Use whatever matches how you actually run things.\n- [ ] **Assign an owner for each area** - Who is responsible for this area's results? If the answer is \"me\" for everything, that's a problem this action will help surface.\n- [ ] ⚡ Quick Win: **Start with the area that causes you the most stress** - That's where visibility will have the biggest immediate impact."
+            },
+            {
+              "title": "Step 2: Design Each Scorecard",
+              "content": "For each department, work through these items:\n\n- [ ] **Pick 4-6 metrics that define success for this area** - Sales might be: pipeline value, proposals sent, close rate, revenue booked, average deal size. Operations might be: on-time delivery, client satisfaction, capacity utilisation, rework rate.\n- [ ] **Include at least one leading indicator** - A metric that predicts future performance, not just reports past performance. Sales: discovery calls booked. Marketing: qualified leads. Operations: project backlog.\n- [ ] **Set targets for every metric** - The department owner should have input here. Targets imposed from above get ignored. Targets agreed together get chased.\n- [ ] **Choose an update frequency** - Weekly for fast-moving areas (sales, marketing). Monthly for slower areas (finance, HR). Match the rhythm to the reality.\n- [ ] **Decide who updates it** - The department owner, not you. If they won't update their own scorecard, that tells you something important about ownership."
+            },
+            {
+              "title": "Step 3: Connect to Your Executive Dashboard",
+              "content": "- [ ] **Link the top-line number from each scorecard to your executive dashboard** - Your executive view shows the summary. The scorecard shows the detail. Two layers, not one giant mess.\n- [ ] **Set up a simple review rhythm** - Each department reviews their scorecard weekly. You review the executive dashboard daily and do a deeper dive with department owners monthly.\n- [ ] **Document what \"red\" means for each metric** - At what point should someone escalate to you? Define this upfront so people know when to flag and when to handle it themselves.\n- [ ] ⚡ Quick Win: **Send the first scorecard to the department owner today** - Don't wait until they're all perfect. One working scorecard this week beats four perfect ones next month.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Each key area has its own visible performance tracker\n- Team members can see how they're doing without asking you\n- Problems surface faster because the people closest to the work spot them first\n- Your executive dashboard gets cleaner because detail lives in department scorecards\n- Accountability conversations shift from \"I think\" to \"the numbers show\""
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common pushback is \"we're too small for this\" or \"everyone already knows how things are going.\" Challenge that. Ask: \"If your sales person left tomorrow, how would you know within a week whether their replacement was performing?\" If the answer involves gut feel, they need a scorecard. Start with one department. Get it working. Let the owner experience the benefit. Then the other departments will want their own."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Exception Reporting System",
+          "description": "Set up alerts that flag anomalies before they become problems. Automatic notifications when key metrics move outside normal ranges so you can act fast.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a set of automatic alerts that flag when key metrics move outside normal ranges. Instead of checking every number every day, you get notified only when something needs attention. Think of it as a smoke alarm for your business - it stays quiet until there's a problem.\n\nThis builds on your executive dashboard and department scorecards. Those show you the current picture. Exception reporting taps you on the shoulder when something changes unexpectedly."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You can't watch every number every day. And you shouldn't have to. The businesses that catch problems early aren't the ones with the most dashboards. They're the ones with the best alerts. A cash balance dropping below a threshold, a client churn spike, a sudden drop in sales pipeline - these are the signals that need immediate attention. Everything else can wait for the weekly review."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the steps in order. You're defining what \"normal\" looks like, setting boundaries around it, and building alerts for when things go outside those boundaries.\n\n---"
+            },
+            {
+              "title": "Step 1: Define Your Critical Metrics",
+              "content": "- [ ] **List the 6-8 metrics that would cause real damage if they moved sharply in the wrong direction** - Cash balance, monthly revenue, client count, pipeline value, gross margin, debtor days. Focus on the ones where a week's delay in spotting a problem costs real money.\n- [ ] ⚡ Quick Win: **Start with cash** - Set an alert for when your bank balance drops below your minimum comfort level (typically 1-2 months of fixed costs). This alone prevents most cash crises.\n- [ ] **Exclude vanity metrics** - Website traffic, social media followers, email open rates. These rarely need exception alerts. Focus on metrics tied directly to revenue, profit, cash, and customers."
+            },
+            {
+              "title": "Step 2: Set Your Thresholds",
+              "content": "- [ ] **For each metric, define \"normal range\"** - Use the last 6-12 months of data. What's the typical range? Revenue might normally be between £40K and £55K per month. Client churn might be 2-4% monthly.\n- [ ] **Set upper and lower alert boundaries** - When should the alarm go off? Too low is obvious (cash below £20K). But too high can also signal problems (expenses suddenly 30% above normal could mean an error or unauthorised spending).\n- [ ] **Define three alert levels** - Watch (approaching the boundary), Warning (at the boundary), Critical (well past the boundary). Not everything is equally urgent.\n- [ ] **Write a one-line \"so what\" for each alert** - \"Cash below £15K\" is the alert. \"Defer all non-essential spending and chase overdue invoices immediately\" is the response. Link the alert to the action."
+            },
+            {
+              "title": "Step 3: Build the Alerts",
+              "content": "- [ ] **Choose your alert method** - Email notifications from your accounting software, conditional formatting in a spreadsheet that turns cells red, Slack alerts, or even a simple weekly checklist where someone checks each threshold manually. Match the tool to your team's habits.\n- [ ] **Set up automated alerts where possible** - Xero, QuickBooks, and most CRM tools can send email alerts based on thresholds. Use them. Manual checking works but gets dropped when things get busy.\n- [ ] **Assign an owner for each alert** - Who receives it? Who acts on it? If all alerts go to you, you've just built a smarter bottleneck. Push appropriate alerts to department owners.\n- [ ] **Test each alert** - Deliberately trigger one (or simulate it) to make sure the notification actually arrives and the right person receives it.\n- [ ] ⚡ Quick Win: **Set up your top 3 alerts this week** - Cash balance, monthly revenue vs target, and client count. These three cover most of what matters. Add more later.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You stop checking every number every day because the system tells you when something needs attention\n- Problems get caught in days, not weeks or months\n- Team members can respond to alerts in their area without waiting for you\n- Your mental load drops because you trust the system to flag what matters\n- False alarms decrease over time as you refine your thresholds"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest mistake is setting too many alerts with thresholds that are too tight. If the system cries wolf every week, everyone ignores it. Start with 3-5 alerts on genuinely critical metrics. Widen the thresholds slightly so alerts only fire when something genuinely unusual happens. You can always tighten them later. For clients without automated tools, a simple weekly checklist where someone manually checks each threshold works perfectly well. The system matters more than the technology."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Weekly Review Rhythm",
+          "description": "Install a weekly cadence to review trends, discuss variances, and adjust course. Turn dashboard data into decisions through structured review meetings.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a structured weekly meeting where you and your team review dashboard data, discuss what's changed, and decide what to do about it. This is the bridge between having data and actually using it. Without a review rhythm, dashboards become wallpaper - nice to look at, but nobody acts on them.\n\nPick a fixed day and time. Follow a consistent agenda. Keep it short. Make decisions, not just observations."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Dashboards don't make decisions. People do. But only if they look at the data regularly and talk about what it means. A weekly review rhythm turns numbers into action. It catches small problems before they become big ones. It keeps everyone aligned on what matters this week. And it creates a culture where decisions are based on evidence, not gut feel or whoever shouts loudest."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the setup steps, then use the meeting agenda template every week. The first few meetings will feel clunky. By week 4 or 5, the team will wonder how they ever ran without it.\n\n---"
+            },
+            {
+              "title": "Step 1: Set Up the Meeting",
+              "content": "- [ ] **Pick a fixed day and time** - Monday morning (sets priorities for the week) or Friday afternoon (reviews the week just gone) both work. Pick one and protect it. This meeting doesn't get moved for client calls.\n- [ ] ⚡ Quick Win: **Block it in everyone's calendar right now** - Recurring, 30-45 minutes, every week. Making it recurring removes the \"should we meet this week?\" question.\n- [ ] **Decide who attends** - You plus anyone who owns a department scorecard or key metric. Keep it tight. More than 6 people and it becomes a broadcast, not a discussion.\n- [ ] **Assign a dashboard updater** - Someone updates all dashboards and scorecards 24 hours before the meeting. Data should be current when the meeting starts.\n- [ ] **Create a shared agenda document** - Same structure every week. Consistency is what makes this work. Use the template below."
+            },
+            {
+              "title": "Step 2: Build Your Meeting Agenda",
+              "content": "- [ ] **Section 1: Wins (5 minutes)** - What went well this week? One highlight per person. This sets the tone and ensures good news doesn't get buried.\n- [ ] **Section 2: Scorecard review (10 minutes)** - Walk through the executive dashboard. Only discuss metrics that are amber or red. Green means it's working - move on.\n- [ ] **Section 3: Exceptions and alerts (5 minutes)** - Any alerts triggered this week? What happened, what was done, is it resolved?\n- [ ] **Section 4: Stuck items (10 minutes)** - What's blocked? What needs a decision? This is where the real value is. Problems that would fester for weeks get resolved in minutes.\n- [ ] **Section 5: Priorities for next week (5 minutes)** - Each person states their top 1-3 priorities. Written down, visible to all. Next week's meeting starts by checking whether these got done.\n- [ ] **Section 6: Action items (2 minutes)** - Who is doing what by when? Capture every action item with a name and a deadline. No orphan actions."
+            },
+            {
+              "title": "Step 3: Make It Stick",
+              "content": "- [ ] **Run the first meeting yourself** - Set the standard. Keep it tight. Cut off tangents with \"let's take that offline.\" Show the team what a good review meeting looks like.\n- [ ] **Rotate the meeting facilitator after 4 weeks** - Once the format is established, let others run it. This builds leadership and stops the meeting dying if you're away.\n- [ ] ⚡ Quick Win: **End every meeting with \"what's the one thing we need to get right this week?\"** - Forces prioritisation and gives everyone a shared focus.\n- [ ] **Review and refine the format quarterly** - After 12 meetings, you'll know what works and what's dead time. Cut what doesn't add value. Add what's missing.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Data turns into decisions every single week\n- Problems get caught and addressed within 7 days, not 7 weeks\n- Team alignment improves because everyone sees the same numbers\n- Accountability becomes natural - people deliver because they know they'll be asked\n- You spend less time in ad-hoc check-ins because the weekly review covers the important stuff"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The first 3-4 meetings are the danger zone. They'll feel slow, awkward, and like a waste of time. Push through. By meeting 5 or 6, the team starts bringing issues to the meeting instead of interrupting you throughout the week. That's the turning point. The most common failure mode is letting the meeting run too long. Be strict on time. If a topic needs more than 5 minutes of discussion, take it offline with the relevant people. The weekly review is for flagging and deciding, not for deep problem-solving."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

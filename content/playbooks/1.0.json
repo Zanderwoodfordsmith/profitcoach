@@ -4,57 +4,140 @@
   "area": 0,
   "name": "Focus",
   "subtitle": "Level 1 · Overwhelm · Owner Performance",
-  "whatThisIs": "Focus is where everything starts. Not strategy. Not marketing. Not hiring. Focus. Because without it, nothing else gets done properly — no matter how good the plan is.\n\nIf your business feels chaotic, it is rarely because there is too much to do. It is because your attention is fragmented. You are working on ten things and finishing none of them. You are reacting to whatever is loudest instead of choosing what matters most. The problem is not effort. It is direction.\n\nThis playbook is about you — not your team, not your systems, not your numbers. It is about getting your own attention back under control so you can actually move the business forward.",
+  "whatThisIs": "Focus is where everything starts. Not strategy. Not marketing. Not hiring. Focus. Because without it, nothing else gets done properly, no matter how good the plan is.\n\nIf your business feels chaotic, it is rarely because there is too much to do. It is because your attention is fragmented. You are working on ten things and finishing none of them. You are reacting to whatever is loudest instead of choosing what matters most. The problem is not effort. It is direction.\n\nThis playbook is about you, not your team, not your systems, not your numbers. It is about getting your own attention back under control so you can actually move the business forward.",
   "whatItLooksLike": {
     "broken": {
-      "label": "When this is broken",
       "emoji": "🔴",
+      "label": "When this is broken",
       "content": "You sit down to work and within minutes you have checked your phone, opened email, and gone down a rabbit hole that has nothing to do with your priorities. You have goals but you never seem to make progress on them. Your day is spent firefighting and reacting. You finish most days exhausted but unable to point to anything meaningful you actually completed."
     },
     "ok": {
-      "label": "When this is OK",
       "emoji": "🟠",
+      "label": "When this is OK",
       "content": "You have good days and bad days. Sometimes you get real work done, other times the day disappears into meetings, messages, and small tasks. You know what you should be working on but you struggle to protect the time for it. You have tried productivity tools and techniques but nothing has stuck consistently."
     },
     "working": {
-      "label": "When this is working",
       "emoji": "🟢",
-      "content": "You know exactly what your most important work is each week and each day. You have protected time to do it without interruption. Distractions are managed — not by willpower, but by systems and environment. You finish your most important work by late morning and the rest of the day is a bonus. You feel in control of your time instead of controlled by everyone else's agenda."
+      "label": "When this is working",
+      "content": "You know exactly what your most important work is each week and each day. You have protected time to do it without interruption. Distractions are managed, not by willpower, but by systems and environment. You finish your most important work by late morning and the rest of the day is a bonus. You feel in control of your time instead of controlled by everyone else's agenda."
     }
   },
   "thingsToThinkAbout": [
-    "If you could only fix one thing this quarter, what would unlock the most momentum? That is your real priority. Everything else is noise until that one thing is moving. Most owners are working on ten things at 10% instead of one thing at 100%.",
-    "Does your calendar reflect your actual priorities? Look at last week. How much time did you spend on the thing you say matters most? If the answer is less than a few hours, your calendar is lying about what you value. Your time goes where your attention goes.",
-    "Where are you reacting instead of deciding? Every notification, every \"quick question,\" every meeting you did not initiate — these are other people's priorities, not yours. If your day is mostly reactive, you are building someone else's business, not yours.",
-    "What are you continuing out of habit rather than necessity? Projects, commitments, meetings, subscriptions — things you started months ago that no longer serve you but keep consuming your attention. Stopping something is as powerful as starting something.",
-    "Do you have a filter for saying no? Without a clear rule for what earns your time, everything feels urgent and everything gets a yes. A simple filter — \"does this move my one priority forward?\" — eliminates most of the noise."
+    "**If you could only fix one thing this quarter, what would unlock the most momentum?** That is your real priority. Everything else is noise until that one thing is moving. Most owners are working on ten things at 10% instead of one thing at 100%.",
+    "**Does your calendar reflect your actual priorities?** Look at last week. How much time did you spend on the thing you say matters most? If the answer is less than a few hours, your calendar is lying about what you value. Your time goes where your attention goes.",
+    "**Where are you reacting instead of deciding?** Every notification, every \"quick question,\" every meeting you did not initiate, these are other people's priorities, not yours. If your day is mostly reactive, you are building someone else's business, not yours.",
+    "**What are you continuing out of habit rather than necessity?** Projects, commitments, meetings, subscriptions, things you started months ago that no longer serve you but keep consuming your attention. Stopping something is as powerful as starting something.",
+    "**Do you have a filter for saying no?** Without a clear rule for what earns your time, everything feels urgent and everything gets a yes. A simple filter, \"does this move my one priority forward?\", eliminates most of the noise."
   ],
-  "plays": [
+  "actionsIntro": "When you open this playbook in the Profit System, you will find:\n**Play 1: The One Thing**:\nIdentify the single most important task for the week and the single most important task for each day. This is how you go from scattered to strategic. One decision that changes how every hour gets spent.",
+  "quickWins": [
+    "**This week:** Put your phone in another room during work hours. Just this one change will make a noticeable difference.",
+    "**This week:** Identify your single most important task for this week. Write it on a piece of paper and stick it where you can see it every morning.",
+    "**This week:** Block 90 minutes tomorrow morning for deep work. No email, no calls, no interruptions. Work on your one thing. See how it feels."
+  ],
+  "classroom": {
+    "moduleEmojiDefault": "📘"
+  },
+  "relatedPlaybooks": [
     {
-      "number": 1,
-      "title": "The One Thing",
-      "description": "Identify the single most important task for the week and the single most important task for each day. This is how you go from scattered to strategic. One decision that changes how every hour gets spent."
+      "ref": "2.0",
+      "description": ""
     },
     {
+      "ref": "1.3",
+      "description": ""
+    },
+    {
+      "ref": "3.0",
+      "description": ""
+    }
+  ],
+  "actions": [
+    {
       "number": 2,
+      "lessonKey": "deep-work-block",
+      "emoji": "🎯",
       "title": "The Deep Work Block",
-      "description": "Protect a daily 90-minute block of uninterrupted time for your most important work. Not something you find time for — something you schedule and defend like a client meeting."
+      "description": "The Deep Work Block",
+      "video": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=5MgBikgcWnY"
+      },
+      "bodyMarkdown": "Use this lesson with your coach. **Deep work** means a fixed daily block where only your One Thing gets attention.\n\n- Pick a recurring 90-minute slot.\n- Close email, chat, and phone.\n- Work only on the task you chose the night before.",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Schedule a daily 90-minute block of uninterrupted time for your most important work. Treat it like a meeting with your most important client — because it is. This is where your One Thing gets done."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Cal Newport's research shows that most knowledge workers get less than 1 hour of genuinely focused work per day. The rest is meetings, messages, and shallow tasks. A business owner who protects 90 minutes of deep work daily gets more strategic work done than one who works 12 fragmented hours. The block is not something you \"find time for\" — it is the most productive time in your day, and everything else fits around it.\n\nKeith Cunningham calls this \"Thinking Time\" — the non-negotiable practice of sitting with a single important question without distraction. The most valuable thing a business owner can do is think clearly. You cannot do that in 5-minute gaps between emails."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Set it up once. Protect it daily. The discipline of showing up is more important than what you work on — though you should always work on your One Thing.\n\n---"
+        },
+        {
+          "title": "Setup Checklist",
+          "content": "- [ ] **Choose your time** — Morning is best for most people (before the world starts demanding your attention). Pick a consistent slot — same time every day so it becomes automatic.\n- [ ] **Block it in your calendar** — Label it something that signals \"do not touch.\" Book it as recurring. It is not optional and it is not the first thing that moves when something comes up.\n- [ ] **Tell your team** — \"I am unavailable from [time] to [time] every day. Unless the building is on fire, it waits.\" Be specific about what counts as an emergency.\n- [ ] **Prepare the night before** — Before you leave work, write down exactly what you will work on during tomorrow's deep work block. When you sit down, you start immediately — no deciding, no browsing, no warming up."
+        },
+        {
+          "title": "Daily Execution",
+          "content": "- [ ] **Close everything except what you need** — Email closed. Phone in another room or on airplane mode. Browser tabs closed. Slack/Teams off. Chat off. If it can ping, buzz, or notify you — shut it down.\n- [ ] **Set a timer for 90 minutes** — Knowing there is an end makes it easier to resist distractions. When the timer goes, you are done. No guilt about stopping.\n- [ ] **Work on your One Thing only** — Not three things. Not whatever feels urgent. The one task you identified as most important. If you finish early, sit with it longer — depth beats breadth.\n- [ ] **When your mind wanders, write the thought down and return to work** — Keep a notepad for \"I must remember to...\" thoughts. Capture them and let them go. They will be there after the block."
+        },
+        {
+          "title": "Troubleshooting",
+          "content": "- [ ] **If 90 minutes feels impossible, start with 45** — Build the habit first. Extend it when 45 minutes feels easy.\n- [ ] **If you keep getting interrupted, change location** — Coffee shop, home office, empty meeting room. Sometimes the best solution is being physically unreachable.\n- [ ] **If you struggle to start, use the \"just 10 minutes\" rule** — Commit to 10 minutes. Almost always, once you start, you keep going.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Your most important work gets your best energy, not your leftovers\n- You complete meaningful work every day instead of only reacting to other people's priorities\n- Over time, the compound effect of daily deep work transforms your business — problems get solved faster, strategy gets clearer, execution improves\n- You feel in control of your time instead of controlled by it"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This is often the hardest action for overwhelmed business owners because they believe they cannot afford 90 minutes away from the noise. Reframe it: they cannot afford NOT to. The noise will fill every minute they give it. The deep work block is how they take that time back.\n\nStart by asking what time they currently waste each day — most will admit to 1-2 hours of low-value activity. The deep work block replaces that, not adds to their day.\n\nIf a client consistently cannot protect their block, that is a signal about boundaries, delegation, or team foundations — not about time management."
+        }
+      ]
     },
     {
       "number": 3,
       "title": "The Digital Detox",
-      "description": "Remove the distractions that are engineered to steal your attention. Phone, browser, desktop — a systematic cleanup so that when you sit down to work, there is nothing pulling you away."
+      "description": "The Digital Detox",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Systematically identify and remove the digital and physical distractions that steal your attention every day. This is not about willpower — it is about designing an environment where focus is the default, not the exception."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Your phone, your inbox, your browser, and your workspace are all engineered to interrupt you. Every notification, every open tab, every bit of clutter competes for your attention. Cal Newport's research shows that after a single interruption, it takes an average of 23 minutes to fully refocus. If you are interrupted 6 times a day, you have lost over 2 hours before you have done anything wrong. The solution is not to resist distractions harder — it is to remove them before they reach you."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through each section once, thoroughly. Then review monthly to catch anything that has crept back in. Distractions are persistent — they will return if you let them.\n\n---"
+        },
+        {
+          "title": "Digital Distractions",
+          "content": "### Your Phone\n\n- [ ] **Turn off all non-essential notifications** — Keep calls and texts from key contacts. Remove everything else: social media, news, email badges, app updates. If you are not sure whether a notification is essential, it is not.\n- [ ] **Remove social media apps from your home screen** — You can still access them through the app library if you need to. The goal is to stop the mindless open-scroll-close loop.\n- [ ] **Set your phone to Do Not Disturb during work hours** — Allow calls from your team and key contacts. Everything else waits.\n- [ ] **Charge your phone in a different room during deep work** — Out of sight, out of mind. If it is within arm's reach, you will check it.\n\n### Your Computer\n\n- [ ] **Close your email client unless you are actively processing email** — Check email 2-3 times per day at set times, not continuously. Batch it.\n- [ ] **Close browser tabs you are not using right now** — Every open tab is a micro-decision your brain has to manage. 3 tabs, not 30.\n- [ ] **Turn off desktop notifications for chat, email, and apps** — Slack, Teams, email pop-ups — all off. Check them on your schedule, not theirs.\n- [ ] **Install a website blocker for your deep work hours** — Tools like Freedom, Cold Turkey, or Focus block distracting sites during your focus time. Use technology to fight technology.\n- [ ] **Unsubscribe from newsletters you do not read** — If you have not opened it in the last 3 issues, unsubscribe. Every email that arrives is a decision you have to make.\n\n### Meetings\n\n- [ ] **Audit your recurring meetings** — List every recurring meeting in your calendar. For each one, ask: \"What would happen if this meeting stopped?\" If the answer is \"nothing much\" — cancel it.\n- [ ] **Set a default meeting length of 25 minutes** — Not 30, not 60. Shorter meetings force focus and create buffers between calls.\n- [ ] **Block \"no meeting\" zones in your calendar** — Protect at least one half-day per week where no meetings can be booked. This is your recovery and thinking time."
+        },
+        {
+          "title": "Physical Environment",
+          "content": "- [ ] **Clear your desk to only what you need for the current task** — Clutter creates visual noise that drains cognitive energy. A clear desk signals \"time to focus.\"\n- [ ] **Remove or relocate anything that triggers task-switching** — Post-it reminders of other projects, printed to-do lists for different workstreams, open notebooks from yesterday's meeting — put them away until they are relevant.\n- [ ] **Address noise** — If your workspace is noisy, use noise-cancelling headphones or find a quieter spot. Background noise reduces cognitive performance even when you think you have tuned it out.\n- [ ] **Make your workspace signal \"work\"** — If you work from home, a dedicated space matters. Your brain associates environments with activities. A workspace that is also where you eat, watch TV, or relax will fight your focus.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Your environment supports focus instead of fighting it\n- You spend less mental energy resisting distractions and more on actual work\n- Your Deep Work Block becomes significantly more productive\n- You feel calmer and more in control during work hours\n- The benefits compound — less distraction today means better habits tomorrow"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Most clients underestimate how much their environment is sabotaging them. Have them do the phone notification audit live in a session — the look on their face when they count 40+ notification sources is usually the wake-up call.\n\nThis action pairs directly with The Deep Work Block. The Distraction Audit makes the environment ready; the Deep Work Block is what you do in that environment.\n\nFor clients who resist (usually \"but I need to be available\"), ask: \"Available for what, specifically?\" Most of what they think is urgent is not. Help them define what genuinely requires immediate attention versus what can wait 90 minutes."
+        }
+      ]
     },
     {
       "number": 4,
       "title": "The Environment Audit",
-      "description": "Design your physical workspace so it supports focus instead of fighting it. Clutter, noise, interruptions — remove them and your brain stops wasting energy on things that do not matter."
+      "description": "The Environment Audit"
     }
-  ],
-  "quickWins": [
-    "This week: Put your phone in another room during work hours. Just this one change will make a noticeable difference.",
-    "This week: Identify your single most important task for this week. Write it on a piece of paper and stick it where you can see it every morning.",
-    "This week: Block 90 minutes tomorrow morning for deep work. No email, no calls, no interruptions. Work on your one thing. See how it feels."
-  ],
-  "relatedPlaybooks": ["2.0", "1.3", "3.0"]
+  ]
 }

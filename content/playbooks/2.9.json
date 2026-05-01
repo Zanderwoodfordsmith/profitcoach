@@ -1,0 +1,78 @@
+{
+  "ref": "2.9",
+  "level": 2,
+  "area": 9,
+  "name": "Recruitment",
+  "subtitle": "Level 2 · Overworked · Team & Leadership",
+  "whatThisIs": "Recruitment is how you build the team that builds your business. Get it right and you bring in people who solve problems, free up your time, and raise the standard. Get it wrong and you spend months managing someone who was never right for the role — and then start again.\n\nMost SME owners hire reactively. A gap appears, panic sets in, and the first warm body gets the job. This playbook replaces that with a structured process so every hire is a deliberate decision, not a relief valve. It covers the full journey: attracting the right candidates, selecting the best one, and getting them up to speed.\n\nThis is not about building an HR department. It is about having a simple, repeatable process that means you hire well every time — even if you only hire two or three people a year.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You hire when you are desperate, write a vague job ad, pick the best of a bad bunch, and hope it works out. There is no interview structure — you go on gut feel and end up with people who interview well but perform badly. New starters are left to figure things out on their own. Turnover is high and every departure feels like starting from scratch."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You put some thought into hiring but the process is different every time. Sometimes you find great people, sometimes you do not, and you are not sure what made the difference. You have a rough onboarding but new hires still take too long to get up to speed. You know the process needs tightening but it only feels urgent when you are mid-hire."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear, repeatable process from job ad to day one. Every role has defined outcomes and success criteria before you start looking. Your interviews are structured so you are comparing candidates against the same bar, not your mood. New hires have a 30-60-90 day plan and regular check-ins. People get productive faster, stay longer, and you spend less time firefighting bad hires."
+    }
+  },
+  "thingsToThinkAbout": [
+    "**Are you hiring for relief or for results?** There is a difference between \"I need someone to take stuff off my plate\" and \"I need someone who can own this outcome.\" The first leads to task-dumping. The second leads to genuine leverage. Define the outcome before you write the job ad.",
+    "**Would a top performer actually apply?** Read your last job ad through the eyes of someone really good. Does it tell them what winning looks like in 90 days? Does it sell why your business is worth joining over a bigger competitor? If not, you are filtering out the best people before they even apply.",
+    "**Is your selection process objective or based on gut feel?** Most owners hire people they like, not people who can do the job. Structured interviews with consistent questions and a simple scorecard remove the guesswork. It feels more effort up front. It saves months of pain later.",
+    "**Do you know what your values actually look like in practice?** Saying \"we want team players\" is meaningless unless you can describe the specific behaviours you expect and ask for real examples of when a candidate demonstrated them. Culture fit is not a vibe check — it is a measurable thing if you define it properly.",
+    "**What happens on day one — and day thirty?** Most SMEs treat onboarding as \"show them where the kettle is.\" The first 90 days are where you either protect your hiring investment or watch it drain away. A simple plan with clear milestones turns a new starter into a productive team member far faster than leaving them to figure it out."
+  ],
+  "actionsIntro": "This is a larger playbook organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "**This week:** Pick the next role you are likely to hire for. Write down the three outcomes that would make that hire a success in 90 days — not tasks, outcomes.",
+    "**This week:** Look at your last job ad. Ask yourself: would I apply for this? Rewrite the opening paragraph so it leads with what the person will achieve and why your business is worth joining.",
+    "**This week:** If you have anyone in their first 90 days right now, book a 15-minute check-in. Ask them: what is clear, what is confusing, and what do you need from me?"
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.9",
+      "description": ""
+    },
+    {
+      "ref": "3.9",
+      "description": ""
+    },
+    {
+      "ref": "4.9",
+      "description": ""
+    },
+    {
+      "ref": "1.5",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Attracting Candidates",
+      "description": "Getting the right people to notice you and apply.\n**Play 1: Role Scorecard** — Define the outcomes, responsibilities, and non-negotiable traits for the role before you write a single word of the job ad. If you do not know what winning looks like, you cannot hire a winner.\n**Play 2: The Job Ad** — Write an ad that sells the role to the right person. Lead with what they will achieve, why your business is worth joining, and what the first 90 days look like.\n**Play 3: Channel Selection** — Pick 3–5 places your ideal candidate actually spends time and focus your effort there. Stop posting everywhere and hoping.\n**Play 4: Candidate Tracker** — A simple system to track who has applied, where they are in the process, and what happens next. Nothing falls through the cracks.",
+      "actions": []
+    },
+    {
+      "title": "Selection & Interviewing",
+      "description": "Choosing the right person based on evidence, not instinct.\n**Play 5: Phone Screen** — A short call to check motivation, logistics, and basic fit before you invest time in a full interview. Kill obvious misfits early.\n**Play 6: Structured Interview** — A consistent set of behavioural and values-based questions asked to every candidate so you are comparing people against the same bar, not your mood on the day.\n**Play 7: Practical Task** — A short, realistic task that mirrors the actual work. Seeing someone do the job tells you more than any interview answer.\n**Play 8: Candidate Scorecard** — A simple rubric for scoring each candidate across the criteria that matter. Every interviewer completes it before the group discussion. Decisions are made on data, not gut feel.",
+      "actions": []
+    },
+    {
+      "title": "Onboarding & Early Ramp",
+      "description": "Turning a good hire into a productive team member.\n**Play 9: Pre-Start Prep** — Everything that needs to be ready before day one: contracts, equipment, logins, first-week schedule, and a welcome message. First impressions count both ways.\n**Play 10: First Week Plan** — A structured first week covering introductions, how the business works, how their role fits in, and what they need to know to start contributing.\n**Play 11: 30-60-90 Day Plan** — Clear goals, training milestones, and KPIs for each phase so the new hire knows exactly what success looks like and you can spot problems early.\n**Play 12: Manager Check-Ins** — Scheduled weekly one-to-ones for the first 90 days to remove blockers, give feedback, and adjust expectations. Do not wait for the first performance review to find out something is wrong.\n---",
+      "actions": []
+    }
+  ]
+}

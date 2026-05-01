@@ -52,7 +52,7 @@ export default function LoginPage() {
     } else if (role === "client") {
       router.push("/client");
     } else {
-      router.push("/coach");
+      router.push("/coach/signature");
     }
   }
 
@@ -113,6 +113,15 @@ export default function LoginPage() {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
+        <p className="mt-4 text-center text-xs text-slate-600">
+          New coach?{" "}
+          <a
+            href="/join"
+            className="font-medium text-sky-700 underline-offset-2 hover:underline"
+          >
+            Create an account
+          </a>
+        </p>
       </div>
     </div>
   );

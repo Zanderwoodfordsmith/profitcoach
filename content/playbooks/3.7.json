@@ -1,0 +1,275 @@
+{
+  "ref": "3.7",
+  "level": 3,
+  "area": 7,
+  "name": "KPIs",
+  "subtitle": "Level 3 · Organised · Financials & Metrics",
+  "whatThisIs": "Numbers drive behaviour. When you measure what matters, people start paying attention to what matters. But most businesses track the wrong metrics, track too many metrics, or track nothing consistently. They drown in data but starve for insight.\n\nThis playbook is about choosing the right numbers to measure and creating the visibility that drives performance. Not a dashboard with fifty charts that nobody looks at. A focused set of KPIs that everyone understands, checks regularly, and acts on when they move in the wrong direction.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have no idea which metrics actually predict success in your business. You measure things because they are easy to measure, not because they matter. Different people track different numbers and nobody can agree what \"good\" looks like. You only discover problems weeks after they happened when it is too late to fix them."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You track some metrics but they change constantly and nobody is really accountable for moving them. You have data but struggle to turn it into decisions. Your team knows some numbers but not why they matter or what happens when they hit their targets."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have 3-5 core metrics that everyone understands and checks weekly. Each KPI clearly predicts business success and each person knows exactly which numbers they own. When metrics move in the wrong direction, you spot it quickly and act immediately. The numbers drive behaviour because they drive decisions."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Which 3-5 numbers actually predict your success? Most businesses could run on five metrics or fewer. Revenue, gross margin, customer acquisition cost, customer retention rate, cash flow. Pick the ones that move first when your business gets healthier or sicker. Everything else is noise.",
+    "Do your metrics predict the future or report the past? Leading indicators tell you what is coming. Lag indicators tell you what already happened. You need both, but leading indicators are more valuable because they give you time to act. What are the early warning signs in your business?",
+    "Does everyone know the score? Metrics only work if the people who can influence them actually see them. Your team should know the key numbers as well as they know the weather. Is the information visible, current, and impossible to ignore?",
+    "Are your targets specific and time-bound? \"Increase revenue\" is not a KPI. \"Grow monthly recurring revenue from £50k to £60k by end of Q2\" is a KPI. Vague targets get vague results. Specific targets get specific actions.",
+    "When and how do you review the numbers? Metrics without rhythm become wallpaper. Whether it is daily, weekly, or monthly, you need a consistent time when everyone looks at the numbers, discusses what they mean, and decides what to do about them."
+  ],
+  "quickWins": [
+    "This week: List every metric you currently track. Circle the 3-5 that best predict whether your business will succeed or struggle next month.",
+    "This week: Pick one metric that matters and make it visible to the person who can influence it most. Put it somewhere they see it every day.",
+    "This week: Schedule a 15-minute weekly slot to review your core numbers. Same time, same agenda, every week."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.7",
+      "description": ""
+    },
+    {
+      "ref": "4.7",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    },
+    {
+      "ref": "2.1",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Critical Metrics Audit",
+          "description": "Review everything you currently measure and identify the 3-5 numbers that actually predict business success. Cut everything else.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Review everything you currently measure in your business and identify the 3-5 numbers that actually predict success. Then cut everything else. Most businesses either measure nothing meaningful or measure too many things, which amounts to the same problem. This exercise strips your metrics back to the handful that genuinely drive decisions."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Peter Drucker was right that what gets measured gets managed. But the reverse is also true: when everything gets measured, nothing gets managed. Businesses drowning in dashboards and reports often make worse decisions than businesses tracking 4 numbers on a whiteboard. The goal is not more data. It is the right data, looked at consistently, driving clear action."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start by listing everything you currently track. Then use the filtering questions to separate the metrics that matter from the ones that just make you feel busy.\n\n---"
+            },
+            {
+              "title": "Current State Audit",
+              "content": "- [ ] **List every number you currently track or report on** - Spreadsheets, dashboards, accounting software, CRM reports, marketing analytics. Get everything in one list.\n- [ ] **For each metric, answer: \"If this number changed by 20%, what would I do differently?\"** - If the answer is \"nothing,\" the metric is not driving decisions. Mark it for removal.\n- [ ] ⚡ Quick Win: **Identify any metrics you track but have not looked at in the last 30 days** - If nobody is looking at it, it is not a KPI. It is decoration. Stop tracking it immediately.\n- [ ] **Flag any metrics where you are not confident the data is accurate** - An inaccurate metric is worse than no metric. It gives you false confidence."
+            },
+            {
+              "title": "Identify Your Critical Few",
+              "content": "- [ ] **Revenue metrics** - Pick one: total revenue, monthly recurring revenue, or revenue per customer. Not all three. Which one, if you could only see one number, would tell you most about business health?\n- [ ] **Profitability metric** - Gross margin, net profit margin, or cash profit. Pick the one your business model makes most useful.\n- [ ] **Pipeline or demand metric** - Leads generated, proposals sent, discovery calls booked, or pipeline value. The number that predicts future revenue.\n- [ ] **Customer health metric** - Retention rate, NPS, repeat purchase rate, or active customer count. The number that tells you whether customers are staying and happy.\n- [ ] **Capacity or efficiency metric** - Utilisation rate, delivery time, output per person, or cost per acquisition. The number that tells you how well your engine runs."
+            },
+            {
+              "title": "Clean Up",
+              "content": "- [ ] **Write your final 3-5 KPIs on a single page** - If they do not fit on one page with definitions, targets, and current performance, you have too many.\n- [ ] **Define each KPI clearly** - Exact calculation, data source, who owns it, and how often it gets updated. No ambiguity.\n- [ ] **Set a target for each KPI** - A good target is specific, time-bound, and achievable but stretching. \"Increase revenue\" is not a target. \"Hit £85K MRR by end of Q3\" is.\n- [ ] ⚡ Quick Win: **Delete or archive at least 3 reports or dashboards you no longer need** - Fewer reports means less noise and more focus on what matters.\n- [ ] **Communicate the change to your team** - Explain why you are simplifying and what the new critical metrics are. Everyone should know the 3-5 numbers that matter.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of everything currently being measured\n- Clear distinction between metrics that drive decisions and metrics that are just noise\n- 3-5 critical KPIs defined with calculations, owners, and targets\n- Redundant reports and dashboards archived or deleted\n- The entire team aligned on which numbers matter most"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part of this exercise is getting the business owner to let go of metrics they have been tracking for years. They feel like removing a report means losing control. Reframe it: \"You are not losing visibility. You are gaining focus.\"\n\nWatch for two common traps. First, the client who insists on 10+ KPIs because \"they are all important.\" Push back hard. If everything is critical, nothing is. Second, the client who picks vanity metrics (social followers, website visits) over substance metrics (conversion rate, profit margin). Always ask: \"Can you make a business decision based on this number?\""
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Leading Indicator Mapping",
+          "description": "For each lag indicator you track, identify the leading indicator that predicts it. Build your early warning system.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "For each of your critical lag indicators (revenue, profit, retention), identify the leading indicator that predicts it. Lag indicators tell you what already happened. Leading indicators tell you what is about to happen. This exercise builds your early warning system so you can act before problems show up in the financial results."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Revenue this month is a result of actions taken weeks or months ago. By the time your revenue drops, the damage was done long before you saw it. Leading indicators give you a chance to intervene early. If your pipeline is thinning, you know revenue will dip in 60 days. If customer engagement is dropping, you know churn will rise next quarter. The businesses that react fastest are the ones watching the right leading indicators."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Take each lag indicator from your Critical Metrics Audit and work backwards through the cause chain to find the earliest measurable signal.\n\n---"
+            },
+            {
+              "title": "Revenue Leading Indicators",
+              "content": "- [ ] **Map your revenue cause chain** - Work backwards: Revenue comes from closed deals. Closed deals come from proposals. Proposals come from discovery calls. Discovery calls come from leads. What is the earliest point in that chain you can measure?\n- [ ] ⚡ Quick Win: **Identify the one number that best predicts next month's revenue** - For most businesses this is pipeline value, proposals sent, or booked calls. Pick one and start tracking it this week.\n- [ ] **Calculate your conversion rates between stages** - Leads to calls, calls to proposals, proposals to closed. These ratios tell you whether your pipeline is healthy or just full.\n- [ ] **Determine the typical time lag** - How many days or weeks between a lead entering and revenue arriving? This tells you how far ahead your leading indicator can see."
+            },
+            {
+              "title": "Profitability Leading Indicators",
+              "content": "- [ ] **Identify what drives your costs before they hit the P&L** - Overtime hours, project scope changes, supplier price increases, or hiring decisions. Which of these can you spot earliest?\n- [ ] **Track gross margin per project or engagement in real time** - Do not wait for month-end accounts. If you know margin is slipping on active work, you can adjust before it becomes a quarterly problem.\n- [ ] **Monitor your pricing win rate** - If you are winning every deal, your prices are too low. If you are losing most, they are too high. A sudden change in win rate signals a margin problem coming."
+            },
+            {
+              "title": "Customer Health Leading Indicators",
+              "content": "- [ ] **Define what \"engaged\" looks like** - Login frequency, session attendance, support ticket volume, email open rates, or purchase frequency. Pick the behaviour that best predicts whether a customer will stay.\n- [ ] ⚡ Quick Win: **Flag every customer whose engagement dropped in the last 30 days** - This is your at-risk list. These customers are more likely to churn unless someone reaches out.\n- [ ] **Track complaint or issue volume** - A spike in support tickets or complaints is an early signal that something is wrong with your product, service, or delivery."
+            },
+            {
+              "title": "Capacity Leading Indicators",
+              "content": "- [ ] **Monitor your team's workload pipeline** - How much committed work is coming in the next 2-4 weeks? If capacity is filling up, you need to act now, not when deadlines start slipping.\n- [ ] **Track your recruitment pipeline** - If you anticipate needing to hire in 3 months, the leading indicator is whether you are building a candidate pipeline today.\n- [ ] **Document your leading indicator dashboard** - Write each leading indicator alongside the lag indicator it predicts, the data source, and the threshold that triggers action.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every critical lag metric paired with at least one leading indicator\n- Clear understanding of the time lag between leading and lagging signals\n- An early warning system that gives you weeks of notice before problems appear in results\n- Specific thresholds defined for when a leading indicator requires intervention\n- The ability to take action proactively instead of reacting to bad news"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most powerful exercises in the entire system, but it requires the client to think causally, not just descriptively. Most business owners are used to looking at results. This forces them to think about what creates those results.\n\nA common trap is picking leading indicators that are too far removed from the outcome. \"Social media posts per week\" is technically a leading indicator for revenue, but the connection is so loose it is not useful. Push for indicators with a direct, measurable link. \"Discovery calls booked this week\" is far more predictive of next month's revenue than \"blog posts published.\""
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "KPI Scorecard",
+          "description": "Create a simple, visual scorecard showing your core metrics, targets, and current performance. One page that tells you everything you need to know.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple, visual one-page scorecard that shows your core metrics, targets, and current performance at a glance. This is the single document you look at every week to know whether the business is on track. No logins required, no complex dashboards, no data analysis. One page that tells you everything you need to know."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The best metrics in the world are useless if nobody looks at them. Most businesses have data scattered across multiple tools - accounting software, CRM, marketing platforms, spreadsheets. The KPI scorecard pulls the critical numbers into one place so they cannot be ignored. When the numbers are visible, they get discussed. When they get discussed, they get improved."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Take the 3-5 critical metrics from your audit and leading indicators from your mapping exercise. Build them into the scorecard format below.\n\n---"
+            },
+            {
+              "title": "Scorecard Design",
+              "content": "- [ ] **Choose your format** - A spreadsheet works fine. Google Sheets for shared access, Excel if you prefer. Do not buy new software for this. The simplest tool you will actually update is the right one.\n- [ ] ⚡ Quick Win: **Set up a single row for each KPI with these columns** - Metric name, owner, target, actual (this week), actual (last week), trend (up/down/flat), and status (green/amber/red). That is all you need.\n- [ ] **Add your 3-5 critical lag indicators** - Revenue, profit margin, retention rate, or whatever you identified in your Critical Metrics Audit.\n- [ ] **Add your leading indicators beneath each lag indicator** - Pipeline value beneath revenue, engagement score beneath retention. This shows cause and effect at a glance.\n- [ ] **Set clear green/amber/red thresholds for each metric** - Green: on or above target. Amber: within 10% of target. Red: more than 10% below target. Define these before you start tracking so there is no debate later."
+            },
+            {
+              "title": "Making It Visual",
+              "content": "- [ ] **Use conditional formatting or colour coding** - The scorecard should be readable in 30 seconds. Colours tell you where to focus without reading every number.\n- [ ] **Add a 4-week trend line or sparkline for each metric** - A single number is a snapshot. A trend tells a story. Is this metric improving, stable, or declining?\n- [ ] **Include a \"notes\" column** - Space for brief context. \"Pipeline down due to bank holiday week\" prevents overreaction to normal fluctuations.\n- [ ] ⚡ Quick Win: **Print it out or display it on a screen in your workspace** - Physical visibility beats digital accessibility. If it is on the wall, it gets looked at."
+            },
+            {
+              "title": "Ownership and Updates",
+              "content": "- [ ] **Assign one person to update the scorecard weekly** - This is a 10-minute task, not a project. The same person updates it every week on the same day.\n- [ ] **Set a fixed update day** - Monday morning or Friday afternoon works best. Pick one and stick to it.\n- [ ] **Build the scorecard into your weekly meeting agenda** - The first 5 minutes of your weekly meeting should be a scorecard review. Numbers first, then discussion.\n- [ ] **Version-control your targets** - When you change a target, keep the old one visible so you can see progress over time. Do not just overwrite.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A single-page scorecard showing every critical metric, target, and current status\n- Visual colour coding that makes problems impossible to miss\n- Trend data showing whether metrics are moving in the right direction\n- Clear ownership for updating and maintaining the scorecard\n- A scorecard that is reviewed weekly and drives real decisions"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common failure mode is building a beautiful scorecard that nobody updates after week 3. The key is making the update process painless. If it takes more than 10 minutes to update, it is too complicated. Strip it back.\n\nPush the client to start ugly and iterate. A Google Sheet with 5 rows and manual data entry is better than a complex dashboard that needs API connections. Get the habit of weekly review established first, then improve the tools later.\n\nIf the client already has dashboards in their CRM or accounting software, do not duplicate that data. The scorecard should only contain the 3-5 numbers that are not already visible in one place. The goal is consolidation, not another layer of reporting."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Team Visibility System",
+          "description": "Make sure every person knows which metrics they influence and can see their numbers in real time. Transparency drives performance.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Make sure every person in your business knows which metrics they influence and can see their numbers in real time. Right now, your KPI scorecard probably lives with you or your management team. This action pushes the right numbers down to the people who actually move them, so everyone is playing with the scoreboard visible."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Imagine playing football without a scoreboard. You would run around for 90 minutes and find out at the end whether you won. That is how most employees experience work. They do their tasks, go home, and find out at their annual review whether they performed well. When people can see their numbers in real time, they self-correct. They push harder when they are behind and maintain momentum when they are ahead. Visibility drives performance without management having to chase anyone."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start by mapping which metrics connect to which roles, then build simple visibility mechanisms for each team or individual.\n\n---"
+            },
+            {
+              "title": "Step 1: Connect Metrics to People",
+              "content": "- [ ] **List every role in the business** - Include yourself. Everyone should have at least one number they own.\n- [ ] **For each role, identify 1-3 metrics they directly influence** - A salesperson influences pipeline and close rate. A delivery person influences customer satisfaction and completion time. Be specific about the connection.\n- [ ] ⚡ Quick Win: **Ask each team member: \"Do you know which numbers you are measured on?\"** - If the answer is no or vague, that tells you everything about your current visibility problem.\n- [ ] **Check that individual metrics roll up to business KPIs** - Every person's numbers should connect logically to the company scorecard. If someone's metrics do not connect, either the metrics or the role needs rethinking."
+            },
+            {
+              "title": "Step 2: Make Numbers Visible",
+              "content": "- [ ] **Create individual or team dashboards** - These do not need to be sophisticated. A shared spreadsheet, a whiteboard, or a simple screen display. The format matters less than the visibility.\n- [ ] **Choose the right update frequency for each metric** - Sales metrics might update daily. Delivery metrics weekly. Financial metrics monthly. Match the rhythm to how fast the number changes.\n- [ ] **Put numbers where people can see them without logging in** - A TV screen on the wall, a printed weekly sheet, or a pinned message in your team chat. The best dashboard is the one nobody has to go looking for.\n- [ ] ⚡ Quick Win: **Set up a daily or weekly \"numbers check\" in your team chat** - A simple message: \"Here are today's numbers: [pipeline, calls, deliveries].\" Takes 2 minutes. Creates instant visibility."
+            },
+            {
+              "title": "Step 3: Build the Conversation Around Numbers",
+              "content": "- [ ] **Start every team meeting with a 2-minute numbers review** - What are we at? Are we on track? What is off? This trains the team to think in numbers, not feelings.\n- [ ] **Teach your team to read their metrics** - Do not assume people know what a conversion rate means or why a trend matters. Spend 15 minutes explaining each metric and what good looks like.\n- [ ] **Celebrate improvements publicly** - When someone's numbers improve, acknowledge it in front of the team. This reinforces that metrics matter and effort gets noticed.\n- [ ] **Address declines without blame** - When numbers dip, the question is \"What happened and what do we need to change?\" not \"Why did you fail?\" The goal is problem-solving, not punishment."
+            },
+            {
+              "title": "Step 4: Maintain the System",
+              "content": "- [ ] **Review individual metrics quarterly** - Are they still the right numbers? As roles evolve, the metrics should evolve too.\n- [ ] **Check for gaming** - Any metric can be gamed if people are measured on it. Watch for behaviours that hit the number but miss the intent. A salesperson who hits call targets by making short, useless calls is gaming the system.\n- [ ] **Get feedback from the team** - Ask: \"Are the numbers you see helping you do your job better?\" If not, adjust what is visible.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every team member knows exactly which 1-3 metrics they own\n- Numbers are visible without effort - displayed, shared, or posted regularly\n- Team meetings start with data, not opinions\n- Individuals self-correct based on real-time performance data\n- A culture where numbers are a tool for improvement, not a weapon for blame"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action often reveals that the business owner has been hoarding information without realising it. They know the numbers. Nobody else does. The instinct is to protect people from \"bad numbers,\" but that just creates a team that cannot self-manage.\n\nStart small. Pick one team or one role and build visibility there first. Once people see the impact, they will ask for it themselves. The biggest risk is overcomplicating the system. A whiteboard with three numbers updated daily is more powerful than a real-time dashboard nobody checks.\n\nFor very small teams (under 5 people), individual dashboards are overkill. A shared weekly scorecard reviewed together is enough."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Review Rhythm",
+          "description": "Install a weekly rhythm for looking at the numbers, discussing trends, and making adjustments. Metrics without action are just data.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a weekly rhythm for looking at your numbers, discussing trends, and making adjustments. Having a scorecard is pointless if nobody reviews it. This action installs the habit and structure that turns measurement into action. The same meeting, same time, same format, every single week."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The gap between businesses that measure and businesses that improve is not better data. It is rhythm. The companies that grow consistently are the ones that look at the same numbers every week, spot trends early, and adjust fast. A weekly review rhythm means problems get caught in days, not months. It means the team stays aligned on what matters. And it means nobody can hide from underperformance because the numbers are discussed regularly."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design your weekly review meeting, set the ground rules, and then commit to running it without exception.\n\n---"
+            },
+            {
+              "title": "Step 1: Design the Meeting",
+              "content": "- [ ] **Pick a fixed day and time** - Monday morning or Friday afternoon. Monday sets the week. Friday closes it. Choose whichever fits your team's energy and schedule.\n- [ ] ⚡ Quick Win: **Block 30 minutes in everyone's calendar, recurring weekly, for the next 12 weeks** - Make it immovable. This meeting does not get cancelled or rescheduled for client calls.\n- [ ] **Set the agenda** - Keep it tight. Five minutes on scorecard review, ten minutes on trends and exceptions, ten minutes on actions, five minutes on priorities for the coming week.\n- [ ] **Assign a meeting owner** - Someone runs the meeting, keeps it on time, and ensures actions are captured. This does not have to be the business owner.\n- [ ] **Define who attends** - Everyone who owns a metric should be in the room. If you have a large team, break it into departmental reviews that feed into a leadership review."
+            },
+            {
+              "title": "Step 2: Run the Review",
+              "content": "- [ ] **Start with the scorecard, not with opinions** - Open the scorecard. Read the numbers. Let the data set the agenda. Do not let the loudest voice in the room decide what gets discussed.\n- [ ] **Focus on red and amber metrics** - Green metrics get a nod. Red and amber get discussion. What caused the miss? What is the plan? Who owns the fix?\n- [ ] **Look at trends, not just this week's snapshot** - A metric that has been declining for 4 weeks needs a different response than one that dipped once. Train the team to think in trends.\n- [ ] **End with clear actions** - Every discussion should result in a specific action, owned by a specific person, with a specific deadline. Write it down. Review it next week."
+            },
+            {
+              "title": "Step 3: Build the Habit",
+              "content": "- [ ] **Run the first 4 meetings yourself** - Model the behaviour. Show the team what good looks like. After 4 weeks, hand the facilitation to someone else.\n- [ ] ⚡ Quick Win: **Send a pre-meeting update the day before** - A quick message with the current scorecard so people arrive prepared. This cuts meeting time in half because nobody is seeing the numbers for the first time.\n- [ ] **Keep a running log of actions and outcomes** - Over time, this becomes a powerful record of decisions made, problems solved, and patterns that repeat.\n- [ ] **Protect the meeting fiercely** - The moment you cancel one review \"because we're too busy,\" you have started the slide. The meeting happens every week. No exceptions."
+            },
+            {
+              "title": "Step 4: Evolve the Rhythm",
+              "content": "- [ ] **Add a monthly deep dive** - Once a month, extend the review to 60 minutes and go deeper on one area. This is where you question targets, revisit strategy, and make bigger adjustments.\n- [ ] **Add a quarterly reset** - Every quarter, review whether the KPIs themselves are still the right ones. Update targets based on what you have learned.\n- [ ] **Gather feedback after 8 weeks** - Ask the team: \"Is this meeting useful? What would make it better?\" Iterate based on what you hear.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A weekly meeting that happens every single week without exception\n- Scorecard reviewed, trends discussed, and actions assigned in 30 minutes\n- Problems caught within a week instead of a quarter\n- Team aligned and accountable for their numbers\n- A decision log that tracks what was discussed and what was done"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is the action that makes all the other KPI actions work. Without the review rhythm, the scorecard becomes decoration. With it, the scorecard becomes a management tool.\n\nThe biggest risk is meeting bloat. Clients love to add agenda items, invite more people, and extend the time. Fight this aggressively. The weekly review is 30 minutes, focused on numbers and actions. Everything else gets its own meeting. The moment this meeting becomes a general catch-up, it loses its power.\n\nFor solo businesses or very small teams, the \"meeting\" can be 15 minutes with yourself reviewing the scorecard and journaling your observations. The rhythm matters more than the format."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

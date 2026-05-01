@@ -1,0 +1,145 @@
+{
+  "ref": "1.4",
+  "level": 1,
+  "area": 4,
+  "name": "Cash Flow",
+  "subtitle": "Level 1 · Overwhelm · Profit & Cash Flow",
+  "whatThisIs": "Cash flow is the oxygen of your business. It is not a nice-to-have metric, it is survival. When cash flow is broken, everything feels broken. When cash flow is stable, you can think clearly, make better decisions, and stop running your business from your bank balance.\n\nThis playbook is about one thing: knowing exactly where your cash is, where it is going, and whether you can pay your bills. Not next year. Next month.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You check your bank balance before every payment and hope the number is high enough. You have no idea what is coming in next week, let alone next month. Invoices go out late. Customers pay whenever they feel like it. You have taken on debt or deferred your own pay just to cover wages. You lie awake wondering if you can make payroll. Every unexpected cost feels like a crisis because there is no buffer. You are making business decisions based on fear, not strategy."
+    },
+    "ok": {
+      "label": "When this is OK",
+      "emoji": "🟠",
+      "content": ""
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You know exactly how much cash you have right now, what is coming in over the next 13 weeks, and what is going out. You review it weekly, it takes 15 minutes. Your invoicing is prompt and your collection process means customers pay on time. You have a cash reserve that covers at least one month of fixed costs. You make spending decisions with confidence because you can see the impact before you commit. Cash is not something you worry about, it is something you manage."
+    }
+  },
+  "thingsToThinkAbout": [
+    "These are the questions that sit behind this playbook. Be honest with yourself.",
+    "**Do you know your break-even number without checking?** This is the amount of cash that needs to come in every month just to keep the lights on, before you pay yourself, before profit, before growth. If you do not know this number off the top of your head, start there.",
+    "**Can you see the next 13 weeks?** A rolling 13 week cash flow forecast is the single most important financial tool for a business at this stage. It turns \"I think we are OK\" into \"I know we are OK\", or \"I know we need to act now.\" Not next month. Now.",
+    "**How quickly do you convert work into cash?** The gap between doing the work and getting paid is where businesses suffocate. Every day a customer takes to pay you is a day you are funding their business with your cash. How tight is your invoicing? How firm are your payment terms? How consistently do you follow up?",
+    "**What expenses survive purely by inertia?** Most businesses are paying for things they no longer need, no longer use, or never questioned. Subscriptions, legacy contracts, overstaffed shifts, inefficient suppliers. Cash leaks quietly, until it doesn't.",
+    "**How many months of runway do you actually have?** If all revenue stopped tomorrow, how long could you survive? One month? Two? The answer tells you how fragile your business really is — and how urgently you need a cash reserve."
+  ],
+  "actionsIntro": "When you open this playbook in the Profit System, you will find the concrete actions to fix this:\n**Play 1: The 13 Week Cash Flow Forecast**.\nBuild a simple rolling forecast so you always know what is coming. Review it every Friday. 15 minutes.",
+  "quickWins": [
+    "**This week:** Write down every fixed cost you pay monthly. All of them. Then circle the ones you have not actively reviewed in the last 6 months. Cancel or renegotiate at least one.",
+    "**This week:** Send every outstanding invoice that is overdue. Today. Not tomorrow.",
+    "**This week:** Open a spreadsheet and list your expected cash in and cash out for the next 4 weeks. It does not need to be perfect. A rough forecast is infinitely better than no forecast."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.4",
+      "description": ""
+    },
+    {
+      "ref": "1.7",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
+      "description": ""
+    },
+    {
+      "ref": "4.4",
+      "description": ""
+    }
+  ],
+  "actions": [
+    {
+      "number": 2,
+      "title": "The Cash Flow Maximiser",
+      "description": "The Cash Flow Maximiser",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Work through this checklist to find cash your business is losing, leaving on the table, or waiting too long to collect. You don't need to do everything — pick the items that apply to your business and commit to the ones with the biggest impact."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Most businesses doing £200K–£5M have £20K–£100K+ in recoverable cash hiding in plain sight — in slow invoices, forgotten subscriptions, weak payment terms, or pricing they haven't reviewed in years. This isn't about cutting costs to the bone. It's about stopping the leaks and speeding up the flow."
+        },
+        {
+          "title": "How to Use This",
+          "content": "1. Go through each section below\n2. Mark each item: **Not Relevant** / **To Do** / **Done**\n3. Pick your top 3–5 actions and do them this month\n4. Review quarterly — your business changes, and new opportunities appear\n\n---"
+        },
+        {
+          "title": "Lever 1: Speed Up Cash Coming In",
+          "content": "Getting paid faster for work you've already done or sold.\n\n- [ ] **Review your payment terms** — If you're on 30-day terms, test moving to 14-day or 7-day for new clients. Most won't push back.\n- [ ] **Invoice on completion, not end of month** — Every day between finishing work and sending the invoice is a day you're lending money for free.\n- [ ] **Add a \"pay now\" button to invoices** — Stripe, GoCardless, or similar. Remove friction between \"I'll pay this\" and actually paying.\n- [ ] **Offer a small discount for early payment** — 2-3% for payment within 7 days. You'll often collect weeks faster. Do the maths — it's usually worth it.\n- [ ] **Chase overdue invoices the day they're overdue** — Not a week later. Day 1. A simple \"just checking this landed\" email is enough. Automate if possible.\n- [ ] **Require deposits or upfront payment for new work** — 50% upfront is standard in most industries. 100% upfront is increasingly normal for smaller projects.\n- [ ] **Set up recurring billing for ongoing clients** — Direct debit or subscription billing removes the \"waiting to be paid\" problem entirely.\n- [ ] **Review your longest-paying clients** — Who consistently pays late? Have the conversation or change their terms. One client paying 60 days late on a £5K invoice costs you real money."
+        },
+        {
+          "title": "Lever 2: Reduce Cash Going Out",
+          "content": "Not about cutting everything — about cutting what isn't earning its place.\n\n- [ ] **List every subscription and recurring payment** — Log into your bank, list them all. Most businesses find 3-5 they forgot about or no longer use.\n- [ ] **Cancel or pause anything unused for 30+ days** — If nobody noticed it was there, nobody will notice it's gone.\n- [ ] **Renegotiate your top 3 supplier contracts** — Especially if you've been with them 12+ months. Ask for better terms, bulk pricing, or extended payment windows. The worst they say is no.\n- [ ] **Review staff costs against revenue per head** — Not to cut people, but to know your ratio. If revenue per employee is declining, that's a signal.\n- [ ] **Check your insurance, utilities, and telecom** — These auto-renew at higher rates. A 30-minute comparison can save thousands annually.\n- [ ] **Stop paying for premium tiers you don't fully use** — Software, memberships, services. Downgrade to what you actually use.\n- [ ] **Audit your ad spend against actual return** — Which campaigns are generating revenue and which are generating vanity metrics? Pause the vanity ones for a month and see what happens."
+        },
+        {
+          "title": "Lever 3: Improve Your Pricing",
+          "content": "The fastest way to increase cash flow without selling more.\n\n- [ ] **When did you last raise prices?** — If it's been over 12 months, you're almost certainly undercharging. Costs have risen. Your prices should too.\n- [ ] **Calculate your effective hourly rate per service** — Total revenue from the service ÷ total hours spent (including admin, prep, revisions). Some \"profitable\" services are loss-makers when you count the real time.\n- [ ] **Identify your most profitable service or product** — Sell more of that. Actively push it. Make it easier to buy.\n- [ ] **Identify your least profitable service or product** — Either raise its price, reduce the delivery cost, or stop offering it.\n- [ ] **Test a price increase on your next 10 new clients** — If they all say yes without hesitation, you're still too cheap.\n- [ ] **Add a premium or fast-track option** — Some clients will pay 20-50% more for faster delivery or priority access. Let them."
+        },
+        {
+          "title": "Lever 4: Manage Your Cash Cycle",
+          "content": "How quickly your business turns effort into cash in the bank.\n\n- [ ] **Calculate your cash conversion cycle** — Days from spending money (supplier payment, wages) to receiving payment from the customer. The shorter this number, the healthier your cash flow.\n- [ ] **Negotiate longer payment terms with suppliers** — If clients pay you in 14 days but you pay suppliers in 7, you're funding the gap. Flip this where you can.\n- [ ] **Reduce work-in-progress (WIP)** — Unfinished work is cash tied up. Finish and invoice projects faster rather than starting new ones.\n- [ ] **Bill in milestones, not on completion** — For larger projects, bill at each stage rather than waiting until the end. This keeps cash flowing throughout the project.\n- [ ] **Review stock or inventory levels** — If you hold physical stock, are you holding too much? Every unit on a shelf is cash you can't use. Aim for just-in-time where possible.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "After your first pass through this checklist, you should have:\n\n- A clear list of 3–5 high-impact actions to take this month\n- At least one quick win you can action today (a subscription to cancel, an invoice to send, a price to test)\n- A sense of where your biggest cash leaks are — and a plan to close them"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Use this in a coaching session by going through it section by section with the client. Don't try to do everything — help them identify the 3 items that will move the most cash fastest. The value of a coach here is prioritisation and accountability, not information.\n\nPair with the [[Cashflow Forecaster]] so they can see the impact of changes in their 13-week forecast."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Cash Collection System",
+      "description": "Cash Collection System",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Build a simple, repeatable system that ensures invoices go out on time, payment terms are clear, and overdue accounts get chased promptly — without you having to remember or manage it manually."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Most small businesses leave thousands on the table every year simply because invoices go out late, terms aren't enforced, and nobody chases until it's awkward. A cash collection system isn't about being aggressive — it's about being consistent. The business that invoices on Tuesday and follows up on Thursday gets paid before the business that invoices \"when I get around to it.\""
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through the steps in order. Each one builds on the last. You're setting up a system, not doing a one-off task — so take the time to get it right.\n\n---"
+        },
+        {
+          "title": "Step 1: Get Your Invoicing Right",
+          "content": "- [ ] **Set a fixed invoicing day** — Pick a day (e.g., every Tuesday, or on project completion). Invoices go out on that day, no exceptions.\n- [ ] **Standardise your invoice format** — Every invoice should include: clear description of work, payment terms, due date, and a direct payment link or bank details.\n- [ ] **Add a \"pay now\" link to every invoice** — Stripe, GoCardless, PayPal, bank transfer link — whatever removes friction. The fewer clicks to pay, the faster you get paid.\n- [ ] **State your payment terms clearly** — \"Payment due within 14 days\" is clear. \"Payment due on receipt\" is clearer. \"Net 30\" is jargon most small business clients don't understand."
+        },
+        {
+          "title": "Step 2: Set Up Your Follow-Up Sequence",
+          "content": "Build this once, then it runs automatically (or with minimal effort).\n\n- [ ] **Day of invoice: Confirmation** — \"Hi [name], invoice [number] for [amount] has been sent. Due by [date]. Let me know if any questions.\"\n- [ ] **3 days before due: Gentle reminder** — \"Just a heads-up that invoice [number] is due on [date]. Payment link: [link].\"\n- [ ] **Due date (if unpaid): Direct follow-up** — \"Invoice [number] was due today. Can you confirm when payment will be made?\"\n- [ ] **7 days overdue: Firm follow-up** — \"Invoice [number] is now 7 days overdue. Please arrange payment by [date] or let me know if there's an issue.\"\n- [ ] **14+ days overdue: Escalation** — Phone call or direct message. At this point, email isn't working. Have the conversation.\n- [ ] **Automate what you can** — Most invoicing tools (Xero, QuickBooks, FreshBooks) can send reminders automatically. Set them up once."
+        },
+        {
+          "title": "Step 3: Handle Your Current Overdue Invoices",
+          "content": "Before the system runs forward, clean up what's behind you.\n\n- [ ] **List every overdue invoice right now** — Amount, client name, how many days overdue.\n- [ ] **Send a follow-up to every one today** — Not next week. Today. A simple \"I'm tidying up our accounts and noticed this is outstanding — can you confirm when payment will be made?\"\n- [ ] **Flag anyone over 30 days** — These need a phone call, not another email.\n- [ ] **Decide your policy for chronic late payers** — Options: move to upfront payment, add a late payment fee, stop work until paid, or fire the client. Pick one and communicate it."
+        },
+        {
+          "title": "Step 4: Protect Future Cash",
+          "content": "- [ ] **Require deposits for new clients or projects** — 50% upfront is standard. 100% for projects under £1,000. State this in your proposal, not after they've agreed.\n- [ ] **Add payment terms to your contracts or proposals** — Don't rely on invoice terms alone. Terms should be agreed before work starts.\n- [ ] **Review your debtor days monthly** — Average number of days between invoicing and receiving payment. Track this number. If it's rising, your system needs attention.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Invoices go out consistently and on time\n- You have a clear follow-up sequence that runs without you thinking about it\n- Overdue invoices get chased promptly, not awkwardly after 6 weeks\n- New clients start with clear payment expectations\n- Your debtor days (time between invoice and payment) start dropping"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This is often the most uncomfortable action for clients — chasing money feels awkward. Reframe it: \"You've done the work. You deserve to be paid on time. A system means you don't have to have awkward conversations — the process handles it.\"\n\nHelp the client draft their follow-up email templates in the session. If they leave with the templates written, they'll actually use them. If they leave with \"I'll write them later,\" they won't.\n\nFor clients with significant overdue invoices, this action alone can unlock thousands in cash within a week."
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { StickyPageHeader } from "@/components/layout";
 import {
   ProspectsTable,
   type ProspectRow,
@@ -222,30 +223,23 @@ export default function AdminProspectsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-            BOSS Dashboard
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            Prospects
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            View prospects by coach, filter, and add prospects directly from the admin area.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setShowAddProspect(true);
-            setCreateError(null);
-            setCreateSuccess(null);
-          }}
-          className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-        >
-          + Add prospect
-        </button>
-      </header>
+      <StickyPageHeader
+        title="Prospects"
+        description="View prospects by coach, filter, and add prospects directly from the admin area."
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setShowAddProspect(true);
+              setCreateError(null);
+              setCreateSuccess(null);
+            }}
+            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
+          >
+            + Add prospect
+          </button>
+        }
+      />
 
       {loading && (
         <p className="text-sm text-slate-600">Loading…</p>

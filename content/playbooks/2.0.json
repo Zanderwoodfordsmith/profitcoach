@@ -1,0 +1,556 @@
+{
+  "ref": "2.0",
+  "level": 2,
+  "area": 0,
+  "name": "Time & Energy",
+  "subtitle": "Level 2 · Overworked · Owner Performance",
+  "whatThisIs": "You are busy because you are still necessary in too many places. As your business grows, demand increases faster than structure, and without intentional redesign, you become the constraint. Time and energy are not the same thing, but you need both working together to build leverage and stop being the bottleneck in your own business.\n\nThis playbook is about energy as much as time. You can have all the time in the world, but if you have no energy to use it effectively, nothing gets done. It is also about shifting from operator to architect, reallocating your attention, protecting your cognitive bandwidth, and creating sustainable work patterns that serve your long-term goals.\n\nThis is not about productivity hacks or cramming more into your day. It is about designing a way of working that gives you more output with less input, more leverage with less overwhelm.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You work long hours but struggle to point to meaningful progress. Most of your day disappears into reactive work, emails, calls, and tasks that feel urgent but do not move the business forward. You finish each day exhausted, and the thought of strategic work feels impossible because you are already running on empty. You are the bottleneck in every decision and process, but you cannot see how to step back without everything falling apart."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some boundaries around your time but they are not consistently enforced. Some weeks you make real progress on important work, other weeks get completely consumed by the urgent. You know you should be working more strategically but struggle to protect the time and energy needed to think, plan, and build systems. You can see the problem but have not yet built the discipline to fix it."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have clear boundaries around your time and the energy to enforce them. Your most important work happens in protected blocks when you are at your best, not in the gaps between everything else. You know where your energy comes from and how to manage it deliberately. You are moving from necessary to strategic, still involved, but by choice rather than desperation. The business can function for days without your constant input."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Where are you spending time that does not require your level of capability? Look at last week. How many hours did you spend on work that someone earning £20 an hour could handle? Every hour you spend on low-leverage work is an hour you are not spending building the business only you can build.",
+    "What are you holding onto out of control rather than necessity? Some things genuinely need your attention. Others you are keeping because letting go feels risky or because you do not trust anyone else to do them right. The question is not whether someone else can do them as well as you, it is whether they can do them well enough that you can focus on higher-value work.",
+    "When in your week do you think, not react? Strategic thinking requires uninterrupted time when your brain is fresh. Most business owners spend their best hours putting out fires and leave strategic work for when they are already mentally drained. That is backwards.",
+    "Are you operating sustainably or sprinting indefinitely? Working 60-hour weeks might be necessary for short bursts, but it is not a business model. Your energy is finite. If you are constantly running on empty, you are making decisions from fatigue rather than clarity.",
+    "Does your calendar reflect leadership or survival? Open your calendar and look at last month. Does it look like the schedule of someone building a business or someone being dragged through one? Your time goes where your priorities actually are, not where you say they are."
+  ],
+  "actionsIntro": "This is a larger playbook organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Do a simple time scan. List out how many hours you spend on sleep, commute, meals, admin, and actual business-building work. Most people find 20+ hours they did not realise were disappearing into low-value activities.",
+    "This week: Identify your best 2-hour block each day and protect it for deep work. Turn off notifications, close email, put your phone in another room. Use that time only for work that moves the business forward.",
+    "This week: Pick three things you did last week that someone earning £15-20 per hour could have handled. Write down what it would take to get those off your plate, either delegating, automating, or simply stopping them."
+  ],
+  "classroom": {
+    "moduleEmojiDefault": "⏱"
+  },
+  "relatedPlaybooks": [
+    {
+      "ref": "1.0",
+      "description": ""
+    },
+    {
+      "ref": "3.0",
+      "description": ""
+    },
+    {
+      "ref": "2.9",
+      "description": ""
+    },
+    {
+      "ref": "2.8",
+      "description": ""
+    },
+    {
+      "ref": "4.8",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Time Audit & Analysis",
+      "description": "Understanding exactly where your time goes and what it produces.\n\nA diagnostic tool that reveals the gap between your current work-life balance and your ideal. Covers what you love to do, your highest-return activities, and how you split time between strategy and operations.\n\nA visual breakdown of how you spend every hour of the week. Input your activities and see exactly where your 168 hours go. Most business owners are shocked by what this reveals.\n\nTrack what you are actually working on every 15 minutes for one week. This simple exercise will be the most productive week you have ever had because measuring it changes how you use it.\n\nCategorise every activity as high, medium, or low value, then use the E-A-T framework (Eliminate, Automate, Transfer) to identify what can come off your plate.",
+      "actions": [
+        {
+          "number": 1,
+          "lessonKey": "time-transformer-assessment",
+          "emoji": "📋",
+          "title": "Time Transformer Assessment",
+          "description": "Time Transformer Assessment",
+          "videoUrl": "https://www.youtube.com/watch?v=5MgBikgcWnY",
+          "bodyMarkdown": "Complete the **Time Transformer** diagnostic with your coach. This lesson uses a sample video URL — replace it in `content/playbooks/2.0.json` when your recording is ready.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Complete a diagnostic assessment that reveals the gap between how you currently spend your time and how you should be spending it. Score yourself across three dimensions: what you love doing, what generates the highest return, and how your time splits between strategic work and day-to-day operations."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners have never honestly evaluated how their time maps to their strengths, their enjoyment, and their impact. You end up spending 80% of your week on work that drains you, pays poorly, or could be done by someone else. This assessment makes that gap visible so you can start closing it deliberately rather than drifting through another year of busy-but-unproductive work."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set aside 30-45 minutes of uninterrupted time. Be brutally honest with your answers. The value of this tool comes from accuracy, not optimism.\n\n---"
+            },
+            {
+              "title": "The Assessment",
+              "content": "### Part 1: Love vs. Loathe\n\n- [ ] List the 10 activities you spend the most time on each week\n- [ ] Rate each one from 1-5 on how much you enjoy it (1 = dread it, 5 = love it)\n- [ ] Rate each one from 1-5 on how good you are at it (1 = poor, 5 = excellent)\n- [ ] Highlight any activity where enjoyment is 1-2 AND skill is 1-3 - these are your immediate delegation or elimination targets\n- [ ] ⚡ Quick Win: Identify the single activity you enjoy least and spend the most time on - this is your first candidate to remove from your plate\n\n### Part 2: Return on Time\n\n- [ ] For each of the 10 activities, estimate the hourly value it generates for the business (directly or indirectly)\n- [ ] Compare that to what you could pay someone else to do it - calculate the gap\n- [ ] Identify activities where your cost (based on what you should be earning per hour) is more than 3x what you could pay someone else\n- [ ] Flag any activity where you are the ONLY person who could do it vs. activities where you are just the person who currently does it\n- [ ] Calculate total hours per week spent on work that could be done by someone earning less than half your target hourly rate\n\n### Part 3: Strategic vs. Operational Split\n\n- [ ] Review your calendar for last week and categorise every block as Strategic (building the business) or Operational (running the business)\n- [ ] Calculate the percentage split between strategic and operational work\n- [ ] Set a target split for 90 days from now (most Level 2 owners should aim for at least 30% strategic)\n- [ ] Identify the three biggest operational time blocks that could be moved off your plate to shift the ratio\n- [ ] Write down what you would do with 5 extra strategic hours per week - make it specific\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear picture of where your time goes and what it produces\n- Visible gap between current time allocation and ideal time allocation\n- A prioritised list of activities to delegate, eliminate, or automate\n- A target strategic/operational split to work towards over the next quarter\n- Specific activities identified for each category: love and keep, tolerate but delegate, eliminate entirely"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is an excellent first-session tool for any client scoring red or amber on Owner Performance. Walk through it together rather than assigning as homework - the conversation it generates is as valuable as the assessment itself. Pay attention to emotional reactions: when a client says \"I know I should delegate this but...\" that resistance is where the real coaching happens. Revisit the assessment at 90 days to show progress."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Time Scan Tracker",
+          "description": "Time Scan Tracker",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Track how you spend every hour of the week across the major categories of your life: sleep, commute, meals, admin, client work, strategic work, family, exercise, and downtime. At the end of the week, total each category and see where your 168 hours actually go."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You have 168 hours every week. Most business owners cannot account for more than 60-70 of them. The rest disappears into transitions, distractions, low-value habits, and activities that feel productive but are not. This tracker makes the invisible visible. Most people find 15-25 hours per week they did not realise were being consumed by low-value activities."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use a simple spreadsheet, notebook, or phone app. At the end of each day (takes about 5 minutes), log how you spent your time in broad categories. Do not try to track in real-time on day one - just reconstruct at the end of each day. After 7 days, total everything up.\n\n---"
+            },
+            {
+              "title": "Setup Checklist",
+              "content": "- [ ] ⚡ Quick Win: Create a simple time log with these categories: Sleep, Commute/Travel, Meals/Breaks, Admin/Email, Client/Delivery Work, Sales/Marketing, Strategic/Planning, Family/Personal, Exercise/Health, Entertainment/Downtime, Other\n- [ ] Decide your tracking method: spreadsheet with hours per category per day, notebook, or a simple app\n- [ ] Set a daily reminder for the end of your workday to log that day's time\n- [ ] Block 5 minutes at the end of each day for the next 7 days to complete your log"
+            },
+            {
+              "title": "Daily Tracking (Repeat for 7 Days)",
+              "content": "- [ ] **Day 1:** Log hours across all categories for today\n- [ ] **Day 2:** Log hours across all categories for today\n- [ ] **Day 3:** Log hours across all categories for today\n- [ ] **Day 4:** Log hours across all categories for today\n- [ ] **Day 5:** Log hours across all categories for today\n- [ ] **Day 6:** Log hours across all categories for today\n- [ ] **Day 7:** Log hours across all categories for today"
+            },
+            {
+              "title": "Week-End Analysis",
+              "content": "- [ ] Total each category for the full week\n- [ ] Calculate percentage of 168 hours for each category\n- [ ] Identify the category that surprised you most - where did more time go than you expected?\n- [ ] Identify the category that got less time than it deserves - where are you underinvesting?\n- [ ] Highlight any category consuming more than 15 hours per week that is not sleep, client delivery, or family\n- [ ] Compare your actual strategic/planning hours to what you thought they were before tracking\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete picture of where your 168 hours go each week\n- Specific categories where time is being wasted or poorly allocated\n- Data to support delegation, elimination, and restructuring decisions\n- A baseline to measure against when you redesign your weekly schedule\n- The shock factor that motivates real change (almost everyone is surprised by what they find)"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Assign this in week 1 or 2 of the coaching engagement. The data it produces fuels the next several sessions. When reviewing results, do not judge - help the client see the gap between their current allocation and their goals. The most common finding: business owners spend 2-3x more time on admin and email than they estimated, and 50-70% less time on strategic work than they believed. Use the results to build their Power Plan (Action 5)."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "15-Minute Time Tracker",
+          "description": "15-Minute Time Tracker",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "For one working week, log what you are doing every 15 minutes. Set a timer and every time it goes off, write down exactly what you were working on. This is the most granular time-tracking exercise in the system and it will be the most productive week you have ever had - because measuring what you do changes how you do it."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The Time Scan Tracker (Action 2) shows you the big picture. This shows you the detail. It catches the micro time-wasters: the 15 minutes checking social media between tasks, the 30-minute email rabbit hole, the meetings that run 20 minutes over. These small leaks add up to hours per day. You cannot fix what you cannot see, and this tool shows you everything."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use a simple sheet with time slots every 15 minutes from when you start work to when you finish. Set a recurring 15-minute timer on your phone. When it goes off, write one line describing what you were doing. Do not edit or justify - just record. Do this for 5 working days.\n\n---"
+            },
+            {
+              "title": "Setup",
+              "content": "- [ ] Create a tracking sheet with 15-minute slots covering your working hours (e.g., 7:00am to 6:00pm = 44 slots per day)\n- [ ] Set a recurring 15-minute timer on your phone or use an interval timer app\n- [ ] ⚡ Quick Win: Start tomorrow - do not wait for the \"right\" week. There is no perfect week. Any week is the right week.\n- [ ] Tell your team what you are doing so they understand if you pause briefly to log"
+            },
+            {
+              "title": "Daily Tracking",
+              "content": "- [ ] **Each 15-minute block:** Write one line describing what you were doing when the timer went off\n- [ ] At the end of each day, review and tag each entry: High Value (H), Medium Value (M), or Low Value (L)\n- [ ] Note any blocks where you were interrupted or switched tasks mid-block"
+            },
+            {
+              "title": "End-of-Week Analysis",
+              "content": "- [ ] Count total blocks per day and per week\n- [ ] Calculate percentage tagged as High, Medium, and Low value\n- [ ] Identify your top 3 recurring low-value activities by frequency\n- [ ] Identify the times of day when you do your best high-value work\n- [ ] Identify the times of day when low-value work clusters (this is usually mid-afternoon or just after lunch)\n- [ ] Count the number of task switches per day - how often did you jump between different activities?\n- [ ] Look for patterns: what triggers low-value time? (usually: after meetings, after checking email, or when energy dips)\n- [ ] Calculate your \"productive hours\" - blocks tagged H that were uninterrupted\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Granular data on exactly where your working hours go\n- A clear picture of your high-value vs. low-value time ratio\n- Specific time-of-day patterns showing when you are at your best and worst\n- A short list of recurring low-value activities to eliminate or delegate\n- The experience of a highly productive week (the act of tracking makes you more intentional)"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is intense - warn the client it will feel annoying for the first day but becomes second nature by day 3. The real value is in the end-of-week analysis session. Do this together. Look for the pattern of task-switching (most owners switch tasks 30+ times per day) and the gap between perceived productive time and actual productive time. Use results to design their energy-based calendar (Action 6) and deep work blocks (Action 7). If the client resists doing a full week, even 2-3 days produces useful data."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Task Value Analysis",
+          "description": "Task Value Analysis",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Take every recurring task on your plate and categorise it by value (high, medium, low), then apply the E-A-T framework: Eliminate, Automate, or Transfer. The goal is to identify what should come off your plate entirely and create a concrete plan for making that happen."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You already know you are doing work beneath your pay grade. The problem is it all feels necessary in the moment. This exercise forces you to evaluate each task objectively and make a decision about its future. Without this analysis, delegation stays theoretical. With it, you have a specific list of tasks, each with a clear action: kill it, automate it, or hand it to someone else."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your task list from the Time Scan Tracker (Action 2) or 15-Minute Time Tracker (Action 3). If you have not done those yet, list every recurring task you can think of from the past month. Then work through the framework below.\n\n---"
+            },
+            {
+              "title": "Task Inventory",
+              "content": "- [ ] List every recurring task you perform weekly or monthly (aim for 20-30 items minimum)\n- [ ] For each task, note approximately how many hours per week or month it takes\n- [ ] Categorise each task: **High Value** (only you can do this, directly drives revenue or strategy), **Medium Value** (you are good at it but someone else could learn), **Low Value** (anyone could do this with basic training)\n- [ ] Total the hours in each category - what percentage of your time goes to low and medium value work?"
+            },
+            {
+              "title": "The E-A-T Framework",
+              "content": "### Eliminate\n\n- [ ] Review all Low Value tasks - which ones would have zero impact if you simply stopped doing them?\n- [ ] ⚡ Quick Win: Pick one task you can stop doing this week with no consequences. Stop doing it.\n- [ ] Identify tasks that exist because \"we have always done it this way\" rather than because they produce results\n- [ ] Flag any reporting or admin that nobody reads or uses\n\n### Automate\n\n- [ ] Review remaining Low and Medium Value tasks - which ones follow a repeatable pattern?\n- [ ] Identify tasks that involve moving data between systems, sending routine communications, or creating standard documents\n- [ ] For each automation candidate, note the tool or method that could handle it (templates, software, Zapier, AI tools)\n- [ ] Prioritise automations by time saved vs. effort to set up\n\n### Transfer (Delegate)\n\n- [ ] Review remaining Medium Value tasks - who on your team could handle these with training?\n- [ ] For each delegation candidate, identify the specific person and what training they would need\n- [ ] Write a simple brief for each task to be delegated: what it is, how to do it, what good looks like, when it is due\n- [ ] Set a 2-week target to hand off at least one task with proper documentation\n- [ ] For tasks where no current team member fits, note whether this is a future hire need or a contractor/freelancer task"
+            },
+            {
+              "title": "Action Plan",
+              "content": "- [ ] Create a simple table: Task | Category | E-A-T Decision | Who/How | By When\n- [ ] Set a target: move at least 5 hours per week of low/medium value work off your plate within 30 days\n- [ ] Schedule a review in 30 days to check progress and identify the next batch\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every recurring task categorised by value with a clear action assigned\n- An immediate short list of tasks to eliminate this week\n- A prioritised automation list with specific tools identified\n- A delegation plan with names, training needs, and deadlines\n- A measurable target for hours reclaimed over the next 30 days"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This works best when combined with data from the time tracking exercises (Actions 2 and 3). Without that data, clients tend to underestimate how much time goes to low-value work. The biggest resistance point is delegation: clients will say \"it is faster to do it myself\" or \"no one else can do it as well.\" Challenge both. Faster to do it yourself today means you are still doing it in a year. Good enough from someone else beats perfect from you if it frees you for higher-value work. Focus on getting the first delegation done successfully to build confidence."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Time Optimization",
+      "description": "Redesigning how you structure and protect your most valuable hours.\n\nCreate your ideal week broken into 15-minute segments. This is not just time-blocking, it is architecting your perfect work rhythm based on your energy patterns and business priorities.\n\nMap your daily energy patterns and align your most important work with your peak hours. Most people waste their best energy on their lowest-value tasks.\n\nBuild uninterrupted blocks of 90 minutes or more for your most strategic work. Includes managing distractions, setting boundaries, and creating your \"success highway.\"\n\nSystematically identify work that can be moved off your plate. Covers what to delegate first, how to prepare tasks for handoff, and building delegation confidence.",
+      "actions": [
+        {
+          "number": 5,
+          "title": "Power Plan Design",
+          "description": "Power Plan Design",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design your ideal week broken into 15-minute segments. This is not just time-blocking - it is building the architecture of your perfect work rhythm, based on your energy patterns, business priorities, and the data from your time tracking exercises. The Power Plan becomes your weekly template that you hold yourself accountable to."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a designed week, your calendar gets filled by other people's priorities. Meetings expand. Admin creeps in. Strategic work gets pushed to \"when I have time\" which means never. A Power Plan gives you a default schedule that protects your most important work and puts everything else in its proper place. You will not follow it perfectly every week, but having the template means you always know what you are drifting from."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use your data from the Time Scan Tracker (Action 2) and the 15-Minute Time Tracker (Action 3) to understand your current patterns. Then design your ideal week using the steps below. Print it out or set it as your default calendar view.\n\n---"
+            },
+            {
+              "title": "Design Your Power Plan",
+              "content": "### Step 1: Map Your Non-Negotiables\n\n- [ ] Block your personal non-negotiables first: family commitments, exercise, meals, sleep schedule\n- [ ] Block any fixed business commitments: regular team meetings, client calls with set times\n- [ ] ⚡ Quick Win: Protect your mornings - do not schedule meetings before 10am for the first two weeks and see what happens to your output\n\n### Step 2: Place Your Strategic Blocks\n\n- [ ] Identify your peak energy hours from your time tracking data (usually morning for most people)\n- [ ] Block 2-3 sessions of 90+ minutes per week for deep strategic work during peak hours\n- [ ] Label these blocks specifically: \"Product development\", \"Business planning\", \"Growth strategy\" - not just \"deep work\"\n- [ ] Make these blocks recurring and treat them as unmovable as a client meeting\n\n### Step 3: Structure Your Operational Time\n\n- [ ] Batch similar tasks together: all calls on one or two days, all admin in one block, all email in defined windows\n- [ ] Set specific email/communication windows (e.g., 11am and 4pm, 30 minutes each) rather than checking constantly\n- [ ] Place operational work in your medium-energy hours, not your peak hours\n- [ ] Build in 15-minute transition buffers between different types of work\n\n### Step 4: Build in Recovery\n\n- [ ] Schedule a 10-15 minute break between every 90-minute block\n- [ ] Block a proper lunch break (not at your desk, not checking email)\n- [ ] Leave one afternoon per week unscheduled as buffer for overflow and unexpected demands\n- [ ] Build in a Friday review block (30 minutes) to assess how the week went vs. the plan\n\n### Step 5: Set Your Boundaries\n\n- [ ] Define your start time and hard stop time for each day\n- [ ] Decide which days are meeting-free or meeting-light\n- [ ] Set rules for what can override a strategic block (real emergencies only, not \"urgent\" emails)\n- [ ] Communicate your Power Plan to your team so they know when you are available and when you are not"
+            },
+            {
+              "title": "Weekly Review",
+              "content": "- [ ] Every Friday: rate the week 1-5 on how closely you followed the Power Plan\n- [ ] Identify what pulled you off plan and whether it was justified\n- [ ] Adjust next week's plan based on what you learned\n- [ ] Celebrate one thing you protected that would have been lost without the plan\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete weekly template that reflects your priorities, not other people's demands\n- Strategic work protected during your peak energy hours\n- Operational work batched and contained rather than spread across the entire week\n- Clear boundaries that your team understands and respects\n- A weekly rhythm you can hold yourself accountable to"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most transformative exercises for Level 2 owners. The biggest obstacle is not designing the plan - it is following it. Expect clients to struggle in week 1-2 as old habits pull them back. Hold them accountable to the Friday review. Common failure modes: scheduling strategic blocks but then accepting meetings over them, checking email outside the defined windows, and not communicating boundaries to the team. A good coaching question: \"What did you protect this week that you would have lost without your Power Plan?\""
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Energy-Based Calendar Design",
+          "description": "Energy-Based Calendar Design",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map your daily energy patterns and align your most important work with your peak hours. Most people waste their best energy on their lowest-value tasks because they schedule by convenience rather than biology. This action restructures your day around when you think best, not when slots happen to be free."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your brain does not perform equally across the day. Most people have 2-4 hours of peak cognitive capacity, a longer stretch of moderate capacity, and several hours of low capacity. If your highest-value strategic work lands in your low-energy hours while email and admin consume your peak hours, you are systematically underperforming. Matching task type to energy level is one of the simplest changes that produces the biggest results."
+            },
+            {
+              "title": "How to Use This",
+              "content": "If you have done the 15-Minute Time Tracker (Action 3), you already have data on when your best work happens. If not, spend 3 days noticing when you feel sharpest and when you start flagging. Then reorganise your calendar accordingly.\n\n---"
+            },
+            {
+              "title": "Energy Mapping",
+              "content": "- [ ] Track your energy levels for 3-5 days: rate yourself every 2 hours on a simple 1-3 scale (1 = low, 2 = moderate, 3 = high)\n- [ ] Identify your peak energy window - the 2-4 hours where you consistently score 3\n- [ ] Identify your moderate window - the hours where you score 2 (good for structured but less demanding work)\n- [ ] Identify your low energy window - the hours where you score 1 (meetings, admin, routine tasks)\n- [ ] Note what affects your energy: meals, exercise, caffeine, sleep quality, specific types of work"
+            },
+            {
+              "title": "Calendar Restructure",
+              "content": "- [ ] ⚡ Quick Win: Move your single most important task to your peak energy window tomorrow. Just one change.\n- [ ] Assign task types to energy levels:\n  - **Peak (score 3):** Strategic thinking, creative work, complex problem-solving, important writing, high-stakes decisions\n  - **Moderate (score 2):** Meetings, phone calls, structured tasks, team management, reviews\n  - **Low (score 1):** Email, admin, data entry, routine communications, filing, expenses\n- [ ] Restructure your default day to match: peak work first, moderate work second, low-value work in low-energy slots\n- [ ] Move all email and Slack checking to moderate or low energy windows - never peak\n- [ ] If you have meetings, batch them into your moderate energy window rather than scattering them across the day"
+            },
+            {
+              "title": "Protect the Pattern",
+              "content": "- [ ] Set \"focus mode\" on your devices during peak hours (no notifications, no email, no Slack)\n- [ ] Brief your team on your new schedule: \"I am not available for calls or questions between [peak hours] unless it is genuinely urgent\"\n- [ ] Create a visual cue for yourself: green/amber/red blocks on your calendar matching your energy zones\n- [ ] Review weekly: did your actual schedule match your energy-based design, or did the old pattern creep back?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear map of your daily energy pattern\n- Your most important work scheduled during your highest-energy hours\n- Low-value work contained in low-energy slots where it cannot do damage\n- Measurable improvement in the quality and speed of your strategic work\n- A sustainable daily rhythm that works with your biology, not against it"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This connects directly to the Power Plan (Action 5) - the energy map informs when to place each type of block. Most clients discover their peak window is 7-11am but they have been filling that time with email and meetings for years. The resistance point is usually meetings: \"I cannot control when other people want to meet.\" Challenge this - most meetings can be moved. Start with just protecting the first 90 minutes of the peak window and expand from there. The energy data from this exercise also feeds into the Sleep Optimisation (Action 9) and Sustainable Work Patterns (Action 12) actions."
+            }
+          ]
+        },
+        {
+          "number": 7,
+          "title": "Deep Work Protection System",
+          "description": "Deep Work Protection System",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a system of uninterrupted 90-minute blocks for your most strategic work. This goes beyond time-blocking: it covers eliminating distractions, setting boundaries, creating your physical environment, and developing the discipline to stay in deep focus. The goal is to produce your highest-quality thinking in dedicated sessions that no one and nothing interrupts."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Cal Newport's research shows that most knowledge workers get less than 1 hour of genuine deep work per day despite working 8-10 hours. Every interruption costs 23 minutes of recovery time (University of California research). If you are interrupted 10 times per day, you lose nearly 4 hours just getting back to where you were. A protected deep work system is not about working harder. It is about creating the conditions where your best thinking can actually happen."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start with one protected block per day. Get that working consistently before adding more. The system below covers setup, boundaries, and the habits that make it stick.\n\n---"
+            },
+            {
+              "title": "Environment Setup",
+              "content": "- [ ] Choose your deep work location: a room with a door, a quiet corner, a coffee shop, anywhere that is not your normal reactive workspace\n- [ ] ⚡ Quick Win: Put your phone in a drawer (not face-down on your desk, in a drawer) during your first deep work block tomorrow\n- [ ] Set up website blockers for distracting sites during deep work hours (Freedom, Cold Turkey, or built-in device focus modes)\n- [ ] Close email completely - not minimised, closed. Same with Slack, Teams, and any messaging apps.\n- [ ] If you work in an open office or shared space, use noise-cancelling headphones or a visual signal (a sign, a specific hat, whatever works) that means \"do not interrupt\""
+            },
+            {
+              "title": "Block Structure",
+              "content": "- [ ] Set your deep work blocks at 90 minutes minimum (this matches your body's natural ultradian rhythm)\n- [ ] Schedule 2-3 blocks per week to start, working up to 1 per day\n- [ ] Define what you will work on BEFORE the block starts - not during the first 20 minutes of the block\n- [ ] Start each block with a 2-minute intention statement: \"In this block I will [specific output]\"\n- [ ] End each block with a 5-minute capture: write down where you got to and what comes next so you can pick up immediately next time"
+            },
+            {
+              "title": "Boundary Rules",
+              "content": "- [ ] Define your \"deep work\" rule with your team: \"Between [time] and [time], I am unavailable unless someone is literally on fire\"\n- [ ] Create an escalation path for genuine emergencies that does not involve interrupting your deep work\n- [ ] Set an auto-responder on email and Slack for deep work hours: \"I check messages at [time]. If this is urgent, call [number].\"\n- [ ] Say no to meetings that overlap with your deep work blocks. Offer alternative times.\n- [ ] If someone interrupts, note what they needed and whether it was genuinely urgent. Track interruption patterns to address root causes."
+            },
+            {
+              "title": "Building the Habit",
+              "content": "- [ ] Track your deep work hours per week in a simple log\n- [ ] Set a target: start with 5 hours per week and build toward 10-15\n- [ ] Review weekly: how many deep work blocks did you protect vs. how many got sacrificed?\n- [ ] Identify the most common reasons blocks get broken and solve the top one each week\n- [ ] Celebrate the output: note what you produced during deep work that would not have happened otherwise\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Consistent blocks of 90+ minutes of uninterrupted strategic work\n- A physical and digital environment designed to eliminate distractions\n- Team understanding of when you are and are not available\n- Measurable increase in high-value output per week\n- A sustainable deep work habit that protects your most important thinking time"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This builds on the Level 1 Deep Work Block action (from 1.0 Focus) but goes much deeper into the system and habits required. The biggest resistance: \"I cannot be unreachable for 90 minutes.\" Challenge this directly - almost nothing in a small business is so urgent it cannot wait 90 minutes. The real issue is usually the owner's anxiety about missing something, not actual emergencies. Start with just one block per week and build confidence. Track what they produce in those blocks to demonstrate the value."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Delegation Candidate Identification",
+          "description": "Delegation Candidate Identification",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically identify the work that can and should be moved off your plate. This is not about dumping tasks on someone else. It is about recognising which activities do not require your specific skills, preparing those tasks for handoff, and building the confidence to let go. This action gives you a concrete delegation plan, not a vague intention to \"delegate more.\""
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners know they should delegate but get stuck on three things: not knowing what to delegate, not trusting anyone else to do it, and not having the time to train someone. This exercise solves the first problem directly and gives you the structure to address the other two. Every hour you spend on work someone else could do is an hour you are not spending on work only you can do."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use your Task Value Analysis (Action 4) as the starting point. If you have not done that, start by listing everything you do in a typical week. Then work through the framework below.\n\n---"
+            },
+            {
+              "title": "Identify Delegation Candidates",
+              "content": "- [ ] Pull your task list from the Task Value Analysis (Action 4) - focus on everything rated Medium or Low value\n- [ ] For each task, answer: \"Does this genuinely require MY specific knowledge, relationships, or decision-making authority?\" If no, it is a delegation candidate.\n- [ ] ⚡ Quick Win: Find one task you are doing today that has a clear, documented process and could be handed to someone else by Friday\n- [ ] Group delegation candidates into categories:\n  - **Admin & operations:** scheduling, data entry, filing, expenses, booking travel\n  - **Communication:** routine emails, standard client updates, supplier correspondence\n  - **Content & marketing:** social media posting, newsletter formatting, basic design work\n  - **Financial:** invoicing, chasing payments, basic bookkeeping entries\n  - **Client delivery:** parts of your service that follow a standard process"
+            },
+            {
+              "title": "Assess Readiness",
+              "content": "- [ ] For each candidate, rate delegation readiness: **Ready** (clear process, someone available), **Almost** (needs brief documentation, someone could learn), **Not Yet** (complex, no one available, needs hiring)\n- [ ] For \"Ready\" tasks: name the specific person who will take them on\n- [ ] For \"Almost\" tasks: note what needs to happen first (write a brief, record a video walkthrough, spend 30 minutes training)\n- [ ] For \"Not Yet\" tasks: decide if this is a future hire need, a contractor opportunity, or an automation candidate"
+            },
+            {
+              "title": "Prepare for Handoff",
+              "content": "- [ ] For your top 3 delegation candidates, write a simple one-page brief: what the task is, how to do it, what good looks like, common mistakes to avoid\n- [ ] Decide on the check-in rhythm: daily review for the first week, then weekly, then monthly as confidence builds\n- [ ] Set the standard: \"80% as good as I would do it\" is good enough for most delegated tasks. Perfect is the enemy of delegated.\n- [ ] Plan the handoff conversation: walk them through the brief, do it together once, let them do it while you watch, then let them fly"
+            },
+            {
+              "title": "Track and Expand",
+              "content": "- [ ] Set a 30-day target: how many hours per week will you reclaim through delegation?\n- [ ] Schedule a review in 2 weeks to check: is the delegated work being done? To what standard? What needs adjusting?\n- [ ] Once the first batch is stable, identify the next 3 tasks to delegate\n- [ ] Keep a running \"delegation log\" showing what you have handed off, to whom, and how it is going\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A prioritised list of tasks ready for delegation with specific people assigned\n- Simple briefs for each task that make handoff smooth\n- A clear plan for moving 5-10 hours per week off your plate within 30 days\n- Confidence that delegation is working, built through structured check-ins\n- A growing habit of asking \"should I be doing this?\" before accepting any new task"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Delegation resistance is one of the most common coaching challenges at Level 2. The two main blockers: \"No one can do it as well as me\" (perfectionism) and \"It is faster to just do it myself\" (short-term thinking). For the first, reframe: their job is not to do it as well as you, it is to do it well enough that you are freed for higher-value work. For the second, point out the maths: 2 hours training someone now saves 2 hours per week forever. That is 100+ hours per year. Challenge clients to delegate one thing this week - not next month, this week. Success breeds confidence."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Energy Management",
+      "description": "Optimising your physical and mental resources for sustained high performance.\n\nThe ten strategies that have the biggest impact on sleep quality, from light exposure timing to creating your bedroom as a sleep sanctuary. Energy starts with recovery.\n\nSimple eating principles that reduce inflammation and support sustained energy: intermittent fasting basics, plant-focused nutrition, and avoiding energy crashes.\n\nTrack what boosts versus drains your energy throughout the day, then develop 10-30 minute recovery rituals for different types of fatigue (physical, mental, emotional).\n\nDesign work rhythms you can maintain long-term. Covers the optimal work-to-break ratios, managing energy cycles, and building in genuine recovery time.\n---",
+      "actions": [
+        {
+          "number": 9,
+          "title": "Sleep Optimisation Protocol",
+          "description": "Sleep Optimisation Protocol",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Audit your current sleep habits and implement the changes that have the biggest impact on sleep quality. This is not a comprehensive sleep science course. It is the ten highest-impact strategies that business owners can implement this week to wake up sharper, think more clearly, and sustain energy through the day."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Sleep is the foundation of everything else in this playbook. Poor sleep destroys decision-making, creativity, emotional regulation, and physical energy. A business owner running on 5-6 hours of broken sleep is operating at roughly 70% cognitive capacity. You would not accept 70% performance from your team. Do not accept it from yourself. Fixing sleep is the highest-ROI investment most overworked owners can make."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start with the audit. Then pick 2-3 strategies to implement this week. Do not try to overhaul everything at once. Small, consistent changes compound.\n\n---"
+            },
+            {
+              "title": "Sleep Audit",
+              "content": "- [ ] Track your sleep for 5 nights: what time you go to bed, what time you fall asleep (estimate), what time you wake, and how you feel on waking (1-5 scale)\n- [ ] Calculate your average sleep duration and quality score\n- [ ] Note any patterns: do you sleep better/worse on certain days? After certain activities? With or without screens?\n- [ ] Identify your biggest sleep disruptor: is it getting to sleep, staying asleep, or waking too early?"
+            },
+            {
+              "title": "The Ten Strategies (Pick 2-3 to Start)",
+              "content": "- [ ] **⚡ Quick Win: Set a consistent wake time 7 days a week.** This is the single most impactful change. Your body clock anchors to wake time, not bedtime. Pick a time and stick to it, including weekends.\n- [ ] **Get 15+ minutes of natural light within 30 minutes of waking.** Go outside. This resets your circadian rhythm and improves sleep onset 14-16 hours later. Artificial light does not count.\n- [ ] **Stop caffeine by 2pm.** Caffeine has a half-life of 5-6 hours. Your 3pm coffee is still 50% active at 9pm. Switch to decaf or water after lunch.\n- [ ] **Create a 30-minute wind-down routine before bed.** No screens, no work, no stimulating conversation. Read, stretch, journal, or do breathing exercises.\n- [ ] **Make your bedroom a sleep sanctuary.** Dark (blackout curtains or an eye mask), cool (16-19C), and quiet (earplugs or white noise if needed). Remove all screens.\n- [ ] **Stop eating 2-3 hours before bed.** Late meals disrupt sleep quality even if they do not prevent you falling asleep.\n- [ ] **Limit alcohol.** Alcohol helps you fall asleep but destroys sleep quality in the second half of the night. Even 1-2 drinks measurably reduces restorative sleep.\n- [ ] **Exercise regularly, but not within 3 hours of bedtime.** Exercise improves sleep quality significantly, but late-night workouts raise your core temperature and can delay sleep onset.\n- [ ] **Use the \"worry dump\" technique.** If racing thoughts keep you awake, spend 5 minutes before bed writing down everything on your mind and your next action for each item. Get it out of your head and onto paper.\n- [ ] **If you cannot sleep after 20 minutes, get up.** Go to another room, do something boring, and return when drowsy. Lying in bed frustrated trains your brain to associate bed with stress."
+            },
+            {
+              "title": "Track Progress",
+              "content": "- [ ] After implementing your chosen strategies for 2 weeks, re-do the sleep audit\n- [ ] Compare your average quality score before and after\n- [ ] If improvement is noticeable, add 1-2 more strategies\n- [ ] If no improvement, try different strategies from the list or consider whether a medical issue needs investigating\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A baseline understanding of your current sleep patterns and quality\n- 2-3 specific, implementable changes made this week\n- Measurable improvement in sleep quality within 2 weeks\n- Better daytime energy, clearer thinking, and improved decision-making\n- A sustainable sleep routine that supports long-term performance"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This can feel like an unusual topic for a business coaching session, but it is one of the most impactful. Many Level 2 owners are running on broken sleep and compensating with caffeine and adrenaline. Frame it as a performance investment, not a lifestyle lecture. The consistent wake time is the biggest lever - push hard on this one. If a client is resistant, challenge them: \"If your top performer told you they were operating at 70% capacity and you could fix it with one habit change, would you ignore it?\""
+            }
+          ]
+        },
+        {
+          "number": 10,
+          "title": "Nutrition for Performance",
+          "description": "Nutrition for Performance",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Assess your current eating habits and implement simple changes that reduce energy crashes, support sustained focus, and keep you performing at your best through the working day. This is not a diet plan. It is a set of practical eating principles for business owners who need reliable energy."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "What you eat directly affects how you think. A carb-heavy lunch creates an afternoon crash. Skipping meals leads to poor decisions fuelled by low blood sugar. Inconsistent eating patterns mean inconsistent energy. Most business owners treat food as fuel they grab between meetings rather than as a performance tool. Small changes to what and when you eat can eliminate the afternoon slump and extend your productive hours."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start with the audit, then pick 2-3 changes to implement this week. This is about progress, not perfection.\n\n---"
+            },
+            {
+              "title": "Current Habits Audit",
+              "content": "- [ ] Track what you eat and when for 5 working days - just a quick note, not calorie counting\n- [ ] Note your energy level 1 hour after each meal (1-5 scale)\n- [ ] Identify meals that consistently cause energy crashes (usually high-sugar or high-carb lunches)\n- [ ] Note how many hours you go without eating during your working day\n- [ ] Count your daily caffeine intake (cups of coffee, energy drinks, etc.)"
+            },
+            {
+              "title": "Performance Eating Principles (Pick 2-3 to Start)",
+              "content": "- [ ] **⚡ Quick Win: Eat a protein-rich breakfast or first meal.** Eggs, Greek yoghurt, nuts, or a protein shake. Protein stabilises blood sugar and sustains energy far longer than toast or cereal.\n- [ ] **Reduce refined carbs at lunch.** Swap the sandwich, pasta, or chips for a meal built around protein and vegetables. Save the carbs for dinner when the crash does not matter.\n- [ ] **Stay hydrated throughout the day.** Dehydration causes fatigue, poor concentration, and headaches before you even feel thirsty. Keep water at your desk and aim for 2-3 litres per day.\n- [ ] **Eat at consistent times.** Your body performs best on a predictable schedule. Erratic meal times create erratic energy levels.\n- [ ] **Prepare meals in advance.** When you are busy, you eat whatever is fastest, which is usually the worst option. Spending 30 minutes on Sunday preparing lunches for the week saves time and protects your energy.\n- [ ] **Snack strategically.** If you need something between meals, choose nuts, fruit, or protein-based snacks rather than biscuits, crisps, or sweets. The sugar spike from junk food is followed by a crash 30-60 minutes later.\n- [ ] **Consider your eating window.** Some people perform well with intermittent fasting (eating within an 8-10 hour window). Others need regular meals. Experiment and track your energy to find what works for you.\n- [ ] **Reduce alcohol on work nights.** Beyond sleep disruption, even moderate drinking reduces next-day cognitive performance. If you drink, keep it to weekends or limit to 1-2 units on work nights."
+            },
+            {
+              "title": "Track and Adjust",
+              "content": "- [ ] After 2 weeks of changes, re-do the energy tracking (rate energy 1 hour after meals)\n- [ ] Compare before and after - are you crashing less? Is afternoon energy more stable?\n- [ ] If improvement is clear, add 1-2 more changes\n- [ ] If certain changes are not sustainable, swap them for others from the list\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear picture of how your current eating habits affect your energy\n- 2-3 practical changes implemented this week\n- Fewer energy crashes during the working day\n- More consistent focus and decision-making capacity\n- A sustainable approach to eating that supports performance without requiring a complete lifestyle overhaul"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Tread carefully - food is personal and emotional. Frame this entirely as a performance conversation, not a health or weight conversation. Avoid being prescriptive about specific diets. The goal is energy management, not nutrition coaching. The most common win for business owners: switching from a carb-heavy lunch to a protein-and-vegetable lunch eliminates the 2-3pm crash that kills productive afternoons. If a client pushes back, focus only on the hydration and lunch changes - these two alone make a noticeable difference within a week."
+            }
+          ]
+        },
+        {
+          "number": 11,
+          "title": "Energy Audit & Recovery Rituals",
+          "description": "Energy Audit & Recovery Rituals",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Track what boosts and what drains your energy throughout the day, then develop short recovery rituals (10-30 minutes) for different types of fatigue. Not all tiredness is the same. Physical, mental, and emotional fatigue need different recovery approaches. This action helps you identify your specific energy patterns and build targeted rituals to recharge."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners push through fatigue until they crash. They treat energy as a single battery that runs down and needs a holiday to recharge. In reality, you have multiple energy systems (physical, mental, emotional, creative) and each one drains and recovers differently. A 15-minute walk can restore physical energy. A 10-minute meditation can restore emotional energy. Knowing which type of fatigue you are experiencing and having a ready-made ritual to address it means you recover faster and crash less."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Do the energy audit first to understand your patterns. Then build 3-4 recovery rituals and start using them daily.\n\n---"
+            },
+            {
+              "title": "Energy Audit",
+              "content": "- [ ] For 5 working days, note your energy level (1-5) at four points: morning start, midday, mid-afternoon, end of day\n- [ ] After each rating, tag the type of energy: Physical (body tiredness), Mental (brain fog, cannot think clearly), Emotional (drained from people, conflict, or stress), Creative (out of ideas, everything feels flat)\n- [ ] Note what happened before each dip: a long meeting? A difficult conversation? Skipped lunch? Screen time?\n- [ ] Identify your biggest energy drains by frequency and severity\n- [ ] ⚡ Quick Win: Identify the one activity that most reliably drains your energy and schedule a 10-minute recovery ritual immediately after it this week"
+            },
+            {
+              "title": "Build Your Recovery Rituals",
+              "content": "### For Physical Fatigue\n\n- [ ] **Movement ritual (10-15 min):** A short walk outside, basic stretches, or a few minutes of exercise. Physical fatigue responds to movement, not rest.\n- [ ] **Posture reset (5 min):** Stand up, stretch your shoulders, walk to get water, and return to your desk with a fresh position.\n\n### For Mental Fatigue\n\n- [ ] **Brain break ritual (10-15 min):** Step away from screens. Do something that requires zero cognitive effort: make a cup of tea, look out the window, listen to music.\n- [ ] **Task switch (15-20 min):** When deep thinking stops producing results, switch to a low-cognitive task (organising, routine admin) and let your subconscious process the hard problem.\n\n### For Emotional Fatigue\n\n- [ ] **Decompression ritual (10-15 min):** After difficult conversations, conflict, or emotionally heavy work - journaling, a walk, or just sitting quietly.\n- [ ] **Connection ritual (10-15 min):** When isolation or stress builds up - call someone who energises you, have a non-work conversation, or spend a few minutes with family.\n\n### For Creative Fatigue\n\n- [ ] **Stimulus change (15-30 min):** Leave your normal environment. Work from a different room, go to a coffee shop, or take a notebook outside. Creative energy responds to new inputs.\n- [ ] **Input ritual (15-20 min):** Read something unrelated to your current work, listen to a podcast, or browse inspiring examples in a different industry."
+            },
+            {
+              "title": "Make It Stick",
+              "content": "- [ ] Create a \"recovery menu\" - a simple list of 3-4 rituals you can choose from based on what type of fatigue you are feeling\n- [ ] Schedule at least one recovery ritual per day (not optional - treated like a meeting)\n- [ ] Track the impact: after each ritual, rate your energy again. Which rituals produce the biggest recovery?\n- [ ] After 2 weeks, refine your menu to the 2-3 rituals that work best for you\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear map of what drains your energy and what type of fatigue you experience most\n- A personalised \"recovery menu\" of 3-4 rituals that work for you\n- Faster recovery from energy dips throughout the day\n- Fewer afternoon crashes and end-of-day exhaustion\n- A sustainable practice of proactive recovery rather than pushing through until burnout"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a powerful exercise for owners who say \"I am tired all the time\" but cannot explain why. The audit usually reveals that one or two types of fatigue dominate. Often it is emotional fatigue for owners dealing with team issues or difficult clients, or mental fatigue for those in constant decision-making mode. Help them build rituals specific to their dominant fatigue type. The key coaching insight: recovery is not laziness, it is performance management. Elite athletes recover deliberately - business owners should too."
+            }
+          ]
+        },
+        {
+          "number": 12,
+          "title": "Sustainable Work Patterns",
+          "description": "Sustainable Work Patterns",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design work rhythms you can maintain for years, not just weeks. This covers optimal work-to-break ratios, managing energy cycles across the day and week, building in genuine recovery time, and creating a sustainable pace that does not sacrifice your health, relationships, or long-term performance for short-term output."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Working 60-hour weeks might feel heroic, but it is not sustainable and the research is clear: beyond 50 hours per week, productivity per hour drops sharply. After 55 hours, it falls off a cliff. You are not getting more done - you are just getting more tired. Sustainable work patterns let you maintain high output over years rather than sprinting for months and crashing. The owners who build the best businesses are the ones who are still sharp and energised at year five, not the ones who burned brightest in year one."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review your current work patterns honestly, then design a sustainable rhythm using the steps below. This works best after you have completed the earlier actions in this playbook (especially the Power Plan and Energy-Based Calendar).\n\n---"
+            },
+            {
+              "title": "Assess Your Current Patterns",
+              "content": "- [ ] Calculate your average working hours per week over the last month (include evening emails, weekend work, and \"just checking\" phone time)\n- [ ] Rate your current pace on sustainability: could you maintain this for 5 more years without health or relationship consequences? Be honest.\n- [ ] Identify the patterns that are unsustainable: late nights, weekend work, no breaks, skipped meals, cancelled personal commitments\n- [ ] Note what triggers unsustainable stretches: deadlines, staff issues, busy seasons, or just habit?"
+            },
+            {
+              "title": "Design Your Sustainable Rhythm",
+              "content": "### Daily Rhythm\n\n- [ ] Set a maximum working day length (recommendation: 8-9 hours including breaks)\n- [ ] ⚡ Quick Win: Set a hard stop time for today and honour it, no matter what. One day of proof that the business survives.\n- [ ] Build in breaks using the 90/20 pattern: 90 minutes of focused work, followed by a genuine 15-20 minute break\n- [ ] Protect a proper lunch break (30+ minutes away from your desk)\n- [ ] Create a \"shutdown ritual\" at end of day: review what you accomplished, note what is next for tomorrow, and close everything. Work is done.\n\n### Weekly Rhythm\n\n- [ ] Set your core working days (typically Monday-Friday) and protect at least one full weekend day with zero work\n- [ ] Designate one day per week as your \"light day\" - shorter hours, less intensity, more thinking and planning\n- [ ] Build in a weekly review session (Friday afternoon works well): what went right, what needs adjusting, what is the priority for next week\n- [ ] Schedule your personal priorities (exercise, family, hobbies) as non-negotiable blocks, not afterthoughts\n\n### Monthly and Quarterly Rhythm\n\n- [ ] Plan one genuine recovery day per month: no work, no email, no \"just checking\" - proper rest\n- [ ] Build in a quarterly review day: step back, assess progress, adjust your 90-day plan, reconnect with your goals\n- [ ] Plan holidays in advance and protect them from work creep - out-of-office on, laptop left at home\n- [ ] After any intense period (product launch, busy season, difficult project), schedule a deliberate recovery period"
+            },
+            {
+              "title": "Build the Boundaries",
+              "content": "- [ ] Define your \"rules of engagement\" and share them with your team: when you are available, when you are not, and what constitutes a genuine emergency\n- [ ] Remove work email and Slack from your phone, or use scheduled focus modes that block them outside working hours\n- [ ] Set expectations with clients about response times: \"We respond within 24 hours on business days\" is professional, not slow\n- [ ] Have the conversation with your family about your new boundaries - their support makes it stick"
+            },
+            {
+              "title": "Track Sustainability",
+              "content": "- [ ] Rate your energy and satisfaction weekly (1-5 scale)\n- [ ] Track your actual vs. planned working hours each week\n- [ ] Note when you break your own rules and what caused it\n- [ ] After 30 days, assess: are the patterns holding? Where do you slip? What needs adjusting?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A designed work rhythm that protects your energy, health, and relationships\n- Clear daily, weekly, and quarterly patterns that support long-term performance\n- Boundaries communicated to team, clients, and family\n- Measurable reduction in working hours without reduction in output\n- A sustainable pace you can maintain for years, not just weeks"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is often the hardest action in the playbook because it requires owners to confront the story they tell themselves: \"I have to work this hard or things will fall apart.\" Challenge this directly but compassionately. Ask: \"If you had a health scare and were forced to work 30 hours a week, what would you stop doing?\" That answer reveals what is actually optional. The biggest risk is clients agreeing in the session and then reverting by Wednesday. Weekly accountability on the hard stop time and the weekend protection is essential. Celebrate small wins: \"You left at 5:30 three days this week. What happened? The business survived.\""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

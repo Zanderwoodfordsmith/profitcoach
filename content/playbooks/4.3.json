@@ -1,0 +1,335 @@
+{
+  "ref": "4.3",
+  "level": 4,
+  "area": 3,
+  "name": "Meetings & Reviews",
+  "subtitle": "Level 4 · Overseer · Disciplined Planning",
+  "whatThisIs": "Meetings and reviews are how you keep a growing business aligned without becoming a bottleneck. When done right, they surface problems early, drive decisions forward, and create accountability. When done wrong, they become time-consuming rituals that nobody finds useful.\n\nAt Level 4, you are overseeing multiple areas of the business. You need structured ways to stay informed, make decisions, and keep everyone moving in the same direction — without spending your entire week in meeting rooms. This playbook builds the rhythms that create alignment across your business.\n\nThis is not about having more meetings. It is about having the right meetings with clear purpose, so everything else can happen without you.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Meetings happen by accident or habit with no clear agenda or outcome. You spend hours in rooms talking about problems but nothing gets decided or followed up. Critical issues only surface when they become crises. Your leadership team operates in silos because there is no regular forum to align and share information. You are either micromanaging everything or completely out of touch with what is happening."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have regular meetings but they often overrun, drift off topic, or end without clear actions. Some meetings are productive, others feel like a waste of time. You review performance quarterly but it feels reactive rather than strategic. Information flows inconsistently — sometimes you hear about issues early, sometimes too late."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear meeting rhythm that serves different purposes: weekly operations meetings that surface issues early, quarterly strategic reviews that step back from execution, and structured decision meetings that move things forward. Every meeting has a clear agenda, produces specific outcomes, and generates documented follow-up actions. Your team knows when and how decisions get made, and accountability is built into the process."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Does every meeting in your calendar serve a clear decision-making or accountability purpose? If you cannot articulate why a meeting exists and what it should produce, it probably should not exist. Most businesses have too many status update meetings and not enough decision meetings.",
+    "Are problems surfacing early enough for you to act on them? The best operational review catches issues when they are still manageable, not when they have become crises. If the first time you hear about a problem is when it is already affecting customers or cash flow, your review rhythm is too slow.",
+    "When do you step back from execution to think strategically? Daily and weekly meetings focus on what is happening now. But if you never create protected time to think about where you are going, execution becomes busy work. Quarterly strategic sessions force you out of the weeds.",
+    "Do decisions actually get made and followed up? Meeting discussions that end with \"we should probably...\" or \"maybe we could...\" are not decisions. Clear decisions have owners, deadlines, and follow-up mechanisms. If your meetings generate good conversations but poor execution, the structure is broken.",
+    "Which meetings could you eliminate without any negative impact? Most businesses accumulate meetings over time that outlive their usefulness. Regular meetings that started for good reasons often continue long after the reason disappeared. Pruning unnecessary meetings is as important as adding necessary ones."
+  ],
+  "actionsIntro": "This playbook is organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Audit your recurring meetings. For each one, write down its purpose in one sentence. If you cannot, cancel it or redesign it with a clear outcome in mind.",
+    "This week: Set up a simple weekly operations meeting with your key team members. Thirty minutes maximum, covering three questions: What is working? What is not working? What needs a decision?",
+    "This week: Book your next quarterly strategy session in the calendar now, before the quarter gets busy. Block half a day minimum and treat it like you would treat a key client meeting — non-negotiable."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.1",
+      "description": ""
+    },
+    {
+      "ref": "3.3",
+      "description": ""
+    },
+    {
+      "ref": "4.9",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "3.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Operational Reviews",
+      "description": "Regular rhythms that keep you informed and surface issues early.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Weekly Operations Meeting",
+          "description": "A structured weekly meeting that reviews key metrics, highlights problems, and ensures nothing critical slips through the cracks. Focused on this week and next, not strategic planning.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Establish a structured weekly meeting that reviews key metrics, highlights problems, and ensures nothing critical slips through the cracks. This meeting is focused exclusively on this week and next week. It is not a strategy session, a brainstorming meeting, or a status update where everyone reads out what they did. It is a tight, disciplined check-in that keeps the business on track between longer planning cycles."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Verne Harnish's research across thousands of scaling companies shows that a consistent weekly meeting rhythm is the single most impactful operational discipline a business can adopt. Without it, problems hide until they become crises, priorities drift without anyone noticing, and communication gaps create duplicate work or dropped balls. The weekly meeting is your early warning system. It catches issues when they are small, cheap, and easy to fix rather than large, expensive, and disruptive."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up the meeting structure once, then run it consistently every week. Same day, same time, same format. Consistency is more important than perfection.\n\n---"
+            },
+            {
+              "title": "Meeting Setup",
+              "content": "- [ ] **Choose a fixed day and time** - Pick a day early enough in the week to act on what you learn (Monday or Tuesday work well) and protect it ruthlessly. This meeting does not move for anything short of a genuine emergency.\n- [ ] **Limit attendance to direct reports or department leads** - Keep it small. 4-8 people maximum. If you need more people, your meeting is too broad. Everyone in the room should have accountability for something.\n- [ ] **Set a strict 60-minute time limit** - Start on time. End on time. If you cannot cover everything in 60 minutes, you are covering too much. The discipline of the time limit forces focus.\n- [ ] ⚡ Quick Win: **Block the next 12 weeks in everyone's calendar right now** - Recurring invite, mandatory attendance, no exceptions. Making it non-negotiable from the start prevents the slow erosion of \"can we skip this week?\""
+            },
+            {
+              "title": "Meeting Agenda (Follow This Order)",
+              "content": "- [ ] **Good news (5 minutes)** - Each person shares one positive thing from the past week. This is not fluff. It sets a constructive tone, builds awareness of wins across the business, and prevents the meeting from becoming a problem-only session.\n- [ ] **Metrics review (10 minutes)** - Review 5-8 key performance indicators. Each metric has an owner. Green means on track, red means off track. No discussion on green metrics. Only discuss red metrics and what is being done about them.\n- [ ] **Customer and employee updates (5 minutes)** - Any customer escalations or concerns. Any team issues that need visibility. Quick flags only, not detailed discussions.\n- [ ] **Priorities check (15 minutes)** - Each person confirms: Are you on track with this week's priority? If not, what is the obstacle and what help do you need? This is accountability, not interrogation.\n- [ ] **Issues and problem-solving (20 minutes)** - Surface the top 1-3 issues that need resolution. Discuss. Decide. Assign an owner and deadline. If an issue needs more than 5 minutes of discussion, schedule a separate meeting for it.\n- [ ] **Next week preview (5 minutes)** - Any upcoming deadlines, events, or potential disruptions that the team should know about. What could go wrong next week, and who is responsible for preventing it?"
+            },
+            {
+              "title": "Making It Stick",
+              "content": "- [ ] **Assign a meeting owner** - One person is responsible for running the agenda, keeping time, and ensuring follow-through. This can be you or a trusted team member, but it must be consistent.\n- [ ] **Take concise notes** - Decisions made, actions assigned, deadlines set. No minutes of what was discussed. Just what was decided and who is doing what by when.\n- [ ] ⚡ Quick Win: **Send action items within 1 hour of the meeting ending** - A brief email or message listing every action, owner, and deadline from the meeting. If it is not written down and shared, it does not exist.\n- [ ] **Review action completion at the start of next week's meeting** - The first thing you check is whether last week's actions were completed. This closes the loop and builds accountability.\n- [ ] **Rate the meeting quarterly** - Ask your team: \"Is this meeting useful? What would make it better?\" If the answer is \"it is a waste of time,\" something in the format needs to change.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A consistent weekly rhythm that keeps the business aligned and accountable\n- Problems surfaced early when they are cheap and easy to fix\n- Clear accountability for actions with documented owners and deadlines\n- Better cross-functional awareness so departments are not working in silos\n- Reduced need for ad-hoc meetings because the weekly covers operational essentials"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest risk is that the weekly meeting becomes a status update where everyone talks and nothing gets decided. Push hard on the issues section. That is where the value is. If the meeting consistently runs over 60 minutes, the owner is trying to cover too much. Help them strip it back to essentials. If attendance starts slipping, it means the meeting is not valuable enough. The fix is to make it more useful, not to mandate attendance harder. Ask the team what would make them want to be there."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Monthly Department Reviews",
+          "description": "Deeper dives with each department head to review performance, resource needs, and upcoming challenges. More detailed than the weekly, less strategic than the quarterly.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Conduct a structured monthly review with each department head (or function owner in smaller businesses) to examine performance, resource needs, upcoming challenges, and progress against quarterly goals. This is deeper and more strategic than the weekly operations meeting. It is where you understand what is really happening beneath the surface numbers and help each area of your business stay on track."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Weekly meetings keep the trains running. Monthly reviews ensure the trains are going to the right destination. Without them, departments drift. Problems that are too nuanced for a weekly check-in accumulate until they become significant. Team members who need support, resources, or direction do not get it until something visibly fails. Andy Grove's management philosophy at Intel centred on regular one-to-one reviews as the most important management tool available. For a business owner, monthly department reviews are the mechanism that prevents surprises and builds genuine understanding of your business."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up a recurring schedule so each department or function gets a dedicated review once per month. Use the same structure every time so both parties know what to prepare.\n\n---"
+            },
+            {
+              "title": "Schedule and Preparation",
+              "content": "- [ ] **Book monthly reviews for each department** - If you have 4-5 department heads, spread them across the month rather than cramming them into one day. One review per week keeps the load manageable.\n- [ ] **Send a standard prep template 3 days before** - Give the department head a simple template to complete: wins from the month, metrics update, challenges, resource requests, and priorities for next month. This ensures the meeting is productive from minute one.\n- [ ] **Block 90 minutes** - 60 minutes for the review itself. 30 minutes buffer for overflow or immediate follow-up actions.\n- [ ] ⚡ Quick Win: **Start with your most important department this month** - Do not wait until you have everything perfect. Pick one department, run the review, and learn from it before rolling out to others."
+            },
+            {
+              "title": "Review Agenda",
+              "content": "- [ ] **Performance review (20 minutes)** - Walk through the key metrics for this department. What is on track? What is behind? For anything behind, what is the root cause and what is the plan to recover? Focus on understanding, not blame.\n- [ ] **Wins and achievements (10 minutes)** - What went well this month? What should be recognised or celebrated? This is not optional. If you only discuss problems, you train people to hide problems.\n- [ ] **Challenges and obstacles (20 minutes)** - What is getting in the way? Resourcing issues, cross-functional blockers, skill gaps, process breakdowns, external factors. Your job is to listen, ask questions, and remove obstacles the department head cannot remove themselves.\n- [ ] **Resource review (10 minutes)** - Does this department have what it needs for the coming month? People, budget, tools, time. If not, what is the specific request and what is the business case?\n- [ ] **Next month priorities (10 minutes)** - Agree on the 2-3 most important outcomes for the coming month. These should connect to the quarterly goals. Write them down so there is no ambiguity about what success looks like."
+            },
+            {
+              "title": "Getting Honest Information",
+              "content": "- [ ] **Ask \"What am I not seeing?\"** - This is the most powerful question in a monthly review. It gives permission to surface issues that the department head might otherwise keep quiet.\n- [ ] **Ask about team health** - How is morale? Is anyone struggling? At risk of leaving? Overloaded? These human factors drive performance more than any process or tool.\n- [ ] ⚡ Quick Win: **End every review by asking: \"What is the one thing I could do to make your job easier?\"** - Then actually do it. This builds trust faster than any management technique.\n- [ ] **Watch for patterns across departments** - If multiple departments raise the same issue (slow decision-making, unclear priorities, resource constraints), that is a leadership or systems problem, not a department problem."
+            },
+            {
+              "title": "Follow-Through",
+              "content": "- [ ] **Document agreed actions and share within 24 hours** - Each review should produce 3-5 specific actions with owners and deadlines. Share them immediately.\n- [ ] **Track actions month to month** - Open the previous month's review at the start of each new one. Were actions completed? If not, why? Accountability without follow-through is meaningless.\n- [ ] **Adjust the format based on feedback** - After 3 months, ask each department head: \"Is this review useful? What would make it more valuable?\" The format should serve them, not just you.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Deep understanding of what is happening in each area of your business\n- Problems caught and addressed before they become crises\n- Department heads who feel heard, supported, and accountable\n- Clear monthly priorities aligned to quarterly goals\n- A running record of actions, progress, and patterns that informs strategic decisions"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The quality of these reviews depends entirely on whether the department head feels safe being honest. If they think the review is about being judged, they will present a polished version of reality and hide the real problems. Help the owner set the right tone: curious, supportive, and direct. Not interrogating, not soft. The \"What am I not seeing?\" question is transformative but only works if the owner genuinely wants the answer and responds constructively when they hear something uncomfortable. If a client says they do not have time for monthly reviews, ask them how much time they spend on firefighting. Monthly reviews prevent the fires."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Strategic Reviews",
+      "description": "Stepping back from execution to review direction and make bigger decisions.",
+      "actions": [
+        {
+          "number": 3,
+          "title": "Quarterly Strategy Sessions",
+          "description": "Protected time every quarter to review progress against annual goals, assess what is working and what is not, and adjust course if needed. Strategic thinking, not operational firefighting.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Protect a half-day every quarter to step back from operations and review progress against your annual goals, assess what is working and what is not, and adjust course for the next 90 days. This is not an extended version of your weekly meeting. It is a fundamentally different conversation - zoomed out, strategic, and focused on direction rather than execution."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Businesses that plan quarterly outperform those that only plan annually. Annual plans lose relevance within weeks as conditions change. Quarterly reviews create a rhythm of assessment and adjustment that keeps you moving toward your goals even as the landscape shifts. Verne Harnish's Rockefeller Habits framework identifies the quarterly planning rhythm as one of the three most critical disciplines for scaling companies. Without it, you are navigating by a map you drew 12 months ago in a landscape that has changed significantly."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Block the session at the start of each quarter. Prepare the data in advance so the session focuses on thinking and deciding, not on looking things up.\n\n---"
+            },
+            {
+              "title": "Session Preparation (One Week Before)",
+              "content": "- [ ] **Gather quarterly performance data** - Revenue, profit, customer metrics, pipeline, team metrics. Compile into a simple one-page summary. No one should be seeing numbers for the first time in the session.\n- [ ] **Review progress against annual goals** - For each annual goal, note the current status. On track, behind, ahead, or abandoned. Be honest.\n- [ ] **Collect input from department heads** - Ask each one: \"What worked, what did not work, and what should change for next quarter?\" Prepare a summary.\n- [ ] ⚡ Quick Win: **Send the data pack to all attendees 3 days before the session** - This ensures everyone arrives informed and ready to discuss, not needing a 30-minute data walkthrough."
+            },
+            {
+              "title": "Session Agenda (Half Day)",
+              "content": "- [ ] **Quarter in review (45 minutes)** - Walk through performance data. What goals did you hit? Which ones did you miss and why? What surprised you, positively or negatively? This is fact-finding, not blame-finding.\n- [ ] **What is working and what is not (30 minutes)** - For each major initiative, product, or market: Is it delivering? Should you continue, adjust, or stop? Candid assessment, not wishful thinking.\n- [ ] **External landscape check (20 minutes)** - Has anything changed in your market, competitive environment, or customer needs since last quarter? Any trends or threats you need to respond to?\n- [ ] **Strategic adjustments (30 minutes)** - Based on everything reviewed, what needs to change? New priorities? Shifted resources? Abandoned initiatives? Specific adjustments to the annual plan?\n- [ ] **Next quarter priorities (45 minutes)** - Define 3-5 priorities for the coming quarter. Each must have: a clear outcome, an owner, a deadline, and metrics for success. These become the focus of your weekly and monthly rhythms for the next 90 days."
+            },
+            {
+              "title": "Quality of Thinking",
+              "content": "- [ ] **Get out of the office** - Run the session somewhere different. A meeting room at a hotel, a co-working space, even someone's home. Physical separation from daily operations helps shift thinking from tactical to strategic.\n- [ ] **Limit attendance** - Only people who have strategic input should be there. 3-6 people maximum. More than that and you get presentations, not conversations.\n- [ ] **Ban devices for the discussion sections** - Laptops and phones pull attention back to operational details. The whole point is to think beyond the day-to-day.\n- [ ] ⚡ Quick Win: **Start the session with a 10-minute \"clear the decks\" round** - Everyone dumps their most pressing operational concern. Write them on a board. Promise to address them after the session. Then set them aside and focus on strategy."
+            },
+            {
+              "title": "Follow-Through",
+              "content": "- [ ] **Document quarterly priorities and share within 48 hours** - A clear one-page document showing the 3-5 priorities, owners, deadlines, and success metrics.\n- [ ] **Cascade to the team** - Within one week of the session, communicate the quarterly priorities to the entire team. Everyone should know what the business is focused on and why.\n- [ ] **Connect to weekly and monthly rhythms** - Quarterly priorities should show up in weekly meeting priority checks and monthly department reviews. If they do not, they are just a document nobody reads.\n- [ ] **Schedule the next session immediately** - Before you leave, the next quarterly session is in the calendar. Protect it.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear view of where you stand against annual goals at each quarter mark\n- Honest assessment of what is working and the courage to stop what is not\n- 3-5 focused priorities for the next 90 days with clear owners and metrics\n- A team that understands the direction and their role in achieving it\n- A rhythm of strategic reflection that prevents the business from drifting"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common failure is treating this as an operational meeting with a strategy label. Push the client to think at a higher level. \"What should we stop doing?\" is often more valuable than \"What should we start?\" Most businesses are doing too much, not too little. Help them resist the temptation to add new priorities without removing old ones. If a client consistently skips or postpones quarterly sessions, that tells you something about their relationship with strategic thinking. Some owners are uncomfortable with it and default to operations because it feels more productive. Help them see that 4 hours of strategic thinking can redirect hundreds of hours of execution."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Annual Planning Retreat",
+          "description": "A structured annual process for setting direction, priorities, and resource allocation for the coming year. This is where the big decisions happen that guide everything else.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Run a structured annual process for setting direction, priorities, and resource allocation for the coming year. This is your opportunity to step fully out of the business and think about the business - where it has been, where it is going, and what needs to be true for the next 12 months to be successful. A retreat is not a luxury. It is the foundation that makes every other planning rhythm effective."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "A business without an annual plan is a business running on momentum. That works when the market is stable and growth is easy. It breaks when conditions change, competition intensifies, or the business hits a complexity ceiling. Keith Cunningham's \"Thinking Time\" approach emphasises that the quality of your annual plan determines the quality of your year. Every quarter, month, and week should be working toward something defined, measurable, and meaningful. Without an annual plan, your quarterly sessions have no anchor and your weekly meetings have no strategic context."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Block a full day (or two half-days) at least 6 weeks before your financial year starts. This gives you time to plan, communicate, and prepare before the year begins.\n\n---"
+            },
+            {
+              "title": "Pre-Retreat Preparation",
+              "content": "- [ ] **Complete a year-in-review analysis** - Revenue and profit actual vs. plan. Customer acquisition and retention. Team changes. Key wins and key failures. What happened and why?\n- [ ] **Gather team input** - Survey or interview each department head. What worked this year? What frustrated them? What would they change? What do they need? Aggregate the themes.\n- [ ] **Review your strategic fundamentals** - Your arena definition, competitive advantages, and growth strategy from the Profit System. Are they still accurate? Has anything shifted?\n- [ ] **Prepare external market data** - Industry trends, competitor moves, regulatory changes, economic outlook. Not an exhaustive research project. Just enough context to plan realistically.\n- [ ] ⚡ Quick Win: **Send a \"pre-read\" pack to all attendees one week before** - Include the year-in-review summary, team feedback themes, and market context. This prevents the first 2 hours of the retreat being a data download."
+            },
+            {
+              "title": "Retreat Agenda (Full Day)",
+              "content": "- [ ] **Year in review (90 minutes)** - Walk through performance, celebrate wins, honestly assess failures and missed goals. What did you learn? What patterns do you see? What would you do differently with the benefit of hindsight?\n- [ ] **Strategic direction check (60 minutes)** - Does your strategic arena still hold? Has your competitive advantage strengthened or weakened? Are there new opportunities or threats that require a strategic shift? This is the \"big picture\" conversation.\n- [ ] **Annual goals (90 minutes)** - Define 3-5 annual goals. Each must be specific, measurable, and connected to your strategic direction. Common categories: revenue/profit target, customer/market goal, operational improvement, team/culture goal.\n- [ ] **Resource allocation (60 minutes)** - For each goal, define the budget, people, and time it needs. If total resource demand exceeds supply (it always does), force prioritisation. What gets full funding and what gets deferred?\n- [ ] **Q1 priorities and actions (60 minutes)** - Break the annual goals into first-quarter deliverables. What must happen in the first 90 days to set the year up for success?"
+            },
+            {
+              "title": "Quality Standards",
+              "content": "- [ ] **Hold the retreat off-site** - Get physically away from the office. No popping back to check on things. No \"just 5 minutes\" interruptions. Full immersion.\n- [ ] **Limit attendance to 3-6 people** - The owner, key leaders, and optionally a coach or facilitator. More than 6 people and you get presentations and politics instead of honest strategy.\n- [ ] **Start with reflection, not planning** - The temptation is to jump straight into next year. Resist it. Understanding this year thoroughly is the foundation for planning next year well.\n- [ ] ⚡ Quick Win: **Hire a facilitator or use your coach** - Having someone else run the agenda frees the owner to think and participate rather than managing the room. Even one facilitated retreat is more productive than five self-run ones."
+            },
+            {
+              "title": "Post-Retreat Execution",
+              "content": "- [ ] **Document the annual plan within one week** - A clear, concise document. Annual goals, quarterly milestones, resource commitments, and Q1 priorities. Maximum 3 pages.\n- [ ] **Communicate to the full team within two weeks** - Everyone needs to know what the business is aiming for and what their role is. If your team does not know the plan, you do not have a plan.\n- [ ] **Connect to your quarterly, monthly, and weekly rhythms** - The annual plan feeds quarterly sessions. Quarterly priorities feed monthly reviews. Monthly outcomes feed weekly meetings. If these rhythms are not connected, the plan lives in a document nobody reads.\n- [ ] **Set the date for the next annual retreat immediately** - Protect it now. If you wait until \"closer to the time,\" it will not happen.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear, written annual plan with 3-5 specific goals\n- Resource allocation that matches priorities rather than spreading thin\n- First quarter priorities defined and ready to execute from day one\n- The full team aligned around the same direction and goals\n- A connected planning rhythm from annual to quarterly to monthly to weekly"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The annual retreat is where you have the most strategic impact as a coach. Many clients have never done one properly. The most common issue is setting too many goals. Push hard for 3-5 maximum. Each additional goal dilutes focus and resources. Better to achieve 3 goals completely than partially progress on 7. Watch for goals that are actually activities rather than outcomes. \"Launch a new marketing campaign\" is an activity. \"Increase qualified leads by 40%\" is an outcome. The activity might be part of the plan, but the goal must be the outcome. If a client resists the time commitment, remind them that one day of strategic thinking directs 250+ days of execution. The return on investment is enormous."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Meeting Management",
+      "description": "Making sure every meeting serves a purpose and produces results.\n\n---",
+      "actions": [
+        {
+          "number": 5,
+          "title": "Meeting Purpose Matrix",
+          "description": "A simple framework for deciding what type of meeting you need based on the outcome you want. Information sharing needs a different structure than decision making.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a framework for deciding what type of meeting is needed based on the outcome you want. Different outcomes require fundamentally different meeting structures. Information sharing needs a different format than decision making. Problem solving needs a different format than brainstorming. Most meeting frustration comes from mismatched format and purpose - running a decision meeting when you needed information sharing, or running a brainstorm when you needed a decision."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The average business owner spends 35-50% of their working week in meetings. Most of those meetings are poorly structured, too long, or unnecessary. Patrick Lencioni argues that the problem is not too many meetings. It is too many bad meetings. A bad meeting is not just wasted time. It is an active drain on morale, energy, and trust. When people sit in meetings that go nowhere, they learn to disengage. A purpose matrix solves this by ensuring every meeting has a clear type, structure, and expected outcome before it starts."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build the matrix once. Then before scheduling any meeting, consult it. The right format for the right purpose transforms meeting culture.\n\n---"
+            },
+            {
+              "title": "Define Meeting Types",
+              "content": "- [ ] **Information sharing meetings** - Purpose: distribute information. Format: one-to-many presentation with Q&A. Duration: 15-30 minutes. Key rule: if it could be an email, make it an email. Only meet when questions, context, or nuance require live discussion.\n- [ ] **Decision meetings** - Purpose: make a specific decision. Format: present options, discuss trade-offs, decide. Duration: 30-45 minutes. Key rule: the decision must be stated at the end. If you leave without a decision, the meeting failed.\n- [ ] **Problem-solving meetings** - Purpose: diagnose and resolve a specific issue. Format: define the problem, explore root causes, generate solutions, agree on actions. Duration: 45-60 minutes. Key rule: start with the problem definition, not the solution.\n- [ ] **Brainstorming meetings** - Purpose: generate ideas without judgement. Format: open exploration, divergent thinking, capture everything. Duration: 30-60 minutes. Key rule: no evaluation during the brainstorm. Separate idea generation from idea selection.\n- [ ] ⚡ Quick Win: **Categorise your next 5 scheduled meetings by type** - If you cannot identify the type, the meeting probably does not have a clear purpose. Cancel or restructure it."
+            },
+            {
+              "title": "Build the Matrix",
+              "content": "- [ ] **Create a one-page reference** - Four columns: Meeting Type, When to Use, Standard Format, Expected Output. This becomes your team's guide for planning any meeting.\n- [ ] **Define default durations for each type** - Information: 20 minutes. Decision: 30 minutes. Problem-solving: 45 minutes. Brainstorming: 45 minutes. Set these as starting points and only extend with justification.\n- [ ] **Define required preparation for each type** - Decision meetings need options prepared in advance. Problem-solving meetings need the problem clearly stated. Brainstorming needs a focused question. If preparation is not done, postpone the meeting.\n- [ ] **Define attendee guidelines for each type** - Information: anyone who needs the information. Decision: only people with relevant input or authority. Problem-solving: people closest to the problem. Brainstorming: diverse perspectives. Smaller is almost always better."
+            },
+            {
+              "title": "Apply to Current Meeting Calendar",
+              "content": "- [ ] **Audit all recurring meetings** - For each one, identify the type and check whether the format matches. A weekly meeting that tries to be all four types at once will be mediocre at all of them.\n- [ ] ⚡ Quick Win: **Cancel or restructure the one meeting that everyone dreads** - Every business has at least one meeting that people avoid or zone out in. Fix it or kill it.\n- [ ] **Introduce the \"meeting purpose statement\"** - Every meeting invite must include one sentence: \"The purpose of this meeting is to [inform/decide/solve/brainstorm] [specific topic].\" If the organiser cannot write this sentence, the meeting is not ready.\n- [ ] **Set a \"no agenda, no meeting\" rule** - If there is no agenda shared at least 24 hours before, the meeting is automatically cancelled. This single rule eliminates most unnecessary meetings.\n- [ ] **Track meeting hours monthly** - How much total time does your team spend in meetings each month? If it is more than 30% of total working hours, something needs to change."
+            },
+            {
+              "title": "Team Adoption",
+              "content": "- [ ] **Share the matrix with your team** - Walk them through each meeting type and explain the expected behaviours. Give them permission to challenge meetings that do not have a clear purpose.\n- [ ] **Model the behaviour** - Apply the matrix to every meeting you call. Your team will follow your lead.\n- [ ] **Review and refine after 30 days** - Is the matrix being used? Are meetings improving? What needs adjustment?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every meeting in your business has a clear type and purpose before it starts\n- Meeting duration matches purpose rather than defaulting to 60 minutes for everything\n- The number of unnecessary meetings decreases significantly\n- Meeting quality improves because format matches objective\n- Team engagement in meetings increases because people know why they are there"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The quickest win in meeting culture is the \"no agenda, no meeting\" rule. Clients are often surprised how many meetings simply disappear when this rule is enforced. The ones that survive are the ones that matter. The harder change is getting the owner to model the behaviour. If the owner continues to call ad-hoc meetings without agendas or holds 90-minute rambling sessions, no matrix will fix the culture. Start with the owner's own meetings before rolling out to the team. Also watch for the \"everything is a decision meeting\" pattern. Some owners turn every discussion into a decision, which exhausts the team. Help them distinguish between \"I need a decision today\" and \"I need to think about this for a few days.\""
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Decision Tracking System",
+          "description": "A consistent way to document decisions, assign owners, set deadlines, and follow up on progress. Decisions without follow-up are just expensive conversations.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a consistent, simple system for documenting decisions, assigning owners, setting deadlines, and following up on progress. Every decision your business makes should be captured somewhere accessible so there is a single source of truth about what was agreed, who is responsible, and when it should be done. No more \"I thought we decided...\" conversations. No more actions that fall through the cracks because nobody wrote them down."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The cost of undocumented decisions is invisible but enormous. Teams re-discuss decisions that were already made because nobody recorded the outcome. Actions get dropped because nobody was clearly assigned as owner. Deadlines pass without anyone noticing because there is no tracking system. In a business with 5-20 people, even a few lost decisions per week compounds into significant waste. Ray Dalio's \"believability-weighted decision making\" at Bridgewater only works because every decision is meticulously documented. You do not need that level of rigour, but you do need a system."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up a simple tracking system, embed it into your existing meeting rhythms, and review it weekly. The system only works if it is used consistently, so simplicity is essential.\n\n---"
+            },
+            {
+              "title": "System Setup",
+              "content": "- [ ] **Choose your tracking tool** - Spreadsheet, project management tool, shared document, or even a physical notebook. The best tool is the one your team will actually use. Do not buy new software for this. Use what you already have.\n- [ ] **Define the standard fields** - Every tracked decision needs: (1) Decision made (one sentence), (2) Owner (one person), (3) Deadline, (4) Status (Open/In Progress/Complete/Overdue), (5) Source (which meeting or conversation).\n- [ ] ⚡ Quick Win: **Create the tracker now and add your last 5 unresolved decisions** - You already have decisions floating around without a home. Capture them immediately.\n- [ ] **Set access permissions** - Everyone who attends meetings should be able to view the tracker. Only meeting organisers or the owner should be able to add or modify entries. This prevents the tracker from becoming cluttered with informal notes."
+            },
+            {
+              "title": "Capture Process",
+              "content": "- [ ] **Assign a \"decision scribe\" for each meeting** - One person is responsible for capturing decisions and actions during the meeting. Rotate if you want, but someone must own it every time. This is not full minute-taking. It is specifically decisions made and actions assigned.\n- [ ] **Capture in real time, not after** - Write decisions down as they happen, not from memory after the meeting. Memory is unreliable, especially for the details that matter most: exact wording, specific deadlines, and who volunteered versus who was assigned.\n- [ ] **Read decisions back at the end of the meeting** - Before closing any meeting, the scribe reads out: \"Here is what we decided, here is who owns what, and here are the deadlines. Any corrections?\" This 2-minute step prevents most follow-up confusion.\n- [ ] ⚡ Quick Win: **Add a \"decisions and actions\" section to the bottom of every meeting agenda template** - This visual prompt reminds people that every meeting should produce documented decisions."
+            },
+            {
+              "title": "Follow-Up Process",
+              "content": "- [ ] **Review overdue items at the start of each weekly meeting** - Open the tracker, filter for overdue items, and address them. No judgement, just accountability. \"This was due Thursday. What happened and when will it be done?\"\n- [ ] **Send a weekly summary of open actions** - A brief automated or manual email listing all open items with their owners and deadlines. Visibility creates accountability.\n- [ ] **Escalate items overdue by more than one week** - If something has been overdue for more than 7 days without a revised deadline, it needs a direct conversation. Either the deadline was unrealistic, the owner needs help, or the decision is being avoided.\n- [ ] **Close completed items promptly** - When an action is done, mark it complete with the date. A tracker full of completed items builds a record of execution that is valuable for performance reviews and team morale."
+            },
+            {
+              "title": "System Maintenance",
+              "content": "- [ ] **Archive completed items monthly** - Move completed decisions to an archive so the active tracker stays clean and focused. Keep the archive searchable for when you need to reference past decisions.\n- [ ] **Review tracker health quarterly** - How many decisions are being captured? How many are completed on time? What percentage are overdue? These meta-metrics tell you whether your decision culture is healthy.\n- [ ] **Improve based on feedback** - Ask your team every quarter: \"Is the tracking system helping or creating busywork?\" If it feels like overhead, simplify it. If decisions are still falling through, tighten it.\n- [ ] **Connect to your meeting rhythms** - The decision tracker should be a standing input to weekly operations meetings, monthly reviews, and quarterly strategy sessions. If it is separate from your meeting rhythms, it will be forgotten.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every significant decision has a documented owner, deadline, and status\n- Decisions stop being re-discussed because there is a clear record of what was agreed\n- Overdue actions are caught and addressed weekly, not months later\n- Team accountability increases because commitments are visible to everyone\n- A searchable history of decisions that provides context for future planning"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Simplicity is everything here. The most common failure is building an elaborate system that nobody maintains. Start with the absolute minimum - a shared spreadsheet with five columns is plenty. You can add complexity later if needed, but you probably will not need to. The second common failure is inconsistent capture. If decisions from some meetings get tracked and others do not, trust in the system erodes quickly. Insist on universal adoption from day one. The read-back at the end of meetings is the single highest-value habit in this entire action. It takes 2 minutes and prevents hours of confusion. If a client only adopts one thing from this action, make it the read-back."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

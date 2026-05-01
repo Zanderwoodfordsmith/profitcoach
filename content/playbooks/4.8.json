@@ -1,0 +1,216 @@
+{
+  "ref": "4.8",
+  "level": 4,
+  "area": 8,
+  "name": "Management",
+  "subtitle": "Level 4 · Overseer · Infrastructure & Systems",
+  "whatThisIs": "Management is how you move from doing everything yourself to having other people execute without constant oversight. It is the difference between delegation that fails and delegation that frees you up to work on higher-level problems.\n\nMost owners confuse leadership with management. Leadership sets direction. Management ensures execution. Without structured management systems, your team becomes dependent on you for every decision. They wait for your approval, your guidance, your permission. You become the bottleneck, not the catalyst.\n\nThis playbook builds the infrastructure that translates your strategy into daily discipline — clear authority lines, visible accountability, and managers who can run their areas without you having to watch over them.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You are still making most decisions because no one else has clear authority to act. Your team checks with you constantly, even on things they should handle themselves. Performance problems drag on for weeks because there is no clear accountability system. When you take a week off, everything slows down or stops until you get back."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some management structure but it is inconsistent. Some areas run smoothly when the right person is there, others fall apart when they are not. Decision-making authority is unclear — people sometimes step up, sometimes wait for permission. You have tried accountability systems but they fade away when other priorities take over."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every area of the business has a clear owner who can make decisions within their scope without asking you. Performance issues are addressed quickly and consistently through regular management rhythms. Your KPIs are visible to everyone and reviewed consistently. People know what they are accountable for and when they will be measured. You can step away for a week and things actually improve while you are gone."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Is your structure actually scalable or just names on a chart? Most org charts are wishful thinking — they show what you want, not what actually works. Real structure means clear lines of authority where people can make decisions without checking up the chain. If everything still comes back to you, the structure is decoration, not function.",
+    "Do your managers know what decisions they can make? The biggest bottleneck in growing businesses is unclear decision authority. People wait for permission they do not need and make decisions they should not be making. A simple decision authority matrix — who decides what, when, and within what limits — transforms how fast things move.",
+    "Would your performance problems be obvious to an outsider? If someone walked into your business today, could they tell within an hour who is performing and who is not? Visible accountability means the numbers, the standards, and the gaps are clear to everyone. No surprises, no politics, just facts.",
+    "Are you developing managers or just promoting doers? Your best technician is rarely your best manager. Management is a distinct skill set — setting expectations, running meetings, having difficult conversations, measuring outcomes. If you promote people without developing these capabilities, you lose a great doer and gain a mediocre manager.",
+    "Do your managers have skin in the game? If your managers are not measured on the outcomes they control, they will manage activities instead of results. The right KPIs align what they focus on with what the business actually needs from their area."
+  ],
+  "quickWins": [
+    "This week: List every decision that came to you yesterday that someone else should have been able to make. Pick the top three and document who should make them going forward.",
+    "This week: Book 15 minutes with each of your key people. Ask them: \"What decisions are you waiting for permission to make?\" The answers will surprise you.",
+    "This week: Pick one area where performance is unclear. Define one simple metric that would make success visible to everyone. Start tracking it this week."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.8",
+      "description": ""
+    },
+    {
+      "ref": "4.9",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    },
+    {
+      "ref": "3.9",
+      "description": ""
+    },
+    {
+      "ref": "4.7",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Management Layer Map",
+          "description": "Define the structure that actually works at your size and stage. Not the ideal future state, but the practical management layers you need right now to get decisions made without everything coming back to you.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define the management structure your business needs right now - not the org chart you'll need in five years. This is about getting clear on who reports to whom, who makes which decisions, and where the gaps are. The output is a simple map showing your actual management layers, who sits in them, and what each layer is responsible for.\n\nMost businesses between £200K and £5M need 2-3 management layers at most. More than that creates bureaucracy. Fewer than that means everything comes back to you."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a clear management structure, every decision, every problem, and every question flows to one person: you. That works at £200K. It breaks at £500K. It's completely unsustainable at £1M+. A management layer map shows you what structure you actually need so you can stop being the answer to every question and start building a business that runs without you in the middle of everything."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Grab a blank sheet of paper or whiteboard. Work through the checklist below. Be honest about how things actually work, not how you wish they worked.\n\n---"
+            },
+            {
+              "title": "Management Layer Map Checklist",
+              "content": "- [ ] **List every person in the business** - Include yourself, full-time, part-time, contractors, and freelancers. Everyone who does work for the business.\n- [ ] **Draw who actually reports to whom right now** - Not the official structure. The real one. Who do people actually go to when they need a decision? Who do they ask for help? That's your current structure.\n- [ ] ⚡ Quick Win: **Circle yourself and count the lines coming into you** - If more than 5-6 people report directly to you, you've found your bottleneck. This is the core problem a management layer solves.\n- [ ] **Identify the natural team clusters** - People who work together on similar things. Sales and marketing. Operations and fulfilment. Finance and admin. These clusters hint at where management layers need to exist.\n- [ ] **Decide how many layers you need** - For most businesses at this stage: Layer 1 is you (owner/MD). Layer 2 is team leads or managers (2-4 people). Layer 3 is everyone else. That's it. Three layers. No more.\n- [ ] **Name the Layer 2 roles** - These are your managers or team leads. What areas do they cover? Sales? Operations? Finance? Don't create roles for the sake of it. Only add a manager where there's enough work and enough people to justify one.\n- [ ] **Check if the right people are in Layer 2** - Do your current team leads have the skills and temperament to manage others? Being good at the work doesn't mean they can manage people doing the work. Be honest here.\n- [ ] **Define what each layer is responsible for** - Layer 1: strategy, direction, and key relationships. Layer 2: execution, team management, and day-to-day decisions. Layer 3: delivery of specific work. Write this down clearly.\n- [ ] **Identify gaps** - Where do you need a manager but don't have one? Where are you personally filling a management role that someone else should own? Where is nobody managing at all?\n- [ ] **Draw the target structure** - What should your management layers look like in 6-12 months? This is your roadmap. You don't need to fill every gap now, but you need to know where you're heading.\n- [ ] ⚡ Quick Win: **Pick one direct report you could shift to report to a Layer 2 manager instead** - Move one person this week. Reduce your direct reports by one. That's immediate relief.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You have a clear, honest picture of how your business is actually managed\n- You know exactly how many management layers you need (probably 2-3)\n- Direct reports to you are reduced to a manageable number (5-6 maximum)\n- Gaps in management are identified with a plan to fill them\n- The team understands who they report to and who makes decisions in their area"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most owners at this stage resist adding management layers because \"we're too small\" or \"I like being close to everything.\" Acknowledge that. Then ask: \"How many hours a week do you spend answering questions that someone else could handle?\" The number is usually shocking. This isn't about adding bureaucracy. It's about creating enough structure so the owner can focus on the work only they can do. Watch for the temptation to promote the best performer into management. Best salesperson doesn't equal best sales manager. Discuss what management actually requires before making that move."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Decision Authority Matrix",
+          "description": "Document who can make what decisions at what levels. Clear boundaries so people know when to act independently and when to escalate. This single tool eliminates most bottlenecks and reduces the constant stream of \"quick questions.\"",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Document who can make what decisions, at what level, and with what limits. The output is a simple matrix that tells every person in the business: \"Here's what you can decide on your own, here's what you need to check with someone about, and here's what needs to go to the owner.\" No more guessing. No more bottlenecks caused by people waiting for permission they didn't need."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "In most small businesses, decision-making works like this: everyone asks the owner. For everything. From hiring decisions to whether they can buy a new keyboard. The owner becomes the bottleneck, the team becomes passive, and growth stalls because nothing moves without one person's approval. A decision authority matrix fixes this by making the rules explicit. People move faster because they know their boundaries. You move faster because you only see the decisions that genuinely need you."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build a simple table or spreadsheet. Rows are decision categories. Columns are authority levels. Work through the checklist to populate it.\n\n---"
+            },
+            {
+              "title": "Decision Authority Matrix Checklist",
+              "content": "- [ ] **List your common decision categories** - Spending, hiring, client issues, pricing, scheduling, process changes, vendor selection, refunds, and anything else that regularly needs a decision. Aim for 10-15 categories.\n- [ ] ⚡ Quick Win: **Think about the last 10 decisions people asked you to make** - How many of those could someone else have made? That list tells you exactly where to start delegating authority.\n- [ ] **Define three authority levels** - Level A: Decide and act (no approval needed). Level B: Decide, then inform (tell me what you did). Level C: Recommend, then wait for approval (bring it to me before acting).\n- [ ] **Set spending thresholds** - Example: Under £100, anyone can approve. £100-£500, team leads approve. £500-£2,000, you approve. Over £2,000, discuss with partner/advisor first. Adjust the numbers to fit your business.\n- [ ] **Assign authority for hiring decisions** - Who can approve a new hire? Who can approve a contractor? Who handles recruitment process decisions? Hiring is one of the biggest bottleneck areas.\n- [ ] **Assign authority for client-facing decisions** - Who can issue a refund? Who can offer a discount? Who can change scope or delivery timelines? These come up constantly and slow teams down when they need approval.\n- [ ] **Assign authority for operational decisions** - Who can change a process? Who can approve time off? Who can reassign work? These feel small but accumulate into massive bottlenecks.\n- [ ] **Assign authority for pricing decisions** - Who can adjust pricing? Who can create a custom package? Who can offer payment terms? Be specific.\n- [ ] **Check for \"ghost authority\"** - Where do people already make decisions without formal permission? Make those official. If someone's been handling refunds for a year, give them the authority properly.\n- [ ] **Create the matrix document** - Simple table: Decision type in rows, roles across columns, authority level (A/B/C) in each cell. One page maximum.\n- [ ] **Share it with the team** - Walk through it together. Answer questions. Adjust based on their feedback. This only works if people know it exists and trust it.\n- [ ] ⚡ Quick Win: **Identify three decisions you currently make that could be Level A for a team member** - Hand those over today. Instant time savings for you, instant empowerment for them.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Team members know exactly what they can decide without asking\n- Decisions happen faster because people aren't waiting in a queue for your approval\n- You spend less time on low-stakes decisions and more time on high-impact ones\n- Fewer interruptions to your day for things that don't need you\n- New team members ramp up faster because the rules are written down, not tribal knowledge"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part is letting go. Most owners know intellectually that they should delegate decisions, but emotionally they struggle to trust others with them. Start small. Hand over low-risk decisions first (supplies purchasing, scheduling). As trust builds, expand. If an owner resists, ask: \"What's the worst that could happen if [person] made this decision wrong? And how does that compare to the cost of you making every decision yourself?\" The maths usually makes the case. Review the matrix every 6 months. As people grow and the business changes, authority levels should shift too."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Accountability Framework",
+          "description": "Build visible, consistent performance tracking that makes problems obvious before they become disasters. Regular reviews, clear metrics, and a process for addressing gaps that does not depend on your mood or availability.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a visible, consistent system for tracking performance and addressing gaps. This covers what gets measured, how often it's reviewed, and what happens when targets are missed. Accountability isn't about punishment. It's about making expectations clear, tracking against them, and having honest conversations when things aren't on track."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a framework, accountability is inconsistent. Some people get away with underperformance because nobody notices. Others get called out unfairly because their work is more visible. Most owners avoid accountability conversations entirely because there's no structured way to have them. This framework gives you the structure. It makes the conversation about the numbers and the expectations, not about personalities. That makes it easier for everyone."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the steps in order. Set up the system first, then start using it with one person before rolling it out to the whole team.\n\n---"
+            },
+            {
+              "title": "Step 1: Define What You're Measuring",
+              "content": "- [ ] **List the key outputs for each role** - Not activities (how busy they are) but outputs (what they produce). Sales: revenue booked, deals closed. Operations: projects delivered on time. Marketing: qualified leads generated.\n- [ ] **Set 2-3 measurable targets per person** - Specific numbers with deadlines. \"Improve customer satisfaction\" is not a target. \"Achieve NPS of 8+ by end of Q2\" is a target.\n- [ ] ⚡ Quick Win: **Ask each team member what they think their key metrics should be** - People who set their own targets are more likely to hit them. Use their input, then adjust if needed.\n- [ ] **Make sure targets are visible** - Everyone should be able to see their own targets and progress at any time. Spreadsheet, dashboard, whiteboard - the format doesn't matter. Visibility does."
+            },
+            {
+              "title": "Step 2: Set Up the Review Rhythm",
+              "content": "- [ ] **Schedule regular one-to-ones** - Weekly or fortnightly, 15-30 minutes, same time each week. Not optional. Not \"when we get a chance.\" Fixed in the calendar.\n- [ ] **Use a consistent one-to-one format** - Three sections: (1) What were your targets? (2) What did you deliver? (3) What's getting in the way? Same structure every time. No surprises.\n- [ ] **Track performance over time** - A simple spreadsheet showing targets vs actuals week by week. Patterns matter more than individual weeks. One bad week isn't a problem. Five bad weeks is a trend.\n- [ ] **Separate performance reviews from catch-ups** - The weekly one-to-one is about this week's work. Deeper performance conversations (development, career progression, pay) happen quarterly or twice yearly. Don't mix them."
+            },
+            {
+              "title": "Step 3: Address Gaps",
+              "content": "- [ ] **Define your escalation process** - What happens when someone consistently misses targets? Step 1: coaching conversation (what's going on, how can I help?). Step 2: performance improvement plan (clear expectations, fixed timeline). Step 3: consequence (role change or exit).\n- [ ] **Have the conversation early** - Most owners wait too long. The first miss should trigger a supportive conversation, not silence followed by an explosion at miss number five.\n- [ ] **Document everything** - Brief notes after each one-to-one. What was discussed, what was agreed, what the next actions are. This protects both parties and creates a clear record.\n- [ ] ⚡ Quick Win: **Have one honest performance conversation this week** - Pick the person whose performance you've been avoiding discussing. Use the one-to-one format above. You'll feel better, and so will they (uncertainty is worse than a direct conversation)."
+            },
+            {
+              "title": "Step 4: Recognise and Reward",
+              "content": "- [ ] **Acknowledge strong performance publicly** - In team meetings, in Slack, in writing. People who consistently hit their targets should know it's noticed.\n- [ ] **Link performance to progression** - People who consistently deliver should get more responsibility, development, and eventually more pay. Make this connection explicit.\n- [ ] **Address the \"quiet performer\" problem** - Some of your best people are invisible because they just get on with it. The framework should surface them, not just the noisy ones.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every team member has clear, measurable targets they understand\n- Performance is reviewed consistently, not sporadically\n- Underperformance is caught and addressed within 2-3 weeks, not 2-3 months\n- Strong performers feel recognised and stay longer\n- You have a clear, documented process for managing people - no more winging it"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most owners hate accountability conversations. They feel like confrontation. Reframe it: \"You're not criticising someone. You're helping them see where they stand so they can improve.\" The framework does the heavy lifting - it moves the conversation from personal judgement to objective measurement. Start with yourself. Set your own targets, track them, review them. When the team sees you holding yourself accountable, they'll take the framework seriously. If a client resists one-to-ones, ask: \"How would you feel if your coach only checked in with you once a quarter instead of every week?\" They'll get the point."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Manager Development Plan",
+          "description": "Develop your key people into genuine managers who can run their areas. The specific skills, tools, and mindsets that separate doers from managers — and a structured way to build those capabilities.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify the people in your business who need to become genuine managers and build a specific development plan for each one. This isn't about sending them on a leadership course. It's about equipping them with the practical skills, tools, and mindsets that separate someone who does great work from someone who can get great work out of others."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The number one constraint on growth in businesses between £500K and £5M is management capability. You hire great people but then expect them to magically become managers. They don't. They default to doing the work themselves (because they're good at it) instead of managing the people doing the work. The result: the best people burn out, the team stays dependent, and you remain stuck in the middle. Developing your managers is the single highest-leverage investment you can make."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Identify who needs development, assess where they are now, and build a practical plan for each person. Review progress monthly.\n\n---"
+            },
+            {
+              "title": "Step 1: Identify Who Needs to Develop",
+              "content": "- [ ] **List everyone in a management or team lead role** - Anyone who has people reporting to them, formally or informally.\n- [ ] **Identify anyone you want to move into management in the next 12 months** - Include them now so development starts before they need the skills.\n- [ ] ⚡ Quick Win: **Pick the one person whose management development would have the biggest impact on you** - Whose growth would free up the most of your time or unblock the biggest team? Start with them."
+            },
+            {
+              "title": "Step 2: Assess Current Capability",
+              "content": "- [ ] **Rate each person against core management skills** - Use a simple 1-5 scale for: delegation, giving feedback, running meetings, prioritisation, difficult conversations, hiring, developing their team, and managing their own time.\n- [ ] **Ask them to self-assess against the same skills** - The gap between your rating and theirs is revealing. If they rate themselves 5 on delegation but you rate them 2, that's your starting point.\n- [ ] **Identify their biggest gap** - Not all 8 skills at once. What's the one thing that would make the biggest difference if they improved it? Focus there first.\n- [ ] **Check for mindset issues, not just skill gaps** - Some people struggle with management because they still see themselves as a doer, not a leader. They feel guilty delegating. They jump in to fix things instead of coaching. Mindset work often matters more than skill training."
+            },
+            {
+              "title": "Step 3: Build the Development Plan",
+              "content": "- [ ] **Set 1-2 specific development goals per quarter** - \"Get better at management\" is not a goal. \"Conduct weekly one-to-ones with all 4 direct reports for 12 consecutive weeks\" is a goal.\n- [ ] **Assign practical learning activities** - Shadow you in a difficult conversation. Run the team meeting for 4 weeks. Deliver feedback to a team member with you observing. Real practice beats theory.\n- [ ] **Schedule regular development check-ins** - Monthly, 30 minutes. Review what they've practiced, what's working, what's hard. This is separate from their operational one-to-one.\n- [ ] **Give them management tools** - One-to-one templates, delegation frameworks, meeting agendas. Don't expect them to invent management from scratch. Give them the structure and let them adapt it.\n- [ ] ⚡ Quick Win: **Have each developing manager run their next team meeting solo** - Step back, let them lead, give them feedback afterwards. One meeting is worth a month of reading about leadership.\n- [ ] **Connect them with peers** - Other managers in similar roles (inside or outside the business) who they can learn from. Management can be lonely, especially for first-time managers."
+            },
+            {
+              "title": "Step 4: Track and Adjust",
+              "content": "- [ ] **Review the plan quarterly** - Is the person growing? Are the activities working? Adjust based on what you're seeing.\n- [ ] **Look for evidence, not just effort** - Is their team performing better? Are they handling more decisions without you? Are their people developing? These are the real measures of management development.\n- [ ] **Be honest about fit** - Not everyone is cut out for management, and that's fine. If someone has been developing for 6-12 months with limited progress, consider whether a senior individual contributor role might suit them better. Being a great specialist is valuable too.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Your managers have clear development plans with specific, practical goals\n- Management capability across the business improves visibly within 3-6 months\n- You spend less time managing the people who should be managing others\n- Team members under developing managers report better leadership and clearer direction\n- You have a bench of capable managers ready for the business's next stage of growth"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a long game. Management development takes 6-18 months to show real results. Set that expectation upfront. The owner will want fast results, and some quick wins will come (better meetings, clearer delegation), but deep capability takes time. Watch for the owner who says \"I'll just do it myself because it's faster.\" That's the exact behaviour that created the management gap in the first place. Every time they jump in, they're robbing their manager of a learning opportunity. Help them see that short-term slowdown creates long-term speed."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

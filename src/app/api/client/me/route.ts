@@ -54,7 +54,7 @@ export async function GET(request: Request) {
     );
   }
 
-  let resolvedContact: { id: string; full_name: string | null; email: string | null; business_name: string | null };
+  let resolvedContact: { id: string; full_name: string | null; email: string | null; business_name: string | null; coach_id?: string | null };
 
   if (authCheck.impersonateContactId) {
     const { data: contact, error: contactError } = await supabaseAdmin
@@ -81,7 +81,7 @@ export async function GET(request: Request) {
   } else {
     const { data: contact, error: contactError } = await supabaseAdmin
       .from("contacts")
-      .select("id, full_name, email, business_name")
+      .select("id, full_name, email, business_name, coach_id")
       .eq("user_id", authCheck.userId)
       .maybeSingle();
 
@@ -102,9 +102,22 @@ export async function GET(request: Request) {
     resolvedContact = contact;
   }
 
+  let coachSlug: string | null = null;
+  if (resolvedContact.coach_id) {
+    const { data: coachRow } = await supabaseAdmin
+      .from("coaches")
+      .select("slug")
+      .eq("id", resolvedContact.coach_id)
+      .maybeSingle();
+    coachSlug = coachRow?.slug ?? null;
+  }
+  if (!coachSlug) {
+    coachSlug = "BCA";
+  }
+
   const { data: latest, error: assessError } = await supabaseAdmin
     .from("assessments")
-    .select("id, total_score, completed_at, answers")
+    .select("id, total_score, completed_at, answers, insights, insights_generated_at")
     .eq("contact_id", resolvedContact.id)
     .order("completed_at", { ascending: false })
     .limit(1)
@@ -124,12 +137,15 @@ export async function GET(request: Request) {
       email: resolvedContact.email,
       business_name: resolvedContact.business_name,
     },
+    coach_slug: coachSlug,
     assessment: latest
       ? {
           id: latest.id,
           total_score: latest.total_score,
           completed_at: latest.completed_at,
           answers: latest.answers ?? {},
+          insights: latest.insights ?? null,
+          insights_generated_at: latest.insights_generated_at ?? null,
         }
       : null,
   });

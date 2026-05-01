@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -206,26 +207,20 @@ export default function AdminClientsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200 pb-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-            BOSS Dashboard
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            Clients
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Create and manage clients, grouped by coach. View as client to see their portal.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAddClient(!showAddClient)}
-          className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-        >
-          {showAddClient ? "Cancel" : "Add client"}
-        </button>
-      </header>
+      <StickyPageHeader
+        eyebrow="BOSS Dashboard"
+        title="Clients"
+        description="Create and manage clients, grouped by coach. View as client to see their portal."
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowAddClient(!showAddClient)}
+            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
+          >
+            {showAddClient ? "Cancel" : "Add client"}
+          </button>
+        }
+      />
 
       {showAddClient && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

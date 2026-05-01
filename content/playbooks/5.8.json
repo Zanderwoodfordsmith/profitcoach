@@ -1,0 +1,401 @@
+{
+  "ref": "5.8",
+  "level": 5,
+  "area": 8,
+  "name": "Optimisation",
+  "subtitle": "Level 5 · Owner · Infrastructure & Systems",
+  "whatThisIs": "Optimisation is the final layer of business refinement. When your structure is mature and systems are running smoothly, optimisation compounds margin without increasing complexity. This is not about building new — it is about making what exists work better, faster, and cheaper.\n\nMost owners optimise too early, polishing processes that should not exist. This playbook is different. It assumes you have built well and now want to refine ruthlessly. The result: higher margins, faster cycle times, and systems that improve themselves over time.\n\nThis is about surgical improvements that unlock exponential gains — the 20% of changes that create 80% of the efficiency improvement.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You optimise everything instead of questioning whether it should exist. You have efficient processes for inefficient outcomes. Margins feel squeezed despite good revenue. Your team spends time on tasks that add little measurable value. You automate broken processes and make problems permanent at scale."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You make periodic improvements but without a systematic approach. Some processes are lean, others are bloated. You know there is waste but struggle to identify where the biggest gains lie. Optimisation happens reactively when problems surface rather than proactively as a discipline."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a systematic process for questioning every requirement and eliminating what does not serve. Your cost-to-serve is decreasing while quality improves. Cycle times shrink quarter over quarter. Overhead stays flat while revenue grows. Every system has feedback loops that make it better over time without your direct involvement."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What are you doing that adds no measurable value? Every process, every meeting, every approval step — if you cannot clearly articulate why it exists and what value it creates, it is a candidate for elimination. The question is not \"how can we do this better?\" but \"should we be doing this at all?\"",
+    "Where is your cost-to-serve increasing instead of decreasing? As systems mature, the cost of delivering your core offer should be falling. If it is not, you are adding complexity faster than you are removing it. This is the clearest signal that optimisation is needed.",
+    "Are you optimising before eliminating? The greatest efficiency gain comes from not doing something, not doing it better. Polish only after you have cut. If you are not occasionally adding things back in, you are not cutting enough.",
+    "Do your systems improve themselves or just run? Level 5 systems have built-in feedback loops. They capture data, identify bottlenecks, and suggest improvements without human intervention. If your systems just execute, they are Level 4 systems running at Level 5 scale.",
+    "Is speed your strategic advantage? In mature businesses, execution speed often matters more than execution perfection. Faster time-to-market, faster problem resolution, faster decision cycles — speed compounds in ways that perfectionism cannot match."
+  ],
+  "actionsIntro": "This is a larger playbook organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "This week: List every approval or sign-off required in your core delivery process. Challenge each one — who decided this was necessary and what happens if you remove it?",
+    "This week: Calculate your true cost-to-serve for your core offering. Include everything — time, tools, overhead allocation. Set a target to reduce it by 10% this quarter.",
+    "This week: Time your three most important business processes from start to finish. Pick the slowest one and identify the single biggest bottleneck. Remove it."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.8",
+      "description": ""
+    },
+    {
+      "ref": "3.8",
+      "description": ""
+    },
+    {
+      "ref": "5.6",
+      "description": ""
+    },
+    {
+      "ref": "5.4",
+      "description": ""
+    },
+    {
+      "ref": "5.7",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Elimination",
+      "description": "Removing what should not exist before optimising what remains.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Requirements Audit",
+          "description": "Question every business requirement and eliminate those that cannot be justified. Every process step, approval layer, and standard practice gets challenged with \"why does this exist and who decided it was necessary?\"",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Question every business requirement and eliminate those that cannot be justified. Every process step, approval layer, report, meeting, and practice gets challenged with one question: \"Why do we do this?\" If the answer is \"because we always have\" or \"I'm not sure,\" that requirement is a candidate for elimination. This is the starting point of optimisation - before you can make things better, you need to remove things that should not exist."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Businesses accumulate requirements like houses accumulate clutter. A process step gets added to fix a problem that no longer exists. An approval layer gets introduced after one mistake and stays forever. A report gets created for a manager who left two years ago. Over time, these requirements slow everything down, frustrate your team, and cost money without producing value. Elon Musk's first principle of engineering applies: \"The best part is no part. The best process is no process.\" Elimination is always more powerful than optimisation. There is no point making a useless step faster."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through your major business areas and challenge every requirement you find.\n\n---"
+            },
+            {
+              "title": "Challenge Your Process Requirements",
+              "content": "- [ ] **Pick your 3 most time-consuming processes** - The ones that eat the most hours each week. List every step in each process.\n- [ ] **For each step, ask: \"What would happen if we stopped doing this?\"** - If the honest answer is \"nothing bad,\" the step should go. If the answer is \"something might go wrong,\" ask how often that something actually happens.\n- [ ] ⚡ Quick Win: Identify one step in a daily process that everyone knows is pointless but nobody has removed. Remove it today. The time savings compound instantly.\n- [ ] **Challenge every handoff** - Each time work passes from one person to another, there is a delay and a risk of error. Can any handoffs be eliminated by letting one person complete the full task?\n- [ ] **Challenge every approval layer** - Who needs to approve what? Is the approval adding value or just adding delay? If someone is approving things and never saying no, the approval is theatre."
+            },
+            {
+              "title": "Challenge Your Reporting Requirements",
+              "content": "- [ ] **List every report your business produces** - Weekly reports, monthly reports, dashboards, status updates, client reports.\n- [ ] **For each report, ask: \"Who reads this and what decision does it drive?\"** - If nobody reads it, or if nobody changes behaviour based on it, the report is waste.\n- [ ] **Check for duplicate data** - Are multiple reports showing the same information in different formats? Consolidate or eliminate.\n- [ ] **Ask your team: \"Which reports do you create that feel like a waste of time?\"** - They know. They have just not been asked."
+            },
+            {
+              "title": "Challenge Your Meeting Requirements",
+              "content": "- [ ] **List every recurring meeting** - Weekly stand-ups, monthly reviews, team meetings, client calls, board meetings.\n- [ ] **For each meeting, ask: \"Could this be an email, a message, or a 5-minute check-in instead?\"** - Most recurring meetings were created for a reason but have outlived that reason.\n- [ ] **Check attendance lists** - Are people in meetings where they add nothing and gain nothing? Let them leave.\n- [ ] **Challenge meeting length** - If a meeting is scheduled for an hour, could it achieve the same outcome in 30 minutes with a tighter agenda?"
+            },
+            {
+              "title": "Challenge Your Administrative Requirements",
+              "content": "- [ ] **Review every form, template, and document your team fills in** - Are all the fields necessary? Are all the documents still relevant?\n- [ ] **Check for \"just in case\" requirements** - Tasks done \"just in case\" something goes wrong. Calculate the actual frequency of the risk. If it happens once a year, doing a daily prevention task is disproportionate.\n- [ ] **Review compliance and regulatory requirements** - Some requirements are genuine and non-negotiable. But many businesses over-comply because nobody has checked what is actually required versus what someone assumed was required.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A list of process steps, reports, meetings, and admin tasks that have been challenged\n- Unjustified requirements identified and marked for elimination\n- Immediate time savings from removing obvious waste\n- A leaner business that moves faster because it has less unnecessary work\n- A mindset shift: the team starts questioning \"why\" before adding new requirements"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest resistance is fear. Clients worry that removing a step will cause problems. Help them see that most requirements were added reactively (in response to one incident) and never reviewed. The question is not \"could this ever be useful?\" but \"does this justify the time it costs every single week?\"\n\nStart with the easy wins. Every business has at least 3-5 things that everyone knows are pointless. Eliminating these builds confidence for the harder decisions later.\n\nWatch for clients who challenge requirements in theory but struggle to actually remove them. Set a target: eliminate at least 5 requirements this quarter. Make it concrete and track it. The habit of elimination is as valuable as any individual change."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Process Archaeology",
+          "description": "Map every core business process and identify redundant operations that add cost without creating value. Focus on the Critical Client Flow first — the path from lead to delivered result.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map every core process in your business and identify redundant, duplicated, or unnecessary operations. Start with your Critical Client Flow - the path from first lead to delivered result - because that is where waste has the biggest impact on revenue and customer experience. This is archaeology because you are digging into layers of accumulated practice to find what is actually needed versus what has just been there a long time."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every business builds up process debt over time. A workaround gets introduced to fix a problem. The problem gets fixed properly later, but the workaround stays. A new tool gets adopted but the old manual process continues alongside it. Steps get added because someone made a mistake once, and nobody ever reviews whether the safeguard is still needed. David Jenyns calls this \"process bloat\" - the gradual accumulation of steps that made sense individually but collectively make your business slower, more expensive, and more confusing than it needs to be."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map your Critical Client Flow first, then extend to other core processes. For each, identify and remove redundant operations.\n\n---"
+            },
+            {
+              "title": "Map Your Critical Client Flow",
+              "content": "- [ ] **Define the start and end points** - Start: the moment a lead first contacts you. End: the moment the work is fully delivered and paid for. Everything in between is your Critical Client Flow.\n- [ ] **List every step between start and end** - Be granular. Include every email sent, every form filled in, every approval needed, every handoff between team members. The detail matters because waste hides in the small steps.\n- [ ] ⚡ Quick Win: Walk through one recent client engagement from start to finish. Track every touchpoint. You will spot at least 3 unnecessary steps.\n- [ ] **Time each step** - How long does each step take? Include both active time (someone working on it) and wait time (nothing happening, waiting for a response or approval).\n- [ ] **Identify the wait times** - In most businesses, work spends more time waiting than being worked on. A proposal that takes 30 minutes to write but 5 days to get approved has a 5-day wait built in."
+            },
+            {
+              "title": "Identify Redundant Operations",
+              "content": "- [ ] **Flag duplicated effort** - Is the same information entered into multiple systems? Is the same check done at multiple points? Does more than one person review the same work?\n- [ ] **Flag legacy steps** - Steps that were created to solve a problem that no longer exists. Ask about each step: \"What was the original reason for this?\" If nobody knows, it is probably legacy.\n- [ ] **Flag workarounds** - Temporary fixes that became permanent. The team routes around a broken system instead of fixing it, creating extra steps that nobody questions.\n- [ ] **Flag over-processing** - Steps where you do more than the customer needs or values. Elaborate proposals for simple projects. Detailed reports nobody reads. Multiple revisions when one would suffice.\n- [ ] **Calculate the total waste** - Add up the time spent on flagged steps per week or per month. Convert to cost (time x hourly rate). This number usually motivates immediate action."
+            },
+            {
+              "title": "Extend to Other Core Processes",
+              "content": "- [ ] **Repeat the mapping exercise for your next 2-3 most important processes** - Examples: hiring and onboarding, financial reporting, marketing campaign execution, complaint resolution.\n- [ ] **Look for cross-process redundancy** - Different teams doing the same thing independently. Data being collected in one process but not shared with another that needs it.\n- [ ] **Create a \"redundancy register\"** - A simple list of every redundant operation you have found, with estimated time wasted and a proposed action (eliminate, simplify, or combine).\n- [ ] **Prioritise by impact** - Fix the most wasteful redundancies first. A step that wastes 2 hours per week is more urgent than one that wastes 10 minutes per month.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Your Critical Client Flow mapped in detail with timings\n- Wait times identified and quantified (often the biggest source of waste)\n- Redundant, legacy, and over-processing steps flagged across core processes\n- A redundancy register with estimated time waste and proposed fixes\n- A prioritised list of operations to eliminate or simplify"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This exercise frequently reveals that the actual process is nothing like what the owner thinks it is. Owners describe the intended process. Team members describe what actually happens. The gap between the two is where the waste lives. If possible, involve the team in the mapping rather than relying on the owner's version alone.\n\nThe biggest wins are usually in wait times, not processing times. Most clients focus on making active steps faster when the real improvement is eliminating the 3-day waits between steps. Ask: \"What is this waiting for? Can we remove the wait entirely?\"\n\nSome clients resist removing steps because \"they have always been there.\" Use the archaeology metaphor: just because something is old does not mean it is important. Sometimes it is just old. The value of a step is measured by its current contribution, not its history."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Overhead Dissection",
+          "description": "Systematically review all overhead costs and eliminate those that do not directly support revenue generation or client delivery. If it does not make money or serve customers, justify it or cut it.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically review all overhead costs and eliminate those that do not directly support revenue generation or client delivery. Pull every line of overhead apart, challenge each one, and decide whether it earns its place. This is not about being cheap. It is about being deliberate."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Overhead costs are the silent killer of small business profitability. They creep up gradually - a software subscription here, a bigger office there, an extra hire that seemed necessary at the time. Individually, each cost seems small. Collectively, they can consume 30-50% of revenue before the owner notices. Mike Michalowicz's Profit First principle is relevant here: most businesses spend whatever comes in. Overhead grows to fill available revenue. The fix is to regularly challenge every overhead line and ask \"does this earn more than it costs?\""
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your overhead data, categorise it, challenge each line, and make cut/keep/reduce decisions.\n\n---"
+            },
+            {
+              "title": "Pull Your Overhead Data",
+              "content": "- [ ] **Export your last 12 months of expenses** - From your accounting software, bank statements, or P&L. You need every recurring cost that is not a direct cost of delivering your product or service.\n- [ ] **List every overhead category:**\n  - Rent and facilities\n  - Software and subscriptions\n  - Insurance\n  - Professional services (accountant, solicitor, advisor)\n  - Marketing and advertising\n  - Travel and entertainment\n  - Equipment and maintenance\n  - Staff costs not tied to delivery (admin, management, support)\n  - Training and development\n  - Miscellaneous and one-off costs\n- [ ] ⚡ Quick Win: Log into your bank account and search for recurring subscriptions. Most businesses have 2-5 subscriptions they have forgotten about and no longer use. Cancel them today."
+            },
+            {
+              "title": "Challenge Each Cost",
+              "content": "- [ ] **For each overhead line, answer three questions:**\n  - Does this directly support revenue or client delivery? (If no, why do we have it?)\n  - What would happen if we stopped paying for this tomorrow? (If the answer is \"nothing,\" cut it)\n  - Is there a cheaper way to get the same result? (Not inferior - the same result for less money)\n- [ ] **Flag \"nice to have\" costs** - Things that feel good but do not measurably contribute to revenue or delivery. Premium office space when clients never visit. Enterprise software when the basic plan would work. Conference attendance with no clear ROI.\n- [ ] **Calculate overhead as a percentage of revenue** - Compare to industry benchmarks. If your overhead percentage is significantly above average, you have a problem.\n- [ ] **Look for costs that scaled with revenue but should not have** - Sometimes costs grow as revenue grows even when there is no logical reason. More revenue should not automatically mean more office space or more software licences."
+            },
+            {
+              "title": "Make Your Decisions",
+              "content": "- [ ] **For each overhead line, decide: Keep (justified), Reduce (renegotiate or downgrade), or Cut (eliminate completely)**\n- [ ] **Renegotiate before cutting** - For any cost you want to keep but find expensive, call the supplier. Ask for a better rate, an annual discount, or a reduced plan. The worst they can say is no.\n- [ ] **Set cancellation dates** - For everything you are cutting, set specific dates and assign someone to action each cancellation. Good intentions without deadlines do not happen.\n- [ ] **Calculate total savings** - Add up the annual savings from all reductions and eliminations. This number goes straight to your bottom line.\n- [ ] **Set a 6-month overhead review** - Costs creep back if you are not vigilant. Build a regular review into your calendar.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of all overhead costs with 12-month totals\n- Every overhead line challenged and justified (or not)\n- Unused subscriptions and forgotten costs identified and cancelled\n- Renegotiation opportunities identified for costs you are keeping\n- Total annual savings calculated\n- A recurring review cycle to prevent overhead creep"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action triggers guilt in some clients. They feel like cutting costs means being \"tight\" or not investing in the business. Reframe it: cutting waste is not the same as cutting investment. Waste produces no return. Investment produces a return. The goal is to eliminate the former and protect the latter.\n\nThe software subscription pile is almost always the easiest win. Most businesses pay for 10-15 tools and actively use 5-7 of them. The unused ones accumulate because nobody remembers to cancel.\n\nBe careful with staff cost discussions. Overhead dissection should not become an excuse to understaff or underpay. The question is not \"can we have fewer people?\" but \"are we spending in the right places?\" Sometimes the answer is to cut a tool and hire a person, not the other way around."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Optimisation",
+      "description": "Refining what remains to maximize efficiency and margin.",
+      "actions": [
+        {
+          "number": 4,
+          "title": "Margin Efficiency Engine",
+          "description": "Identify the specific levers that decrease cost-to-serve without impacting quality. This is about making the delivery machine more efficient, not cheaper.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify specific levers that decrease your cost-to-serve without reducing quality. This is about making your delivery machine more efficient, not cheaper. The distinction matters: cheaper means cutting corners. Efficient means achieving the same (or better) outcome with less waste, less rework, and less unnecessary effort."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Revenue gets the attention. Margin pays the bills. Many businesses grow revenue year after year but margins stay flat or shrink because the cost of delivery grows alongside it. Every percentage point of margin improvement drops straight to the bottom line. A business doing £500K in revenue that improves margin by 5 points adds £25K in annual profit without selling a single extra unit. Efficiency is the fastest path to profitability because it does not require more customers, more marketing, or more sales. It requires working smarter with what you already have."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Analyse your cost-to-serve, identify the biggest efficiency levers, and implement improvements.\n\n---"
+            },
+            {
+              "title": "Calculate Your Cost-to-Serve",
+              "content": "- [ ] **For your core product or service, list every direct cost of delivery:**\n  - Labour (hours x rate for everyone involved in delivery)\n  - Materials or inputs\n  - Software and tools used in delivery\n  - Subcontractor or outsourced costs\n  - Travel or logistics\n  - Customer support and aftercare\n- [ ] **Calculate total cost-to-serve per customer or per unit** - Total delivery costs divided by number of customers served (or units delivered) in the period.\n- [ ] ⚡ Quick Win: Compare your cost-to-serve today versus 12 months ago. If it has gone up without a corresponding improvement in quality, you have efficiency leak.\n- [ ] **Break cost-to-serve into fixed and variable components** - Fixed costs stay the same regardless of volume. Variable costs change with each customer. Your efficiency opportunities are different for each type."
+            },
+            {
+              "title": "Identify Efficiency Levers",
+              "content": "- [ ] **Labour efficiency** - Can delivery time per customer be reduced without cutting quality? Look for rework (doing things twice), over-servicing (doing more than the customer needs or values), and skill mismatches (expensive people doing tasks that cheaper people could do).\n- [ ] **Input costs** - Are you paying the best price for materials and inputs? Could you buy in bulk, switch suppliers, or negotiate volume discounts?\n- [ ] **Template and standardise** - What parts of delivery are reinvented every time? Templates, checklists, and standard operating procedures reduce time without reducing quality. The creative and customised parts should be custom. Everything else should be standardised.\n- [ ] **Batch similar work** - Are you switching between different types of work throughout the day? Context switching is expensive. Batching similar tasks (all proposals on Monday, all client calls on Tuesday) can save 20-30% of time.\n- [ ] **Reduce rework and errors** - What gets done wrong and then redone? Every instance of rework is double the cost for the same output. Track error rates and fix the root causes.\n- [ ] **Review scope creep** - Are you delivering more than customers are paying for? Scope creep is a margin thief. Clear scope boundaries protect your time and your margin."
+            },
+            {
+              "title": "Implement and Measure",
+              "content": "- [ ] **Pick the 3 biggest efficiency levers** - The ones with the most potential savings and the most feasible implementation.\n- [ ] **For each lever, define a specific change** - \"Reduce proposal creation time from 3 hours to 1 hour by using templates.\" Be concrete.\n- [ ] **Set a target cost-to-serve reduction** - What should your cost-to-serve be after implementation? Even a 10% reduction is significant at scale.\n- [ ] **Implement one change at a time** - Multiple simultaneous changes make it impossible to know what worked. Sequential implementation lets you measure each one.\n- [ ] **Remeasure cost-to-serve after 30 days** - Compare to your baseline. Did the change deliver the expected savings?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A detailed understanding of your cost-to-serve, broken down by component\n- Specific efficiency levers identified with estimated savings\n- At least 3 concrete changes planned and prioritised\n- A target cost-to-serve that represents meaningful margin improvement\n- A measurement approach to confirm that changes are working"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Clients often confuse efficiency with cost-cutting. Keep the distinction sharp: efficiency means the same output for less input. Cost-cutting means less output for less input. If a change reduces quality, it is not efficiency. It is degradation.\n\nThe biggest lever for service businesses is almost always labour efficiency. Not working harder or longer, but eliminating the time wasted on rework, over-servicing, and low-value admin tasks. Start there.\n\nWatch for clients who resist standardisation because they believe their work is \"too bespoke.\" In reality, even highly customised services have repeatable components. The customised 20% gets better when the standard 80% is handled efficiently."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Cycle Time Compression",
+          "description": "Systematically reduce the time between decision and outcome across all key business processes. Every delay is a margin leak and a competitive disadvantage.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically reduce the time between decision and outcome across all key processes. Measure how long things actually take from start to finish, identify where delays happen, and compress those delays. Every unnecessary day in a cycle is a margin leak, a customer experience problem, and a competitive disadvantage."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Speed is one of the most underrated competitive advantages in small business. The company that delivers a proposal in 24 hours beats the company that takes a week, even if the week-long proposal is slightly better. The company that onboards new clients in 2 days wins over the one that takes 2 weeks. Fast cycle times improve cash flow (you invoice sooner), improve customer satisfaction (they get results sooner), and improve team morale (people feel momentum instead of stagnation). Most delays are not caused by the work itself. They are caused by waiting, queuing, approvals, and handoffs."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Measure your current cycle times, identify the biggest delays, and systematically compress them.\n\n---"
+            },
+            {
+              "title": "Measure Your Current Cycle Times",
+              "content": "- [ ] **Identify your 5 most important business cycles:**\n  - Lead to proposal (how long from first contact to sending a quote?)\n  - Proposal to signed deal (how long from quote to contract?)\n  - Signed deal to first delivery (how long until the customer gets something?)\n  - Start to completion of core service/product\n  - Invoice to payment (how long until you get paid?)\n- [ ] **For each cycle, measure the actual elapsed time** - Not the working time (how long someone actively spends on it) but the total calendar time from start to finish. Include weekends, holidays, and waiting periods.\n- [ ] ⚡ Quick Win: Measure your lead-to-proposal time. If it is more than 48 hours, you are losing deals to competitors who move faster.\n- [ ] **Break each cycle into active time vs. wait time** - Active time is when someone is actually working on it. Wait time is everything else. In most businesses, wait time is 70-80% of total cycle time."
+            },
+            {
+              "title": "Identify Delay Causes",
+              "content": "- [ ] **For each cycle, map where the delays happen** - Common delay causes:\n  - Waiting for information from the customer\n  - Waiting for internal approvals\n  - Queuing (work sits in someone's inbox)\n  - Handoffs between team members\n  - Batch processing (work accumulates until someone gets to it)\n  - Unclear ownership (nobody is sure whose job it is)\n- [ ] **Quantify each delay** - How many hours or days does each delay add? Which delays are the biggest contributors to total cycle time?\n- [ ] **Identify delays within your control vs. outside your control** - Customer response times are hard to influence. Internal approval queues are entirely within your control. Focus on what you can fix.\n- [ ] **Check for sequential steps that could run in parallel** - If Step B does not depend on Step A's output, why are they running one after the other?"
+            },
+            {
+              "title": "Compress Your Cycles",
+              "content": "- [ ] **Eliminate unnecessary approval steps** - Every approval adds delay. If someone approves 95% of requests without changes, the approval is not adding value.\n- [ ] **Pre-build templates and standard components** - Proposals, contracts, onboarding materials, and common deliverables should be 80% ready before the customer even signs. Customise the remaining 20%.\n- [ ] **Set response time commitments** - \"We respond to all enquiries within 4 business hours\" is a compression mechanism. It forces speed.\n- [ ] **Reduce handoffs** - Every time work passes from one person to another, there is a delay. Can one person handle more of the cycle end-to-end?\n- [ ] **Move from batch to flow** - Instead of processing invoices once a week, process each one as it is ready. Instead of reviewing proposals every Friday, review each one within 24 hours.\n- [ ] **Set target cycle times** - For each of your 5 cycles, define a target that is 30-50% shorter than current. This is ambitious but achievable for most businesses.\n- [ ] **Track weekly** - Measure cycle times weekly for the first 3 months to build the habit and spot regressions.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Current cycle times measured and documented for your 5 most important processes\n- Wait time identified and quantified as a proportion of total time\n- Specific delay causes mapped and prioritised\n- Target cycle times set for each process (30-50% reduction)\n- Concrete compression actions implemented\n- A weekly tracking rhythm to maintain speed"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The data is usually eye-opening. Clients think their proposal process takes \"a day or two\" but when measured, it takes 8 days. The work itself takes 2 hours. The other 7 days and 22 hours are waiting. This gap between perception and reality is where the coaching value lives.\n\nStart with the lead-to-proposal cycle. It is the highest-leverage cycle because every day of delay costs potential revenue. A prospect who waits a week for a proposal is shopping competitors. A prospect who gets a proposal same-day feels prioritised.\n\nWatch for clients who try to compress cycle time by making people work faster. That is the wrong lever. The goal is to reduce waiting, not to increase pace. People are usually working at a reasonable speed already. The system around them is what is slow."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Performance Metrics Refresh",
+          "description": "Audit your KPIs and dashboards to ensure they still reflect what actually drives business outcomes. Old metrics optimise for old priorities.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Audit your current KPIs and dashboards to make sure they still reflect what actually drives outcomes in your business. Remove metrics that no longer matter, add ones that do, and make sure the numbers you track lead to action, not just observation. Old metrics optimise for old priorities."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Businesses change but their dashboards often do not. The KPIs you set up two years ago may have been perfect for that stage of growth. But if your strategy has shifted, your market has changed, or your business model has evolved, those old metrics are now optimising for the wrong things. Peter Drucker's principle - \"what gets measured gets managed\" - cuts both ways. If you measure the wrong things, you manage the wrong things. A metrics refresh ensures you are steering with current instruments, not last year's map."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review every metric you currently track, test whether it still drives decisions, and rebuild your dashboard around what matters now.\n\n---"
+            },
+            {
+              "title": "Inventory Your Current Metrics",
+              "content": "- [ ] **List every metric, KPI, and report your business currently tracks** - Include everything: financial dashboards, sales metrics, marketing analytics, delivery metrics, team metrics, customer metrics.\n- [ ] **For each metric, note: who looks at it, how often, and what decisions it informs** - Be specific. \"We look at it in the monthly review\" is not enough. What action does the number trigger?\n- [ ] ⚡ Quick Win: Identify any metric you have not looked at in 3+ months. If nobody has missed it, you probably do not need it. Remove it from your dashboard.\n- [ ] **Categorise each metric as: Leading (predicts future results) or Lagging (reports past results)** - Most businesses track too many lagging indicators and not enough leading ones. Lagging tells you what happened. Leading tells you what is about to happen."
+            },
+            {
+              "title": "Test Each Metric",
+              "content": "- [ ] **Apply the \"so what?\" test** - If this metric goes up by 20%, what would you do differently? If it goes down by 20%, what would you do differently? If the answer to both is \"nothing,\" the metric is decorative, not functional.\n- [ ] **Check for vanity metrics** - Numbers that look impressive but do not connect to revenue or profit. Website traffic, social media followers, and email list size are common vanity metrics unless you can draw a clear line to revenue.\n- [ ] **Check for conflicting metrics** - Are any of your metrics pulling in opposite directions? For example, tracking both \"speed of delivery\" and \"thoroughness of delivery\" can create confusion unless there is a clear priority.\n- [ ] **Check alignment with current strategy** - Does each metric connect to one of your top 3 strategic priorities? If not, why are you tracking it?"
+            },
+            {
+              "title": "Rebuild Your Dashboard",
+              "content": "- [ ] **Define your 5-7 core metrics** - These are the numbers you look at every week. They should include: at least one financial metric, one customer metric, one delivery metric, and one leading indicator.\n- [ ] **For each core metric, define: target, current performance, owner, and review frequency** - Every metric needs a target. Without one, you are just watching numbers move.\n- [ ] **Add 2-3 leading indicators** - Pipeline value, proposal conversion rate, customer satisfaction trends, team capacity. These predict future performance and give you time to react.\n- [ ] **Remove everything else from your primary dashboard** - You can still track detailed data in sub-reports. But the dashboard everyone looks at should have 5-7 numbers, not 25.\n- [ ] **Set a review cadence** - Weekly for operational metrics, monthly for strategic metrics, quarterly for this full refresh.\n- [ ] **Communicate the changes to your team** - If you change what you measure, tell people. Otherwise they keep optimising for the old metrics.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of all currently tracked metrics with usage data\n- Unused, vanity, and misaligned metrics identified and removed\n- A refreshed dashboard with 5-7 core metrics that drive decisions\n- Leading indicators added to give early warning of future performance\n- A quarterly refresh cycle to keep metrics aligned with evolving strategy"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common problem is too many metrics, not too few. Clients think more data means better decisions. The opposite is usually true. Decision quality degrades when there are 20 numbers competing for attention. Help clients be ruthless about cutting their dashboard to the essential few.\n\nWatch for emotional attachment to metrics. \"We have always tracked that\" is not a reason to keep tracking it. The question is always \"does this number change what we do?\" If no, it goes.\n\nA good test for whether a dashboard is working: can a new team member look at it for 30 seconds and understand whether the business is having a good week or a bad week? If they cannot, the dashboard is too complicated."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Automation",
+      "description": "Automating optimised processes to compound efficiency gains.\n\n---",
+      "actions": [
+        {
+          "number": 7,
+          "title": "Strategic Automation Map",
+          "description": "Identify which optimised processes are ready for automation. Never automate a broken process — fix it first, then automate.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify which of your optimised processes are ready for automation. Map every repeatable task, score it for automation potential, and prioritise based on time savings and implementation feasibility. The golden rule: never automate a broken process. Fix it first, then automate it. Automating waste just produces waste faster."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Automation is one of the most powerful tools available to small businesses today. Tasks that once required a full-time employee can now be handled by software, AI, or simple workflow tools. But automation done wrong creates more problems than it solves. Automating a bad process locks in the inefficiency. Automating before you understand the process means you cannot troubleshoot when things go wrong. The businesses that win with automation are the ones that optimise first (using the earlier actions in this playbook) and automate second."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Inventory your automatable tasks, score them, and build a phased automation plan.\n\n---"
+            },
+            {
+              "title": "Inventory Automatable Tasks",
+              "content": "- [ ] **Review your optimised processes from Process Archaeology** - Focus on the processes you have already simplified and standardised. These are the candidates for automation.\n- [ ] **List every task that is: repetitive, rule-based, and high-volume** - If a human does the same thing the same way more than 10 times per week, it is a candidate.\n- [ ] ⚡ Quick Win: Identify one task you do daily that follows the same steps every time. This is your easiest automation candidate. Common examples: sending follow-up emails, updating a spreadsheet, scheduling appointments, generating invoices.\n- [ ] **Categorise tasks by type:**\n  - Data entry and transfer (moving information between systems)\n  - Communication (sending standard emails, reminders, confirmations)\n  - Scheduling (booking meetings, allocating resources)\n  - Reporting (generating regular reports from existing data)\n  - Document creation (proposals, contracts, invoices from templates)\n  - Monitoring and alerts (flagging when a metric hits a threshold)"
+            },
+            {
+              "title": "Score Each Task for Automation",
+              "content": "- [ ] **Time spent** - How many hours per week does this task consume across the team? (1 = less than 30 min, 5 = 5+ hours)\n- [ ] **Consistency** - How standardised is the task? Does it follow the same steps every time? (1 = highly variable, 5 = identical every time)\n- [ ] **Error rate** - How often does the manual version produce mistakes? (1 = rarely, 5 = frequently)\n- [ ] **Integration complexity** - How many systems need to connect to automate this? (1 = 3+ systems, 5 = single system or simple connection)\n- [ ] **Total score per task** - Higher scores = higher automation priority. Focus on tasks that are time-consuming, consistent, error-prone, and simple to connect."
+            },
+            {
+              "title": "Build Your Automation Plan",
+              "content": "- [ ] **Phase 1 (Next 30 days): Quick automations** - Tasks scoring 15+ that can be automated with tools you already have (email rules, CRM workflows, spreadsheet formulas, Zapier). No new software needed.\n- [ ] **Phase 2 (30-90 days): Standard automations** - Tasks scoring 12+ that need a new tool or integration. Research options, choose a tool, and implement.\n- [ ] **Phase 3 (90+ days): Advanced automations** - Tasks requiring more complex setup, AI tools, or custom development. Plan these but do not start until Phases 1 and 2 are stable.\n- [ ] **For each automation, define: the manual process being replaced, the tool or method, the owner responsible for setup, and the success metric (time saved, errors reduced, or speed improved)**\n- [ ] **Build a \"human check\" into critical automations** - Automation should handle the routine. Humans should review the exceptions. Never fully automate something where an error has serious consequences without a checkpoint.\n- [ ] **Set a review after 60 days** - Is each automation working as expected? Are there new manual tasks that have emerged and need automation?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of automatable tasks with scores\n- Clear automation priorities based on time savings and feasibility\n- A phased plan (30/60/90 days) with specific automations for each phase\n- Quick wins implemented in the first 30 days\n- Human checkpoints built into critical automations\n- A review cycle to assess automation performance and add new candidates"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest mistake is jumping to tools before understanding the process. Clients hear \"automation\" and immediately want to buy software. Slow them down. The first question is \"what exactly are we automating and is the current process worth automating?\" If the answer is no, go back to the optimisation actions first.\n\nStart with the boring automations. Data entry, email follow-ups, and appointment scheduling are not exciting, but they save real hours every week. The complex, impressive automations can wait until the basics are solid.\n\nWatch for over-automation. Some client interactions benefit from a human touch. A personalised welcome email from a real person is worth more than a perfectly timed automated sequence. Help clients draw the line between tasks that should be automated and moments that should stay human."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Continuous Improvement Loops",
+          "description": "Install systematic feedback mechanisms that identify bottlenecks and improvement opportunities without human intervention. The system optimises itself over time.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Install systematic feedback mechanisms that identify bottlenecks, inefficiencies, and improvement opportunities on an ongoing basis. Instead of optimising in big, infrequent efforts, build a system where small improvements happen continuously and the business gets a little better every week."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "One-off optimisation projects produce temporary results. Without a system to sustain improvement, processes drift back to their old state within months. The Japanese concept of kaizen (continuous improvement) is built on a simple truth: small, consistent improvements compound over time into massive gains. Toyota built the world's most efficient car manufacturing system not through one breakthrough, but through decades of small daily improvements. Your business can do the same at its own scale. The goal is to build the habit of improvement into how the business operates, not to rely on occasional bursts of effort."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up three feedback loops - one for your team, one for your customers, and one for your metrics - then build a rhythm for acting on what you learn.\n\n---"
+            },
+            {
+              "title": "Team Feedback Loop",
+              "content": "- [ ] **Install a weekly \"friction log\"** - A shared document or channel where anyone on the team can note things that slowed them down, confused them, or felt unnecessarily difficult during the week. No judgement, just observations.\n- [ ] ⚡ Quick Win: At your next team meeting, ask: \"What is one thing that annoyed you this week about how we work?\" Write down every answer. You will have a list of improvement candidates in 5 minutes.\n- [ ] **Run a 15-minute \"improvement slot\" in your weekly team meeting** - Review the friction log, pick one item, and decide what to change. One improvement per week. 52 improvements per year.\n- [ ] **Create a \"fixed it\" list** - Track every improvement you make, no matter how small. Seeing the list grow builds momentum and reinforces the habit.\n- [ ] **Assign an improvement owner** - One person responsible for making sure the weekly improvement actually happens. Not doing the improvement necessarily, but making sure it gets done."
+            },
+            {
+              "title": "Customer Feedback Loop",
+              "content": "- [ ] **Set up a simple post-delivery feedback question** - After every project, sale, or service delivery, ask: \"What is one thing we could do better next time?\" One question. Not a 20-question survey.\n- [ ] **Review customer feedback monthly** - Look for patterns. If three customers mention the same issue in a month, it is a systemic problem, not a one-off.\n- [ ] **Close the loop** - When you fix something a customer flagged, tell them. \"You mentioned X, we have changed Y.\" This builds loyalty and encourages more feedback.\n- [ ] **Track your Net Promoter Score (or a simpler alternative) quarterly** - \"How likely are you to recommend us?\" on a 0-10 scale. Track the trend over time."
+            },
+            {
+              "title": "Metrics Feedback Loop",
+              "content": "- [ ] **Review your core dashboard weekly** - Not just looking at the numbers, but asking: \"What do these numbers tell us to change?\"\n- [ ] **Set thresholds that trigger investigation** - If a metric drops below X or rises above Y, someone investigates why. Do not wait for a monthly review to notice a problem.\n- [ ] **Run a monthly root cause analysis on your biggest problem area** - Pick the metric that is furthest from target. Ask \"why?\" five times (Toyota's Five Whys technique) until you find the root cause, not just the symptom.\n- [ ] **Track improvement velocity** - How many improvements have you implemented this month? Is the pace increasing, steady, or declining? If declining, the system needs attention."
+            },
+            {
+              "title": "Build the Rhythm",
+              "content": "- [ ] **Weekly: 15 minutes to review friction log and pick one improvement** - Small, consistent action.\n- [ ] **Monthly: 30 minutes to review customer feedback and metrics, identify patterns, run one root cause analysis** - Deeper investigation.\n- [ ] **Quarterly: 60 minutes to review improvement velocity, celebrate wins, and reset priorities** - Strategic perspective.\n- [ ] **Make improvement part of performance conversations** - Ask team members: \"What have you improved this quarter?\" Reward the behaviour you want to see.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Three active feedback loops capturing team, customer, and metrics data\n- A weekly improvement rhythm producing at least one change per week\n- A growing \"fixed it\" list that demonstrates compounding progress\n- Root cause analysis applied to persistent problems\n- A culture where improvement is expected and normal, not exceptional"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part is sustaining the rhythm. The first month is easy because the backlog of obvious improvements is long. Month three is harder because the easy wins are done and improvements require more thought. Coach clients through this dip by focusing on the compound effect: 52 small improvements per year transforms a business.\n\nWatch for clients who use the improvement loop to tackle only minor irritations while ignoring major systemic issues. The friction log is great for catching small things. The monthly root cause analysis is where the bigger problems get addressed. Both are necessary.\n\nIf a client says \"we do not have time for this,\" calculate how much time they spent this month fixing problems that a continuous improvement loop would have caught earlier. Prevention is almost always cheaper than repair."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

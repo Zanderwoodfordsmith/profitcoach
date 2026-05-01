@@ -1,0 +1,236 @@
+{
+  "ref": "2.2",
+  "level": 2,
+  "area": 2,
+  "name": "Business Model",
+  "subtitle": "Level 2 · Overworked · Defined Strategy",
+  "whatThisIs": "Your business model is the machine that turns effort into profit. When it is broken, growth becomes exhausting — more hours, more stress, more chaos just to stay afloat. When it is right, revenue becomes predictable and growth becomes manageable.\n\nMost owners never step back to look at how money flows through their business. They focus on getting customers and delivering work but ignore the structure underneath. This playbook helps you design a model that scales without scaling your effort. It is about working smarter, not harder.\n\nThis is not about complex business theory. It is about asking five simple questions: Where does money come from? How reliable is it? What breaks if your biggest client leaves? Can you grow without burning out? Where can you build predictability?",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Every sale feels like starting from scratch. Revenue swings wildly month to month. You are completely dependent on a few big clients who could leave any time. Growth means working more hours, not making better decisions. You are trapped in a cycle of effort — stop working and the money stops."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some revenue predictability but it is patchy. Some months are strong, others catch you off guard. You know you rely too heavily on certain clients or revenue streams but you are not sure how to change it. Growth is possible but it feels like pushing a boulder uphill — constant effort for modest gains."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have multiple revenue streams that balance each other out. A significant portion is predictable — subscriptions, retainers, or repeat clients. You could lose your biggest client and survive comfortably. Growth comes from better systems and pricing, not just more hours. Your income is steady and your margins are healthy."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Which revenue stream actually pays the bills? Most businesses have multiple income sources but only one or two that matter. Identify your reliable core. Everything else is a bonus until it becomes consistent enough to count on.",
+    "What happens if your largest client disappears tomorrow? If losing one client would break you, your model is fragile. True business health means no single relationship controls your survival. Spread the risk or accept that you are running on borrowed time.",
+    "Does your pricing reward scale or punish it? Some pricing structures get better as you grow — higher volumes, lower costs, better margins. Others trap you in a linear exchange of time for money. The difference determines whether growth energises you or exhausts you.",
+    "Can your delivery expand without expanding you personally? Look at how work gets done. If every new client means more personal involvement from you, growth is capped by your capacity. Sustainable models let you serve more customers without working more hours.",
+    "Where can you build predictability into the chaos? One-off projects create feast-or-famine cycles. Subscriptions, retainers, maintenance contracts, memberships — any revenue that repeats creates stability. Even a small recurring base changes everything."
+  ],
+  "quickWins": [
+    "This week: List every revenue stream and calculate what percentage each represents. Circle any that make up more than 40% of your income — these are dependencies to watch.",
+    "This week: Identify one client relationship or service where you could introduce recurring revenue. A maintenance contract, ongoing support, or monthly retainer. Ask yourself: what do they need regularly that I could provide?",
+    "This week: Look at your three most profitable clients. What made those relationships profitable? Can you replicate that model with new clients or existing ones?"
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.2",
+      "description": ""
+    },
+    {
+      "ref": "2.4",
+      "description": ""
+    },
+    {
+      "ref": "3.2",
+      "description": ""
+    },
+    {
+      "ref": "1.4",
+      "description": ""
+    },
+    {
+      "ref": "4.6",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Revenue Stream Analysis",
+          "description": "Map all your income sources and identify which ones are reliable, growing, or vulnerable. Know exactly where your money comes from so you can make informed decisions about where to focus.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map every source of income in your business, calculate the percentage each represents, and assess which streams are reliable, growing, or vulnerable. This gives you a clear picture of where your money actually comes from so you can make informed decisions about where to focus, what to protect, and what to build."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners have a rough sense of their revenue mix but have never mapped it precisely. When you actually run the numbers, surprises appear. A stream you thought was 20% of revenue turns out to be 40%. A service you spend a lot of time on generates almost nothing. The analysis reveals where your business is strong, where it is fragile, and where the best growth opportunities sit."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your revenue data for the last 12 months (or as much as you have). Break it down by source and work through the framework below.\n\n---"
+            },
+            {
+              "title": "Revenue Mapping",
+              "content": "- [ ] List every distinct revenue stream in your business (products, services, retainers, project work, subscriptions, affiliate income, etc.)\n- [ ] For each stream, calculate the total revenue for the last 12 months\n- [ ] Calculate the percentage of total revenue each stream represents\n- [ ] ⚡ Quick Win: Circle any stream that makes up more than 40% of your total revenue - this is a dependency risk that needs attention\n- [ ] Rank the streams from largest to smallest"
+            },
+            {
+              "title": "Stream Assessment",
+              "content": "For each revenue stream, answer:\n\n- [ ] **Reliability:** Is this income predictable month to month, or does it fluctuate? Rate 1-5 (1 = completely unpredictable, 5 = highly recurring)\n- [ ] **Growth trajectory:** Is this stream growing, flat, or declining over the last 6-12 months?\n- [ ] **Effort required:** How much of your personal time does this stream demand per £1,000 of revenue? Rate 1-5 (1 = very time-intensive, 5 = mostly passive)\n- [ ] **Margin:** What is the approximate profit margin on this stream? (High >50%, Medium 20-50%, Low <20%)\n- [ ] **Vulnerability:** If your biggest customer or channel in this stream disappeared, what would happen?"
+            },
+            {
+              "title": "Revenue Quality Score",
+              "content": "- [ ] Create a simple table with each stream and its scores across the five criteria above\n- [ ] Highlight your strongest streams: high reliability, growing, low effort, high margin, low vulnerability\n- [ ] Highlight your weakest streams: unreliable, declining, high effort, low margin, or highly vulnerable\n- [ ] Identify the single stream with the most growth potential and the single stream that is the biggest risk"
+            },
+            {
+              "title": "Action Planning",
+              "content": "- [ ] For your strongest stream: what would it take to grow this by 20-30% in the next 12 months?\n- [ ] For your weakest stream: should you fix it, reduce it, or eliminate it?\n- [ ] For any stream over 40% of revenue: what is your plan to reduce that dependency?\n- [ ] Is there a revenue stream you should be building that does not exist yet? (Recurring revenue, productised service, digital product, etc.)\n- [ ] Prioritise: which one change to your revenue mix would have the biggest impact on business stability and growth?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete map of every revenue stream with exact percentages\n- Each stream assessed on reliability, growth, effort, margin, and vulnerability\n- Clear identification of strengths to build on and risks to address\n- A prioritised action plan for improving your revenue mix\n- Data-driven decisions about where to focus instead of gut feel"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most eye-opening exercises for Level 2 owners. Many discover that their most profitable stream gets the least attention, or that a stream consuming 30% of their time generates only 10% of revenue. Use the results to challenge their time allocation (connects to 2.0 Time & Energy). The vulnerability question is particularly powerful for owners dependent on 1-2 big clients. If losing one client would cause a crisis, that is not a business - it is a job with extra risk. Push for concrete actions to diversify."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Client Dependency Assessment",
+          "description": "Calculate how much of your revenue comes from your top clients and assess the risk. Create a plan to reduce dangerous dependencies before they become a crisis.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Calculate how much of your revenue comes from your top clients and assess the risk that concentration creates. Then build a plan to reduce dangerous dependencies before they become a crisis. This is about stress-testing your business: what happens if your biggest relationship ends tomorrow?"
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Client concentration is one of the most common hidden risks in small businesses. When 30-50% of your revenue comes from one or two clients, you do not really have a business - you have a high-risk employment arrangement where you can be \"fired\" without notice. Every decision gets filtered through \"will this upset the big client?\" which limits your independence and growth. Diversification is not about dropping big clients. It is about making sure no single loss can threaten your survival."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your client revenue data for the last 12 months. Sort by revenue generated. Then work through the framework below.\n\n---"
+            },
+            {
+              "title": "Concentration Analysis",
+              "content": "- [ ] List your top 10 clients by revenue (or all clients if you have fewer than 10)\n- [ ] Calculate the percentage of total revenue each represents\n- [ ] ⚡ Quick Win: If any single client represents more than 25% of your revenue, write down what would happen to your business if they left next month. Be specific about the financial impact.\n- [ ] Calculate the \"top 3 concentration\": what percentage of revenue do your top 3 clients represent combined?\n- [ ] Calculate the \"danger zone\": how many clients would need to leave before your business could not cover its fixed costs?"
+            },
+            {
+              "title": "Risk Assessment (For Each Top 5 Client)",
+              "content": "- [ ] **Contract status:** Is there a contract in place? When does it expire? How much notice is required?\n- [ ] **Relationship depth:** How many people in their organisation do you have relationships with? (1 contact = high risk, 3+ contacts = lower risk)\n- [ ] **Switching cost:** How easy would it be for them to replace you? (Easy = high risk, difficult = lower risk)\n- [ ] **Payment reliability:** Do they pay on time, or do you chase? Are there ever disputes?\n- [ ] **Growth potential:** Is this client likely to spend more, the same, or less with you over the next 12 months?"
+            },
+            {
+              "title": "Dependency Score",
+              "content": "- [ ] Score each top client: Green (healthy relationship, <15% of revenue), Amber (growing dependency, 15-25%), Red (dangerous dependency, >25%)\n- [ ] For any Red clients: what specific steps would reduce the dependency? (Win new clients, diversify service offerings, build recurring revenue from other sources)\n- [ ] Set a 12-month target: no single client should represent more than [X]% of revenue (15-20% is a healthy target for most SMEs)"
+            },
+            {
+              "title": "Diversification Plan",
+              "content": "- [ ] Identify 3 potential new clients or segments you could pursue to spread your revenue\n- [ ] Calculate how much new revenue you would need to bring your top client below 20% of total\n- [ ] Review your marketing and sales activity: is your lead generation currently focused on winning clients similar to your biggest one, or genuinely different?\n- [ ] Set a quarterly review to re-run the concentration analysis and track progress\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- An honest picture of how concentrated your revenue is\n- Risk scores for your most important client relationships\n- A specific plan to reduce dangerous dependencies over the next 12 months\n- A target concentration level to work toward\n- Confidence that no single loss can threaten your business survival"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This exercise often creates discomfort - owners know they are too dependent on a few clients but have been avoiding the conversation. Do not let them minimise the risk (\"they would never leave\"). Push back with: \"What if they get acquired? What if their budget gets cut? What if their key contact leaves?\" None of these require the client to be unhappy with your work. The best time to reduce dependency is when everything is going well, not when the call comes. This connects directly to the Revenue Stream Analysis (Action 1) and feeds into the Lead Generation playbook (2.5)."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Pricing Structure Review",
+          "description": "Examine whether your pricing model supports growth or limits it. Identify opportunities to build recurring revenue, improve margins, or reward scale.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Examine whether your pricing model supports growth or limits it. Assess your current pricing against market positioning, value delivered, and scalability, then identify opportunities to build recurring revenue, improve margins, or create pricing that rewards scale rather than punishing it."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Pricing is the most powerful lever in your business. A 10% price increase on the same volume drops straight to profit. But most SME owners set prices once, based on what competitors charge or what \"feels right,\" and never revisit them. Your pricing structure determines whether growth is energising (higher volume = better margins) or exhausting (more clients = more hours for the same money). Getting pricing right can transform your business model without changing anything else."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review your current pricing across all services and products. Be honest about how prices were set and whether they still make sense.\n\n---"
+            },
+            {
+              "title": "Current Pricing Audit",
+              "content": "- [ ] List every product or service you sell with its current price\n- [ ] For each, note how the price was set: market rate, competitor matching, cost-plus, gut feel, or value-based?\n- [ ] Calculate the profit margin on each (revenue minus direct costs, before overheads)\n- [ ] ⚡ Quick Win: Identify one service where you have not raised prices in 12+ months. Research what competitors charge for the same thing today.\n- [ ] Note which pricing models you use: hourly/daily rate, fixed project fee, retainer, subscription, value-based, performance-based"
+            },
+            {
+              "title": "Pricing Health Check",
+              "content": "- [ ] **Do you trade time for money?** If your primary pricing is hourly or daily rates, your revenue is capped by your available hours. Consider whether fixed-price, retainer, or productised pricing could break that ceiling.\n- [ ] **When was your last price increase?** If it has been more than 12 months, you have effectively given yourself a pay cut (inflation, rising costs). What would a 10-15% increase look like?\n- [ ] **Do your prices reflect the value you deliver?** Calculate the ROI your clients get from working with you. If you charge £5,000 for a service that saves them £50,000, you are dramatically underpriced.\n- [ ] **Are clients pushing back on price, or accepting without negotiation?** If no one ever questions your price, you are probably too cheap. Some price resistance is healthy.\n- [ ] **Do you have a pricing ladder?** Can clients start small and grow with you? (Entry offer → core offer → premium offer). A ladder maximises lifetime value."
+            },
+            {
+              "title": "Recurring Revenue Opportunity",
+              "content": "- [ ] Review your current client base: which clients need ongoing support, maintenance, or advice?\n- [ ] For each, could you convert project work into a retainer, subscription, or ongoing contract?\n- [ ] Calculate what monthly recurring revenue would look like if you converted just 3-5 project clients to retainers\n- [ ] Design a simple retainer or subscription offer: what would you include, what would it cost, and what is the minimum commitment?\n- [ ] Identify services that could be productised: standard scope, standard price, repeatable delivery"
+            },
+            {
+              "title": "Action Plan",
+              "content": "- [ ] Decide: which one pricing change would have the biggest impact on revenue, margin, or stability?\n- [ ] Set a timeline for implementing the change (new pricing for new clients is usually easiest to start)\n- [ ] Draft the communication for existing clients if prices will change for them too\n- [ ] Set a review date to assess the impact of the change after 90 days\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear picture of how your pricing was set and whether it still makes sense\n- Specific gaps identified: underpricing, time-for-money traps, missing recurring revenue\n- At least one concrete pricing change to implement this quarter\n- A recurring revenue opportunity identified and designed\n- Confidence that your pricing supports growth rather than limiting it"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Pricing conversations often trigger fear: \"If I raise prices, I will lose clients.\" Challenge this with data. Most SMEs can raise prices 10-20% with minimal client loss, and the clients who leave over a 10% increase are often the least profitable anyway. The recurring revenue conversation is especially powerful for project-based businesses running feast-or-famine cycles. Even a small retainer base (5-10 clients at £500-1,000/month) creates stability that transforms how the owner sleeps at night. Connect this to the Revenue Stream Analysis (Action 1) for a complete picture."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Scalability Audit",
+          "description": "Assess which parts of your delivery can expand without expanding your personal involvement. Find the bottlenecks that cap your growth and plan to remove them.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Assess which parts of your business can grow without growing your personal involvement. Find the bottlenecks that cap your growth and create a plan to remove them. This is about answering one question honestly: if you doubled your revenue tomorrow, what would break?"
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Many SMEs hit an invisible ceiling because the owner is the bottleneck in every process. More clients means more of the owner's time, which means the owner works harder but the business does not actually scale. A scalability audit reveals where growth is capped by your personal capacity so you can redesign those areas before they become crises. The goal is not to remove yourself entirely - it is to ensure growth comes from better systems, not longer hours."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Walk through each area of your business and honestly assess what happens if volume doubles. The bottlenecks will become obvious.\n\n---"
+            },
+            {
+              "title": "The Doubling Test",
+              "content": "For each area below, answer: \"If we doubled our volume tomorrow, what would break?\"\n\n### Sales & Marketing\n\n- [ ] Could you generate 2x the leads with your current marketing approach? If not, what is the constraint?\n- [ ] Could you handle 2x the sales enquiries without you being involved in every conversation?\n- [ ] Is your sales process dependent on your personal relationships, or could someone else follow a defined process?\n- [ ] Rate scalability (1-5): 1 = completely dependent on you, 5 = could scale without you\n\n### Delivery & Operations\n\n- [ ] Could you deliver to 2x the clients with your current team and processes?\n- [ ] Which parts of delivery require your personal involvement and which could someone else handle?\n- [ ] Are your processes documented enough that new team members could follow them?\n- [ ] Rate scalability (1-5)\n\n### Finance & Admin\n\n- [ ] Could your back-office systems handle 2x the invoices, expenses, and financial complexity?\n- [ ] Is financial management automated or manual?\n- [ ] Rate scalability (1-5)\n\n### Team & Management\n\n- [ ] Could your current team handle 2x the workload, or would you need to hire?\n- [ ] If you need to hire, do you have the recruitment and onboarding systems to do it quickly? (See [[2.9 Recruitment]])\n- [ ] Are there enough management layers, or does everything still report to you?\n- [ ] Rate scalability (1-5)"
+            },
+            {
+              "title": "Bottleneck Identification",
+              "content": "- [ ] ⚡ Quick Win: Look at your ratings above. The area with the lowest score is your primary bottleneck - the thing that will break first as you grow. Name it.\n- [ ] List the top 3 bottlenecks in order of severity\n- [ ] For each bottleneck, identify the root cause: Is it a people gap (need to hire)? A process gap (need to document and systematise)? A technology gap (need tools)? A trust gap (need to learn to let go)?\n- [ ] For each bottleneck, describe what \"fixed\" looks like: what would need to be true for this area to handle 2x volume?"
+            },
+            {
+              "title": "Removal Plan",
+              "content": "- [ ] Prioritise: which bottleneck, if removed, would unlock the most growth?\n- [ ] Define the first step to address it (not the whole solution, just the next action)\n- [ ] Set a timeline: when will this bottleneck be addressed?\n- [ ] Identify dependencies: does fixing this bottleneck require other changes first?\n- [ ] Set a review date to re-run the doubling test after changes are made\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- An honest assessment of where your business cannot scale without you\n- Your top 3 growth bottlenecks identified and ranked\n- Root causes diagnosed for each bottleneck\n- A prioritised removal plan with specific next steps\n- A clear picture of what needs to change before your next growth phase"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a strategic conversation, not a tactical one. Resist the urge to dive into solving each bottleneck in the session. The goal is the diagnosis. Most Level 2 owners discover that they ARE the bottleneck in 2-3 areas, which can be confronting. Frame it positively: \"The good news is the bottleneck is something you control.\" The most common bottlenecks for £200K-£1M businesses: owner involved in every sale, no documented delivery processes, and no management layer between owner and team. Connect to Delegation (2.0 Action 8), Processes (1.8), and Team Foundations (1.9)."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

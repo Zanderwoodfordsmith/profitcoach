@@ -1,13 +1,33 @@
 "use client";
 
+import type React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactElement;
+  /** Highlights for /admin roster and /admin/client-success */
+  coachesHub?: boolean;
+};
+
+function IconAcademy({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l7-3.5L12 7 5 10.5 12 14z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 10.5V16.5l7 3.5 7-3.5v-6M5 16.5l7 3.5 7-3.5" />
+    </svg>
+  );
+}
+
+const navItems: NavItem[] = [
   { href: "/admin/playbooks", label: "Playbooks", icon: IconBook },
-  { href: "/admin", label: "Coaches", icon: IconUsers },
+  { href: "/admin/academy", label: "Academy", icon: IconAcademy },
+  { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/clients", label: "Clients", icon: IconBriefcase },
   { href: "/admin/prospects", label: "Prospects", icon: IconUserPlus },
+  { href: "/admin/settings", label: "Settings", icon: IconCog },
 ];
 
 function IconBook({ className }: { className?: string }) {
@@ -55,23 +75,27 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen bg-slate-100 text-slate-900">
-      <aside className="flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white">
-        <div className="flex items-center justify-between px-4 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
-              BOSS Dashboard
-            </p>
-            <p className="text-sm font-semibold">Admin</p>
-          </div>
+    <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
+      <aside
+        className="fixed left-0 top-0 bottom-0 z-10 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white"
+        style={{ height: "100vh" }}
+      >
+        <div className="shrink-0 px-4 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
+            BOSS Dashboard
+          </p>
+          <p className="text-sm font-semibold">Admin</p>
         </div>
-        <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-3">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
           <ul className="space-y-1">
             {navItems.map((item) => {
-              const active =
-                item.href === "/admin"
-                  ? pathname === "/admin" || pathname === "/admin/"
-                  : pathname === item.href || pathname?.startsWith(item.href + "/");
+              const active = item.coachesHub
+                ? pathname === "/admin" ||
+                  pathname === "/admin/" ||
+                  pathname === "/admin/client-success" ||
+                  Boolean(pathname?.startsWith("/admin/client-success/"))
+                : pathname === item.href ||
+                  Boolean(pathname?.startsWith(`${item.href}/`));
               const Icon = item.icon;
               return (
                 <li key={item.href}>
@@ -93,7 +117,7 @@ export default function AdminLayout({
         </nav>
         <Link
           href="/admin/account"
-          className={`flex items-center gap-3 border-t border-white/10 px-4 py-4 text-sm transition-colors ${
+          className={`flex shrink-0 items-center gap-3 border-t border-white/10 px-4 py-4 text-sm transition-colors ${
             pathname?.startsWith("/admin/account")
               ? "bg-sky-500/80 text-white"
               : "text-slate-100/80 hover:bg-white/10 hover:text-white"
@@ -106,8 +130,8 @@ export default function AdminLayout({
           </div>
         </Link>
       </aside>
-      <main className="flex-1 bg-slate-100 px-10 pt-10 pb-6">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4">
+      <main className="min-h-screen min-w-0 w-full px-6 pb-6 pt-0">
+        <div className="flex w-full min-w-0 flex-col gap-4">
           {children}
         </div>
       </main>

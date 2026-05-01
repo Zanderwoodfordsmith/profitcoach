@@ -1,0 +1,194 @@
+{
+  "ref": "1.3",
+  "level": 1,
+  "area": 3,
+  "name": "Execution",
+  "subtitle": "Level 1 · Overwhelm · Disciplined Planning",
+  "whatThisIs": "Execution is the bridge between strategy and outcome. You can have the best plan in the world, but if you cannot finish what you start, it is worthless. At this level, the problem is not ideas — it is turning those ideas into completed work that moves the business forward.\n\nThis playbook is about disciplined implementation. Not perfect planning, not creative brainstorming, not endless meetings about what you could do. It is about defining what will get done, assigning clear ownership, and building the rhythm to make it happen consistently.\n\nStrategy without execution is theatre. Execution without strategy is chaos. This playbook assumes you know roughly where you are going — now it is about getting there.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You start dozens of projects but finish very few. Your to-do list is a graveyard of half-completed tasks. You confuse activity with progress — you are always busy but rarely feel like you are moving forward. Deadlines slip, accountability is vague, and nothing has clear ownership. You measure how much you worked, not what you accomplished."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You get things done but it feels reactive and inconsistent. Some weeks are productive, others disappear into firefighting. You have goals but they often get pushed back as other priorities emerge. You finish projects eventually but they take longer than they should and the quality is not what you wanted."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You define clear deliverables every 90 days and consistently hit them. Every important outcome has an owner who is genuinely accountable for results. You have a weekly rhythm that turns intentions into completed work. Context switching is minimized and your attention stays focused on what matters most. You measure completion, not activity — and your completion rate keeps improving."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What must be completed, not started, this quarter? Most business owners have a list of things they want to start. The question that matters is what absolutely must be finished in the next 90 days. Three completed projects beat ten half-started ones every time.",
+    "Who is accountable when it does not get done? Shared responsibility is no responsibility. Every deliverable needs one person whose reputation is on the line if it fails. Not someone who helps, not someone who is involved — someone who owns the outcome completely.",
+    "What does a winning week look like? Without a clear picture of what progress looks like week by week, you cannot tell if you are on track until it is too late. Define what a successful week contains and measure against it every Friday.",
+    "How often are you breaking your own focus? Every time you switch between projects, check email mid-task, or take on something new before finishing what you started, you are sabotaging your own execution. Context switching is the enemy of completion.",
+    "Are you measuring activity or results? Hours worked, meetings attended, emails sent — these are activity metrics. What got finished, what outcome was achieved, what moved the business forward — these are result metrics. Track the right thing or you will optimise for the wrong thing."
+  ],
+  "quickWins": [
+    "This week: Pick three things currently on your to-do list and finish them completely. Not 80%, not \"almost done\" — finished. See how it feels to close the loop.",
+    "This week: List your current projects. For each one, write down what \"done\" looks like in one sentence. If you cannot do this clearly, the project is not ready to execute.",
+    "This week: Block 30 minutes every Friday for the next month to review what you committed to versus what you completed. Track your percentage — awareness alone will improve it."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.0",
+      "description": ""
+    },
+    {
+      "ref": "2.0",
+      "description": ""
+    },
+    {
+      "ref": "1.9",
+      "description": ""
+    },
+    {
+      "ref": "3.3",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "90-Day Deliverables",
+          "description": "Define exactly what will be completed this quarter. Not a wish list, not a rough direction — specific, measurable outcomes with clear deadlines. If you cannot describe what \"done\" looks like, you are not ready to start.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define exactly what will be completed in the next 90 days — not a wish list, not a rough direction, but specific, measurable outcomes with clear deadlines and single-person ownership. If you cannot describe what \"done\" looks like, you are not ready to start."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Ray Dalio's 5-Step Process is: Goals → Problems → Diagnosis → Design → Execution. Most business owners jump straight to execution without clearly defining what they are executing towards. The result is constant activity with no completion. 90-day cycles work because they are long enough to achieve something meaningful but short enough to maintain urgency. A year is too abstract. A week is too tactical. 90 days is the sweet spot for turning strategy into finished work."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Do this at the start of every quarter. Review weekly. The discipline is in the review, not just the planning.\n\n---"
+            },
+            {
+              "title": "Setting Your 90-Day Deliverables",
+              "content": "- [ ] **Ask: \"If I could only complete 3 things in the next 90 days, which 3 would move the business forward most?\"** — Not start. Complete. The distinction matters. Write them down.\n- [ ] **For each deliverable, define what \"done\" looks like in one sentence** — \"Improve marketing\" is not a deliverable. \"Launch a lead generation campaign that produces 20 qualified leads per month\" is. If you cannot describe done, you are not ready to start.\n- [ ] **Assign one owner per deliverable** — Not a team. Not \"shared responsibility.\" One person whose name is on it and who will explain what happened if it does not get done. If you are a solo operator, all three are yours — but be honest about capacity.\n- [ ] **Set a deadline for each** — Within the 90-day window. Not all three need the same deadline. Sequence them if one depends on another.\n- [ ] **Identify the first action for each deliverable** — David Allen's GTD principle: every project must have a defined \"next action.\" What is the very first thing that needs to happen? Make it specific and physical — not \"think about marketing\" but \"write the brief for the landing page.\""
+            },
+            {
+              "title": "The \"Not Now\" List",
+              "content": "- [ ] ⚡ Quick Win · **Write down everything else you want to do that did not make the top 3** — This is your \"Not Now\" list. It is not a rejection — it is a deliberate decision to focus. Put it somewhere visible so you can stop carrying it in your head.\n- [ ] **Review the Not Now list at the end of the quarter** — Some items will have resolved themselves. Some will become next quarter's priorities. Some will never matter. All of that is fine."
+            },
+            {
+              "title": "Weekly Check (Every Friday, 15 Minutes)",
+              "content": "- [ ] **For each deliverable: am I on track to complete this by the deadline?** — Green (on track), amber (at risk), red (behind). Be honest. Amber is where coaching intervention happens — do not wait until it is red.\n- [ ] **What is the next action for each deliverable this coming week?** — Keep the momentum moving. Every week should have at least one concrete step towards each deliverable.\n- [ ] **Is anything blocking progress?** — Name it specifically. A vague sense of \"it's not moving\" is not useful. \"I need a decision from X\" or \"I don't know how to do Y\" are actionable blockers.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Three clear, defined deliverables for the quarter with deadlines and owners\n- A \"Not Now\" list that frees your mind from everything else\n- A weekly rhythm that keeps you honest about progress\n- At the end of 90 days, a track record of completion that builds confidence and momentum\n- The foundation for more sophisticated planning at higher levels (Projects & Planning, Meetings & Reviews)"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest trap is clients who set 7-10 deliverables because \"they're all important.\" They are not. If everything is priority one, nothing is priority one. Push them to choose three — maximum. The discipline of choosing is where the value lives.\n\nIf a client consistently fails to complete their 90-day deliverables, the problem is usually one of three things: too many deliverables (reduce), unclear definition of \"done\" (sharpen), or no weekly review rhythm (install). Diagnose which one before adding more.\n\nThis action pairs with the Weekly Execution Rhythm (which provides the weekly discipline) and the Completion Tracker (which measures whether they are actually finishing what they start)."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Ownership Matrix",
+          "description": "Assign clear, single-person accountability for every important deliverable. Every outcome has one name next to it. When something slips, there is no confusion about who needs to explain why and what happens next.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a consistent weekly cycle: plan on Monday, execute through the week, review on Friday. This rhythm turns good intentions into completed work by creating accountability within each week, not just at quarterly milestones."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "David Allen's GTD research shows that the weekly review is the single most important productivity habit — more important than any app, system, or tool. Without it, tasks pile up, priorities drift, and you lose track of what matters. The weekly rhythm is not about working harder. It is about working deliberately — starting each week with a clear plan and ending it with an honest review of what got done."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up the Monday Plan and Friday Review as recurring calendar blocks. Non-negotiable. If you skip these, everything else degrades within 2-3 weeks.\n\n---"
+            },
+            {
+              "title": "Monday Plan (30 Minutes)",
+              "content": "- [ ] **Review your 90-day deliverables** — Where does each one stand? What needs to move forward this week to stay on track?\n- [ ] **Identify your top 3 outcomes for this week** — Not tasks. Outcomes. \"Write the proposal\" is a task. \"Send the completed proposal to the client for approval\" is an outcome. Outcomes have an end state.\n- [ ] **Assign your top 3 to specific days** — Do not leave them floating. \"I'll do the proposal on Wednesday morning\" is a commitment. \"I'll do the proposal this week\" is a hope.\n- [ ] ⚡ Quick Win · **Identify your One Thing for today** — What is the single most important thing you can do today to start the week with momentum? Do it before anything else.\n- [ ] **Check for conflicts** — Look at your calendar. Do you have enough unblocked time to do the work you have planned? If not, move or cancel something now, not when it is too late."
+            },
+            {
+              "title": "Daily Execution (2 Minutes Each Morning)",
+              "content": "- [ ] **Before opening email, confirm today's priority** — What is the one thing that moves the week forward? Write it down. Do it first.\n- [ ] **At the end of the day, note what got done** — 30 seconds. Just a quick mark: done, partially done, or not started. This feeds your Friday review."
+            },
+            {
+              "title": "Friday Review (15 Minutes)",
+              "content": "- [ ] **Review your 3 weekly outcomes — did you complete them?** — Be honest. Completed means finished, not \"mostly done\" or \"I worked on it.\"\n- [ ] **Calculate your completion rate** — How many of your planned outcomes did you actually complete? Track this number weekly. Your completion rate is more important than how many hours you worked.\n- [ ] **What got in the way?** — If something was not completed, why? Was it unrealistic? Did something unexpected consume your time? Did you avoid it? The pattern across weeks reveals the real problem.\n- [ ] **What carries forward?** — Anything not completed either carries to next week (if still important) or gets dropped (if it was not important enough to finish). Do not let unfinished items accumulate indefinitely.\n- [ ] ⚡ Quick Win · **Set your top 3 outcomes for next week** — Do this now, not Monday morning. Starting Monday with a clear plan means you hit the ground running instead of spending your best energy deciding what to do.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every week starts with a clear plan and ends with an honest review\n- Your completion rate becomes visible — and it will improve just from tracking it\n- You stop confusing \"busy\" with \"productive\" because you are measuring outcomes, not hours\n- Problems surface early (Friday review) instead of festering until the quarterly review\n- The compounding effect: 48 weeks of deliberate execution per year transforms a business"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The Friday review is where coaching gets traction. Ask the client to share their completion rate each week. A consistent 60-70% completion rate is healthy. Below 50% means they are overcommitting. Above 90% means they are not stretching enough.\n\nIf a client says \"I didn't have time for the review,\" that IS the problem. The review takes 15 minutes. If they cannot find 15 minutes to assess whether their week was productive, their time management is the first thing to address — which loops back to 1.0 Focus.\n\nThis pairs directly with 90-Day Deliverables (which sets the quarterly targets) and The One Thing from 1.0 Focus (which drives the daily priority)."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Weekly Execution Rhythm",
+          "description": "Build a consistent weekly cycle of planning, working, and reviewing. Monday you plan the week against your deliverables. Friday you review what got completed and what needs to carry forward. The rhythm creates momentum.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a simple tracking system that measures what you committed to versus what you actually finished. Your completion rate — the percentage of planned work you actually complete — is the single most important metric for an overwhelmed business owner."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You cannot improve what you do not measure. Most business owners measure effort (hours worked, tasks started) rather than completion (work finished, outcomes delivered). The Completion Tracker makes the gap visible. When you can see that you planned 10 things and finished 4, you either need to plan fewer things or remove the obstacles to finishing. Both are better than continuing to overcommit and underdeliver."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Choose one of the tracking methods below. Keep it dead simple — the moment tracking becomes a project in itself, you will stop doing it.\n\n---"
+            },
+            {
+              "title": "Setup",
+              "content": "- [ ] ⚡ Quick Win · **Choose your format** — Spreadsheet, notebook, whiteboard, or app. It does not matter. What matters is that you will actually use it every week. A notebook on your desk beats a fancy app you never open.\n- [ ] **Create four columns: Planned, Completed, Carried Forward, Dropped** — That is the whole system. Each week, list what you planned (from your Monday Plan), then mark each as completed, carried forward, or dropped on Friday.\n- [ ] **Add a \"Completion Rate\" row** — Completed ÷ Planned × 100 = your weekly percentage. Track this number every week."
+            },
+            {
+              "title": "Weekly Tracking (Every Friday, 2 Minutes)",
+              "content": "- [ ] **Mark each planned item: Completed, Carried Forward, or Dropped** — Be honest. \"Almost done\" is not completed. Either it is finished or it is not.\n- [ ] **Calculate your completion rate** — Write it down alongside the week number. You want to see the trend over time, not just any single week.\n- [ ] **If carrying forward, ask: is this still the right priority?** — Items that carry forward for 3+ weeks are either not important enough to do or too big to finish. Break them down or drop them."
+            },
+            {
+              "title": "Monthly Pattern Review (10 Minutes)",
+              "content": "- [ ] **Look at your last 4 weeks of completion rates** — What is your average? What is the trend? Improving, stable, or declining?\n- [ ] **What types of work do you consistently complete?** — These are your strengths. Lean into them.\n- [ ] **What types of work do you consistently carry forward or drop?** — These are either not aligned with your strengths, not important enough, or blocked by something you have not addressed. This is where the insight lives.\n- [ ] **Adjust next month's planning based on reality, not optimism** — If your average completion rate is 50%, plan 5 things, not 10. Better to plan 5 and finish 5 than plan 10 and finish 4.\n\n---"
+            },
+            {
+              "title": "Benchmarks",
+              "content": "| Rate | What It Means |\n|------|--------------|\n| Below 40% | Significantly overcommitting. Reduce planned items or remove blockers. |\n| 40-60% | Common starting point. Room to improve through better planning and fewer commitments. |\n| 60-75% | Healthy range. You are stretching but realistic. |\n| 75-90% | Strong execution. Make sure you are still challenging yourself. |\n| Above 90% | Either exceptional or not stretching enough. Try adding one more ambitious item per week. |\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear, visible measure of your execution effectiveness\n- Self-correcting behaviour — just tracking completion improves it\n- Better planning because you calibrate commitments against real data\n- A trend line that shows progress over weeks and months\n- Evidence for coaching conversations — \"your completion rate dropped, what changed?\""
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The Completion Tracker is the accountability mechanism for everything in this playbook. If a client is doing their 90-Day Deliverables and Weekly Execution Rhythm but not tracking completion, they are guessing about their effectiveness.\n\nThe first month is the hardest — most clients will see a completion rate of 30-50% and feel discouraged. Reframe it: \"You've been operating blind. Now you can see the gap. That's the first step to closing it.\" Most clients improve to 60%+ within 4-6 weeks just from awareness.\n\nAsk to see their tracker in every session. It takes 30 seconds to review and it tells you more about their progress than anything they say."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Completion Tracker",
+          "description": "A simple system to track what you committed to versus what you actually finished. Your completion rate is the most important metric at this stage — improve it and everything else follows."
+        }
+      ]
+    }
+  ]
+}

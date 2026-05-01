@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { StickyPageHeader } from "@/components/layout";
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { PlaybookContent as PlaybookContentType } from "@/lib/playbookContentTypes";
@@ -74,25 +75,30 @@ export default function CoachContactPlaybookDetailPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="border-b border-slate-200 pb-3">
-        <Link
-          href={`/coach/contacts/${contactId}/playbooks`}
-          className="text-xs text-slate-500 hover:text-slate-700"
-        >
-          ← Back to Playbooks
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold text-slate-900">
-          {content.ref} {content.name} Playbook
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">{content.subtitle}</p>
-      </header>
-
-      <PlaybookTabs
-        content={content}
-        showClientTab={true}
-        showCoachesTab={true}
-        basePath={`/coach/contacts/${contactId}/playbooks`}
+      <StickyPageHeader
+        leading={
+          <Link
+            href={`/coach/contacts/${contactId}/playbooks`}
+            className="text-xs text-slate-500 hover:text-slate-700"
+          >
+            ← Back to Playbooks
+          </Link>
+        }
+        title={`${content.ref} ${content.name} Playbook`}
+        descriptionPlacement="below"
+        description={
+          <span className="text-slate-500">{content.subtitle}</span>
+        }
       />
+
+      <div className="w-full">
+        <PlaybookTabs
+          content={content}
+          showClientTab={true}
+          showCoachesTab={true}
+          basePath={`/coach/contacts/${contactId}/playbooks`}
+        />
+      </div>
     </div>
   );
 }

@@ -1,0 +1,224 @@
+{
+  "ref": "1.5",
+  "level": 1,
+  "area": 5,
+  "name": "Ideal Customer",
+  "subtitle": "Level 1 · Overwhelm · Revenue & Marketing",
+  "whatThisIs": "Ideal customer definition is the foundation of all marketing that works. Without clarity about who you serve, your messaging becomes generic, your marketing becomes expensive, and you attract the wrong buyers. You end up competing on price instead of value because nobody understands why they should choose you.\n\nThis playbook is about precision. Not trying to serve everyone, but getting crystal clear about the specific person whose problem you solve better than anyone else. When you nail this, everything else gets easier — your marketing gets cheaper, your sales conversations get shorter, and your customers stay longer.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Your marketing talks to \"small businesses\" or \"busy professionals\" — groups so broad they mean nothing. You struggle to explain what makes you different from competitors. You attract price shoppers and one-time buyers. Every prospect feels like starting from scratch because you have no clear message that resonates. You spend money on advertising that gets ignored because it speaks to everyone and connects with no one."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have a rough sense of who your customers are but it changes depending on who you are talking to. Your marketing gets some traction but conversion rates are inconsistent. You can describe your customers but not their specific problems or what triggers them to buy. You win some deals and lose others for reasons you cannot predict or replicate."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You know exactly who you serve — their role, their situation, their biggest frustrations. Your marketing speaks directly to their specific pain points using their language, not yours. When prospects read your content or see your ads, they think \"this person understands my exact problem.\" You attract higher-commitment buyers who see you as the obvious choice, not just another option."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Are you speaking to everyone or someone? If your marketing could apply to any business owner, it applies to no business owner. The more specific you get, the more powerfully your message resonates with the right people. \"Small business owners\" is a category. \"Construction company owners struggling to win quotes against cheaper competitors\" is a person.",
+    "What problem keeps them awake at night? This is not what you think their problem is — it is what they think their problem is. The language they use, the way they describe it to their spouse, the frustration that drives them to search for a solution at 11pm. Their pain, in their words.",
+    "What makes them act now instead of later? Most people live with problems for months or years before they decide to fix them. What is the moment, the trigger, the final straw that makes them go from \"I should probably do something about this\" to \"I need to fix this right now\"?",
+    "Where does trust typically break down? Every market has standard objections — reasons people hesitate to buy. Price is almost never the real reason. It is usually about credibility, timing, or past bad experiences. Know the real objections so you can address them before they become problems.",
+    "Is this client valuable beyond the first sale? Some customers are one-and-done transactions. Others become long-term relationships worth ten times the initial sale. Choose the segment that gives you the business model you actually want to build, not just the easiest first sale."
+  ],
+  "quickWins": [
+    "This week: Pick your three best customers from the last year. Write down what they all have in common — not just industry, but situation, challenges, and what made them buy from you.",
+    "This week: Call or message one great customer and ask them: \"What was happening in your business that made you decide you needed help with this problem right now?\" Listen to how they describe it.",
+    "This week: Look at your current marketing. Circle every word that could apply to any business in your industry. Those are the words that make you invisible."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.2",
+      "description": ""
+    },
+    {
+      "ref": "2.5",
+      "description": ""
+    },
+    {
+      "ref": "4.5",
+      "description": ""
+    },
+    {
+      "ref": "3.2",
+      "description": ""
+    },
+    {
+      "ref": "5.5",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Customer Avatar Build",
+          "description": "Create a detailed profile of your ideal customer including their demographics, situation, problems, and goals. Not a made-up persona, but a real person you can picture having a conversation with.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a detailed profile of your ideal customer — not a made-up persona from a marketing textbook, but a real person based on your best existing clients. This becomes the foundation for all your marketing, sales, and product decisions."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Hormozi's Grand Slam Offer principle starts here: you cannot create an irresistible offer without knowing exactly who you are creating it for. Allan Dib's 1-Page Marketing Plan makes the same point — your ideal customer is \"cell one\" because everything else (message, media, lead generation) flows from it. And Michalowicz's Pumpkin Plan is blunt: find your best clients, kill the rest, and pour all your resources into the winners. You cannot do any of this without knowing who the winner looks like."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build this from real data — your actual best clients — not from imagination. If you do not have clients yet, use the closest equivalent: people you have spoken to, researched, or deeply understand.\n\n---"
+            },
+            {
+              "title": "Step 1: Identify Your Best Clients",
+              "content": "- [ ] ⚡ Quick Win · **List your 5 best clients from the past 12-24 months** — \"Best\" means: most profitable, most enjoyable, best results, referred others, and stayed longest. Not just \"paid the most.\"\n- [ ] **What do they have in common?** — Industry, company size, revenue range, role, years in business, team size. Find the demographic patterns.\n- [ ] **What situation were they in when they came to you?** — What was happening in their business that made them seek help? Was it growth, pain, opportunity, or crisis? This is the trigger."
+            },
+            {
+              "title": "Step 2: Map Their World",
+              "content": "- [ ] **What is their biggest frustration right now?** — In their words, not yours. What do they complain about to their spouse, their friends, or their accountant? Write it the way they would say it.\n- [ ] **What have they already tried that did not work?** — Failed solutions create scepticism. If they have tried a consultant before and been burned, you need to know that. If they have tried DIY and it did not stick, you need to know that too.\n- [ ] **What does \"success\" look like to them?** — Not your definition. Theirs. For some it is revenue. For others it is time freedom. For others it is respect or legacy. The answer shapes how you sell to them.\n- [ ] **Where do they spend time and attention?** — Which social platforms, events, publications, communities, podcasts? This tells you where to find more of them.\n- [ ] **Who do they trust and listen to?** — Accountant, mentor, peer group, specific authors or thought leaders? These are your partnership and positioning clues."
+            },
+            {
+              "title": "Step 3: Write the Avatar",
+              "content": "- [ ] **Give them a name** — Not because it is a cute exercise, but because \"Dave, 48, runs a £600K plumbing business with 12 staff and works 60-hour weeks\" is infinitely more useful than \"SME owners in the trades sector.\"\n- [ ] **Write a paragraph describing their day** — What does a typical Monday look like? What stresses them before they get to work? What keeps them up at night? The more vivid this picture, the better your marketing speaks to them.\n- [ ] **Summarise in one sentence: \"[Name] is a [role] who [situation] and needs [transformation]\"** — This becomes your targeting filter. Every marketing decision, every piece of content, every sales conversation gets measured against this person.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A named, specific avatar based on real client data\n- A clear picture of their frustrations, failed solutions, and definition of success\n- Knowledge of where to find more of them and who influences their decisions\n- A one-sentence summary you can use as a filter for all marketing and sales decisions\n- The foundation for Pain & Trigger Mapping and your Objection Playbook"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common mistake is going too broad. \"Business owners\" is not an avatar. Push the client to be uncomfortably specific — they will resist because specificity feels like turning away money. Reframe: you are not turning away other clients, you are making your marketing speak directly to the ones most likely to buy and stay.\n\nIf a client cannot name 5 best clients, start with 3. If they cannot name 3, they either have not been in business long enough or they have not been selective enough — both are useful realisations.\n\nHave them do the avatar build in the session rather than as homework. The conversation draws out insights they would not write down on their own."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Pain Point Deep Dive",
+          "description": "Map their biggest frustrations, failed solutions they have tried, and the language they use to describe their problems. This becomes the foundation of all your messaging.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map your ideal customer's biggest pain points in their language, then identify the specific triggers — the moments, events, or breaking points — that make them move from \"I should probably do something\" to \"I need to fix this right now.\""
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most marketing describes the solution. Effective marketing describes the problem — in the exact words the customer uses. When a business owner reads your marketing and thinks \"this person understands my exact situation,\" you have won before the sales conversation starts. But knowing the pain is only half the picture. You also need to know what makes them act. Most people live with business problems for months or years. Something specific tips them over the edge — a lost client, a failed hire, a tax bill, a health scare, a competitor's success. That trigger is when your marketing needs to reach them."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build this from real conversations, not assumptions. If you have not spoken to your ideal clients about their problems recently, this action starts with doing that.\n\n---"
+            },
+            {
+              "title": "Map the Pain Points",
+              "content": "- [ ] ⚡ Quick Win · **Talk to 3 existing or past ideal clients** — Ask: \"What was the biggest frustration in your business before you started working with us?\" Write down their exact words. Do not paraphrase or clean up the language — their words are better than yours.\n- [ ] **Categorise their pains into 3 levels** — Surface pain (what they say first — \"I need more leads\"), deeper pain (what is underneath — \"I'm doing all the sales myself and I'm exhausted\"), and core pain (the real fear — \"If this doesn't change, I'll burn out or the business will fail\"). Your marketing should address all three, but the deeper ones create the strongest connection.\n- [ ] **Identify which pain comes up most often** — If 3 out of 3 clients mention the same frustration, that is your lead message. Not every pain point you discover goes in your marketing — the most common and most emotional ones go first.\n- [ ] **Note the language they use** — Specific phrases, metaphors, and descriptions. \"I feel like I'm spinning plates\" is marketing gold. \"Operational inefficiency\" is marketing death. Use their words, not yours."
+            },
+            {
+              "title": "Identify the Triggers",
+              "content": "- [ ] **Ask past clients: \"What was happening when you decided to reach out to us?\"** — Not why they chose you. What was happening in their life or business at that specific moment. There is always a trigger event.\n- [ ] **List the common trigger events** — Examples: lost a key client, missed a tax deadline, partner threatened to leave, competitor launched something new, failed a hire, hit a revenue ceiling, had a health scare. Be specific.\n- [ ] **Identify seasonal or cyclical triggers** — Does your ideal client face predictable pressure points? End of financial year? January planning? Pre-summer slump? September \"back to business\"? These tell you when to intensify your marketing.\n- [ ] **Match triggers to marketing timing** — If the most common trigger is \"end of financial year panic,\" your most aggressive marketing should run in February-March (UK) or October-November (US). Time your message to when the pain is sharpest."
+            },
+            {
+              "title": "Build the Map",
+              "content": "- [ ] **Create a simple document with 3 columns: Pain Point, Trigger, and Marketing Message** — Each row connects a real pain to the event that makes it urgent and the message that speaks to it. This becomes your marketing content calendar.\n- [ ] ⚡ Quick Win · **Write 3 social media posts or email subject lines using the exact language from your client conversations** — Not polished marketing copy. Raw, honest language that makes your ideal client stop scrolling and think \"that's me.\"\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A list of real pain points in your customer's exact language — ready to use in marketing\n- Identified trigger events that tell you when prospects are most likely to buy\n- A marketing message map connecting pains to triggers to messages\n- Content ideas based on real conversations, not guesswork\n- A foundation for your Objection Playbook (what stops them buying once they are triggered)"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "If a client says \"I don't have time to call past clients,\" push back. Three 10-minute conversations will produce better marketing insight than 10 hours of brainstorming. The call is the shortcut, not the extra work.\n\nThe depth matters. Surface pain (\"I need more leads\") is where everyone competes. Deeper pain (\"I'm scared I'm going to lose the business I spent 15 years building\") is where connection happens. Help the client go deeper — they often know the real pain but are uncomfortable saying it out loud.\n\nThis action feeds directly into Content Marketing, Sales Conversations, and Lead Generation at higher levels. The language and triggers discovered here should be referenced throughout."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Buying Trigger Identification",
+          "description": "Understand what makes them move from \"thinking about it\" to \"buying now.\" The events, deadlines, or moments that create urgency in their world.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Document the predictable objections your ideal customers raise before buying, then build a prepared response for each one. This turns sales from improvisation into a repeatable system where you handle concerns before they become deal-breakers."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every market has standard objections — and price is almost never the real one. Cialdini's research on influence shows that objections are usually about risk, trust, or timing, not money. The business owner who says \"it's too expensive\" usually means \"I'm not confident this will work for me.\" When you know the real objection, you can address it proactively in your marketing and sales conversations — before the prospect even raises it. That is the difference between closing 2 in 10 and closing 5 in 10."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Collect objections from real sales conversations, then build your response for each. This document should live next to your desk and get updated every time you hear a new objection.\n\n---"
+            },
+            {
+              "title": "Collect the Objections",
+              "content": "- [ ] ⚡ Quick Win · **List every reason a prospect has said no or hesitated in the last 6 months** — Even vague ones like \"I need to think about it.\" Write them all down without filtering.\n- [ ] **Group them into categories** — Most objections fall into 5 buckets:\n  - **Price** — \"It's too expensive\" / \"I can't afford it right now\"\n  - **Timing** — \"Not the right time\" / \"Maybe next quarter\"\n  - **Trust** — \"How do I know this will work?\" / \"I've been burned before\"\n  - **Authority** — \"I need to check with my partner/accountant/team\"\n  - **Need** — \"I'm not sure I need this\" / \"We're managing OK\"\n- [ ] **Identify your top 3 most common objections** — These are the ones you need bulletproof responses for. The rest can be handled more loosely."
+            },
+            {
+              "title": "Build Your Responses",
+              "content": "For each of your top 3 objections:\n\n- [ ] **Name the real concern behind the words** — \"Too expensive\" usually means \"I don't see enough value to justify the cost.\" \"Not the right time\" usually means \"This isn't painful enough yet.\" Identify the real objection underneath the polite version.\n- [ ] **Write a response that addresses the real concern, not the surface words** — Do not argue with the objection. Acknowledge it, then redirect to the real issue. Example: \"I completely understand. Before we talk about the investment, can I ask — if the cost were not a factor, would this be the right solution for you?\" If yes, the objection is value communication, not price.\n- [ ] **Add proof that reduces the risk** — Case studies, testimonials, guarantees, or data that answers \"will this work for someone like me?\" The more specific the proof, the more powerful. \"We helped a similar business increase revenue by 40% in 6 months\" beats \"our clients love us.\"\n- [ ] **Write a one-line version for marketing** — Address the objection before they raise it. Example in marketing copy: \"You might be thinking 'I've tried consultants before and nothing changed.' Here's why this is different...\""
+            },
+            {
+              "title": "Integrate Into Your Sales Process",
+              "content": "- [ ] **Address the top 3 objections proactively in your sales conversation** — Do not wait for them to raise it. Bring it up yourself: \"Most business owners I speak to have two concerns at this point...\" This demonstrates confidence and removes the awkwardness.\n- [ ] **Add objection-handling to your marketing content** — FAQ sections, email sequences, social proof placement — all designed to address concerns before the sales call happens.\n- [ ] ⚡ Quick Win · **Update your proposal or sales page to pre-empt your #1 objection** — Whatever concern comes up most often, address it directly in your sales materials. If it is trust, add case studies. If it is timing, add urgency. If it is price, add ROI calculation.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented playbook of objections and prepared responses you can use in every sales conversation\n- Proactive objection handling in your marketing that reduces resistance before the sales call\n- Higher close rates because concerns are addressed rather than ignored\n- A living document that improves every time you hear a new objection\n- Confidence in sales conversations because you have heard it all before"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Role-play objection handling in coaching sessions. Most clients know the right response intellectually but freeze when a real prospect pushes back. Practice makes the response feel natural rather than scripted.\n\nIf a client gets the same objection repeatedly and their response is not working, the problem is usually their offer, not their sales technique. If every prospect says \"too expensive,\" the value communication or the value itself needs work — loop back to Value Definition.\n\nThis is a living document. After every lost deal, the client should add the objection and their planned response for next time. Over 6 months, this becomes one of their most valuable business assets."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Objection Pattern Analysis",
+          "description": "Identify the predictable reasons they hesitate to buy from you or your competitors, so you can address these concerns proactively in your marketing and sales process.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Grade every current customer or client A, B, C, or D based on how closely they match your ideal customer profile. Then decide what to do with each grade — protect the As, develop the Bs, tolerate the Cs, and exit the Ds."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Michalowicz's Pumpkin Plan is built on one insight: the biggest pumpkins grow when you remove the small ones and pour all resources into the winners. Most business owners treat all clients equally — same attention, same effort, same energy. But your A clients are worth 5-10x what your D clients are worth, and your D clients often consume more of your time than anyone. The Customer Grade Analysis makes this visible so you can stop subsidising the wrong clients with your best energy."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Customer Avatar (from the Avatar Build action) as your benchmark. Grade every active client against that ideal.\n\n---"
+            },
+            {
+              "title": "Define Your Grading Criteria",
+              "content": "- [ ] **Choose 4-6 criteria that matter to your business** — Common criteria include: revenue generated, profit margin, ease of working with, referral likelihood, payment reliability, growth potential, and alignment with your purpose. Pick the ones that genuinely drive value in your business.\n- [ ] **Weight them if needed** — Not all criteria are equal. For some businesses, profitability matters more than revenue. For others, referral potential is king. Decide which 1-2 criteria matter most.\n- [ ] ⚡ Quick Win · **Use this as a starting framework and adapt it to your business type:**\n\n**Service businesses:**\n- A = High revenue + profitable + easy to work with + refers others\n- B = Good revenue but missing one element (e.g., profitable but never refers)\n- C = Average across the board — pays bills but does not excite\n- D = Low value + difficult + unprofitable + drains energy\n\n**Recurring/subscription businesses:**\n- A = Long tenure + high spend + low support needs + advocates\n- B = Good tenure but could spend more or engage more\n- C = Month-to-month, price-sensitive, minimal engagement\n- D = High churn risk + high support cost + complains publicly\n\n**Retail/hospitality:**\n- A = Frequent visits + high spend per visit + brings others + leaves reviews\n- B = Regular but modest spend, or high spend but infrequent\n- C = Occasional, discount-driven, no loyalty\n- D = Returns frequently, complains, costs more to serve than they spend"
+            },
+            {
+              "title": "Grade Your Clients",
+              "content": "- [ ] **List every active client or customer segment** — For businesses with many customers, group into segments rather than grading individually.\n- [ ] **Score each one against your criteria** — Be honest. The client you enjoy chatting with but who pays late and never refers is not an A.\n- [ ] **Assign the grade: A, B, C, or D** — Do not overthink it. Your gut reaction plus the criteria will give you the right answer in most cases.\n- [ ] ⚡ Quick Win · **Calculate what percentage of your revenue comes from each grade** — Often the result is startling: 20% of clients (the As) generate 60-80% of revenue. The Ds might represent 5% of revenue but 30% of your headaches."
+            },
+            {
+              "title": "Decide What to Do",
+              "content": "### A Clients — Protect and Replicate\n\n- [ ] **What do your A clients have in common?** — This feeds directly back into your Customer Avatar. Your As ARE your ideal client profile in real life.\n- [ ] **How are you showing them they are valued?** — If your A clients get the same experience as your D clients, you are underinvesting in the relationship that matters most. What could you do for your As that you do not do for everyone?\n- [ ] **Where did they come from?** — The source of your A clients tells you where to find more of them. Double down on that channel.\n\n### B Clients — Develop\n\n- [ ] **What is missing?** — For each B, identify the one thing that would make them an A. Is it spend? Referrals? Engagement? Then create a plan to develop it.\n- [ ] **Is it worth the effort?** — Some Bs will never become As. That is fine — they are still good clients. Focus development effort on the Bs with the highest potential.\n\n### C Clients — Tolerate Strategically\n\n- [ ] **Are any Cs costing you more than they generate?** — When you factor in time, energy, and opportunity cost, some Cs are actually loss-makers. Identify them.\n- [ ] **Can you systematise the C relationship?** — Automate, templatise, or reduce the service level so Cs require less of your personal attention. They can stay, but they should not consume A-level effort.\n\n### D Clients — Exit\n\n- [ ] ⚡ Quick Win · **Pick one D client and plan a graceful exit this month** — Refer them elsewhere, let the contract expire, or have the honest conversation. Every D client you remove frees capacity for a future A.\n- [ ] **Set a policy for future Ds** — How will you spot them before they become clients? What red flags will you watch for in sales conversations? Loop this back into your Objection Playbook and Serve & Swerve criteria.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear grade for every active client, making the invisible visible\n- A data-backed understanding of where your revenue and profit actually come from\n- A protection plan for your A clients — the relationships that matter most\n- An exit plan for D clients — freeing up energy and capacity\n- Sharpened ideal customer criteria based on what your real As look like\n- A quarterly habit: re-grade and re-assess as your client base evolves"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action produces strong emotional reactions. Clients often realise their biggest revenue client is actually a C or D when graded honestly (difficult, low margin, never refers). Help them separate emotion from economics — the grading is about business value, not personal feelings.\n\nThe Pumpkin Plan metaphor works well: \"You cannot grow a giant pumpkin while feeding 20 small ones. Cut the small ones, feed the big one.\" Most clients intellectually agree but emotionally resist. The grading makes the decision data-driven rather than gut-feel.\n\nRevisit this quarterly. Client grades change — Bs become As, Cs become Ds, new clients enter. The grading should be a living practice, not a one-off exercise.\n\nFor businesses with hundreds of customers (retail, e-commerce), grade by segment rather than individually. \"Repeat customers who spend over £X per visit\" is your A segment. The principle is the same at any scale."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

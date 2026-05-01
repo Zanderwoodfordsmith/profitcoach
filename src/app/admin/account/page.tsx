@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const linkItems = [
@@ -67,17 +68,10 @@ export default function AdminAccountPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="border-b border-slate-200 pb-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-          BOSS Dashboard
-        </p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">
-          Account
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Admin settings, links, and preferences.
-        </p>
-      </header>
+      <StickyPageHeader
+        title="Account"
+        description="Admin settings, links, and preferences."
+      />
 
       {checkingRole ? (
         <p className="text-sm text-slate-600">Checking access…</p>

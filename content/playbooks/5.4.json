@@ -1,0 +1,368 @@
+{
+  "ref": "5.4",
+  "level": 5,
+  "area": 4,
+  "name": "Wealth Building",
+  "subtitle": "Level 5 · Owner · Profit & Cash Flow",
+  "whatThisIs": "Your business has created wealth — now you need to protect it, grow it, and make it work for you beyond the company itself. Business income is not the same as personal security. Without structured wealth strategy, even successful business owners find themselves cash rich but asset poor, with everything tied up in one place.\n\nThis playbook is about converting business success into true financial independence. It covers how to diversify beyond your business, build an investment strategy that matches your goals, and create the financial foundation that gives you genuine choice about how you spend your time.\n\nThis is not about basic cash flow management or profit allocation — those fundamentals are handled in earlier playbooks. This is about sophisticated wealth building for business owners who have moved beyond survival mode.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Most of your wealth is tied up in the business and you have no clear plan for what happens next. You take cash out when you need it but have no structured investment strategy. Your personal finances are still reactive rather than strategic. You know you should be building wealth outside the business but you have no idea where to start or who to trust with advice."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have started diversifying but it feels ad hoc rather than strategic. You have some investments but no clear framework for making decisions. You are earning good money from the business but not sure if you are optimising tax efficiency or building wealth in the right way. You know this area needs attention but other priorities keep pushing it down the list."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear wealth building strategy that works alongside your business success. Your investments are diversified across asset classes and aligned with your risk tolerance and timeline. You understand the tax implications of different strategies and work with advisors you trust. You have defined what financial independence looks like for you and you can track progress towards it. The business funds your wealth building — but your security does not depend entirely on the business."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Is your wealth dangerously concentrated in one place? Most business owners have 80-90% of their wealth tied up in their company. This feels natural — it is your baby, you understand it, it has performed well. But it is also the ultimate undiversified position. One industry downturn or competitor could wipe out decades of wealth building.",
+    "Do you have an investment philosophy or are you just accumulating? Buying property because \"it always goes up\" or shares because \"everyone says they are good\" is not a strategy. Your investment approach should match your timeline, risk tolerance, and specific goals. Growth, income, or preservation — you need to know what you are optimising for.",
+    "Are your business and personal wealth strategies aligned? Taking large dividends might feel good but could be tax inefficient if you are not ready to invest that cash properly. Keeping everything in the business might defer tax but concentrates risk. The two strategies need to work together, not against each other.",
+    "What safeguards do you have if everything goes wrong? Insurance, diversification, and cash reserves are not exciting topics but they protect decades of hard work. Most business owners are great at building wealth and terrible at protecting it. Both matter equally.",
+    "When does work become optional for you? Financial independence has a number — the amount of assets that would support your desired lifestyle without the business income. Most owners have never calculated this figure. Without it, you are building wealth but have no idea whether you are building enough."
+  ],
+  "actionsIntro": "This is a larger playbook organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [],
+  "relatedPlaybooks": [],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Asset Diversification & Investment Strategy",
+      "description": "Moving beyond business-only wealth into a structured portfolio.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Wealth Concentration Audit",
+          "description": "Map exactly where your wealth sits right now and identify concentration risks. Most business owners are shocked by how much of their net worth depends on one asset.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map exactly where your wealth sits and identify concentration risks. List every asset you own, its approximate value, and what percentage of your total net worth it represents. Most business owners are shocked by how much of their net worth depends on a single asset - the business itself.\n\nThis is not about judging your financial position. It is about seeing it clearly so you can make informed decisions about diversification and risk."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Thomas Stanley's research in \"The Millionaire Next Door\" found that most wealthy business owners have 60-80% of their net worth tied up in their business. That is not wealth - that is concentration risk dressed up as success. If the business suffers a downturn, gets disrupted, or fails to sell at expected value, decades of work can evaporate.\n\nNassim Taleb's concept of antifragility applies here. A portfolio that is 80% dependent on one asset is fragile. One bad event - a market shift, a key client leaving, a health crisis - can wipe out most of your net worth. The audit is the first step toward building a more resilient financial position."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Gather your financial information (bank statements, investment accounts, property valuations, pension statements, business valuation estimate) and work through the mapping exercise. Be honest about values - use conservative estimates rather than optimistic ones.\n\n---"
+            },
+            {
+              "title": "Asset Mapping",
+              "content": "- [ ] **Estimate the current value of your business** - Use a conservative multiple of normalised EBITDA, or the price you would realistically accept if someone offered to buy today. Not the aspirational price - the realistic one.\n- [ ] **List all property assets with current values** - Primary residence, investment properties, commercial property. Use recent comparable sales, not purchase price or peak value.\n- [ ] **List all investment accounts and balances** - ISAs, general investment accounts, stocks, bonds, funds. Include crypto or alternative investments if applicable.\n- [ ] **List all pension provisions and current values** - Personal pensions, SIPPs, workplace pensions, defined benefit entitlements. Include estimated values.\n- [ ] **List all cash and savings** - Current accounts, savings accounts, fixed-term deposits. Include business cash reserves if you own 100% of the business.\n- [ ] **List any other significant assets** - Vehicles, collectibles, intellectual property, loans owed to you, partnership interests.\n- [ ] ⚡ Quick Win: **Write down your best guess of business value as a percentage of total net worth before doing the detailed mapping** - Then compare after. The gap between perception and reality is usually the most powerful part of this exercise."
+            },
+            {
+              "title": "Concentration Analysis",
+              "content": "- [ ] **Calculate the percentage of net worth in each asset class** - Business equity, property, investments, pensions, cash, other. Express each as a percentage of total.\n- [ ] **Flag any single asset representing more than 40% of net worth** - This is your primary concentration risk. It deserves specific attention and a plan to reduce over time.\n- [ ] **Assess liquidity of each asset** - How quickly could you convert each asset to cash? Business equity and property are illiquid. Investments and cash are liquid. Know the difference.\n- [ ] **Identify correlated risks** - If your business is in property, your commercial property and business equity may be correlated. A property downturn hits both simultaneously. Look for hidden correlations.\n- [ ] **Calculate your \"liquid net worth\"** - Total net worth minus illiquid assets (business, property). This is what you could actually access in a crisis. For many owners, this number is uncomfortably small."
+            },
+            {
+              "title": "Risk Assessment",
+              "content": "- [ ] **Scenario test: What happens to your net worth if the business value drops by 50%?** - How much of your total wealth would you lose? Can you afford that outcome?\n- [ ] **Scenario test: What if you could not sell the business at all?** - Some businesses are worth a lot to the owner but very little on the open market. What would your net worth look like without the business value?\n- [ ] **Identify your single biggest financial vulnerability** - The one event that could damage your wealth most severely. Name it and start thinking about how to protect against it.\n- [ ] ⚡ Quick Win: **Check whether your personal finances could survive 12 months with zero income from the business** - If not, building a personal cash buffer becomes an immediate priority.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Complete map of all assets with realistic valuations\n- Clear picture of wealth concentration, especially business dependency\n- Identification of liquidity gaps and correlated risks\n- Understanding of vulnerability to specific scenarios\n- Foundation for building a diversification strategy"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This exercise often produces discomfort. Owners who feel wealthy discover that most of their wealth is illiquid and concentrated. That is not a failure - it is normal for business owners. The value is in seeing it clearly and deciding to do something about it.\n\nBe careful with business valuations. Owners tend to use the number they heard from a broker or read about comparable sales. Push for conservative estimates. A business that \"could be worth\" a certain amount is not the same as one that has a firm offer at that price.\n\nThe emotional response to this audit varies widely. Some owners feel motivated to diversify immediately. Others feel defensive (\"The business IS my best investment\"). Both reactions are valid. The coach's role is to ensure the data is accurate and the risks are understood, then let the owner decide their comfort level."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Investment Philosophy Framework",
+          "description": "Define your investment approach based on timeline, risk tolerance, and specific financial goals rather than tips from friends or financial media noise.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define your personal investment approach based on your timeline, risk tolerance, and specific financial goals - not on tips from friends, hot takes from social media, or whatever performed well last year. Build a written investment philosophy that guides every allocation decision so you are consistent over time rather than reactive to market noise.\n\nYour philosophy answers: What do I believe about investing? What am I trying to achieve? What risks am I willing to accept? And what will I never do?"
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Howard Marks argues that having a clear investment philosophy is the single most important factor in long-term investment success. Without one, investors chase performance, panic during downturns, and make emotional decisions that destroy wealth. With one, they have a framework for staying disciplined when markets and friends are telling them to do something different.\n\nMost business owners are excellent investors in their own business but terrible investors outside it. They take the same aggressive, concentrated approach that built the business and apply it to public markets or property speculation. What works as a founder - conviction, concentration, high risk tolerance - is usually the opposite of what works as an investor."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each section honestly. The goal is a written document - your investment policy statement - that you can reference before making any investment decision. Share it with your financial adviser if you have one.\n\n---"
+            },
+            {
+              "title": "Define Your Investment Goals",
+              "content": "- [ ] **Write down your financial independence number** - How much capital do you need to generate enough passive income to fund your life without working? See [[5.4 Wealth Building]] for the Financial Independence Calculator action.\n- [ ] **Set a timeline** - When do you want to reach financial independence? 5 years? 10? 20? Your timeline determines how much risk you can afford to take.\n- [ ] **List specific financial milestones** - Not just \"get rich.\" Specific goals: children's education funded by X date. Mortgage paid by X date. Retirement income of X per year from X date.\n- [ ] **Determine how much you can invest regularly** - What amount can you move from business to personal investments each month or quarter without endangering the business? Be conservative.\n- [ ] ⚡ Quick Win: **Write down the single most important financial goal you have outside the business** - This becomes the anchor for your entire philosophy."
+            },
+            {
+              "title": "Understand Your Risk Profile",
+              "content": "- [ ] **Honestly assess your risk tolerance** - Not what you think it should be. What you actually feel when investments drop 20%. If that keeps you awake at night, you need a more conservative approach than you probably think.\n- [ ] **Separate risk tolerance from risk capacity** - Tolerance is emotional (how much loss can you stomach). Capacity is financial (how much loss can you absorb without it affecting your life). Both matter.\n- [ ] **Define your \"sleep test\"** - What is the maximum portfolio drop you could experience without changing your behaviour? 10%? 20%? 30%? Build your portfolio to stay within that boundary.\n- [ ] **Acknowledge what you do not know** - Most business owners overestimate their investment knowledge because they are successful in business. Different game, different rules. Intellectual humility is a competitive advantage here."
+            },
+            {
+              "title": "Set Your Investment Beliefs",
+              "content": "- [ ] **Write down 5 core beliefs about investing** - Examples: \"I believe in diversification over concentration.\" \"I believe costs matter more than picking winners.\" \"I believe time in the market beats timing the market.\" Your beliefs should drive your strategy.\n- [ ] **Define what you will never invest in** - Exclusions based on ethics, risk, or knowledge. \"I will never invest in something I do not understand.\" \"I will never put more than 10% in any single investment.\"\n- [ ] **Decide your stance on active vs. passive investing** - Evidence consistently shows that passive index funds outperform most active managers after fees. Take a position based on evidence, not ego.\n- [ ] **Set rules for when you will and will not act** - \"I will rebalance annually.\" \"I will not sell during a downturn unless my circumstances change.\" \"I will review but not act on any investment tip for 30 days.\" Rules prevent emotional decisions."
+            },
+            {
+              "title": "Build Your Investment Policy Statement",
+              "content": "- [ ] **Write a one-page document combining goals, risk profile, beliefs, and rules** - This is your investment constitution. Every decision gets tested against it.\n- [ ] **Share it with your financial adviser** - If they disagree with any part, have the conversation. If they ignore it, find a new adviser.\n- [ ] **Review it annually** - Your goals, timeline, and risk tolerance will change over time. Update the document when they do.\n- [ ] ⚡ Quick Win: **Before your next investment decision, ask: \"Does this align with my philosophy, or am I reacting to something?\"** - This single question prevents most bad investment decisions.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Written investment philosophy covering goals, risk tolerance, beliefs, and rules\n- Clear financial milestones with timelines\n- Framework for making consistent investment decisions over time\n- Protection against emotional, impulsive, or peer-influenced investing\n- Foundation for working productively with a financial adviser"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Many business owners resist this exercise because they believe investing should be intuitive, like business decisions. Help them see that the best investors in the world - Buffett, Marks, Dalio - all have written philosophies they follow religiously. Discipline is not boring. It is how wealth compounds.\n\nWatch for the owner who wants to apply their business instincts to investing: concentrated bets, leverage, insider knowledge, moving fast. In business, these are advantages. In public markets, they usually lead to losses. The mindset shift from founder to investor is significant.\n\nIf the client does not have a financial adviser, this is a good moment to suggest finding one. An independent financial adviser who works on a fee basis (not commission) can be invaluable for business owners building wealth outside the business. The philosophy statement makes the adviser relationship more productive."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Asset Allocation Model",
+          "description": "Build a diversified portfolio across asset classes that matches your life stage and reduces dependence on business performance alone.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a diversified portfolio across asset classes that matches your life stage, risk profile, and financial goals. Asset allocation - how you split your money across different types of investments - determines roughly 90% of long-term investment returns. This is not about picking winners. It is about building a structure that grows steadily and survives downturns.\n\nUse your Investment Philosophy Framework to guide the allocation. Then set a rebalancing schedule to maintain it over time."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Harry Markowitz called diversification \"the only free lunch in investing.\" By spreading capital across asset classes that do not move together, you reduce overall risk without proportionally reducing returns. A diversified portfolio does not outperform a concentrated bet in a good year, but it dramatically outperforms over a full market cycle because it avoids the catastrophic losses that concentrated portfolios suffer.\n\nFor business owners specifically, asset allocation is critical because the business itself is already a concentrated, illiquid, high-risk asset. Everything outside the business should balance that risk. If your business is your \"aggressive\" investment, your portfolio should be your \"conservative\" one."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review the asset class descriptions, decide on your target allocation percentages, and implement the model. Set a calendar reminder to rebalance annually or when any asset class drifts more than 5% from its target.\n\n---"
+            },
+            {
+              "title": "Understand the Asset Classes",
+              "content": "- [ ] **Equities (stocks and shares)** - Highest long-term returns but highest short-term volatility. Index funds provide diversified equity exposure at low cost. Consider global diversification, not just UK or home-country bias.\n- [ ] **Bonds and fixed income** - Lower returns but provide stability and income. Government bonds for safety, corporate bonds for higher yield with more risk. Essential ballast during equity downturns.\n- [ ] **Property (beyond your primary residence)** - Rental income plus capital growth, but illiquid and management-intensive. REITs offer property exposure without the hassle of direct ownership.\n- [ ] **Cash and near-cash** - Lowest returns but highest liquidity and zero volatility. Essential for short-term needs and as dry powder for opportunities. Not a long-term growth strategy.\n- [ ] **Alternative investments** - Private equity, commodities, infrastructure, hedge funds, crypto. Higher complexity and often higher fees. Only appropriate if you genuinely understand the investment and it fits your philosophy.\n- [ ] ⚡ Quick Win: **Check your current allocation right now** - Add up what you have in each category. Most owners discover they are heavily overweight in business equity and property, with very little in diversified investments."
+            },
+            {
+              "title": "Design Your Target Allocation",
+              "content": "- [ ] **Choose an allocation model based on your risk profile and timeline** - Conservative (more bonds, less equity), balanced (roughly equal), or growth (more equity, less bonds). Your Investment Philosophy Framework guides this choice.\n- [ ] **Set target percentages for each asset class** - Write them down. Example: 50% equities, 20% bonds, 15% property, 10% cash, 5% alternatives. Your numbers will differ based on your situation.\n- [ ] **Factor in your business as an asset class** - If 60% of your net worth is in the business, your non-business portfolio should be more conservative than it would otherwise be. The business is your growth engine. The portfolio is your safety net.\n- [ ] **Consider your income needs** - If you need investment income now, weight toward income-producing assets (bonds, dividend stocks, rental property). If you are building for the future, weight toward growth.\n- [ ] **Set a rebalancing trigger** - Rebalance annually, or whenever any asset class drifts more than 5% from its target. This forces the discipline of selling what has grown and buying what has dropped - the opposite of what emotions suggest."
+            },
+            {
+              "title": "Implementation",
+              "content": "- [ ] **Choose your investment vehicles** - Index funds for equity and bond exposure (low cost, diversified). REITs or property funds for property exposure. High-interest accounts for cash. Keep it simple - complexity rarely adds value.\n- [ ] **Set up regular contributions** - Automate monthly or quarterly transfers from business to personal investment accounts. Consistency matters more than timing.\n- [ ] **Document your allocation model** - Write down your target percentages, chosen vehicles, contribution amounts, and rebalancing rules. This is the operational companion to your Investment Philosophy.\n- [ ] **Review with a professional** - Share your model with an independent financial adviser. They may identify risks or opportunities you missed. Accept advice on the structure, not on specific tips.\n- [ ] ⚡ Quick Win: **Set up a standing order to move money from your business to a personal investment account** - Even a small amount. The habit of regular investment matters more than the amount.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Written target allocation across all major asset classes\n- Clear rationale for each allocation decision tied to your goals and risk profile\n- Automated contribution system moving money from business to investments\n- Annual rebalancing rhythm that maintains target allocation over time\n- Reduced dependence on business value for overall financial security"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most business owners find this action frustrating because it feels passive compared to running a business. They want to pick stocks, time markets, or make concentrated bets. The evidence is overwhelmingly against this approach for non-professional investors. Help them accept that boring, consistent allocation beats exciting, inconsistent speculation.\n\nThe biggest implementation barrier is usually moving money out of the business. Owners always find a reason to reinvest in the business instead: \"I need it for growth,\" \"Cash flow is tight this quarter,\" \"There is a big opportunity coming.\" Challenge this. The business will always want more capital. The question is whether the owner's long-term financial security should be sacrificed for the business's short-term appetite.\n\nIf the client is uncomfortable designing their own allocation, that is fine. The action's value is in understanding the principles. The actual allocation can be designed with a financial adviser. But the owner should understand and agree with the logic, not just outsource the decision."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Tax-Efficient Wealth Transfer",
+          "description": "Structure how money moves from business to personal investments in the most tax-efficient way, including timing and vehicle selection.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Structure how money moves from your business to your personal investments in the most tax-efficient way possible. Every pound you extract from the business gets taxed. The difference between a well-structured and poorly structured extraction strategy can be worth tens or hundreds of thousands of pounds over a business lifetime.\n\nThis is not about avoidance. It is about using legitimate structures, allowances, and timing to keep more of what you have earned."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners take money out of their business in the simplest way possible - salary and dividends - without considering whether a more structured approach would save them significant tax. HMRC provides numerous legitimate reliefs, allowances, and structures specifically designed for business owners. Not using them is leaving money on the table.\n\nThe compound effect of tax efficiency is enormous. An owner who saves 5% more of their extraction each year, invested over 20 years, accumulates significantly more wealth than one who does not. Tax efficiency is not a one-time win - it is a permanent advantage that compounds."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through this checklist to identify opportunities you may be missing. Then engage a qualified accountant or tax adviser to implement the ones that apply to your situation. This action provides awareness and direction - professional advice is essential for implementation.\n\n---"
+            },
+            {
+              "title": "Salary & Dividend Strategy",
+              "content": "- [ ] **Review your salary level** - Are you taking the tax-optimal salary? In most cases, this is at the National Insurance threshold. Above that, dividends are usually more tax-efficient.\n- [ ] **Optimise your dividend strategy** - Use your annual dividend allowance fully. Consider timing dividends across tax years to stay within lower tax bands.\n- [ ] **Consider your spouse or partner's tax position** - If they are a shareholder, their lower tax bands may offer additional extraction efficiency. Ensure any arrangement is commercially legitimate.\n- [ ] ⚡ Quick Win: **Check whether your salary is set at the optimal NI threshold for the current tax year** - This is the single most common missed optimisation. Five minutes with your accountant can save thousands annually."
+            },
+            {
+              "title": "Pension Contributions",
+              "content": "- [ ] **Maximise employer pension contributions** - Company pension contributions are a corporation tax deduction and do not attract NI or income tax. The annual allowance is generous - make sure you are using it.\n- [ ] **Consider carry-forward rules** - If you have unused pension allowance from the previous 3 tax years, you can carry it forward. This allows larger one-off contributions in profitable years.\n- [ ] **Review your pension fund structure** - SIPPs offer investment flexibility. Ensure your pension is invested in line with your Asset Allocation Model, not sitting in a default fund.\n- [ ] **Plan for the lifetime allowance implications** - Although the lifetime allowance charge has been removed, keep tracking total pension value in case rules change. Tax policy is not permanent."
+            },
+            {
+              "title": "Business Asset Structures",
+              "content": "- [ ] **Review company ownership of assets** - In some cases, holding property or investments through the company is more tax-efficient than personal ownership. In others, it is not. Get specific advice for your situation.\n- [ ] **Consider a holding company structure** - If you have significant retained profits, a holding company can allow tax-efficient reinvestment and provide asset protection. Not suitable for every business, but worth evaluating.\n- [ ] **Review Business Asset Disposal Relief (formerly Entrepreneurs' Relief)** - Understand the current rules and qualifying criteria. This relief can significantly reduce CGT on business sale, but it has conditions and limits.\n- [ ] **Plan for inheritance tax implications** - Business Property Relief can shelter business assets from IHT, but the rules are specific. Ensure your structure qualifies and plan ahead."
+            },
+            {
+              "title": "Extraction Timing",
+              "content": "- [ ] **Plan profit extraction around tax year boundaries** - Timing dividend declarations and bonus payments to span two tax years can keep income within lower bands.\n- [ ] **Build a multi-year extraction plan** - Rather than taking large sums in one year, plan a 3-5 year extraction strategy that smooths income and minimises peak tax rates.\n- [ ] **Consider retained profits strategy** - Not all profits need extracting immediately. Retained profits grow within the company and can be extracted more efficiently over time or via eventual sale.\n- [ ] **Review annually with your accountant** - Tax rules change every budget. What was optimal last year may not be optimal this year. Book an annual tax planning meeting, not just a compliance review.\n- [ ] ⚡ Quick Win: **Ask your accountant: \"Am I extracting profits in the most tax-efficient way?\"** - If they have not proactively raised this, you may need a more advisory-focused accountant.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear understanding of current extraction strategy and its tax efficiency\n- Identified opportunities for more tax-efficient extraction\n- Professional advice engaged for implementation\n- Multi-year extraction plan that maximises wealth transfer from business to personal investments\n- Annual review rhythm that keeps the strategy current with changing tax rules"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action sits at the intersection of coaching and professional advice. The coach's role is to ensure the client is thinking about tax efficiency and engaging the right professionals. The coach should not provide specific tax advice - that is for accountants and tax advisers.\n\nMany business owners have a compliance-focused accountant who files returns accurately but does not proactively advise on tax planning. If a client cannot remember the last time their accountant suggested a tax-saving strategy, they may benefit from a more advisory-focused relationship. Raising this question diplomatically is part of the coaching value.\n\nWatch for the owner who avoids this topic because it feels complicated or \"not my area.\" Tax efficiency is not optional at Level 5 - the sums involved are too significant. Push them to engage, even if they delegate the detail to a professional."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Risk Management & Protection",
+      "description": "Protecting the wealth you have already built.",
+      "actions": [
+        {
+          "number": 5,
+          "title": "Downside Protection Strategy",
+          "description": "Build safeguards through insurance, cash reserves, and defensive positioning so that one bad event cannot destroy decades of wealth building.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build safeguards through insurance, cash reserves, and defensive positioning so that one bad event cannot destroy decades of wealth. Map every significant risk to your financial position, assess the potential impact of each, and put protection in place for the ones that could be catastrophic.\n\nThis is not about eliminating all risk. It is about ensuring that no single event - health crisis, lawsuit, market crash, business failure, key person loss - can wipe you out."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Nassim Taleb's core insight is that the downside matters more than the upside. Most people spend their time trying to maximise gains while ignoring the risks that could destroy everything. One uninsured liability, one unprotected concentration, one missing safety net can undo 20 years of wealth building in a single event.\n\nBusiness owners are particularly vulnerable because their financial lives are complex. Personal and business finances are often intertwined. Guarantees, directorships, and contractual obligations create exposures that employed people never face. Protecting the downside is not pessimism - it is the foundation that makes aggressive wealth building possible."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each protection category and check whether you have adequate coverage. Flag gaps and engage professionals (insurance broker, solicitor, financial adviser) to close them. Review the entire strategy annually.\n\n---"
+            },
+            {
+              "title": "Insurance Protection",
+              "content": "- [ ] **Review life insurance coverage** - Is it sufficient to clear all debts, fund your family's lifestyle, and replace your income? Factor in business debts with personal guarantees. Get professional advice on the right amount.\n- [ ] **Review critical illness and income protection** - If you cannot work for 12 months, what happens? Income protection replaces your earnings. Critical illness provides a lump sum. Both are essential for business owners.\n- [ ] **Check key person insurance for the business** - If you died or became incapacitated, could the business survive the transition? Key person insurance provides a cash buffer for the business during disruption.\n- [ ] **Review professional indemnity and liability insurance** - Are your limits adequate for the size of your contracts and exposure? Underinsurance is as dangerous as no insurance.\n- [ ] **Check directors and officers (D&O) insurance** - Personal liability for directors' decisions is real and can be financially devastating. If you do not have D&O cover, get it.\n- [ ] ⚡ Quick Win: **Call your insurance broker and ask: \"Is there any significant gap in my coverage?\"** - Brokers see your position from the outside. They often spot risks you have normalised."
+            },
+            {
+              "title": "Cash Reserves",
+              "content": "- [ ] **Build a personal emergency fund** - Minimum 6 months of living expenses in a readily accessible account. Not invested, not in the business, not tied up in property. Pure cash safety net.\n- [ ] **Build a business emergency fund** - Minimum 3 months of fixed operating costs. Separate from working capital. Only touched in genuine emergencies.\n- [ ] **Stress test both funds** - What if you needed to cover 12 months instead of 6? What if the business and personal emergencies happened simultaneously? Is there enough?\n- [ ] **Protect reserves from yourself** - Put emergency funds in a separate account that is slightly inconvenient to access. This prevents dipping into them for non-emergencies."
+            },
+            {
+              "title": "Structural Protection",
+              "content": "- [ ] **Review personal guarantee exposure** - List every personal guarantee you have given: bank loans, property leases, supplier agreements. Understand the total amount you are personally liable for.\n- [ ] **Assess whether any guarantees can be removed or reduced** - As the business grows, renegotiate terms. Replace personal guarantees with business-only security where possible.\n- [ ] **Review your company structure for asset protection** - Are personal assets properly separated from business liabilities? In some cases, holding companies or trust structures provide additional protection.\n- [ ] **Ensure your will is current and comprehensive** - Not just for inheritance, but for business continuity. What happens to your shares, your directorship, your guarantees if you die unexpectedly?\n- [ ] **Set up lasting powers of attorney** - For both health and finance. If you are incapacitated, someone needs legal authority to manage your affairs and make business decisions.\n- [ ] ⚡ Quick Win: **Check when you last updated your will** - If the answer is \"more than 3 years ago\" or \"never,\" book an appointment with a solicitor this week.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Complete map of all significant financial risks and current protection status\n- Insurance coverage reviewed and gaps identified\n- Personal and business emergency funds established at appropriate levels\n- Structural protections (guarantees, company structure, legal documents) reviewed and updated\n- Confidence that no single event can destroy your financial position"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is the action that most owners agree is important but keep postponing. Insurance reviews, wills, and powers of attorney are not exciting. But the coach who pushes a client to complete this work may end up being the person who saved their family from financial disaster.\n\nStart with the quick wins - they build momentum. Calling the insurance broker and checking the will take minutes. Once those are done, the bigger structural items feel less daunting.\n\nWatch for the owner who says \"I will get to it\" and never does. Set specific deadlines in the coaching session. \"By our next meeting, you will have called your insurance broker and booked a will review.\" Accountability is the coach's primary value here - the client knows what to do, they just need someone to hold them to it."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Estate Planning Foundations",
+          "description": "Structure your affairs so wealth transfers efficiently to your beneficiaries, minimising tax and complexity while protecting your intentions.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Structure your affairs so wealth transfers efficiently to your beneficiaries, minimising tax and complexity. Estate planning is not just about writing a will - it covers how assets are owned, how business interests transfer, how inheritance tax is managed, and how your wishes are documented clearly enough to be executed without dispute.\n\nThis action covers the foundational elements. Complex estate planning requires professional advice, but every business owner should understand and complete these basics."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without proper estate planning, the default outcome is determined by law, not by your wishes. In the UK, intestacy rules decide who gets what, and the result is often not what the owner would have chosen. Business assets can be frozen during probate. Tax liabilities can force the sale of assets at unfavourable prices. Family members can end up in disputes that destroy relationships and wealth simultaneously.\n\nFor business owners, the stakes are higher than for employed people. Business interests, shareholdings, directorships, and intellectual property all need specific handling. A business owner who dies without adequate estate planning does not just leave a mess - they may destroy the business they spent decades building."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through this checklist to assess your current position. Engage a solicitor who specialises in business owner estate planning for anything beyond the basics. This is not an area for DIY.\n\n---"
+            },
+            {
+              "title": "Foundational Documents",
+              "content": "- [ ] **Ensure you have a current, comprehensive will** - Covering all personal and business assets. If your circumstances have changed since the last will (marriage, divorce, new children, business growth), it needs updating.\n- [ ] **Set up lasting power of attorney for finances** - If you lose mental capacity, someone needs legal authority to manage your financial affairs. Without an LPA, your family faces a costly, slow court process.\n- [ ] **Set up lasting power of attorney for health** - Separate from financial LPA. Appoints someone to make health decisions if you cannot. Essential, often neglected.\n- [ ] **Write a letter of wishes** - Not legally binding but extremely valuable. Explains the reasoning behind your will, provides guidance on business decisions, and helps executors understand your intentions.\n- [ ] ⚡ Quick Win: **Check whether your LPAs are in place and registered** - If not, download the forms from gov.uk or instruct a solicitor. Registration takes weeks, so start early."
+            },
+            {
+              "title": "Business Asset Planning",
+              "content": "- [ ] **Clarify what happens to your shares on death** - Does your shareholder agreement have a buy-sell provision? Cross-option agreement? Or will your shares pass through your estate with no plan for what happens next?\n- [ ] **Review Business Property Relief eligibility** - Shares in qualifying trading companies can pass free of inheritance tax. Ensure your structure qualifies and document it.\n- [ ] **Consider a cross-option agreement with co-shareholders** - If you have business partners, a cross-option ensures your shares can be bought at agreed value rather than left in limbo.\n- [ ] **Assess the impact of your death on business operations** - Who takes over? How are decisions made? How is the transition funded? Your estate plan should dovetail with your succession plan.\n- [ ] **Ensure key documents are accessible** - Shareholder agreements, partnership deeds, insurance policies, bank mandates. Your executors need to find these quickly. Document locations clearly."
+            },
+            {
+              "title": "Inheritance Tax Planning",
+              "content": "- [ ] **Calculate your potential IHT exposure** - Total estate value minus allowances (nil-rate band, residence nil-rate band, BPR). Know the potential liability before planning how to mitigate it.\n- [ ] **Review how assets are owned** - Joint ownership, sole ownership, trust ownership. How assets are held affects both IHT and probate. Get advice on the optimal structure.\n- [ ] **Consider lifetime giving** - Gifts made more than 7 years before death are typically free of IHT. Regular gifts from surplus income can also be exempt. These strategies require planning and record-keeping.\n- [ ] **Review trust structures** - Trusts can be useful for IHT planning, asset protection, and control over how wealth is distributed. But they are complex and have their own tax implications. Professional advice is essential.\n- [ ] **Ensure life insurance is in trust** - If your life insurance pays into your estate, it increases the taxable value. Putting policies in trust means the payout goes directly to beneficiaries, outside the estate.\n- [ ] ⚡ Quick Win: **Check whether your life insurance policies are written in trust** - If not, your insurance provider can usually arrange this with a simple form. Potentially saves your family tens of thousands in IHT.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- All foundational legal documents in place and current (will, LPAs, letter of wishes)\n- Business asset transfer planned and aligned with succession strategy\n- Inheritance tax exposure calculated and mitigation strategies identified\n- Key documents accessible and locations documented for executors\n- Professional advice engaged for complex elements"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Estate planning is the topic most owners know they should address but actively avoid. The reasons are understandable - it involves confronting mortality, family dynamics, and legal complexity. The coach's role is to make it feel manageable by breaking it into the specific, practical steps in this checklist.\n\nStart with the quick wins. Getting LPAs registered and checking life insurance trusts are high-impact, low-effort actions. Once those are done, the momentum makes the bigger items feel less overwhelming.\n\nNever provide specific tax or legal advice. The coach's value is in ensuring the client engages with the topic, prioritises the work, and follows through with professional advisers. If a client says \"My accountant handles all that,\" ask them to name three specific things their accountant has done for estate planning in the last year. If they cannot, the work is not being done."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Financial Independence Planning",
+      "description": "Creating the roadmap to make work optional.",
+      "actions": [
+        {
+          "number": 7,
+          "title": "Financial Independence Calculator",
+          "description": "Define exactly how much passive income you need and how much capital that requires, then track progress towards that target with specific milestones.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define exactly how much passive income you need to fund your ideal life, calculate how much capital is required to generate it, and track your progress with clear milestones. Financial independence is not a vague aspiration - it is a specific number. This action helps you find that number and build a roadmap to reach it.\n\nWork through three stages: define your required income, calculate the capital needed, and set quarterly milestones to track progress."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners have no idea what financial independence actually costs for them personally. They work toward \"enough\" without defining what enough means. The result is either working far longer than necessary (because they never realise they have already arrived) or retiring and discovering they do not have enough (because they never calculated the real requirement).\n\nJL Collins' \"Simple Path to Wealth\" principle applies: the number is simpler than you think, and the path is more achievable than you fear. Once you know the number, every financial decision becomes clearer. Every pound invested is measurable progress. Every unnecessary expense is visible delay."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the three sections in order. The calculations are straightforward - you do not need a financial adviser for this part. What you need is honesty about your lifestyle costs and discipline about tracking progress.\n\n---"
+            },
+            {
+              "title": "Stage 1: Define Your Required Income",
+              "content": "- [ ] **Calculate your current annual living expenses** - Not your income, your actual spending. Go through 12 months of bank statements. Include everything: mortgage/rent, bills, food, travel, leisure, children, insurance, subscriptions.\n- [ ] **Adjust for your ideal lifestyle** - Your Life Vision Canvas (see [[5.0 Life Design]]) describes the life you want. Does it cost more or less than your current lifestyle? Be realistic. Adventure, travel, and freedom often cost more than people estimate.\n- [ ] **Add a buffer of 20%** - Life surprises you. Healthcare costs rise. Inflation erodes purchasing power. Children have unexpected needs. Build in a margin.\n- [ ] **Calculate your annual Financial Independence Income** - Current expenses, adjusted for ideal lifestyle, plus 20% buffer. This is the annual income your investments need to generate.\n- [ ] ⚡ Quick Win: **Write down your best guess of annual living costs before checking the bank statements** - Then compare. Most people underestimate by 20-30%."
+            },
+            {
+              "title": "Stage 2: Calculate Required Capital",
+              "content": "- [ ] **Choose a safe withdrawal rate** - The standard guideline is 4% (the \"Trinity Study\" rule). This means you need capital of 25x your annual income requirement. More conservative planners use 3.5% (roughly 29x). Choose your comfort level.\n- [ ] **Calculate your Financial Independence Number** - Annual income needed multiplied by 25 (at 4%) or 29 (at 3.5%). This is the total investment capital you need to be financially independent.\n- [ ] **Subtract your current investment portfolio value** - What you already have invested (excluding business equity and primary residence). The gap between this and your FI number is what you still need to build.\n- [ ] **Factor in pension income** - State pension and any defined benefit pensions reduce the capital you need. Calculate the income these will provide and subtract it from your annual requirement before calculating the capital number.\n- [ ] **Factor in business sale proceeds (conservatively)** - If you plan to sell the business, estimate net proceeds after tax. This reduces the gap. But use a conservative valuation - do not count on the best-case scenario."
+            },
+            {
+              "title": "Stage 3: Build Your Roadmap",
+              "content": "- [ ] **Calculate how much you need to invest annually to reach your FI number** - Based on the gap, your timeline, and assumed investment returns (use 5-7% real returns for a balanced portfolio). Online compound interest calculators make this easy.\n- [ ] **Set quarterly milestones** - Break the annual target into quarterly investment contributions. Track whether you are on pace.\n- [ ] **Define \"levels\" of financial independence** - Level 1: 6 months' expenses in cash (security). Level 2: Annual expenses covered by investments (breathing room). Level 3: Full FI number reached (freedom). Celebrate each level.\n- [ ] **Track net worth quarterly** - Total assets minus total liabilities. Plot the number on a simple chart. Watching it grow is motivating.\n- [ ] **Review and recalculate annually** - Lifestyle costs change. Investment values fluctuate. The number is not fixed - it is a living target that you update regularly.\n- [ ] ⚡ Quick Win: **Calculate your FI number right now using rough estimates** - Even a rough number is infinitely more useful than no number. Refine it later.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Specific annual income requirement for financial independence\n- Clear capital target (your Financial Independence Number)\n- Understanding of the gap between where you are and where you need to be\n- Quarterly milestones and tracking system\n- Motivating progress chart that makes abstract wealth building feel tangible"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most motivating actions in the system. When a client sees a specific number and a realistic path to it, the conversation shifts from \"I hope I can retire someday\" to \"I am X% of the way there and I know exactly what to do next.\"\n\nThe most common mistake is using gross income instead of actual expenses as the starting point. Push clients to use real spending data, not salary. Many discover they need less than they thought, which means their FI number is more achievable than expected.\n\nWatch for the client who calculates a very large number and feels discouraged. Help them see the role of business sale proceeds, pension income, and compound growth. Also introduce the \"levels\" concept - they do not need to reach full FI to feel the benefit. Even Level 1 (6 months in cash) dramatically reduces financial anxiety and improves decision-making."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Wealth Monitoring Dashboard",
+          "description": "Build a simple system to track net worth, investment performance, and progress towards financial independence goals across all asset classes and accounts.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple system to track your net worth, investment performance, and progress toward financial independence goals. You do not need complex software. A spreadsheet updated monthly is enough. The goal is visibility - seeing your complete financial picture in one place so you can make informed decisions and track progress over time.\n\nSet it up once, then update it monthly. The 15 minutes it takes each month is the most valuable financial time you will spend."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build the dashboard using a spreadsheet (Google Sheets or Excel). Follow the structure below. Populate it with current values, then set a recurring monthly calendar reminder to update it."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Peter Drucker's principle - \"What gets measured gets managed\" - applies powerfully to personal wealth. Most business owners can tell you their business revenue to the penny but have no idea what their personal net worth is, how their investments performed last quarter, or whether they are on track for financial independence.\n\nWithout a dashboard, wealth building happens by accident. Money sits in wrong accounts, underperforming investments go unnoticed, and progress toward goals is invisible. With a dashboard, you see the truth every month. That visibility drives better decisions - where to invest, what to cut, whether to accelerate or relax.\n\n---"
+            },
+            {
+              "title": "Dashboard Structure",
+              "content": "### Section 1: Net Worth Tracker\n- [ ] **List all assets with current values** - Business equity, property, investments, pensions, cash, other. One row per asset. Update monthly.\n- [ ] **List all liabilities** - Mortgage, business loans, personal loans, credit cards, other debts. One row per liability. Update monthly.\n- [ ] **Calculate total net worth** - Assets minus liabilities. This is your headline number. Track it monthly and plot it on a chart.\n- [ ] **Calculate liquid net worth** - Total net worth minus illiquid assets (business, property). This is what you could access in a crisis. Track it separately.\n- [ ] ⚡ Quick Win: **Create a simple spreadsheet with two columns (Asset/Value and Liability/Value) and fill it in right now** - You will have a net worth figure within 30 minutes.\n\n### Section 2: Investment Performance\n- [ ] **Track each investment account's value monthly** - ISAs, SIPPs, general investment accounts, property investments. Simple value tracking, not detailed transaction analysis.\n- [ ] **Calculate total investment return** - Compare current total to contributions plus previous month's value. You do not need exact IRR calculations - a simple \"Am I up or down, and by how much?\" is sufficient.\n- [ ] **Compare your allocation to your target** - Your Asset Allocation Model sets target percentages. Check monthly whether you have drifted. If any class is 5%+ off target, schedule a rebalance.\n- [ ] **Track investment contributions** - How much did you add this month? Are you on track with your annual contribution target?\n\n### Section 3: Financial Independence Progress\n- [ ] **Display your FI number prominently** - The total capital target from your Financial Independence Calculator. This is the finish line.\n- [ ] **Calculate percentage progress** - Current investment portfolio (excluding business and primary residence) divided by FI number. Express as a percentage. Watch it grow.\n- [ ] **Estimate time to FI** - Based on current portfolio, monthly contributions, and assumed returns. This number will fluctuate but gives you a rough timeline.\n- [ ] **Track your \"FI level\"** - Level 1 (6 months' expenses in cash), Level 2 (annual expenses covered), Level 3 (full FI). Which level are you at?\n- [ ] ⚡ Quick Win: **Calculate your current FI percentage** - Investment portfolio divided by FI number, times 100. Even 5% is progress worth celebrating.\n\n### Section 4: Monthly Review Checklist\n- [ ] **Update all asset and liability values** - Takes 10-15 minutes with online banking and investment platform access.\n- [ ] **Note any significant changes** - Large expenses, windfalls, business distributions, investment gains or losses. Context helps you understand the numbers.\n- [ ] **Check for actions needed** - Rebalancing, contribution increases, insurance renewals, policy reviews. The dashboard should trigger action, not just record numbers.\n- [ ] **Compare to previous month and same month last year** - Monthly comparison shows short-term progress. Annual comparison shows the trend. Both matter.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Single-view dashboard showing complete personal financial picture\n- Monthly tracking rhythm that takes 15 minutes\n- Clear visibility of progress toward financial independence\n- Investment performance monitoring against target allocation\n- Data-driven financial decisions instead of guesswork"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest barrier to building a dashboard is perceived complexity. Many owners think they need sophisticated financial software or a detailed accounting system. They do not. A simple spreadsheet with current values, updated monthly, is more than 90% of business owners have. Start simple and add complexity only if needed.\n\nThe first time a client fills in the dashboard is often a significant moment. Seeing their complete financial position in one place - sometimes for the first time ever - frequently triggers important realisations. Common reactions: \"I did not realise how much was tied up in the business,\" \"My liquid position is much weaker than I thought,\" or \"I am actually further along than I expected.\"\n\nHold clients accountable to the monthly update. It is easy to set up and then neglect. Build it into the coaching rhythm: \"Before we discuss business performance, show me your wealth dashboard.\" Making it a standing agenda item ensures it gets done.\n\nIf a client finds the monthly update genuinely impossible (it should not be), suggest automating it. Tools like Moneyhub, Emma, or a simple portfolio tracker can pull investment values automatically. But even a manual spreadsheet works if it is maintained."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

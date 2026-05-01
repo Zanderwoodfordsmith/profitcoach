@@ -1,0 +1,224 @@
+{
+  "ref": "5.6",
+  "level": 5,
+  "area": 6,
+  "name": "Product Development",
+  "subtitle": "Level 5 · Owner · Operations & Delivery",
+  "whatThisIs": "Product development is how you evolve what your business offers to stay relevant, profitable, and growing. It is not about chasing every shiny idea that comes along. It is about structured innovation that protects your core while exploring new opportunities.\n\nAt Level 5, your business runs without you, but it still needs to grow and adapt. Markets change. Competitors emerge. Customer needs evolve. Product development gives you the framework to stay ahead of the curve without losing focus on what already works.\n\nThis playbook is about balancing innovation with discipline — knowing when to double down on your core, when to experiment with new offers, and how to validate demand before you invest time and resources.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You are either stuck with the same offers you have had for years while competitors pass you by, or you are constantly chasing new ideas without finishing anything. Product decisions are reactive — driven by competitor moves, random customer requests, or founder whims. There is no pipeline of what comes next. Innovation feels risky because there is no system to test ideas before committing."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some new products in development but the process feels chaotic. Sometimes launches work, sometimes they do not, and you are not sure what made the difference. You know you need to innovate but you are not sure where to focus. There is appetite for new things but no clear roadmap linking them to your strategy."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear 12-24 month innovation pipeline with a mix of core improvements and experimental new offers. Every new product gets validated with real customer demand before full development. You know exactly what percentage of effort goes to core vs new, and risk is proportionate to potential. Innovation serves your positioning and strategic intent instead of diluting it."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Where is your innovation pipeline for the next 12-24 months? If you cannot map out what is coming next, you are flying blind. Markets move fast at this level. You need a clear view of what you will launch, when, and why.",
+    "Are you balancing core refinement with genuine innovation? Most businesses either get addicted to new product launches or stick with the same offers for too long. The right mix depends on your market and competitive position, but you need both.",
+    "Is there real evidence of demand before you build? The biggest product failures happen because someone thought \"this would be a good idea\" without validating it with actual customers. Demand validation does not mean asking customers what they want — it means testing if they will pay for it.",
+    "Does your product roadmap serve your strategic positioning? Random innovation weakens your brand. Every new product should either strengthen your position in your core market or deliberately move you into a new one. Anything else is a distraction.",
+    "How systematic is your iteration process? Products are never finished — they evolve based on feedback, market changes, and competitive moves. Without a structured way to gather feedback and integrate improvements, good products become stagnant products."
+  ],
+  "quickWins": [
+    "This week: List every product or service you offer and mark each as \"core\" (essential to your business), \"growth\" (expanding what works), or \"experimental\" (testing new ground). Check the balance.",
+    "This week: Pick your most likely next product launch and define the minimum viable test to validate demand before you build it. Pre-order page, customer survey, or pilot programme.",
+    "This week: Review your biggest product successes and failures from the last two years. What patterns can you see? What would you do differently next time?"
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "5.2",
+      "description": ""
+    },
+    {
+      "ref": "4.2",
+      "description": ""
+    },
+    {
+      "ref": "3.2",
+      "description": ""
+    },
+    {
+      "ref": "4.7",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Innovation Pipeline",
+          "description": "Map out your 12-24 month product roadmap with clear timelines, resource allocation, and strategic rationale for each initiative. Separate core improvements from new experiments.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map your 12-24 month product roadmap with clear timelines, resource requirements, and strategic rationale for each item. Separate core product improvements from new experiments so you can invest in both without confusing the two. This gives you a structured plan for what to build, when to build it, and why it matters."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses either never innovate (they sell the same thing for years until it stops working) or they innovate chaotically (chasing every new idea without finishing anything). Both paths lead to stagnation. A structured pipeline solves this by giving innovation a container. You know what you are working on now, what is coming next, and what is just an idea being tested. Without this structure, the loudest idea wins - usually whatever the owner got excited about last Tuesday."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build your pipeline in three stages: gather all ideas, categorise them, then sequence them into a timeline.\n\n---"
+            },
+            {
+              "title": "Gather Your Product Ideas",
+              "content": "- [ ] **Brain-dump every product idea, improvement, and enhancement you have been thinking about** - New offers, add-ons, upgrades, bundled packages, digital products, events, service improvements. Get everything out of your head and onto paper.\n- [ ] **Review customer feedback from the last 6 months** - What have customers asked for? What have they complained about? What do they wish you offered?\n- [ ] ⚡ Quick Win: Check your last 10 support tickets or complaint emails. The product improvements hiding in complaints are usually the most valuable ones.\n- [ ] **Ask your team: \"If you could fix or add one thing to what we offer, what would it be?\"** - Front-line staff see problems the owner misses.\n- [ ] **Review competitor offerings** - What are competitors offering that you do not? Not to copy, but to spot gaps and opportunities."
+            },
+            {
+              "title": "Categorise Each Idea",
+              "content": "- [ ] **Label each idea as one of three types:**\n  - **Core improvement** - Makes your existing offer better (faster delivery, higher quality, better experience)\n  - **Extension** - Adds something new to your existing offer (upsell, add-on, new tier)\n  - **Experiment** - Completely new offer or market (untested, higher risk, higher potential reward)\n- [ ] **Score each idea on three dimensions (1-5 each):**\n  - Revenue potential - How much could this generate?\n  - Customer impact - How much would customers value this?\n  - Effort required - How much time, money, and resource to build?\n- [ ] **Calculate priority: (Revenue + Customer Impact) minus Effort** - Higher scores go higher on the list.\n- [ ] **Apply the 70/20/10 rule as a guideline** - 70% of resource on core improvements, 20% on extensions, 10% on experiments. Adjust to fit your business, but the principle holds: protect your core while testing the future."
+            },
+            {
+              "title": "Build Your Timeline",
+              "content": "- [ ] **Place your top-priority core improvements in the next 0-6 months** - These protect your existing revenue and keep current customers happy.\n- [ ] **Place extensions in the 6-12 month window** - These grow revenue from your existing base once the core is solid.\n- [ ] **Place experiments in the 12-24 month window** - These explore new territory. Some will fail. That is the point.\n- [ ] **For each item in the next 6 months, define: owner, deadline, resources needed, and success metric** - Vague items on a roadmap are wishes, not plans.\n- [ ] **Set quarterly review points** - The pipeline is a living document. Review it every quarter and reprioritise based on what you have learned.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of all product ideas, improvements, and innovations\n- Each idea categorised as core improvement, extension, or experiment\n- A prioritised 12-24 month roadmap with clear sequencing\n- The next 6 months planned in detail with owners and deadlines\n- A quarterly review rhythm to keep the pipeline current"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common mistake is filling the pipeline with experiments while ignoring core improvements. Exciting new ideas are more fun than fixing what already exists. But core improvements protect revenue and often deliver the biggest return for the least effort. Push clients to strengthen the core first.\n\nWatch for pipelines that are really just wish lists. Every item needs a \"why now\" and a \"what does success look like.\" If a client cannot answer those questions, the idea is not ready for the pipeline.\n\nIf a client has never mapped a product roadmap before, start with just the next 6 months. A 24-month roadmap can feel overwhelming for someone who has been making product decisions on instinct. Build the muscle first, extend the timeframe later."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Demand Validation Framework",
+          "description": "Test customer demand before building anything. Use pre-orders, landing pages, customer interviews, and pilot programmes to validate need and willingness to pay.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Test customer demand before building anything. Use pre-orders, landing pages, customer interviews, pilot programmes, and other low-cost methods to validate that people actually want what you plan to create and are willing to pay for it. This prevents the most expensive mistake in business: building something nobody buys."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The graveyard of small business is full of products that the owner loved but customers did not want. Building first and selling later is backwards. Every week you spend developing an unvalidated product is a week of revenue you will never get back. Eric Ries' Lean Startup principle applies to every business, not just tech startups: build the minimum version, test it with real customers, and iterate based on real data. The goal is to fail cheaply and learn fast, not to perfect something in isolation and hope the market agrees."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pick the validation method that fits your product idea, run the test, and use the results to decide whether to build, adjust, or abandon.\n\n---"
+            },
+            {
+              "title": "Choose Your Validation Method",
+              "content": "- [ ] **Customer conversations (lowest effort, highest insight)** - Talk to 5-10 ideal customers about the problem your product solves. Do not pitch your solution. Ask about their pain, what they have tried, and what they would pay for a fix. If the problem is not urgent for them, the product will not sell.\n- [ ] ⚡ Quick Win: Send a one-question survey to your existing customer list: \"If we offered [product concept in one sentence], would you be interested? Reply yes or no.\" Simple data, zero cost.\n- [ ] **Landing page test** - Build a simple page describing the offer with a \"register interest\" or \"join waitlist\" button. Drive traffic to it and measure sign-up rate. No product needed.\n- [ ] **Pre-order or pre-sale** - Offer the product at a discount before it exists. Real money committed is the strongest validation signal. If people will not pay in advance, they probably will not pay later either.\n- [ ] **Pilot programme** - Deliver a stripped-down version to 3-5 customers at a reduced price in exchange for detailed feedback. You learn what works, what does not, and what customers actually value before building the full version.\n- [ ] **Competitor analysis** - If a competitor already sells something similar and is growing, demand is partially validated. Your job becomes differentiation, not demand creation."
+            },
+            {
+              "title": "Design Your Test",
+              "content": "- [ ] **Define your hypothesis in one sentence** - \"I believe [target customer] will pay [price] for [product] because [reason].\" Write it down. You need to know what you are testing.\n- [ ] **Set your success threshold before you start** - What number or result would make you confident enough to build? 10 pre-orders? 50 waitlist sign-ups? 8 out of 10 interviewees saying they would buy? Define \"pass\" and \"fail\" in advance so you cannot move the goalposts.\n- [ ] **Set a time limit** - Give the test 2-4 weeks. Long enough to get meaningful data, short enough that you do not lose momentum.\n- [ ] **Identify your test audience** - Who specifically will you test with? Existing customers, email list, social media followers, cold prospects? The audience affects the results.\n- [ ] **Budget your test** - Most validation tests cost very little. Landing pages, email surveys, and conversations are nearly free. Pre-orders require some marketing spend. Set a budget and stick to it."
+            },
+            {
+              "title": "Evaluate Results and Decide",
+              "content": "- [ ] **Compare results to your pre-set threshold** - Did you pass or fail? Be honest. Wishful thinking at this stage is expensive later.\n- [ ] **Look for patterns in the feedback** - What did customers love? What concerned them? What would they change? This shapes the final product.\n- [ ] **Make one of three decisions:**\n  - **Build** - Demand is validated, move to development\n  - **Adjust** - Interest exists but the offer needs changes before building\n  - **Abandon** - Demand is not there, move on to the next idea without guilt\n- [ ] **Document what you learned** - Even failed tests produce valuable insight. Write down what you discovered about customer preferences, pricing sensitivity, or market gaps. This feeds your next innovation.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear validation method chosen and executed for your product idea\n- Real data from real customers, not assumptions\n- A confident build/adjust/abandon decision backed by evidence\n- Documented learnings that improve your next product decision\n- Reduced risk of investing time and money in products that will not sell"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest barrier is emotional attachment. Clients fall in love with their product idea and treat validation as a formality rather than a genuine test. Push them to define success criteria before running the test, and hold them to those criteria when results come in.\n\nWatch for \"false validation\" - asking friends and family who say \"great idea!\" but would never actually buy. Real validation involves people in the target market making a commitment, ideally financial. Compliments are not validation. Purchases are.\n\nIf a client is reluctant to test because \"it will take too long,\" reframe it: building an unvalidated product takes 3-6 months. A validation test takes 2-4 weeks. Which is the bigger waste of time if the idea is wrong?"
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Portfolio Balance Review",
+          "description": "Analyse how much time and resource you allocate to core offers vs experimental ones. Set clear criteria for what percentage should go where based on your market position and growth goals.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Analyse how your time, money, and team resource is allocated between your core offers and any experimental or new products. Set clear criteria for what percentage of resource goes where, and make deliberate decisions about your product portfolio rather than letting it drift."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Left unmanaged, product portfolios become bloated. Every new idea gets a \"yes,\" nothing gets retired, and the team ends up supporting six offers when they only have capacity for three. The result is mediocre delivery across the board. Your best products suffer because resource is being drained by marginal ones. A portfolio review forces the hard conversations: what should we stop offering? What deserves more investment? What looked promising but is not pulling its weight?"
+            },
+            {
+              "title": "How to Use This",
+              "content": "List everything you sell, measure its performance, and rebalance your portfolio around what is actually working.\n\n---"
+            },
+            {
+              "title": "Inventory Your Current Portfolio",
+              "content": "- [ ] **List every product or service you currently offer** - Include every tier, package, add-on, and variant. If a customer can buy it, it goes on the list.\n- [ ] ⚡ Quick Win: Count the items on your list. If you have more than 5-7 distinct offers, you are almost certainly spread too thin. Most small businesses perform best with 2-4 core offers.\n- [ ] **For each offer, record:**\n  - Revenue generated in the last 12 months\n  - Gross margin (revenue minus direct delivery costs)\n  - Number of active customers\n  - Time spent delivering and supporting it (hours per month)\n  - Age of the offer (how long have you been selling it?)"
+            },
+            {
+              "title": "Analyse Performance",
+              "content": "- [ ] **Calculate revenue per hour for each offer** - Total revenue divided by total hours spent. This reveals which offers are worth your time and which are deceptively busy.\n- [ ] **Rank offers by gross margin percentage** - Which offers keep the most money after delivery costs?\n- [ ] **Identify your \"hero\" products** - The 1-2 offers that generate the majority of your revenue and profit. These deserve the most protection and investment.\n- [ ] **Identify your \"zombie\" products** - Offers that still exist but barely generate revenue, consume disproportionate effort, or have not grown in over a year. These are candidates for retirement.\n- [ ] **Identify your \"rising stars\"** - Newer offers showing growth in revenue or customer interest, even if still small. These may deserve more investment."
+            },
+            {
+              "title": "Rebalance Your Portfolio",
+              "content": "- [ ] **Set your target allocation** - What percentage of your team's time and your budget should go to: hero products (protect and optimise), rising stars (invest and grow), and experiments (test and learn)?\n- [ ] **Compare target vs. reality** - Where is the gap? Most businesses over-invest in zombies and under-invest in heroes.\n- [ ] **Decide the fate of each zombie product** - For each underperformer, choose: sunset it (stop selling), simplify it (reduce the resource it consumes), or set a 90-day deadline for improvement.\n- [ ] **Reallocate freed-up resource** - Every hour or pound saved from retiring a zombie should go to a hero or rising star. Be specific about where it goes.\n- [ ] **Set a 6-month review date** - Portfolio balance is not a one-time exercise. Markets change, offers mature, new opportunities emerge. Review every 6 months.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of every product and service with performance data\n- Hero, zombie, and rising star products clearly identified\n- Underperforming offers retired or given a clear improvement deadline\n- Resource reallocated from low-performers to high-performers\n- A target allocation set for ongoing portfolio management"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Retiring a product is emotionally difficult for owners. They built it, they remember the first customer who loved it, and stopping feels like failure. Reframe it: retiring a product that no longer serves you is not failure. It is good management. The resource you free up goes to something better.\n\nWatch for the \"but what if someone asks for it\" trap. Clients keep zombie products alive because one customer per quarter might want it. Calculate what that one sale actually costs in terms of ongoing support, complexity, and distraction. It is almost never worth it.\n\nIf a client has never done a portfolio review, the first one will be revealing. Most owners have no idea how much time each offer actually consumes. The data often triggers immediate decisions to simplify."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Product Iteration System",
+          "description": "Build a repeatable process for gathering customer feedback, prioritising improvements, and rolling out updates. Make sure your best products keep getting better.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a repeatable process for gathering customer feedback, prioritising improvements, and rolling out updates to your products and services. Instead of improving things when you feel like it or when something breaks, create a rhythm that ensures your offers get better every quarter."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Products that do not improve die slowly. Your customers' expectations rise every year, competitors copy your best ideas, and the market moves on. But most small businesses only improve their products reactively - when a customer complains, when a competitor launches something new, or when the owner has a random burst of inspiration. A systematic iteration process means improvements happen regularly, are based on real feedback, and get implemented without chaos."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up three things: a feedback collection system, a prioritisation method, and a release rhythm. Then run the cycle continuously.\n\n---"
+            },
+            {
+              "title": "Build Your Feedback Collection",
+              "content": "- [ ] **Choose 3 feedback channels and set them up:**\n  - Post-purchase or post-delivery survey (keep it to 3-5 questions maximum)\n  - Quarterly check-in conversation with top clients (phone or video, not email)\n  - Internal team debrief after each project or delivery cycle\n- [ ] ⚡ Quick Win: Add one question to your next client interaction: \"What is one thing we could do better?\" This costs nothing and the answers are gold.\n- [ ] **Create a central feedback log** - A simple spreadsheet or document where all feedback goes, regardless of source. Columns: Date, Source, Feedback, Product/Service, Frequency (how often you hear this), Priority.\n- [ ] **Assign someone to review the log monthly** - Feedback that sits unread is worse than no feedback at all. Someone needs to own this.\n- [ ] **Track feature requests separately from complaints** - Complaints tell you what is broken. Requests tell you what is missing. Both matter but they need different responses."
+            },
+            {
+              "title": "Prioritise Improvements",
+              "content": "- [ ] **Review your feedback log at the start of each quarter** - Look for patterns. What feedback appears most frequently? What comes from your best customers?\n- [ ] **Score each potential improvement on three criteria:**\n  - Customer impact (how many customers benefit and how much?)\n  - Revenue impact (will this help retain customers, increase prices, or attract new ones?)\n  - Implementation effort (how much time and money to build?)\n- [ ] **Apply the \"quick wins first\" principle** - High impact, low effort improvements go first. Always. Saving the easy wins for later while tackling hard ones first is a common trap.\n- [ ] **Select 2-3 improvements per quarter** - No more. Fewer improvements done well beats a long list done poorly.\n- [ ] **Write a one-sentence brief for each selected improvement** - What changes, why, and what does success look like? Keep it simple enough that anyone on the team can understand."
+            },
+            {
+              "title": "Implement and Release",
+              "content": "- [ ] **Assign an owner for each improvement** - One person responsible for making it happen, even if multiple people contribute.\n- [ ] **Set a deadline within the quarter** - If an improvement cannot be done in a quarter, break it into smaller pieces. Shipping partial progress beats planning indefinitely.\n- [ ] **Communicate changes to customers** - When you improve something, tell people. An email, a note in a meeting, a social post. Customers notice when things get better, but they appreciate you pointing it out.\n- [ ] **Measure the impact** - After implementation, check: did customer satisfaction improve? Did complaints on that topic decrease? Did retention or revenue change? If you cannot measure it, at least gather anecdotal feedback.\n- [ ] **Start the cycle again** - Review the feedback log, pick the next improvements, implement, measure. This never stops.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A working feedback collection system with multiple channels\n- A central log where all customer feedback is captured and reviewed\n- A quarterly rhythm for selecting and implementing product improvements\n- Clear ownership and deadlines for each improvement\n- A continuous cycle that ensures your products get better every quarter"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest risk with this action is over-engineering. Clients hear \"system\" and think they need software, dashboards, and complex workflows. Push back. A spreadsheet and a quarterly calendar is enough for most small businesses. The system should take minutes to maintain, not hours.\n\nWatch for clients who collect feedback but never act on it. That is worse than not collecting it, because customers feel ignored. If you ask for feedback, you must close the loop. Even if the answer is \"we heard you and we are not changing this right now because X.\"\n\nHelp clients distinguish between feedback that represents real patterns and feedback from one loud customer. A single request is an anecdote. The same request from five different customers is a signal. Teach them to look for frequency before acting."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

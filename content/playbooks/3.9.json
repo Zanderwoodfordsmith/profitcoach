@@ -1,0 +1,279 @@
+{
+  "ref": "3.9",
+  "level": 3,
+  "area": 9,
+  "name": "Team Performance",
+  "subtitle": "Level 3 · Organised · Team & Leadership",
+  "whatThisIs": "Team performance is about turning your people from task-completers into results-deliverers. It is the difference between a team that shows up and a team that shows up and gets things done. When performance is working, everyone knows what winning looks like, gets the feedback they need to improve, and has a clear path to grow.\n\nThis playbook moves you beyond hoping your team performs well to ensuring they do. It covers setting measurable outcomes, building structured feedback loops, and creating a culture where candid conversations about performance are normal and helpful.\n\nThis is not about micromanaging or performance management theatre. It is about creating clarity so good people can do their best work — and helping everyone else get better or move on.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Nobody really knows what \"good\" looks like in their role. Performance conversations happen reactively when something goes wrong, or not at all. People drift along doing OK work without clear feedback or development. You avoid difficult conversations and hope performance issues fix themselves. Team members who want to grow have no clear path forward."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some performance measures in place but they are inconsistent across roles. Reviews happen annually — if you remember to do them. Some people get good feedback, others do not, depending on their manager. You know who your top performers are but you are not sure how to develop the rest. Development conversations are ad hoc rather than systematic."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every role has clear, measurable success criteria that people understand and track. Performance feedback is regular, specific, and actionable. People know exactly where they stand and what they need to do to improve or advance. Development paths are clear and intentional. Performance issues are addressed quickly and fairly. Your best people stay challenged and growing."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Is success actually measurable in each role? If you cannot point to specific numbers or observable outcomes that define good performance, then \"performance management\" is just subjective opinion. Revenue, quality scores, customer satisfaction, projects completed — what gets measured gets managed.",
+    "Are your performance conversations data or feelings? \"You need to communicate better\" is not feedback — it is a vague complaint. \"In the last three client meetings, two customers had to repeat their requirements because you missed key details\" is feedback you can act on. Facts beat feelings every time.",
+    "Do people know how to grow in your business? If someone wants to advance their career, can they see the specific skills, experiences, and results they need to get there? Without clear development paths, your best people will find them somewhere else.",
+    "Is feedback frequent enough to be useful? Annual reviews are archaeological exercises — you are digging up ancient history. Monthly or quarterly feedback keeps development conversations current and actionable. Problems get fixed before they become performance issues.",
+    "Do your incentives actually reward the behaviour you want? If you say collaboration matters but only reward individual achievement, guess what you will get more of? Check whether your recognition, pay rises, and promotions are reinforcing the right things."
+  ],
+  "quickWins": [
+    "This week: Pick your most important role and write down three specific, measurable outcomes that define success in that position. Make them numbers or observable behaviours, not personality traits.",
+    "This week: Schedule 30-minute one-to-ones with each of your direct reports for the next two weeks. Ask: \"What is clear about your role? What is confusing? What do you need from me?\"",
+    "This week: Look at your last three recognition or reward decisions. Were they based on measurable results or gut feel? Make a note to track this going forward."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.9",
+      "description": ""
+    },
+    {
+      "ref": "4.9",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Role Success Scorecard",
+          "description": "Define measurable outcomes for each role so everyone knows exactly what winning looks like. Clear targets make everything else possible.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "For each role in your business, define 3-5 measurable outcomes that make it clear what winning looks like. Not tasks, not activities, not job descriptions. Outcomes. The question each scorecard answers is simple: \"If this person is doing a great job, what results would I see?\""
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most employees are unclear on what success actually looks like in their role. They know their tasks, they know their responsibilities, but they could not tell you the 3-5 results that define whether they are performing well. This ambiguity creates two problems. For high performers, it means they never feel a sense of achievement because the target keeps moving. For underperformers, it means problems go unaddressed because there is no clear standard to measure against."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each role in the business, starting with the ones that have the biggest impact on revenue and customer satisfaction.\n\n---"
+            },
+            {
+              "title": "Build the Scorecard",
+              "content": "- [ ] **List every role in the business, including your own** - Use actual role titles, not people's names. You are defining the role, not evaluating the person.\n- [ ] ⚡ Quick Win: **For each role, write one sentence: \"This role exists to...\"** - If you cannot finish that sentence clearly, the role itself needs clarifying before you can define success.\n- [ ] **Identify 3-5 measurable outcomes for each role** - Not activities (\"make sales calls\") but outcomes (\"close £X in new revenue per month\"). What results would you see if this role were being done brilliantly?\n- [ ] **Set specific targets for each outcome** - \"Improve customer satisfaction\" is not measurable. \"Maintain NPS above 40\" or \"Resolve 90% of tickets within 24 hours\" is. Every outcome needs a number.\n- [ ] **Define how each outcome gets measured** - Where does the data come from? Who reports it? How often? If you cannot measure it reliably, it is not a useful outcome."
+            },
+            {
+              "title": "Test and Validate",
+              "content": "- [ ] **Check that outcomes are within the role's control** - A salesperson can control their pipeline activity and close rate. They cannot control whether marketing generates enough leads. Only include outcomes the role holder can genuinely influence.\n- [ ] **Verify that outcomes connect to business goals** - Every role scorecard should ladder up to the company KPIs. If a role's success metrics do not connect to business results, something is misaligned.\n- [ ] ⚡ Quick Win: **Share the draft scorecard with the person in the role** - Ask: \"Does this feel fair and accurate? Is anything missing?\" Their input improves the scorecard and builds buy-in at the same time.\n- [ ] **Check for conflicting outcomes across roles** - If sales is measured on new deals and delivery is measured on utilisation, they may be pulling in opposite directions. Resolve conflicts before publishing."
+            },
+            {
+              "title": "Implement",
+              "content": "- [ ] **Format each scorecard consistently** - Role title, purpose statement, 3-5 outcomes with targets and measurement methods. Keep it to one page per role.\n- [ ] **Use scorecards in your hiring process** - When you recruit for a role, the scorecard tells candidates exactly what success looks like. This attracts people who want accountability.\n- [ ] **Build scorecards into your performance review process** - Every review conversation should start with the scorecard. How did the person perform against their defined outcomes?\n- [ ] **Review scorecards every 6 months** - Roles evolve. Priorities shift. Update the scorecards to reflect the current reality, not last year's expectations.\n- [ ] **Display scorecards where people can see them** - Not locked in an HR file. On the wall, in a shared document, or in your team wiki. Visibility reinforces clarity.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every role in the business has a clear, one-page success scorecard\n- 3-5 measurable outcomes per role with specific targets\n- Team members understand exactly what \"winning\" looks like in their role\n- Scorecards used in hiring, reviews, and daily management\n- Alignment between individual role outcomes and business-level KPIs"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common mistake is writing activity-based scorecards instead of outcome-based ones. \"Send 50 emails per week\" is an activity. \"Generate 10 qualified leads per week\" is an outcome. Keep pushing the client toward outcomes. Activities are how people choose to achieve the outcome, not the measure of success itself.\n\nFor very small teams where people wear multiple hats, create a scorecard for the role, not the person. If Sarah handles both sales and customer service, she has two role scorecards. This makes it clear when the business is ready to split the role into two positions.\n\nSome clients resist putting numbers on everything. Help them see that vague expectations are unfair to the employee. \"Do a good job\" is not a target anyone can hit with confidence."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Performance Review System",
+          "description": "Build a structured, consistent process for regular performance discussions. Same framework, same frequency, same quality of conversation for everyone.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design and implement a structured, consistent process for regular performance conversations. The same framework, the same frequency, the same expectations for everyone. No more ad hoc chats that vary depending on the manager's mood or the employee's confidence. A proper system that makes performance discussions productive, predictable, and fair."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Performance reviews have a terrible reputation, mostly because most businesses do them badly. Annual reviews that surprise people with feedback from 11 months ago. Vague conversations that end with \"keep up the good work\" or \"try harder.\" The problem is not the concept. It is the execution. A well-designed review system gives people regular, honest feedback, catches problems early, celebrates progress, and creates a paper trail when difficult decisions need to be made."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each step to design your review framework, then prepare for and run your first round.\n\n---"
+            },
+            {
+              "title": "Step 1: Design the Framework",
+              "content": "- [ ] **Set your review frequency** - Quarterly is the sweet spot for most small businesses. Annual is too infrequent. Monthly is too burdensome unless your team is very new. Pick a rhythm and commit to it.\n- [ ] **Choose a standard format** - Every review should cover: scorecard results (how did they perform against their outcomes?), strengths demonstrated, areas for improvement, development goals, and actions for next quarter.\n- [ ] ⚡ Quick Win: **Create a one-page review template** - A simple document with sections matching your format. Same template for every role. Consistency makes preparation faster and comparison easier.\n- [ ] **Define who reviews whom** - Direct manager reviews their team members. If you are a solo founder managing everyone, that is fine for now. As you grow, this will need to cascade.\n- [ ] **Build in self-assessment** - Before each review, the employee fills out the same template about their own performance. This gives you their perspective before the conversation starts and often surfaces things you would have missed."
+            },
+            {
+              "title": "Step 2: Prepare for Reviews",
+              "content": "- [ ] **Gather data before the conversation** - Pull scorecard results, customer feedback, project outcomes, and any notes you have made during the quarter. Reviews based on data are fair. Reviews based on memory are biased.\n- [ ] **Keep a running notes file for each person** - When something notable happens (good or bad), jot it down. Do not rely on remembering everything at review time. A quick note takes 30 seconds and prevents recency bias.\n- [ ] **Schedule reviews in advance** - Put them in the calendar 2 weeks ahead. Give the employee time to prepare their self-assessment. No ambush reviews.\n- [ ] **Prepare your key messages** - Go into each review knowing the 2-3 most important things you want to communicate. What is the person doing well? What needs to change? What is the most important development focus?"
+            },
+            {
+              "title": "Step 3: Run the Review",
+              "content": "- [ ] **Start with the scorecard** - Results first, feelings second. \"Here is how you performed against your defined outcomes.\" This grounds the conversation in facts.\n- [ ] **Discuss strengths before development areas** - This is not about being soft. It is about building trust so the person can hear the constructive feedback without becoming defensive.\n- [ ] **Be specific, not general** - \"Your client retention rate was 92%, above the 85% target\" is useful. \"You are great with clients\" is not. Apply the same specificity to improvement areas.\n- [ ] **Agree on 1-2 development goals for next quarter** - Not ten. One or two. With specific actions and a timeline. These get reviewed at the next session.\n- [ ] ⚡ Quick Win: **End every review with: \"What do you need from me to succeed next quarter?\"** - This flips the power dynamic and often reveals blockers you did not know about."
+            },
+            {
+              "title": "Step 4: Follow Through",
+              "content": "- [ ] **Document the review conversation** - Both parties should have a copy of what was discussed, agreed, and expected. This protects everyone.\n- [ ] **Schedule a mid-quarter check-in** - A 15-minute conversation halfway through to check progress on development goals and address any emerging issues. Not a full review, just a pulse check.\n- [ ] **Track development goals across quarters** - If someone's improvement area has been the same for three quarters, either the support is not working or the person is not the right fit. Both need addressing.\n- [ ] **Act on what you learn** - If multiple reviews surface the same systemic issue (poor tools, unclear processes, lack of training), fix the system. Do not keep coaching individuals around a broken environment.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A consistent, structured review process that runs every quarter without fail\n- Every team member receives honest, data-driven feedback on a predictable schedule\n- Development goals set and tracked over time\n- A documented history of performance conversations for every person\n- Problems caught quarterly instead of festering until they become crises"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The number one excuse for not doing reviews is \"we are too busy.\" Reframe it for the client: \"You are too busy NOT to do reviews. Without them, you spend far more time on misalignment, underperformance, and preventable turnover.\"\n\nHelp the client rehearse difficult conversations before their first round. Most managers have never been taught how to give constructive feedback. Role-play the conversation. Practice saying \"Here is what needs to change and here is why\" without softening it into uselessness.\n\nFor businesses with no review history, the first round will feel awkward. That is normal. By the third quarter, it becomes routine. Encourage the client to start even if it feels imperfect. A mediocre review is better than none."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Development Planning",
+          "description": "Create clear pathways for skill building and career advancement. Map the specific capabilities, experiences, and results needed for each person to reach their next level.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build clear, practical development pathways for each team member that map the capabilities, experiences, and results needed to reach the next level. This is not about creating elaborate career frameworks. It is about answering one question for every person: \"What do I need to learn, demonstrate, and achieve to progress here?\""
+            },
+            {
+              "title": "Why It Matters",
+              "content": "People do not leave businesses because of money alone. They leave because they cannot see a future. When there is no development pathway, ambitious people start looking elsewhere. When the pathway exists but is vague (\"just keep doing a good job and we will see\"), it creates frustration. A clear development plan retains your best people, improves performance across the board, and builds the bench strength you need to grow the business without doing everything yourself."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the process for each team member, starting with your highest-potential people and anyone at risk of leaving.\n\n---"
+            },
+            {
+              "title": "Step 1: Assess Current Capability",
+              "content": "- [ ] **Map the key skills required for each person's current role** - What do they need to be competent at? List 5-8 core skills.\n- [ ] **Rate current proficiency for each skill** - Use a simple scale: developing, competent, or advanced. Be honest. Overrating helps nobody.\n- [ ] ⚡ Quick Win: **Have the team member self-assess before you rate them** - Comparing their view to yours reveals blind spots on both sides and makes the development conversation much richer.\n- [ ] **Identify strengths to leverage** - What is this person already great at? Development is not just about fixing weaknesses. It is also about pushing strengths further.\n- [ ] **Identify gaps to close** - What skills are they missing or underperforming in? Prioritise the gaps that have the biggest impact on their role performance."
+            },
+            {
+              "title": "Step 2: Define the Next Level",
+              "content": "- [ ] **Describe what the next level looks like** - Whether that is a promotion, expanded responsibilities, or mastery of the current role. Be specific about what changes.\n- [ ] **List the capabilities needed at the next level** - What skills, knowledge, and behaviours are required that they do not have yet?\n- [ ] **Define the experiences needed** - Some development only happens through doing. Leading a project, handling a difficult client, managing a team member for the first time. What experiences will build the capabilities they need?\n- [ ] **Set the results threshold** - What performance results would demonstrate readiness for the next level? \"Consistently hits scorecard targets for 2+ quarters\" is a clear threshold."
+            },
+            {
+              "title": "Step 3: Build the Plan",
+              "content": "- [ ] **Create 2-3 development goals per person** - No more. Each goal should be specific, time-bound, and linked to a skill gap or required experience.\n- [ ] ⚡ Quick Win: **Identify one development action each person can start this week** - A book, a course module, a shadowing opportunity, or a stretch assignment. Momentum matters more than perfection.\n- [ ] **Mix learning methods** - Not everything is a training course. Include on-the-job projects, mentoring, peer learning, self-study, and real responsibility increases. The 70-20-10 rule applies: 70% of development comes from challenging work, 20% from others, 10% from formal training.\n- [ ] **Assign a development sponsor or mentor** - Someone other than their direct manager who can offer guidance, open doors, and provide a different perspective.\n- [ ] **Set review checkpoints** - Monthly or quarterly touchpoints to discuss progress, adjust the plan, and address blockers. Development plans that get set and forgotten are worthless."
+            },
+            {
+              "title": "Step 4: Support and Track",
+              "content": "- [ ] **Allocate time and budget for development** - If you tell people to develop but give them no time or resources, the message is clear: it is not really a priority.\n- [ ] **Track development progress alongside performance** - Include development goals in your quarterly reviews. They are not separate from performance. They are part of it.\n- [ ] **Celebrate progress and milestones** - When someone completes a development goal or demonstrates a new capability, acknowledge it publicly. This signals that growth matters in your business.\n- [ ] **Adjust plans when circumstances change** - Business priorities shift, people's interests evolve, and new opportunities appear. Review and update plans at least every 6 months.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every team member has a clear, written development plan with 2-3 specific goals\n- Each person knows what capabilities, experiences, and results are needed for the next level\n- A mix of development activities scheduled and underway\n- Regular check-ins tracking progress and maintaining momentum\n- Higher retention of your best people because they can see a future in the business"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest pitfall here is creating plans that are too ambitious. A development plan with 8 goals and 20 actions will overwhelm the person and get abandoned. Two or three focused goals with clear next steps are far more effective.\n\nPush the client to have the development conversation even if they do not have a formal career ladder or promotion pathway. Not every business needs titles and levels. But every person needs to know they are growing, valued, and heading somewhere. \"You are going to get better at X, take on more responsibility in Y, and we will review where that leads in 6 months\" is enough.\n\nFor very small businesses where there is no obvious \"next level\" role, development can focus on mastery, expanded scope, or preparing for a future role that does not exist yet. Growth does not always mean promotion. It can mean becoming genuinely excellent at what you do."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Feedback Culture Toolkit",
+          "description": "Install the systems and skills that make candid, helpful feedback a normal part of how your team operates. Train managers to give feedback that drives improvement, not defensiveness.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build the systems, skills, and habits that make candid, helpful feedback a normal part of how your team operates. Not annual review feedback. Not \"can I give you some feedback?\" (which makes everyone tense up). Regular, in-the-moment, two-way feedback that helps people improve continuously. This action gives you the tools and frameworks to make that happen."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "In most small businesses, feedback only happens when something goes wrong. A mistake gets made, frustration builds, and eventually someone has an awkward conversation that should have happened weeks earlier. Meanwhile, good work goes unrecognised because nobody thinks to mention it. A feedback culture changes the default. When feedback is normal, problems get addressed quickly, people improve faster, and the team trusts each other more because honesty is expected, not feared."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pick the elements that fit your team's size and maturity. Not everything here will be relevant for every business. Start with the foundations and add more as the culture develops.\n\n---"
+            },
+            {
+              "title": "Feedback Frameworks",
+              "content": "- [ ] **Adopt a simple feedback model for your team** - SBI (Situation, Behaviour, Impact) works well. \"In the client meeting yesterday [situation], when you interrupted the client twice [behaviour], it made them hesitate to share their real concerns [impact].\" Teach everyone the same model.\n- [ ] **Separate feedback from judgement** - Feedback describes what happened and its effect. Judgement evaluates the person. \"The report had three errors\" is feedback. \"You are careless\" is judgement. Train the difference.\n- [ ] ⚡ Quick Win: **Start your next team meeting with one piece of positive feedback per person** - Go around the room. Each person recognises something a colleague did well this week. Takes 5 minutes, shifts the tone immediately.\n- [ ] **Create a \"how to receive feedback\" guide** - Giving feedback is hard. Receiving it is harder. Teach your team to listen, ask clarifying questions, and say \"thank you\" before reacting. Defensiveness kills feedback culture faster than anything."
+            },
+            {
+              "title": "Manager Skills",
+              "content": "- [ ] **Train every manager (including yourself) on delivering constructive feedback** - Practice out loud. Role-play difficult conversations. Knowing a framework and using it under pressure are very different things.\n- [ ] **Teach the 24-hour rule** - Give feedback within 24 hours of the event. After that, the details get fuzzy, the emotion fades, and the learning opportunity passes.\n- [ ] **Model vulnerability as the leader** - Ask your team for feedback on your own performance regularly. \"What is one thing I could do better as your manager?\" When the boss asks for feedback and acts on it, everyone else feels safer doing the same.\n- [ ] **Address feedback avoidance directly** - If a manager is avoiding difficult conversations, coach them through it. Avoidance is the most common and most damaging feedback failure."
+            },
+            {
+              "title": "Systems and Rituals",
+              "content": "- [ ] **Build peer feedback into project wrap-ups** - At the end of every project or sprint, include a 10-minute \"what worked, what did not, what should we do differently?\" conversation. Normalise it as part of the workflow.\n- [ ] ⚡ Quick Win: **Set up a recognition channel in your team chat** - A dedicated Slack or Teams channel where anyone can post a quick \"thanks to [name] for [specific thing].\" Low effort, high visibility.\n- [ ] **Run a quarterly feedback health check** - Ask the team: \"How comfortable are you giving feedback? Receiving it? Is feedback happening enough?\" Track the trend over time.\n- [ ] **Create a \"stop, start, continue\" ritual** - Once a quarter, each team member writes down one thing the team should stop doing, one thing to start doing, and one thing to continue. Discuss as a group.\n- [ ] **Protect psychological safety** - Feedback culture only works if people feel safe. If someone gives honest feedback and gets punished for it (formally or informally), the culture dies instantly. Watch for this and address it immediately."
+            },
+            {
+              "title": "Scaling Feedback",
+              "content": "- [ ] **Build feedback into your onboarding** - New hires should learn on day one that feedback is expected, welcomed, and normal here. Set the expectation early.\n- [ ] **Use 360-degree feedback for senior roles** - For managers and leaders, gather feedback from their team, peers, and their own manager. This gives a rounded picture that self-assessment and top-down review miss.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A common feedback framework that everyone in the business uses\n- Managers confident and practised in giving both positive and constructive feedback\n- Feedback happening regularly and informally, not just in formal reviews\n- A recognition system that makes good work visible\n- A team that trusts each other enough to be honest"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Feedback culture is one of the hardest things to build because it requires the business owner to go first. If they avoid difficult conversations, their managers will too. If they only give feedback when something goes wrong, the team will associate feedback with criticism. The leader sets the tone.\n\nStart with positive feedback. It is easier, it builds trust, and it creates the safety that makes constructive feedback possible later. A team that has never heard \"great job on that\" is not ready for \"here is what you need to change.\"\n\nFor very small teams (2-3 people), skip the formal systems and focus on the leader modelling the behaviour. Regular one-to-one conversations with honest, specific feedback will do more than any framework or Slack channel."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Performance Incentive Alignment",
+          "description": "Review and redesign how recognition, rewards, and advancement decisions get made to ensure they reinforce the behaviours and results you actually want.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Review and redesign how recognition, rewards, and advancement decisions get made in your business to ensure they reinforce the behaviours and results you actually want. Most incentive systems were not designed. They evolved. And they often reward the wrong things or miss the right ones entirely. This action brings deliberate thinking to how you motivate, recognise, and reward your team."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "People do what they get rewarded for. If you pay salespeople purely on revenue but want them to find profitable clients, you have a misalignment. If you promote based on tenure but want high performance, you are sending the wrong signal. Incentive misalignment does not just waste money. It actively drives the wrong behaviours. When incentives are aligned with your business goals and values, the team naturally pulls in the direction you need."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Audit your current incentive structure, identify misalignments, and redesign the elements that need fixing. Not everything will need changing. Focus on the areas where misalignment is costing you the most.\n\n---"
+            },
+            {
+              "title": "Audit Current Incentives",
+              "content": "- [ ] **List every formal incentive in your business** - Base pay, bonuses, commissions, profit share, benefits, perks, equity, promotion criteria. Get the full picture.\n- [ ] **List every informal incentive** - Who gets the best projects? Who gets public praise? Who gets the most flexibility? Informal incentives often drive behaviour more than formal ones.\n- [ ] ⚡ Quick Win: **Ask each team member: \"What gets rewarded here?\"** - Their answers will tell you what your incentive system actually communicates, which may be very different from what you intend.\n- [ ] **Map each incentive to the behaviour it encourages** - Commission on revenue encourages selling. But does it encourage selling the right things at the right price to the right customers? Follow the logic through.\n- [ ] **Identify misalignments** - Where are incentives encouraging behaviours that conflict with your goals? Common ones: rewarding individual performance when you need teamwork, rewarding activity when you need outcomes, rewarding short-term results when you need long-term relationships."
+            },
+            {
+              "title": "Redesign for Alignment",
+              "content": "- [ ] **Start with your business goals** - What are the 3-5 results that matter most right now? Your incentive system should push people toward those results.\n- [ ] **Ensure every incentivised metric connects to a business outcome** - If you bonus someone on a number, that number should drive revenue, profit, customer satisfaction, or operational efficiency. If it does not, question why it is incentivised.\n- [ ] **Balance individual and team incentives** - Pure individual incentives create competition. Pure team incentives create free-riders. A mix (typically 60-70% individual, 30-40% team) drives both personal accountability and collaboration.\n- [ ] **Include quality, not just quantity** - If salespeople are bonused on deals closed but not on client retention, they will close anyone who fogs a mirror. Add a quality measure to every quantity incentive.\n- [ ] ⚡ Quick Win: **Fix the single most obvious misalignment this month** - There is usually one incentive that everyone knows rewards the wrong thing. Changing it sends a powerful signal that you are serious about alignment."
+            },
+            {
+              "title": "Recognition and Non-Financial Incentives",
+              "content": "- [ ] **Design a recognition programme that reinforces your values** - Public acknowledgment, team awards, or spotlight features that celebrate people who demonstrate the behaviours and results you value most.\n- [ ] **Make recognition specific, not generic** - \"Great job this month\" is forgettable. \"Your follow-up system brought back three clients who were about to leave, saving us £15K in annual revenue\" is memorable and reinforces exactly what you want more of.\n- [ ] **Create non-financial rewards that people actually value** - Extra time off, flexible hours, first pick of projects, development budget, or a simple handwritten note. Often these matter more than a cash bonus.\n- [ ] **Ensure advancement criteria are transparent** - If people do not know what it takes to get promoted or advance, they will assume it is political. Publish the criteria. Remove the guesswork."
+            },
+            {
+              "title": "Protect Against Gaming",
+              "content": "- [ ] **For every incentive, ask: \"How could someone hit this number without doing the right thing?\"** - If you can think of a way to game it, someone will. Build safeguards or add balancing metrics.\n- [ ] **Monitor for unintended consequences** - After changing incentives, watch behaviour closely for the first 2-3 months. Are people responding the way you expected? Adjust quickly if not.\n- [ ] **Review incentive structure every 6 months** - Business goals change. Incentives should change with them. A bonus structure from two years ago may be rewarding last year's priorities.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete picture of every formal and informal incentive in the business\n- Misalignments between incentives and business goals identified and addressed\n- A redesigned incentive structure that rewards the right behaviours and results\n- Recognition and non-financial rewards that reinforce company values\n- Safeguards in place to prevent gaming and unintended consequences"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a sensitive topic because changing incentives affects people's income and perception of fairness. Advise the client to communicate changes openly and explain the reasoning. \"We are aligning rewards with what matters most for the business and for customers\" is much better received than silent changes people notice on their pay slip.\n\nIf the client has commission-only salespeople, watch for the common trap where commission structure has not been updated since the business was small. What worked for a startup hustling for any revenue may be wrong for a business that needs profitable, long-term clients.\n\nFor very small businesses without formal bonus structures, this action is still relevant. The informal incentives (who gets praise, who gets the interesting work, whose ideas get listened to) are still shaping behaviour every day. Making those informal systems intentional is just as important as designing a bonus plan."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

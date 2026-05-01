@@ -1,0 +1,228 @@
+{
+  "ref": "3.8",
+  "level": 3,
+  "area": 8,
+  "name": "Systems",
+  "subtitle": "Level 3 · Organised · Infrastructure & Systems",
+  "whatThisIs": "Systems are what turn your business from a collection of activities into a connected machine. They reduce your dependency on specific people (including you) and make sure things get done the same way every time, regardless of who is doing them. When systems are working, processes flow smoothly, nothing falls through the cracks, and you can scale without things breaking.\n\nThis playbook is about connecting the dots between all the moving parts of your business. Marketing systems, sales systems, delivery systems, finance systems — making sure they talk to each other instead of operating in silos. It is the difference between running a business and building one.\n\nSystems are not about bureaucracy. They are about freedom. The freedom to grow without everything depending on your personal involvement.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Everything runs through you because you are the only person who knows how all the pieces connect. When someone is off sick, their work stops completely. Information lives in individual heads instead of documented processes. You spend more time fixing things that went wrong than preventing them from going wrong in the first place."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some processes documented but they are not connected to each other. Your marketing system works but it does not talk properly to your sales system. People follow different approaches for the same task depending on who trained them. You know systems would help but building them feels like a luxury you cannot afford time for."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Work flows smoothly from one stage to the next without manual handovers or gaps. Everyone knows exactly what to do and when to do it. Your tools and platforms are connected so information flows automatically between them. New team members can get up to speed quickly by following documented systems. The business runs consistently whether you are there or not."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Is execution consistent across similar cases? When you handle the same type of project or customer twice, does it happen the same way both times? If the process changes depending on mood, memory, or who is involved, you do not have a system — you have organised chaos.",
+    "Are your tools and platforms talking to each other? Your CRM, your accounts package, your project management tool, your email system — do they share information or are you manually copying data between them? Every manual handover is a place where things go wrong and time gets wasted.",
+    "Who actually owns each system? Systems do not maintain themselves. Someone needs to be responsible for keeping them current, training people on them, and improving them when gaps appear. If no one owns the system, the system will slowly break down.",
+    "Where does friction persist in your workflows? Look for the places where work stops, gets delayed, or requires someone to chase someone else. These friction points are where systematic thinking pays off most. One good system eliminates the problem forever instead of managing it daily.",
+    "Is your business getting faster over time? Good systems compound. Each iteration should be quicker and smoother than the last. If you are not getting measurably faster at delivering results, your systems are not working hard enough for you."
+  ],
+  "quickWins": [
+    "This week: Pick your most frustrating weekly task and document exactly how it gets done. Write it down step by step as if you were training someone else to do it.",
+    "This week: Identify one place where you manually copy information between two systems and investigate if they can be connected automatically. Even one automation saves hours over time.",
+    "This week: Ask your team: \"What is the most annoying part of getting your work done?\" Their answers will show you where systems are missing or broken."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.8",
+      "description": ""
+    },
+    {
+      "ref": "4.8",
+      "description": ""
+    },
+    {
+      "ref": "5.8",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "2.6",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "System Mapping",
+          "description": "Map out your existing workflows to see how work actually moves through your business. You cannot improve what you cannot see, and most businesses are surprised by how disconnected their systems actually are.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map how work actually moves through your business, from the moment a lead comes in to the moment a customer is fully served and paid for. You are drawing a picture of reality, not how you think it works or how you wish it worked. Most businesses are surprised by how disconnected their systems are once they see it all on paper."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You cannot improve a system you cannot see. Most business owners carry a rough mental model of how their business works, but that model is usually incomplete, outdated, or wrong. System mapping exposes the gaps, bottlenecks, and manual workarounds that slow everything down. It also reveals the single points of failure where one person leaving or one tool breaking would cause chaos."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Get a large whiteboard, a wall with sticky notes, or a digital tool like Miro. You need space. Work through each workflow below and draw the actual path work takes.\n\n---"
+            },
+            {
+              "title": "Core Workflow Mapping",
+              "content": "- [ ] **Map your sales workflow** - From first contact to closed deal. Every step, every handoff, every tool used. Include: where leads come from, how they get qualified, who contacts them, how proposals get created, and how deals get closed.\n- [ ] **Map your delivery workflow** - From closed deal to completed work. How does a new customer get onboarded? Who does the work? How is progress tracked? When and how does the customer get what they paid for?\n- [ ] **Map your financial workflow** - From invoice to cash in the bank. How do invoices get created? When are they sent? How do payments get reconciled? Who chases overdue accounts?\n- [ ] ⚡ Quick Win: **Map your most repeated daily task** - The thing you or your team do most often. Draw every step. You will almost certainly spot at least one unnecessary step you can eliminate today."
+            },
+            {
+              "title": "Identify Gaps and Problems",
+              "content": "- [ ] **Mark every manual handoff** - Any point where information moves from one person to another by email, verbal instruction, or someone \"just knowing.\" These are your highest-risk failure points.\n- [ ] **Mark every point where information is re-entered** - If the same data gets typed into two different systems, that is a gap in your system design. It wastes time and introduces errors.\n- [ ] **Identify your bottlenecks** - Where does work queue up waiting for one person, one approval, or one tool? These are the points where speed dies.\n- [ ] **Find your single points of failure** - If one specific person were sick for a week, which workflows would stop? Those are your fragile points.\n- [ ] **Note where the real process differs from the official process** - People often create workarounds when the system does not work. Those workarounds are useful data. They tell you where the system is broken."
+            },
+            {
+              "title": "Document What You Find",
+              "content": "- [ ] **Create a simple visual diagram for each core workflow** - Does not need to be fancy. Boxes and arrows showing steps, people, and tools. Keep it on one page per workflow.\n- [ ] ⚡ Quick Win: **Share the maps with your team and ask: \"Is this right?\"** - They will spot things you missed. The people doing the work every day know the real process better than anyone.\n- [ ] **Prioritise your problem areas** - Rank the gaps and bottlenecks by impact. Which ones cost you the most time, money, or customer satisfaction? Those get fixed first.\n- [ ] **Save a dated copy of your current-state maps** - This is your baseline. When you improve systems later, you will want to compare back to where you started.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Visual maps of your 3-4 core business workflows as they actually operate today\n- Every manual handoff, data re-entry point, and bottleneck identified\n- Single points of failure flagged\n- A prioritised list of system problems to address\n- A shared understanding across the team of how work actually flows"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a revealing exercise and some clients find it uncomfortable. They built these systems (or let them evolve) and seeing the mess on paper can feel like a personal failure. Reframe it: every business has system gaps. The ones that map them can fix them. The ones that do not just keep tripping over the same problems.\n\nEncourage the client to involve their team in the mapping session. The owner's view of how work flows is often different from the team's experience. The truth usually sits somewhere in between. A 90-minute session with 2-3 key people in the room produces a much more accurate map than the owner working alone.\n\nDo not let this turn into a redesign session. Map first, fix later. The goal today is to see reality clearly."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Integration Audit",
+          "description": "Review every tool and platform you use and identify where information should flow automatically but currently requires manual input. Focus on the highest-volume handovers first.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Review every tool and platform your business uses, identify where information should flow automatically but currently requires manual input, and prioritise the integrations that would save the most time. Most small businesses are running 10-20 software tools that barely talk to each other. The result is hours of manual data transfer every week, errors that nobody catches, and a team that spends more time feeding systems than serving customers."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every time someone copies data from one system to another, three things happen: it takes time, it introduces the chance of error, and it creates a delay. Multiply that by dozens of manual transfers happening every week and you have a significant hidden cost. Integration is not about buying more technology. It is about making the technology you already have work together so your team can focus on the work that actually matters."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start with a complete inventory of your tools, then map the data flows between them to find the gaps.\n\n---"
+            },
+            {
+              "title": "Tool Inventory",
+              "content": "- [ ] **List every software tool and platform your business uses** - CRM, accounting, email marketing, project management, communication, file storage, scheduling, invoicing, analytics. Include everything, even the small ones.\n- [ ] **For each tool, note: who uses it, what data it holds, and what it costs** - This often reveals forgotten subscriptions and duplicate tools doing the same job.\n- [ ] ⚡ Quick Win: **Identify any tools you are paying for but nobody uses regularly** - Cancel them today. Most businesses have 2-3 zombie subscriptions costing money for nothing.\n- [ ] **Flag any tools where the same data exists in multiple places** - Customer contact details in your CRM, email tool, and invoicing software. That is three places the same information can be wrong."
+            },
+            {
+              "title": "Data Flow Analysis",
+              "content": "- [ ] **Map how data moves between your tools** - When a new lead comes in, what happens? Does it get entered into the CRM automatically, or does someone type it in? When an invoice gets paid, does your accounting software know, or does someone reconcile manually?\n- [ ] **Identify every manual data transfer** - Each one is a candidate for automation. List them all with an estimate of how long each takes per week.\n- [ ] **Mark the transfers that cause the most errors** - Where do things go wrong? Mismatched customer details, missed invoices, leads that fall through the cracks. These are your priority fixes.\n- [ ] **Check what native integrations already exist** - Most popular tools connect natively or through Zapier, Make, or similar platforms. Before building anything custom, check what is already available out of the box."
+            },
+            {
+              "title": "Prioritise and Plan",
+              "content": "- [ ] **Rank integrations by time saved per week** - A transfer that takes 5 minutes daily (25 minutes per week) multiplied by 50 weeks is over 20 hours per year. That adds up fast.\n- [ ] **Rank integrations by error risk** - Some manual transfers are low-risk (copying a name). Others are high-risk (entering financial data). Prioritise the high-risk ones even if they do not save the most time.\n- [ ] ⚡ Quick Win: **Pick the single easiest integration to set up this week** - Usually connecting your form tool to your CRM, or your invoicing tool to your accounting software. One Zapier connection, 15 minutes, done.\n- [ ] **Create a phased integration plan** - Not everything needs to happen at once. Quick wins this week, medium-effort integrations this month, complex ones this quarter.\n- [ ] **Estimate costs for each integration** - Some are free (native connections). Some need middleware (Zapier at £20-50/month). Some need custom work. Know the cost before you commit.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of every tool and platform in the business with costs\n- A clear map of where data flows automatically and where it requires manual input\n- Zombie subscriptions identified and cancelled\n- A prioritised list of integrations to build, ranked by time saved and error risk\n- At least one quick-win integration set up and running"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action often triggers \"shiny object syndrome\" where the client wants to replace everything with one perfect system. Redirect them. The goal is not to change tools. It is to connect the tools you have. New tools come with migration costs, learning curves, and their own integration problems.\n\nStart with the integration that annoys the team the most. That builds momentum and buy-in. If the first integration saves someone 30 minutes a week of tedious data entry, they will champion the next one.\n\nFor very small businesses with only 3-5 tools, this audit may only take 30 minutes. That is fine. The exercise is still valuable because it forces the owner to see the full picture of their tech stack and make deliberate choices about what stays."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Standardisation Framework",
+          "description": "Create consistent approaches for the work that gets repeated most often. Standard operating procedures that people actually follow, not perfect documents that sit in folders.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build consistent, documented approaches for the work that gets repeated most often in your business. These are standard operating procedures (SOPs) that people will actually follow, not 40-page manuals that gather dust. The goal is simple: anyone in the business should be able to pick up a documented process and deliver a consistent result, even if the usual person is unavailable."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without standardisation, quality depends on who does the work. Your best person delivers a great result. Your newest person delivers something different. The customer experience becomes unpredictable. Standardisation does not mean removing creativity or judgement. It means building a reliable floor that nobody drops below. The best businesses standardise the routine so their people can focus their energy on the exceptional."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the steps in order. You are building a framework for creating SOPs, not trying to document everything at once. Start with the highest-impact processes and expand from there.\n\n---"
+            },
+            {
+              "title": "Step 1: Identify What to Standardise First",
+              "content": "- [ ] **List every process that happens more than once a week** - Customer onboarding, invoicing, lead follow-up, content publishing, reporting, quality checks. Get them all down.\n- [ ] ⚡ Quick Win: **Pick the process that causes the most inconsistency or complaints** - This is your first SOP. Document it this week.\n- [ ] **Identify processes where mistakes are most costly** - Financial processes, customer-facing communications, and compliance tasks should be standardised before internal admin.\n- [ ] **Flag processes that currently depend on one person's knowledge** - If only Sarah knows how to run payroll or only James knows how to set up a new client, those are fragile processes that need documenting urgently."
+            },
+            {
+              "title": "Step 2: Build Your SOP Template",
+              "content": "- [ ] **Create a standard template for all SOPs** - Every SOP should include: process name, purpose (why it exists), trigger (what starts it), steps (in order), tools needed, output (what \"done\" looks like), and owner (who is responsible).\n- [ ] **Keep steps to 7-12 per process** - If a process has 30 steps, it is either too complex or needs breaking into smaller sub-processes. Simplicity drives adoption.\n- [ ] **Include screenshots or visuals for tool-based steps** - A screenshot of where to click beats a paragraph of description every time.\n- [ ] **Add a \"common mistakes\" section** - What goes wrong most often? Warn people upfront so they avoid the traps."
+            },
+            {
+              "title": "Step 3: Document Your First 3 SOPs",
+              "content": "- [ ] **Watch someone do the process in real time** - Do not write the SOP from memory. Watch it happen, note the actual steps (including the shortcuts and workarounds), and document reality.\n- [ ] **Have someone else follow your draft SOP without help** - If they can complete the process using only the document, it works. If they get stuck, the document needs more detail at that step.\n- [ ] ⚡ Quick Win: **Record a screen capture of the process** - A 5-minute video paired with a written checklist is often more useful than a detailed written SOP alone.\n- [ ] **Get feedback from the team** - Ask: \"Is anything missing? Is anything confusing? Would you actually use this?\" Revise based on what they say."
+            },
+            {
+              "title": "Step 4: Organise and Maintain",
+              "content": "- [ ] **Choose a single location for all SOPs** - A shared drive folder, a wiki, or a project management tool. One place, consistently organised, accessible to everyone who needs it.\n- [ ] **Create a naming convention** - Department, process name, version. Example: \"Sales - Lead Follow-Up - v2.\" Consistent naming makes finding things easy.\n- [ ] **Assign an owner for each SOP** - One person is responsible for keeping it current. Not for doing all the work, but for ensuring the document stays accurate.\n- [ ] **Set a review schedule** - Every SOP gets reviewed at least once every 6 months. Processes change. Documents that do not keep up become misleading.\n- [ ] **Track which SOPs exist and which are still needed** - A simple tracker showing: process name, SOP status (documented / needs update / not yet written), owner, and last review date.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear framework and template for creating SOPs across the business\n- Your top 3 highest-impact processes documented and tested\n- A single, organised location where all SOPs live\n- Clear ownership and a review schedule so documents stay current\n- Reduced dependency on individual knowledge and more consistent delivery"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The resistance to SOPs usually comes in two flavours. \"We are too small for that\" (you are not, you are exactly the right size to start). And \"it will stifle creativity\" (it will not, it will free creativity by handling the routine).\n\nPush the client to document processes as they are, not as they wish they were. If the real process includes workarounds and shortcuts, document those. You can improve the process later. For now, you need an accurate record of how things actually work.\n\nThe biggest trap is trying to document everything at once. Three good SOPs that get used are worth more than thirty that sit in a folder. Start with the three processes that would cause the most damage if the person who does them disappeared tomorrow."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "System Ownership Matrix",
+          "description": "Assign clear ownership for each system so someone is accountable for keeping it current and improving it over time. Systems without owners become systems that do not work.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Assign clear ownership for every system, tool, and process in your business so that someone specific is accountable for keeping it running, keeping it current, and improving it over time. Right now, most of your systems are \"everyone's responsibility,\" which really means they are nobody's responsibility. This matrix changes that."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Unowned systems decay. The CRM that nobody maintains fills up with duplicate contacts. The process document that nobody updates becomes misleading. The software subscription that nobody reviews keeps charging for features you stopped using. When every system has an owner, problems get spotted early, improvements happen naturally, and nothing falls through the cracks because \"I thought someone else was handling it.\""
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull together your system map and tool inventory from previous actions. Then assign ownership for each one using the framework below.\n\n---"
+            },
+            {
+              "title": "Build the Matrix",
+              "content": "- [ ] **Create a spreadsheet or table with these columns** - System/tool name, description (what it does), owner (one person), backup owner (who covers if the owner is away), review frequency, and last review date.\n- [ ] **List every system, tool, and documented process** - Your CRM, accounting software, project management tool, email platform, every SOP, and every recurring workflow. Include the infrastructure too - hosting, domains, backups.\n- [ ] ⚡ Quick Win: **Identify any systems that currently have no clear owner** - These are your highest-risk items. Assign an owner to each one today, even if it is temporary.\n- [ ] **Assign one owner per system** - Not a team. Not \"shared.\" One person whose name is next to it. They do not have to do all the work, but they are accountable for the system's health."
+            },
+            {
+              "title": "Define Ownership Responsibilities",
+              "content": "- [ ] **Clarify what \"owning\" a system means** - The owner is responsible for: keeping it running, keeping documentation current, managing access and permissions, flagging problems, and recommending improvements.\n- [ ] **Set review frequency for each system** - Critical systems (CRM, finance) get monthly reviews. Supporting systems (file storage, internal tools) get quarterly reviews. Documentation gets reviewed every 6 months.\n- [ ] **Define what a system review includes** - Is it working as expected? Is the documentation accurate? Are there unused features or licences? Are there problems that need fixing? Is there a better option available?\n- [ ] **Assign backup owners for critical systems** - If your CRM owner is on holiday when something breaks, who steps in? Critical systems need a named backup."
+            },
+            {
+              "title": "Clean Up and Communicate",
+              "content": "- [ ] **Identify overlapping systems** - Two project management tools, three places for file storage, duplicate CRMs. Ownership clarity often reveals redundancy. Flag these for consolidation.\n- [ ] ⚡ Quick Win: **Share the matrix with the whole team** - Everyone should know who owns what. This eliminates \"I did not know who to ask\" and \"I thought you were handling that.\"\n- [ ] **Add system ownership to your onboarding process** - When someone new joins, they should see the matrix and know who to ask about each system.\n- [ ] **Schedule the first round of reviews** - Put the review dates in calendars now. If it is not scheduled, it will not happen.\n- [ ] **Review the matrix itself quarterly** - As people change roles, leave, or join, the matrix needs updating. Build this into your quarterly operations review.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete matrix showing every system, its owner, backup owner, and review schedule\n- No unowned systems, tools, or processes in the business\n- Clear definition of what system ownership means and what is expected\n- Overlapping and redundant systems identified for consolidation\n- A living document that stays current through regular reviews"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This exercise often creates awkward conversations because it reveals how much has been running on autopilot. That is normal and healthy. The point is not to blame anyone for the gaps. It is to close them going forward.\n\nWatch for the business owner trying to own everything. In small businesses, the founder often defaults to \"I will just own it all.\" Push back. The goal is to distribute ownership so the business does not depend entirely on one person. Even in a 3-person team, each person should own something.\n\nThe matrix does not need to be complicated. A simple Google Sheet with 6 columns is enough. The value is in the assignment and accountability, not in the format. If the client spends more than an hour building the document, they are overengineering it."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

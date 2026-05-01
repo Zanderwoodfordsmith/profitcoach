@@ -1,0 +1,224 @@
+{
+  "ref": "3.4",
+  "level": 3,
+  "area": 4,
+  "name": "Profit & Pricing",
+  "subtitle": "Level 3 · Organised · Profit & Cash Flow",
+  "whatThisIs": "Profit does not happen by accident. It is not what is left over after all the bills are paid. It is designed into every price, every offer, every client relationship from day one. At this stage, you have cash flow under control. Now it is time to engineer profit into the machine.\n\nThis playbook is about understanding where you actually make money and where you do not. It covers margin analysis by offer and client, pricing architecture that makes sense strategically, and protecting profit from the complexity that slowly erodes it. Revenue feels good. Profit pays for growth.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You can tell them your revenue but not your margin. Some clients and projects seem profitable but you are not sure which ones. Pricing is inconsistent — sometimes based on cost, sometimes on competition, sometimes on what feels right. Discounting happens more often than you would like to admit. The business feels busy but bank balance growth does not match the effort."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have a rough sense of which offers make more money than others but no clear data to prove it. Pricing has some logic to it but exceptions creep in regularly. You know discounting hurts profit but struggle to say no when clients push back. Some months feel profitable, others feel thin, and you are not always sure why."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You know exactly which offers and which clients generate real profit and which do not. Your pricing is structured strategically with clear logic that ties to value delivered. Discounting has rules and happens rarely. Every new offer is designed with margin in mind before it goes to market. You can see profit trends month to month and make decisions based on data, not gut feel."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Which offers actually make you money? Not revenue — profit. If you stripped out all the hidden costs, complexity, and time that different offers require, which ones would you do more of and which would you stop tomorrow? Without this clarity, you are building a business on hope.",
+    "Is your pricing telling the right story about value? Every price sends a message about what the customer is buying and how much it is worth. Pricing too low suggests low value. Pricing without logic confuses the buyer. Your pricing architecture should make the decision easy for the right customers.",
+    "Are you pricing effort or outcomes? Hours and costs are about you. Outcomes and transformations are about them. The shift from \"this costs me X to deliver\" to \"this is worth Y to them\" is where real profitability lives. What are you actually selling — time or results?",
+    "When you discount, is it strategic or habitual? Every discount should have a clear strategic reason — to win a big contract, to move volume, to test a new market. If you find yourself discounting to close most deals, the problem is not price sensitivity. It is value clarity.",
+    "Where does complexity kill your margins? Every custom solution, every special exception, every \"just this once\" adds cost that rarely gets priced in properly. The simplest offers to deliver often have the best margins. Where are you making things harder than they need to be?"
+  ],
+  "quickWins": [
+    "This week: List your top 5 offers. Next to each one, write your gut feel of which makes the most profit per hour. Then calculate the actual numbers. See where your instincts were right and where they were wrong.",
+    "This week: Pick one offer where you regularly discount. Define the minimum margin you need to make it worthwhile and the specific circumstances where discounting makes strategic sense.",
+    "This week: Review your last 10 clients. Circle the ones where delivery was smooth and simple. Put a square around the ones that were complex or custom. Compare the profit margins and see the pattern."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.4",
+      "description": ""
+    },
+    {
+      "ref": "2.4",
+      "description": ""
+    },
+    {
+      "ref": "4.4",
+      "description": ""
+    },
+    {
+      "ref": "1.2",
+      "description": ""
+    },
+    {
+      "ref": "4.6",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Profit by Offer Analysis",
+          "description": "Map the true profitability of each service or product you offer. Include all costs — direct, indirect, and opportunity. Some offers that feel profitable will surprise you.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Take every product or service you sell and calculate the true profitability of each one. Not just gross margin - full profitability including direct costs, indirect costs, and the opportunity cost of the time and attention each offer consumes. The goal is to see clearly which offers are genuinely profitable, which are break-even, and which are quietly losing you money.\n\nMost business owners know their total profit but cannot tell you which specific offer makes the most money and which one drags the average down. This tool fixes that."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Michalowicz's Profit First methodology starts with a brutal truth: revenue is not profit, and busy is not profitable. A service that generates £200K in revenue but requires three full-time staff and constant firefighting might be less profitable than a £50K product that runs itself. Alex Hormozi makes the same point from the offer side - the best businesses have a small number of high-margin offers, not a long menu of mediocre ones. You cannot make good decisions about pricing, marketing, or product development until you know where profit actually comes from."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your last 12 months of financial data, your price list, and your team structure. A spreadsheet is the best format for this work. Be prepared for surprises.\n\n---"
+            },
+            {
+              "title": "Step 1: List Every Offer",
+              "content": "- [ ] ⚡ Quick Win: **Write down every product, service, and package you currently sell** - Include one-off projects, retainers, subscriptions, add-ons, and anything else that generates revenue. If you have more than 10, that is already useful information.\n- [ ] **Record revenue per offer for the last 12 months** - Pull actual numbers, not estimates. If your accounting system cannot break this down by offer, that is a problem to fix after this exercise.\n- [ ] **Note the number of clients or units for each offer** - This gives you average revenue per client per offer, which matters for pricing decisions later."
+            },
+            {
+              "title": "Step 2: Calculate True Costs",
+              "content": "- [ ] **Assign direct costs to each offer** - Materials, subcontractors, software licences, delivery costs. Anything that only exists because this offer exists.\n- [ ] **Allocate indirect costs proportionally** - Rent, utilities, admin staff, insurance. Divide these across offers based on the share of time and resources each one consumes. This does not need to be precise to the penny. Directionally right is good enough.\n- [ ] **Estimate the owner's time per offer** - How many hours per month do you personally spend on each offer? Value your time at a reasonable rate. This is often the hidden cost that turns a \"profitable\" offer into a break-even one.\n- [ ] **Calculate profit per offer** - Revenue minus all costs (direct, indirect, and owner time). Express it as a pound amount and as a percentage margin."
+            },
+            {
+              "title": "Step 3: Analyse and Decide",
+              "content": "- [ ] ⚡ Quick Win: **Rank offers by profit margin, highest to lowest** - The ranking alone is often a revelation. Your \"best seller\" by revenue may sit in the bottom half by margin.\n- [ ] **Identify your top two profit generators** - These are the offers to protect, invest in, and grow. Every marketing pound should prioritise driving demand for these.\n- [ ] **Identify any loss-making or break-even offers** - Ask honestly: does this offer need to exist? Is it a stepping stone to something profitable, or is it just legacy? If it does not serve a clear strategic purpose, consider killing it.\n- [ ] **Check for complexity costs** - Offers that require custom scoping, bespoke delivery, or constant client management carry hidden costs that eat margin. Flag any offer where the delivery is never the same twice.\n- [ ] **Document your findings** - One page: offer name, revenue, profit, margin, and a recommendation (grow, maintain, fix, or kill). Share this with your accountant or finance person for a reality check.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear, ranked picture of profitability by offer, not just total business profit\n- Hidden loss-makers or break-even offers identified and flagged for decision\n- Your top profit generators identified for investment and growth focus\n- A foundation for the Pricing Architecture Review and Margin Protection work\n- Data to support any decisions about retiring, simplifying, or restructuring offers"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Expect resistance on the owner-time calculation. Many owners do not want to see how much of their time goes into low-margin offers because it forces an uncomfortable decision. Push through it. The number does not have to be exact, but ignoring it completely makes the analysis useless.\n\nIf the client does not have good financial data broken down by offer, do a rough version first based on estimates, then use it as motivation to fix their tracking. A rough Profit by Offer Analysis is still far better than none.\n\nWatch for the \"but it brings in referrals\" defence of unprofitable offers. Ask them to quantify it. How many referrals? What revenue? If they cannot put a number on it, it is a feeling, not a strategy."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Pricing Architecture Review",
+          "description": "Build logical, strategic pricing that connects to value delivered. Good pricing architecture makes it easier to sell and harder for clients to negotiate down.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Review your entire pricing structure to ensure it is logical, strategic, and easy to explain. Good pricing architecture means every offer sits at a clear price point, the relationship between offers makes sense, and clients can see the value progression from one tier to the next. Bad pricing architecture is a random collection of numbers that evolved over time with no design behind them.\n\nThis is about structure, not specific price points. You are designing the framework that prices sit within, not picking the exact numbers (that comes in the Value-Based Pricing action)."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Allan Dib points out that most small businesses set prices by copying competitors or adding a margin to costs, then never revisit the decision. The result is pricing that does not reflect value, confuses buyers, and leaves money on the table. Hormozi's Value Equation makes this concrete: people do not buy based on cost. They buy based on perceived value minus perceived effort and risk. Your pricing architecture should make the high-value choice feel obvious and the comparison to alternatives feel unfair in your favour."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Bring your current price list, your Profit by Offer Analysis results, and any competitor pricing you can find. Work through this step by step.\n\n---"
+            },
+            {
+              "title": "Step 1: Audit Current Pricing",
+              "content": "- [ ] **List every price point in your business** - Every offer, every tier, every add-on. Include discounted rates if you regularly discount. Include legacy pricing for existing clients if it differs from new-client pricing.\n- [ ] ⚡ Quick Win: **Check for pricing gaps and clusters** - Plot your prices on a number line. Are there big gaps where you have nothing? Are several offers clustered at similar prices, competing with each other? Both are problems.\n- [ ] **Identify legacy pricing** - Offers where the price has not changed in over two years. Costs have gone up. Value has likely increased. The price should have moved too.\n- [ ] **Map the client journey through your pricing** - What does a typical client buy first? What do they buy next? Is there a clear path from entry-level to premium, or do clients hit a dead end?"
+            },
+            {
+              "title": "Step 2: Design the Architecture",
+              "content": "- [ ] **Define your pricing tiers** - Most businesses need 2-4 tiers: an entry point, a core offer, and a premium option. Some add a VIP or done-for-you tier at the top. Each tier should serve a different buyer: budget-conscious, standard, and high-value.\n- [ ] **Set clear value gaps between tiers** - The jump from one tier to the next should feel justified by what the client gets. If your middle tier is £500/month and your premium is £550/month, the distinction is not strong enough. Typical multipliers are 2-3x between tiers.\n- [ ] **Build in an anchor** - Your highest-priced offer makes your core offer feel reasonable by comparison. Even if few people buy the premium, it reframes the middle option as sensible rather than expensive.\n- [ ] ⚡ Quick Win: **Name your tiers strategically** - Names signal value. \"Gold/Silver/Bronze\" is generic. Names that reflect outcomes or access levels (\"Foundations,\" \"Growth,\" \"Partnership\") tell a story.\n- [ ] **Simplify the menu** - If you cannot explain your pricing in under two minutes, it is too complex. Cut, combine, or restructure until a new prospect can understand their options quickly."
+            },
+            {
+              "title": "Step 3: Pressure-Test the Architecture",
+              "content": "- [ ] **Run the \"explain it to a stranger\" test** - Describe your pricing to someone unfamiliar with your business. If they look confused, simplify further.\n- [ ] **Check alignment with profit data** - Does your architecture push clients toward your most profitable offers? If your highest-margin offer is buried in the middle with no spotlight, restructure.\n- [ ] **Compare to 2-3 competitors** - Not to copy them, but to understand what your market expects. If you are 3x more expensive, you need a clear reason. If you are significantly cheaper, you may be signalling low value.\n- [ ] **Plan the transition for existing clients** - If pricing is changing, decide how to handle current clients. Grandfather them, phase in changes, or renegotiate. Have a clear policy before you announce anything.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clean, logical pricing architecture with defined tiers and clear value progression\n- Legacy pricing identified and flagged for update\n- A client journey that naturally leads from entry-level to higher-value offers\n- Pricing that is simple enough to explain in under two minutes\n- A plan for transitioning existing clients if prices are changing"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Pricing is emotional. Clients will resist raising prices because they fear losing clients. Reframe: you are not raising prices, you are aligning prices to the value you deliver. If they have improved their service since they last set prices, the current price is actually wrong.\n\nThe biggest structural mistake is having too many offers at similar price points. It creates decision paralysis for buyers and internal competition between your own products. Push toward fewer, more distinct tiers.\n\nIf the client sells services (not products), watch for the trap of pricing by time instead of by outcome. Hourly rates punish efficiency and cap revenue. Guide them toward fixed-fee or value-based models where possible."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Value-Based Pricing Framework",
+          "description": "Shift from cost-plus pricing to outcome-based pricing. Learn to price what it is worth to them, not what it costs you to deliver.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Shift your pricing from \"what does it cost me to deliver this\" to \"what is this worth to my client.\" Value-based pricing means setting prices based on the outcome the client receives, not the inputs you provide. This process walks you through identifying the value you create, quantifying it, and translating it into a price that feels fair to both sides.\n\nThis is not about charging as much as possible. It is about charging in proportion to the results you deliver, which usually means charging more than cost-plus pricing would suggest."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Hormozi's Value Equation is the clearest framework here: Value = (Dream Outcome x Perceived Likelihood of Achievement) divided by (Time Delay x Effort and Sacrifice). When you price based on cost, you ignore all four of those variables. A consultant who saves a client £200K per year in wasted spend should not be pricing based on the 40 hours the work took. The value is in the outcome, not the hours. Blair Enns makes the same argument in Pricing Creativity - the moment you sell time, you commoditise yourself and cap your income."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your offer list, your client results data (case studies, testimonials, or even anecdotal evidence of outcomes), and your Pricing Architecture Review. Work through each offer.\n\n---"
+            },
+            {
+              "title": "Step 1: Identify the Value You Create",
+              "content": "- [ ] **List the tangible outcomes your clients get** - Revenue increases, cost savings, time saved, risks avoided, problems solved. Be specific and use numbers wherever possible.\n- [ ] ⚡ Quick Win: **Ask three recent clients what the engagement was worth to them** - Not what they paid. What it was worth. The gap between those two numbers is your pricing opportunity.\n- [ ] **Identify intangible value** - Confidence, peace of mind, reduced stress, better decisions, stronger team. These are real and clients will pay for them, but you need to name them explicitly.\n- [ ] **Calculate the ROI range** - If your service costs £10K and typically delivers £50K-£100K in value, that is a 5-10x return. This number becomes central to your pricing conversation."
+            },
+            {
+              "title": "Step 2: Build the Pricing Model",
+              "content": "- [ ] **Set a value-based price floor** - Your price should be no less than 10-20% of the value you create. If you save a client £100K, charging £5K is underpricing. Charging £10K-£20K is the starting point.\n- [ ] **Create a pricing conversation framework** - Before quoting a price, ask questions that surface value: \"What would solving this problem be worth to your business this year?\" \"What is it costing you to not fix this?\" These questions set the context for your price.\n- [ ] **Design outcome-linked pricing options** - Consider tying part of your fee to results. A base fee plus a performance bonus, or a higher fee with a guarantee. This signals confidence in your delivery.\n- [ ] **Test price sensitivity** - Try the new price with your next three prospects. If all three say yes immediately, you are still too cheap. If all three balk, you have gone too far. One yes and two negotiations is usually about right.\n- [ ] ⚡ Quick Win: **Stop quoting hourly rates** - If you currently sell by the hour, switch to project fees or retainer fees immediately. Same total revenue, but it breaks the \"time equals money\" frame that caps your growth."
+            },
+            {
+              "title": "Step 3: Support the Price with Proof",
+              "content": "- [ ] **Build a results library** - Collect every case study, testimonial, and data point that shows the value you deliver. Organise by outcome type (revenue, cost saving, time, risk) so you can pull the right proof for the right prospect.\n- [ ] **Quantify your track record** - \"We have delivered £X in measurable results across Y clients\" is more powerful than any individual case study. Calculate the aggregate.\n- [ ] **Create before-and-after stories** - Specific narratives of client transformation are the most persuasive pricing support. Where were they before? What did you do? Where are they now?\n- [ ] **Prepare for the \"why so much?\" question** - Do not defend the price. Reframe to value: \"The investment is £15K. Based on what we have discussed, the likely return is £80K-£120K in the first year. The question is not whether you can afford it, but whether you can afford not to.\"\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear understanding of the quantifiable and intangible value each offer creates\n- Pricing that reflects outcomes delivered, not inputs consumed\n- A conversation framework for surfacing value before discussing price\n- A results library that supports premium pricing with evidence\n- Confidence to quote higher prices backed by real data"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The shift to value-based pricing is psychological as much as practical. Most clients undercharge because they anchor to their own costs and compare themselves to cheaper competitors. Your job is to reframe: the comparison is not \"us versus the cheaper option\" - it is \"our fee versus the cost of the problem continuing.\"\n\nStart with the client's highest-margin, highest-impact offer. Get value-based pricing working there first, then extend to other offers. Trying to change everything at once creates confusion.\n\nIf a client is deeply uncomfortable with this approach, start smaller. Raise prices by 20% on new clients only, keeping existing clients on current rates. Track whether win rates change. They almost never do, which builds the confidence to go further."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Margin Protection System",
+          "description": "Identify where discounting and complexity are eroding profit, then install the guardrails to protect margins going forward.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify every place where your profit margins are being eroded - through discounting, scope creep, undercharging, complexity, or operational waste - and then install specific guardrails to protect them. This is a defensive action. You have done the work to set the right prices and understand your profitability. Now you need to stop the margin from leaking away through a hundred small concessions."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Michalowicz's Profit First principle is that profit is not what is left over after expenses. It is what you take first and protect. Most businesses lose 10-30% of their potential margin through preventable leaks: discounts given too easily, projects that expand beyond the original scope, invoices sent late, and clients who consume more time than they pay for. Each one seems small. Together, they are the difference between a business that grows its profit and one that works harder every year for the same return."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review this checklist and tick the items that apply to your business. You do not need all of them - pick the ones that address your biggest margin leaks first.\n\n---"
+            },
+            {
+              "title": "Discounting Guardrails",
+              "content": "- [ ] ⚡ Quick Win: **Set a maximum discount policy** - Define the maximum discount anyone in the business can offer (e.g., 10%) and require approval for anything beyond it. Write it down. Share it with the sales team.\n- [ ] **Eliminate casual discounting** - If \"I'll do you a deal\" is a standard part of your sales conversation, you are training clients to expect it. Remove discounting from the default sales process.\n- [ ] **Replace discounts with added value** - Instead of cutting price, add a bonus that costs you little but has high perceived value. This protects margin while still giving the client something.\n- [ ] **Track every discount given** - Run a monthly report showing total discount value. When the team sees the aggregate number, behaviour changes."
+            },
+            {
+              "title": "Scope Creep Guardrails",
+              "content": "- [ ] **Define scope in writing for every engagement** - Proposals and contracts must specify what is included and what is not. Vague scope is an open invitation for extras.\n- [ ] ⚡ Quick Win: **Create a change request process** - When a client asks for something outside scope, respond with \"Absolutely, let me put together a quick quote for that.\" This is not adversarial. It is professional.\n- [ ] **Track \"free\" extras** - Every time you or your team does something outside scope without charging, log it. Review monthly. This number is usually eye-opening.\n- [ ] **Set boundaries on client communication** - Unlimited access to you via WhatsApp, evenings, and weekends is not a feature. It is a margin leak. Define response times and channels in your engagement terms."
+            },
+            {
+              "title": "Operational Margin Protection",
+              "content": "- [ ] **Review supplier and subcontractor costs annually** - Costs creep up. Renegotiate or shop around at least once a year. Even a 5% reduction on a major supplier flows straight to profit.\n- [ ] **Identify your most time-consuming clients** - Some clients consume 3x the attention of others at the same price. Either restructure their engagement, increase their price, or let them go.\n- [ ] ⚡ Quick Win: **Tighten payment terms** - If you are on 30-day terms, move new clients to 14-day or payment-on-completion. Faster payment improves cash flow and reduces the cost of chasing.\n- [ ] **Automate or eliminate low-value admin** - Every hour your team spends on admin that could be automated is an hour that is not generating revenue. Audit for quick automation wins.\n- [ ] **Set a minimum engagement size** - Small projects often have disproportionate setup and management costs. Set a floor below which you do not take work, or charge a minimum project fee.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear picture of where margin is leaking in your business\n- Written policies for discounting, scope management, and payment terms\n- Guardrails installed that protect profit without damaging client relationships\n- A monthly tracking habit that makes margin erosion visible\n- Higher effective margins on both new and existing engagements"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most practical actions in the entire system because the results show up almost immediately. A client who stops giving 15% discounts on a £100K revenue line just added £15K to their bottom line.\n\nThe most common pushback is \"my clients will leave if I enforce boundaries.\" They will not. The clients who leave over reasonable scope management and payment terms are usually the ones eroding your margins the most. Losing them is profitable.\n\nStart with the biggest leak. For most service businesses, it is scope creep. For most product businesses, it is discounting. Fix the biggest one first, then work down the list. Do not try to install all guardrails simultaneously or the team will feel like everything changed overnight."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

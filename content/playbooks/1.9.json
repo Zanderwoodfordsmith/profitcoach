@@ -1,0 +1,78 @@
+{
+  "ref": "1.9",
+  "level": 1,
+  "area": 9,
+  "name": "Team Foundations",
+  "subtitle": "Level 1 · Overwhelm · Team & Leadership",
+  "whatThisIs": "Team Foundations is about getting the basics right before you hire anyone else. Even small teams need clarity. When roles are undefined and expectations are assumed rather than stated, you get friction, frustration, and wasted effort. Everyone works harder but achieves less.\n\nThis playbook is not about building an HR department. It is about establishing the essential structures that let people do their best work — whether you have 3 people or 30\\. Get these foundations right now and hiring becomes easier, performance improves, and you stop feeling like the only person who knows what is going on.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Nobody is quite sure what their job actually is beyond the obvious tasks. People step on each other's toes or assume someone else is handling things that nobody is handling. Communication is reactive — everything is urgent, nothing is planned. You feel like you have to be involved in every decision because authority lines are unclear."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "Most people know their main responsibilities but the edges are blurry. Some processes are documented, others exist only in your head. Communication works most of the time but important things still slip through the cracks. You have an idea of who reports to whom but it is not completely clear to everyone else."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every person knows exactly what winning looks like in their role and how their work fits into the bigger picture. Reporting lines are clear so people know who makes which decisions. Communication happens on schedule, not just when something goes wrong. You can step away for a week and the team functions without constant check-ins."
+    }
+  },
+  "thingsToThinkAbout": [
+    "**Does everyone know what winning looks like?** Beyond job titles, can each person describe what success looks like in their role over the next 90 days? If they cannot, you are managing activities instead of outcomes — and that scales poorly.",
+    "**Is authority ever ambiguous?** When decisions need to be made, is it always clear who has the authority to make them? Unclear authority creates bottlenecks, delays, and frustrated team members who either overstep or under-deliver.",
+    "**Are expectations explicit or assumed?** Most performance issues stem from expectations that live in your head but were never communicated clearly. What you think is obvious often is not obvious to anyone else.",
+    "**Where is skill missing?** Are people failing because they do not know what to do, or because they do not know how to do it? The solution for unclear expectations is different from the solution for capability gaps.",
+    "**Is communication structured or reactive?** If your team only talks when something is wrong, you are always firefighting. Regular, planned communication prevents most fires from starting."
+  ],
+  "actionsIntro": "This playbook is organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "**This week:** List every person on your team and write one sentence describing what success looks like in their role over the next 90 days. If you cannot do this clearly, neither can they.",
+    "**This week:** Pick the decision that gets delayed most often in your business. Clarify who has authority to make that decision and communicate it to everyone involved.",
+    "**This week:** Schedule a 15-minute weekly team check-in for next week. Agenda: what is working, what is blocked, what do people need. Keep it simple but make it happen."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.9",
+      "description": ""
+    },
+    {
+      "ref": "3.9",
+      "description": ""
+    },
+    {
+      "ref": "2.3",
+      "description": ""
+    },
+    {
+      "ref": "1.8",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Role Clarity",
+      "description": "Defining what everyone does and how performance is measured.\n**Play 1: Role Definition** — Create clear role descriptions that focus on outcomes, not just activities. Each role gets defined by what winning looks like, not just what tasks to do.\n**Play 2: Accountability Map** — Map who is responsible for what across all business functions so there are no gaps and no overlaps. Every important outcome has an owner.\n**Play 3: Performance Standards** — Set explicit standards for how work gets done — quality, timing, communication, problem-solving. Make the invisible expectations visible.",
+      "actions": []
+    },
+    {
+      "title": "Structure & Authority",
+      "description": "Building the framework that lets decisions happen efficiently.\n**Play 4: Simple Org Chart** — Create a basic organizational structure that shows who reports to whom, even if it is just you and two other people. Structure clarifies authority.\n**Play 5: Decision Rights** — Define who makes which decisions and what the approval process looks like for different types of choices. Remove bottlenecks and ambiguity.\n**Play 6: Capability Assessment** — Identify where people need training, support, or development to meet the expectations in their roles. Close the gaps between what you need and what you have.",
+      "actions": []
+    },
+    {
+      "title": "Communication Systems",
+      "description": "Installing the rhythms and tools that keep everyone aligned.\n**Play 7: Communication Protocols** — Establish how information flows — who needs to know what, when, and through which channels. Make communication predictable.\n**Play 8: Team Meeting Rhythm** — Set up regular check-ins that keep everyone aligned without becoming a meeting-heavy culture. Weekly updates, monthly reviews, quarterly check-ins.\n---",
+      "actions": []
+    }
+  ]
+}

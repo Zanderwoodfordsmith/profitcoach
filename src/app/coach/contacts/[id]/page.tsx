@@ -4,9 +4,12 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { StickyPageHeader } from "@/components/layout";
 import { BossGrid } from "@/components/BossGrid";
 import { BossWheel, BossDoughnut, FocusAreas } from "@/components/BossCharts";
 import { computeAreaScores } from "@/lib/bossScores";
+import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
+import { useWheelViewMode } from "@/lib/useWheelViewMode";
 
 type Contact = {
   id: string;
@@ -30,6 +33,8 @@ export default function ContactDetailPage({
   const { id: contactId } = use(params);
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
+  const [wheelColorScheme] = useWheelColorScheme();
+  const [wheelViewMode] = useWheelViewMode();
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [assessment, setAssessment] = useState<Assessment | null>(null);
@@ -140,10 +145,10 @@ export default function ContactDetailPage({
   const areaScores = computeAreaScores(answers);
 
   return (
-    <div className="min-h-screen bg-slate-100 px-4 py-6 text-slate-900">
-      <div className="mx-auto flex max-w-5xl flex-col gap-4">
-        <header className="border-b border-slate-200 pb-3">
-          <div className="mb-2 flex items-center gap-4">
+    <div className="flex flex-col gap-4">
+      <StickyPageHeader
+        leading={
+          <div className="flex items-center gap-4">
             <button
               type="button"
               className="text-xs text-slate-600 hover:text-slate-800"
@@ -158,22 +163,20 @@ export default function ContactDetailPage({
               Playbooks →
             </a>
           </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-            BOSS Dashboard
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            {contact ? contact.full_name : "Contact"}
-          </h1>
-          {contact && (
-            <p className="mt-1 text-sm text-slate-700">
+        }
+        title={contact ? contact.full_name : "Contact"}
+        descriptionPlacement="below"
+        description={
+          contact ? (
+            <span className="text-sm text-slate-700">
               {contact.business_name ?? "No business name"}
-              {contact.email
-                ? ` • ${contact.email}`
-                : null}
-            </p>
-          )}
-        </header>
+              {contact.email ? ` • ${contact.email}` : null}
+            </span>
+          ) : null
+        }
+      />
 
+      <div className="flex w-full flex-col gap-4">
         {loading && (
           <p className="text-sm text-slate-600">Loading…</p>
         )}
@@ -208,6 +211,9 @@ export default function ContactDetailPage({
                   <BossWheel
                     areaScores={areaScores}
                     totalScore={assessment.total_score}
+                    answers={answers}
+                    colorScheme={wheelColorScheme}
+                    viewMode={wheelViewMode}
                   />
                 </div>
                 <div className="flex justify-center">
@@ -218,10 +224,7 @@ export default function ContactDetailPage({
                 </div>
               </div>
             </section>
-            <section className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h2 className="mb-4 text-sm font-semibold text-slate-900">
-                BOSS grid
-              </h2>
+            <section className="overflow-x-auto">
               <BossGrid
                 answers={answers}
                 showDials

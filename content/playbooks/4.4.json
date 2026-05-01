@@ -1,0 +1,236 @@
+{
+  "ref": "4.4",
+  "level": 4,
+  "area": 4,
+  "name": "Profit Allocation",
+  "subtitle": "Level 4 · Overseer · Profit & Cash Flow",
+  "whatThisIs": "Profit is not something that happens to you — it is something you decide what to do with. When profit comes in, most owners either spend it reactively or leave it sitting in the bank account where it gets absorbed by the next month's expenses. This playbook changes that.\n\nProfit allocation is about deliberately deciding where every pound of profit goes before you make it. Owner distributions, business reserves, reinvestment, innovation funds, tax — each gets its own bucket so you are building resilience, funding growth, and rewarding yourself according to a plan, not a mood.\n\nThis is not budgeting. This is not expense management. This is about taking the profit you have earned and directing it towards the outcomes that matter most: a sustainable business, strategic growth, and personal reward.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Profit disappears as quickly as it arrives. You make a good month, then wonder where the money went when the next month's bills come in. Owner distributions are random — you take money when things feel good and nothing when they do not. There are no reserves, so every setback feels like a crisis. Growth happens by accident, not intention, because there is no dedicated fund for investment."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some structure around profit but it is inconsistent. You set aside money for tax but other allocations happen on gut feel. Owner distributions are better than before but still feel arbitrary. You talk about reinvesting in the business but never quite know how much or when. Reserves exist but they are not systematic — sometimes healthy, sometimes depleted."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every pound of profit has a destination before you make it. You have clear percentages that go to owner distributions, business reserves, reinvestment, and tax. Reserves are automatically built to your target level and stay there. Growth investments are funded from a dedicated allocation, not by borrowing from other buckets. You take consistent distributions without guilt because they are part of the plan, not an extra."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What percentage of profit should you actually keep in the business? Most owners reinvest everything and wonder why they feel broke despite having a profitable company. Others take everything out and wonder why growth stagnates. The right reinvestment ratio depends on your growth plans, your personal needs, and your risk tolerance.",
+    "How much should sit in reserves before you feel safe? Different businesses need different cushions. A consultancy might need three months of expenses. A manufacturer might need six. The number matters less than having a deliberate target and a plan to reach it.",
+    "Are you funding innovation or just talking about it? Growth requires investment in new capabilities, new offerings, and new systems. If you do not allocate profit specifically for innovation, it gets crowded out by immediate needs. Every good month becomes an opportunity lost.",
+    "What does reward look like in your business model? Owner distributions are not just about personal reward — they are about business sustainability. Take too little and you resent the business. Take too much and you starve future growth. The allocation needs to reflect both what you need personally and what the business needs to thrive.",
+    "How do you balance today's needs with tomorrow's opportunities? The tension in profit allocation is always between now and later. Reserves feel safe but do not grow the business. Investment feels exciting but leaves you exposed. The right allocation acknowledges both without sacrificing either."
+  ],
+  "quickWins": [
+    "This week: Calculate last quarter's profit and decide what percentage should have gone to each bucket: you, reserves, reinvestment, tax. Use this as your starting allocation framework.",
+    "This week: Open separate bank accounts for reserves and growth investment if you do not have them already. Physical separation makes allocation real.",
+    "This week: Set a target reserve amount based on 3-6 months of your fixed costs. This becomes your minimum safety level before distributions or investments get increased."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.4",
+      "description": ""
+    },
+    {
+      "ref": "5.4",
+      "description": ""
+    },
+    {
+      "ref": "4.2",
+      "description": ""
+    },
+    {
+      "ref": "1.4",
+      "description": ""
+    },
+    {
+      "ref": "5.0",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Profit Allocation Framework",
+          "description": "Set up the allocation percentages that work for your business and personal needs. Define how much goes to owner distributions, reserves, reinvestment, and tax so every decision is made once, not every month.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up fixed percentages that determine where every pound of revenue goes before you spend it. You will create allocation buckets for profit (owner distributions), operating expenses, tax, and reserves. Once set, this becomes a standing decision that runs every month without renegotiation.\n\nThis is the Profit First principle in practice. Instead of Revenue - Expenses = Profit, you flip it: Revenue - Profit = Expenses. You take your profit first, then run the business on what remains."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without predetermined allocations, profit is whatever happens to be left over at the end of the month. For most business owners, that means profit is zero or close to it because expenses expand to fill available revenue. Fixed percentages create discipline. They force spending decisions within a constraint. They also remove the monthly debate about \"can we afford to take profit this month?\" The answer is always yes, because the percentage is set."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your last 6 months of revenue and expense data. You need to know your current reality before setting target percentages. Work through the checklist below to build your allocation framework.\n\n---"
+            },
+            {
+              "title": "Assess Your Current Reality",
+              "content": "- [ ] Calculate your average monthly revenue over the last 6 months\n- [ ] Calculate what percentage currently goes to: owner pay, operating expenses, tax provisions, and actual profit retained\n- [ ] ⚡ Quick Win: Check your bank balance right now. If profit is supposed to be there but is not, that tells you everything about why allocation matters.\n- [ ] Note any months where you took zero profit or skipped tax provisions\n- [ ] Identify your current effective tax rate (ask your accountant if unsure)"
+            },
+            {
+              "title": "Set Your Target Allocation Percentages",
+              "content": "- [ ] Choose your profit allocation percentage (start with 5% if you are currently at 0%, target 10-20% over time)\n- [ ] Set your owner pay percentage (what you need personally, typically 30-50% depending on business size)\n- [ ] Set your tax reserve percentage (based on your effective rate plus a small buffer, typically 15-20%)\n- [ ] Set your operating expense percentage (whatever remains after profit, owner pay, and tax)\n- [ ] Confirm all four percentages add up to 100%\n- [ ] Compare your target percentages against your current reality. If the gap is large, plan a phased transition over 3-6 months."
+            },
+            {
+              "title": "Create Your Allocation System",
+              "content": "- [ ] Open separate bank accounts for each bucket: Profit, Tax, Owner Pay, Operating Expenses\n- [ ] Set up automatic transfers that run on the 1st and 15th of each month (twice monthly keeps amounts manageable)\n- [ ] ⚡ Quick Win: Open the separate accounts this week. Even before you set final percentages, the act of separating money changes behaviour immediately.\n- [ ] Write down your allocation percentages somewhere visible so they are not forgotten\n- [ ] Set a calendar reminder to review percentages quarterly\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Four clear allocation percentages that account for 100% of revenue\n- Separate bank accounts for each allocation bucket\n- Automatic transfers scheduled twice monthly\n- A clear gap analysis between current state and target state\n- A transition plan if percentages need to shift gradually"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most clients resist this at first because they feel they cannot afford to take profit. That is exactly why they need it. Start with small percentages and increase over time. The psychological shift matters more than the exact numbers. Mike Michalowicz's Profit First framework is the foundation here, but adapt it to each client's reality. Do not let them set aspirational percentages they cannot sustain - that leads to raiding the profit account and losing trust in the system. Connect this directly to the Cash Flow Forecast (1.4) so they can see how allocation affects monthly cash position."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Reserve Fund Targets",
+          "description": "Calculate the right reserve levels for your business and create the automatic process to build and maintain them. Reserves should grow when times are good and protect you when they are not.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Calculate the right reserve levels for your business and create an automatic process to build and maintain them. You will set targets for an emergency fund (survival money), an opportunity fund (growth money), and a seasonal buffer (smoothing money). Then you will build a system that grows these reserves when times are good and protects them when they are not."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Businesses without reserves make fear-based decisions. Every unexpected expense becomes a crisis. Every slow month triggers panic. Every opportunity gets passed over because there is no cash to act on it. Reserves give you options. They let you survive a bad quarter without laying people off. They let you say yes to an opportunity without going into debt. They turn you from reactive to strategic. The difference between a business that survives a downturn and one that does not is almost always cash reserves."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your monthly fixed costs number from the Cost Categorisation action (2.4) and your Profit Allocation Framework (4.4 Action 1). Work through each reserve type below.\n\n---"
+            },
+            {
+              "title": "Calculate Your Emergency Reserve Target",
+              "content": "- [ ] Look up your total monthly fixed costs (from Cost Categorisation or your P&L)\n- [ ] Multiply by 3 for a minimum emergency reserve target (3 months of fixed costs)\n- [ ] For businesses with variable or seasonal revenue, multiply by 4-6 months instead\n- [ ] ⚡ Quick Win: If you currently have zero reserves, set a starter target of one month of fixed costs. Getting to one month changes your stress levels immediately.\n- [ ] Write down your emergency reserve target: £___"
+            },
+            {
+              "title": "Calculate Your Opportunity Reserve Target",
+              "content": "- [ ] Review your last 12 months and note any opportunity you missed because cash was not available\n- [ ] Set an opportunity fund target based on the typical size of investments you want to make (new hire, equipment, marketing campaign, etc.)\n- [ ] A good starting point is 5-10% of annual revenue\n- [ ] Write down your opportunity reserve target: £___"
+            },
+            {
+              "title": "Calculate Your Seasonal Buffer",
+              "content": "- [ ] Review monthly revenue for the past 12-24 months and identify your lowest revenue months\n- [ ] Calculate the gap between your lowest month's revenue and your average monthly expenses\n- [ ] Multiply that gap by the number of low months in your cycle\n- [ ] If your business has no seasonal pattern, you can skip this or set a small buffer (one month of expenses)\n- [ ] Write down your seasonal buffer target: £___"
+            },
+            {
+              "title": "Build the Reserve System",
+              "content": "- [ ] Open a dedicated reserve account (separate from your operating account)\n- [ ] Set a monthly contribution amount based on your profit allocation percentage\n- [ ] ⚡ Quick Win: Set up an automatic transfer today, even if it is just £100/month. The habit matters more than the amount.\n- [ ] Define rules for when reserves can be used (emergency only, opportunity with clear ROI, seasonal shortfall)\n- [ ] Define a replenishment rule: after any withdrawal, increase monthly contributions until the reserve is rebuilt\n- [ ] Set a quarterly review to check reserve levels against targets\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Three clear reserve targets calculated: emergency, opportunity, and seasonal\n- A dedicated reserve account opened and funded\n- Automatic monthly contributions set up\n- Clear rules for when reserves can and cannot be used\n- A replenishment plan for rebuilding after withdrawals"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Reserves are emotional for most business owners. Many have operated hand-to-mouth for years and the idea of \"locking up\" cash feels wasteful or even impossible. Reframe it: reserves are not idle money, they are insurance and freedom. Start small and build. The first milestone that matters psychologically is one month of fixed costs. Once a client hits that, they visibly relax and start making better decisions. Watch for clients who set aggressive targets but then raid the reserve at the first temptation. The rules for withdrawal need to be strict enough to create real friction."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Growth Investment Budget",
+          "description": "Create a dedicated fund for strategic investments in the business — new systems, new capabilities, new opportunities. When the budget is set, investment decisions become about priorities, not whether you can afford it.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a dedicated fund for strategic investments so you can say yes to the right opportunities without scrambling for cash or going into debt. You will set a fixed monthly contribution, define clear categories for what counts as a growth investment, and build a simple decision framework so choices become about priorities rather than affordability."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses invest reactively. They see something shiny, check the bank balance, and either buy impulsively or say no because cash is tight. Neither approach is strategic. A dedicated growth budget changes the conversation entirely. Instead of \"can we afford this?\" the question becomes \"is this the best use of our growth fund?\" That shift in framing leads to dramatically better investment decisions over time. Businesses that invest consistently and strategically in capability, systems, and talent outperform those that spend erratically."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Profit Allocation Framework (4.4 Action 1) and your reserve fund status (4.4 Action 2). Growth investment comes after profit, tax, and essential reserves are funded. Work through the sections below to build your budget.\n\n---"
+            },
+            {
+              "title": "Define Your Growth Categories",
+              "content": "- [ ] List the types of investment that would genuinely move your business forward (not just keep it running)\n- [ ] Common growth categories: new hires, training and development, marketing campaigns, technology and systems, product development, equipment\n- [ ] ⚡ Quick Win: Write down the single investment you have been putting off that would make the biggest difference. That is probably your first priority.\n- [ ] Separate \"maintenance\" spending from \"growth\" spending. Replacing a broken laptop is maintenance. Implementing a new CRM is growth. Only growth goes in this budget."
+            },
+            {
+              "title": "Set Your Monthly Growth Contribution",
+              "content": "- [ ] Determine what percentage of revenue goes to growth investment (typically 5-15% depending on stage)\n- [ ] Cross-check against your profit allocation framework to confirm this is sustainable\n- [ ] If you cannot fund growth and reserves at the same time, prioritise reserves first until your emergency fund target is met\n- [ ] Open a separate growth investment account or earmark funds within your accounting software\n- [ ] Set up automatic monthly transfers into the growth fund"
+            },
+            {
+              "title": "Build Your Investment Decision Framework",
+              "content": "- [ ] For each potential investment, require a written one-page case covering: what it is, what it costs, what outcome it produces, how you will measure success, and timeline to ROI\n- [ ] Set a minimum threshold below which you can approve without a formal case (e.g. under £500)\n- [ ] ⚡ Quick Win: Create a simple scoring system. Rate each investment 1-5 on impact, urgency, and confidence in ROI. Only fund items scoring 10 or above.\n- [ ] Maintain a running priority list so when funds are available, you already know what is next\n- [ ] Review and reprioritise the list monthly"
+            },
+            {
+              "title": "Plan Your Investment Calendar",
+              "content": "- [ ] Map out planned investments for the next 12 months\n- [ ] Identify which investments are time-sensitive and which can wait\n- [ ] Stagger large investments so you are not depleting the fund in a single month\n- [ ] Build in a quarterly \"investment review\" to assess returns on previous investments\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A funded growth investment account with regular contributions\n- Clear categories defining what qualifies as growth investment\n- A decision framework that evaluates investments on merit, not just affordability\n- A prioritised investment pipeline for the next 12 months\n- A review rhythm to assess returns on past investments"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest win here is psychological. Clients who create a growth fund stop feeling guilty about investing in their business because the money is already allocated for that purpose. Watch for two common traps: clients who never spend the growth fund (hoarding) and clients who spend it on the first thing that comes along (impulsiveness). The decision framework solves both. Push clients to actually write the one-page investment case, even for small items. The discipline of articulating expected ROI kills most bad ideas before they cost anything. Connect this to the Scalability Audit (2.2) and Strategic Project Prioritisation (3.3) for a complete investment picture."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Owner Distribution Rules",
+          "description": "Establish clear rules for when and how much to distribute to yourself. Consistent distributions that are sustainable for both your personal needs and the business health.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Establish clear, written rules for when and how much you distribute to yourself from the business. This covers both your regular owner pay and profit distributions. The goal is consistent, sustainable income that meets your personal needs without starving the business of cash. Once the rules are set, distributions happen automatically on schedule."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Owner pay is the area where most business owners either overpay themselves (draining the business) or underpay themselves (building resentment and burnout). Without rules, you end up making emotional decisions each month based on how the bank balance looks. Some months you take too much because it feels like a good month. Other months you take nothing because cash is tight. This inconsistency makes personal financial planning impossible and creates stress in the business. Clear rules eliminate the monthly negotiation with yourself."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Profit Allocation Framework (4.4 Action 1) completed first. You also need a clear picture of your personal financial requirements. Work through the steps below in order.\n\n---"
+            },
+            {
+              "title": "Step 1: Define Your Personal Baseline",
+              "content": "- [ ] Calculate your minimum monthly personal expenses (mortgage/rent, bills, food, insurance, school fees, essentials)\n- [ ] Add a reasonable buffer for variable personal expenses (10-15% above essentials)\n- [ ] This is your minimum owner pay requirement. The business must cover this or something is fundamentally wrong.\n- [ ] ⚡ Quick Win: If you have never written down your personal minimum, do it now. Most owners are surprised by how low (or high) the actual number is."
+            },
+            {
+              "title": "Step 2: Set Your Regular Pay Structure",
+              "content": "- [ ] Choose between salary (fixed monthly amount) or percentage draw (fixed % of revenue)\n- [ ] For stability, a fixed salary is usually better. Set it at a level the business can sustain even in a slow month.\n- [ ] Set a pay schedule: weekly, fortnightly, or monthly. Stick to it like an employee payroll.\n- [ ] If using a limited company, work with your accountant to optimise the salary vs. dividend split for tax efficiency\n- [ ] Document the amount and schedule in writing"
+            },
+            {
+              "title": "Step 3: Set Profit Distribution Rules",
+              "content": "- [ ] Determine how often profit distributions happen (quarterly is recommended, monthly is acceptable)\n- [ ] Set a minimum profit account balance before distributions are allowed (e.g. must have at least £X before any distribution)\n- [ ] Set a maximum distribution percentage (e.g. distribute 50% of accumulated profit, retain 50%)\n- [ ] ⚡ Quick Win: If you have been taking irregular lump sums, switch to quarterly distributions immediately. The rhythm alone reduces financial anxiety.\n- [ ] Define what happens when the business has a bad quarter: distributions pause, regular pay continues"
+            },
+            {
+              "title": "Step 4: Build Safety Mechanisms",
+              "content": "- [ ] Create a \"distribution gate\" checklist that must pass before any profit distribution:\n  - [ ] Tax reserves are fully funded for the period\n  - [ ] Emergency reserves are at or above target\n  - [ ] No overdue supplier payments\n  - [ ] No upcoming large expenses in the next 30 days\n- [ ] If any gate fails, the distribution is deferred, not cancelled\n- [ ] Set an annual review date to adjust pay and distribution levels based on business performance\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A written owner pay policy with fixed amount and schedule\n- Clear rules for when profit distributions happen and how much\n- A distribution gate checklist preventing withdrawals that would harm the business\n- Separation between regular pay (predictable) and profit distributions (variable but structured)\n- An annual review rhythm for adjusting levels"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is deeply personal territory. Many business owners feel guilty paying themselves well, while others feel entitled to every pound of profit. Neither extreme works. The goal is sustainability: pay that meets personal needs, distributions that reward risk and effort, and rules that protect the business from being hollowed out. If a client's personal minimum exceeds what the business can afford, that is a business model problem, not a distribution problem. Address it through revenue growth or cost reduction rather than increasing distributions. Connect this to the Break-Even Calculator (1.7) to show how owner pay affects the numbers the business needs to hit."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

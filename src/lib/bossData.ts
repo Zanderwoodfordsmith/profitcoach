@@ -106,14 +106,37 @@ export function getPlaybookMeta(ref: string): BossPlaybook | null {
 
 /** Wheel chart colors for each area (index 0-9) */
 export const WHEEL_COLORS = [
-  "#c026d3",
+  "#4C667A",
   "#093a6d",
   "#0c5290",
   "#3d7ab8",
   "#3183d9",
   "#42a1ee",
   "#7fc8f5",
-  "#157a96",
-  "#1ca0c2",
   "#5dcce3",
+  "#1ca0c2",
+  "#157a96",
+];
+
+/** Level colors for diagram/wheel (Overwhelm→Owner) */
+export const LEVEL_COLORS_DIAGRAM = [
+  "#FC2975", // 1 Overwhelm
+  "#FF7400", // 2 Overworked
+  "#B743F0", // 3 Organised
+  "#07BC84", // 4 Overseer
+  "#238BF7", // 5 Owner
+];
+
+/** Alternative warm color palette for wheel */
+export const WHEEL_COLORS_ALT = [
+  "#E06D69",
+  "#F39667",
+  "#FBCB66",
+  "#FAE774",
+  "#B5D87E",
+  "#8FBC69",
+  "#71B8ED",
+  "#528BC3",
+  "#AC75B4",
+  "#E17DDC",
 ];

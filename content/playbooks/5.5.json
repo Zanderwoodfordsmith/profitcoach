@@ -1,0 +1,224 @@
+{
+  "ref": "5.5",
+  "level": 5,
+  "area": 5,
+  "name": "Branding",
+  "subtitle": "Level 5 · Owner · Revenue & Marketing",
+  "whatThisIs": "Branding is your business's most valuable asset when built intentionally. At the owner level, you shift from reactive reputation management to strategic brand building that compounds over time. This playbook is about becoming the go-to choice in your market so customers come to you.\n\nThis is not about logos and colours — that is visual identity, which sits within branding. This playbook covers the strategic elements that transform your reputation into enterprise value: positioning, authority, visibility, and integrity.\n\nWhen branding works, you stop competing on price and start commanding premium positioning.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Your business feels interchangeable with competitors. Customers choose you mainly on price or convenience, not because they specifically want you. You struggle to explain what makes you different in a way that matters to customers. You are constantly introducing yourself and explaining what you do because nobody knows who you are or what you stand for."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "People recognise your business name and roughly know what you do. You get some referrals but they are inconsistent. Your messaging varies depending on who is delivering it and which channel they encounter you on. You have some authority in your field but it is not translating into consistent business advantage."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You are known for something specific and valuable in your market. Customers actively seek you out and refer others without being asked. Your brand commands premium pricing because people want to work with you specifically. Industry peers recognise your expertise and journalists come to you for comment. Your reputation opens doors and creates opportunities beyond what marketing alone could achieve."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What are you consistently known for? This is your brand promise — the single thing customers can count on from you every time. If different customers would give different answers, your brand lacks clarity. Strength comes from consistency, not trying to be all things to all people.",
+    "Where is credibility visibly demonstrated? Authority is not claimed — it is earned and shown. Where do potential customers see evidence that you know what you are talking about? Content, speaking, media coverage, partnerships, results — authority needs proof.",
+    "Is reach expanding deliberately? Visibility without strategy is just noise. The best brands grow their reach through channels where their ideal customers actually pay attention, not by trying to be everywhere at once.",
+    "Is messaging consistent across all touchpoints? From your website to your sales calls to your delivery — does everything sound like it comes from the same company with the same values? Inconsistent messaging confuses customers and weakens brand recognition.",
+    "What actions could dilute brand perception? Your brand can be damaged faster than it is built. One poor customer experience, one misaligned partnership, one message that contradicts your positioning — what are the risks and how are you protecting against them?"
+  ],
+  "quickWins": [
+    "This week: Write down what you want to be known for in one clear sentence. Test it with five existing customers — would they describe you the same way?",
+    "This week: Audit your last ten pieces of content, your website, and your sales materials. Circle every place where the messaging feels different or contradictory.",
+    "This week: Pick one industry publication, podcast, or community where your ideal customers spend time. Engage meaningfully — comment, share insights, start building presence."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.5",
+      "description": ""
+    },
+    {
+      "ref": "3.5",
+      "description": ""
+    },
+    {
+      "ref": "5.6",
+      "description": ""
+    },
+    {
+      "ref": "3.2",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Brand Promise Definition",
+          "description": "Clarify the single most important commitment your business makes to customers. This becomes the filter for every decision and the foundation everything else builds on.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Clarify the single most important commitment your business makes to every customer. This is not a tagline or a slogan. It is the one result, feeling, or experience that people can count on every time they buy from you. Once defined, this promise becomes the filter for every decision - from what you sell to how you answer the phone."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most businesses have a vague sense of what they stand for, but nothing specific enough to guide real decisions. The result is inconsistency. One team member prioritises speed, another prioritises quality, another prioritises price. Without a clear promise, your brand is whatever each employee happens to feel like delivering that day. Companies like Volvo (safety), FedEx (overnight, guaranteed), and Ritz-Carlton (personalised luxury) built empires on one clear promise that everyone in the business could understand and deliver against. You need the same clarity."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through these sections in order. By the end, you should have a single sentence that captures what your business promises, and a simple test to check whether you are keeping it.\n\n---"
+            },
+            {
+              "title": "Gather Your Evidence",
+              "content": "- [ ] **List the top 5 reasons customers choose you over competitors** - Ask real customers if you can. If not, review testimonials, feedback, and your own experience from sales conversations.\n- [ ] **Review the last 10 positive reviews or testimonials** - What patterns emerge? What words come up again and again?\n- [ ] ⚡ Quick Win: Ask 3 current customers: \"What is the one thing you count on us for?\" Their language is often better than anything you would write yourself.\n- [ ] **List 3-5 things you would never compromise on, even under pressure** - These reveal your real values, not the ones on a poster.\n- [ ] **Identify what you do differently from your nearest competitors** - Not better. Different. What would customers miss if you disappeared?"
+            },
+            {
+              "title": "Draft Your Promise",
+              "content": "- [ ] **Write 5-10 versions of a single sentence that completes: \"When you work with us, you can always count on...\"** - Do not filter. Get quantity first.\n- [ ] **Eliminate anything generic** - \"Great service,\" \"high quality,\" and \"customer focus\" mean nothing because everyone claims them. Cross these out.\n- [ ] **Eliminate anything you cannot consistently deliver** - A promise you break is worse than no promise at all.\n- [ ] **Circle the 2-3 drafts that feel most true and most distinctive** - True meaning you already deliver this. Distinctive meaning competitors cannot easily claim the same thing.\n- [ ] **Test each finalist: Could a new employee understand this well enough to make daily decisions based on it?** - If not, simplify.\n- [ ] **Choose one. Write it down as a clean, single sentence.** - This is your Brand Promise."
+            },
+            {
+              "title": "Validate Your Promise",
+              "content": "- [ ] **Share it with your team and ask: \"Does this match what we actually do?\"** - If there is a gap between the promise and reality, you either need to change the promise or change the operations.\n- [ ] **Check it against 3 recent customer complaints** - Did those complaints happen because the promise was broken? If so, you have identified the right promise but need to deliver it more consistently.\n- [ ] **Run the \"hard decision\" test** - Think of a recent tough business decision. Would this promise have made the right answer obvious? If yes, it is a useful filter. If no, it may be too vague.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A single, clear sentence that captures what customers can always count on from your business\n- Evidence that this promise matches what customers actually value\n- A filter that makes difficult business decisions simpler\n- A foundation that the rest of this playbook builds on - authority positioning, visibility, and brand integrity all flow from this promise"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most clients will try to make their brand promise a paragraph. Push them to one sentence. The discipline of choosing one thing is the whole point. If they say \"we promise great quality AND fast delivery AND personal service,\" they have not done the work yet. Help them choose.\n\nWatch for promises that describe what the business does instead of what the customer gets. \"We provide bespoke consulting\" is a description. \"You get a clear plan within 48 hours\" is a promise. Keep redirecting toward the customer's experience.\n\nIf a client struggles, go back to customer language. The promise is usually hiding in the best testimonials."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Authority Positioning Strategy",
+          "description": "Identify where and how you will demonstrate credibility in your field. Choose your platforms, topics, and formats based on where your market pays attention.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify where and how to demonstrate credibility so that your ideal customers trust you before they ever speak to you. Choose the platforms, topics, and formats that align with where your market pays attention and what they need to believe before buying. Stop trying to be an expert at everything and start owning one specific territory."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "In a crowded market, the business that is seen as the authority wins. Not the cheapest, not the biggest, not the one with the most features. The one people trust. Authority is not about bragging or self-promotion. It is about consistently showing up with useful, relevant knowledge in the places where your ideal customers are already looking. When someone sees your name associated with a specific topic enough times, you become the default choice when they need help with that thing."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each section to define your authority territory, choose your primary format, and build a 90-day plan to establish presence.\n\n---"
+            },
+            {
+              "title": "Define Your Authority Territory",
+              "content": "- [ ] **Name the single topic you want to own in your market** - What subject should people automatically associate with your business? This should connect directly to your brand promise.\n- [ ] **List 5-7 subtopics within that territory** - These become your content pillars. Enough variety to stay interesting, narrow enough to stay focused.\n- [ ] ⚡ Quick Win: Google your topic + your industry. Who currently shows up? These are your authority competitors. Study what they do well and where the gaps are.\n- [ ] **Identify your unique angle** - What perspective do you bring that others do not? Industry experience, a specific methodology, contrarian opinion, real-world results? This is your differentiator.\n- [ ] **Write your \"I help [who] with [what] so they can [result]\" statement** - This is your authority positioning in one line."
+            },
+            {
+              "title": "Choose Your Authority Platforms",
+              "content": "- [ ] **List where your ideal customers go to learn and solve problems** - LinkedIn, YouTube, industry publications, podcasts, conferences, trade groups, online communities, Google search.\n- [ ] **Rank these by three factors: where you can reach the most ideal customers, where you are most comfortable creating, and where competition for attention is lowest** - The sweet spot is high audience overlap, medium comfort, and low competition.\n- [ ] **Select one primary platform and one secondary** - You will go deep on one before adding another. Spreading across five platforms means you build authority on none.\n- [ ] **Research the format that works best on your primary platform** - Long-form articles on LinkedIn, short videos on Instagram, detailed guides for SEO, interviews for podcasts. Match the platform's native format."
+            },
+            {
+              "title": "Build Your 90-Day Authority Plan",
+              "content": "- [ ] **Commit to a publishing frequency you can sustain for 90 days without burning out** - Weekly is ideal. Fortnightly is fine. Monthly is the minimum. Consistency beats volume.\n- [ ] **Map your first 8-12 content topics from your subtopic pillars** - You should never sit down wondering \"what should I write about?\" The topics should already be decided.\n- [ ] **Create one cornerstone piece of content** - A definitive guide, framework, or resource that demonstrates your depth on your core topic. This becomes your anchor that everything else links back to.\n- [ ] **Identify 2-3 places to contribute as a guest** - Podcasts, publications, events, or communities where you can reach new audiences without building from scratch.\n- [ ] **Set a 90-day review date** - What will you measure? Reach, engagement, inbound enquiries, or direct mentions? Pick one lead metric and track it.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clearly defined authority territory with specific subtopics\n- One primary platform chosen with a format that matches\n- A 90-day content plan with topics already mapped\n- Guest contribution opportunities identified\n- A cornerstone content piece planned or created"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest resistance here is clients who want to be known for everything. \"I am a business coach\" is not an authority position. \"I help service businesses fix their cash flow\" is. The narrower the territory, the faster authority builds.\n\nWatch for clients who skip straight to tactics (posting on LinkedIn) without defining their territory first. Content without a clear positioning is just noise. Make sure the territory is defined before any content gets created.\n\nIf a client says \"but my competitors already own that topic,\" remind them that authority is local and contextual. You do not need to be the world's top expert. You need to be the most visible, most consistent voice for your specific audience."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Visibility Channel Selection",
+          "description": "Map the 3-5 channels where your ideal customers actually spend time and develop a strategic presence there. Stop trying to be everywhere and start dominating somewhere.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map 3-5 channels where your ideal customers spend time and develop a strategic presence on each. Instead of trying to be everywhere and being mediocre at all of it, pick the channels that match your strengths and your audience, then dominate them. This action builds on your authority positioning by deciding where that authority gets distributed."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Visibility without strategy is exhausting. Most business owners post sporadically across six platforms, attend networking events they do not enjoy, and dabble in SEO without committing. The result: no platform builds momentum because none gets enough consistent attention. The businesses that grow fastest pick a small number of channels and go deep. They become known in those spaces. The key insight: your customers do not care how many platforms you are on. They care whether you show up consistently in the one or two places they actually look."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Score each potential channel against five criteria, then build a simple presence plan for your top selections.\n\n---"
+            },
+            {
+              "title": "Map All Potential Channels",
+              "content": "- [ ] **List every channel where your ideal customers might discover you** - Include both online and offline:\n  - Social media (LinkedIn, Instagram, Facebook, X, TikTok, YouTube)\n  - Content platforms (blog/SEO, podcast, newsletter, Medium, Substack)\n  - Paid advertising (Google Ads, Meta Ads, LinkedIn Ads)\n  - Referral and partnership channels\n  - Events (conferences, local networking, speaking, trade shows)\n  - Directories, listings, and industry platforms\n  - Community spaces (forums, Slack groups, Facebook groups, Reddit)\n- [ ] ⚡ Quick Win: Cross off any channel where your ideal customer does not spend time. Be honest. If your customers are CFOs, TikTok is probably not the answer."
+            },
+            {
+              "title": "Score Each Channel",
+              "content": "For each remaining channel, score 1-5 on these five criteria:\n\n- [ ] **Audience match** - How many of your ideal customers are active here? (1 = very few, 5 = core audience lives here)\n- [ ] **Content fit** - Does the channel suit your strengths and your brand promise? (1 = poor fit, 5 = natural match)\n- [ ] **Effort required** - How much time and resource to maintain presence? (1 = very high effort, 5 = manageable)\n- [ ] **Competition** - How crowded is this channel in your niche? (1 = extremely crowded, 5 = wide open)\n- [ ] **Measurability** - Can you track results from this channel? (1 = impossible to measure, 5 = clear metrics available)\n- [ ] **Total each channel's score** - Rank from highest to lowest. Your top 3-5 are your visibility channels."
+            },
+            {
+              "title": "Build Your Channel Plan",
+              "content": "- [ ] **For each selected channel, define your role** - Are you an educator, commentator, entertainer, curator, or connector? Pick one per channel.\n- [ ] **Set a minimum viable presence for each** - What is the least you can do consistently? One LinkedIn post per week. One networking event per month. One blog post per fortnight. Define the floor, not the ceiling.\n- [ ] **Assign ownership** - Who manages each channel? If you are doing everything yourself, reduce to 2-3 channels maximum. Spreading yourself thin defeats the purpose.\n- [ ] **Create a 30-day test period** - Commit to your minimum viable presence for 30 days before judging results. Most people quit channels before they have given them a fair test.\n- [ ] **Set review criteria** - After 30 days, what would \"working\" look like? Leads generated, conversations started, profile views, or engagement? Define this now so you are not guessing later.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A scored list of all potential visibility channels\n- 3-5 channels selected based on evidence, not habit\n- A clear minimum viable presence defined for each\n- Ownership assigned and review criteria set\n- A 30-day commitment to test the plan before making changes"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part of this action is getting clients to drop channels. They feel guilty about stopping something, even if it produces nothing. Frame it this way: every hour spent on a channel that does not work is an hour stolen from a channel that could.\n\nWatch for clients who pick channels based on what they enjoy rather than where their customers are. Enjoying a platform is a bonus, not a reason. Also watch for clients who pick channels based on what everyone else is doing. The best channel is often the one competitors are ignoring.\n\nIf a client has zero current presence anywhere, start with just one channel. Build consistency before adding a second."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Brand Integrity Framework",
+          "description": "Build the systems to ensure every customer interaction reinforces your brand promise. From operations to communications — everything must align with what you say you stand for.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build systems to ensure every customer interaction reinforces your brand promise. From how you answer emails to how you handle complaints, from your invoicing process to your onboarding experience, everything must align. This action turns your brand promise from a statement into an operational reality."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "A brand promise is worthless if the day-to-day experience contradicts it. If you promise \"personal attention\" but take three days to reply to emails, customers learn to distrust what you say. If you promise \"expert guidance\" but your onboarding is chaotic, customers question your competence before you have even started working together. Brand integrity means the promise and the experience match. Every touchpoint either reinforces or undermines your brand. There is no neutral."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Audit every customer touchpoint against your brand promise, identify gaps, and build simple systems to close them.\n\n---"
+            },
+            {
+              "title": "Map Your Customer Touchpoints",
+              "content": "- [ ] **List every point where a customer or prospect interacts with your business** - Include:\n  - First discovery (website, social media, referral conversation)\n  - Initial enquiry (phone, email, contact form, DM)\n  - Sales conversation and proposal\n  - Payment and contract signing\n  - Onboarding and first delivery\n  - Ongoing service delivery\n  - Invoicing and admin\n  - Follow-up and check-ins\n  - Complaint handling\n  - Offboarding and farewell\n- [ ] ⚡ Quick Win: Walk through the journey as if you were a new customer. Start from Google and go all the way to delivery. Note every moment where the experience feels inconsistent."
+            },
+            {
+              "title": "Audit Against Your Brand Promise",
+              "content": "- [ ] **For each touchpoint, ask: \"Does this reinforce our brand promise or contradict it?\"** - Be brutally honest. Score each as Reinforces, Neutral, or Contradicts.\n- [ ] **Identify the 3 worst contradictions** - These are the touchpoints doing the most damage to your brand. They are your priority fixes.\n- [ ] **Identify the 3 strongest reinforcements** - These show you what \"on brand\" looks like in practice. Use them as templates for fixing the weak ones.\n- [ ] **Check for consistency across team members** - Does the experience change depending on who the customer talks to? If yes, the brand lives in people's heads rather than in systems."
+            },
+            {
+              "title": "Build Your Alignment Systems",
+              "content": "- [ ] **Create a \"Brand Standards\" one-pager** - Not a 50-page brand book. A single page that says: \"Our brand promise is X. This means we always do Y. We never do Z.\" Simple enough for anyone to follow.\n- [ ] **Define response standards** - Maximum response time for enquiries, complaints, and routine communication. Make these specific numbers, not \"as soon as possible.\"\n- [ ] **Script or template your highest-impact touchpoints** - The first email, the welcome message, the proposal format, the complaint response. Templates ensure consistency without killing personality.\n- [ ] **Build one feedback loop** - A simple way to catch when the experience falls short. This could be a post-project survey, a quarterly client check-in, or a standing \"how are we doing?\" question in every meeting.\n- [ ] **Add brand promise to team onboarding** - Every new hire should hear the promise on day one and understand what it means for their role specifically.\n- [ ] **Schedule a quarterly brand integrity review** - 30 minutes every quarter to check: are we still keeping the promise? Where have we drifted?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete map of customer touchpoints with brand alignment scores\n- Priority fixes identified for the worst contradictions\n- A simple Brand Standards one-pager the whole team can follow\n- Response standards and templates for key touchpoints\n- A feedback loop to catch problems before they become patterns\n- A quarterly review cadence to maintain alignment over time"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action often surfaces uncomfortable truths. Clients discover that their brand promise says one thing but their operations say another. That gap is actually valuable - it shows exactly where to focus improvement.\n\nThe most common gap is response time. Almost every business promises responsiveness and almost every business is slower than customers expect. Start there. It is the easiest fix with the biggest impact.\n\nResist the urge to create elaborate brand guidelines. A one-page standards document that gets used beats a 30-page brand book that sits in a drawer. Keep it simple enough that a new team member could read it in 5 minutes and start making aligned decisions immediately."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

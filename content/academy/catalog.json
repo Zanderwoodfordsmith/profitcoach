@@ -1,0 +1,81 @@
+{
+  "categories": [
+    {
+      "id": "coach-academy",
+      "title": "Coach Academy",
+      "description": "Internal training for coaches. Edit lessons in content/academy/catalog.json.",
+      "courses": [
+        {
+          "id": "connect",
+          "title": "Connect",
+          "description": "How you show up, build trust, and open the right conversations before someone enrolls.",
+          "lessons": [
+            {
+              "id": "connect-01",
+              "title": "Placeholder: Mindset & positioning",
+              "emoji": "🔗",
+              "videoUrl": null,
+              "bodyMarkdown": "Replace this with your real lesson copy, links, and optional YouTube URL in the catalog."
+            },
+            {
+              "id": "connect-02",
+              "title": "Placeholder: First conversation framework",
+              "emoji": "💬",
+              "videoUrl": null,
+              "bodyMarkdown": "Add your script, examples, or homework for coaches here."
+            }
+          ]
+        },
+        {
+          "id": "enroll",
+          "title": "Enroll",
+          "description": "Turning interest into clear next steps and committed clients.",
+          "lessons": [
+            {
+              "id": "enroll-01",
+              "title": "Placeholder: Offer clarity",
+              "emoji": "📋",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder content for the Enroll course."
+            },
+            {
+              "id": "enroll-02",
+              "title": "Placeholder: Handling objections",
+              "emoji": "🛡",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder content — swap in your training when ready."
+            }
+          ]
+        },
+        {
+          "id": "deliver",
+          "title": "Deliver",
+          "description": "Fulfilling powerfully: onboarding, delivery rhythm, and outcomes.",
+          "lessons": [
+            {
+              "id": "deliver-01",
+              "title": "Placeholder: Kickoff & expectations",
+              "emoji": "🚀",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder for Deliver course — onboarding, boundaries, wins."
+            },
+            {
+              "id": "deliver-02",
+              "title": "Placeholder: Check-ins & course-correction",
+              "emoji": "📈",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder lesson body."
+            },
+            {
+              "id": "deliver-03",
+              "title": "Placeholder: Completion & referrals",
+              "emoji": "✨",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder lesson body."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

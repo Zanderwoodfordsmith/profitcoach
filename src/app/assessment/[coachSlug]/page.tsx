@@ -24,6 +24,7 @@ export default function AssessmentPage({
   const searchParams = useSearchParams();
   const fromLanding = searchParams.get("from_landing");
   const landingVariant = fromLanding === "a" || fromLanding === "b" ? fromLanding : null;
+  const fromDashboard = searchParams.get("from") === "dashboard";
   const startTracked = useRef(false);
 
   const [coachName, setCoachName] = useState<string | null>(null);
@@ -47,6 +48,9 @@ export default function AssessmentPage({
   const [businessName, setBusinessName] = useState(
     searchParams.get("business") ?? ""
   );
+
+  const [clientDashboardChecked, setClientDashboardChecked] = useState(false);
+  const [isClientFromDashboard, setIsClientFromDashboard] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,10 +83,80 @@ export default function AssessmentPage({
     };
   }, [coachSlug]);
 
+  const landingUrl = useMemo(
+    () => `/landing/a?coach=${encodeURIComponent(coachSlug)}`,
+    [coachSlug]
+  );
+
   useEffect(() => {
     if (landingVariant) return;
-    router.replace(`/landing/a?coach=${encodeURIComponent(coachSlug)}`);
-  }, [landingVariant, coachSlug, router]);
+    if (!fromDashboard) {
+      setClientDashboardChecked(true);
+      window.location.href = landingUrl;
+      return;
+    }
+    if (clientDashboardChecked) return;
+
+    try {
+      const raw = sessionStorage.getItem("boss_client_dashboard");
+      if (raw) {
+        const data = JSON.parse(raw) as {
+          contact?: { full_name?: string | null; email?: string | null; business_name?: string | null };
+          coach_slug?: string;
+        };
+        if (data.contact) {
+          setFullName(data.contact.full_name ?? "");
+          setEmail(data.contact.email ?? "");
+          setBusinessName(data.contact.business_name ?? "");
+          setStep("assessment");
+          setIsClientFromDashboard(true);
+          setClientDashboardChecked(true);
+          return;
+        }
+      }
+    } catch {
+      // ignore invalid or missing sessionStorage
+    }
+
+    let cancelled = false;
+    async function checkClientDashboard() {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (cancelled) return;
+        if (session?.access_token) {
+          const res = await fetch("/api/client/me", {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          if (cancelled) return;
+          if (res.ok) {
+            const body = (await res.json()) as {
+              contact?: { full_name?: string | null; email?: string | null; business_name?: string | null };
+            };
+            if (body.contact) {
+              setFullName(body.contact.full_name ?? "");
+              setEmail(body.contact.email ?? "");
+              setBusinessName(body.contact.business_name ?? "");
+              setStep("assessment");
+              setIsClientFromDashboard(true);
+              setClientDashboardChecked(true);
+              return;
+            }
+          }
+          setClientDashboardChecked(true);
+          window.location.href = landingUrl;
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      if (cancelled) return;
+      setClientDashboardChecked(true);
+      window.location.href = landingUrl;
+    }
+    checkClientDashboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [landingVariant, fromDashboard, coachSlug, landingUrl, clientDashboardChecked]);
 
   useEffect(() => {
     if (!landingVariant || startTracked.current) return;
@@ -192,11 +266,20 @@ export default function AssessmentPage({
   }
 
   if (!landingVariant) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-        <p className="text-sm text-slate-600">Redirecting to landing…</p>
-      </div>
-    );
+    if (!clientDashboardChecked) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+          <p className="text-sm text-slate-600">Loading…</p>
+        </div>
+      );
+    }
+    if (!isClientFromDashboard) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+          <p className="text-sm text-slate-600">Redirecting…</p>
+        </div>
+      );
+    }
   }
 
   if (step === "intro") {

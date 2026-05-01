@@ -1,0 +1,194 @@
+{
+  "ref": "1.6",
+  "level": 1,
+  "area": 6,
+  "name": "Fulfilment",
+  "subtitle": "Level 1 · Overwhelm · Operations & Delivery",
+  "whatThisIs": "Fulfilment is about delivering what you promised. Consistently. Every single time. It is not about being perfect or pulling off miracles — it is about having a process that works even when you are not there to fix things.\n\nMost businesses start by doing whatever it takes to get the work done. That might mean staying late, cutting corners, or just figuring it out as you go. But growth amplifies these weaknesses. What works when it is just you breaks when you have a team, tight deadlines, and higher expectations.\n\nThis playbook is about making delivery repeatable, not heroic. So every client gets the same quality, every project follows the same path, and your reputation builds on consistency, not luck.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Every job feels different even when it should be the same. You are constantly putting out fires, chasing deadlines, and explaining why things went wrong. Clients are confused about what happens next and when. You spend more time managing the chaos than actually delivering. The quality depends entirely on who is available and how much pressure they are under."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some processes but they are not always followed. Most deliveries go smoothly but there are still surprises that throw you off course. Clients mostly know what to expect but there are gaps in communication. You can see where things could be better but fixing them always gets pushed down the priority list."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every client knows exactly what happens next and when. Your team follows the same steps for every delivery so quality stays consistent. Potential problems get caught early, not at the deadline. Clients are confident in your process because you are confident in your process. New team members can follow the system and deliver good work without constant supervision."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What must happen every single time? Strip away everything optional and identify the absolute minimum standards for every delivery. These are your non-negotiables — the things that must happen regardless of timeline, budget, or who is doing the work.",
+    "Could someone replicate your delivery process tomorrow? If you were unavailable for two weeks, could a competent person pick up your client work and deliver the same quality? If not, your process lives in your head, not in a system.",
+    "Where do clients get lost or frustrated? Map their journey from the moment they buy to the moment they get results. Where do they stall, get confused, or disengage? These friction points are where your reputation gets damaged and where simple fixes can have huge impact.",
+    "What boundaries prevent scope creep? Clients will always want more than they paid for if the boundaries are unclear. Where does your responsibility end and theirs begin? What happens when they ask for extras or changes? Clear scope prevents over-servicing from killing your margins.",
+    "How do you know clients are actually succeeding? Delivering is not the same as clients getting results. What signals tell you whether your work is actually solving their problem? These satisfaction signals are early warnings before problems become complaints."
+  ],
+  "quickWins": [
+    "This week: List the five things that must happen on every single delivery regardless of client, timeline, or budget. Write them down as your minimum service standards.",
+    "This week: Pick your most common delivery type and write down every step from start to finish. Just the facts — what happens and in what order.",
+    "This week: Ask your last three completed clients: \"What was confusing or frustrating about working with us?\" Their answers will show you exactly where to focus first."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.6",
+      "description": ""
+    },
+    {
+      "ref": "1.8",
+      "description": ""
+    },
+    {
+      "ref": "2.4",
+      "description": ""
+    },
+    {
+      "ref": "1.5",
+      "description": ""
+    },
+    {
+      "ref": "1.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Service Standards Checklist",
+          "description": "Define the minimum standards that must be met on every delivery. This becomes your quality filter — nothing goes out the door unless it passes these checks.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define the minimum standards that must be met on every single delivery, regardless of client, timeline, or who does the work. These become your non-negotiable quality filter — nothing goes out the door unless it passes."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "David Jenyns' SYSTEMology starts with a simple observation: when you do not define what \"good\" looks like, quality becomes random. It depends on who is available, how much pressure they are under, and whether they remembered the important steps. Service standards remove the guesswork. They are not about perfection — they are about consistency. A client should get the same quality whether you deliver personally or your newest team member does."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each section for your most common type of delivery first. If you offer multiple services, do this for the one that generates the most revenue.\n\n---"
+            },
+            {
+              "title": "Define Your Standards",
+              "content": "- [ ] ⚡ Quick Win · **List the 5 things that must happen on every delivery, no exceptions** — The absolute non-negotiables. If any of these are missed, the client experience is damaged. Examples: \"Client receives a confirmation within 24 hours,\" \"Every deliverable is reviewed before sending,\" \"Client is updated at least weekly.\"\n- [ ] **For each standard, define what \"good\" looks like specifically** — \"Quick response\" is not a standard. \"All client messages receive a response within 4 business hours\" is. Make each one measurable.\n- [ ] **Identify the standards that are currently being missed** — Be honest. Which of your non-negotiables are you already failing on? These are your first fixes.\n- [ ] **Prioritise: which missed standard is most damaging to client trust?** — Fix that one first. Client trust is built on reliability, and reliability is built on consistently meeting standards."
+            },
+            {
+              "title": "Communication Standards",
+              "content": "- [ ] **Set response time expectations** — How quickly should clients hear back from you? Set the expectation explicitly rather than leaving it undefined. Then communicate it to clients.\n- [ ] **Define update frequency** — Weekly? After each milestone? Clients do not complain about over-communication — they complain about silence. Set a minimum and stick to it.\n- [ ] ⚡ Quick Win · **Create a standard \"welcome\" message or onboarding email** — The first interaction sets the tone. Every new client should receive the same professional start, explaining what happens next and when."
+            },
+            {
+              "title": "Delivery Standards",
+              "content": "- [ ] **Define your quality check** — What review happens before any work reaches the client? Who checks it? What are they checking for? Even a simple \"read it through once before sending\" is better than nothing.\n- [ ] **Set your delivery timeline standards** — How long should each type of delivery take? What is the maximum acceptable delay before the client is notified? Define it and track it.\n- [ ] **Create a simple handoff checklist** — When work passes between team members (or between you and a subcontractor), what information must be included? Missing handoff details cause most quality failures."
+            },
+            {
+              "title": "Track Compliance",
+              "content": "- [ ] **Pick one standard and track it for 4 weeks** — Did you meet it every time? If not, why? The tracking itself improves compliance.\n- [ ] **Ask clients for feedback on the specific standard** — \"How was our response time this month?\" is more useful than \"Are you happy?\" Targeted questions get honest, actionable answers.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear, written standards that everyone on your team can follow\n- Consistent client experience regardless of who delivers the work\n- Fewer surprises, complaints, and quality failures\n- A foundation you can build on — once Level 1 standards are reliable, Level 2 takes them higher\n- Client confidence in your process, which builds trust and referrals"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most clients will try to set too many standards at once. Push them to start with 5 non-negotiables. If they cannot maintain 5, adding more is pointless. Master the basics, then expand.\n\nThe clients who need this most are the ones who say \"we don't need standards — we just deliver great work.\" That usually means quality depends on who is having a good day. Standards make \"great work\" the default, not the exception.\n\nThis pairs with Client Journey Map (which documents the full process) and Scope & Boundaries (which protects against overdelivery)."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Client Journey Map",
+          "description": "Document every step from initial contact to final delivery. Map what happens, when it happens, and who is responsible. Turn the invisible process into a visible system that anyone can follow.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Document every step from the moment a client says \"yes\" to the moment the work is complete and they are delighted. Turn the invisible process in your head into a visible system anyone can follow."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Jenyns calls this your \"Critical Client Flow\" — it is the single most important process to document first because it directly touches revenue and reputation. Ryan Deiss frames it as the \"Fulfillment Engine\" — the system that delivers what your Growth Engine sold. When this process lives only in your head, every delivery requires you. When it is documented, others can follow it, quality stays consistent, and you stop being the bottleneck."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map your most common delivery type first. Use a whiteboard, a document, or sticky notes — whatever gets the steps out of your head and into view.\n\n---"
+            },
+            {
+              "title": "Step 1: Map the Current Reality",
+              "content": "- [ ] **Start from \"client says yes\" and write every step that happens next** — Do not skip the obvious ones. Include: payment collection, welcome communication, kickoff, information gathering, actual delivery, review, completion, and follow-up.\n- [ ] **For each step, note: who does it, when it happens, and how long it takes** — This reveals where your process depends on you personally, where handoffs happen, and where delays creep in.\n- [ ] **Mark the client touchpoints** — Every moment the client hears from you, sees something, or needs to do something. These are the moments that shape their experience.\n- [ ] ⚡ Quick Win · **Identify the biggest gap between steps** — Where does the client wait longest without hearing anything? That silence is where trust erodes. Even a quick \"we're working on it, here's where we are\" email fixes this."
+            },
+            {
+              "title": "Step 2: Find the Friction",
+              "content": "- [ ] **Where do clients get confused?** — Where do they ask \"what happens next?\" or \"when will I hear from you?\" These are missing communication points.\n- [ ] **Where do things regularly go wrong?** — Missed steps, delays, quality issues, miscommunication. These are your process failures — and they are usually predictable.\n- [ ] **Where do you personally have to intervene?** — Every point where only you can move things forward is a bottleneck. At Level 1, that is expected — but documenting it shows you what needs to change as you grow.\n- [ ] **What information do you repeatedly chase from clients?** — If you always need the same 5 things from clients and you always have to ask for them, build a standard request that goes out automatically at the right stage."
+            },
+            {
+              "title": "Step 3: Build the Standard Journey",
+              "content": "- [ ] **Rewrite the journey as a clean sequence of steps** — Numbered, in order, with who is responsible and when it happens. This becomes your delivery playbook.\n- [ ] **Add standard communications at each client touchpoint** — Welcome email, progress update, delivery notification, completion message, feedback request. Write templates once, use them every time.\n- [ ] ⚡ Quick Win · **Create a simple client onboarding checklist** — The first 48 hours after \"yes\" set the tone for the entire relationship. A consistent onboarding process builds immediate confidence.\n- [ ] **Test it** — Have someone else (team member, VA, or friend) read your journey map and tell you where they get confused. If they cannot follow it, a new hire will not be able to either.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented, step-by-step delivery process anyone can follow\n- Clear client touchpoints with template communications ready to use\n- Identified friction points and bottlenecks you can fix immediately\n- The ability to delegate parts of delivery because the process is documented\n- A foundation for scaling — you cannot grow what you cannot replicate"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is often a breakthrough session. When clients see their delivery process mapped out in front of them, they immediately spot 3-5 things that are broken or missing. The map makes problems visible that they have been working around unconsciously.\n\nJenyns recommends recording yourself walking through the process, then having someone else document it. This is faster than writing it from scratch and captures the nuances that would otherwise be missed.\n\nIf the client says \"my delivery is different every time,\" that IS the problem. Even customised work has common steps — find those steps and standardise them. Customisation should happen within a framework, not in place of one."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Friction Point Audit",
+          "description": "Identify where clients get stuck, confused, or frustrated in your delivery process. Find the bottlenecks, communication gaps, and handoff problems that slow things down or damage the experience.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define clear boundaries around what is included in your delivery and what is not. Build the scripts and processes for handling scope creep before it happens, so you protect your margins without damaging client relationships."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Scope creep is the silent profit killer in service businesses. It starts with \"can you just...\" and ends with you doing 40% more work than you quoted for, resenting the client, and making less money than if you had never taken the job. The problem is not difficult clients — it is unclear boundaries. When your scope is vague, every request feels reasonable because there is no line to cross. When your scope is explicit, you can say \"yes, and here's the cost for that addition\" without awkwardness."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Define your boundaries for your core offer first. If you have multiple offerings, start with the one that suffers most from scope creep.\n\n---"
+            },
+            {
+              "title": "Define What Is In",
+              "content": "- [ ] **List exactly what your core offer includes** — Be specific. Not \"marketing support\" but \"3 blog posts per month, 1 strategy call, and a monthly analytics report.\" Specificity is the boundary.\n- [ ] **Define the number of revisions or iterations included** — If applicable. \"2 rounds of revisions included\" is clear. \"We'll keep going until you're happy\" is a blank cheque.\n- [ ] **State the timeline** — When does the engagement start and end? What milestones happen when? Open-ended timelines invite scope creep because there is no natural endpoint.\n- [ ] ⚡ Quick Win · **Add your scope to your proposal or contract** — If it is not written down before the client signs, it does not exist. One paragraph in your proposal prevents months of argument."
+            },
+            {
+              "title": "Define What Is Out",
+              "content": "- [ ] **List the most common \"extras\" clients ask for** — The requests that come up regularly but are not included. These become your explicit exclusions.\n- [ ] **Price the extras** — Every excluded item should have a price tag ready. \"That's not included in the current package, but I can add it for £X.\" This is not hostile — it is professional.\n- [ ] **Define where your responsibility ends and theirs begins** — What do you need from the client to do your job? What happens if they do not provide it? What delays are on them versus on you? Clarity here prevents blame games."
+            },
+            {
+              "title": "Handle Scope Creep When It Happens",
+              "content": "- [ ] **Write your \"scope creep\" response script** — Something you are comfortable saying every time: \"Great idea — that falls outside the current scope. I can add it for £X, or we can include it in the next phase. Which works better for you?\"\n- [ ] ⚡ Quick Win · **Practice saying it out loud** — Seriously. Most business owners know what to say but freeze in the moment because they do not want to seem difficult. Say it 10 times until it feels natural.\n- [ ] **Track scope additions** — When you do say yes to extras, log them. At the end of the engagement, review: how much free work did you do? What should have been charged? This data informs your next proposal.\n- [ ] **Review your scope quarterly** — Are clients consistently asking for the same extras? That is a signal to either include it (and raise your price) or to make the exclusion more prominent.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear, documented scope for your core offer that clients agree to before work starts\n- Prepared responses for scope creep that feel professional, not confrontational\n- Priced extras ready to go — turning \"can you just...\" into additional revenue\n- Protected margins because you are delivering what you quoted, not 40% more\n- Better client relationships because expectations are clear from day one"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Scope creep is an emotional issue for most clients. They feel guilty saying no, afraid of losing the client, or unsure whether the request is reasonable. Help them see that clear boundaries actually improve client relationships — clients respect you more when you are clear about what they get.\n\nIf a client says \"I can't say no to clients,\" dig into why. Often it is a pricing confidence issue (they feel they are not delivering enough value to justify their price) or a scarcity issue (they are afraid to lose any client). Both loop back to other playbooks — Value Definition and Ideal Customer.\n\nThe \"practice saying it out loud\" step sounds silly but works. Role-play a scope creep conversation in the session. The client who can handle it calmly in role-play will handle it calmly in real life."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Scope & Boundaries Framework",
+          "description": "Create clear boundaries around what is included in each type of delivery and what is not. Build the scripts and processes for handling scope creep before it happens, not after."
+        }
+      ]
+    }
+  ]
+}

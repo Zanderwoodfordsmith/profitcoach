@@ -3,11 +3,26 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { PLAYBOOKS } from "@/lib/bossData";
 
-type UnlockState = Record<string, boolean>;
+type PlaybookStatus = "locked" | "in_progress" | "implemented";
+
+const STATUS_OPTIONS: { value: PlaybookStatus; label: string }[] = [
+  { value: "locked", label: "Locked" },
+  { value: "in_progress", label: "In progress" },
+  { value: "implemented", label: "Implemented" },
+];
+
+function statusBg(status: PlaybookStatus): string {
+  return status === "implemented"
+    ? "bg-green-100 text-green-800"
+    : status === "in_progress"
+      ? "bg-amber-100 text-amber-800"
+      : "bg-rose-100 text-rose-800";
+}
 
 export default function CoachContactPlaybooksPage({
   params,
@@ -18,10 +33,10 @@ export default function CoachContactPlaybooksPage({
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
   const [contactName, setContactName] = useState<string | null>(null);
-  const [unlocks, setUnlocks] = useState<UnlockState>({});
+  const [statusByRef, setStatusByRef] = useState<Record<string, PlaybookStatus>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toggling, setToggling] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,12 +108,11 @@ export default function CoachContactPlaybooksPage({
       if (cancelled) return;
 
       if (res.ok) {
-        const body = (await res.json()) as { unlocks?: string[] };
-        const map: UnlockState = {};
-        for (const ref of body.unlocks ?? []) {
-          map[ref] = true;
-        }
-        setUnlocks(map);
+        const body = (await res.json()) as {
+          unlocks?: string[];
+          statusByRef?: Record<string, PlaybookStatus>;
+        };
+        setStatusByRef(body.statusByRef ?? {});
       }
 
       setLoading(false);
@@ -110,14 +124,14 @@ export default function CoachContactPlaybooksPage({
     };
   }, [contactId, router, impersonatingCoachId]);
 
-  async function handleToggle(ref: string, currentlyUnlocked: boolean) {
-    setToggling(ref);
+  async function handleStatusChange(ref: string, status: PlaybookStatus) {
+    setUpdating(ref);
 
     const {
       data: { session },
     } = await supabaseClient.auth.getSession();
     if (!session?.access_token) {
-      setToggling(null);
+      setUpdating(null);
       return;
     }
 
@@ -136,38 +150,33 @@ export default function CoachContactPlaybooksPage({
         headers,
         body: JSON.stringify({
           playbook_ref: ref,
-          unlocked: !currentlyUnlocked,
+          status,
         }),
       }
     );
 
-    setToggling(null);
+    setUpdating(null);
     if (res.ok) {
-      setUnlocks((prev) => ({ ...prev, [ref]: !currentlyUnlocked }));
+      setStatusByRef((prev) => ({ ...prev, [ref]: status }));
     }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="border-b border-slate-200 pb-3">
-        <Link
-          href={`/coach/contacts/${contactId}`}
-          className="text-xs text-slate-600 hover:text-slate-800"
-        >
-          ← Back to contact
-        </Link>
-        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-          BOSS Dashboard
-        </p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">
-          Playbooks — {contactName ?? "Contact"}
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Unlock playbooks for this client. Unlocked playbooks are visible in
-          their client portal.
-        </p>
-      </header>
+      <StickyPageHeader
+        leading={
+          <Link
+            href={`/coach/contacts/${contactId}`}
+            className="text-xs text-slate-600 hover:text-slate-800"
+          >
+            ← Back to contact
+          </Link>
+        }
+        title={`Playbooks — ${contactName ?? "Contact"}`}
+        description="Set status per playbook: Locked (client sees overview only), In progress, or Implemented (client sees overview + client tab)."
+      />
 
+      <div className="w-full">
       {loading && (
         <p className="text-sm text-slate-600">Loading…</p>
       )}
@@ -180,8 +189,8 @@ export default function CoachContactPlaybooksPage({
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <ul className="divide-y divide-slate-100">
             {PLAYBOOKS.map((p) => {
-              const unlocked = unlocks[p.ref] ?? false;
-              const isToggling = toggling === p.ref;
+              const status = statusByRef[p.ref] ?? "locked";
+              const isUpdating = updating === p.ref;
               return (
                 <li
                   key={p.ref}
@@ -193,24 +202,25 @@ export default function CoachContactPlaybooksPage({
                   >
                     {p.ref} {p.name}
                   </Link>
-                  <button
-                    type="button"
-                    disabled={isToggling}
-                    onClick={() => handleToggle(p.ref, unlocked)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                      unlocked
-                        ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    } disabled:opacity-60`}
+                  <select
+                    value={status}
+                    onChange={(e) => handleStatusChange(p.ref, e.target.value as PlaybookStatus)}
+                    disabled={isUpdating}
+                    className={`rounded-full border-0 px-3 py-1.5 text-xs font-medium transition disabled:opacity-60 ${statusBg(status)}`}
                   >
-                    {isToggling ? "…" : unlocked ? "Unlocked" : "Locked"}
-                  </button>
+                    {STATUS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                 </li>
               );
             })}
           </ul>
         </div>
       )}
+      </div>
     </div>
   );
 }

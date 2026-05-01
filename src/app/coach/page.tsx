@@ -97,81 +97,18 @@ export default function CoachDashboardPage() {
     };
   }, [router, impersonatingCoachId]);
 
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  const assessmentLink =
-    profile && profile.slug
-      ? origin
-        ? `${origin}/landing/a?coach=${encodeURIComponent(profile.slug)}`
-        : `/landing/a?coach=${encodeURIComponent(profile.slug)}`
-      : null;
+  useEffect(() => {
+    if (!loading && profile && !error) {
+      router.replace("/coach/signature");
+    }
+  }, [loading, profile, error, router]);
 
-  return (
-    <div className="flex flex-col gap-4">
-        <header className="border-b border-slate-200 pb-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-            BOSS Dashboard
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            Coach dashboard
-          </h1>
-          {profile && (
-            <p className="mt-1 text-sm text-slate-700">
-              {profile.full_name ?? "Coach"}
-              {profile.coach_business_name
-                ? ` @ ${profile.coach_business_name}`
-                : null}
-            </p>
-          )}
-        </header>
-
-        {loading && (
-          <p className="text-sm text-slate-600">Loading…</p>
-        )}
-        {error && <p className="text-sm text-rose-600">{error}</p>}
-
-        {profile && assessmentLink && !loading && !error && (
-          <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">
-              Your prospect link
-            </h2>
-            <p className="text-xs text-slate-700">
-              Share this link with prospects. When they complete the
-              assessment, their results will be stored under your
-              account.
-            </p>
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-sky-700">
-              <span className="truncate">{assessmentLink}</span>
-            </div>
-          </section>
-        )}
-
-        <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Prospects &amp; clients
-          </h2>
-          <p className="text-xs text-slate-700">
-            Manage prospects and clients from the sidebar. Add
-            prospects and share your assessment link, or view results.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="inline-flex items-center rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white shadow hover:bg-sky-500"
-              onClick={() => router.push("/coach/prospects")}
-            >
-              View prospects →
-            </button>
-            <button
-              type="button"
-              className="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-              onClick={() => router.push("/coach/clients")}
-            >
-              View clients →
-            </button>
-          </div>
-        </section>
-    </div>
-  );
+  if (loading) {
+    return <p className="text-sm text-slate-600">Redirecting…</p>;
+  }
+  if (error) {
+    return <p className="text-sm text-rose-600">{error}</p>;
+  }
+  return <p className="text-sm text-slate-600">Redirecting…</p>;
 }
 

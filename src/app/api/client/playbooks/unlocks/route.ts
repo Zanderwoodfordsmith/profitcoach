@@ -108,10 +108,16 @@ export async function GET(request: Request) {
 
   const { data: rows } = await supabaseAdmin
     .from("client_playbook_unlocks")
-    .select("playbook_ref")
+    .select("playbook_ref, status")
     .eq("contact_id", contactId);
 
-  const unlocks = (rows ?? []).map((r) => r.playbook_ref as string);
+  const unlocks = (rows ?? [])
+    .filter((r) => {
+      const s = r.status as string | undefined;
+      if (s === undefined || s === null) return true;
+      return s === "in_progress" || s === "implemented";
+    })
+    .map((r) => r.playbook_ref as string);
 
   return NextResponse.json({ unlocks });
 }

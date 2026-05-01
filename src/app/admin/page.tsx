@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -176,31 +178,23 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-            BOSS Dashboard
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            Admin – Coaches
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            View your coaches, their assessment links, and add new coaches
-            directly from the admin area.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setShowAddCoach(true);
-            setCreateError(null);
-            setCreateSuccess(null);
-          }}
-          className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-        >
-          + Add coach
-        </button>
-      </header>
+      <StickyPageHeader
+        title="Coaches"
+        tabs={<CoachesHubTabs />}
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setShowAddCoach(true);
+              setCreateError(null);
+              setCreateSuccess(null);
+            }}
+            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
+          >
+            + Add coach
+          </button>
+        }
+      />
 
       {checkingRole ? (
         <p className="text-sm text-slate-600">Checking access…</p>

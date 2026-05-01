@@ -1,0 +1,214 @@
+{
+  "ref": "5.1",
+  "level": 5,
+  "area": 1,
+  "name": "Mission",
+  "subtitle": "Level 5 · Owner · Aligned Vision",
+  "whatThisIs": "Mission is what remains when the momentum is gone. It is not your vision, your strategy, or your revenue goals. It is the enduring reason your company exists, the impact that outlasts you, the legacy you are building, the change you are committed to leading in the world.\n\nAt Level 5, you have built a business that runs without you. Now the question becomes: what is it actually for? Mission defines your company's contribution beyond profit. It attracts talent who believe in something bigger and guides decisions when the path is unclear.\n\nThis playbook is not about writing mission statements for the wall. It is about defining the lasting change your business creates and protecting that intention through everything you build.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Your business succeeds financially but feels hollow. You struggle to explain why your company matters beyond making money. Great people join but leave for businesses with clearer purpose. Strategic decisions feel arbitrary because there is no deeper principle guiding them. You have built something profitable but not something meaningful."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have a sense of purpose but it is not clearly articulated or consistently applied. Sometimes decisions align with your deeper intentions, sometimes they do not. Your team understands the business goals but not the broader mission. You talk about impact but it feels abstract rather than concrete and measurable."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your mission is clear, specific, and drives real decisions every day. Great talent seeks you out because they want to be part of the change you are creating. Strategic choices become easier because you have a filter for what serves the mission and what does not. Your legacy is being built deliberately, not by accident. People know what your company stands for beyond what it sells."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What problem will still exist if your company disappeared tomorrow? This is where your mission lives, in the gap between the world as it is and the world as it should be. Your mission is the bridge you are building across that gap, not just for customers but for society.",
+    "What change are you actually committed to leading? Beyond growing revenue or expanding markets, what shift in your industry or community are you willing to spend decades driving? Mission requires commitment that outlasts quarterly results and yearly targets.",
+    "Does your team understand the bigger picture? When your people explain what the company does to their family or friends, do they talk about features and services or do they talk about impact and change? Mission only matters if it lives in the culture, not just on the website.",
+    "Where do profit and purpose intersect? The strongest missions create sustainable competitive advantage. They are not charity, they are the reason customers choose you and stay with you. How does your impact drive your commercial success?",
+    "What decisions would change if you filtered them through mission? Product development, hiring, partnerships, market expansion, every strategic choice should serve both profit and purpose. If your mission does not influence real decisions, it is just decoration."
+  ],
+  "actionsIntro": "When you open this playbook in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Write one paragraph describing the change your business creates in the world beyond financial results. Make it specific enough that someone could disagree with it.",
+    "This week: Ask three of your best people why they joined the company and why they stay. Listen for purpose beyond paycheque.",
+    "This week: Review your last three major strategic decisions. Ask whether they served both profit and purpose, or just profit."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.1",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    },
+    {
+      "ref": "5.2",
+      "description": ""
+    }
+  ],
+  "actions": [
+    {
+      "number": 1,
+      "title": "Mission Definition",
+      "description": "Mission Definition",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Define the lasting change your company exists to create. Not a marketing slogan or a wall poster, but a clear statement of intention that guides decisions and inspires action. Your mission answers one question: \"What change will exist in the world because this company existed?\"\n\nWork through a structured process to move from vague purpose to a specific, memorable mission statement. Then test it against real decisions you have made and will make."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Simon Sinek's \"Start With Why\" popularised the idea, but most companies got it wrong. They wrote a purpose statement, put it on the website, and carried on as before. A real mission is not a statement - it is a filter. Every strategic decision, every hire, every product choice either serves the mission or distracts from it. Without that clarity, the business drifts toward whatever is most profitable or most urgent, and those are not always the right direction.\n\nAt Level 5, mission becomes especially important because the owner is preparing for legacy. The business will eventually operate without them. A strong mission gives the organisation a north star that outlasts any individual leader."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through each step in order. The early steps generate raw material. The later steps refine it into a usable mission statement. Do not rush to the statement - the thinking matters more than the words.\n\n---"
+        },
+        {
+          "title": "Discovery",
+          "content": "- [ ] **Answer: \"What problem in the world makes you angry?\"** - Not mildly annoyed. Genuinely angry. The problem your business was built to fight. Write at least a paragraph.\n- [ ] **Answer: \"What would be different if your company succeeded completely?\"** - Describe the world after your mission is accomplished. Be specific and visual.\n- [ ] **Answer: \"Why did you start this business, really?\"** - Not the polished story. The real reason. Financial need, frustration, opportunity, ambition, desire to prove something. Honesty here matters.\n- [ ] **List 5 decisions you have made that felt deeply right** - Decisions where you chose purpose over profit, or long-term impact over short-term gain. What pattern emerges?"
+        },
+        {
+          "title": "Drafting",
+          "content": "- [ ] **Write a one-sentence mission statement** - Format: \"We exist to [change] for [who] by [how].\" Keep it under 20 words. If you cannot explain it simply, you have not thought about it enough.\n- [ ] **Test it: Does this statement help you say no?** - A good mission excludes as much as it includes. If your statement could apply to any company in your industry, it is too vague.\n- [ ] **Test it: Would you still pursue this if the business could never grow beyond its current size?** - If the answer is no, your mission might actually be \"growth\" wearing a purpose costume.\n- [ ] ⚡ Quick Win: **Say your mission statement out loud to someone outside the business** - If they do not understand it immediately, rewrite it."
+        },
+        {
+          "title": "Validation",
+          "content": "- [ ] **Review your last 10 major decisions against the mission** - How many align? How many contradict? This tells you whether the mission reflects reality or aspiration.\n- [ ] **Ask your leadership team: \"What do you think our mission is?\"** - If their answers are wildly different from yours, the mission has not been communicated, no matter how clear it is in your head.\n- [ ] **Identify one current initiative that does not serve the mission** - There will be at least one. Deciding what to do about it is the first test of whether the mission has teeth.\n- [ ] **Write down what you will say no to because of this mission** - Opportunities, markets, partnerships, products. A mission that does not cause you to decline things is not doing its job.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A clear, memorable mission statement under 20 words\n- Alignment between the stated mission and actual business decisions\n- Leadership team able to articulate the mission consistently\n- A decision-making filter that helps say no to distractions\n- Foundation for brand narrative, hiring, and strategic planning"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Mission work often stalls because owners confuse mission with marketing. They try to write something that sounds good on a website instead of something that is genuinely true. Push for honesty over polish. A rough, authentic mission is infinitely more useful than a slick, empty one.\n\nWatch for missions that are actually financial goals in disguise: \"To be the leading provider of X\" is a market position, not a purpose. Keep asking \"Why does that matter?\" until you hit something that resonates emotionally, not just commercially.\n\nSome owners discover their personal purpose and their company's mission are not aligned. That is a critical finding. It does not mean the business is wrong, but it does mean something needs to change - either the mission or the owner's role within it."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Brand Narrative Alignment",
+      "description": "Brand Narrative Alignment",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Ensure your external story reflects your internal mission. Audit every place your brand speaks - website, social media, sales conversations, recruitment ads, investor materials, client onboarding - and check whether the narrative is consistent with the purpose you have defined. Where there are gaps, close them.\n\nThis is not a rebranding exercise. It is an alignment exercise. The mission is set. Now make sure every external touchpoint tells the same story."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Donald Miller's StoryBrand framework shows that confused messaging costs companies customers. But at Level 5, the cost is bigger than lost sales. Inconsistent narrative confuses your team about what the company stands for. It attracts the wrong talent, the wrong clients, and the wrong partnerships. When what you say externally does not match what you believe internally, people notice - and they stop trusting.\n\nYour brand narrative is how the mission travels beyond the walls of the business. It is the story customers tell about you, the reason talent wants to join, and the lens media and partners use to understand what you do. If that story is misaligned, everything downstream is harder."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through the audit first to see where you stand. Then prioritise the biggest gaps and fix them. You do not need to change everything at once - start with the touchpoints that reach the most people.\n\n---"
+        },
+        {
+          "title": "Narrative Audit",
+          "content": "- [ ] **Read your website homepage as a stranger** - Does it clearly communicate why your company exists, not just what it sells? Can someone understand your mission in 10 seconds?\n- [ ] **Review your \"About\" page** - Does it tell the real story or a corporate filler version? Is the mission front and centre or buried below team photos?\n- [ ] **Read your last 10 social media posts** - What story do they collectively tell? Does it reinforce the mission or just promote products and offers?\n- [ ] **Listen to a recorded sales call** - What does your sales team say the company is about? Does it match the mission or has it drifted into pure feature-benefit selling?\n- [ ] ⚡ Quick Win: **Update your LinkedIn company description to lead with your mission** - Takes 10 minutes and reaches every person who looks you up."
+        },
+        {
+          "title": "Audience Alignment",
+          "content": "- [ ] **Check your recruitment messaging** - Job ads and career pages are brand touchpoints. Do candidates understand your mission before they apply? Patagonia attracts mission-aligned talent because every job ad leads with purpose.\n- [ ] **Review client onboarding materials** - New clients should understand why your company exists, not just how to use your product. Mission context builds loyalty.\n- [ ] **Audit investor or stakeholder communications** - If you report to investors, partners, or a board, is the mission clearly part of how you communicate progress?\n- [ ] **Ask 5 customers: \"What do you think our company stands for?\"** - Their answers reveal what your actual narrative is, regardless of what you intend."
+        },
+        {
+          "title": "Closing Gaps",
+          "content": "- [ ] **Prioritise the 3 touchpoints with the biggest misalignment** - Fix the ones that reach the most people first. Website and sales conversations usually top the list.\n- [ ] **Create a brand narrative one-pager** - A simple document that captures: mission, the change you create, who you serve, and how you are different. Share it with everyone who communicates on behalf of the brand.\n- [ ] **Brief your sales team on the mission narrative** - They are your most frequent brand ambassadors. If they cannot connect what they sell to why the company exists, the narrative breaks at the most critical point.\n- [ ] **Update your content strategy to reflect the mission** - At least 30% of content should connect back to mission and purpose, not just tactical advice or promotion.\n- [ ] ⚡ Quick Win: **Rewrite your email signature to include a one-line mission statement** - Every email you send becomes a micro-touchpoint for the mission.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Complete audit of all external brand touchpoints against the mission\n- Clear picture of where narrative is aligned and where it has drifted\n- Brand narrative one-pager that anyone in the company can use\n- Sales, marketing, and recruitment messaging updated to reflect mission\n- Consistent story across every channel and audience"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Most owners think their narrative is more consistent than it actually is. The audit often reveals that marketing says one thing, sales says another, and the website says a third. This is normal - it accumulates over years of different people creating content without a shared mission filter.\n\nDo not let this become a perfectionist exercise. The goal is not pixel-perfect brand consistency across every touchpoint. The goal is that anyone who encounters the brand in any context gets the same fundamental message about why the company exists.\n\nIf the owner discovers the external narrative does not match the mission they defined, there are two possibilities: the narrative needs updating, or the mission definition was not honest enough. Check both before making changes."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Internal Mission Integration",
+      "description": "Internal Mission Integration",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Build the mission into the operational fabric of your business: hiring, performance reviews, strategic planning, and daily operations. Purpose only matters if it shapes how the business actually runs. This action takes the mission off the wall and puts it into the systems that drive behaviour.\n\nWork through each operational area and identify specific changes that embed the mission into how people are selected, evaluated, rewarded, and directed."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Patrick Lencioni's research shows that organisational health - alignment around shared purpose - is the single greatest advantage a company can have. But most companies treat mission as a communications exercise rather than an operational one. They announce the mission then manage the business the same way they always did. Nothing changes because nothing structural changed.\n\nThe companies that succeed with mission-driven culture - Patagonia, Southwest Airlines, Richer Sounds - did not just have a good statement. They built systems that made mission-aligned behaviour the default. Hiring filters screened for mission fit. Performance reviews measured mission contribution. Strategy sessions started with \"Does this serve our purpose?\""
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through each operational area in order. For each one, identify what currently exists, what needs to change, and one specific action to take in the next 30 days. Full integration takes 6-12 months, but the first changes can happen immediately.\n\n---"
+        },
+        {
+          "title": "Hiring & Onboarding",
+          "content": "- [ ] **Add mission questions to every interview** - \"What about our mission resonates with you personally?\" and \"Tell me about a time you chose purpose over convenience.\" Screen for alignment, not just capability.\n- [ ] **Rewrite job descriptions to lead with mission** - Before listing requirements, explain why the company exists and why this role matters to the mission. Attract people who care about the purpose, not just the salary.\n- [ ] **Build mission into onboarding** - First-week experience should include the mission story, not just HR paperwork and system logins. New hires should understand the \"why\" before the \"how.\"\n- [ ] ⚡ Quick Win: **Add one mission-alignment question to your next interview** - Start testing for cultural and purpose fit immediately."
+        },
+        {
+          "title": "Performance & Recognition",
+          "content": "- [ ] **Include mission contribution in performance reviews** - Not as a vague category but as a specific evaluation: \"How has this person's work advanced our mission in the last quarter?\" Require examples.\n- [ ] **Create a mission recognition programme** - Celebrate people who demonstrate mission-aligned behaviour. Public acknowledgment, awards, or simple shout-outs in team meetings. What gets recognised gets repeated.\n- [ ] **Tie a portion of incentives to mission-aligned outcomes** - Not all compensation, but enough that it signals mission matters. If bonuses only reward revenue, revenue is all people will chase.\n- [ ] **Review whether any current metrics or incentives conflict with the mission** - Sometimes existing KPIs accidentally reward behaviour that undermines purpose. Find and fix those conflicts."
+        },
+        {
+          "title": "Strategic Planning",
+          "content": "- [ ] **Start every strategy session with the mission** - Before discussing numbers, markets, or competition, ask: \"Are we still true to why we exist? What has changed?\" This grounds every strategic conversation in purpose.\n- [ ] **Create a mission filter for new opportunities** - A simple yes/no checklist: Does this opportunity align with our mission? Does it strengthen or dilute our focus? Would we pursue it even if it were less profitable? Use it before committing to any major initiative.\n- [ ] **Review your current product/service portfolio against the mission** - Is everything you offer connected to the purpose? If something exists purely for revenue with no mission connection, consider whether it belongs.\n- [ ] **Include mission impact in your annual planning** - Alongside financial targets, set mission targets. What specific progress toward the mission will you make this year? How will you measure it?"
+        },
+        {
+          "title": "Daily Operations",
+          "content": "- [ ] **Make the mission visible** - Not just a poster. Integrate it into meeting agendas, email templates, internal dashboards, and decision documents. Constant, natural exposure.\n- [ ] **Create a \"mission check\" habit in leadership meetings** - Before closing any significant decision, ask: \"Is this consistent with our mission?\" Make it a standard agenda item, not an afterthought.\n- [ ] ⚡ Quick Win: **Open your next team meeting by sharing a specific example of the mission in action** - A client outcome, a team decision, a product choice that reflected purpose. Make it real, not abstract.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Mission embedded in hiring, performance, strategy, and daily operations\n- Team members can explain the mission and connect their work to it\n- Strategic decisions filtered through mission alignment\n- Culture that attracts and retains mission-driven people\n- Business that operates with purpose whether the owner is present or not"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Integration is a 6-12 month project, not a single session. Help the client prioritise: hiring and strategic planning usually have the highest impact because they shape who enters the company and what direction it takes.\n\nWatch for surface-level changes that look like integration but are not. Adding a mission slide to the all-hands meeting is not integration. Changing what you hire for, how you evaluate performance, and which opportunities you pursue - that is integration.\n\nThe hardest moment comes when mission and profit conflict. A client gets offered a lucrative contract that does not align with purpose. How they handle that moment reveals whether the mission is real or decorative. Coach them through it without judgement, but help them see the long-term cost of compromise."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Mission Protection Framework",
+      "description": "Mission Protection Framework",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Create clear criteria for decisions that protect your mission from compromise. Build a framework you can use whenever growth, profit, or opportunity conflicts with purpose. When those moments arrive - and they will - you need a pre-made decision tool, not a debate.\n\nDefine your non-negotiables, create a decision matrix for grey-area situations, and establish review triggers that flag when the business is drifting from its mission."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Every successful mission-driven company faces the same test: a lucrative opportunity arrives that requires compromising the purpose. Without a framework, these decisions get made emotionally, inconsistently, or by whoever argues loudest. Over time, small compromises accumulate. The company still talks about mission, but the behaviour tells a different story.\n\nJim Collins found that companies which endure over decades protect their core purpose while adapting everything else. The key word is \"protect.\" Purpose does not survive passively. It requires active defence against the constant pressure to prioritise short-term gains. Yvon Chouinard built Patagonia's decision framework around environmental impact. When a profitable product line conflicted with environmental values, the framework made the decision clear - even when it was expensive."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Build the framework once, then use it every time a significant decision creates tension between mission and other priorities. Review and update it annually as the business evolves.\n\n---"
+        },
+        {
+          "title": "Define Non-Negotiables",
+          "content": "- [ ] **List 3-5 things you will never compromise, regardless of financial impact** - These are your absolute boundaries. Examples: \"We will never sell a product we do not believe in,\" \"We will never treat our team as disposable,\" \"We will never mislead customers about results.\"\n- [ ] **For each non-negotiable, write a specific scenario that would test it** - Make it real. \"A client offers double our normal fee but wants us to deliver something that conflicts with our values.\" Thinking through scenarios now prevents hesitation later.\n- [ ] **Share non-negotiables with your leadership team** - They need to know the boundaries so they can protect them when you are not in the room.\n- [ ] ⚡ Quick Win: **Write down one decision from the past where you compromised and regretted it** - What would your framework need to include to prevent that from happening again?"
+        },
+        {
+          "title": "Build the Decision Matrix",
+          "content": "- [ ] **Create a scoring system for grey-area decisions** - Not everything is black and white. For situations where mission alignment is unclear, score the opportunity on: mission alignment (1-5), financial impact (1-5), long-term strategic fit (1-5), and reversibility (1-5). Set a minimum total score for proceeding.\n- [ ] **Define \"mission drift\" indicators** - What early warning signs show the business is moving away from purpose? Revenue from non-mission activities exceeding 20%? Team members unable to explain why the company exists? Decisions consistently favouring profit over purpose?\n- [ ] **Create a \"regret test\" question** - \"In 10 years, will I be proud of this decision or will I wish I had chosen differently?\" Require this question in every major decision review.\n- [ ] **Document recent decisions that felt uncomfortable** - Were they mission-aligned or not? These real examples calibrate the framework better than hypothetical scenarios."
+        },
+        {
+          "title": "Establish Review Triggers",
+          "content": "- [ ] **Set quarterly mission alignment reviews** - Look at all major decisions from the past quarter. How many passed the mission test? How many were compromises? Track the trend.\n- [ ] **Create financial trigger points** - \"If revenue from non-mission activities exceeds X%, we review and course-correct.\" Specific thresholds prevent gradual drift.\n- [ ] **Assign a mission guardian** - One person (could be you, a board member, or a senior leader) whose explicit role includes flagging mission drift. Give them authority to raise concerns without being seen as obstructive.\n- [ ] **Review the framework annually** - As the business grows, new types of decisions emerge. Update the framework to cover them.\n- [ ] ⚡ Quick Win: **Apply the framework to one current decision you are wrestling with** - Test it immediately. If it does not help, the framework needs refining.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Written list of 3-5 non-negotiable principles with real scenario tests\n- Decision matrix for evaluating grey-area opportunities\n- Quarterly review rhythm that catches mission drift early\n- Leadership team aligned on what the company will and will not do\n- Confidence to say no to lucrative opportunities that compromise purpose"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This framework is only valuable if it gets used. Many owners create it, feel good about it, and then ignore it when a real test arrives. The coaching role is to hold them accountable: \"What does your framework say about this decision?\"\n\nThe hardest moment is when the framework says no to something the owner wants to say yes to. A big contract, a high-profile partnership, a fast-growth opportunity. That is exactly when the framework earns its value. If they override it, ask why. If the reason is good, update the framework. If the reason is just \"but the money,\" the mission is not real yet.\n\nBe careful not to let the framework become an excuse for avoiding hard decisions. Sometimes mission-aligned decisions are uncomfortable, expensive, or unpopular. The framework should guide, not paralyse."
+        }
+      ]
+    }
+  ]
+}

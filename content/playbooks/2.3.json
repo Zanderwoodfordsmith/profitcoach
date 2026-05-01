@@ -1,0 +1,224 @@
+{
+  "ref": "2.3",
+  "level": 2,
+  "area": 3,
+  "name": "Business Mapping",
+  "subtitle": "Level 2 · Overworked · Disciplined Planning",
+  "whatThisIs": "Before you can optimise anything, you need to see how it actually works. Business mapping is about getting the invisible visible — turning the tangled mess of \"how things get done\" into clear, visual diagrams that show you where the problems are.\n\nMost business owners run on instinct and memory. They know roughly how a customer journey works or how their team delivers a project, but they have never drawn it out. The problem is you cannot fix what you cannot see. Every bottleneck, every handoff, every point where things break down — it is all hidden until you map it.\n\nThis playbook is about creating simple visual maps of how work flows through your business. Not detailed process manuals. Not complex flowcharts. Just clear pictures that help you understand where the problems are before you start trying to solve them.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You know things are inefficient but you cannot pinpoint where the problems are. Work gets stuck in mysterious places and no one knows why. Team members have different ideas about how the same process works. You spend time fixing the same problems over and over because you treat symptoms, not causes. When someone asks \"how does this work?\" you struggle to explain it clearly."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have a rough sense of how your main processes work but nothing is written down or visualised. Some team members understand the flow, others are guessing. You can see obvious problems but the subtle inefficiencies stay hidden. You have tried to document processes before but they sit in folders unused and quickly become outdated."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your key business processes are mapped out visually so anyone can understand them at a glance. You can see exactly where work gets stuck, where handoffs fail, and where duplication happens. New team members learn faster because they can see how their role fits into the bigger picture. When problems arise, you know exactly which part of the process to examine and fix."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Can you draw your customer journey from first contact to final delivery? Not the idealised version you wish existed — the messy reality of how things actually happen. Every handoff, every delay, every point where customers have to wait. If you cannot draw it, you cannot improve it.",
+    "Where does work get stuck most often? There are always a few predictable places where things slow down or break. These bottlenecks are costing you time, money, and customer satisfaction. Mapping helps you see them clearly instead of just feeling their effects.",
+    "Who actually owns each step? Mapping reveals the uncomfortable truth about unclear accountability. When something goes wrong, everyone points to someone else. Clear process maps show exactly whose responsibility each stage is — and where ownership gaps exist.",
+    "What work is being done twice? Duplication loves to hide in plain sight. Different people doing the same task, information being re-entered multiple times, customers being asked for the same details repeatedly. Mapping exposes these hidden inefficiencies that everyone just accepts as \"how we do things.\"",
+    "Which handoffs regularly fail? Every time work passes from one person to another, there is a risk something gets lost, delayed, or misunderstood. Mapping shows you these critical handoff points so you can strengthen the weak links."
+  ],
+  "quickWins": [
+    "This week: Pick one process that frustrates you regularly. Get a whiteboard or large piece of paper and draw out every step from start to finish. Do not worry about making it perfect — just get it visible.",
+    "This week: Walk through your customer journey as if you were a new customer. Note every point where they have to wait, repeat information, or feel confused. Mark these on your map.",
+    "This week: Ask three team members to describe the same process. Compare their answers. Where they disagree, that is where your process clarity needs work."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.8",
+      "description": ""
+    },
+    {
+      "ref": "3.3",
+      "description": ""
+    },
+    {
+      "ref": "2.8",
+      "description": ""
+    },
+    {
+      "ref": "1.6",
+      "description": ""
+    },
+    {
+      "ref": "4.7",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Customer Journey Map",
+          "description": "Draw how customers experience your business from first contact to completion. See your business through their eyes and identify every friction point.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Draw out how customers experience your business from first contact to completion (and beyond). Map every touchpoint, every handoff, every moment where they wait, get confused, or feel friction. The goal is to see your business through your customer's eyes and identify where the experience breaks down."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You experience your business from the inside. Your customers experience it from the outside, and those two views rarely match. What feels efficient internally often feels confusing externally. A customer journey map reveals the gaps: where leads fall through the cracks, where new clients feel lost, where service delivery creates frustration, and where you lose people without ever knowing why. You cannot fix friction you cannot see."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Get a large piece of paper, a whiteboard, or a digital tool. Walk through the journey as if you were a brand-new customer who has never heard of you before. Be brutally honest about what actually happens, not what is supposed to happen.\n\n---"
+            },
+            {
+              "title": "Map the Journey",
+              "content": "### Stage 1: Discovery (How They Find You)\n\n- [ ] List every way a potential customer discovers your business (website, social media, referral, ad, networking, etc.)\n- [ ] For each channel, what is the first impression? What do they see, read, or experience?\n- [ ] How long does it take from \"I have heard of this business\" to \"I have a way to contact them or learn more\"?\n- [ ] Flag any channel where the first impression is unclear, outdated, or inconsistent with your brand\n\n### Stage 2: First Contact (How They Reach Out)\n\n- [ ] What happens when someone enquires? (Email, phone, form, DM, etc.)\n- [ ] How quickly do they get a response? Is this consistent, or does it depend on who is available?\n- [ ] What information do you ask for, and is it the right amount? (Too much = friction, too little = wasted follow-up)\n- [ ] ⚡ Quick Win: Check your enquiry channels right now. Is there anything waiting for a response? Reply today.\n\n### Stage 3: Evaluation (How They Decide)\n\n- [ ] What does the sales process look like from the customer's perspective? How many steps?\n- [ ] Where do they have to wait? For proposals, for callbacks, for information?\n- [ ] Is the pricing clear, or do they have to ask?\n- [ ] At what point do most prospects drop off? (This is your biggest conversion leak)\n\n### Stage 4: Onboarding (How They Start)\n\n- [ ] What happens in the first 48 hours after someone becomes a client?\n- [ ] Do they receive a welcome email, an introduction call, a clear explanation of next steps?\n- [ ] How quickly do they get their first result or \"win\" from working with you?\n- [ ] Is the onboarding the same every time, or does it depend on who handles it?\n\n### Stage 5: Delivery (How They Experience the Work)\n\n- [ ] How do you communicate progress during the engagement?\n- [ ] Where do clients typically get frustrated or confused?\n- [ ] Are handoffs between team members smooth, or does work get lost?\n- [ ] How does the client know when something is complete?\n\n### Stage 6: Completion and Beyond\n\n- [ ] How does the engagement end? Is there a clear wrap-up, or does it just fizzle out?\n- [ ] Do you ask for feedback? A testimonial? A referral?\n- [ ] What happens after the project or contract ends? Do you stay in touch?\n- [ ] Is there a clear path to continue working together (repeat purchase, upsell, ongoing support)?"
+            },
+            {
+              "title": "Identify Friction Points",
+              "content": "- [ ] Mark every point on your map where the customer has to wait, repeat information, or figure something out themselves\n- [ ] Mark every handoff where work passes between people\n- [ ] Mark any moment where the experience is inconsistent (different depending on the day, the person, or the channel)\n- [ ] Prioritise: which 3 friction points are costing you the most in lost customers, wasted time, or poor experience?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A visual map of your complete customer journey from discovery to completion\n- Every touchpoint, handoff, and waiting point identified\n- The top 3 friction points that are hurting your business\n- A clear picture of where the experience is strong and where it needs work\n- A foundation for improving onboarding (2.6), retention, and referral systems"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Do this exercise on a whiteboard in the coaching session if possible - the visual element makes it much more powerful than filling in a form. Have the client walk you through the journey as if you are a customer. Ask \"then what?\" at every step until the full picture is clear. The most revealing moments: when the client says \"well, it depends\" (inconsistency), \"I think...\" (lack of clarity), or long pauses (gaps they have never thought about). This map becomes a reference document for several other playbooks, especially 2.6 Customer Experience and 1.6 Fulfilment."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Core Process Flow",
+          "description": "Map your most important internal process step by step. Usually your main delivery process or your sales process — whichever drives the most revenue.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map your most important internal process step by step - usually your main delivery process or your sales process, whichever drives the most revenue. Draw out every step from start to finish, who does each step, how long it takes, and where things regularly go wrong."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your core process is how you make money. If it is running on memory and improvisation rather than a clear, documented flow, you are leaving quality, speed, and profit on the table. Mapping it reveals inefficiencies that have been hiding in plain sight: duplicate steps, unnecessary approvals, bottlenecks where one person holds everything up, and steps that add time without adding value. Once visible, these problems become solvable."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Choose your single most important process (the one that directly generates revenue or delivers value to clients). Then map it from trigger to completion.\n\n---"
+            },
+            {
+              "title": "Choose Your Process",
+              "content": "- [ ] ⚡ Quick Win: Pick the one process that, if it ran 20% faster or 20% more reliably, would have the biggest impact on revenue or client satisfaction. That is the one to map.\n- [ ] Define the trigger: what event starts this process? (A new enquiry, a signed contract, a support ticket, etc.)\n- [ ] Define the end point: what does \"complete\" look like? (Invoice sent, project delivered, problem resolved, etc.)"
+            },
+            {
+              "title": "Map the Steps",
+              "content": "- [ ] Write down every step between the trigger and the end point in order\n- [ ] For each step, note:\n  - Who does it (name or role)\n  - How long it typically takes\n  - What tools or systems are used\n  - What information is needed to start this step\n- [ ] Be honest: map how it actually works today, not how it should work\n- [ ] Include the informal steps: \"wait for approval,\" \"check with the boss,\" \"hope someone remembers to...\"\n- [ ] Note any step where the outcome depends on who does it (inconsistency signal)"
+            },
+            {
+              "title": "Analyse the Flow",
+              "content": "- [ ] Mark any step that regularly causes delays - what causes the delay?\n- [ ] Mark any step where the same information is entered or communicated more than once (duplication)\n- [ ] Mark any step that requires you personally when it could theoretically be done by someone else\n- [ ] Mark any approval step - is the approval genuinely adding value, or is it just a control habit?\n- [ ] Count the total number of handoffs (work passing from one person to another). Each handoff is a risk point.\n- [ ] Calculate the total time from trigger to completion: what is the best case, worst case, and typical case?"
+            },
+            {
+              "title": "Improvement Opportunities",
+              "content": "- [ ] Identify steps that could be eliminated without affecting the outcome\n- [ ] Identify steps that could be combined (two separate steps by the same person that could happen together)\n- [ ] Identify steps that could be automated (standard communications, data entry, routine approvals)\n- [ ] Identify steps that could be delegated to free up higher-value people\n- [ ] Prioritise the top 3 improvements by impact and ease of implementation\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete visual map of your most important process\n- Every step, owner, duration, and tool documented\n- Delays, duplications, and bottlenecks identified\n- A prioritised list of improvements to make the process faster, more reliable, and less dependent on you\n- A foundation for documentation (connects to 1.8 Processes) and automation (connects to 2.8 AI & Automation)"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Get the client to draw this out rather than just describe it verbally. The physical act of mapping reveals gaps that talking misses. When they say \"and then we...\" interrupt with \"Who specifically? How long? What if they are busy?\" The detail matters. Common findings: most processes have 2-3 unnecessary steps that exist because \"we have always done it that way,\" at least one critical handoff that regularly fails, and the owner as an unnecessary bottleneck in the approval chain. This exercise directly feeds into 1.8 Processes (documentation) and 2.8 AI & Automation (which steps to automate)."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Handoff Analysis",
+          "description": "Identify every point where work transfers between people or departments and assess what regularly goes wrong at each handoff.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify every point in your business where work transfers between people or departments, then assess what regularly goes wrong at each handoff. Handoffs are where most process failures occur - information gets lost, deadlines get missed, and accountability gets blurred. This action maps them all and fixes the worst ones."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every time work passes from one person to another, there is a risk of something going wrong. The message gets garbled. The context gets lost. One person assumes the other has done something they have not. In a business with 5-10 handoffs in a typical process, even a 90% success rate at each handoff means only 35% of work makes it through cleanly. Fixing your handoffs is one of the fastest ways to improve quality, speed, and client satisfaction."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use your Customer Journey Map (Action 1) and Core Process Flow (Action 2) as inputs. If you have not done those yet, start by listing the main handoffs you can think of.\n\n---"
+            },
+            {
+              "title": "Identify All Handoffs",
+              "content": "- [ ] List every point where work passes from one person to another in your main processes\n- [ ] For each handoff, note: who gives, who receives, what information transfers, and what medium is used (email, verbal, system, Slack, etc.)\n- [ ] Include external handoffs: supplier to you, you to client, freelancer to team\n- [ ] ⚡ Quick Win: Ask your team today - \"Where does work get stuck or lost when it passes between people?\" Their answers will identify your worst handoffs immediately."
+            },
+            {
+              "title": "Assess Each Handoff",
+              "content": "For your top 5-8 handoffs (the most frequent or most important):\n\n- [ ] **Clarity:** Does the receiver always know exactly what they need to do? (1-5 scale)\n- [ ] **Completeness:** Does the information transfer include everything needed, or does the receiver have to chase missing details? (1-5 scale)\n- [ ] **Timeliness:** Does the handoff happen on time, or is there usually a delay? (1-5 scale)\n- [ ] **Accountability:** Is it clear who is responsible after the handoff? (Yes/No)\n- [ ] **Failure frequency:** How often does this handoff cause a problem? (Rarely / Sometimes / Often)"
+            },
+            {
+              "title": "Fix the Worst Handoffs",
+              "content": "- [ ] Rank handoffs by failure frequency - start with the ones that go wrong most often\n- [ ] For the top 3 problem handoffs, diagnose the root cause:\n  - Information loss: what is not being communicated?\n  - Format mismatch: is the giver sending information in a way the receiver cannot easily use?\n  - Timing issues: is the handoff happening too early, too late, or inconsistently?\n  - Accountability gap: does nobody clearly own the work during the transition?\n- [ ] For each, design a simple fix:\n  - A standard handoff template or checklist\n  - A shared system where both parties can see the status\n  - A clear trigger (\"when X is complete, Y starts\")\n  - An explicit confirmation step (\"received and understood\")\n- [ ] Implement fixes one at a time and monitor for 2 weeks before tackling the next\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of handoffs across your main processes\n- Each handoff assessed for clarity, completeness, timeliness, and accountability\n- The top 3 problem handoffs identified with root causes diagnosed\n- Simple, practical fixes designed and implementation started\n- Fewer dropped balls, less chasing, and smoother workflow between people"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Handoff analysis often surfaces team communication issues that the owner was not fully aware of. Approach this constructively - the goal is to fix the system, not blame individuals. A powerful exercise: have two people involved in the same handoff describe the process independently, then compare their descriptions. Where they differ, that is where the handoff is failing. Common fixes are surprisingly simple: a shared checklist, a standard email template, or a 2-minute verbal confirmation. The improvement is often dramatic for minimal effort."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Bottleneck Identification",
+          "description": "Find the constraint points where work consistently gets stuck and analyse what causes the slowdown.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Find the constraint points where work consistently gets stuck in your business and analyse what causes the slowdown. A bottleneck is any point where the flow of work narrows, slows, or stops. Fixing even one bottleneck can dramatically improve throughput, delivery speed, and team morale."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your business can only move as fast as its slowest point. If your delivery team can handle 20 projects a month but your sales process can only close 8, you have a sales bottleneck. If you can close 20 but can only onboard 10, onboarding is the bottleneck. Every business has bottlenecks. The question is whether you know where yours are and are actively working to widen them."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use your process maps (Actions 1-3) as inputs. If you have not mapped your processes yet, you can still identify bottlenecks by looking at where work piles up and where people wait.\n\n---"
+            },
+            {
+              "title": "Find Your Bottlenecks",
+              "content": "- [ ] Look at each stage of your main process: where does work pile up or queue? That is a bottleneck.\n- [ ] Ask your team: \"Where do you spend time waiting for something or someone before you can continue?\" Their answers point to bottlenecks.\n- [ ] ⚡ Quick Win: Think about the last 3 times a project or delivery was late. What was the common cause of the delay? That is likely your primary bottleneck.\n- [ ] Check your own calendar: are you the person people are waiting for? (The owner-as-bottleneck is the most common pattern in SMEs)\n- [ ] List every bottleneck you can identify. Do not worry about solutions yet - just find them all."
+            },
+            {
+              "title": "Analyse Each Bottleneck",
+              "content": "For each bottleneck identified:\n\n- [ ] **Type:** Is it a people bottleneck (not enough capacity), a process bottleneck (too many steps or approvals), a technology bottleneck (manual work that should be automated), or a decision bottleneck (waiting for someone to say yes)?\n- [ ] **Frequency:** How often does this bottleneck cause delays? (Daily / Weekly / Monthly)\n- [ ] **Impact:** When this bottleneck hits, what is the cost? (Lost revenue, delayed delivery, frustrated clients, stressed team)\n- [ ] **Root cause:** What is the underlying reason this bottleneck exists? (Understaffing, poor planning, unclear authority, outdated tools, owner control habits)"
+            },
+            {
+              "title": "Prioritise and Fix",
+              "content": "- [ ] Rank bottlenecks by impact x frequency: the one that hits hardest and most often gets fixed first\n- [ ] For your #1 bottleneck, identify 3 possible solutions:\n  - A quick fix (what could you do this week to reduce the impact?)\n  - A medium-term fix (what could you implement over 30 days?)\n  - A structural fix (what would permanently eliminate this bottleneck?)\n- [ ] Start with the quick fix while planning the structural one\n- [ ] Set a measurable target: \"After fixing this bottleneck, [process X] should complete in [Y days] instead of [Z days]\"\n- [ ] After fixing the primary bottleneck, re-assess: the next bottleneck in the chain will now become visible\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete list of bottlenecks across your main processes\n- Each bottleneck typed, assessed for frequency and impact, and root-caused\n- Your #1 bottleneck identified with a tiered solution plan\n- Quick fixes implemented this week for immediate relief\n- A structured approach to progressively removing constraints from your business"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Eliyahu Goldratt's Theory of Constraints applies perfectly here: improving anything other than the bottleneck does not improve the system. Help clients resist the urge to fix everything at once and focus on the single biggest constraint. Once that is resolved, the next bottleneck reveals itself. The most emotionally charged finding: when the owner is the bottleneck. Handle this carefully. Frame it as a success indicator (\"the business has outgrown having you in the middle of everything\") rather than a failure. Connect solutions to Delegation (2.0 Action 8), Processes (1.8), and the Scalability Audit (2.2 Action 4)."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

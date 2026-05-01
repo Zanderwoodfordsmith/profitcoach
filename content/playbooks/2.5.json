@@ -1,0 +1,464 @@
+{
+  "ref": "2.5",
+  "level": 2,
+  "area": 5,
+  "name": "Lead Generation",
+  "subtitle": "Level 2 · Overworked · Revenue & Marketing",
+  "whatThisIs": "Lead generation is the lifeblood of growth. Without a consistent flow of qualified prospects, every month feels like starting from zero. You win some deals, celebrate briefly, then wake up next month with an empty pipeline and have to scramble again.\n\nThis playbook builds a systematic acquisition engine so you never have to pray that the phone rings. It covers the full lead generation system: choosing the right channels, creating content that attracts prospects, capturing them effectively, and measuring what actually works. The goal is predictable, consistent lead flow that feeds your sales process every week.\n\nThis is not about being everywhere at once. It is about finding what works for your business and doubling down on it.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You never know where next month's leads will come from. Most of your business comes from word of mouth or one-off marketing efforts that worked once but you cannot replicate. You try random tactics — social media one week, paid ads the next — but nothing sticks. You spend money on marketing but cannot tell if it is working because you do not track the numbers."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You get some leads from a couple of channels but the flow is inconsistent. Some months are good, others are terrible, and you are not sure what made the difference. You know roughly what you spend on marketing but not what it costs to get each lead. You have content but it feels random rather than strategic."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have 2-3 lead generation channels that consistently produce qualified prospects every week. You know exactly what it costs to generate a lead from each channel and which channels deliver the highest quality prospects. Your content strategy is focused and builds authority in your niche. You have weekly lead targets and you hit them regularly through a mix of organic and paid efforts."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Which channel consistently produces your best customers? Most businesses spread their effort across five channels when one or two could deliver all the leads they need. Double down on what is already working before chasing the next shiny marketing tactic.",
+    "Do you know what it actually costs to get a qualified lead? Without cost-per-lead numbers, you are flying blind. You might be spending £100 to generate a lead worth £50, or missing out on a channel that delivers £500 leads for £20 each.",
+    "Is your content strategy focused or scattered? Publishing random content hoping something sticks is not a strategy. The best lead generation content consistently addresses the same problems for the same people. Repetition builds authority.",
+    "Are you capturing leads or just creating awareness? Getting attention is not the same as generating leads. Every piece of marketing should have a clear next step that moves prospects from \"interested\" to \"contact details captured.\"",
+    "What weekly volume do you need to hit your revenue targets? If you need £50k revenue and your average deal is £5k, you need ten customers. If 20% of leads convert, you need fifty leads. Work backwards from revenue to weekly lead targets."
+  ],
+  "actionsIntro": "This playbook is organised into three sections that build your complete lead generation system:",
+  "quickWins": [
+    "This week: Audit your current lead sources. List every way leads found you in the last three months. Circle the top two sources by both volume and quality.",
+    "This week: Calculate your target weekly lead volume. Take your monthly revenue goal, divide by average deal size, then multiply by the leads needed per sale. That is your weekly target.",
+    "This week: Pick one piece of content you have created recently and turn it into a lead magnet by adding a clear call-to-action and a simple way to capture contact details."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.5",
+      "description": ""
+    },
+    {
+      "ref": "3.5",
+      "description": ""
+    },
+    {
+      "ref": "4.5",
+      "description": ""
+    },
+    {
+      "ref": "5.5",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Channel Strategy",
+      "description": "Finding the 2-3 channels that work best for your business.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Channel Audit",
+          "description": "Review all the ways leads currently find you, identify what is working and what is not, and eliminate the channels that drain time without delivering results.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Review every way leads currently find your business, measure which channels are actually working, and eliminate the ones that drain time without delivering results. This gives you a clear, data-driven picture of your current lead generation so you can double down on winners and stop wasting effort on losers."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners are spread across too many channels. A bit of social media here, some networking there, occasional ads, maybe a blog post when they remember. The result: mediocre results from everything and great results from nothing. A channel audit reveals the truth. Usually 1-2 channels produce 80% of your leads and the rest are noise. Once you know which is which, you can redirect all that scattered effort into what actually works."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Look at the last 3-6 months of data. If you do not have formal tracking, reconstruct from memory, your CRM, your inbox, or by asking new clients \"how did you find us?\"\n\n---"
+            },
+            {
+              "title": "Inventory Your Channels",
+              "content": "- [ ] List every channel that has generated at least one lead in the last 6 months:\n  - Referrals / word of mouth\n  - Website organic search (SEO)\n  - Social media (list each platform separately)\n  - Paid advertising (list each platform)\n  - Email marketing\n  - Content marketing (blog, podcast, YouTube)\n  - Networking events / speaking\n  - Partnerships / joint ventures\n  - Directories / listings\n  - Cold outreach (email, phone, LinkedIn)\n  - Other: ___\n- [ ] For each channel, estimate or count: how many leads per month?\n- [ ] ⚡ Quick Win: Ask your last 5 new clients \"How did you first hear about us?\" The answers often reveal your best channel."
+            },
+            {
+              "title": "Measure Each Channel",
+              "content": "For each active channel:\n\n- [ ] **Lead volume:** How many leads per month (average over last 3-6 months)?\n- [ ] **Lead quality:** What percentage of leads from this channel become paying customers?\n- [ ] **Cost:** What do you spend on this channel monthly (include your time at your hourly rate)?\n- [ ] **Cost per lead:** Total cost / number of leads\n- [ ] **Cost per customer:** Total cost / number of customers acquired\n- [ ] **Time investment:** How many hours per week do you or your team spend on this channel?"
+            },
+            {
+              "title": "Rank and Decide",
+              "content": "- [ ] Rank channels by cost per customer (lowest = best efficiency)\n- [ ] Rank channels by lead quality (highest conversion rate = best quality)\n- [ ] Rank channels by volume (most leads = best scale)\n- [ ] Identify your top 2-3 channels that score well across multiple rankings\n- [ ] Identify channels that score poorly on all three: these are candidates for elimination\n- [ ] For each channel, decide: **Double down** (invest more), **Maintain** (keep current effort), **Reduce** (scale back), or **Eliminate** (stop completely)"
+            },
+            {
+              "title": "Action Plan",
+              "content": "- [ ] Eliminate or pause the bottom-performing channels this week - free up the time\n- [ ] Redirect freed-up time and budget to your top 2-3 channels\n- [ ] Set up proper tracking for your top channels if it does not already exist (so the next audit is data-driven, not estimated)\n- [ ] Schedule a channel audit every 6 months to stay focused on what works\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of every lead generation channel with performance data\n- Your top 2-3 channels identified with clear evidence of why they work\n- Underperforming channels eliminated or reduced\n- Time and budget redirected to the highest-performing channels\n- A tracking system in place for future measurement"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common finding: referrals are the best channel but get zero systematic effort, while social media gets hours of attention but generates few actual leads. Challenge clients to be honest about time spent vs. results produced. The hardest part is eliminating channels - owners feel like they should be everywhere. Push back: \"Being average on 7 channels is worse than being excellent on 2.\" The channel audit is the foundation for everything else in this playbook. Do it first."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Channel Selection",
+          "description": "Choose 2-3 primary channels to focus on based on where your ideal customers actually spend time and where you can realistically compete.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Choose 2-3 primary lead generation channels to focus on based on where your ideal customers actually spend time and where you can realistically compete. This is about strategic focus, not spreading thin. Pick your channels, commit to them, and ignore everything else until they are working."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You cannot be great at every channel. LinkedIn, Facebook, Google Ads, YouTube, email, networking, SEO, referrals, cold outreach - each one is a full-time job to do well. The businesses that generate consistent leads are not on every channel. They are excellent on 2-3 channels that match their audience, their strengths, and their budget. Channel selection is the strategic decision that determines whether your marketing effort produces results or just produces activity."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use your Channel Audit (Action 1) data as the starting point. Then apply the selection criteria below to choose your primary channels.\n\n---"
+            },
+            {
+              "title": "Selection Criteria",
+              "content": "For each potential channel, assess:\n\n- [ ] **Audience presence:** Are your ideal customers actually here? (A LinkedIn strategy is pointless if your customers are tradespeople who do not use LinkedIn)\n- [ ] **Proven results:** Has this channel already produced leads for you, or are you hoping it will?\n- [ ] **Competitive landscape:** Can you realistically stand out here? (Competing with huge brands on Google Ads might not be viable on a small budget)\n- [ ] **Skill and resource fit:** Do you or your team have the skills to execute well on this channel? Can you commit the time it requires?\n- [ ] **Cost viability:** Can you afford to invest consistently for 3-6 months before expecting significant returns?\n- [ ] **Scalability:** If it works, can you scale it up? (Networking produces great leads but does not scale. Paid ads scale but cost money.)"
+            },
+            {
+              "title": "Make Your Selection",
+              "content": "- [ ] ⚡ Quick Win: If your Channel Audit showed one channel clearly outperforming the rest, that is your primary channel. Start there.\n- [ ] Choose your **Primary Channel** (the one you invest the most time and money in): ___\n- [ ] Choose your **Secondary Channel** (your backup and diversification): ___\n- [ ] Choose your **Opportunity Channel** (one you are testing with limited investment): ___\n- [ ] For each channel, define: what does \"doing it well\" look like? (Posting frequency, ad budget, outreach volume, etc.)"
+            },
+            {
+              "title": "Channel Commitment",
+              "content": "- [ ] Set a minimum commitment period: 90 days of consistent effort before evaluating results\n- [ ] Define weekly activities for each channel (e.g., \"3 LinkedIn posts, 10 connection requests, 2 comments on prospect posts\")\n- [ ] Assign a specific person responsible for each channel (even if that person is you)\n- [ ] Set monthly KPIs: leads generated, engagement metrics, cost per lead\n- [ ] Agree on what \"not working\" looks like so you can make a data-driven decision at 90 days"
+            },
+            {
+              "title": "What to Ignore",
+              "content": "- [ ] List the channels you are NOT going to focus on for the next 90 days\n- [ ] For each, set a reminder to reassess at the 90-day mark\n- [ ] Give yourself permission to say no to new channel ideas for the next 90 days (\"That sounds interesting, I will evaluate it at the next review\")\n- [ ] Unsubscribe from marketing emails and courses about channels you are not using - they create FOMO and distraction\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- 2-3 channels selected with clear rationale for each choice\n- Weekly activity targets defined for each channel\n- A 90-day commitment to consistent execution before re-evaluation\n- Non-selected channels parked with review dates\n- Focused effort that produces results instead of scattered activity that produces noise"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part of channel selection is what you decide NOT to do. Owners see competitors on TikTok and panic, or hear a podcast about webinars and want to try it. Your job is to protect their focus. The 90-day commitment is critical - most channels need 8-12 weeks of consistent effort before producing reliable results. Clients who switch channels every month never give any channel enough time to work. Common winning combinations for SMEs: referrals + LinkedIn, SEO + email marketing, or local networking + Google Ads. The best channel combination depends on the business type, audience, and owner's strengths."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Channel Testing Plan",
+          "description": "Set up simple tests for each channel so you can measure what works and scale up the winners while killing the losers quickly.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up simple, structured tests for your selected lead generation channels so you can measure what works, scale the winners, and kill the losers quickly. This is not about gut feel - it is about running small experiments, tracking the numbers, and letting the data decide."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Even the right channel can fail if executed poorly. A Channel Testing Plan lets you try different approaches within your chosen channels and find what resonates with your audience. Testing one ad headline against another, one content format against another, or one outreach script against another compounds over time. Small improvements in conversion at each stage multiply across your entire funnel."
+            },
+            {
+              "title": "How to Use This",
+              "content": "For each of your selected channels (from Action 2), design 2-3 simple tests to run over the next 30-60 days. Keep tests small, measurable, and time-bound.\n\n---"
+            },
+            {
+              "title": "Design Your Tests",
+              "content": "For each primary channel:\n\n- [ ] Identify one variable to test first (headline, offer, audience, format, timing, or call-to-action)\n- [ ] Create Version A (your current approach or best guess) and Version B (one change)\n- [ ] ⚡ Quick Win: Pick the simplest test you can start this week. For example: try a different subject line on your next email, a different hook on your next LinkedIn post, or a different headline on your landing page.\n- [ ] Define the success metric: what number will tell you which version won? (Click rate, response rate, lead conversion rate, cost per lead)\n- [ ] Set a time frame: how long will you run each test? (Usually 2-4 weeks or until you have enough data)"
+            },
+            {
+              "title": "Test Framework",
+              "content": "- [ ] **Test 1:** Channel: ___ | Variable: ___ | Version A: ___ | Version B: ___ | Metric: ___ | Duration: ___\n- [ ] **Test 2:** Channel: ___ | Variable: ___ | Version A: ___ | Version B: ___ | Metric: ___ | Duration: ___\n- [ ] **Test 3:** Channel: ___ | Variable: ___ | Version A: ___ | Version B: ___ | Metric: ___ | Duration: ___\n- [ ] Run only one test per channel at a time (testing multiple variables simultaneously makes it impossible to know what caused the change)"
+            },
+            {
+              "title": "Track and Evaluate",
+              "content": "- [ ] Record results weekly: what happened with each test?\n- [ ] At the end of each test period, declare a winner based on the data\n- [ ] Keep the winner, discard the loser, and design the next test\n- [ ] Document what you learned: build a \"what works for us\" reference over time\n- [ ] After 90 days of testing, you should have a clear picture of what works on each channel"
+            },
+            {
+              "title": "Scaling Winners",
+              "content": "- [ ] Once a test produces a clear winner, increase investment: more budget, more time, more frequency\n- [ ] Track whether results hold as you scale (sometimes what works small breaks at scale)\n- [ ] Set a rule: only scale after 2+ weeks of consistent results\n- [ ] When a channel stops producing despite good execution, it may be saturated - test a new approach before abandoning it\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Structured tests running on each of your primary channels\n- Data-driven decisions about what works and what does not\n- Continuous improvement in lead generation performance over time\n- A documented \"playbook\" of what works for your specific business and audience\n- Confidence that your marketing spend is being optimised, not guessed"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Testing discipline separates businesses that grow from businesses that stay stuck. Most SME owners try something once, decide it \"did not work,\" and move on. Push for proper tests: enough volume, enough time, and only one variable changed. The biggest mistake is testing too many things at once and learning nothing. Start with the highest-impact variable - usually the headline/hook/offer, not the colour of the button. For clients new to testing, start with just one simple A/B test and build the habit."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Content & Messaging",
+      "description": "Creating content that attracts prospects and positions you as the obvious choice.",
+      "actions": [
+        {
+          "number": 4,
+          "title": "Content Strategy",
+          "description": "Develop a focused content plan that consistently addresses your ideal customer's problems and builds authority in your niche.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Develop a focused content plan that consistently addresses your ideal customer's problems and builds authority in your niche. This is not about posting for the sake of posting. It is about creating content that attracts the right people, demonstrates your expertise, and moves them toward becoming a lead."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Random content produces random results. Posting about your holiday one week, sharing an industry article the next, and writing a tip the week after creates no momentum. A content strategy focuses your effort: same audience, same problems, same message, repeated consistently until you own that space in your prospect's mind. The businesses that generate leads through content are not the ones with the best content - they are the ones with the most consistent, focused content."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Define your content pillars, create a simple publishing rhythm, and commit to 90 days of consistency.\n\n---"
+            },
+            {
+              "title": "Define Your Content Foundation",
+              "content": "- [ ] **Who are you creating content for?** Write a one-sentence description of your ideal reader/viewer (use your ICP from 1.5 Ideal Customer)\n- [ ] **What problem do you solve?** List the top 5 problems your ideal customer faces that your business addresses\n- [ ] **What is your unique angle?** Why should someone listen to you rather than anyone else on this topic? (Experience, methodology, results, perspective)\n- [ ] ⚡ Quick Win: Write down the 10 questions clients ask you most often. Each one is a piece of content waiting to be created."
+            },
+            {
+              "title": "Choose Your Content Pillars (3-5 Topics)",
+              "content": "- [ ] Select 3-5 recurring themes that you will create content about. Every piece should fit within one of these pillars.\n- [ ] Each pillar should address a specific problem or aspiration your ideal customer has\n- [ ] Example pillars for a business coach: \"Cash flow management\", \"Time as a business owner\", \"Hiring and team\", \"Growth strategy\", \"Owner mindset\"\n- [ ] Test each pillar: could you create 20+ pieces of content about this topic without running out of things to say?"
+            },
+            {
+              "title": "Set Your Publishing Rhythm",
+              "content": "- [ ] Choose your primary content format: written posts, short videos, long-form articles, podcast, or a mix\n- [ ] Set a realistic publishing frequency you can maintain for 90 days (consistency beats volume - 2 great posts per week beats 7 mediocre ones)\n- [ ] Create a simple content calendar for the next 4 weeks: topic + pillar + format for each piece\n- [ ] Block time in your weekly schedule for content creation (batch creating is more efficient than daily scrambling)\n- [ ] Decide who creates the content: you, a team member, or a combination"
+            },
+            {
+              "title": "Content That Generates Leads (Not Just Likes)",
+              "content": "- [ ] Every piece of content should include one of these:\n  - A direct call to action (\"DM me 'cashflow' for our forecast template\")\n  - A link to a lead magnet or resource\n  - An invitation to a conversation (\"If this sounds like your business, let's talk\")\n  - A demonstration of results that prompts enquiries\n- [ ] Create one signature piece of content per month: a deep-dive post, guide, or case study that showcases your expertise\n- [ ] Repurpose: every long piece can become 3-5 shorter pieces. One article becomes a LinkedIn post, a tweet thread, an email, and a quote graphic."
+            },
+            {
+              "title": "Track and Refine",
+              "content": "- [ ] Track which posts get the most engagement and which generate actual leads (these are often different)\n- [ ] After 30 days, review: which pillar resonates most? Which format performs best?\n- [ ] Double down on what works. Stop doing what does not.\n- [ ] At 90 days, assess: is content generating measurable leads? If not, adjust the strategy or the call-to-action.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- 3-5 content pillars defined and aligned with your ideal customer's problems\n- A realistic publishing rhythm committed to for 90 days\n- A 4-week content calendar created\n- Every piece of content designed to move readers toward becoming leads\n- A tracking system to measure what generates leads, not just engagement"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Content strategy overwhelm is real. Clients hear \"you need to be on LinkedIn, YouTube, email, and have a blog\" and freeze. Simplify: one channel, one format, 2-3 times per week. That is enough. The most important thing is consistency over 90 days. Most businesses quit content after 6 weeks because they do not see immediate leads. Content compounds - the first 60 days build authority, leads typically start flowing after 90 days of consistent output. Hold them accountable to the rhythm, not the results, for the first quarter."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Lead Magnets",
+          "description": "Create valuable resources that prospects exchange their contact details for — the bridge between attention and captured leads.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create one or more valuable resources that prospects exchange their contact details for. A lead magnet bridges the gap between \"someone who is interested\" and \"someone whose details I have.\" It should solve a specific problem, demonstrate your expertise, and make the prospect want to learn more."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Content creates awareness. Lead magnets create leads. Without a lead magnet, your content marketing is just brand building - nice but hard to measure. A good lead magnet captures contact details so you can follow up, nurture, and eventually convert. It also pre-qualifies prospects: someone who downloads your \"Cash Flow Forecast Template\" is signalling they have a cash flow problem you can solve."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Choose a lead magnet format, create it, and set up a simple delivery mechanism. Start with one. You can add more later based on what works.\n\n---"
+            },
+            {
+              "title": "Choose Your Lead Magnet",
+              "content": "- [ ] ⚡ Quick Win: Think about the tool, template, or checklist you wish you had when you started. That is probably a great lead magnet.\n- [ ] Select a format that matches your audience and your strengths:\n  - **Checklist or cheat sheet** (quick to consume, easy to create - great first lead magnet)\n  - **Template or worksheet** (practical, high perceived value)\n  - **Calculator or assessment** (interactive, highly engaging)\n  - **Short guide or PDF** (5-10 pages max, focused on one problem)\n  - **Video training or webinar replay** (good for demonstrating expertise)\n  - **Swipe file or example collection** (saves the prospect time)"
+            },
+            {
+              "title": "Design for Conversion",
+              "content": "- [ ] Focus on ONE specific problem your ideal customer has - not a broad topic\n- [ ] The title should promise a clear outcome: \"The 13-Week Cash Flow Forecast Template\" not \"Guide to Finance\"\n- [ ] It should deliver value in under 15 minutes of the prospect's time - if it takes longer, they will not use it\n- [ ] Include a subtle bridge to your paid offering: \"This template covers the basics. For a full diagnostic of your business finances, [link/CTA]\"\n- [ ] Make it look professional: clean design, your branding, well-formatted"
+            },
+            {
+              "title": "Create and Launch",
+              "content": "- [ ] Create the lead magnet content\n- [ ] Set up a simple landing page with: headline, 3-4 bullet points of what they will get, email capture form, and a clear button\n- [ ] Set up automatic email delivery: when someone submits their details, they immediately receive the resource\n- [ ] Create a thank-you page that appears after sign-up (this is a great place for a secondary CTA - book a call, join a community, etc.)\n- [ ] Test the entire flow yourself before promoting it"
+            },
+            {
+              "title": "Promote and Measure",
+              "content": "- [ ] Add the lead magnet link to your email signature, social media bio, and website\n- [ ] Reference it in your content: \"I created a free [resource] that helps with exactly this - link in comments\"\n- [ ] Consider running a small paid ad to the landing page to test conversion ($5-10/day for 2 weeks)\n- [ ] Track: landing page visits, sign-up rate, email delivery rate, and how many sign-ups become leads or customers\n- [ ] If conversion rate is below 20%, test a different headline. If it is above 30%, the magnet is working well.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- One lead magnet created, designed, and live\n- A landing page and automated email delivery system set up\n- The lead magnet promoted across your content and channels\n- Contact details being captured from interested prospects\n- A measurable conversion path from content viewer to captured lead"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest mistake with lead magnets: making them too broad or too long. \"The Ultimate Guide to Running a Business\" is too generic. \"The 5-Minute Daily Cash Check for Business Owners\" is specific and actionable. Push clients toward the narrowest, most practical option. The lead magnet does not need to be perfect - it needs to be useful. A simple, well-targeted checklist outperforms a beautifully designed 40-page guide that nobody reads. Also ensure the follow-up sequence is in place - capturing an email and doing nothing with it wastes the entire effort. Connect to Lead Nurture (3.5) for what happens after capture."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Referral System",
+          "description": "Build a simple system to generate referrals from existing customers, the highest-quality lead source most businesses completely ignore.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple, repeatable system to generate referrals from existing customers, past clients, and your network. Referrals are the highest-quality lead source most businesses completely ignore. This action turns \"I get referrals sometimes\" into \"I systematically generate referrals every month.\""
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Referred leads convert at 3-5x the rate of cold leads, spend more, and stay longer. Despite this, most business owners leave referrals to chance - they hope happy clients will mention them but never actually ask. A referral system does not need to be complex. It needs to be consistent. When you make asking for referrals a habit and make it easy for people to refer, the volume increases dramatically."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design your referral system, then implement it over the next 30 days.\n\n---"
+            },
+            {
+              "title": "Build the System",
+              "content": "### When to Ask\n\n- [ ] Identify the natural \"ask moments\" in your client journey: when clients are happiest with your work (after a win, after a deliverable, at a milestone, during a renewal conversation)\n- [ ] ⚡ Quick Win: Contact 3 of your happiest current clients this week and ask: \"Is there anyone you know who might benefit from what we do?\" That is a referral system in its simplest form.\n- [ ] Set triggers: after every positive client interaction, ask. Make it reflexive, not random.\n\n### How to Ask\n\n- [ ] Script your referral request (keep it natural, not salesy):\n  - \"You mentioned you found [specific result] really valuable. Do you know anyone else facing a similar challenge?\"\n  - \"We are looking to work with more businesses like yours. Who in your network might be a good fit?\"\n  - \"I have space for [X] new clients this quarter. If you know anyone who could benefit, I would love an introduction.\"\n- [ ] Make it specific: instead of \"anyone who needs help,\" say \"business owners doing £200K+ who are struggling with [specific problem]\"\n- [ ] Offer to make it easy: \"I can send you a short message you could forward, or I'm happy for you to just share my name and number\"\n\n### What to Offer\n\n- [ ] Decide whether to offer a referral incentive:\n  - **No incentive:** Works well in professional services where the referral itself is a favour between trusted contacts\n  - **Reciprocal value:** Offer something valuable to the referrer (a free session, a discount on future work, access to an exclusive resource)\n  - **Financial incentive:** A commission or gift for successful referrals (works best for product businesses or structured programmes)\n- [ ] Whatever you choose, make the offer clear and consistent\n\n### How to Follow Up\n\n- [ ] When you receive a referral, contact them within 24 hours (speed matters - the warm introduction cools quickly)\n- [ ] Always reference the referrer: \"Sarah mentioned you might be looking at improving your cash flow management\"\n- [ ] Update the referrer on what happened (within appropriate confidentiality): \"I spoke with James - great connection, thank you\"\n- [ ] Regardless of outcome, thank the referrer personally"
+            },
+            {
+              "title": "Systematise It",
+              "content": "- [ ] Create a referral tracking list: who referred whom, when, and what happened\n- [ ] Add \"ask for referral\" as a step in your client delivery process (not a one-off effort, a built-in habit)\n- [ ] Set a monthly target: [X] referral asks per month\n- [ ] Review monthly: how many asks, how many referrals received, how many converted?\n- [ ] Send a quarterly thank-you to your top referrers (handwritten note, small gift, or simply a genuine message)\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A repeatable referral process built into your client journey\n- A scripted, natural way to ask for referrals at the right moments\n- A clear incentive structure (even if the incentive is simply gratitude)\n- Monthly referral targets being tracked and hit\n- A growing source of high-quality, pre-qualified leads from trusted introductions"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Referral reluctance is almost universal. Clients say \"I do not want to seem pushy.\" Reframe: if your service genuinely helps people, not asking for referrals is doing their network a disservice. The key insight: the best time to ask is right after a win, when the client is most delighted. Also push for specificity in the ask - \"Do you know any business owners?\" is too vague. \"Do you know any business owners doing £500K+ who are frustrated by their cash flow?\" gives the referrer a specific person to think of. Track referrals carefully - they often become your highest-ROI lead source by far."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Measurement & Optimisation",
+      "description": "Tracking what matters and improving results over time.\n\n---",
+      "actions": [
+        {
+          "number": 7,
+          "title": "Lead Tracking System",
+          "description": "Set up simple tracking so you know exactly how many leads each channel generates, what they cost, and which ones convert best.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up simple tracking so you know exactly how many leads each channel generates, what they cost, and which ones convert to paying customers. This does not require expensive software. A well-structured spreadsheet beats a fancy CRM that nobody uses."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without tracking, your marketing is a black box. You spend money, you do activities, and customers appear - but you have no idea which activities produced which customers. Tracking connects the dots: this channel produced this lead, this lead became this customer, this customer generated this revenue. Once you can see those connections, you can invest in what works and stop wasting money on what does not."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start with a simple system. You can upgrade later once the habit is established.\n\n---"
+            },
+            {
+              "title": "Setup",
+              "content": "- [ ] ⚡ Quick Win: Create a spreadsheet with these columns: Date, Lead Name, Source (how they found you), Status (New / Contacted / Meeting Booked / Proposal Sent / Won / Lost), Value (if won), Notes\n- [ ] Add every current lead and opportunity to the tracker\n- [ ] Set up a \"source\" dropdown with your active channels: Referral, Website, LinkedIn, Google Ads, Email, Networking, Cold Outreach, Other\n- [ ] Make this your single source of truth for leads - everything goes in here"
+            },
+            {
+              "title": "Daily/Weekly Habits",
+              "content": "- [ ] Add every new enquiry or lead to the tracker the day it comes in (takes 30 seconds per lead)\n- [ ] Update statuses as leads progress through your pipeline\n- [ ] Every Friday, spend 5 minutes reviewing: How many new leads this week? From which channels? What stage is each at?\n- [ ] Flag any lead that has been in the same status for more than 2 weeks - it needs attention or a decision"
+            },
+            {
+              "title": "Monthly Metrics",
+              "content": "At the end of each month, calculate:\n\n- [ ] **Total new leads** this month\n- [ ] **Leads by source:** How many from each channel?\n- [ ] **Conversion rate:** What percentage of leads became customers?\n- [ ] **Conversion rate by source:** Which channel produces the highest-quality leads?\n- [ ] **Average time to close:** How long from first contact to paying customer?\n- [ ] **Cost per lead by channel:** Total channel cost / leads from that channel\n- [ ] **Cost per customer by channel:** Total channel cost / customers from that channel"
+            },
+            {
+              "title": "Use the Data",
+              "content": "- [ ] Compare this month to last month: are lead numbers improving, declining, or flat?\n- [ ] Identify your best channel by cost per customer (not just volume - quality matters)\n- [ ] Identify bottlenecks in your pipeline: where are leads getting stuck?\n- [ ] Share the numbers with your coach or accountability partner monthly\n- [ ] Adjust your marketing spend and effort based on what the data shows, not what you feel\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A single, simple system tracking every lead from source to outcome\n- Weekly visibility on pipeline health\n- Monthly metrics that show what is working and what is not\n- Data-driven decisions about where to invest marketing time and money\n- A foundation for more sophisticated tracking as the business grows"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Start simple. A Google Sheet beats a CRM for most businesses under £1M if the alternative is a CRM that nobody uses. The critical habit is adding every lead the day it arrives and updating statuses weekly. If the client says \"I will catch up on the tracker later,\" it will never happen. Build the habit before upgrading the tool. The most powerful number: cost per customer by channel. When a client sees they are paying £500 per customer from paid ads but £0 per customer from referrals (which they never systematically pursue), the strategic implication is obvious."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Weekly Lead Targets",
+          "description": "Calculate how many leads you need each week to hit your revenue goals and track progress against those targets.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Calculate how many leads you need each week to hit your revenue goals and set up a simple system to track progress against those targets. This turns \"I need more leads\" (vague) into \"I need 12 leads per week\" (specific and measurable)."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a lead target, you cannot tell whether your marketing is working until the revenue shows up (or does not) weeks or months later. A weekly lead target gives you an early warning system. If you need 12 leads per week and you are getting 6, you know NOW that you will miss your revenue target in 60-90 days - with enough time to do something about it. This is one of the simplest and most powerful metrics in your business."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work backwards from your revenue goal to calculate the exact number of weekly leads you need.\n\n---"
+            },
+            {
+              "title": "The Calculation",
+              "content": "- [ ] **Step 1: Monthly revenue target.** What monthly revenue do you need to hit your annual goal? £___/month\n- [ ] **Step 2: Average deal value.** What is the average value of a new customer? £___\n- [ ] **Step 3: New customers needed per month.** Monthly target / Average deal value = ___ customers per month\n- [ ] **Step 4: Conversion rate.** What percentage of leads become customers? ___% (If you do not know, use 10-20% as a starting estimate)\n- [ ] **Step 5: Monthly leads needed.** Customers needed / Conversion rate = ___ leads per month\n- [ ] **Step 6: Weekly lead target.** Monthly leads / 4.3 = ___ leads per week\n\n- [ ] ⚡ Quick Win: Do this calculation right now. Write the weekly number on a Post-It and stick it where you see it every day."
+            },
+            {
+              "title": "Example",
+              "content": "If your monthly revenue target is £50,000, your average deal is £5,000, and your conversion rate is 20%:\n- 50,000 / 5,000 = 10 customers needed\n- 10 / 0.20 = 50 leads needed per month\n- 50 / 4.3 = ~12 leads per week"
+            },
+            {
+              "title": "Set Up Tracking",
+              "content": "- [ ] Add your weekly lead target to your Lead Tracking System (Action 7)\n- [ ] Every Friday, count new leads this week and compare to target\n- [ ] Use a simple traffic light: Green (on or above target), Amber (within 25% of target), Red (more than 25% below)\n- [ ] If you are Red for 2 consecutive weeks, treat it as urgent: diagnose the cause and adjust your lead generation activities immediately"
+            },
+            {
+              "title": "Refine Over Time",
+              "content": "- [ ] After 3 months of tracking, replace estimated conversion rates with your actual numbers\n- [ ] Recalculate the lead target with real data - it may change significantly\n- [ ] If your conversion rate improves (through better sales process or lead quality), your lead target drops\n- [ ] If your average deal value increases (through pricing or upselling), your lead target drops\n- [ ] Review and adjust quarterly alongside your revenue goals\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A specific weekly lead target calculated from your revenue goals\n- A simple tracking system showing whether you are on pace each week\n- Early warning when lead flow drops below what is needed\n- A clear connection between marketing activity and revenue outcomes\n- A number your whole team can rally around and be accountable for"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most impactful calculations you can do in a coaching session. Most clients have never worked backwards from revenue to leads. The number is often either surprisingly manageable (\"I only need 8 leads a week?\") or surprisingly high (\"I need 40 leads a week and I'm getting 5?\"). Either way, it creates clarity. If the number seems unreachable, look at the levers: can you improve conversion rate? Increase average deal value? Both are often easier than dramatically increasing lead volume. Review this monthly and celebrate weeks when the target is hit."
+            }
+          ]
+        },
+        {
+          "number": 9,
+          "title": "Conversion Rate Optimisation",
+          "description": "Test and improve how many visitors become leads by optimising landing pages, forms, and calls-to-action.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Test and improve how many website visitors, content viewers, or prospects become actual leads by optimising your landing pages, forms, and calls-to-action. A small improvement in conversion rate has a multiplying effect on your entire lead generation system without increasing traffic or spend."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "If 100 people visit your website and 2 become leads (2% conversion), doubling your conversion to 4% doubles your leads without spending a penny more on marketing. Most SME websites convert at 1-3%, but well-optimised pages convert at 5-10%+. The difference is not about design or technology - it is about clarity, relevance, and removing friction. Conversion optimisation is the highest-leverage marketing activity because it makes everything else work harder."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Audit your current conversion points, identify the biggest leaks, and fix them one at a time.\n\n---"
+            },
+            {
+              "title": "Audit Your Conversion Points",
+              "content": "- [ ] List every place where a visitor can become a lead: website contact form, landing pages, social media DMs, phone calls, email sign-ups, booking pages\n- [ ] For each, find or estimate the current conversion rate (visitors or viewers / leads captured)\n- [ ] ⚡ Quick Win: Check your website's contact page right now. Is the form simple (name + email + one question)? Or does it ask for 8 fields that nobody wants to fill in? Reduce to the minimum.\n- [ ] Identify your highest-traffic conversion point - this is where optimisation will have the biggest impact"
+            },
+            {
+              "title": "Common Conversion Killers (Check Each)",
+              "content": "- [ ] **Unclear headline:** Does the visitor know within 5 seconds what you do, who you help, and what they should do next?\n- [ ] **Too many options:** Does your page give one clear action, or does it offer 5 different things to click?\n- [ ] **Weak call-to-action:** Does your CTA tell them what happens next? \"Submit\" is weak. \"Get your free template\" is strong.\n- [ ] **Too much friction:** Are you asking for too much information? Every additional form field reduces conversion by 5-10%.\n- [ ] **No social proof:** Are there testimonials, client logos, or results visible near the conversion point?\n- [ ] **Slow page load:** Does your page load in under 3 seconds? Slow pages lose visitors before they even see your offer.\n- [ ] **Mobile unfriendly:** Does the page work well on a phone? (50%+ of visitors are on mobile)"
+            },
+            {
+              "title": "Fix and Test",
+              "content": "- [ ] Prioritise: fix the biggest conversion killer first\n- [ ] Make one change at a time so you can measure the impact\n- [ ] Run each change for 2-4 weeks before evaluating (unless the sample size is very small)\n- [ ] Track before and after: what was the conversion rate before the change, and what is it now?\n- [ ] If the change improved conversion, keep it and move to the next fix. If not, revert and try something different."
+            },
+            {
+              "title": "Ongoing Optimisation",
+              "content": "- [ ] Review conversion rates monthly as part of your lead tracking routine\n- [ ] Test one new element per month: headline, CTA, form length, testimonial placement, page layout\n- [ ] Set a conversion rate target for your main landing page (aim for at least 5% as a starting goal)\n- [ ] As you add new lead magnets or landing pages, apply the same principles from the start\n- [ ] Document what works so you build a \"conversion playbook\" for your business over time\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- All conversion points identified and current rates measured\n- The biggest conversion killers identified and fixed\n- Measurable improvement in how many visitors become leads\n- An ongoing testing habit that continuously improves conversion\n- More leads from the same traffic, without increasing marketing spend"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Conversion optimisation is often overlooked because it is less exciting than launching a new marketing campaign. But the maths is compelling: a client spending £2,000/month on ads with a 2% landing page conversion gets 40 leads. Improving to 4% conversion gives them 80 leads for the same spend. That is equivalent to doubling their ad budget. Start with the simplest fixes first - reducing form fields, clarifying the headline, and adding one testimonial near the CTA. These three changes alone often produce a 30-50% improvement in conversion rate. Connect to Lead Magnets (Action 5) for the content side and Channel Testing (Action 3) for the traffic side."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

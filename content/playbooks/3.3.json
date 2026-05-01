@@ -1,0 +1,224 @@
+{
+  "ref": "3.3",
+  "level": 3,
+  "area": 3,
+  "name": "Projects & Planning",
+  "subtitle": "Level 3 · Organised · Disciplined Planning",
+  "whatThisIs": "Projects are where strategy meets execution. They are the vehicles that carry your business from where it is to where it wants to go. But without structure, projects become chaos. Multiple initiatives compete for attention, timelines slip, and resources get spread thin across too many things that never quite get finished.\n\nThis playbook is about bringing discipline to project delivery. It covers prioritising what matters most, sequencing initiatives for maximum impact, and building visibility so nothing falls through the cracks. It is not about complex project management software or endless Gantt charts. It is about a simple system that ensures the right projects get done at the right time.\n\nThe line: this is not about the day-to-day execution of individual projects. That sits in 1.3 Execution Playbook. This is about managing multiple projects across time horizons and making sure they add up to something meaningful.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have a dozen half-finished initiatives and no clear sense of which ones actually matter. Projects start enthusiastically but fizzle out when something more urgent appears. You commit to too many things at once and deliver none of them properly. There is no shared view of what projects are active, who owns what, or when things are supposed to be finished. Strategic initiatives get stuck in endless discussion while urgent tasks dominate your time."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some project discipline but it is inconsistent. Big projects sometimes get planned properly, smaller ones fly by the seat of your pants. You know what you are working on this quarter but the connection between projects and longer-term goals is unclear. Resource conflicts happen regularly because nobody is looking at the bigger picture. Some projects succeed, others quietly disappear, and you are not always sure why."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear view of all active projects with defined outcomes, timelines, and owners. New project requests get evaluated against strategic priorities before being approved. Resources are allocated thoughtfully across initiatives so nothing gets starved of attention. You conduct regular project reviews and adjust priorities based on what you learn. Projects connect clearly to quarterly goals, which connect to annual plans, which connect to your 3-year vision. When projects finish, you capture the lessons and apply them to what comes next."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Which project would move the needle most if you could only finish one this quarter? That is your real priority. Everything else is supporting cast. Most businesses dilute their impact by spreading effort across too many moderately important things instead of concentrating on the one thing that unlocks everything else.",
+    "What must happen first to unlock other initiatives? Some projects are dependencies — they clear the path for everything that comes after. Others are nice-to-haves that can wait. Sequencing matters as much as selection. Build the foundation before you build the house.",
+    "Who actually has time to deliver this? The biggest project killer is not poor planning — it is assuming people who are already at capacity can somehow take on more work. Every project needs real time from real people. If the math does not add up on paper, it will not add up in reality.",
+    "Can you see clearly what is actually happening? Projects die in the shadows. Without regular visibility — status updates, milestone reviews, blockers identified and addressed — momentum leaks away and you wake up three months later wondering where the time went.",
+    "What did your last few projects teach you? Every project is a learning opportunity about your planning, your team, your processes. If you are not capturing these lessons and applying them to future initiatives, you are doomed to repeat the same mistakes over and over."
+  ],
+  "quickWins": [
+    "This week: List every active project or initiative currently running in your business. Circle the three that would have the biggest impact if finished properly.",
+    "This week: Pick your most important project and identify the single biggest blocker preventing progress. Schedule time this week to address it directly.",
+    "This week: Set up a simple project tracker — a spreadsheet or basic tool where you can see all active projects, their status, and who owns them. Update it before your next team meeting."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.3",
+      "description": ""
+    },
+    {
+      "ref": "3.1",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    },
+    {
+      "ref": "2.1",
+      "description": ""
+    },
+    {
+      "ref": "1.4",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Strategic Project Prioritisation",
+          "description": "A framework for evaluating and ranking potential projects against impact, effort, and strategic alignment. Stop saying yes to everything and start choosing what actually matters.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "List every project, initiative, and \"thing we should probably do\" that is currently competing for attention in your business. Then score each one against a simple framework that measures real impact, actual effort, and strategic alignment. The goal is to go from \"too many things, not enough time\" to a short, ranked list that makes decisions obvious.\n\nMost business owners carry around 15-30 potential projects in their head at any time. Without a structured way to compare them, the loudest voice or the most recent crisis wins. This tool replaces gut feel with a repeatable scoring method."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Greg McKeown's Essentialism principle applies directly here: if you do not prioritise, everything feels equally urgent and nothing gets finished. Verne Harnish makes the same point in Scaling Up - the best-run companies focus on a small number of \"rocks\" each quarter and say no to everything else. The cost of taking on too many projects is not just slow delivery. It is context-switching, half-finished work, exhausted teams, and the opportunity cost of the projects that would have actually moved the needle."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Gather your leadership team or, if you are a solo operator, block 90 minutes with no distractions. You need a whiteboard, spreadsheet, or simple table. Be honest about effort estimates - most people underestimate by 50%.\n\n---"
+            },
+            {
+              "title": "Step 1: Build the Project List",
+              "content": "- [ ] **Brain dump every active and potential project** - Include everything: product launches, system upgrades, hiring plans, marketing campaigns, process improvements, tech changes. Nothing is too small or too ambitious at this stage.\n- [ ] **Remove anything that is already complete or dead** - If it has been \"on the list\" for six months with zero progress and no real intention to start, cross it out.\n- [ ] ⚡ Quick Win: **Group projects by category** - Operations, marketing, product, finance, team. This often reveals that 70% of your projects sit in one or two areas while others are neglected."
+            },
+            {
+              "title": "Step 2: Score Each Project",
+              "content": "- [ ] **Score impact (1-5)** - What is the likely revenue, profit, or strategic benefit if this project succeeds? A 5 is transformational. A 1 is a nice-to-have.\n- [ ] **Score effort (1-5)** - How much time, money, and attention does this project require? A 5 is massive (months of work, significant budget). A 1 is quick and light.\n- [ ] **Score strategic alignment (1-5)** - Does this project directly support your 3-year vision, annual goals, or core business model? A 5 is dead-centre strategic. A 1 is a tangent or distraction.\n- [ ] **Calculate priority score** - (Impact x Alignment) divided by Effort. Higher scores go first. This penalises high-effort distractions and rewards quick strategic wins."
+            },
+            {
+              "title": "Step 3: Make the Decisions",
+              "content": "- [ ] **Select your top 3-5 projects for this quarter** - No more. If you cannot get it down to 5, the scoring was too generous. Go back and be harder.\n- [ ] ⚡ Quick Win: **Identify your \"not now\" list** - These are good projects that lose to better ones. Put them on a dated parking list so they do not creep back in through side doors.\n- [ ] **Name one project to kill entirely** - Every business has at least one zombie project that nobody wants to admit is dead. Find it. End it. Free up the energy.\n- [ ] **Assign a single owner to each selected project** - Not a committee. One person who is accountable for progress. If you cannot name an owner, the project is not ready.\n- [ ] **Set a review date** - Book 30 minutes in your calendar, 4 weeks from now, to revisit this list and check whether priorities still hold.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of all projects competing for your time and resources\n- A scored, ranked list that makes trade-offs visible and defensible\n- A clear top 3-5 for this quarter with named owners\n- A \"not now\" parking list that stops good ideas from becoming distractions\n- At least one killed project that frees up capacity"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest resistance you will hit is \"but they are all important.\" They are not. Push the client to force-rank even when it feels uncomfortable. If two projects score the same, ask: \"If you could only do one, which one?\" That question always breaks ties.\n\nWatch for pet projects that score low but the client defends emotionally. These are fine to keep if they are low-effort, but they should not occupy a top-5 slot. Also watch for projects that score high on impact but have no realistic owner - these will stall within weeks.\n\nRun this exercise quarterly. The list changes as the business evolves, and the discipline of re-scoring prevents project creep."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Project Planning & Sequencing",
+          "description": "A system for mapping out project timelines, identifying dependencies, and sequencing initiatives for maximum impact. Build the roadmap before you start the journey.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Take each prioritised project and break it into a clear plan with milestones, dependencies, and a realistic timeline. Then sequence your projects so they support each other rather than competing for the same people and resources at the same time.\n\nThis is not about building elaborate Gantt charts. It is about answering three questions for every project: What are the key milestones? What depends on what? And when does each piece realistically happen given everything else on the plate?"
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most projects fail not because the idea was bad but because the plan was vague. \"Launch the new service\" is not a plan. It is a wish. Harnish's Scaling Up methodology insists on breaking rocks into specific, time-bound milestones because that is where accountability becomes real. And the sequencing piece matters because dependencies are invisible until they cause problems. Project B cannot start until Project A delivers a key output, but nobody mapped that, so both stall."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through this for each of your top 3-5 projects from the Strategic Project Prioritisation tool. Start with the highest-priority project and work down.\n\n---"
+            },
+            {
+              "title": "Step 1: Define Project Scope",
+              "content": "- [ ] **Write a one-sentence project objective** - \"By [date], we will have [specific deliverable] so that [business outcome].\" If you cannot write this sentence, the project is not clear enough to plan.\n- [ ] **List what is in scope and what is not** - Scope creep kills projects. Be explicit about boundaries now so you do not argue about them later.\n- [ ] ⚡ Quick Win: **Define the \"done\" criteria** - What does completion actually look like? What can you see, touch, or measure that proves this project is finished?"
+            },
+            {
+              "title": "Step 2: Break into Milestones",
+              "content": "- [ ] **Identify 3-6 key milestones** - Major checkpoints between start and finish. Each milestone should be a concrete deliverable, not a vague phase like \"planning\" or \"development.\"\n- [ ] **Estimate duration for each milestone** - In weeks, not days. Be realistic. Whatever you think, add 30% for the unexpected.\n- [ ] **Identify dependencies between milestones** - Which milestones must complete before others can start? Draw these links explicitly. This is where most hidden delays live.\n- [ ] **Flag external dependencies** - Anything that depends on a supplier, client, or third party. These are your highest-risk items because you do not control the timeline."
+            },
+            {
+              "title": "Step 3: Sequence Across Projects",
+              "content": "- [ ] **Map all projects on a single timeline** - Use a wall, whiteboard, or simple spreadsheet. Seeing everything together reveals clashes that are invisible when you plan projects in isolation.\n- [ ] ⚡ Quick Win: **Identify resource collisions** - Where do two projects need the same person or team at the same time? Shift one. Do not pretend people can do both.\n- [ ] **Stagger project starts** - Launching three projects in the same week guarantees none of them get proper attention. Space starts by 2-4 weeks minimum.\n- [ ] **Build in buffer between dependent projects** - If Project B depends on Project A finishing, do not schedule them back-to-back. Leave at least one week of breathing room.\n- [ ] **Set monthly review checkpoints** - A standing 30-minute slot to review all project timelines together. This is where you catch drift early rather than discovering it at the deadline.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Each priority project has a clear objective, scope, and done criteria\n- Milestones and dependencies mapped for every active project\n- A single view showing all projects across the same timeline\n- Resource collisions identified and resolved before they cause problems\n- A realistic sequence that gives each project the attention it needs"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Clients often want to skip straight to execution. Push them to spend the time on planning - the quality of the plan directly predicts whether the project finishes on time or drags on for months.\n\nThe most useful question during this exercise is \"What could stop this milestone from completing on time?\" It surfaces risks that the client is aware of but has not articulated. Once they are on paper, you can plan around them.\n\nIf a client has never planned projects this way before, start with just one project as a worked example. Once they see the value, they will want to do the rest."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Resource Allocation & Capacity Planning",
+          "description": "Match project demands to actual team capacity so nothing gets starved of attention or sets people up to fail. Realistic planning based on what people can actually deliver.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map the actual available capacity of your team against the demands of your active projects. This means knowing how many hours each person genuinely has for project work after you subtract their day-to-day responsibilities. Then allocate people to projects based on real numbers, not wishful thinking.\n\nThe goal is simple: stop overloading your team and start making honest trade-offs about what can actually get done."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The number one reason projects miss deadlines is not poor planning. It is overcommitment. Michael Gerber's E-Myth principle applies here - the owner assumes everyone can absorb more because they themselves work 60-hour weeks. But most team members have 25-30 hours of productive work per week after meetings, admin, and day-to-day operations. Projects that need 15 hours a week from someone who only has 5 available hours will fail. Every time."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need a list of your team members, their current roles, and your active project list from the previous two actions. A simple spreadsheet works best for this.\n\n---"
+            },
+            {
+              "title": "Step 1: Calculate True Capacity",
+              "content": "- [ ] **List every person involved in project work** - Include yourself. If contractors or part-time staff contribute, include them too with their actual hours.\n- [ ] ⚡ Quick Win: **Estimate each person's weekly \"BAU\" hours** - BAU means business-as-usual: the recurring tasks, meetings, admin, and client work they do every week regardless of projects. Be honest. Most people underestimate this.\n- [ ] **Calculate available project hours** - Total contracted hours minus BAU hours. For most people, this is 5-15 hours per week. If someone shows zero available hours, they cannot take on project work without dropping something else.\n- [ ] **Factor in leave, holidays, and known absences** - Check the next 90 days. Adjust capacity for weeks where key people are away."
+            },
+            {
+              "title": "Step 2: Map Demand Against Capacity",
+              "content": "- [ ] **Estimate hours per person per project per week** - For each active project, how many hours does it need from each team member? Be specific. \"John: 8 hours/week on Project A\" is useful. \"The team works on it\" is not.\n- [ ] **Compare total demand to available capacity** - Add up all project demands for each person. If someone is allocated 20 hours of project work but only has 10 hours available, you have a problem to solve now rather than later.\n- [ ] ⚡ Quick Win: **Identify the bottleneck person** - There is almost always one person who is overallocated across multiple projects. Find them. They are your constraint, and everything flows through their capacity.\n- [ ] **Flag skills gaps** - Where a project needs a capability that nobody on the team has. This is a hire, outsource, or train decision that needs making before the project starts."
+            },
+            {
+              "title": "Step 3: Make Allocation Decisions",
+              "content": "- [ ] **Resolve overallocations** - Three options: reduce the scope of one project, delay a project start, or move a task to someone else. Do not \"solve\" it by assuming people will just work harder.\n- [ ] **Protect critical capacity** - Your bottleneck person needs their time defended. Block their calendar. Reduce their meeting load. Give them permission to say no to requests outside their allocated projects.\n- [ ] **Set a capacity check rhythm** - Every two weeks, spend 15 minutes reviewing whether allocations still match reality. People get pulled into fires. Capacity shifts. Catch it early.\n- [ ] **Document the allocation** - A simple table: Person, Project, Hours/Week, Start Date, End Date. Share it with the team so everyone knows what is expected.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A realistic picture of how much project capacity your team actually has\n- Clear allocation of people to projects based on real hours, not assumptions\n- Bottleneck people identified and their capacity protected\n- Overallocations resolved before they cause missed deadlines\n- A rhythm for reviewing and adjusting capacity as things change"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is often an uncomfortable exercise because it reveals that the business has committed to more projects than it can deliver. That is the point. Better to face it now and make conscious trade-offs than to discover it in month three when everything is behind schedule.\n\nIf the owner is the bottleneck (which is common), challenge them on what they can delegate or defer. The owner's time is the scarcest resource in most small businesses, and it gets allocated last when it should be allocated first.\n\nFor clients who resist the detail, start with just the top two projects and their top three people. Even that rough cut usually surfaces a capacity problem worth solving."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Project Tracking & Reviews",
+          "description": "Simple dashboards and regular review processes to keep projects visible and on track. Catch problems early and adjust course before small issues become big failures.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple, visible tracking system for all active projects and install a regular review rhythm that catches problems before they become crises. This is not about software or dashboards for the sake of it. It is about making project status obvious to everyone who needs to know, in under 60 seconds.\n\nThe rule is: if you cannot tell whether a project is on track, behind, or blocked within one minute of looking at it, your tracking system is not working."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Harnish's Scaling Up methodology is built around meeting rhythms and visible metrics because the alternative is \"management by walking around and hoping.\" Newport's work on Deep Work reinforces the same principle from the individual level - if you do not track what matters, shallow urgencies will consume every available hour. Projects drift silently. A task that was \"nearly done\" three weeks ago is still \"nearly done\" today. Without regular, structured reviews, you only find out a project is in trouble when it misses its deadline."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Choose your tracking format first (whiteboard, spreadsheet, or project tool), then set up the review cadence. Keep it as simple as possible. The best system is one people actually update.\n\n---"
+            },
+            {
+              "title": "Step 1: Set Up the Tracker",
+              "content": "- [ ] ⚡ Quick Win: **Create a one-page project dashboard** - One row per project. Columns: Project Name, Owner, Status (Green/Amber/Red), Next Milestone, Due Date, Blockers. That is it. Resist adding more columns.\n- [ ] **Define what Green, Amber, and Red mean** - Green: on track, no issues. Amber: at risk, needs attention this week. Red: blocked or behind, needs escalation now. Write these definitions down so everyone uses them consistently.\n- [ ] **Make it visible** - Put the dashboard where the team sees it regularly. A wall in the office, a pinned message in your team chat, or the first slide in your weekly meeting. Out of sight means out of mind.\n- [ ] **Assign update responsibility** - Each project owner updates their row before the review meeting. Not during. Before. If it is not updated, the meeting starts with that conversation."
+            },
+            {
+              "title": "Step 2: Install the Review Rhythm",
+              "content": "- [ ] **Schedule a weekly 30-minute project review** - Same day, same time, every week. Non-negotiable. This is where you look at the dashboard together and make decisions.\n- [ ] **Follow a tight agenda** - Three questions per project: (1) What was the milestone for this week? (2) Did we hit it? (3) What is the plan for next week? No long updates. No problem-solving in the meeting. Just status and decisions.\n- [ ] ⚡ Quick Win: **Start every review with blockers** - Ask \"What is stuck?\" before anything else. Blockers that are cleared quickly save weeks of delay. Blockers that sit unaddressed kill projects.\n- [ ] **Document decisions, not discussions** - Keep a running log of decisions made in each review. \"Decided to delay Project B start by two weeks\" is useful. Minutes of the conversation are not."
+            },
+            {
+              "title": "Step 3: Respond to What the Tracker Shows",
+              "content": "- [ ] **Amber projects get a recovery plan within 48 hours** - If something moves from Green to Amber, the project owner writes a short plan: what went wrong, what needs to happen, and when it will be back to Green.\n- [ ] **Red projects get an immediate escalation conversation** - Do not wait for the next weekly review. The owner and decision-maker meet within 24 hours to decide: fix it, rescope it, or kill it.\n- [ ] **Celebrate Green completions** - When a milestone or project finishes on time, acknowledge it. Teams that only hear about problems stop caring about the tracker.\n- [ ] **Review the tracker itself quarterly** - Is it being used? Is it accurate? Are the right projects on it? A tracker that nobody updates is worse than no tracker at all because it creates false confidence.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A single-page project dashboard that shows status of all active projects at a glance\n- A weekly review rhythm that catches problems early and drives accountability\n- Clear escalation rules for amber and red projects\n- A running log of project decisions for reference\n- A team habit of updating and using the tracker consistently"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most clients will overcomplicate this. They want to buy project management software before they have the discipline to update a spreadsheet. Start analogue or simple. If they cannot keep a whiteboard current, they will not keep Monday.com current either.\n\nThe weekly review is the real tool here, not the dashboard. The dashboard just gives the review something to look at. Push the client to protect this meeting and keep it short. The moment it becomes a 90-minute discussion forum, people will start skipping it.\n\nIf a project stays Amber for more than two consecutive weeks, it is actually Red. Challenge the owner on this. Perpetual Amber is a sign that someone is avoiding a difficult conversation about scope, resources, or feasibility."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

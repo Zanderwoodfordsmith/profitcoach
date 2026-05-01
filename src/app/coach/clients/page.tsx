@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { StickyPageHeader } from "@/components/layout";
 import {
   ProspectsTable,
   type ProspectRow,
@@ -32,10 +33,10 @@ export default function CoachClientsPage() {
       setError(null);
 
       const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+        data: { session },
+      } = await supabaseClient.auth.getSession();
 
-      if (!user) {
+      if (!session?.user) {
         router.replace("/login");
         return;
       }
@@ -43,7 +44,7 @@ export default function CoachClientsPage() {
       const roleRes = await fetch("/api/profile-role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: session.user.id }),
       });
       const roleBody = (await roleRes.json().catch(() => ({}))) as {
         role?: string;
@@ -54,77 +55,31 @@ export default function CoachClientsPage() {
         setLoading(false);
         return;
       }
-      const effectiveId =
-        roleBody.role === "admin" && impersonatingCoachId
-          ? impersonatingCoachId
-          : user.id;
       if (roleBody.role === "admin" && !impersonatingCoachId) {
         router.replace("/admin");
         return;
       }
 
-      const { data: contactsData, error: contactsError } =
-        await supabaseClient
-          .from("contacts")
-          .select(
-            "id, full_name, email, business_name, type, created_at"
-          )
-          .eq("coach_id", effectiveId)
-          .eq("type", "client")
-          .order("created_at", { ascending: false });
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${session.access_token}`,
+      };
+      if (roleBody.role === "admin" && impersonatingCoachId) {
+        headers["x-impersonate-coach-id"] = impersonatingCoachId;
+      }
+
+      const res = await fetch("/api/coach/clients", { headers });
 
       if (cancelled) return;
 
-      if (contactsError) {
-        setError("Unable to load clients.");
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? "Unable to load clients.");
         setLoading(false);
         return;
       }
 
-      const contactIds =
-        contactsData?.map((c: any) => c.id as string) ?? [];
-
-      let latestByContact: Record<
-        string,
-        { total_score: number; completed_at: string }
-      > = {};
-
-      if (contactIds.length > 0) {
-        const { data: assessments, error: assessmentsError } =
-          await supabaseClient
-            .from("assessments")
-            .select("contact_id, total_score, completed_at")
-            .in("contact_id", contactIds)
-            .order("completed_at", { ascending: false });
-
-        if (!assessmentsError && assessments) {
-          for (const row of assessments as any[]) {
-            const cid = row.contact_id as string;
-            if (!latestByContact[cid]) {
-              latestByContact[cid] = {
-                total_score: row.total_score as number,
-                completed_at: row.completed_at as string,
-              };
-            }
-          }
-        }
-      }
-
-      const mapped: ProspectRow[] =
-        contactsData?.map((c: any) => {
-          const latest = latestByContact[c.id as string];
-          return {
-            id: c.id as string,
-            full_name: c.full_name as string,
-            email: c.email ?? null,
-            business_name: c.business_name ?? null,
-            type: (c.type as string) ?? "client",
-            last_score: latest?.total_score ?? null,
-            last_completed_at: latest?.completed_at ?? null,
-          };
-        }) ?? [];
-
-      setProspects(mapped);
+      const body = (await res.json()) as { clients?: ProspectRow[] };
+      setProspects(body.clients ?? []);
       setLoading(false);
     }
 
@@ -147,12 +102,16 @@ export default function CoachClientsPage() {
       if (!session?.access_token) {
         throw new Error("You must be signed in to add a client.");
       }
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      };
+      if (impersonatingCoachId) {
+        headers["x-impersonate-coach-id"] = impersonatingCoachId;
+      }
       const res = await fetch("/api/coach/contacts", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        headers,
         body: JSON.stringify({
           fullName: newFullName,
           email: newEmail || undefined,
@@ -187,27 +146,21 @@ export default function CoachClientsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-            BOSS Dashboard
-          </p>
-          <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            Clients
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            View your clients. Add clients or move prospects to clients when they convert.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAddClient(!showAddClient)}
-          className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-        >
-          {showAddClient ? "Cancel" : "Add client"}
-        </button>
-      </header>
+      <StickyPageHeader
+        title="Clients"
+        description="View your clients. Add clients or move prospects to clients when they convert."
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowAddClient(!showAddClient)}
+            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
+          >
+            {showAddClient ? "Cancel" : "Add client"}
+          </button>
+        }
+      />
 
+      <div className="flex w-full flex-col gap-4">
       {showAddClient && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-900">Add client</h2>
@@ -306,6 +259,7 @@ export default function CoachClientsPage() {
           </button>
         )}
       />
+      </div>
     </div>
   );
 }

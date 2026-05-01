@@ -56,6 +56,30 @@ type CoachInfo = {
   linkedin_url: string | null;
 };
 
+type LandingVariantLegacyProps = {
+  coachSlug: string;
+  coach: CoachInfo | null;
+  loadingCoach: boolean;
+  formStep: 1 | 2 | 3;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneCountryCode: string;
+  phone: string;
+  formError: string | null;
+  submitting: boolean;
+  setFirstName: (v: string) => void;
+  setLastName: (v: string) => void;
+  setEmail: (v: string) => void;
+  setPhoneCountryCode: (v: string) => void;
+  setPhone: (v: string) => void;
+  handleStep1: (e: React.FormEvent) => void;
+  handleStep2: (e: React.FormEvent) => void;
+  handleStep3Submit: (e: React.FormEvent) => void;
+  goBack: () => void;
+  scrollToForm: () => void;
+};
+
 export default function LandingVariantPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -208,6 +232,58 @@ export default function LandingVariantPage() {
     );
   }
 
+  const legacyProps: LandingVariantLegacyProps = {
+    coachSlug,
+    coach,
+    loadingCoach,
+    formStep,
+    firstName,
+    lastName,
+    email,
+    phoneCountryCode,
+    phone,
+    formError,
+    submitting,
+    setFirstName,
+    setLastName,
+    setEmail,
+    setPhoneCountryCode,
+    setPhone,
+    handleStep1,
+    handleStep2,
+    handleStep3Submit,
+    goBack,
+    scrollToForm,
+  };
+
+  return isVariantA ? <LandingVariantA {...legacyProps} /> : <LandingVariantLegacy {...legacyProps} />;
+}
+
+function LandingVariantLegacy(props: LandingVariantLegacyProps) {
+  const {
+    coachSlug,
+    coach,
+    loadingCoach,
+    formStep,
+    firstName,
+    lastName,
+    email,
+    phoneCountryCode,
+    phone,
+    formError,
+    submitting,
+    setFirstName,
+    setLastName,
+    setEmail,
+    setPhoneCountryCode,
+    setPhone,
+    handleStep1,
+    handleStep2,
+    handleStep3Submit,
+    goBack,
+    scrollToForm,
+  } = props;
+
   return (
     <div className="min-h-screen bg-[#fafafa] text-slate-900">
       {/* Header — Profit Coach logo, smaller, at ~90% page width */}
@@ -237,6 +313,7 @@ export default function LandingVariantPage() {
 
             {/* BOSS grid image */}
             <div className="mt-8 w-full max-w-[45rem]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/boss-grid-placeholder.png"
                 alt="BOSS grid — 5 owner levels, 10 business areas"
@@ -613,6 +690,435 @@ export default function LandingVariantPage() {
           </div>
         </footer>
       </main>
+    </div>
+  );
+}
+
+function LandingVariantA(props: LandingVariantLegacyProps) {
+  const { scrollToForm } = props;
+
+  return (
+    <div className="min-h-screen bg-white text-slate-900">
+      <main>
+        {/* Hero (match comp: centered stack) */}
+        <section className="relative overflow-hidden bg-[#061a2e] text-white">
+          <div className="pointer-events-none absolute inset-0 opacity-55">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,161,238,0.35),transparent_62%),radial-gradient(circle_at_bottom,rgba(13,148,136,0.22),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:72px_72px]" />
+          </div>
+
+          <div className="mx-auto max-w-6xl px-4 pt-14 pb-10 sm:pt-18">
+            <div className="mx-auto max-w-4xl text-center">
+              <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+                Are You Running Your Business{" "}
+                <span className="text-[#42a1ee]">Or Is It Running You?</span>
+              </h1>
+              <p className="mt-5 text-pretty text-lg leading-relaxed text-white/80 sm:text-xl">
+                Successful business owners master all 5 “Owner Levels” across profit, systems, team, and strategy.
+                How many have you nailed? Take the free BOSS Scorecard and find out where you really stand.
+              </p>
+            </div>
+
+            <div className="mx-auto mt-10 max-w-5xl">
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-3 shadow-2xl shadow-black/35">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/landing/v2/hero.png"
+                  alt="BOSS Scorecard preview"
+                  className="w-full rounded-2xl object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="mx-auto mt-10 max-w-2xl text-center">
+              <button
+                type="button"
+                onClick={scrollToForm}
+                className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
+              >
+                Take the Free BOSS Scorecard
+              </button>
+              <p className="mt-3 text-sm text-white/70">Free · Under 10 min · Instant results</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Form block (white, centered) */}
+        <section className="bg-white py-14">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mx-auto max-w-xl">
+              <LandingOptInForm {...props} variant="light" />
+            </div>
+          </div>
+        </section>
+
+        {/* Levels holding you back (match comp: centered header + 2 cards) */}
+        <section className="bg-white py-14">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                Know exactly which levels are holding your business back
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-slate-600">
+                Your BOSS report shows your score, your level, and what to fix first.
+              </p>
+            </div>
+
+            <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <LevelsList />
+              </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/landing/v2/dashboard.png"
+                  alt="Example BOSS dashboard"
+                  className="w-full rounded-2xl object-cover"
+                />
+              </div>
+            </div>
+
+            <div className="mt-10 flex justify-center">
+              <button
+                type="button"
+                onClick={scrollToForm}
+                className="inline-flex items-center justify-center rounded-full bg-[#0c5290] px-8 py-4 text-base font-semibold text-white shadow-lg hover:opacity-95"
+              >
+                Take the Free BOSS Scorecard →
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* How it works (match comp: 3 stacked rows) */}
+        <section className="bg-white py-14">
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                How It Works
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-slate-600">
+                Answer a few questions, get your score, and see what to fix first.
+              </p>
+            </div>
+
+            <div className="mt-10 space-y-6">
+              <HowRow
+                step="01."
+                imageSrc="/landing/v2/how-1.png"
+                title="Answer a few questions about how your business runs"
+                description="Quick red / amber / green questions across the operating system — no prep, no essays."
+              />
+              <HowRow
+                step="02."
+                imageSrc="/landing/v2/how-2.png"
+                title="Get your BOSS score out of 100"
+                description="A weighted score that highlights foundations first — so you see the real constraint."
+              />
+              <HowRow
+                step="03."
+                imageSrc="/landing/v2/how-3.png"
+                title="See what to fix first"
+                description="Instant clarity on the highest-leverage priorities for profit, control, and time back."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA (match comp: blue band) */}
+        <section className="relative overflow-hidden bg-[#061a2e] py-16 text-white">
+          <div className="pointer-events-none absolute inset-0 opacity-50">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,161,238,0.30),transparent_60%),radial-gradient(circle_at_bottom,rgba(13,148,136,0.20),transparent_55%)]" />
+          </div>
+          <div className="mx-auto max-w-6xl px-4">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+                Ready to build a rewarding business?
+              </h2>
+              <p className="mt-4 text-lg leading-relaxed text-white/80">
+                Take the free BOSS Scorecard and get instant insight into what’s holding you back — and what to do next.
+              </p>
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={scrollToForm}
+                  className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
+                >
+                  Get started →
+                </button>
+              </div>
+              <p className="mt-5 text-sm text-white/60">Free · Private · Instant</p>
+            </div>
+          </div>
+        </section>
+
+        <footer className="border-t border-slate-200 bg-white py-8">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row">
+            <span className="text-sm text-slate-500">BOSS Scorecard · The Profit System</span>
+            <Link href="/login" className="text-sm font-medium text-[#0c5290] hover:underline">
+              Log in
+            </Link>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
+
+function LevelsList() {
+  const rows = [
+    { label: "Overwhelm", pct: 84, color: "#ec4899" },
+    { label: "Overworked", pct: 64, color: "#22c55e" },
+    { label: "Organised", pct: 47, color: "#8b5cf6" },
+    { label: "Overseer", pct: 32, color: "#f97316" },
+    { label: "Owner", pct: 12, color: "#ef4444" },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-500">Overview</p>
+        <p className="text-sm font-semibold text-[#0c5290]">BOSS Score</p>
+      </div>
+
+      <div className="mt-5 space-y-4">
+        {rows.map((r) => (
+          <div key={r.label} className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-slate-900">{r.label}</p>
+              <p className="text-sm font-semibold text-slate-700">{r.pct}%</p>
+            </div>
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full" style={{ width: `${r.pct}%`, backgroundColor: r.color }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HowRow(props: { step: string; imageSrc: string; title: string; description: string }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={props.imageSrc}
+          alt=""
+          className="h-28 w-full rounded-2xl object-cover sm:h-24 sm:w-40"
+        />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-slate-500">{props.step}</p>
+          <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">{props.title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">{props.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeatureTile(props: { iconSrc: string; title: string; description: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={props.iconSrc} alt="" className="h-12 w-12 rounded-xl" />
+      <div>
+        <p className="font-semibold text-slate-900">{props.title}</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate-600">{props.description}</p>
+      </div>
+    </div>
+  );
+}
+
+function HowCard(props: { imageSrc: string; eyebrow: string; title: string; description: string }) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="p-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={props.imageSrc}
+          alt=""
+          className="h-44 w-full rounded-2xl object-cover"
+        />
+      </div>
+      <div className="px-6 pb-6">
+        <p className="text-sm font-semibold text-[#0c5290]">{props.eyebrow}</p>
+        <h3 className="mt-2 text-xl font-semibold tracking-tight">{props.title}</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{props.description}</p>
+      </div>
+    </div>
+  );
+}
+
+function LandingOptInForm(
+  props: LandingVariantLegacyProps & { variant: "dark" | "light" }
+) {
+  const {
+    coachSlug,
+    coach,
+    loadingCoach,
+    formStep,
+    firstName,
+    lastName,
+    email,
+    phoneCountryCode,
+    phone,
+    formError,
+    submitting,
+    setFirstName,
+    setLastName,
+    setEmail,
+    setPhoneCountryCode,
+    setPhone,
+    handleStep1,
+    handleStep2,
+    handleStep3Submit,
+    goBack,
+  } = props;
+
+  const isDark = props.variant === "dark";
+  const cardClass = isDark
+    ? "rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/25"
+    : "rounded-3xl border border-slate-200 bg-white p-6 shadow-lg";
+  const inputClass = isDark
+    ? "block w-full rounded-xl border border-white/15 bg-white/10 px-4 py-4 text-base text-white placeholder-white/50 outline-none focus:border-[#42a1ee] focus:ring-2 focus:ring-[#42a1ee]/20"
+    : "block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20";
+  const labelClass = isDark ? "text-white/85" : "text-slate-900";
+  const subtleText = isDark ? "text-white/60" : "text-slate-500";
+  const errorText = isDark ? "text-rose-200" : "text-rose-600";
+  const primaryBtn = isDark
+    ? "w-full rounded-full bg-white px-6 py-3.5 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
+    : "w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95";
+
+  return (
+    <div id="landing-form" className="scroll-mt-24">
+      <div className={cardClass}>
+        <div className="space-y-5">
+          {formStep === 1 && (
+            <form onSubmit={handleStep1} className="space-y-5">
+              <p className={`text-xl font-semibold sm:text-2xl ${labelClass}`}>
+                Start with your <span className="font-bold">name</span>
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="landingA-firstName" className="sr-only">First name</label>
+                  <input
+                    id="landingA-firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className={inputClass}
+                    placeholder="First name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="landingA-lastName" className="sr-only">Last name</label>
+                  <input
+                    id="landingA-lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className={inputClass}
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
+              {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
+              <button type="submit" className={primaryBtn}>
+                Get my results
+              </button>
+            </form>
+          )}
+
+          {formStep === 2 && (
+            <form onSubmit={handleStep2} className="space-y-5">
+              <p className={`text-xl font-semibold sm:text-2xl ${labelClass}`}>
+                Where should I <span className="font-bold">email</span> it?
+              </p>
+              <div>
+                <label htmlFor="landingA-email" className="sr-only">Email</label>
+                <input
+                  id="landingA-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass}
+                  placeholder="e.g. you@company.com"
+                />
+              </div>
+              {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
+              <button type="submit" className={primaryBtn}>
+                Continue
+              </button>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className={`text-sm font-medium hover:underline ${subtleText}`}
+                >
+                  ← Previous
+                </button>
+              </div>
+            </form>
+          )}
+
+          {formStep === 3 && (
+            <form onSubmit={handleStep3Submit} className="space-y-5">
+              <p className={`text-xl font-semibold sm:text-2xl ${labelClass}`}>
+                And your <span className="font-bold">phone number</span>?
+              </p>
+              <div className="flex gap-2">
+                <label htmlFor="landingA-phone-country" className="sr-only">Country code</label>
+                <select
+                  id="landingA-phone-country"
+                  value={phoneCountryCode}
+                  onChange={(e) => setPhoneCountryCode(e.target.value)}
+                  className={`${inputClass} w-36 shrink-0`}
+                  aria-label="Country code"
+                >
+                  {COUNTRY_CODES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="landingA-phone" className="sr-only">Phone number</label>
+                <input
+                  id="landingA-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className={inputClass}
+                  placeholder="e.g. 7123 456789"
+                />
+              </div>
+              {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
+              <button type="submit" disabled={submitting} className={`${primaryBtn} disabled:opacity-70 disabled:cursor-wait`}>
+                {submitting ? "Starting…" : "Get my results"}
+              </button>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className={`text-sm font-medium hover:underline ${subtleText}`}
+                >
+                  ← Previous
+                </button>
+              </div>
+            </form>
+          )}
+
+          <p className={`text-center text-sm ${subtleText}`}>Free · No sales call · Instant results</p>
+
+          {!loadingCoach && (coach?.full_name || coach?.coach_business_name || coachSlug.toUpperCase() === "BCA") && (
+            <p className={`pt-4 text-sm border-t ${isDark ? "border-white/10 text-white/60" : "border-slate-200 text-slate-500"}`}>
+              Your results can be shared with your coach
+              {coach?.full_name || coach?.coach_business_name ? ` — ${coach.full_name ?? coach.coach_business_name}` : ""}.
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

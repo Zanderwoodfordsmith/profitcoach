@@ -1,0 +1,240 @@
+{
+  "ref": "5.9",
+  "level": 5,
+  "area": 9,
+  "name": "Company Culture",
+  "subtitle": "Level 5 · Owner · Team & Leadership",
+  "whatThisIs": "Company culture is what happens when you are not in the room. It is the invisible operating system that governs how decisions get made, standards get kept, and problems get solved. When clearly defined and consistently reinforced, culture accelerates everything \\- alignment happens faster, quality stays high, and the business operates by your values without needing you there to enforce them.\n\nThis playbook is about transforming culture from something that just happens to something you deliberately build. Not ping-pong tables and pizza Fridays \\- real culture that drives behaviour, protects standards, and creates the environment where your best people thrive. It is the difference between hoping your team does the right thing and knowing they will.\n\nCulture only becomes a system when you have the team and structure to support it. This is Level 5 work \\- building something that outlasts you and operates according to your principles even when you are absent.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Your values exist on the website but not in daily decisions. Different people interpret \"good work\" differently, leading to inconsistent standards. Problem behaviours get tolerated because addressing them feels too hard. Your best people get frustrated watching mediocrity go unchallenged. The culture is whatever happens to emerge \\- and it is usually not what you wanted."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have defined values and occasionally reference them, but they are not consistently applied. Some behaviours get called out, others slide by depending on who is involved or how busy things are. People generally know what is expected but the boundaries are fuzzy. Culture feels positive but lacks the structure to maintain standards at scale."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your values are operational, not decorative \\- they drive hiring decisions, performance reviews, and daily choices. Everyone knows exactly what behaviours get rewarded and what will not be tolerated. Cultural standards are enforced consistently regardless of who is involved. People police the culture themselves because they understand and believe in it. The business operates by your principles even when you are not there."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Are your values actually values or just nice words? Real values create tension \\- they force you to choose one path over another. If your values could apply to any business anywhere, they are not values, they are wishful thinking. Values should be specific enough that someone can break them.",
+    "What behaviours do you consistently reward? Culture is not what you say it is \\- it is what you tolerate and what you celebrate. Look at who gets promoted, recognised, or given more responsibility. Those are your real values in action, not the ones on your website.",
+    "Do your incentives align with your stated culture? If you say teamwork matters but only reward individual performance, guess which behaviour you will get more of? Every bonus structure, promotion criteria, and recognition programme either reinforces your culture or undermines it.",
+    "Who models your standards publicly? Culture spreads through example, not explanation. Your cultural exemplars \\- the people who embody what you want to see \\- need to be visible and celebrated. If your best cultural ambassadors are invisible, the wrong examples will fill the vacuum.",
+    "How quickly do you address misalignment? Every day a problem behaviour goes unchallenged is a day you signal that the standard does not really matter. Culture degrades through inaction as much as through bad action. Swift, consistent response to misalignment protects the culture for everyone else."
+  ],
+  "quickWins": [
+    "This week: Identify one behaviour that consistently undermines your culture and address it directly with the person involved. Standards without enforcement are just suggestions.",
+    "This week: Publicly recognise someone who exemplifies your values in action \\- not just results, but how they achieved them. Make the connection between behaviour and recognition explicit.",
+    "This week: Review your last three hiring decisions. Did you hire for cultural fit as rigorously as you hired for skills? Cultural misfits cost far more than skill gaps."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.9",
+      "description": ""
+    },
+    {
+      "ref": "2.9",
+      "description": ""
+    },
+    {
+      "ref": "4.8",
+      "description": ""
+    },
+    {
+      "ref": "3.1",
+      "description": ""
+    },
+    {
+      "ref": "5.1",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Values Definition & Translation",
+          "description": "Move beyond generic values to specific, operational principles that actually guide decisions. Turn \"integrity\" into behaviours people can see and measure.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Move beyond generic value statements to specific, operational principles that guide real decisions. Take words like \"integrity,\" \"teamwork,\" and \"excellence\" and translate them into observable behaviours that people can see, measure, and hold each other accountable for. The goal is not to create a list for the wall. It is to create a decision-making tool that everyone in the business actually uses."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most businesses have values. Very few have useful ones. \"We value integrity\" means nothing because everyone thinks they have integrity. \"We tell customers the truth even when it costs us the sale\" means something specific. It guides behaviour. It makes the right action obvious in a difficult moment. Patrick Lencioni's work on organisational health makes the distinction clear: core values only create culture when they are specific enough to be controversial. If nobody would disagree with your value, it is not distinctive enough to guide behaviour. Generic values are wallpaper. Translated values are tools."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Identify your real values, translate each one into specific behaviours, and test them against real decisions.\n\n---"
+            },
+            {
+              "title": "Identify Your Real Values (Not Your Aspirational Ones)",
+              "content": "- [ ] **List the 3-5 principles that actually guide how you run the business today** - Not what you wish was true. What is true. Look at your last 10 decisions: what patterns emerge? What did you prioritise when things got difficult?\n- [ ] **Ask yourself: \"What behaviour would I never tolerate, even from a top performer?\"** - The things you would fire someone for reveal your real non-negotiables.\n- [ ] ⚡ Quick Win: Think of the best person who ever worked for you. What 3 qualities made them great? Now think of the worst. What 3 qualities made them terrible? Your values are hiding in those answers.\n- [ ] **Cross out anything generic** - \"Excellence,\" \"innovation,\" \"teamwork,\" \"customer focus\" appear on 90% of company value lists. If your value could apply to any business, it is not distinctive enough. Sharpen it or replace it.\n- [ ] **Ask your team independently: \"What do we really stand for here?\"** - Compare their answers to yours. Alignment means the values are real. Divergence means the values are aspirational."
+            },
+            {
+              "title": "Translate Each Value into Behaviours",
+              "content": "- [ ] **For each value, write 3-5 specific behaviours that demonstrate it** - These should be observable. Someone watching from outside could see whether the behaviour is happening.\n  - Example: \"Ownership\" becomes: \"If you see a problem, you fix it or flag it within 24 hours. You never say 'that is not my job.' You follow up on commitments without being chased.\"\n- [ ] **For each value, write 2-3 behaviours that violate it** - Knowing what the value is NOT is as useful as knowing what it is. This creates clarity at the boundaries.\n  - Example: \"Ownership\" is NOT: \"Agreeing in a meeting then doing nothing. Waiting to be told. Blaming someone else when things go wrong.\"\n- [ ] **Use plain language** - If a new employee on their first day cannot understand the behaviour, it is too complicated. Write for clarity, not sophistication.\n- [ ] **Check for tension between values** - If two of your values conflict in practice (speed vs. thoroughness, for example), define which one wins in specific situations. Unresolved tension between values creates confusion."
+            },
+            {
+              "title": "Test Against Real Decisions",
+              "content": "- [ ] **Pick 3 difficult decisions you have made in the last year** - Hiring, firing, pricing, strategy, customer disputes. Anything where the right answer was not obvious.\n- [ ] **Apply your translated values to each decision** - Would the values have made the right answer clearer? If yes, they are working. If the values pointed in a different direction from what you actually did, either the values or the decision was wrong.\n- [ ] **Create a \"values decision\" scenario for each value** - A short, realistic scenario that a team member might face, where the value tells them what to do. Use these in onboarding and team discussions.\n- [ ] **Share the translated values with your team** - Get feedback. Do these feel true? Are the behaviours realistic? Would they change how people work?\n- [ ] **Finalise and publish** - One page. Values on the left, behaviours on the right. Put it somewhere everyone can see it, not buried in a handbook nobody reads.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- 3-5 core values that are distinctive to your business, not generic\n- Each value translated into specific, observable behaviours (what it looks like in practice)\n- Anti-behaviours defined for each value (what it does not look like)\n- Values tested against real decisions to confirm they work as decision tools\n- A one-page values document that the whole team can use"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most revealing question is: \"Would you keep these values even if they cost you money?\" If a client says their value is \"always put the customer first\" but would not give a refund to an unhappy customer, the value is not real. Real values sometimes come at a cost. That is what makes them values instead of slogans.\n\nMany clients will resist limiting to 3-5 values. They want 8 or 10 because they do not want to leave anything out. Push them to choose. The discipline of selection is part of the exercise. If everything is a value, nothing is.\n\nWatch for values that describe what the owner wants to be, not what the business actually is. Aspirational values create cynicism when the team sees the gap between the poster on the wall and reality on the ground. Start with what is genuinely true, then add one aspirational value as a growth target."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Culture Stack Implementation",
+          "description": "Build the systematic framework for reinforcing culture through hiring, onboarding, performance management, and recognition. Culture becomes a process, not an accident.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a systematic framework for reinforcing your defined values through every stage of the employee lifecycle: hiring, onboarding, daily work, performance management, and recognition. Culture becomes a process rather than an accident. Each layer of the stack reinforces the same values, so the message is consistent from job ad to annual review."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Defining values is step one. Making them real is where most businesses fail. Values only become culture when they are embedded in systems. If you hire for skills but not values, you get talented people who undermine your culture. If you onboard without values, people learn \"how things work around here\" from whoever they sit next to, not from you. If you review performance without including values, you signal that only results matter, not how those results are achieved. The culture stack ensures every system reinforces the same message."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each layer of the stack, checking whether your current systems reinforce your values or ignore them.\n\n---"
+            },
+            {
+              "title": "Layer 1: Hiring",
+              "content": "- [ ] **Add values-based questions to your interview process** - For each value, create at least one behavioural question. \"Tell me about a time when...\" questions reveal past behaviour, which is the best predictor of future behaviour.\n- [ ] **Include values in your job descriptions** - Not a generic \"our values are...\" section. Specific statements like: \"You will thrive here if you [behaviour]. You will struggle if you [anti-behaviour].\"\n- [ ] **Score candidates on values fit alongside skills fit** - A candidate who scores high on skills but low on values is a culture risk. Define your threshold: would you reject a skilled candidate who does not fit your values? If yes, make that policy explicit.\n- [ ] ⚡ Quick Win: Before your next hire, write down the top 3 values-based behaviours you want to see. Use these as an explicit filter during interviews."
+            },
+            {
+              "title": "Layer 2: Onboarding",
+              "content": "- [ ] **Introduce values on day one** - Not as a slide in an induction pack. As a conversation. Explain each value, share real examples of what it looks like in practice, and explain why it matters.\n- [ ] **Assign a values buddy** - A team member who models the values well and can answer \"how do we do things here?\" questions during the first 30 days.\n- [ ] **Include values-based scenarios in onboarding** - \"Here is a situation you might face. Based on our values, what would you do?\" This is more effective than reading a list.\n- [ ] **Check values understanding at the 30-day mark** - Not a test. A conversation. \"Which of our values resonates most with you? Which one do you find hardest to apply?\""
+            },
+            {
+              "title": "Layer 3: Daily Operations",
+              "content": "- [ ] **Reference values in meetings and decisions** - When discussing options, ask: \"Which choice aligns best with our values?\" This normalises values as a decision-making tool, not a poster.\n- [ ] **Use values language in feedback** - \"That was a great example of [value]\" or \"That did not align with [value] because...\" makes feedback specific and connected to shared standards.\n- [ ] **Make values visible** - Not a laminated poster nobody reads. Integrate values into the tools people use daily: project templates, Slack channels, meeting agendas, one-to-one formats.\n- [ ] **Model from the top** - The owner and leaders must visibly demonstrate the values. If leadership behaves differently from the values, the values are dead. This is the most important layer."
+            },
+            {
+              "title": "Layer 4: Performance Management",
+              "content": "- [ ] **Include values in performance reviews** - Alongside results and skills, assess whether the person consistently demonstrates the defined behaviours.\n- [ ] **Make values a promotion criterion** - People who get results through values-aligned behaviour should be promoted ahead of those who get results despite violating values.\n- [ ] **Address values violations directly** - When someone behaves in a way that contradicts a value, address it immediately and specifically. \"In that situation, our value of [X] means we would do [Y]. Here is why that matters.\"\n- [ ] **Create consequences for persistent values violations** - Values without consequences are suggestions. Define what happens when someone repeatedly violates a value, even if their results are strong."
+            },
+            {
+              "title": "Layer 5: Recognition",
+              "content": "- [ ] **Recognise values-aligned behaviour publicly** - When someone demonstrates a value exceptionally, call it out. In a meeting, in a message, in a review. Specific recognition reinforces the behaviour.\n- [ ] **Connect recognition to the specific value** - Not just \"great job.\" Instead: \"That was a perfect example of [value] because you [specific behaviour].\" This teaches everyone what the value looks like in practice.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Values embedded in every stage of the employee lifecycle\n- Hiring process updated with values-based questions and scoring\n- Onboarding redesigned to include values introduction and scenarios\n- Daily operations language and tools updated to reference values\n- Performance management includes values assessment\n- A complete culture stack where every layer reinforces the same message"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common failure is building the stack but not maintaining it. Values in hiring is easy to implement. Values in daily operations requires ongoing discipline from the owner and managers. Check in regularly: are leaders actually referencing values in decisions, or did it fade after the first month?\n\nWatch for the \"brilliant jerk\" dilemma. Clients will have someone who delivers great results but consistently violates values. This is the ultimate test of the culture stack. If the brilliant jerk is tolerated, the whole stack collapses because the team sees that values are optional for high performers. Help clients see that keeping a values violator is more expensive than losing their output.\n\nStart with the layer the client can implement this week. For most businesses, that is adding values questions to the next interview or starting to use values language in team meetings. Build momentum before trying to overhaul everything."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Enforcement Matrix",
+          "description": "Create clear boundaries around what behaviour gets which response. Consistency in enforcement is what turns values from suggestions into standards.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create clear boundaries around what behaviour gets which response. Map the spectrum from minor drift to serious violation, and define proportionate consequences for each level. Consistency in enforcement turns values from suggestions into standards. Without clear enforcement, your values depend entirely on the mood and personality of whoever happens to be managing that day."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Inconsistent enforcement is the number one killer of company culture. If one manager lets value violations slide while another addresses them firmly, the team learns that values are optional. If a top performer gets a pass on behaviour that would earn a junior team member a warning, the message is clear: results matter more than values. Ray Dalio's principle is relevant here: \"If you are not willing to enforce a standard, it is not really a standard.\" The enforcement matrix removes ambiguity and personal discretion. Everyone knows what to expect, regardless of who they report to."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Define your enforcement levels, map specific behaviours to each level, and create response protocols that anyone in a leadership role can follow.\n\n---"
+            },
+            {
+              "title": "Define Your Enforcement Levels",
+              "content": "- [ ] **Level 1: Drift** - Minor, possibly unintentional deviation from values. First occurrence, no pattern. Example: missing a deadline without communicating, being slightly dismissive in a meeting.\n- [ ] **Level 2: Pattern** - The same type of drift recurring 2-3 times after being addressed. No longer accidental but not yet deliberate. Example: repeatedly missing deadlines after being coached on it.\n- [ ] **Level 3: Violation** - Clear, significant breach of a defined value. Deliberate or reckless. Example: lying to a customer, taking credit for someone else's work, refusing to take responsibility.\n- [ ] **Level 4: Dealbreaker** - Behaviour so far outside your values that it cannot be resolved with coaching or warnings. Example: theft, harassment, intentional sabotage, sustained dishonesty.\n- [ ] ⚡ Quick Win: Think of the last time someone's behaviour bothered you at work. What level would it fall under? This gives you an immediate sense of whether your instincts match the framework."
+            },
+            {
+              "title": "Map Behaviours to Levels",
+              "content": "- [ ] **For each of your defined values, list 2-3 example behaviours at each enforcement level** - What does Level 1 drift look like for \"ownership\"? What does a Level 3 violation of \"honesty\" look like? Be specific enough that two different managers would categorise the same behaviour at the same level.\n- [ ] **Check for grey areas** - Where does behaviour sit between two levels? These boundary cases need discussion and agreement among leaders before they happen, not during.\n- [ ] **Involve your team leads or managers** - If you have them. They need to agree with the categorisation because they are the ones who will enforce it. If they disagree, the matrix will be applied inconsistently.\n- [ ] **Write it down in plain language** - No legal jargon. No HR-speak. Write it so anyone could read it and understand what behaviour sits at which level."
+            },
+            {
+              "title": "Define Response Protocols",
+              "content": "- [ ] **Level 1 response: Private conversation** - \"I noticed [specific behaviour]. Our value of [X] means we do [Y] instead. Can you help me understand what happened?\" Supportive tone. Assumption of good intent. Document the conversation.\n- [ ] **Level 2 response: Formal feedback with documented plan** - \"This is the second/third time we have discussed [behaviour]. Here is what needs to change, by when, and here is the support available. If it continues, here is what happens next.\" Clear expectations. Written record.\n- [ ] **Level 3 response: Written warning with performance improvement plan** - Formal documentation. Specific changes required. Timeline. Consequences of failure to improve. Follow your legal requirements here.\n- [ ] **Level 4 response: Immediate action** - Depending on severity: suspension pending investigation, termination, or other immediate measures. Follow employment law and take legal advice for serious matters.\n- [ ] **Document everything** - Every conversation, at every level, gets a brief written record. Date, what was discussed, what was agreed. This protects you legally and ensures continuity if a manager changes."
+            },
+            {
+              "title": "Implement the Matrix",
+              "content": "- [ ] **Share the matrix with all people managers** - Walk through it together. Discuss the examples. Practise categorising real scenarios.\n- [ ] **Share the principles (not the full matrix) with the whole team** - Everyone should know that values are enforced and what the general approach is. They do not need to see every detail of the escalation process.\n- [ ] **Review the matrix every 6 months** - Are the levels right? Have new grey areas emerged? Does the matrix need updating based on real situations?\n- [ ] **Track enforcement consistency** - Are similar behaviours receiving similar responses across different managers? If not, recalibrate.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Four clear enforcement levels defined with proportionate responses\n- Specific behaviours mapped to each level for every core value\n- Response protocols documented so any manager can follow them\n- Grey areas identified and resolved before they become real situations\n- A consistent enforcement approach that builds trust and reinforces culture"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most difficult actions for clients because it forces them to confront something uncomfortable: what will you actually do when someone violates a value? Many clients prefer to keep things vague because clarity feels harsh. Help them see that vagueness is actually harsher. Without clear boundaries, people do not know where they stand, and enforcement becomes arbitrary and unfair.\n\nThe Level 1 conversation is the most important one. If drift gets addressed consistently at Level 1, you rarely need Levels 2-4. Most culture problems grow because early drift was ignored. Coach clients to get comfortable with early, supportive conversations rather than waiting until a pattern develops.\n\nWatch for clients who build the matrix but exempt themselves. If the owner is not held to the same standards (ideally by a trusted peer, mentor, or advisor), the matrix loses credibility. Culture starts at the top."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Recognition Flywheel",
+          "description": "Design a system that spots, celebrates, and amplifies the behaviours you want to see more of. Make your cultural exemplars visible and let their example spread naturally.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design a system that spots, celebrates, and amplifies the behaviours you want to see more of. Make cultural exemplars visible so the whole team sees what \"great\" looks like. Recognition is the positive reinforcement that makes your values sticky - people repeat behaviour that gets noticed and appreciated."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most businesses rely entirely on correction to shape culture: telling people what they did wrong. Recognition is the other half of the equation, and for most people, the more powerful half. Research consistently shows that employees who feel recognised are more engaged, more productive, and more likely to stay. But recognition only works when it is specific, timely, connected to values, and genuine. Generic \"employee of the month\" programmes feel hollow. A flywheel works differently: specific recognition makes values visible, which inspires more values-aligned behaviour, which creates more recognition opportunities. The cycle builds on itself."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build each component of the flywheel: spotting, celebrating, and amplifying.\n\n---"
+            },
+            {
+              "title": "Spotting: Build Your Observation System",
+              "content": "- [ ] **Train yourself and your managers to watch for values-aligned behaviour** - Not just big achievements. Daily actions that demonstrate your values. The team member who stayed late to help a colleague. The person who flagged a problem early instead of hiding it. The one who said \"I got this wrong\" instead of making excuses.\n- [ ] ⚡ Quick Win: This week, notice one team member demonstrating a value and tell them specifically what you saw and why it mattered. Do this before building any system.\n- [ ] **Create a \"values in action\" log** - A simple shared document where anyone can note when they see a colleague demonstrating a value. Include: who, what they did, and which value it demonstrates.\n- [ ] **Enable peer-to-peer recognition** - Do not make recognition top-down only. Give the whole team a way to recognise each other. A Slack channel, a physical board, a standing item in team meetings. Peer recognition often means more than manager recognition.\n- [ ] **Set a weekly observation goal for leaders** - Each manager spots and records at least 2 values-aligned behaviours per week. This builds the habit of looking for the good, not just the bad."
+            },
+            {
+              "title": "Celebrating: Design Your Recognition Methods",
+              "content": "- [ ] **Match recognition to the behaviour** - Not everything needs a grand gesture. Small behaviours get a quick thank you. Significant behaviours get public recognition. Exceptional behaviours get a meaningful reward.\n- [ ] **Build a recognition toolkit with multiple options:**\n  - Immediate verbal recognition (private or in a meeting)\n  - Written recognition (email, message, handwritten note)\n  - Public shout-out (team meeting, company channel, noticeboard)\n  - Tangible reward (gift card, extra time off, experience, team lunch)\n  - Career recognition (new responsibilities, development opportunity, involvement in strategic decisions)\n- [ ] **Always connect recognition to a specific value and behaviour** - \"Great job this week\" is nice but forgettable. \"The way you handled that customer complaint showed exactly what [value] means in practice - you [specific behaviour] and the result was [outcome]\" is memorable and teaches everyone what the value looks like.\n- [ ] **Recognise effort and process, not just results** - Someone who demonstrates values-aligned behaviour but does not get the perfect result still deserves recognition for the behaviour. If you only recognise results, people learn to chase outcomes at any cost."
+            },
+            {
+              "title": "Amplifying: Make Culture Visible",
+              "content": "- [ ] **Share recognition stories in team communications** - Weekly email, team meeting, internal newsletter. When everyone hears about values-aligned behaviour, it raises the bar for the whole team.\n- [ ] **Create a \"values wall\" or digital equivalent** - A visible, updated collection of recognition moments. New hires see it. Visitors see it. The team sees it daily.\n- [ ] **Use recognition in onboarding** - Share real examples of team members living the values with every new hire. This shows that values are not just words - they are things people actually do here.\n- [ ] **Reference past recognition in performance reviews** - \"Over the last quarter, you were recognised three times for [value]. Here is how that connects to your growth...\" This links daily recognition to career development.\n- [ ] **Celebrate milestones** - When the team collectively hits an improvement target, solves a long-standing problem, or receives exceptional customer feedback, celebrate together. Shared wins reinforce shared culture."
+            },
+            {
+              "title": "Keep the Flywheel Spinning",
+              "content": "- [ ] **Review recognition frequency monthly** - Is recognition happening regularly across the team? Or only for the same 2-3 people? Spread the net wider.\n- [ ] **Ask the team quarterly: \"Do you feel recognised for living our values?\"** - If the answer is no, the flywheel is stalling. Investigate why and adjust.\n- [ ] **Refresh your recognition methods every 6 months** - The same approach gets stale. Introduce new ways to recognise and celebrate. Keep it fresh.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A systematic approach to spotting values-aligned behaviour across the team\n- Multiple recognition methods available, matched to the significance of the behaviour\n- Recognition consistently connected to specific values and observable behaviours\n- Culture made visible through shared stories, public recognition, and onboarding\n- A self-reinforcing flywheel where recognition drives more values-aligned behaviour"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest mistake is making recognition complicated. Clients want to design elaborate reward programmes before they have built the habit of simply saying \"I noticed what you did and it mattered.\" Start with verbal recognition. Build the habit of noticing. Add systems and rewards later once the observation muscle is strong.\n\nWatch for recognition that is too infrequent or too concentrated. If only the owner recognises people, and they do it once a month, the flywheel will not spin. It needs to be frequent (multiple times per week across the team) and distributed (peer-to-peer, not just top-down).\n\nThe most common objection is: \"My team should not need praise for doing their job.\" This misunderstands what recognition does. It is not about rewarding the expected. It is about making the desired behaviour visible so everyone knows what good looks like. The alternative - only giving feedback when things go wrong - teaches people to hide rather than to strive."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

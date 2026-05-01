@@ -1,0 +1,223 @@
+{
+  "ref": "3.5",
+  "level": 3,
+  "area": 5,
+  "name": "Lead Nurture",
+  "subtitle": "Level 3 · Organised · Revenue & Marketing",
+  "whatThisIs": "Not everyone buys on the first visit. The best prospects often need time, trust, and multiple touchpoints before they are ready to commit. A structured nurture system turns cold leads into warm prospects, and warm prospects into customers who choose you because they already know, like, and trust you.\n\nThis playbook is about building relationships at scale. It bridges the gap between someone raising their hand and someone reaching for their wallet. It is the systematic follow-up that most businesses know they should do but struggle to do consistently.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Leads come in and disappear into a black hole. You have no systematic follow-up beyond maybe a single phone call or email. Most prospects go cold because you do not stay in touch. When you do remember to follow up, it is sporadic and generic. You have no idea who is warming up, who is ready to buy, or who has gone cold completely."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some follow-up sequences but they are inconsistent. Sometimes leads get nurtured, sometimes they do not. Your messaging is generic rather than segmented. You track opens and clicks but do not really know what they mean or what to do with that information. Some leads convert over time but you cannot predict which ones or when."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every lead enters a structured nurture sequence immediately. Your follow-up is consistent, valuable, and personalised to where they are in their journey. You can see who is engaging, who is warming up, and who is ready for a conversation. Conversion rates from your nurture sequences are predictable. Prospects often reach out to you because your nurturing has built enough trust and urgency for them to act."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Are you tracking the full journey from first contact to sale? Most businesses only measure leads and sales, missing everything in between. The nurture phase is where the real work happens — building trust, overcoming objections, and staying top of mind until they are ready to buy.",
+    "Is your follow-up valuable or just persistent? There is a difference between nurturing and nagging. Every touchpoint should give them something useful — insight, tools, case studies, or solutions to problems they did not know they had. If you would not want to receive your own emails, neither do they.",
+    "Do you know the difference between hot, warm, and cold leads? Different temperatures need different approaches. A hot lead who just downloaded your pricing guide needs a different message than a cold lead who signed up for a general newsletter six months ago. Segment by behaviour, not just demographics.",
+    "How do you handle prospects who go quiet? Every nurture system needs reactivation campaigns for leads who have disengaged. Sometimes people are just busy. A well-timed \"we miss you\" campaign can bring dormant leads back to life."
+  ],
+  "quickWins": [
+    "This week: Set up a simple 5-email sequence that goes out automatically to every new lead. Educational content first, then social proof, then a soft call-to-action.",
+    "This week: Review your CRM or lead list. Identify 10 leads who showed interest but went quiet in the last 90 days. Send them a personal \"check-in\" email asking how you can help.",
+    "This week: Look at your best customers. What questions did they ask or objections did they raise before buying? Turn those into nurture content that addresses those concerns proactively."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.5",
+      "description": ""
+    },
+    {
+      "ref": "4.5",
+      "description": ""
+    },
+    {
+      "ref": "3.6",
+      "description": ""
+    },
+    {
+      "ref": "1.5",
+      "description": ""
+    },
+    {
+      "ref": "3.8",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Nurture Journey Mapping",
+          "description": "Map out the stages prospects go through from first contact to purchase decision. Define what each stage looks like and what they need to hear to move to the next one.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map the stages a prospect goes through from the moment they first encounter your business to the point they become a paying client. For each stage, define what the prospect is thinking, what they need to hear, and what action moves them to the next stage. This becomes the blueprint for every piece of nurture content, every email sequence, and every touchpoint you build.\n\nMost businesses treat the gap between \"lead captured\" and \"sale made\" as a black box. This tool makes it visible and manageable."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Allan Dib's 1-Page Marketing Plan breaks the customer journey into three phases: before, during, and after. The nurture journey lives in the \"during\" phase, and it is where most businesses lose the highest volume of potential clients. Ryan Deiss calls this the \"relationship escalation\" - you cannot jump from stranger to customer in one step. Each stage in the journey is a micro-commitment that builds trust and moves the prospect closer to a buying decision. Without a mapped journey, your marketing is a series of disconnected touchpoints that hope for the best."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work from your real client data. Think about your last 10-20 clients and how they actually moved from first contact to purchase. The journey you map should reflect reality, not an idealised marketing funnel from a textbook.\n\n---"
+            },
+            {
+              "title": "Step 1: Define Your Stages",
+              "content": "- [ ] ⚡ Quick Win: **Identify your typical entry points** - How do prospects first find you? Website, social media, referral, event, direct outreach? List the top three. These are the starting points of your journey.\n- [ ] **Map 4-6 stages from awareness to purchase** - A simple version: Aware (they know you exist), Interested (they are consuming your content), Considering (they are evaluating you as an option), Ready (they want to buy and need a reason to act now). Adjust to match your actual sales cycle.\n- [ ] **Define what the prospect is thinking at each stage** - At \"Aware\" they are thinking \"Who is this?\" At \"Considering\" they are thinking \"Can I trust them to deliver?\" Write out the internal questions for each stage.\n- [ ] **Define what they need to hear at each stage** - At \"Aware\" they need proof you understand their problem. At \"Considering\" they need case studies and social proof. Match the message to the mindset."
+            },
+            {
+              "title": "Step 2: Map the Touchpoints",
+              "content": "- [ ] **List every current touchpoint you have** - Emails, social posts, blog articles, webinars, calls, meetings, proposals, free resources. Everything that makes contact with a prospect.\n- [ ] **Assign each touchpoint to a stage** - Where does this touchpoint sit in the journey? Some will cluster in one stage (usually awareness) while other stages have almost nothing. The gaps are your priorities.\n- [ ] ⚡ Quick Win: **Identify the biggest gap** - Which stage has the fewest touchpoints? That is where prospects are falling out of your funnel. Prioritise building content for that stage first.\n- [ ] **Define the transition triggers** - What action or signal shows that a prospect has moved from one stage to the next? Downloading a guide, booking a call, replying to an email, visiting a pricing page. These triggers tell you when someone is warming up."
+            },
+            {
+              "title": "Step 3: Design the Experience",
+              "content": "- [ ] **Set a timeline for each stage** - How long does a typical prospect spend in each stage? Some journeys take days, others take months. Knowing this shapes how often you make contact and how patient you need to be.\n- [ ] **Define the ideal next action at each stage** - What do you want the prospect to do next? Read an article, watch a video, book a call, download a guide? Every touchpoint should have one clear next step.\n- [ ] **Plan for drop-off points** - Where do prospects typically disappear? After the first email? Before the sales call? Build specific re-engagement content for those moments.\n- [ ] **Document the full journey on one page** - A visual map showing stages, touchpoints, triggers, and timelines. This becomes the reference document for all nurture activity.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear, documented map of the prospect journey from first contact to purchase\n- Each stage defined with prospect mindset, key messages, and touchpoints\n- Gaps in the current journey identified and prioritised for action\n- Transition triggers defined so you know when prospects are moving forward\n- A single-page reference document that guides all nurture content creation"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most clients will try to map an idealised journey rather than their actual one. Push them to be honest about what really happens. If 80% of their clients come through referrals and skip straight to \"Considering,\" that is the journey to optimise, not a theoretical seven-stage funnel.\n\nThe most valuable output of this exercise is usually the gap analysis. Clients almost always discover they have plenty of awareness-stage content but almost nothing for the \"Considering\" and \"Ready\" stages. That is where sales are being lost.\n\nIf the client has a short sales cycle (under 2 weeks), keep the journey to 3-4 stages. If they have a long cycle (3-6 months), they may need 5-6 stages with more touchpoints in the middle. Match the map to reality."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Content Cadence System",
+          "description": "Build a consistent schedule of valuable touchpoints that keeps you top of mind without overwhelming them. Email sequences, social media, direct mail — whatever channels your prospects actually use.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design a consistent, repeatable schedule of valuable touchpoints that keeps your business in front of prospects throughout their buying journey. This means deciding what content goes out, through which channels, how often, and to which audience segments. The result is a system that runs predictably rather than a sporadic burst of content followed by weeks of silence.\n\nConsistency beats brilliance in nurture marketing. A good email every week outperforms a great email once a quarter."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Ryan Deiss's Customer Value Optimization framework treats consistent touchpoints as the engine that moves prospects through the journey. Without regular contact, even warm prospects forget about you. Research consistently shows that most B2B purchases require 7-13 touchpoints before a decision is made. If you are making contact twice and then going quiet, you are losing to competitors who stay visible. Allan Dib reinforces this: your nurture system should work like a dripping tap, steadily building trust and familiarity until the prospect is ready to act."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Start with your Nurture Journey Map. You need to know the stages and the gaps before you can plan the content. Then work through this process channel by channel.\n\n---"
+            },
+            {
+              "title": "Step 1: Choose Your Channels",
+              "content": "- [ ] ⚡ Quick Win: **Pick your primary nurture channel** - For most B2B businesses, this is email. For some, it is LinkedIn or direct mail. Choose the one channel where your prospects are most likely to engage and commit to doing it well before adding others.\n- [ ] **Identify your secondary channel** - One backup channel that reinforces the primary. If email is primary, social media is a good secondary. Two channels, done consistently, beats five channels done sporadically.\n- [ ] **Audit what you already have** - Existing email sequences, social posts, blog articles, videos, guides. List everything. You probably have more content than you think, just not organised into a system."
+            },
+            {
+              "title": "Step 2: Design the Cadence",
+              "content": "- [ ] **Set a contact frequency for each stage** - Early stage (Aware): weekly or fortnightly. Mid stage (Interested/Considering): weekly. Late stage (Ready): 2-3 times per week. More frequent contact is appropriate as prospects warm up.\n- [ ] **Plan content types for each stage** - Awareness: educational content, thought leadership, industry insights. Interest: case studies, how-to guides, webinars. Consideration: comparison content, objection handling, proof. Decision: offers, deadlines, direct calls to action.\n- [ ] ⚡ Quick Win: **Build a 4-week content calendar** - Map out exactly what goes out, to whom, through which channel, for the next 4 weeks. Do not plan further ahead until you have proven you can sustain a monthly rhythm.\n- [ ] **Create content templates** - A standard email format, a standard social post structure, a standard case study format. Templates reduce creation time by 50% and maintain consistency.\n- [ ] **Batch your content creation** - Set aside one block per week (or per month for smaller businesses) to create all nurture content in one go. Batching is dramatically more efficient than creating content ad hoc."
+            },
+            {
+              "title": "Step 3: Systematise and Sustain",
+              "content": "- [ ] **Automate what you can** - Email sequences should run automatically once triggered. Social posts can be scheduled in advance. The less manual work required, the more likely the system survives contact with reality.\n- [ ] **Assign ownership** - Someone owns the nurture system. They are responsible for content going out on time, monitoring engagement, and flagging when something is not working. If nobody owns it, it dies within a month.\n- [ ] **Set review points** - Monthly: check open rates, click rates, and engagement. Quarterly: review the full cadence against your nurture journey map. Are the right messages reaching the right people at the right time?\n- [ ] **Build a content bank** - As you create content, store it in an organised library tagged by stage, topic, and channel. This makes it easy to repurpose, update, and re-use rather than starting from scratch every time.\n- [ ] **Plan for seasonal adjustments** - Some periods are busier for your audience (year-end, new financial year, seasonal peaks). Adjust your cadence to increase contact during high-intent periods and pull back during low-engagement windows.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented content cadence with specific frequencies, channels, and content types per stage\n- A 4-week content calendar ready to execute\n- Templates that speed up content creation and maintain quality\n- An automation plan that reduces manual work\n- Clear ownership and review rhythms that keep the system running"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The number one reason nurture systems fail is ambition. The client designs a beautiful plan with daily emails, three social channels, monthly webinars, and a podcast, then collapses under the workload within three weeks. Start small. One channel, one piece of content per week, for four weeks. Once that rhythm is established, add more.\n\nIf the client has no existing email list or content, start with a simple welcome sequence: 5 emails over 2 weeks that introduce the business, share a key insight, present a case study, address a common objection, and offer a next step. That alone puts them ahead of most competitors.\n\nPush back on \"we do not have time for content.\" They do not have time to chase every lead individually either. Nurture content is leverage: one email reaches hundreds of prospects simultaneously. The maths always works in favour of the system."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Lead Scoring & Segmentation",
+          "description": "Create a simple system to identify who is warming up based on their behaviour. Website visits, email engagement, content downloads — the digital body language that tells you they are getting ready to buy.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a simple system to identify which prospects are warming up and which have gone cold, based on their behaviour. Every time a prospect visits your website, opens an email, downloads a resource, or engages with your content, they are giving you signals. Lead scoring turns those signals into a number that tells your sales team who to call first. Segmentation groups prospects by characteristics so you can send the right message to the right audience.\n\nYou do not need enterprise software for this. A spreadsheet and some basic email tracking will get you 80% of the value."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Ryan Deiss's traffic temperature model (cold, warm, hot) is the simplest version of this idea: different people need different messages depending on where they are in the relationship. Sending a sales pitch to someone who just discovered you is like proposing on a first date. Lead scoring prevents that mistake by giving you data on readiness. Allan Dib reinforces that the purpose of nurture is to move people from cold to warm to hot, and scoring is how you measure whether that is actually happening."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need access to your email marketing data (open rates, click rates), website analytics (if available), and your CRM or contact list. Start simple and add complexity only when the basic system is working.\n\n---"
+            },
+            {
+              "title": "Step 1: Define Your Scoring Criteria",
+              "content": "- [ ] ⚡ Quick Win: **List the behaviours that signal buying intent** - Email opens, link clicks, website visits, pricing page views, resource downloads, webinar attendance, social media engagement, direct replies, booking requests. Write down every signal you can track.\n- [ ] **Assign point values to each behaviour** - Low-intent signals (email open, social like): 1-2 points. Medium-intent signals (link click, resource download, blog visit): 3-5 points. High-intent signals (pricing page view, booking request, reply to email): 8-10 points.\n- [ ] **Set scoring thresholds** - Cold: 0-10 points. Warm: 11-25 points. Hot: 26+ points. Adjust based on your sales cycle and data. The thresholds matter less than the consistency of using them.\n- [ ] **Add decay** - Points should reduce over time. A website visit from yesterday is more meaningful than one from three months ago. Simple approach: halve all scores every 30 days."
+            },
+            {
+              "title": "Step 2: Build Your Segments",
+              "content": "- [ ] **Segment by temperature** - Cold, warm, and hot leads get different content and different levels of sales attention. This is the minimum segmentation every business should have.\n- [ ] ⚡ Quick Win: **Segment by source** - Where the lead came from (referral, social, organic, paid, event) tells you something about their mindset and intent. Referral leads are typically warmer than cold traffic. Treat them accordingly.\n- [ ] **Segment by interest or need** - If you sell multiple products or services, track which ones each prospect has shown interest in. Someone who downloaded a guide on pricing is a different prospect from someone who watched a video on operations.\n- [ ] **Segment by fit** - Not all leads are good leads. If you have qualifying criteria (company size, revenue, industry), tag prospects early so your sales team focuses on the ones most likely to buy and succeed.\n- [ ] **Keep segments simple** - 3-5 segments is enough to start. Temperature (cold/warm/hot) plus one additional dimension (source or interest) covers most businesses. Do not build 20 segments that nobody maintains."
+            },
+            {
+              "title": "Step 3: Put Scoring to Work",
+              "content": "- [ ] **Create a weekly \"hot leads\" report** - Every Monday, pull a list of prospects who crossed the hot threshold in the past 7 days. This is your sales team's priority call list.\n- [ ] **Trigger actions at thresholds** - When a lead crosses from cold to warm, they enter an automated nurture sequence. When they cross from warm to hot, a salesperson gets notified. Define these triggers and automate them.\n- [ ] **Send different content to different segments** - Cold leads get educational content. Warm leads get case studies and social proof. Hot leads get direct offers and calls to action. Your Content Cadence System should map to these segments.\n- [ ] **Review and calibrate monthly** - Check whether your scoring is accurate by comparing scores to actual conversions. If people who score \"hot\" are not buying, your point values need adjusting. If people who score \"cold\" are converting, you are missing signals.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented lead scoring system with defined behaviours, point values, and thresholds\n- At least three prospect segments receiving tailored content and attention\n- A weekly hot leads report driving sales activity\n- Automated triggers that move prospects between segments based on behaviour\n- Monthly calibration habit that keeps scoring accurate"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Start with the simplest possible version. A Google Sheet with columns for name, email, last activity date, and a manual temperature tag (cold/warm/hot) is a perfectly valid lead scoring system for a business doing under £1M. Do not let the client get distracted by CRM features they do not need yet.\n\nThe biggest win from this exercise is usually the realisation of how many warm leads are being ignored. Most small businesses have prospects who have engaged multiple times but never received a follow-up because nobody was tracking behaviour. That list of warm, neglected leads is immediate revenue opportunity.\n\nIf the client has no email marketing or tracking in place, this action depends on the Content Cadence System being set up first. You need touchpoints generating data before you can score anything."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Reactivation Campaign Builder",
+          "description": "Design automated sequences to re-engage leads who have gone cold. Different approaches for different reasons they stopped engaging — too busy, not ready, wrong timing.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design automated sequences to re-engage leads who have gone cold. These are people who showed interest at some point - downloaded a resource, attended an event, had a sales conversation, or engaged with your content - but then stopped responding. A reactivation campaign gives them a reason to come back and a clear path to re-engage.\n\nMost businesses focus all their energy on generating new leads while sitting on a database of old ones who already know them. Reactivation is almost always cheaper and faster than new lead generation."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Deiss and Henneberry's Digital Marketing framework positions reactivation as one of the highest-ROI activities in any marketing system. These prospects already cleared the hardest hurdle: they know you exist and they showed some level of interest. The cost of re-engaging them is a fraction of the cost of acquiring a new lead. Dean Jackson's \"9-word email\" technique has demonstrated that even the simplest reactivation approach can generate responses from leads that have been dormant for months or years. You are not starting from zero with these people. You are restarting a conversation."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your contact database, any available engagement history, and a basic email tool. Work through this process to design 2-3 reactivation campaigns for different scenarios.\n\n---"
+            },
+            {
+              "title": "Step 1: Identify and Segment Your Cold Leads",
+              "content": "- [ ] ⚡ Quick Win: **Pull a list of all contacts who have not engaged in 60+ days** - No email opens, no website visits, no replies, no purchases. This is your reactivation pool. For most businesses, it is larger than they expect.\n- [ ] **Segment by how they went cold** - Did they drop off after a sales conversation (high intent, something stopped them)? After downloading a resource (early stage, never warmed up)? After being a client (lapsed customer)? Each group needs a different approach.\n- [ ] **Segment by original source** - Referral leads who went cold might respond to a personal touch. Ad-generated leads might need a different offer. Match the reactivation approach to how they arrived.\n- [ ] **Remove genuinely dead contacts** - Bounced emails, wrong numbers, people who asked to be removed. Clean the list before you start so you are working with real prospects."
+            },
+            {
+              "title": "Step 2: Design Your Reactivation Sequences",
+              "content": "- [ ] **Build a \"simple check-in\" sequence for warm drop-offs** - 3 emails over 2 weeks. Email 1: Short, personal, no selling. \"Hi [name], are you still looking at [problem you solve]?\" Email 2: Share something useful (article, insight, case study). Email 3: Direct offer or invitation to reconnect.\n- [ ] ⚡ Quick Win: **Write a 9-word email** - \"[Name], are you still interested in [outcome]?\" No formatting, no images, no footer. Just a plain text question. This technique works because it feels personal and requires almost no effort to respond to.\n- [ ] **Build a \"new value\" sequence for early-stage drop-offs** - These prospects never warmed up, so give them a reason to. Share something new: a fresh case study, a new resource, a recent result. 4 emails over 3 weeks, each offering genuine value.\n- [ ] **Build a \"win-back\" sequence for lapsed clients** - Different tone: you have a relationship here. Acknowledge the gap, share what has changed or improved, and make a specific return offer. 3 emails over 2 weeks plus a personal phone call from the account owner.\n- [ ] **Include a clear unsubscribe or \"not interested\" option** - Let people opt out cleanly. This improves your list quality and keeps you compliant. A smaller, engaged list is worth more than a large, unresponsive one."
+            },
+            {
+              "title": "Step 3: Launch, Measure, and Iterate",
+              "content": "- [ ] **Test with a small batch first** - Send your first reactivation sequence to 50-100 contacts before rolling it out to the full list. Check for deliverability issues, reply patterns, and unsubscribe rates.\n- [ ] **Track the right metrics** - Reply rate matters more than open rate for reactivation. A reply (even \"not interested right now\") is a success because it confirms the contact is real and gives you information.\n- [ ] **Set up a response handling process** - When someone replies, who responds and how quickly? Reactivation replies need a fast, personal response. If they wait 48 hours for a reply, you have lost them again.\n- [ ] **Schedule reactivation campaigns quarterly** - This is not a one-time exercise. New contacts go cold every month. Run reactivation sequences on a rolling quarterly basis to keep your pipeline active.\n- [ ] **Feed results back into your scoring system** - Contacts who re-engage move back from cold to warm in your lead scoring. Contacts who do not respond after two reactivation attempts get moved to a long-term nurture list or removed.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A segmented list of cold leads ready for reactivation\n- 2-3 tailored reactivation sequences designed for different drop-off scenarios\n- A tested, repeatable process for re-engaging dormant contacts quarterly\n- Response handling procedures so re-engaged leads get prompt, personal follow-up\n- An ongoing rhythm that treats reactivation as a standard part of marketing operations"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Reactivation campaigns are one of the quickest wins in the entire Profit System because the leads already exist. A client with 500 cold contacts who reactivates even 5% has 25 warm conversations without spending a penny on advertising.\n\nThe most common mistake is sending a sales pitch as the reactivation email. Cold leads went cold for a reason. Lead with curiosity or value, not a discount. The 9-word email works precisely because it asks a question rather than making an offer.\n\nIf a client has never done reactivation before, start with just the simple check-in sequence and the 9-word email. These take 30 minutes to set up and typically generate replies within 48 hours. Use those early wins to build momentum for the more structured sequences.\n\nFor lapsed clients, always recommend a phone call alongside the email sequence. The personal touch carries weight with someone who already knows and trusted you."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

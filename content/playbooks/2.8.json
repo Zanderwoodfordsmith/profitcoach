@@ -1,0 +1,240 @@
+{
+  "ref": "2.8",
+  "level": 2,
+  "area": 8,
+  "name": "AI & Automation",
+  "subtitle": "Level 2 · Overworked · Infrastructure & Systems",
+  "whatThisIs": "AI and automation are how you get your time back. Not by working faster — by working less on things that can run without you. When you are spending hours every week on repetitive tasks that a computer could handle in minutes, you are not running a business. You are being run by it.\n\nThis playbook is about intelligent leverage. Finding the tasks that consume time through repetition, then using technology to handle them automatically. The goal is not to become a tech expert. It is to free up your capacity for the work that actually needs your brain.\n\nThis is your first step into building systems that scale without adding people. It is not about complex enterprise software. It is about simple tools and workflows that take work off your plate this week.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You spend hours every week doing the same tasks over and over. Data entry, sending follow-up emails, updating spreadsheets, creating reports — work that feels necessary but leaves you exhausted and behind. You know technology could help but you do not know where to start. Every manual process is a bottleneck with your name on it."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have tried a few automation tools but they are not connected to each other. Some things run automatically, others still require your input. You can see the potential but the setup feels overwhelming. You are saving some time but not as much as you hoped, and maintaining the automations sometimes feels like more work than doing it manually."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Routine tasks happen without your involvement. Lead enquiries get auto-responses and enter your CRM. Reports generate automatically. Follow-up sequences run based on customer behaviour. You focus on strategy, relationships, and growth while the repetitive work handles itself. Technology amplifies your impact instead of consuming your time."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Where do you spend time on things a computer could do better? Map out your typical week. How many hours go to data entry, sending routine emails, updating records, or generating reports? Every manual, repetitive task is a candidate for automation. Start with the time sinks, not the nice-to-haves.",
+    "What client data lives in your head or scattered across different places? If customer information is stored in emails, spreadsheets, and your memory, you are creating work for yourself every time you need to find something. A proper CRM centralises everything so the system remembers what you used to have to recall.",
+    "Which reports do you create manually every week or month? Financial summaries, sales reports, customer updates — if you are pulling numbers from different places and formatting them by hand, you are doing work a dashboard should handle. Automated reporting gives you visibility without the effort.",
+    "What content or analysis could AI help you create faster? Writing proposals, analysing feedback, creating social media posts, answering common questions — AI tools can handle first drafts, research, and routine analysis. You review and refine instead of starting from scratch every time.",
+    "Which workflows require you to be the connection point? If every process needs your input to move to the next stage, you become the bottleneck. Look for handoffs where one system can trigger the next without waiting for you to remember to do something."
+  ],
+  "quickWins": [
+    "This week: List every task you did this week that felt repetitive or mechanical. Pick the one that takes the most time and research one automation tool that could handle it.",
+    "This week: Set up automatic responses for common enquiries. If people email you the same questions, create template responses that send immediately when they contact you.",
+    "This week: Export your contact data from wherever it lives now and put it all in one spreadsheet. Even if you do nothing else, centralising the data is the first step toward a proper CRM."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.3",
+      "description": ""
+    },
+    {
+      "ref": "3.8",
+      "description": ""
+    },
+    {
+      "ref": "2.0",
+      "description": ""
+    },
+    {
+      "ref": "1.8",
+      "description": ""
+    },
+    {
+      "ref": "2.5",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Task & Time Audit",
+          "description": "Map exactly where your time goes on manual, repetitive work. Identify the highest-impact automation opportunities based on time saved and effort to implement.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map exactly where your time goes on manual, repetitive work and identify the highest-impact automation opportunities based on time saved and effort to implement. This is similar to the Time & Energy audit (2.0) but focused specifically on finding tasks that technology can handle instead of you."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Automation works best when you automate the right things. Most businesses either automate nothing (because it feels overwhelming) or automate something complex and impressive that saves 20 minutes per month. The biggest wins are usually the boring, repetitive tasks you do every day without thinking about them. This audit identifies those high-frequency, low-value tasks so you automate for maximum impact."
+            },
+            {
+              "title": "How to Use This",
+              "content": "List your recurring tasks, score them on automation potential, and prioritise the best candidates.\n\n---"
+            },
+            {
+              "title": "Task Inventory",
+              "content": "- [ ] List every task you or your team does on a recurring basis (daily, weekly, monthly). Aim for 20-30 items.\n- [ ] For each task, note: how often it happens, how long it takes each time, and who currently does it\n- [ ] Calculate the total time per month for each task (frequency x duration)\n- [ ] ⚡ Quick Win: Identify the task you personally do most often that involves copying data from one place to another. This is almost certainly automatable."
+            },
+            {
+              "title": "Score Each Task for Automation Potential",
+              "content": "Rate each task on three criteria (1-5 scale):\n\n- [ ] **Repetitiveness:** Is the task the same every time (5) or different every time (1)?\n- [ ] **Rule-based:** Can the task be described with clear rules and if/then logic (5) or does it require judgment and creativity (1)?\n- [ ] **Digital:** Does the task happen on a computer using digital tools (5) or is it physical/relationship-based (1)?\n\nCalculate: Repetitiveness + Rule-based + Digital = Automation Score (out of 15)\n\n- [ ] Tasks scoring 12-15: Strong automation candidates\n- [ ] Tasks scoring 8-11: Possible automation with some setup\n- [ ] Tasks scoring 7 or below: Better suited for delegation than automation"
+            },
+            {
+              "title": "Prioritise by Impact",
+              "content": "- [ ] Sort your strong candidates (12-15 score) by monthly time saved\n- [ ] Estimate the setup effort for each: Quick (under 1 hour), Moderate (1-4 hours), or Complex (4+ hours)\n- [ ] Create your priority list: high time saved + quick setup = do first\n- [ ] Pick your top 3 automation candidates to focus on"
+            },
+            {
+              "title": "Common Automation Opportunities",
+              "content": "Review this list and check any that apply to your business:\n\n- [ ] New enquiry notifications and auto-responses\n- [ ] Data entry from one system to another (email to CRM, form to spreadsheet)\n- [ ] Sending follow-up emails after specific events (meeting booked, invoice sent, onboarding started)\n- [ ] Social media posting from a scheduled queue\n- [ ] Invoice creation and sending\n- [ ] Report generation and distribution\n- [ ] Calendar scheduling and reminders\n- [ ] File organisation and backup\n- [ ] Customer feedback collection at set intervals\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete inventory of recurring tasks with time estimates\n- Each task scored for automation potential\n- A prioritised list of the top 3 automation opportunities\n- A clear picture of how much time automation could reclaim per month\n- A starting point for the workflow automation work in Actions 3 and 4"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This audit often reveals that the owner spends 5-10 hours per week on tasks that could be fully automated. The emotional response is usually a mix of frustration (\"I have been doing this manually for years\") and overwhelm (\"I do not know how to automate anything\"). Reassure them: start with one. The first automation win builds confidence and momentum. Common first wins: auto-responding to enquiries, scheduling social media, and automating invoice reminders. These can each be set up in under an hour with tools like Zapier, Mailchimp, or built-in features of their existing software."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "CRM Implementation",
+          "description": "Set up a simple customer relationship management system so all client data, communication history, and next actions live in one place instead of your memory.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a simple customer relationship management system so all client data, communication history, and next actions live in one place instead of your memory, your inbox, and scattered spreadsheets. This does not need to be expensive or complex. A basic CRM used consistently beats a sophisticated one that nobody touches."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "When client information lives in your head, three things happen: you forget things (follow-ups, preferences, conversation history), nothing is transferable (if you are unavailable, nobody else can help the client), and you cannot see patterns (which clients are at risk, which prospects need chasing, where deals are getting stuck). A CRM solves all three. It is your business's memory system. And unlike your memory, it does not lose things after a busy week."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Choose a CRM, set it up with the basics, migrate your existing data, and build the daily habit of using it.\n\n---"
+            },
+            {
+              "title": "Choose Your CRM",
+              "content": "- [ ] ⚡ Quick Win: If you have fewer than 50 contacts and need something today, start with a well-structured Google Sheet or Notion database. A simple system you use beats a fancy system you do not.\n- [ ] For a proper CRM, evaluate based on your needs:\n  - **Simple and free:** HubSpot Free, Zoho Free, or Notion\n  - **Simple and paid:** Pipedrive, Close, or Capsule (£15-30/month)\n  - **All-in-one:** HubSpot, GoHighLevel, or Keap (includes email marketing, automation)\n- [ ] Choose based on: ease of use (will you actually open it daily?), integration with your email and calendar, and cost\n- [ ] Do NOT over-research. Pick one that seems right and commit for 90 days. You can switch later."
+            },
+            {
+              "title": "Initial Setup (2-3 Hours)",
+              "content": "- [ ] Create your pipeline stages (match your actual sales process):\n  - Example: New Lead > Contacted > Meeting Booked > Proposal Sent > Negotiation > Won > Lost\n- [ ] Set up your contact fields: Name, Company, Email, Phone, Source (how they found you), Status, Last Contact Date, Next Action, Notes\n- [ ] Import your existing contacts: export from your spreadsheet, phone, or email and import into the CRM\n- [ ] Connect your email if the CRM supports it (auto-logs email conversations)\n- [ ] Connect your calendar if supported (auto-logs meetings)\n- [ ] Create a simple dashboard view: what needs attention today?"
+            },
+            {
+              "title": "Build the Daily Habit",
+              "content": "- [ ] Start every working day by opening your CRM and checking: who needs a follow-up today?\n- [ ] After every client call, meeting, or significant email: update the contact record (2 minutes max)\n- [ ] Log the key point from every conversation: what was discussed, what was agreed, what is the next action\n- [ ] Move deals through pipeline stages as they progress\n- [ ] Every Friday: review your pipeline. Which deals are stuck? Which leads have gone cold? Who needs chasing?"
+            },
+            {
+              "title": "Make It Useful",
+              "content": "- [ ] Set up reminders for follow-ups so nothing falls through the cracks\n- [ ] Use tags or categories to segment contacts: Hot Lead, Current Client, Past Client, Partner, etc.\n- [ ] Track how leads found you (Source field) so you can measure which channels produce results\n- [ ] After 30 days, review: is the CRM helping you stay on top of relationships? What is missing?\n- [ ] After 90 days, consider adding automation: auto-emails when a deal moves to a new stage, reminder sequences for cold leads, etc.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- All client and prospect data in one accessible place\n- Communication history logged and searchable\n- A clear pipeline showing where every opportunity stands\n- Follow-ups happening on time because the system reminds you\n- The ability to hand off client relationships to team members without losing context"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "CRM resistance is common: \"I already know my clients.\" Challenge: \"What happens when you go on holiday? What happens when you hire someone? What if a client calls and you cannot remember what you discussed 3 months ago?\" The daily habit is everything - a CRM is only as good as the data in it. The first 2 weeks are the hardest as the habit forms. Check in every session: \"Are you updating your CRM daily?\" If not, diagnose why. Usually it is too complex (simplify) or too slow (switch tools). For most businesses under £1M, Pipedrive or HubSpot Free are the sweet spot."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Workflow Automation",
+          "description": "Build simple automated workflows using tools like Zapier so routine processes happen without your input. Lead notifications, data entry, follow-up sequences, and basic reporting.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build simple automated workflows using tools like Zapier, Make, or built-in software features so routine processes happen without your input. Start with your highest-impact automation candidate from the Task Audit (Action 1) and get it running this week."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every manual step in a recurring workflow is a step that depends on someone remembering to do it. Automated workflows run every time, on time, without reminders. A lead fills in a form and automatically gets added to your CRM, receives a welcome email, and creates a task for you to follow up - all without you touching anything. This is not futuristic technology. It is available now for £20-50/month and most automations take under an hour to set up."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pick one automation, build it, test it, and get it running. Then add the next one. One at a time.\n\n---"
+            },
+            {
+              "title": "Choose Your First Automation",
+              "content": "- [ ] Review your top 3 candidates from the Task Audit (Action 1)\n- [ ] ⚡ Quick Win: Start with the simplest one that saves the most time. Common first automations:\n  - New form submission > auto-email response + add to CRM\n  - New enquiry > Slack/email notification to you\n  - Invoice overdue > automatic reminder email to client\n  - New client signed > trigger onboarding email sequence\n  - Social media post scheduled from a content calendar"
+            },
+            {
+              "title": "Build It",
+              "content": "- [ ] Choose your automation tool:\n  - **Zapier** (beginner-friendly, widest range of app connections, free tier available)\n  - **Make (formerly Integromat)** (more powerful, slightly steeper learning curve, better value)\n  - **Built-in features** (many tools like HubSpot, Mailchimp, Xero have their own automation)\n- [ ] Map the workflow: Trigger (what starts it) > Actions (what happens automatically)\n- [ ] Set it up step by step:\n  - Define the trigger: \"When [event] happens in [app]...\"\n  - Define the action(s): \"Do [this] in [app]...\"\n  - Map the data: which fields from the trigger populate which fields in the action?\n- [ ] Test with a real example: trigger the automation and check that every step works correctly\n- [ ] Fix any issues and test again until it runs cleanly"
+            },
+            {
+              "title": "Common Automation Recipes",
+              "content": "- [ ] **Lead capture:** Website form > CRM contact created > Welcome email sent > Task created for follow-up\n- [ ] **Invoice chasing:** Invoice overdue by 7 days > Reminder email sent > Overdue by 14 days > Second reminder + notification to you\n- [ ] **Client onboarding:** Contract signed > Welcome email with next steps > Calendar invite for kickoff > Folder created in shared drive\n- [ ] **Social scheduling:** Content calendar updated > Post automatically published at scheduled time\n- [ ] **Report generation:** End of week > Pull data from sources > Format into report > Email to you or team"
+            },
+            {
+              "title": "Monitor and Expand",
+              "content": "- [ ] Check your first automation weekly for the first month: is it running correctly? Any errors?\n- [ ] Calculate time saved: how many minutes per week has this automation freed up?\n- [ ] Once stable, build your second automation from the priority list\n- [ ] Aim for 3-5 working automations within 90 days\n- [ ] Set a quarterly review: are automations still running? Do any need updating? What should be automated next?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- At least one workflow fully automated and running reliably\n- Time reclaimed from manual, repetitive work\n- Fewer dropped balls on routine tasks (follow-ups, reminders, notifications)\n- A growing library of automations that compound time savings\n- Confidence that \"automation\" is not scary or complex - it is practical and accessible"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest blocker is overwhelm: clients see automation possibilities everywhere and freeze. Force a single starting point: \"What one manual process annoys you most?\" Build that one, celebrate the win, then move to the next. Zapier is the easiest entry point for non-technical users - their visual workflow builder is intuitive. Warn clients about over-automating: not every process should be automated. Automate the repetitive and rule-based; keep the human touch where relationships matter. A personalised follow-up email from you is worth more than an automated one, even if it takes longer."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "AI Content & Analysis Tools",
+          "description": "Implement AI tools for content creation, customer analysis, and routine decision-making. First drafts instead of blank pages, insights instead of raw data, responses instead of thinking from scratch.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Implement AI tools for content creation, customer analysis, and routine decision support. This is about using AI as an accelerator - not a replacement for thinking, but a tool that gives you first drafts instead of blank pages, insights instead of raw data, and quick answers instead of hours of research."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "AI tools have reached the point where they can genuinely save hours per week for a small business owner. Writing a proposal from scratch takes 2 hours; editing an AI-generated first draft takes 30 minutes. Analysing customer feedback manually takes an afternoon; asking AI to identify themes takes 5 minutes. The business owners who learn to use AI effectively will have a significant time and quality advantage over those who do not. This is not about becoming a tech expert. It is about knowing which tools to use and when."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Identify where AI can help most in your business, choose your tools, and start using them this week.\n\n---"
+            },
+            {
+              "title": "Identify Your AI Opportunities",
+              "content": "- [ ] Review these categories and tick every task where you could use AI help:\n\n### Content Creation\n- [ ] Writing social media posts\n- [ ] Drafting emails to clients\n- [ ] Creating proposals or quotes\n- [ ] Writing blog posts or articles\n- [ ] Creating marketing copy\n- [ ] Writing job descriptions\n- [ ] Producing meeting agendas and summaries\n\n### Analysis and Research\n- [ ] Summarising customer feedback\n- [ ] Analysing competitor offerings\n- [ ] Researching industry trends\n- [ ] Reviewing financial data for patterns\n- [ ] Identifying themes across client conversations\n\n### Communication and Response\n- [ ] Drafting responses to common questions\n- [ ] Creating template emails for recurring situations\n- [ ] Preparing for difficult conversations\n- [ ] Writing standard operating procedures\n\n- [ ] ⚡ Quick Win: Pick the one task from the list above that you do most frequently. Use an AI tool for it today. Even a basic prompt like \"Write a first draft of [thing]\" will show you the potential."
+            },
+            {
+              "title": "Choose Your Tools",
+              "content": "- [ ] **General AI assistant:** ChatGPT, Claude, or Gemini (for writing, analysis, brainstorming, and research)\n- [ ] **Email AI:** Built-in features in Gmail or Outlook, or Superhuman (for faster email drafting and responses)\n- [ ] **Content AI:** Jasper, Copy.ai, or just ChatGPT/Claude (for marketing copy, social posts, and long-form content)\n- [ ] **Meeting AI:** Otter.ai, Fireflies, or Fathom (for automatic meeting transcription and summaries)\n- [ ] Start with ONE general tool (ChatGPT or Claude) and learn to use it well before adding specialised tools"
+            },
+            {
+              "title": "Build the AI Habit",
+              "content": "- [ ] Set a rule: \"Before I start writing anything from scratch, I ask AI for a first draft\"\n- [ ] Save your best prompts: when you find a prompt that produces great results, save it for reuse\n- [ ] Create prompt templates for your recurring tasks:\n  - \"Write a follow-up email to a client who [situation]. Keep it professional and [tone].\"\n  - \"Summarise these meeting notes into action items with owners and deadlines.\"\n  - \"Draft a social media post about [topic] for [audience]. Keep it under 200 words.\"\n- [ ] Spend 15 minutes per week experimenting with new ways AI can help"
+            },
+            {
+              "title": "Quality Control",
+              "content": "- [ ] Never send AI output without reviewing and editing it - AI is your starting point, not your finish line\n- [ ] Check facts: AI can generate plausible-sounding but incorrect information. Verify anything important.\n- [ ] Maintain your voice: edit AI drafts to sound like you, not like a robot\n- [ ] Be transparent where appropriate: some contexts require disclosure that AI was used\n- [ ] Track time saved: after 30 days, estimate how many hours AI has saved you per week\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- AI tools integrated into your daily workflow for content, analysis, and communication\n- First drafts produced in minutes instead of hours\n- Routine analysis and summarisation handled in seconds\n- A library of reusable prompts for your most common tasks\n- Measurable time savings that free you for higher-value work"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "AI adoption varies hugely by client. Some are already using ChatGPT daily; others have never tried it. Meet them where they are. For beginners, start with one simple use case: \"Use ChatGPT to draft your next client email.\" Let them experience the time saving before expanding. For more advanced users, push toward prompt engineering and integration (using AI within their existing tools). The most important principle to reinforce: AI generates first drafts, humans create final versions. Clients who skip the editing step produce generic, impersonal content that can damage their brand. The sweet spot is AI speed with human judgment and personality layered on top."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,619 @@
+{
+  "ref": "4.5",
+  "level": 4,
+  "area": 5,
+  "name": "Sales & Conversion",
+  "subtitle": "Level 4 · Overseer · Revenue & Marketing",
+  "whatThisIs": "Sales and conversion is where marketing effort becomes revenue. It is the bridge between having prospects and having customers. Get this right and you multiply the value of every lead, every conversation, every pound spent on marketing. Get it wrong and you are burning money on leads that never convert.\n\nThis playbook is about building a systematic sales process that works consistently across all mediums — whether you are selling in person, on the phone, over Zoom, or through digital channels. It covers the complete journey from initial conversation to signed contract, with clear metrics so you know exactly where deals are won and lost.\n\nThis is not about learning sales tricks or persuasion techniques. It is about creating a repeatable system that converts prospects into customers predictably, scales beyond just you, and improves every month.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Your conversion rates vary wildly depending on your mood, the prospect, or what you had for breakfast. You wing every sales conversation with no clear process. Some deals close, others disappear, and you have no idea why. You cannot explain to someone else how to sell your product because you do not have a system — just instinct and hope."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some sales processes but they are different for phone calls versus Zoom versus email. Your close rate is decent but inconsistent across your team. You know roughly how many leads convert but you cannot pinpoint where most deals are lost. Some months are great, others are disappointing, and you cannot predict which will be which."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have one core sales process that adapts to any medium — phone, Zoom, in-person, or digital. Every conversation follows the same diagnostic framework so you are comparing like with like. You know your exact conversion rates at every stage and can spot problems immediately. New salespeople can learn your system and hit targets within 90 days. Revenue becomes predictable because conversion is systematic."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Do you have one sales process or four different approaches? Most businesses sell differently on the phone versus Zoom versus email versus in-person. This creates inconsistency, makes training impossible, and means you never get good at any single approach.",
+    "Can you explain exactly where deals are lost? If you cannot tell the difference between prospects who do not show up, prospects who show but do not buy, and prospects who want to think about it, you cannot improve. Each problem needs a different solution.",
+    "Would your sales process work if you recorded every conversation? The test of a real system is whether it sounds professional when played back. If you would be embarrassed by a recording, you do not have a process — you have improvisation.",
+    "Do you handle objections or do they handle you? The same five objections come up in 80% of sales conversations. If you do not have prepared, practiced responses that feel natural, you are losing deals you should win.",
+    "Is your sales training \"shadow me once\" or something more systematic? Most SMEs train new salespeople by having them listen to a few calls and then hope for the best. Real sales training means scripts, role-play, recorded calls, and weekly coaching sessions."
+  ],
+  "actionsIntro": "This is a larger playbook organised into four sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Map your last 20 prospects through the 5-stage pipeline. Count how many progressed from each stage to the next. Your lowest conversion rate shows you where to focus first.",
+    "This week: Write down the exact words you use to open every sales conversation. If it changes depending on your mood, you need a script. If you do not have one, create a 30-second opening that works for phone, Zoom, or in-person.",
+    "This week: List the five objections you hear most often. Write a 60-second response to each one. Practice them out loud until they sound natural, not rehearsed."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.5",
+      "description": ""
+    },
+    {
+      "ref": "4.7",
+      "description": ""
+    },
+    {
+      "ref": "3.6",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
+      "description": ""
+    },
+    {
+      "ref": "3.5",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Sales Architecture & Pipeline",
+      "description": "Building the foundation for systematic selling.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "The 4 Selling Mediums",
+          "description": "Understand when to use in-person, phone, Zoom, and async channels, and how they work together rather than competing with each other.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Understand the four channels through which you can sell - in-person, phone, video call (Zoom), and asynchronous (email, DM, text) - and decide which combination works best for your business, your offer, and your buyers. Each medium has different strengths, conversion rates, and scalability. Most businesses default to one without considering whether it is actually the best fit."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The medium you sell through affects your conversion rate, your reach, and your time investment. In-person meetings convert highest but scale worst. Async messages scale best but convert lowest. Choosing the wrong medium for your offer means either leaving money on the table (selling a high-ticket offer over email) or burning time unnecessarily (doing face-to-face meetings for a low-ticket product). Getting this right is a leverage decision that affects every sale you make."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review each medium below and assess honestly which ones you currently use, which you should use, and where the gaps are.\n\n---"
+            },
+            {
+              "title": "Audit Your Current Sales Mediums",
+              "content": "- [ ] List every way you currently sell (in-person meetings, phone calls, Zoom calls, emails, DMs, proposals sent without a call, etc.)\n- [ ] ⚡ Quick Win: For each medium, estimate your conversion rate. Even a rough guess will reveal which channels actually work and which waste time.\n- [ ] Note how much of your selling time goes to each medium\n- [ ] Identify whether you chose these mediums strategically or just fell into them by habit"
+            },
+            {
+              "title": "Evaluate Each Medium for Your Business",
+              "content": "### In-Person\n\n- [ ] Assess: Is your offer high enough value to justify the time and travel cost of face-to-face selling?\n- [ ] Consider where in-person adds value others cannot: complex demonstrations, relationship-heavy industries, high-trust purchases\n- [ ] If you use in-person selling, define a minimum deal size that justifies the time investment\n\n### Phone\n\n- [ ] Assess: Could your current in-person meetings work just as well as phone calls?\n- [ ] Phone works well for: quick qualification, warm leads, follow-ups, relationship maintenance, and selling to time-poor buyers\n- [ ] Note: phone removes visual cues but adds personal connection compared to async\n\n### Video Call (Zoom)\n\n- [ ] Assess: Is video call your primary selling channel? If not, should it be?\n- [ ] Video gives you most of the benefits of in-person (visual cues, rapport, screen sharing, demonstrations) with none of the travel cost\n- [ ] For most service businesses selling to other businesses, video call is the optimal primary channel\n\n### Asynchronous (Email, DM, Text)\n\n- [ ] Assess: Are you trying to close deals through messaging that would close faster on a call?\n- [ ] Async is best for: initial outreach, qualification, follow-up nurture, sending proposals after a live conversation\n- [ ] Async is worst for: handling objections, building trust, closing high-value deals for the first time"
+            },
+            {
+              "title": "Design Your Sales Medium Strategy",
+              "content": "- [ ] Choose your primary selling medium (the channel where most deals close)\n- [ ] Choose your supporting mediums (channels that feed into or follow the primary)\n- [ ] Map the typical path: e.g. DM → phone qualifier → Zoom close → email follow-up\n- [ ] ⚡ Quick Win: If you are currently trying to close over email or DM, switch one prospect to a call this week and compare the result.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear understanding of which selling mediums you currently use and their conversion rates\n- A strategic choice of primary and supporting sales channels\n- A mapped prospect journey across mediums\n- Eliminated or reduced use of low-converting channels for high-value sales"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most business owners have never thought about this consciously. They sell the way they started selling and never question it. The biggest unlock is usually moving from trying to close through async channels to using async for qualification and calls for closing. For high-ticket offers (£2,000+), live conversation is almost always necessary for the first sale. For repeat purchases from existing customers, async works fine. Push clients to track conversion rates by medium for 30 days. The data usually makes the right strategy obvious."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "5-Stage Sales Pipeline",
+          "description": "Map every prospect journey through Lead → Booked → Showed → Proposal → Won/Lost, with clear entry and exit criteria for each stage.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map your prospect journey through five clear stages - Lead, Booked, Showed, Proposal, Won/Lost - with defined entry criteria, exit criteria, and actions for each stage. This gives you a visual pipeline showing exactly where every prospect sits and what needs to happen next to move them forward."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a pipeline, sales is a guessing game. You do not know how many prospects you have, where they are stuck, or what your real forecast looks like. A structured pipeline turns sales from an art into a process. It shows you where deals die (so you can fix the bottleneck), how long your sales cycle takes (so you can forecast revenue), and whether you have enough prospects at the top to hit your targets. Every business that scales beyond the owner doing all the selling needs this foundation."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each stage below. Define what qualifies a prospect for that stage and what moves them to the next one. Then map your current prospects into the pipeline.\n\n---"
+            },
+            {
+              "title": "Stage 1: Lead",
+              "content": "- [ ] Define what qualifies someone as a lead (e.g. expressed interest, downloaded something, was referred, responded to outreach)\n- [ ] List all sources that generate leads for your business\n- [ ] Define the action that moves a lead to \"Booked\" (e.g. they agree to a call, they fill in a booking form)\n- [ ] Set a maximum time a lead can sit without action before it is archived or re-engaged (e.g. 14 days)\n- [ ] ⚡ Quick Win: List every prospect you are currently \"talking to\" but have not booked a call with. Those are leads that need an action today."
+            },
+            {
+              "title": "Stage 2: Booked",
+              "content": "- [ ] Define what \"Booked\" means specifically (date and time confirmed, calendar invite sent, reminder sequence active)\n- [ ] Set up a confirmation and reminder process for booked calls (see Action 8: Show Rate System)\n- [ ] Define the action that moves a booked prospect to \"Showed\" (they turn up to the call or meeting)"
+            },
+            {
+              "title": "Stage 3: Showed",
+              "content": "- [ ] A prospect enters this stage when they attend the scheduled call or meeting\n- [ ] Define what happens during the call (see Action 4: Diagnostic Call Framework)\n- [ ] The exit action is either: a proposal is made/sent, or the prospect is disqualified\n- [ ] Track how many booked calls result in shows. This is your show rate."
+            },
+            {
+              "title": "Stage 4: Proposal",
+              "content": "- [ ] Define what counts as a proposal (verbal offer on the call, written proposal sent, quote delivered)\n- [ ] Set a maximum follow-up window (e.g. proposals not responded to within 7 days get a follow-up sequence)\n- [ ] The exit is Won or Lost. Every proposal must resolve to one of these.\n- [ ] ⚡ Quick Win: Check right now - how many outstanding proposals do you have with no next action scheduled? Follow up on all of them today."
+            },
+            {
+              "title": "Stage 5: Won / Lost",
+              "content": "- [ ] Won: Define the handoff process from sales to delivery/onboarding\n- [ ] Lost: Record the reason for every lost deal (price, timing, competitor, no decision, not qualified)\n- [ ] Review lost reasons monthly to identify patterns you can fix\n- [ ] For \"not now\" losses, move to a nurture sequence (see Action 9: Follow-Up Engine)"
+            },
+            {
+              "title": "Build Your Pipeline View",
+              "content": "- [ ] Choose a tool for tracking your pipeline (CRM, spreadsheet, Kanban board - anything visual)\n- [ ] Enter all current prospects into the correct stage\n- [ ] Set a daily or weekly review rhythm to update pipeline status\n- [ ] Calculate your current conversion rates: Lead→Booked, Booked→Showed, Showed→Proposal, Proposal→Won\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Five clearly defined pipeline stages with entry and exit criteria\n- Every current prospect mapped to a stage\n- A visual pipeline view in your chosen tool\n- Conversion rates calculated between each stage\n- A review rhythm to keep the pipeline current"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The pipeline is useless if it is not kept up to date. Push clients to make pipeline review a non-negotiable weekly habit, ideally Monday morning. The most common mistake is letting prospects sit in a stage with no next action. Every prospect needs a next action with a date. If a client says \"I will follow up when they are ready,\" that means the deal is dead - teach them to set a specific follow-up date instead. The conversion rate data is gold. If the bottleneck is Booked→Showed, fix the reminder system. If it is Showed→Proposal, fix the sales call. If it is Proposal→Won, fix the offer or follow-up."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Pipeline Metrics Dashboard",
+          "description": "Track conversion rates at every stage so you can identify the single constraint limiting your growth and focus your improvement efforts there.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple dashboard tracking conversion rates at every stage of your sales pipeline. The purpose is to identify the single constraint limiting your growth right now so you can focus improvement efforts on the one number that matters most, rather than trying to fix everything at once."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Sales is a chain of conversions. Leads become booked calls. Booked calls become attended calls. Attended calls become proposals. Proposals become wins. If you improve the weakest link by even a small percentage, the impact flows through to revenue. But if you do not measure each link, you will either guess wrong about where the problem is or try to improve everything simultaneously and improve nothing. Eli Goldratt's Theory of Constraints applies perfectly to sales: find the bottleneck, fix it, then find the next one."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your 5-Stage Sales Pipeline (4.5 Action 2) set up first. Pull data from the last 30-90 days if available, or start tracking from today.\n\n---"
+            },
+            {
+              "title": "Define Your Core Metrics",
+              "content": "- [ ] Lead Volume: How many new leads enter the pipeline per week/month?\n- [ ] Lead→Booked Rate: What percentage of leads book a call?\n- [ ] Show Rate: What percentage of booked calls are attended?\n- [ ] Proposal Rate: What percentage of attended calls result in a proposal or offer?\n- [ ] Close Rate: What percentage of proposals convert to paying customers?\n- [ ] ⚡ Quick Win: Calculate your overall conversion rate (leads to customers). Even if the stage-by-stage data is rough, knowing your end-to-end rate immediately tells you whether you have a volume problem or a conversion problem."
+            },
+            {
+              "title": "Identify Your Revenue Formula",
+              "content": "- [ ] Write out your revenue equation: Leads x Conversion Rate x Average Deal Value = Revenue\n- [ ] Calculate each number using your current data\n- [ ] Work backwards from your revenue target: how many leads do you need to hit your monthly number?\n- [ ] If the lead volume required is unrealistic, your conversion rates need to improve before you scale lead generation"
+            },
+            {
+              "title": "Build Your Dashboard",
+              "content": "- [ ] Choose a format: spreadsheet, CRM dashboard, whiteboard, or printed scorecard\n- [ ] Track weekly numbers for each pipeline metric\n- [ ] ⚡ Quick Win: A simple spreadsheet with one row per week and columns for each metric is enough. Do not over-engineer this.\n- [ ] Include a rolling 4-week average so you can spot trends rather than reacting to individual weeks\n- [ ] Add your target numbers alongside actuals so gaps are immediately visible\n- [ ] Set up a visual indicator (red/amber/green) for each metric against target"
+            },
+            {
+              "title": "Find Your Single Constraint",
+              "content": "- [ ] Compare conversion rates across stages. The stage with the biggest drop-off is your current bottleneck.\n- [ ] Common bottlenecks and their fixes:\n  - Low Lead→Booked: messaging, targeting, or speed of follow-up\n  - Low Show Rate: reminder system, perceived value of the call, ease of booking\n  - Low Proposal Rate: sales call structure, qualification, or offer-market fit\n  - Low Close Rate: pricing, objection handling, follow-up, or proposal format\n- [ ] Choose ONE metric to focus on improving this month\n- [ ] Set a specific improvement target (e.g. \"increase show rate from 60% to 75%\")\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A working dashboard tracking conversion rates at every pipeline stage\n- Your revenue formula calculated and documented\n- A clear picture of how many leads you need to hit your revenue target\n- Your single biggest constraint identified\n- A specific improvement target set for this month"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Resist the urge to build a complex dashboard. A single sheet of paper on the wall with five numbers updated weekly is more effective than a sophisticated CRM dashboard nobody looks at. The constraint focus is critical. Clients who try to improve all five metrics simultaneously make no progress. Clients who focus on one metric for 4-6 weeks see real movement. If the data does not exist yet, start tracking from today and use the first 30 days as a baseline. Do not wait for perfect data to start making decisions. Connect this to the Leading Indicators action (2.1) so pipeline metrics feed into the broader goal-tracking system."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Core Sales Process",
+      "description": "The systematic approach that works across all mediums.",
+      "actions": [
+        {
+          "number": 4,
+          "title": "Diagnostic Call Framework",
+          "description": "One master script that adapts to phone, Zoom, or in-person: open the conversation, diagnose the problem, paint the desired future, make the offer, and secure commitment.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build one master sales call script that works across phone, Zoom, and in-person meetings. The framework follows five phases: open the conversation, diagnose the problem, paint the desired future, make the offer, and secure commitment. This is not about being scripted or pushy. It is about having a reliable structure so every sales conversation covers the right ground in the right order."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners wing their sales calls. Some talk too much about their product. Some never ask for the sale. Some diagnose the problem brilliantly but forget to make an offer. A framework gives you consistency. It ensures you spend most of the call listening (not pitching), that you understand the prospect's real problem before offering solutions, and that every call ends with a clear next step. The diagnostic approach also positions you as an expert rather than a vendor, because you are leading the conversation rather than reacting to it."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each phase below. Write your version of each section in your own words. Then practise the full flow at least three times before using it live.\n\n---"
+            },
+            {
+              "title": "Phase 1: Open (5 minutes)",
+              "content": "- [ ] Write your opening: set the agenda, explain how the call will work, and get permission to ask questions\n- [ ] Include a rapport-building question that is genuine, not formulaic (avoid \"so, how's the weather?\")\n- [ ] State the outcome of the call clearly: \"By the end, you will know whether we can help and what that looks like\"\n- [ ] ⚡ Quick Win: The single most powerful opening move is to give the prospect control. \"I want to make sure this is useful for you. What would make this call a good use of your time?\" This immediately shifts the dynamic."
+            },
+            {
+              "title": "Phase 2: Diagnose (15-20 minutes)",
+              "content": "- [ ] Prepare 5-7 diagnostic questions that uncover the prospect's current situation, challenges, and root causes\n- [ ] Questions should move from surface to depth: What is happening? How long has it been happening? What have you tried? What is it costing you?\n- [ ] Listen for the emotional driver underneath the logical problem. People buy to solve pain or achieve desire, not to acquire features.\n- [ ] Take notes during this phase. Repeating their own words back to them later is the most powerful selling technique that exists.\n- [ ] Do not offer solutions during this phase. Diagnose first. Prescribe later."
+            },
+            {
+              "title": "Phase 3: Paint the Future (5-10 minutes)",
+              "content": "- [ ] Summarise what you have heard: \"So if I understand correctly, the situation is X, and what that means is Y\"\n- [ ] Ask the prospect to describe what success looks like: \"If we were having this conversation 12 months from now and things had gone well, what would be different?\"\n- [ ] Bridge the gap between their current situation and their desired future. This gap is what your offer fills.\n- [ ] ⚡ Quick Win: Let the prospect sell themselves. The more they talk about what they want, the more committed they become before you even make an offer."
+            },
+            {
+              "title": "Phase 4: Make the Offer (5-10 minutes)",
+              "content": "- [ ] Present your solution in terms of their specific problems and desired outcomes, not your features\n- [ ] Structure the offer clearly: what they get, what it costs, what happens next\n- [ ] Address the obvious objection before they raise it (usually price or time commitment)\n- [ ] Use their own words from Phase 2 to connect the offer to their situation\n- [ ] Include social proof relevant to their situation (a similar client, a relevant result)"
+            },
+            {
+              "title": "Phase 5: Secure Commitment (5 minutes)",
+              "content": "- [ ] Ask for the decision directly. Do not hint or hope. \"Based on everything we have discussed, would you like to go ahead?\"\n- [ ] If yes: define the immediate next step (payment, contract, onboarding call) and complete it on the call if possible\n- [ ] If not now: set a specific follow-up date and action. \"No problem. When would be a good time to revisit this? I will send you X in the meantime.\"\n- [ ] If no: thank them, ask what would need to change for them to reconsider in the future, and add to nurture\n- [ ] Never end a call without a defined next step. \"I will be in touch\" is not a next step.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A written call framework covering all five phases\n- 5-7 diagnostic questions tailored to your prospects\n- A clear offer presentation structure\n- Confidence to ask for the sale directly\n- Every call ending with a defined next step regardless of outcome"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The diagnosis phase is where most clients need the most coaching. Business owners love talking about their solution but hate asking probing questions because it feels intrusive. Reframe it: you cannot help someone you do not understand. A doctor who prescribes without diagnosing is negligent. The same applies in sales. Role-play this framework with clients before they use it live. Record a few practice runs so they can hear how they sound. The most common mistake is rushing through diagnosis to get to the pitch. If anything, slow down the diagnosis and speed up the offer. A well-diagnosed prospect practically closes themselves."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Risk Reversal & Guarantees",
+          "description": "Use guarantees strategically to remove the biggest objection — \"what if it does not work\" — without creating operational nightmares or attracting problem customers.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design a guarantee or risk reversal strategy that removes the \"what if it does not work\" objection from your prospects' minds without creating operational nightmares for your business. The right guarantee makes buying feel safe. The wrong one attracts tyre-kickers and drains your cash. This action helps you find the right balance."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every purchase involves risk. The buyer is trading certain money for an uncertain outcome. The more you can shift that risk from the buyer to yourself, the easier the buying decision becomes. Alex Hormozi calls this \"the grand slam offer\" principle: make the offer so good people feel stupid saying no. But risk reversal is not just about money-back guarantees. It can be performance guarantees, conditional guarantees, milestone-based commitments, or simply removing barriers to getting started. The goal is to answer the prospect's unspoken question: \"What happens if this does not work for me?\""
+            },
+            {
+              "title": "How to Use This",
+              "content": "Think about the specific risks your prospects worry about before buying. Then design a guarantee that directly addresses those fears.\n\n---"
+            },
+            {
+              "title": "Identify Your Buyer's Risks",
+              "content": "- [ ] List the top 3-5 fears or concerns your prospects have before buying\n- [ ] Common fears: it will not work for me, I will waste money, I will waste time, it is not what I expected, I will look foolish, I cannot get out if it is wrong\n- [ ] ⚡ Quick Win: Look at your last 10 lost deals. What reasons did people give for not buying? Those reasons are the risks your guarantee should address.\n- [ ] Rank these fears by frequency and intensity\n- [ ] Note which fears are rational (based on real risk) and which are emotional (based on uncertainty)"
+            },
+            {
+              "title": "Choose Your Guarantee Type",
+              "content": "- [ ] **Unconditional money-back guarantee**: Full refund within a time period, no questions asked. Strongest signal but highest risk to you. Best for: lower-priced products, digital offerings, subscription-based services.\n- [ ] **Conditional guarantee**: Refund or credit if specific conditions are met (e.g. \"If you follow the programme and do not see results in 90 days, we will refund you\"). Protects against tyre-kickers while still shifting risk.\n- [ ] **Performance guarantee**: You commit to a specific measurable outcome. If you do not deliver, you keep working until you do or refund the difference. Best for: consultants, agencies, service providers.\n- [ ] **Milestone guarantee**: Break the engagement into stages with go/no-go decisions. Client can exit after any milestone without further commitment.\n- [ ] **Extended trial or pilot**: Let the client experience a small piece of the full offer before committing. Reduces perceived risk without requiring a formal guarantee."
+            },
+            {
+              "title": "Design Your Specific Guarantee",
+              "content": "- [ ] Choose the guarantee type that best fits your offer and audience\n- [ ] Define the exact terms: what is guaranteed, for how long, under what conditions\n- [ ] Calculate the financial risk to your business. What percentage of clients would you expect to claim?\n- [ ] ⚡ Quick Win: Ask 3 past clients what would have made their buying decision easier. Their answers will tell you exactly what to guarantee.\n- [ ] Test whether the guarantee creates perverse incentives (people buying with the intention to claim)\n- [ ] Write the guarantee in plain language, not legal jargon"
+            },
+            {
+              "title": "Implement and Communicate",
+              "content": "- [ ] Add the guarantee to your sales script at the objection-handling stage\n- [ ] Include it on your website, proposals, and marketing materials\n- [ ] Train anyone who sells for you on how to present the guarantee with confidence\n- [ ] Track claim rates monthly. If claims are above 5-10%, the guarantee terms need tightening or your delivery needs improving.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear understanding of the risks your buyers perceive\n- A specific guarantee designed to address those risks\n- Financial exposure calculated and deemed acceptable\n- The guarantee integrated into your sales process and materials\n- A tracking system for claim rates"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Many clients resist guarantees because they focus on the downside (people claiming refunds). Reframe it: a guarantee that increases conversions by 20% but gets claimed 5% of the time is a massive net win. The other reframe is that if you cannot guarantee your work, what does that say about your confidence in your own product? Conditional guarantees are usually the sweet spot for service businesses. They shift risk while filtering out people who are not serious. Push clients to actually use the guarantee in sales conversations, not just put it on the website. Spoken guarantees convert better than written ones because they feel personal and committed."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Objection Handling System",
+          "description": "Prepare and practice responses to the five objections that appear in 80% of sales conversations, including which ones to handle before the call and which ones to address live.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Prepare and practise responses to the five objections that appear in roughly 80% of all sales conversations. Instead of being caught off guard each time, you will build a documented response for each objection and rehearse until the responses feel natural. The goal is not to \"overcome\" objections through manipulation but to genuinely address legitimate concerns so the prospect can make an informed decision."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Objections are not rejection. They are requests for more information or reassurance. The prospect who objects is still engaged. The one who says nothing and disappears is the one you have lost. Most salespeople (and business owners who sell) either freeze when they hear an objection, get defensive, or start discounting. All three responses kill deals. A prepared, empathetic response keeps the conversation moving and often reveals the real concern behind the stated objection."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each of the five universal objections below. Write your specific responses in your own words and practise them until they feel natural, not robotic.\n\n---"
+            },
+            {
+              "title": "Step 1: Map Your Common Objections",
+              "content": "- [ ] Review your last 20 sales conversations and list every objection you heard\n- [ ] Group similar objections together (most will fall into the five categories below)\n- [ ] ⚡ Quick Win: Note the one objection that throws you off most. Write a response for that one first.\n- [ ] Identify any objections unique to your industry or offer that do not fit the five universals"
+            },
+            {
+              "title": "Step 2: Build Responses to the Five Universal Objections",
+              "content": "### \"It's too expensive\" (Price)\n\n- [ ] Write a response that reframes cost in terms of value, ROI, or cost of inaction\n- [ ] Prepare a comparison: what is the cost of not solving this problem for another 6-12 months?\n- [ ] If relevant, offer payment terms or a smaller starting package rather than discounting\n\n### \"I need to think about it\" (Stall)\n\n- [ ] Write a response that respects the request while uncovering the real concern underneath\n- [ ] Ask: \"Of course. What specifically do you want to think about? Is it the investment, the timing, or whether this is the right approach?\"\n- [ ] Set a specific follow-up date. \"Thinking about it\" with no deadline means the deal dies quietly.\n\n### \"I need to talk to my partner/team\" (Authority)\n\n- [ ] Write a response that helps them sell it internally rather than trying to bypass the decision-maker\n- [ ] Offer to join a call with the other decision-maker or send a summary they can share\n- [ ] Ask what the other person's main concern is likely to be, then address it proactively\n\n### \"The timing is not right\" (Priority)\n\n- [ ] Write a response that explores whether timing is a real constraint or a polite deflection\n- [ ] Ask: \"What would need to change for the timing to be right?\" If they cannot answer specifically, timing is not the real issue.\n- [ ] If timing is genuinely bad, propose a start date that works and get commitment now\n\n### \"I've tried something like this before and it did not work\" (Scepticism)\n\n- [ ] Write a response that acknowledges their experience without dismissing it\n- [ ] Ask what specifically did not work and why. Then show how your approach addresses that gap.\n- [ ] Use social proof from a client who had the same concern and succeeded"
+            },
+            {
+              "title": "Step 3: Practise and Refine",
+              "content": "- [ ] Role-play each objection with a colleague, partner, or coach until responses feel conversational\n- [ ] Record yourself delivering each response and listen back critically\n- [ ] ⚡ Quick Win: Practise the \"think about it\" response first. This is the most common objection and the one most people handle worst.\n- [ ] Create a one-page cheat sheet with your five responses for reference before calls\n- [ ] After each real sales call, note which objections came up and how your response worked. Refine based on what actually happens.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Written responses to the five universal sales objections\n- Responses practised until they feel natural and conversational\n- A one-page reference sheet for pre-call preparation\n- A process for capturing new objections and building responses over time\n- Increased confidence in handling pushback without freezing, discounting, or getting defensive"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Objection handling is a skill, which means it improves with deliberate practice, not just experience. Most clients have heard the same objections dozens of times but have never written down a good response. The exercise of writing it out is transformative. Watch for clients who interpret \"handling objections\" as \"pressuring people into buying.\" That is not the goal. The goal is to make sure the prospect has all the information they need to make a good decision for themselves. If the answer is genuinely no, let them go gracefully. The follow-up process (Action 9) will catch the ones who need more time. Role-play is the key coaching tool here. Do not just talk about it. Actually play the prospect and throw objections at them."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Conversion Optimization",
+      "description": "Improving show rates, close rates, and deal sizes.",
+      "actions": [
+        {
+          "number": 7,
+          "title": "Async-to-Call Flow",
+          "description": "Use DM, email, and text to start conversations, qualify prospects, and book calls — without trying to close deals through messaging.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a structured process for using DMs, email, and text messages to start conversations, qualify prospects, and book calls - without trying to close deals through messaging. Async channels are brilliant for opening doors and filtering prospects. They are terrible for closing. This action maps the handoff from written conversation to live call so you get the right people on calls and waste less time on unqualified ones."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Two mistakes dominate async selling. First, trying to close through DMs or email, which leads to long message threads that go nowhere because you cannot read tone, handle objections, or build trust in real time. Second, jumping to \"let's get on a call\" too early, which feels pushy and scares off prospects who are not ready. The async-to-call flow solves both problems. It gives you a sequence: start the conversation casually, establish relevance, qualify interest, then transition to a call when the prospect is warm and ready."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map your async flow for each channel you use (DM, email, text). Follow the steps below in order.\n\n---"
+            },
+            {
+              "title": "Step 1: Define Your Async Channels",
+              "content": "- [ ] List every async channel where you interact with prospects (LinkedIn DM, Instagram DM, email, SMS, WhatsApp, Facebook Messenger, etc.)\n- [ ] For each channel, note the typical conversation style (formal vs. casual, long vs. short messages)\n- [ ] ⚡ Quick Win: Pick your highest-volume async channel and build the flow for that one first. Add others later.\n- [ ] Identify which channels generate the most booked calls currently"
+            },
+            {
+              "title": "Step 2: Build Your Opening Sequence",
+              "content": "- [ ] Write 3-5 opening message templates for each channel (not copy-paste scripts, but frameworks you personalise)\n- [ ] First message purpose: start a relevant conversation, not pitch or sell\n- [ ] Good openers: react to something they posted, ask a genuine question, share something useful, reference a mutual connection\n- [ ] Bad openers: \"Hi, I help businesses like yours...\" or anything that sounds like it was sent to 500 people\n- [ ] ⚡ Quick Win: Go through your last 10 successful conversations that led to calls. What did the opening message look like? Use that pattern."
+            },
+            {
+              "title": "Step 3: Build Your Qualification Flow",
+              "content": "- [ ] After the conversation is flowing, ask 2-3 qualifying questions through messaging:\n  - What is their situation? (Are they a fit for what you offer?)\n  - What have they tried? (Are they problem-aware and solution-seeking?)\n  - What is their timeline? (Are they ready to act or just browsing?)\n- [ ] If qualified, transition to a call. If not, either nurture or gracefully exit.\n- [ ] Write your transition phrase: the message that moves from async chat to booked call"
+            },
+            {
+              "title": "Step 4: Design the Call Transition",
+              "content": "- [ ] Write 2-3 transition messages that naturally move from messaging to a call\n- [ ] Good transitions: \"This is getting interesting - would it be easier to jump on a quick call to dig into this properly?\" or \"I think I can help but I would need to understand more. Fancy a 20-minute call this week?\"\n- [ ] Include a direct booking link or propose specific times (reduce friction)\n- [ ] If they hesitate, offer a low-commitment framing: \"No pitch, just a conversation to see if it makes sense\"\n- [ ] Once booked, send a confirmation with date, time, and what you will cover"
+            },
+            {
+              "title": "Step 5: Handle Common Async Objections",
+              "content": "- [ ] \"Can you just send me more info?\" - Respond with a short summary and restate the call offer. Do not send a full proposal over message.\n- [ ] \"I'm not ready yet\" - Respect it, offer something useful (article, resource), and set a future follow-up date\n- [ ] \"What does it cost?\" - Give a range if appropriate, then pivot: \"The exact investment depends on your situation, which is why the call is useful\"\n- [ ] Radio silence after initial response - Send one follow-up after 3-5 days, then move to nurture\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented async-to-call flow for your primary channel\n- Opening message templates you can personalise quickly\n- A qualification framework that filters before the call, not during it\n- Transition messages that move warm prospects to booked calls naturally\n- Fewer dead-end message threads and more qualified calls on your calendar"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest mindset shift for clients is accepting that the purpose of messaging is to book the call, not to sell. Many business owners write long, detailed DMs trying to convince someone to buy. That almost never works. Keep messages short, conversational, and focused on getting to a live conversation. The qualification step is critical. Without it, clients end up on calls with people who were never going to buy. Teach clients to see async as a filter, not a sales channel. The metric that matters is \"messages sent to calls booked\" ratio. If it takes 50 DMs to book one call, the opening messages need work. If calls are booked but prospects are unqualified, the qualification questions need work."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Show Rate System",
+          "description": "The reminder sequences, incentives, and personal touches that turn booked calls into attended calls, because you cannot close people who do not show up.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a reminder and engagement system that turns booked calls into attended calls. You will design a sequence of touchpoints between booking and the call that increases perceived value, builds anticipation, and makes it easy for the prospect to show up. The target is a show rate of 80% or higher."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Every no-show is wasted pipeline. You generated the lead, had the conversation, booked the call, and then the prospect did not turn up. If your show rate is 60%, you are losing 40% of your qualified pipeline to a problem that is almost entirely solvable with systems. A 20-percentage-point improvement in show rate has the same revenue impact as generating 20% more leads, but it costs almost nothing. This is one of the highest-leverage fixes in any sales process."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map the time between booking and the call. Then build touchpoints at each gap.\n\n---"
+            },
+            {
+              "title": "Step 1: Measure Your Current Show Rate",
+              "content": "- [ ] Pull data from the last 30-60 days: how many calls were booked vs. how many were attended?\n- [ ] Calculate your show rate: (Attended / Booked) x 100\n- [ ] ⚡ Quick Win: If you do not track this, start today. Even a simple tally on a notepad gives you the number within two weeks.\n- [ ] Set a target show rate (80% is good, 85%+ is excellent)"
+            },
+            {
+              "title": "Step 2: Build Your Confirmation Sequence",
+              "content": "- [ ] Immediately after booking: send a confirmation email or message with date, time, link/location, and what to expect\n- [ ] Include one sentence on the value of the call: what they will get from showing up\n- [ ] 24 hours before the call: send a reminder via the channel they are most likely to see (email, SMS, or DM)\n- [ ] 1 hour before the call: send a short \"looking forward to speaking\" message\n- [ ] ⚡ Quick Win: Add a personal touch to the 24-hour reminder. \"Hi [Name], looking forward to our call tomorrow at 2pm. I have been thinking about [specific thing they mentioned] and have some ideas.\" Personalisation dramatically increases show rates."
+            },
+            {
+              "title": "Step 3: Increase Perceived Value",
+              "content": "- [ ] Send a short piece of content between booking and the call (article, video, case study) that relates to their situation\n- [ ] Frame it as \"I thought this might be useful before our conversation\"\n- [ ] This positions you as helpful before they have paid anything and increases their investment in the relationship\n- [ ] If appropriate, send a brief pre-call questionnaire (2-3 questions max) so they start thinking about their problem before the call"
+            },
+            {
+              "title": "Step 4: Reduce Friction",
+              "content": "- [ ] Make the call link or location easy to find in every message (do not make them search for it)\n- [ ] If using Zoom, include the link in the calendar invite, the confirmation email, and the reminder\n- [ ] Offer easy rescheduling rather than cancellation. Include a reschedule link in your reminders.\n- [ ] If a prospect reschedules, treat it as a positive signal, not a negative one. They are still engaged."
+            },
+            {
+              "title": "Step 5: Handle No-Shows",
+              "content": "- [ ] If someone does not show, wait 5 minutes then send a message: \"Hi [Name], I had us down for a call just now. No worries if something came up. Here is my calendar link to rebook.\"\n- [ ] Follow up once more 24 hours later if no response\n- [ ] After two no-shows with no communication, move to nurture rather than continuing to chase\n- [ ] Track no-show reasons when given. If multiple people cite the same reason, there is a systemic issue to fix.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented reminder sequence covering booking confirmation through to call time\n- A pre-call engagement touchpoint that increases perceived value\n- Easy access to call links and rescheduling options in every communication\n- A no-show follow-up process that recovers missed calls\n- Show rate tracked weekly with a clear improvement target"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Show rate problems are almost always system problems, not lead quality problems. If the prospect was interested enough to book, they are interested enough to attend. They no-show because they forgot, something came up, or they did not feel the call was important enough to prioritise. Your system needs to solve all three: reminders for forgetting, easy rescheduling for schedule conflicts, and value framing for priority. The pre-call content is underused by most businesses. A client who arrives on the call having read or watched something you sent is significantly more engaged and converts at a higher rate. Push clients to automate this sequence so it runs without manual effort."
+            }
+          ]
+        },
+        {
+          "number": 9,
+          "title": "Follow-Up Engine",
+          "description": "What happens to prospects who do not buy immediately: the systematic nurture process that converts maybes into yeses over time.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a systematic nurture process that converts \"not now\" prospects into future customers. Most sales are not lost. They are just not won yet. This action creates a structured follow-up sequence for prospects who showed interest but did not buy, so they stay warm until the timing is right. You will design touchpoints across days, weeks, and months that keep you top of mind without being annoying."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Research consistently shows that 80% of sales require five or more follow-ups, yet most salespeople stop after one or two. The reason is simple: follow-up feels awkward. Without a system, you rely on memory and motivation, both of which fade quickly. A Follow-Up Engine removes the personal discomfort by making follow-up automatic and value-driven rather than \"just checking in.\" The revenue sitting in your unconverted pipeline is often larger than the revenue you need from new leads. Activating it is the cheapest growth strategy available."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Categorise your unconverted prospects, then build a follow-up sequence for each category.\n\n---"
+            },
+            {
+              "title": "Step 1: Categorise Your Unconverted Prospects",
+              "content": "- [ ] Pull a list of every prospect who engaged but did not buy in the last 6 months\n- [ ] Sort them into categories:\n  - Hot: interested but timing or budget was wrong (follow up within 1-2 weeks)\n  - Warm: engaged but not convinced (follow up within 2-4 weeks)\n  - Cool: early-stage interest, did not progress (monthly nurture)\n- [ ] ⚡ Quick Win: Identify the 5 hottest unconverted prospects right now. Send each one a personal message today. At least one will re-engage.\n- [ ] Remove anyone who explicitly said no or asked not to be contacted"
+            },
+            {
+              "title": "Step 2: Build Your Short-Term Follow-Up (Days 1-14)",
+              "content": "- [ ] Day 1 after the call: send a thank-you message summarising what you discussed and the offer\n- [ ] Day 3: share a relevant piece of content, case study, or testimonial related to their situation\n- [ ] Day 7: check in with a specific question, not \"just following up.\" Ask about something they mentioned on the call.\n- [ ] Day 14: make a direct but low-pressure offer. \"I have a slot opening next week. Want to revisit this?\"\n- [ ] If no response after Day 14, move to the medium-term sequence"
+            },
+            {
+              "title": "Step 3: Build Your Medium-Term Follow-Up (Weeks 3-12)",
+              "content": "- [ ] Every 2-3 weeks, send one touchpoint that provides value rather than asks for a sale\n- [ ] Touchpoint types: useful article, industry insight, relevant case study, event invitation, tool or resource\n- [ ] Every third touchpoint, include a soft call-to-action: \"If your situation has changed, I would love to pick up where we left off\"\n- [ ] ⚡ Quick Win: Create a library of 10-12 follow-up content pieces you can rotate. Build it once, use it for every prospect.\n- [ ] Track opens and responses. If someone re-engages, move them back to the short-term sequence."
+            },
+            {
+              "title": "Step 4: Build Your Long-Term Nurture (3-12 months)",
+              "content": "- [ ] Monthly touchpoint: newsletter, LinkedIn content, or personal message\n- [ ] Quarterly check-in: a brief personal note referencing their situation. \"Hi [Name], we spoke in January about X. Has anything changed on that front?\"\n- [ ] Annual triggers: end of financial year, budget planning season, New Year, industry events\n- [ ] Keep the tone helpful and patient. Long-term nurture is about being present when they are ready, not pressuring them to be ready now."
+            },
+            {
+              "title": "Step 5: Automate What You Can",
+              "content": "- [ ] Set up email sequences for the short and medium-term follow-up in your CRM or email tool\n- [ ] Use calendar reminders for personal touchpoints that cannot be automated\n- [ ] Create templates for each follow-up type so sending takes minutes, not hours\n- [ ] Review your follow-up pipeline weekly: who is in which stage, who has re-engaged, who needs a personal touch\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every unconverted prospect categorised and in a follow-up sequence\n- A documented short-term sequence (Days 1-14) for recent near-misses\n- A medium-term value-driven nurture flow (Weeks 3-12)\n- A long-term monthly nurture keeping you top of mind for 3-12 months\n- Automated sequences for repeatable touchpoints\n- A content library of 10-12 follow-up assets"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Follow-up is where most clients feel uncomfortable, and that discomfort is costing them serious money. Reframe follow-up as a service, not an imposition. If you genuinely believe your offer helps people, following up is the responsible thing to do. The prospect is busy and forgetful, not uninterested. The biggest implementation barrier is building the content library. Help clients create it in a single session rather than trying to build it one piece at a time. Once the library exists, follow-up becomes easy. Track \"reactivation rate\" as a key metric: what percentage of nurtured prospects eventually buy. Even 10-15% reactivation from a systematic follow-up engine represents significant revenue from prospects who would otherwise have been lost."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Sales Team Development",
+      "description": "Scaling sales beyond just the founder.\n\n---",
+      "actions": [
+        {
+          "number": 10,
+          "title": "Call Recording & Coaching",
+          "description": "Record every sales conversation, review wins and losses against your framework, and improve one specific behaviour per week per salesperson.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a system to record every sales conversation, review wins and losses against your Diagnostic Call Framework, and improve one specific behaviour per week per salesperson. This is not surveillance. It is the same deliberate practice approach that elite performers use in every field: record, review, identify one thing to improve, practise it, repeat."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Sales skill improves through reviewed repetition, not just raw experience. A salesperson who makes 100 calls without reviewing any of them will repeat the same mistakes for years. A salesperson who reviews 5 calls per week and fixes one specific issue each time will be dramatically better within a month. Recording also eliminates the \"I think the call went well\" problem. Memory is unreliable. The recording tells you exactly what happened, and it is often very different from what you remember."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up recording technology, then build a weekly review habit. Follow the steps below in order.\n\n---"
+            },
+            {
+              "title": "Step 1: Set Up Recording",
+              "content": "- [ ] Choose a recording tool: Zoom records natively, phone calls can use apps like Otter.ai or dedicated call recording software\n- [ ] ⚡ Quick Win: If you use Zoom, turn on cloud recording now. It takes 30 seconds and captures every call automatically.\n- [ ] Ensure you comply with recording laws in your jurisdiction (in the UK, inform the other party at the start of the call)\n- [ ] Create a simple filing system: date, prospect name, outcome (won/lost/pending)\n- [ ] Set up automatic transcription if your tool supports it (makes review faster)"
+            },
+            {
+              "title": "Step 2: Build Your Review Framework",
+              "content": "- [ ] Create a scorecard based on your Diagnostic Call Framework (Action 4) with key behaviours to rate:\n  - Did you open by setting an agenda and getting permission?\n  - Did you ask diagnostic questions before presenting solutions?\n  - Did you listen more than you talked? (Aim for 70/30 prospect/seller split)\n  - Did you uncover the emotional driver, not just the logical problem?\n  - Did you present the offer in terms of their specific situation?\n  - Did you ask for the decision directly?\n  - Did the call end with a clear next step?\n- [ ] Rate each behaviour 1-5 on every reviewed call\n- [ ] ⚡ Quick Win: Review your last recorded call right now against this scorecard. You will immediately spot 2-3 things you do well and 1-2 that need work."
+            },
+            {
+              "title": "Step 3: Establish the Weekly Review Rhythm",
+              "content": "- [ ] Block 30 minutes per week for call review (Friday afternoon works well)\n- [ ] Review at least 2 calls per week: one win and one loss\n- [ ] For wins: identify what you did well so you can repeat it deliberately\n- [ ] For losses: identify the moment the deal started slipping and what you could have done differently\n- [ ] If you have a sales team, review one call per salesperson per week as a coaching exercise"
+            },
+            {
+              "title": "Step 4: Focus on One Behaviour at a Time",
+              "content": "- [ ] From your review, identify the single behaviour that would make the biggest difference if improved\n- [ ] Make that behaviour your focus for the entire week. Before every call, remind yourself of the one thing you are working on.\n- [ ] Track whether the behaviour improves across the week\n- [ ] Next week, pick a new behaviour or continue with the same one if it is not yet consistent\n- [ ] Keep a log of behaviours worked on and progress made\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every sales call recorded and filed consistently\n- A scorecard for evaluating calls against your framework\n- A weekly review habit with at least 2 calls reviewed per week\n- One specific improvement focus per week per salesperson\n- A log showing skill progression over time"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Recording calls is one of the most resisted and most effective coaching tools available. Clients hate hearing themselves on tape. Push through the discomfort. The insight is worth it. Keep the review session positive: start with what went well, then identify one improvement area. Never review a call by listing everything wrong. That destroys confidence. The one-behaviour-per-week rule is essential. Trying to fix three things simultaneously means fixing none of them. If you coach a client's sales team, use call recordings in group sessions. Hearing a colleague's great call teaches faster than any training manual. Just make sure the culture is supportive, not judgemental. Connect this to the Diagnostic Call Framework (Action 4) so the review scorecard matches the call structure."
+            }
+          ]
+        },
+        {
+          "number": 11,
+          "title": "Sales Training System",
+          "description": "Onboard new salespeople with scripts, role-play scenarios, and a 90-day development plan so they can hit targets quickly.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build an onboarding and development system for new salespeople that includes scripts, role-play scenarios, and a 90-day development plan. The goal is to get a new salesperson from zero to competent in 90 days without relying on \"shadow me and figure it out.\" This system makes your sales knowledge transferable so you are not the only person who can sell effectively."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses hire salespeople and throw them in the deep end. \"Here is a phone, here are some leads, go sell.\" The result is slow ramp-up, inconsistent performance, and high turnover. A structured training system solves all three. It compresses the learning curve from 6-12 months to 90 days. It creates consistency because everyone learns the same framework. And it reduces turnover because people who feel supported and competent stay longer than those who feel lost and failing."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Diagnostic Call Framework (Action 4), Objection Handling System (Action 6), and Call Recording system (Action 10) in place before building this. Work through the sections below.\n\n---"
+            },
+            {
+              "title": "Step 1: Document Your Sales Knowledge",
+              "content": "- [ ] Write out your complete sales script based on the Diagnostic Call Framework\n- [ ] Document your product knowledge: what you sell, who it is for, what problems it solves, pricing, FAQs\n- [ ] Create a \"competitor cheat sheet\" covering the top 3-5 alternatives prospects might consider and how you compare\n- [ ] ⚡ Quick Win: Record yourself doing a mock sales call using your framework. This single recording becomes the most valuable training asset you own.\n- [ ] Compile 3-5 examples of great calls (from your recordings) that new hires can study"
+            },
+            {
+              "title": "Step 2: Build Role-Play Scenarios",
+              "content": "- [ ] Create 5-7 realistic prospect scenarios covering different industries, objections, and personality types\n- [ ] For each scenario, write a one-paragraph brief the role-player uses to \"become\" the prospect\n- [ ] Include at least one scenario per universal objection (price, timing, authority, stall, scepticism)\n- [ ] Build in a \"difficult prospect\" scenario for advanced practice (hostile, dismissive, or constantly interrupting)\n- [ ] ⚡ Quick Win: Create one role-play scenario based on your most common prospect type. You can use this in hiring interviews to assess sales potential."
+            },
+            {
+              "title": "Step 3: Design the 90-Day Development Plan",
+              "content": "### Week 1-2: Foundation\n\n- [ ] Product knowledge training: what you sell, how it works, who it helps, results achieved\n- [ ] Study the sales script and Diagnostic Call Framework\n- [ ] Listen to 10 recorded calls (mix of wins and losses)\n- [ ] Shadow 5 live calls with the business owner or senior salesperson\n\n### Week 3-4: Guided Practice\n\n- [ ] Daily role-play sessions (15-20 minutes each) working through all scenarios\n- [ ] First supervised live calls with coaching debrief after each one\n- [ ] Begin handling inbound enquiries with support available\n- [ ] Weekly review against the call scorecard (Action 10)\n\n### Month 2: Supervised Selling\n\n- [ ] Full call volume with weekly call review and coaching\n- [ ] Focus on one skill improvement per week\n- [ ] Track conversion metrics against team benchmarks\n- [ ] Introduce objection handling practice using real scenarios from their calls\n\n### Month 3: Independent Selling\n\n- [ ] Full autonomy with continued weekly review\n- [ ] Performance compared against targets with clear feedback\n- [ ] Identify whether the new hire is on track, needs additional support, or is not a fit\n- [ ] End-of-90-days review: decision to confirm, extend probation, or part ways\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented sales training package covering scripts, product knowledge, and competitor information\n- 5-7 role-play scenarios for practice and assessment\n- A structured 90-day onboarding plan with clear milestones\n- Faster ramp-up time for new salespeople\n- Consistent sales approach across the team"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part for business owners is documenting what they do instinctively. They have sold successfully for years but cannot explain their process because it feels intuitive. The recording exercise (recording themselves doing a mock call) forces the tacit knowledge into explicit form. Push for it. Role-play resistance is also common. Adults feel silly pretending to be prospects. Normalise it by doing it yourself first. The 90-day timeline is a guideline, not a rigid rule. Some people ramp faster, some slower. The key is having clear milestones so you know whether someone is on track rather than guessing. If a new hire is not showing improvement by the end of Month 2, it is usually a fit issue rather than a training issue."
+            }
+          ]
+        },
+        {
+          "number": 12,
+          "title": "Setter & Closer Structure",
+          "description": "When you are ready to scale beyond doing all the selling yourself, how to split lead qualification from deal closing and route the best prospects to your best closers.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design the structure for splitting lead qualification (setting) from deal closing when you are ready to scale beyond doing all the selling yourself. A setter qualifies prospects, books calls, and ensures only the right people reach the closer. A closer runs the diagnostic call, makes the offer, and wins the deal. This division lets you handle more volume, reduces wasted time on unqualified prospects, and creates a clear career path for your sales team."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "In early-stage businesses, the owner does everything: finds leads, qualifies them, books calls, runs calls, closes deals, and follows up. That works until it does not. The ceiling is typically 15-20 sales conversations per week before quality drops. Beyond that, you need to split the role. The setter-closer model is the most common and effective way to do this. It works because each role requires different skills. Setting requires speed, volume, and friendly persistence. Closing requires depth, empathy, and commercial acumen. Few people excel at both."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Only move to a setter-closer model when you have a documented sales process (Actions 1-6) and enough lead volume to justify the split. Work through the checklist below to design the structure.\n\n---"
+            },
+            {
+              "title": "Assess Readiness",
+              "content": "- [ ] Confirm you have a documented sales process that someone else can follow\n- [ ] Calculate your current weekly sales call volume. If it is under 10 per week, you probably do not need this yet.\n- [ ] Calculate how much of your selling time goes to qualification vs. closing. If more than 40% is qualification, the split will create immediate leverage.\n- [ ] ⚡ Quick Win: Track your time for one week. Log every sales-related activity and categorise it as setting (qualification, booking, admin) or closing (running calls, proposals, negotiation). The ratio tells you exactly where the bottleneck is."
+            },
+            {
+              "title": "Define the Setter Role",
+              "content": "- [ ] Write a clear job description: what setters do, what they do not do, and how they are measured\n- [ ] Core setter activities: respond to inbound leads, conduct outbound outreach, qualify using 2-3 key questions, book calls for closers\n- [ ] Setters should NOT: make offers, discuss pricing, send proposals, or try to close\n- [ ] Define qualification criteria: what makes a prospect qualified to be booked with a closer?\n- [ ] Set setter KPIs: number of conversations started, qualification rate, calls booked per week, show rate of booked calls"
+            },
+            {
+              "title": "Define the Closer Role",
+              "content": "- [ ] Write a clear job description: what closers do, what they do not do, and how they are measured\n- [ ] Core closer activities: run diagnostic calls, present offers, handle objections, close deals, manage proposal follow-up\n- [ ] Closers should NOT: prospect, respond to initial enquiries, or handle admin\n- [ ] Set closer KPIs: calls attended, proposal rate, close rate, average deal value, revenue per month"
+            },
+            {
+              "title": "Design the Handoff Process",
+              "content": "- [ ] Define the information the setter passes to the closer before each call (prospect name, company, situation summary, key pain points, qualification notes)\n- [ ] Choose a format: CRM notes, shared document, Slack message, or handoff form\n- [ ] ⚡ Quick Win: Create a simple one-page handoff form with 5 fields. Keep it fast for the setter to complete and useful for the closer to review.\n- [ ] Set a standard: closers review the handoff notes before every call so they walk in prepared\n- [ ] Build a feedback loop: closers tell setters when a booked prospect was not actually qualified, so qualification criteria improve over time"
+            },
+            {
+              "title": "Set Compensation Structure",
+              "content": "- [ ] Decide how setters are paid: base salary + bonus per qualified booking, or base + commission on deals that close from their bookings\n- [ ] Decide how closers are paid: base salary + commission on closed deals, or higher base with smaller bonus\n- [ ] Align incentives: setters should be rewarded for quality (bookings that show up and convert), not just volume\n- [ ] Closers should be rewarded for revenue, not just close rate (prevents cherry-picking easy deals)\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear decision on whether you are ready for the setter-closer split\n- Written role definitions for both setter and closer positions\n- Qualification criteria that filter prospects before they reach a closer\n- A documented handoff process ensuring closers are prepared for every call\n- A compensation structure that aligns incentives with business outcomes"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Timing matters. Clients who split too early create overhead without enough volume to justify it. Clients who split too late burn out and their close rate drops because they are exhausted from doing everything. The sweet spot is usually when the owner is consistently doing 15+ sales conversations per week and growth is limited by their available time. The first hire should usually be a setter, not a closer. It is easier to find and train someone to qualify and book calls than to close. The owner stays as the closer until the second sales hire. Common mistakes: setters who over-qualify (filtering out good prospects) and closers who blame setters for lead quality rather than improving their own conversion. The feedback loop between roles is what makes the system work. Without it, setter and closer end up in conflict rather than collaboration."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+{
+  "ref": "4.0",
+  "level": 4,
+  "area": 0,
+  "name": "Leadership",
+  "subtitle": "Level 4 · Overseer · Owner Performance",
+  "whatThisIs": "Leadership is not about being louder or working harder. It is about shifting from executing to elevating. Your role is no longer to do the work, it is to set the standard, make the decisions, and model the behaviours that everyone else follows.\n\nAt Level 4, personal productivity matters less than organisational clarity. You cannot scale by being better at your job. You scale by being better at defining what good looks like, then helping other people get there. This means influence replaces control, and systems replace heroics.\n\nThis playbook is about you becoming the leader your business needs, not just the expert who started it. It covers how you think, how you decide, and how you show up when the pressure is on.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You are still the person everyone comes to for every decision, no matter how small. Your team waits for you to tell them what to do instead of figuring it out themselves. When things go wrong, you jump in to fix them personally instead of addressing why they went wrong. You say you want people to take ownership but you keep taking it back from them. Your mood and stress levels dictate the whole team's energy."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have started delegating but you struggle to let go fully. Sometimes you model great leadership, other times you revert to old habits under pressure. Your team respects you but they are not always clear on your expectations. You make good decisions when you have time to think, but you still react poorly when caught off guard. You know what kind of leader you want to be but you are not consistent about it."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your team knows exactly what you stand for and what you expect. They make decisions confidently because they understand your framework and values. When problems arise, they bring you solutions, not just problems. You respond to pressure with calm clarity, not reactive emotion. People describe you as predictable, not boring, but consistent in your standards and responses. The business runs smoother when you are around, but it does not fall apart when you are not."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Where are you still operating instead of leading? Look at your calendar from last week. How much time did you spend doing work that someone else should be doing versus setting direction, making decisions, or developing people? If you are still the primary executor in any area, that area cannot scale past you.",
+    "What behaviours do you consistently model? Your team learns more from what you do than what you say. When you are stressed, how do you behave? When you make mistakes, how do you handle them? When someone disappoints you, how do you respond? These moments define your leadership more than any speech or meeting.",
+    "How are strategic decisions evaluated and made? Do you have a clear framework for making big decisions, or do you go with gut feel every time? Can your team predict how you will approach a decision, or does it feel random to them? Good leaders have consistent decision-making principles that their team can learn and apply.",
+    "How aware are you of your impact under pressure? The real test of leadership is not how you act when things are going well, it is how you act when everything is on fire. Do you become the calm in the storm, or do you add to the chaos? Your team takes their emotional cues from you, especially during difficult times.",
+    "Would your team describe you as predictable in your standards? This is not about being boring — it is about being consistent. Do people know what you will celebrate and what you will not tolerate? Can they predict your reaction to different situations based on your values? Predictable standards create psychological safety and clear expectations."
+  ],
+  "actionsIntro": "When you open this playbook in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Write down your three non-negotiable leadership standards, the behaviours you will model regardless of pressure or circumstances. Share them with your team.",
+    "This week: Identify one area where you are still doing work instead of directing work. Schedule a conversation with someone to start transferring that responsibility.",
+    "This week: Next time someone brings you a problem, ask \"What do you think we should do?\" before giving your opinion. Practice developing their decision-making instead of making the decision for them."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.9",
+      "description": ""
+    },
+    {
+      "ref": "4.8",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    },
+    {
+      "ref": "3.0",
+      "description": ""
+    },
+    {
+      "ref": "4.9",
+      "description": ""
+    }
+  ],
+  "actions": [
+    {
+      "number": 1,
+      "title": "Leadership Philosophy",
+      "description": "Leadership Philosophy",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Write a one-page leadership philosophy that captures your core beliefs about how you lead, what you stand for, and what you will not tolerate. This is not a mission statement for the wall. It is an internal compass that guides every decision you make, every hire, every difficult conversation, and every trade-off. Think of it as your leadership operating manual - the thing you come back to when the pressure is on and clarity is hard to find."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Most business owners lead reactively. They respond to whatever is loudest, adjust their style depending on who is in the room, and make inconsistent decisions because they have never defined what consistency looks like. A written leadership philosophy forces you to confront what you actually believe, not what sounds good. It also gives your team something predictable to work with. People perform better when they know what their leader values, rewards, and will not accept."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Block 60-90 minutes of uninterrupted time. Answer each question honestly. Do not write what you think you should believe. Write what you actually believe. Then refine it into a clear, usable document.\n\n---"
+        },
+        {
+          "title": "Core Beliefs",
+          "content": "- [ ] **Write down 3-5 things you believe about leadership** - What have you learned from the best (and worst) leaders you have worked with? What principles do you come back to again and again?\n- [ ] **Define what \"good\" looks like in your business** - What does a well-run team look like to you? What does a good day feel like? What would you see, hear, and measure?\n- [ ] **Identify your leadership strengths** - Where do you naturally excel as a leader? Be specific. \"Good communicator\" is too vague. \"I give clear, direct feedback in the moment\" is useful.\n- [ ] ⚡ Quick Win: **Write one sentence that captures your leadership identity** - \"I am the kind of leader who...\" Finish that sentence. This becomes your anchor."
+        },
+        {
+          "title": "Non-Negotiable Standards",
+          "content": "- [ ] **List 3-5 behaviours you will always model** - These are the things your team should expect from you every single day. If you would not want your team to copy a behaviour, it should not be on this list.\n- [ ] **List 3-5 things you will never tolerate** - Be specific. \"Dishonesty\" is a start. \"Hiding bad news until it becomes a crisis\" is better. These become your hard boundaries.\n- [ ] **Define how you will handle it when standards are broken** - What happens the first time? The second time? Clarity here prevents inconsistency later."
+        },
+        {
+          "title": "Communication Commitments",
+          "content": "- [ ] **Write down how you will communicate expectations** - Will you tell people directly? Put it in writing? Both? How will you make sure people know what you expect before you judge them for missing it?\n- [ ] **Define your feedback approach** - How quickly will you give feedback? Privately or publicly? What is your style - direct, coaching, questioning?\n- [ ] ⚡ Quick Win: **Identify one communication habit you will start this week** - Pick the easiest one and build from there."
+        },
+        {
+          "title": "Review and Accountability",
+          "content": "- [ ] **Share your philosophy with at least one person** - A business partner, coach, or trusted team member. Saying it out loud makes it real.\n- [ ] **Set a quarterly review date** - Your philosophy should evolve as you grow. Review it every quarter and ask: \"Am I living this?\"\n- [ ] **Ask your team for honest feedback** - Do they experience you the way you intend? The gap between intent and impact is where the real growth happens.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A written document that captures your leadership beliefs in your own words\n- Clear non-negotiable standards that you and your team can point to\n- Greater consistency in how you lead, especially under pressure\n- A reference point for hiring, firing, promoting, and having difficult conversations\n- Reduced decision fatigue because your principles do the filtering"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This action often surfaces uncomfortable truths. Many business owners discover a gap between how they think they lead and how they actually lead. That gap is the coaching opportunity. Do not let them write an aspirational document that sounds impressive but does not reflect reality. Push for honesty first, then help them close the gap between who they are and who they want to be. If a client struggles to articulate their beliefs, ask about specific moments - \"Tell me about a time you were proud of how you handled something\" or \"When did you let yourself down as a leader?\" Stories reveal philosophy faster than abstract thinking."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Decision-Making Framework",
+      "description": "Decision-Making Framework",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Build a structured process for evaluating strategic decisions so you stop relying on gut feel alone. The goal is a repeatable framework that you (and eventually your team) can use to make better decisions faster, with less second-guessing. This is not about removing judgement. It is about adding discipline to your judgement so the quality of your decisions improves consistently."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Poor decisions rarely come from stupidity. They come from speed, emotion, incomplete information, or lack of process. Keith Cunningham calls this \"the cost of being wrong\" - most business owners underestimate how much a single bad decision costs when you factor in time, money, opportunity cost, and team morale. A decision-making framework does not guarantee perfect decisions, but it dramatically reduces avoidable mistakes. It also allows you to teach your team how to think, not just what to do."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through the framework design once, then test it on your next three decisions before rolling it out to your team. A framework you do not use is worthless. Build it, test it, refine it.\n\n---"
+        },
+        {
+          "title": "Framework Design",
+          "content": "- [ ] **Define your decision categories** - Not all decisions need the same process. Sort them into three tiers: (1) Reversible, low-cost decisions - decide fast and move on. (2) Significant but recoverable decisions - take a day, consult one person. (3) High-stakes, hard-to-reverse decisions - use the full framework below.\n- [ ] ⚡ Quick Win: **Write down the last three decisions you agonised over** - Were they actually Tier 3, or were you overthinking Tier 1 decisions? Most owners spend too long on small calls and too little on big ones.\n- [ ] **Create your decision criteria checklist** - For Tier 3 decisions, define 5-7 evaluation criteria. Examples: alignment with strategy, financial impact, reversibility, team capacity, customer impact, opportunity cost.\n- [ ] **Assign weightings to each criterion** - Not all criteria matter equally. Financial impact might be weighted 3x higher than team preference. Define this before you need it so emotion does not distort priorities in the moment."
+        },
+        {
+          "title": "Decision Process",
+          "content": "- [ ] **Write the decision as a clear question** - \"Should we...\" forces clarity. Vague framing leads to vague thinking. If you cannot state the decision in one sentence, you have not defined it yet.\n- [ ] **List what you know and what you do not know** - Separate facts from assumptions. Most bad decisions happen because assumptions are treated as facts. Identify the biggest unknown and decide whether you can resolve it before committing.\n- [ ] **Identify who is affected and consult them** - Not for consensus. For perspective. The person closest to the problem often sees things you miss.\n- [ ] **Define the \"kill criteria\" before you start** - What would make you reverse or abandon this decision? Setting this in advance prevents the sunk cost trap where you keep going because you have already invested, not because it is working.\n- [ ] **Set a decision deadline** - Every decision needs a \"decide by\" date. Without one, analysis paralysis wins. For most business decisions, 80% of the information available now is enough."
+        },
+        {
+          "title": "Team Rollout",
+          "content": "- [ ] **Teach your team the three tiers** - Help them understand which decisions they can make alone (Tier 1), which need a quick check-in (Tier 2), and which come to you (Tier 3).\n- [ ] ⚡ Quick Win: **Identify three decisions your team currently escalates that they could handle themselves** - Push Tier 1 decisions down immediately. This frees your time and builds their confidence.\n- [ ] **Create a simple one-page decision template** - For Tier 3 decisions, give your team a template: What is the decision? What are the options? What do we recommend and why? What are the risks? This trains them to think before they ask.\n- [ ] **Review decisions monthly** - Look back at significant decisions from the past month. What went well? What would you change? This builds organisational learning.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Faster decisions on small things because you stop overthinking them\n- Better decisions on big things because you apply a consistent process\n- Your team starts making more decisions independently because they understand your criteria\n- Less decision fatigue because the framework does the heavy lifting\n- A track record you can review and learn from"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "The most common issue is owners who want to apply the full framework to every decision. This creates bottlenecks and frustration. Push hard on the three-tier model - the biggest productivity gain comes from deciding faster on Tier 1 items, not from perfecting Tier 3 analysis. Watch for clients who use \"I need more information\" as a delay tactic. Help them distinguish between genuine information gaps and fear of commitment. If a client consistently makes good gut decisions, do not overengineer the process. Some owners have strong intuition. The framework is a safety net, not a replacement for judgement."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Emotional Intelligence Audit",
+      "description": "Emotional Intelligence Audit",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Honestly assess how you handle pressure, conflict, stress, and high-stakes situations as a leader. Then build specific practices to respond rather than react. This is not therapy. It is a practical review of the emotional patterns that help or hurt your business, followed by a concrete plan to manage them better."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Your emotional state sets the tone for your entire business. When you are calm and focused, your team feels safe to perform. When you are reactive, anxious, or short-tempered, your team spends energy managing you instead of doing their work. Daniel Goleman's research shows that emotional intelligence accounts for nearly 90% of what sets high performers apart from peers with similar technical skills. For a business owner, the cost of poor emotional regulation shows up in staff turnover, bad decisions made under pressure, damaged client relationships, and a culture of fear or avoidance."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through the self-assessment honestly. Score yourself, identify your patterns, then pick 2-3 specific practices to build. This is not about perfection. It is about awareness and incremental improvement.\n\n---"
+        },
+        {
+          "title": "Self-Assessment",
+          "content": "- [ ] **Rate your self-awareness (1-10)** - How quickly do you notice when your emotional state is shifting? Can you name what you are feeling in the moment, or do you only recognise it after the fact?\n- [ ] **Rate your self-regulation (1-10)** - When you feel frustrated, anxious, or angry, how well do you control your response? Do you snap first and apologise later, or can you pause before reacting?\n- [ ] **Rate your empathy (1-10)** - How well do you read other people's emotional states? Can you tell when a team member is struggling before they tell you? Do you genuinely consider how decisions affect others?\n- [ ] **Rate your social skills (1-10)** - How effectively do you navigate difficult conversations, resolve conflict, and build trust? Do people come to you with problems, or do they avoid you?\n- [ ] **Rate your motivation under pressure (1-10)** - When things go wrong, do you rise to the challenge or withdraw? How quickly do you recover from setbacks?"
+        },
+        {
+          "title": "Pattern Recognition",
+          "content": "- [ ] **Identify your top 3 emotional triggers** - What situations consistently cause you to react badly? Common ones: feeling disrespected, losing control, being blindsided, perceived incompetence in others, financial pressure.\n- [ ] **Map your stress response** - What do you actually do when triggered? Some owners go quiet and withdraw. Others get loud and dominant. Others micromanage. Name your pattern honestly.\n- [ ] ⚡ Quick Win: **Ask two trusted people: \"What am I like when I am stressed?\"** - Their answer will be more accurate than your self-assessment. Listen without defending.\n- [ ] **Review your last 3 difficult conversations** - How did you handle them? What would you do differently? Where did emotion override logic?"
+        },
+        {
+          "title": "Building Better Responses",
+          "content": "- [ ] **Create a personal pause protocol** - Define what you will do when you feel a trigger. A 10-second breathing pause, leaving the room, writing your thoughts before speaking. Pick something simple that buys you time between stimulus and response.\n- [ ] ⚡ Quick Win: **Practise naming your emotions out loud this week** - \"I am feeling frustrated right now\" is remarkably powerful. It moves you from reacting to observing, which gives you choice.\n- [ ] **Schedule weekly reflection time** - 10 minutes reviewing how you handled difficult moments that week. Not to judge yourself, but to notice patterns and track improvement.\n- [ ] **Identify one relationship that needs repair** - If your emotional patterns have damaged a relationship with a team member, client, or partner, name it. Repairing it is both the hardest and most impactful thing you can do.\n- [ ] **Build a pre-meeting reset habit** - Before any high-stakes meeting or conversation, take 2 minutes to check your emotional state. Are you calm enough to listen well? If not, what do you need to do first?\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Clear understanding of your emotional triggers and default reactions\n- Honest assessment from people you trust, not just your own view\n- 2-3 specific practices that help you respond instead of react\n- Improved team dynamics because your emotional state is more predictable\n- Better decisions under pressure because you are not being hijacked by emotion"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This is one of the most sensitive actions in the entire system. Many business owners have never examined their emotional patterns with any rigour, and some will resist strongly. Do not push too hard too fast. Start with the self-assessment and let the numbers speak. If a client rates themselves 9/10 on everything, gently challenge it - ask for specific examples. If they rate themselves low across the board, normalise it - most founders struggle here precisely because the job is stressful. The goal is awareness, not perfection. Help them pick one or two practices and stick with them rather than trying to overhaul their entire emotional wiring at once."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Behaviour Standards Matrix",
+      "description": "Behaviour Standards Matrix",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Create a matrix that maps specific, observable behaviours you will model as a leader and expect from your team. This takes your leadership philosophy and your company values from vague words on a wall to measurable actions that everyone can see, recognise, and hold each other accountable for. Each value or standard gets translated into \"what this looks like\" and \"what this does not look like\" in daily practice."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Patrick Lencioni's work shows that most companies have values, but few have behaviours attached to those values. \"Integrity\" means nothing until you define what integrity looks like on a Tuesday afternoon when a client asks you to cut corners. Vague values create inconsistency because everyone interprets them differently. A behaviour standards matrix removes ambiguity. Your team knows exactly what good looks like, and you have a fair, consistent basis for recognition and accountability."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Start with your top 3-5 values or leadership principles from your Leadership Philosophy. For each one, define specific behaviours. Then share the matrix with your team and use it in hiring, reviews, and daily management.\n\n---"
+        },
+        {
+          "title": "Define Observable Behaviours",
+          "content": "- [ ] **List your 3-5 core values or standards** - Pull these from your Leadership Philosophy action or define them fresh. Keep the list short. Five values with clear behaviours beat ten values nobody remembers.\n- [ ] **For each value, write 3-4 \"looks like\" behaviours** - These must be observable. Not \"be respectful\" but \"respond to internal messages within 4 hours\" or \"raise concerns directly with the person, not behind their back.\" If you cannot see it or measure it, it is too vague.\n- [ ] **For each value, write 2-3 \"does not look like\" behaviours** - Defining what you do not want is just as important. \"Ownership does not look like blaming other departments when a deadline is missed.\" This removes grey areas.\n- [ ] ⚡ Quick Win: **Pick one value and complete the full behaviour mapping now** - Do not wait until you have time for all five. One complete entry is more useful than five empty ones."
+        },
+        {
+          "title": "Build the Matrix",
+          "content": "- [ ] **Create a simple table format** - Value in column one. \"Looks like\" in column two. \"Does not look like\" in column three. Keep it to one page. If it does not fit on one page, you have too many items.\n- [ ] **Rate yourself honestly against each behaviour** - Before asking anything of your team, check whether you are modelling these behaviours consistently. Your team will mirror what you do, not what you say.\n- [ ] **Identify your biggest personal gap** - Where is the largest distance between what you expect and what you actually do? This is your priority.\n- [ ] **Add frequency or context where helpful** - Some behaviours are daily (e.g., \"acknowledge good work when you see it\"). Others are situational (e.g., \"admit mistakes openly when they happen\"). Adding context makes the standard more practical."
+        },
+        {
+          "title": "Team Implementation",
+          "content": "- [ ] **Share the matrix with your team** - Walk them through it. Explain why each behaviour matters. Give them space to ask questions and push back. If they helped create it, they will own it more.\n- [ ] ⚡ Quick Win: **In your next team meeting, recognise someone who demonstrated one of these behaviours** - Public recognition linked to specific behaviours reinforces the standards immediately.\n- [ ] **Use the matrix in hiring** - Add behavioural interview questions based on each standard. \"Tell me about a time you...\" questions reveal patterns better than hypotheticals.\n- [ ] **Use the matrix in performance conversations** - Reference specific behaviours, not vague judgements. \"You consistently raise concerns directly - that is exactly what we mean by transparency\" is far more useful than \"you are doing great.\"\n- [ ] **Review and update quarterly** - As your business evolves, some behaviours become more or less important. Keep the matrix current.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- Every team member knows exactly what good behaviour looks like in your business\n- Performance conversations become easier because you have a shared reference point\n- Hiring improves because you are screening for specific behaviours, not just skills\n- Culture becomes self-reinforcing as the team holds each other to clear standards\n- You model the behaviours you expect, which builds trust and credibility"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "The biggest trap is creating a matrix that is aspirational but not honest. If the owner is not currently modelling the behaviours they want to mandate, the team will see it instantly and the whole exercise loses credibility. Start by helping the client audit their own behaviour against the matrix. The second trap is overcomplication. Push for simplicity. Three values with clear behaviours will change a culture faster than eight values with vague descriptions. If a client struggles to define observable behaviours, ask them to describe a specific moment when someone on their team did something that made them proud, or something that frustrated them. Real stories produce better behaviour definitions than abstract thinking."
+        }
+      ]
+    }
+  ]
+}

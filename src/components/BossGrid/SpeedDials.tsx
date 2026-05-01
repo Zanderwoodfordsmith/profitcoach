@@ -8,10 +8,11 @@ const MAX_PILLAR_SCORE = 30;
 
 type SpeedDialsProps = {
   pillarScores: PillarScores;
+  gridCols: string;
   "aria-label"?: string;
 };
 
-export function SpeedDials({ pillarScores, "aria-label": ariaLabel }: SpeedDialsProps) {
+export function SpeedDials({ pillarScores, gridCols, "aria-label": ariaLabel }: SpeedDialsProps) {
   const dials: { pillar: keyof PillarScores; label: string; strokeClass: string }[] = [
     { pillar: "vision", label: "Clarify Vision", strokeClass: "stroke-[#0c5290]" },
     { pillar: "velocity", label: "Control Velocity", strokeClass: "stroke-[#42a1ee]" },
@@ -20,30 +21,30 @@ export function SpeedDials({ pillarScores, "aria-label": ariaLabel }: SpeedDials
 
   return (
     <div
-      className="grid w-full gap-0 mb-0 py-2"
+      className="grid w-full gap-x-3 gap-y-0 mb-0 py-2"
       style={{
-        gridTemplateColumns: "56px 94px repeat(10, minmax(0, 1fr))",
+        gridTemplateColumns: gridCols,
       }}
       role="img"
       aria-label={ariaLabel ?? "Pillar scores"}
     >
-      <div className="col-span-2" />
       <div />
-      <div className="col-span-3 flex justify-center items-center border-2 border-[#6d737a] border-b-0 rounded-t-md py-5 px-2">
+      <div />
+      <div className="flex justify-center items-center rounded-t-lg shadow-sm border-2 border-[#6d737a] border-b-0 py-5 px-2 bg-transparent">
         <SingleDial
           score={pillarScores.vision}
           label={dials[0].label}
           strokeClass={dials[0].strokeClass}
         />
       </div>
-      <div className="col-span-3 flex justify-center items-center border-2 border-[#6d737a] border-b-0 rounded-t-md py-5 px-2">
+      <div className="flex justify-center items-center rounded-t-lg shadow-sm border-2 border-[#6d737a] border-b-0 py-5 px-2 bg-transparent">
         <SingleDial
           score={pillarScores.velocity}
           label={dials[1].label}
           strokeClass={dials[1].strokeClass}
         />
       </div>
-      <div className="col-span-3 flex justify-center items-center border-2 border-[#6d737a] border-b-0 rounded-t-md py-5 px-2">
+      <div className="flex justify-center items-center rounded-t-lg shadow-sm border-2 border-[#6d737a] border-b-0 py-5 px-2 bg-transparent">
         <SingleDial
           score={pillarScores.value}
           label={dials[2].label}

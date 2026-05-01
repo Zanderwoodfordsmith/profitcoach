@@ -1,0 +1,232 @@
+{
+  "ref": "2.4",
+  "level": 2,
+  "area": 4,
+  "name": "Cost Control",
+  "subtitle": "Level 2 · Overworked · Profit & Cash Flow",
+  "whatThisIs": "Revenue grows ego. Cost discipline grows profit.\n\nRevenue expansion can disguise inefficiency. When you are growing, it is easy to ignore the fact that costs are creeping upward and margin is eroding. You feel successful because the top line is moving, but the bottom line tells a different story.\n\nThis playbook is about installing the discipline to control what goes out so more stays in. Not penny-pinching or cutting everything to the bone — smart cost management that strengthens resilience and increases your reinvestment capacity. Revenue gets the headlines. Cost control gets the profits.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have no idea what you are actually spending each month until you see the bank statement. Costs have crept up gradually over months or years, and you are not sure where the money is going. Subscriptions and services pile up on autopay. You make spending decisions in the moment without knowing if you can afford them. Profit margins feel squeezed but you cannot put your finger on why."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You review expenses occasionally and cut obvious waste when you remember to. Some costs are controlled, others have grown without oversight. You know roughly what the big expenses are but have not tested whether you are getting value for money. You suspect there are leaks but lack the time or system to plug them properly."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You know exactly what you are spending and why. Every expense is categorised as fixed or variable, and you understand which costs grow with revenue and which do not. Major expenses are regularly reviewed for ROI. Supplier contracts are renegotiated periodically. Spending approval thresholds are clear and respected. You cut waste systematically, not reactively. Your cost base supports growth rather than draining it."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Can you separate your fixed costs from your variable costs? Fixed costs hit you every month regardless of revenue — rent, salaries, software subscriptions. Variable costs move with sales — materials, commissions, transaction fees. Until you know which is which, you cannot predict what happens to profit as you grow.",
+    "Which expenses have you never properly evaluated? Most businesses carry costs that made sense two years ago but no longer deliver value. The software you bought but never implemented. The service contract you have not reviewed since you signed it. What is quietly draining margin without contributing to results?",
+    "Do you know the ROI on your major expenses? That expensive consultant, the premium software package, the upgraded office space — what measurable return are these generating? If you cannot answer this question for your biggest costs, you are spending on hope rather than data.",
+    "Who can authorise what level of spend? Without clear approval thresholds, costs creep up through a thousand small decisions. If everyone can spend anything, everything gets bought. If only you can approve expenses, you become a bottleneck. The sweet spot is clear rules that protect cash without slowing decisions.",
+    "When did you last test the market on your biggest contracts? Your biggest suppliers know you are comfortable with them. That comfort costs you money. Loyalty should be earned with competitive pricing and great service, not rewarded with lazy procurement."
+  ],
+  "quickWins": [
+    "This week: List every recurring payment that hits your bank account automatically. Circle any you have not consciously reviewed in the last 12 months.",
+    "This week: Call your three biggest suppliers and ask for their latest pricing. Tell them you are reviewing all contracts and need their best rates to stay competitive.",
+    "This week: Add up what you spent on software subscriptions last month. Cancel anything you have not used in the last 90 days or find a cheaper alternative that does the same job."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.4",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
+      "description": ""
+    },
+    {
+      "ref": "2.7",
+      "description": ""
+    },
+    {
+      "ref": "5.8",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Cost Categorisation",
+          "description": "Sort every expense into fixed, variable, and semi-variable buckets so you understand what drives your cost base and how it behaves as revenue changes.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Sort every business expense into fixed, variable, and semi-variable buckets so you understand what drives your cost base and how it behaves as revenue changes. This gives you control over your spending because you can see which costs are locked in, which move with sales, and which are discretionary."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners know their total expenses but do not understand the structure underneath. Fixed costs hit you every month regardless of revenue - they are your baseline burn. Variable costs scale with activity - they grow as you grow but also shrink if revenue drops. Semi-variable costs have a fixed base with a variable component. Understanding which is which lets you predict what happens to profit at different revenue levels, make smarter spending decisions, and know exactly where to cut if cash gets tight."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your last 3 months of business expenses from your accounting software or bank statements. Work through every line item.\n\n---"
+            },
+            {
+              "title": "Expense Inventory",
+              "content": "- [ ] Export or list every expense from the last 3 months\n- [ ] Group them into natural categories: rent, salaries, software, marketing, supplies, professional services, etc.\n- [ ] Calculate the monthly average for each category\n- [ ] ⚡ Quick Win: Highlight any expense you do not immediately recognise. Look it up today - you may find something you are paying for that you no longer use or need."
+            },
+            {
+              "title": "Categorise Each Expense",
+              "content": "### Fixed Costs (Stay the Same Regardless of Revenue)\n\n- [ ] Identify all expenses that do not change whether you have a great month or a terrible one\n- [ ] Common fixed costs: rent, salaries, loan repayments, insurance, core software subscriptions, accounting fees\n- [ ] Total your monthly fixed costs - this is your baseline. You need this much revenue just to break even before anything else.\n\n### Variable Costs (Move with Revenue or Activity)\n\n- [ ] Identify expenses that increase when you sell more and decrease when you sell less\n- [ ] Common variable costs: materials, commissions, transaction fees, shipping, subcontractor costs, per-unit costs\n- [ ] Calculate variable cost as a percentage of revenue - this is your variable cost ratio\n- [ ] Note: as revenue grows, your profit per sale is revenue minus variable cost per sale minus allocated fixed cost\n\n### Semi-Variable Costs (Fixed Base + Variable Component)\n\n- [ ] Identify expenses that have a base cost but increase with activity\n- [ ] Common semi-variable costs: utilities, phone/internet (base plan + overages), marketing (base spend + per-campaign costs), part-time staff (minimum hours + overtime)\n- [ ] Split these into their fixed base and variable component\n\n### Discretionary Costs (Could Be Reduced or Eliminated)\n\n- [ ] Review all expenses and flag anything that is a choice rather than a necessity\n- [ ] Common discretionary costs: premium software tiers, office perks, conference attendance, subscriptions, professional development\n- [ ] This is not about cutting them all - it is about knowing which costs you could reduce if needed"
+            },
+            {
+              "title": "Build Your Cost Map",
+              "content": "- [ ] Create a simple summary:\n  - Total fixed costs per month: £___\n  - Total variable costs as % of revenue: ___%\n  - Total semi-variable base: £___ (plus variable component)\n  - Total discretionary spend per month: £___\n- [ ] Calculate your break-even revenue: Fixed costs / (1 - variable cost %)\n- [ ] Identify: if revenue dropped 20%, which costs could you reduce and by how much?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every expense categorised as fixed, variable, semi-variable, or discretionary\n- A clear picture of your monthly baseline burn\n- Your variable cost ratio calculated\n- Break-even revenue calculated\n- A \"contingency list\" of costs you could cut if revenue dropped"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is foundational work that makes every other financial conversation more productive. Most clients have never separated their costs this way and the exercise itself creates insight. The break-even calculation is often surprising - many owners discover they need more revenue just to cover fixed costs than they realised. The contingency list is psychologically powerful: knowing you have a plan if things go wrong reduces anxiety about growth investments. Connect this to the Cash Flow Forecast (1.4) and the P&L (1.7) for a complete financial picture."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "ROI Evaluation Matrix",
+          "description": "Review your major expenses against measurable returns using a simple framework that separates essential costs from nice-to-haves and identifies what is delivering value versus what is consuming it.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Review your major expenses against measurable returns using a simple framework that separates essential costs from nice-to-haves and identifies what is delivering value versus what is consuming it. Every significant expense should be able to justify its existence with a clear return."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Businesses accumulate costs the way houses accumulate clutter - gradually, without anyone noticing. The consultant you hired 18 months ago who still sends monthly invoices. The premium software plan you upgraded to but only use 20% of. The marketing channel you keep funding because stopping feels like giving up. An ROI evaluation forces each expense to prove its value. Costs that cannot justify themselves are candidates for elimination, renegotiation, or downgrading."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pull your list of expenses from the Cost Categorisation (Action 1). Focus on your top 15-20 expenses by monthly cost. Work through the matrix below.\n\n---"
+            },
+            {
+              "title": "Set Up the Matrix",
+              "content": "- [ ] List your top 15-20 expenses by monthly cost (start with the biggest)\n- [ ] For each expense, note the monthly cost and the annual cost\n- [ ] ⚡ Quick Win: Look at your subscriptions and software list. Cancel or downgrade anything you have not actively used in the last 30 days."
+            },
+            {
+              "title": "Evaluate Each Expense",
+              "content": "For each major expense, answer these questions:\n\n- [ ] **What is the intended return?** (Revenue generated, time saved, risk reduced, quality improved, compliance met)\n- [ ] **Can you measure the actual return?** (If yes, calculate it. If no, that is a warning sign.)\n- [ ] **What would happen if you stopped this expense tomorrow?** (Nothing = candidate for cutting. Business impact = essential.)\n- [ ] **Is there a cheaper alternative that delivers 80%+ of the value?**\n- [ ] **When did you last review whether this expense still makes sense?**"
+            },
+            {
+              "title": "Categorise by ROI",
+              "content": "Place each expense in one of four categories:\n\n- [ ] **High ROI - Keep and potentially invest more:** Clear, measurable return that exceeds the cost significantly. These are your best-performing expenses.\n- [ ] **Moderate ROI - Keep but review:** Returns are positive but could be better. Look for ways to get more value or reduce cost.\n- [ ] **Low ROI - Reduce or renegotiate:** The return does not clearly justify the cost. Downgrade, renegotiate, or find a cheaper alternative.\n- [ ] **No measurable ROI - Cut or justify:** Cannot demonstrate a return. Either find a way to measure the value or eliminate the cost."
+            },
+            {
+              "title": "Action Plan",
+              "content": "- [ ] For each \"Low ROI\" expense: set a deadline to renegotiate, downgrade, or cancel\n- [ ] For each \"No measurable ROI\" expense: decide within 2 weeks - justify it or cut it\n- [ ] Calculate the total monthly savings if you act on all Low and No ROI expenses\n- [ ] Set a calendar reminder to re-run this evaluation every 6 months\n- [ ] For \"High ROI\" expenses: is there an opportunity to invest more and get even better returns?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every major expense evaluated against its actual return\n- Expenses categorised by ROI into four clear groups\n- Specific actions identified for underperforming costs\n- Total potential savings calculated\n- A regular review rhythm established to prevent cost creep"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Business owners often protect expenses that feel important but cannot demonstrate returns. The \"what would happen if you stopped this tomorrow?\" question cuts through emotional attachment. If the honest answer is \"probably nothing,\" that expense needs to go or be justified with data. Be particularly alert to marketing expenses where the owner \"feels like it is working\" but has no tracking in place. Also watch for the sunk cost trap: \"We have already spent £X on this\" is not a reason to keep spending. The only question is whether future spending will produce future returns."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Supplier Contract Review",
+          "description": "Systematically renegotiate your biggest contracts using market benchmarking and relationship leverage to reduce costs without damaging service quality.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically review and renegotiate your biggest supplier contracts using market benchmarking and relationship leverage. Most businesses overpay their suppliers simply because they have never asked for better terms. This action gives you a structured process for reducing costs without damaging service quality."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your suppliers are businesses too - they have flexibility in their pricing that they will not volunteer. The rate you agreed 2 years ago is probably not the best they can offer today. Market conditions change, competitors emerge, and your volume may have grown enough to warrant a volume discount. A single afternoon of supplier negotiations can save thousands per year. Most SME owners leave this money on the table because the negotiation feels uncomfortable or they assume the price is fixed."
+            },
+            {
+              "title": "How to Use This",
+              "content": "List your biggest supplier relationships, research alternatives, then contact each supplier with a clear ask. This is not aggressive negotiation - it is informed business management.\n\n---"
+            },
+            {
+              "title": "Preparation",
+              "content": "- [ ] List your top 5-8 suppliers by annual spend\n- [ ] For each, note: what they provide, your annual spend, contract terms, renewal date, and how long you have been with them\n- [ ] ⚡ Quick Win: Check if any contracts are on auto-renew in the next 60 days. Mark these for immediate attention - you have more leverage before renewal than after.\n- [ ] For each supplier, research one alternative provider and their pricing (even a rough estimate is useful)"
+            },
+            {
+              "title": "Market Benchmarking",
+              "content": "- [ ] For your top 3 suppliers by spend, get at least one competing quote\n- [ ] You do not need to switch - the quote is leverage for the negotiation\n- [ ] Check online for typical market rates in your industry for these services\n- [ ] Note any areas where your current supplier provides value beyond price (reliability, relationship, expertise, flexibility)\n- [ ] Calculate the gap: are you paying market rate, above, or below?"
+            },
+            {
+              "title": "The Negotiation Conversations",
+              "content": "For each supplier you are reviewing:\n\n- [ ] Call (do not email) your account manager or main contact\n- [ ] Frame the conversation positively: \"We value the relationship and want to continue working together. We are reviewing all our contracts to make sure we are getting the best value.\"\n- [ ] Share that you have been looking at the market: \"We have seen competitive quotes that are [X]% lower for comparable service.\"\n- [ ] Ask directly: \"What can you do on pricing to keep us as a customer?\"\n- [ ] If they cannot move on price, negotiate other terms: payment terms, additional services, volume discounts, longer notice periods in your favour\n- [ ] Get any agreed changes in writing"
+            },
+            {
+              "title": "Review Outcomes",
+              "content": "- [ ] Document the outcome of each conversation: price change, new terms, or no change\n- [ ] Calculate total annual savings from successful negotiations\n- [ ] For any supplier where negotiation failed and the gap is significant, seriously consider switching\n- [ ] Set calendar reminders 60 days before each contract renewal to repeat this process\n- [ ] Build a supplier review into your quarterly or annual business rhythm\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Your top supplier contracts reviewed against market rates\n- Negotiation conversations completed with each major supplier\n- Measurable cost savings achieved or alternative suppliers identified\n- A renewal calendar set up so contracts never auto-renew without review\n- A repeatable process for keeping supplier costs competitive over time"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Many clients feel uncomfortable negotiating with suppliers they have good relationships with. Reframe it: this is not confrontation, it is good business management. Their suppliers expect it. The script above is designed to be firm but friendly. Common wins: 10-20% reduction on software and SaaS contracts (especially if you mention cancelling), better payment terms on professional services, and volume discounts for growing businesses. The auto-renewal check alone often saves money - many businesses pay for contracts they forgot to cancel or renegotiate. This is one of the fastest ways to improve profit without changing anything about revenue."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Spending Authority Framework",
+          "description": "Set clear approval thresholds and processes so routine expenses flow smoothly while protecting against budget creep and unauthorized spending.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set clear rules for who can approve what level of spending in your business. Define thresholds, approval processes, and boundaries so routine expenses flow smoothly while protecting against budget creep and unauthorised spending. The goal: your team can spend where needed without everything coming through you, but significant costs get proper scrutiny."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without clear spending authority, one of two things happens. Either you approve every purchase (which makes you a bottleneck and slows everything down) or everyone spends freely (which leads to creeping costs and unpleasant surprises). A simple framework solves both problems. The team knows what they can approve themselves, what needs a manager, and what needs the owner. Decisions happen faster and costs stay controlled."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design your framework based on your business size, team structure, and risk tolerance. Start simple - you can always add complexity later.\n\n---"
+            },
+            {
+              "title": "Design Your Thresholds",
+              "content": "- [ ] ⚡ Quick Win: Set three spending levels right now. For example: Under £100 = team member decides. £100-£500 = manager approval. Over £500 = owner approval. Adjust the numbers to your business.\n- [ ] Define the thresholds for each level of your organisation:\n  - **Self-approve:** Individual team members can spend up to £___ without asking anyone\n  - **Manager approve:** Spending between £___ and £___ needs a manager's sign-off\n  - **Owner approve:** Spending above £___ requires owner approval\n- [ ] Set separate thresholds for recurring expenses (monthly subscriptions) vs. one-off purchases - recurring costs have a bigger long-term impact"
+            },
+            {
+              "title": "Define the Rules",
+              "content": "- [ ] Create a short list of spending categories that always need owner approval regardless of amount (new hires, new contracts, capital equipment, etc.)\n- [ ] Define what \"approval\" means: verbal OK, email confirmation, or formal sign-off? Keep it proportional to the amount.\n- [ ] Set rules for emergency spending: what if someone needs to spend above their threshold urgently and the approver is not available?\n- [ ] Clarify budget vs. unbudgeted spending: if an expense was already included in the plan/budget, does it still need approval?\n- [ ] Define what happens with personal expenses and reimbursements: what is covered, what is not, and what is the process?"
+            },
+            {
+              "title": "Communicate and Implement",
+              "content": "- [ ] Write up the framework in one page (keep it simple enough to fit on a single sheet)\n- [ ] Share it with every team member and explain the reasoning: \"This is about speed AND control\"\n- [ ] Make the approval process as frictionless as possible - a quick Slack message or email is fine for most levels\n- [ ] Set clear expectations: spending within your authority is encouraged, not just permitted. The goal is to remove bottlenecks, not create fear.\n- [ ] Define consequences for spending outside the framework - not punishment, but a conversation about why it happened"
+            },
+            {
+              "title": "Monitor and Adjust",
+              "content": "- [ ] Review all expenses monthly against the framework: is it working? Are approvals happening smoothly?\n- [ ] Track whether the thresholds are right: too low and you create bottlenecks, too high and costs creep\n- [ ] Adjust thresholds as people prove reliable - increase authority as trust builds\n- [ ] Watch for workarounds: splitting purchases to stay under thresholds is a sign the limits are too low or the approval process is too slow\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear spending authority levels that the whole team understands\n- Routine expenses flowing without owner involvement\n- Significant expenses getting proper review before commitment\n- Faster decision-making at every level\n- Cost control built into the culture rather than dependent on the owner catching everything"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "For solo operators or very small teams (2-3 people), this framework might seem unnecessary. It is not. Even setting rules for yourself (\"I will not commit to any recurring expense above £200 without sleeping on it\") creates discipline. For growing teams, this is essential infrastructure - without it, the owner becomes the approval bottleneck for every purchase, which kills both speed and trust. The most common mistake: setting thresholds too low out of anxiety. If you trust someone to manage a client relationship worth £50K, you can probably trust them to approve a £200 software purchase. Start generous and tighten only if problems emerge."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

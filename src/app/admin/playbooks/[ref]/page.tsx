@@ -4,13 +4,14 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { StickyPageHeader } from "@/components/layout";
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
 import { getPlaybookMeta } from "@/lib/bossData";
 import { parsePastedPlaybookContent } from "@/lib/parsePlaybookPaste";
 import type {
   PlaybookContent as PlaybookContentType,
-  PlayItem,
-  PlaySection,
+  ActionItem,
+  ActionSection,
   RelatedPlaybookItem,
   WhatItLooksLikeItem,
 } from "@/lib/playbookContentTypes";
@@ -35,9 +36,9 @@ export default function AdminPlaybookDetailPage({
     whatThisIs: string;
     whatItLooksLike: { broken: WhatItLooksLikeItem; ok: WhatItLooksLikeItem; working: WhatItLooksLikeItem };
     thingsToThinkAbout: string[];
-    plays: PlayItem[];
-    playsIntro: string;
-    playsSections: PlaySection[];
+    actions: ActionItem[];
+    actionsIntro: string;
+    actionSections: ActionSection[];
     quickWins: string[];
     relatedPlaybooks: RelatedPlaybookItem[];
   } | null>(null);
@@ -101,12 +102,18 @@ export default function AdminPlaybookDetailPage({
         whatThisIs: content.whatThisIs ?? "",
         whatItLooksLike: content.whatItLooksLike,
         thingsToThinkAbout: [...(content.thingsToThinkAbout ?? [])],
-        plays: [...(content.plays ?? [])].map((p) => ({ ...p })),
-        playsIntro: content.playsIntro ?? "",
-        playsSections: (content.playsSections ?? []).map((s) => ({
+        actions: [...(content.actions ?? [])].map((p) => ({
+          ...p,
+          detailSections: p.detailSections?.map((d) => ({ ...d })),
+        })),
+        actionsIntro: content.actionsIntro ?? "",
+        actionSections: (content.actionSections ?? []).map((s) => ({
           title: s.title,
           description: s.description,
-          plays: (s.plays ?? []).map((p) => ({ ...p })),
+          actions: (s.actions ?? []).map((p) => ({
+            ...p,
+            detailSections: p.detailSections?.map((d) => ({ ...d })),
+          })),
         })),
         quickWins: [...(content.quickWins ?? [])],
         relatedPlaybooks: (content.relatedPlaybooks ?? []).map((r) => ({
@@ -158,9 +165,9 @@ export default function AdminPlaybookDetailPage({
           whatThisIs: form.whatThisIs,
           whatItLooksLike: form.whatItLooksLike,
           thingsToThinkAbout: form.thingsToThinkAbout.filter(Boolean),
-          plays: form.playsSections.length ? [] : form.plays,
-          playsIntro: form.playsIntro || undefined,
-          playsSections: form.playsSections.length ? form.playsSections : undefined,
+          actions: form.actionSections.length ? [] : form.actions,
+          actionsIntro: form.actionsIntro || undefined,
+          actionSections: form.actionSections.length ? form.actionSections : undefined,
           quickWins: form.quickWins.filter(Boolean),
           relatedPlaybooks: form.relatedPlaybooks
             .filter((r) => r.ref?.trim())
@@ -180,47 +187,50 @@ export default function AdminPlaybookDetailPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 pb-3">
-        <div>
+      <StickyPageHeader
+        leading={
           <Link
             href="/admin/playbooks"
             className="text-xs text-slate-500 hover:text-slate-700"
           >
             ← Back to Playbooks
           </Link>
-          <h1 className="mt-2 text-xl font-semibold text-slate-900">
-            {content.ref} {content.name} Playbook
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">{content.subtitle}</p>
-        </div>
-        {!editing ? (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-          >
-            Edit content
-          </button>
-        ) : (
-          <div className="flex gap-2">
+        }
+        title={`${content.ref} ${content.name} Playbook`}
+        descriptionPlacement="below"
+        description={
+          <span className="text-slate-500">{content.subtitle}</span>
+        }
+        actions={
+          !editing ? (
             <button
               type="button"
-              onClick={() => setEditing(false)}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+              onClick={() => setEditing(true)}
+              className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
             >
-              Cancel
+              Edit content
             </button>
-            <button
-              type="submit"
-              form="playbook-edit-form"
-              disabled={saving}
-              className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:opacity-70"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
-          </div>
-        )}
-      </header>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="playbook-edit-form"
+                disabled={saving}
+                className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:opacity-70"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          )
+        }
+      />
 
       {saveError && (
         <p className="text-sm text-rose-600" role="alert">{saveError}</p>
@@ -266,8 +276,12 @@ export default function AdminPlaybookDetailPage({
                       if (parsed.whatItLooksLike) parts.push("What It Looks Like");
                       if (parsed.thingsToThinkAbout?.length)
                         parts.push(`${parsed.thingsToThinkAbout.length} things`);
-                      if (parsed.playsIntro || parsed.plays?.length || parsed.playsSections?.length)
-                        parts.push("Plays");
+                      if (
+                        parsed.actionsIntro ||
+                        parsed.actions?.length ||
+                        parsed.actionSections?.length
+                      )
+                        parts.push("Actions");
                       if (parsed.quickWins?.length)
                         parts.push(`${parsed.quickWins.length} quick wins`);
                       if (parsed.relatedPlaybooks?.length)
@@ -285,18 +299,18 @@ export default function AdminPlaybookDetailPage({
                               ...(parsed.thingsToThinkAbout && {
                                 thingsToThinkAbout: parsed.thingsToThinkAbout,
                               }),
-                              ...(parsed.playsIntro !== undefined && {
-                                playsIntro: parsed.playsIntro,
+                              ...(parsed.actionsIntro !== undefined && {
+                                actionsIntro: parsed.actionsIntro,
                               }),
-                              ...(parsed.playsSections && parsed.playsSections.length > 0
+                              ...(parsed.actionSections && parsed.actionSections.length > 0
                                 ? {
-                                    playsSections: parsed.playsSections,
-                                    plays: [] as PlayItem[],
+                                    actionSections: parsed.actionSections,
+                                    actions: [] as ActionItem[],
                                   }
-                                : parsed.plays && parsed.plays.length > 0
+                                : parsed.actions && parsed.actions.length > 0
                                   ? {
-                                      playsSections: [] as PlaySection[],
-                                      plays: parsed.plays,
+                                      actionSections: [] as ActionSection[],
+                                      actions: parsed.actions,
                                     }
                                   : {}),
                               ...(parsed.quickWins && { quickWins: parsed.quickWins }),
@@ -423,13 +437,13 @@ export default function AdminPlaybookDetailPage({
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-slate-900">Plays</h2>
+            <h2 className="text-sm font-semibold text-slate-900">Actions</h2>
             <label className="mt-2 block">
               <span className="text-xs text-slate-600">Intro paragraph (optional)</span>
               <textarea
-                value={form.playsIntro}
+                value={form.actionsIntro}
                 onChange={(e) =>
-                  setForm((f) => (f ? { ...f, playsIntro: e.target.value } : f))
+                  setForm((f) => (f ? { ...f, actionsIntro: e.target.value } : f))
                 }
                 rows={3}
                 className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
@@ -437,36 +451,40 @@ export default function AdminPlaybookDetailPage({
               />
             </label>
             <p className="mt-2 text-xs text-slate-500">
-              Use &quot;Organise into sections&quot; when the playbook has section headings (e.g. Role Clarity, Structure &amp; Authority) with plays under each.
+              Use &quot;Organise into sections&quot; when the playbook has section headings with actions under each.
             </p>
             <label className="mt-2 flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={form.playsSections.length > 0}
+                checked={form.actionSections.length > 0}
                 onChange={(e) =>
                   setForm((f) => {
                     if (!f) return f;
                     if (e.target.checked) {
                       return {
                         ...f,
-                        playsSections: f.plays.length
-                          ? [{ title: "", description: "", plays: f.plays }]
-                          : [{ title: "", description: "", plays: [] }],
-                        plays: [],
+                        actionSections: f.actions.length
+                          ? [{ title: "", description: "", actions: f.actions }]
+                          : [{ title: "", description: "", actions: [] }],
+                        actions: [],
                       };
                     }
-                    const flat: PlayItem[] = [];
-                    f.playsSections.forEach((s) => s.plays.forEach((p) => flat.push({ ...p })));
-                    return { ...f, playsSections: [], plays: flat.length ? flat : [{ number: 1, title: "", description: "" }] };
+                    const flat: ActionItem[] = [];
+                    f.actionSections.forEach((s) => s.actions.forEach((p) => flat.push({ ...p })));
+                    return {
+                      ...f,
+                      actionSections: [],
+                      actions: flat.length ? flat : [{ number: 1, title: "", description: "" }],
+                    };
                   })
                 }
                 className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
               />
               <span className="text-sm text-slate-700">Organise into sections</span>
             </label>
-            {form.playsSections.length > 0 ? (
+            {form.actionSections.length > 0 ? (
               <div className="mt-4 space-y-6">
-                {form.playsSections.map((sec, si) => (
+                {form.actionSections.map((sec, si) => (
                   <div key={si} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 space-y-2">
@@ -476,10 +494,10 @@ export default function AdminPlaybookDetailPage({
                           onChange={(e) =>
                             setForm((f) => {
                               if (!f) return f;
-                              const next = f.playsSections.map((s, j) =>
+                              const next = f.actionSections.map((s, j) =>
                                 j === si ? { ...s, title: e.target.value } : s
                               );
-                              return { ...f, playsSections: next };
+                              return { ...f, actionSections: next };
                             })
                           }
                           placeholder="Section title (e.g. Role Clarity)"
@@ -490,10 +508,10 @@ export default function AdminPlaybookDetailPage({
                           onChange={(e) =>
                             setForm((f) => {
                               if (!f) return f;
-                              const next = f.playsSections.map((s, j) =>
+                              const next = f.actionSections.map((s, j) =>
                                 j === si ? { ...s, description: e.target.value } : s
                               );
-                              return { ...f, playsSections: next };
+                              return { ...f, actionSections: next };
                             })
                           }
                           rows={2}
@@ -508,7 +526,7 @@ export default function AdminPlaybookDetailPage({
                             f
                               ? {
                                   ...f,
-                                  playsSections: f.playsSections.filter((_, j) => j !== si),
+                                  actionSections: f.actionSections.filter((_, j) => j !== si),
                                 }
                               : f
                           )
@@ -520,7 +538,7 @@ export default function AdminPlaybookDetailPage({
                       </button>
                     </div>
                     <div className="mt-4 space-y-3">
-                      {sec.plays.map((play, pi) => (
+                      {sec.actions.map((play, pi) => (
                         <div key={pi} className="rounded-lg border border-slate-200 bg-white p-3">
                           <div className="flex flex-wrap gap-2">
                             <input
@@ -530,14 +548,14 @@ export default function AdminPlaybookDetailPage({
                               onChange={(e) =>
                                 setForm((f) => {
                                   if (!f) return f;
-                                  const next = [...f.playsSections];
+                                  const next = [...f.actionSections];
                                   next[si] = {
                                     ...next[si],
-                                    plays: next[si].plays.map((p, k) =>
+                                    actions: next[si].actions.map((p, k) =>
                                       k === pi ? { ...p, number: parseInt(e.target.value, 10) || 1 } : p
                                     ),
                                   };
-                                  return { ...f, playsSections: next };
+                                  return { ...f, actionSections: next };
                                 })
                               }
                               className="w-14 rounded border border-slate-300 px-2 py-1 text-sm"
@@ -548,17 +566,17 @@ export default function AdminPlaybookDetailPage({
                               onChange={(e) =>
                                 setForm((f) => {
                                   if (!f) return f;
-                                  const next = [...f.playsSections];
+                                  const next = [...f.actionSections];
                                   next[si] = {
                                     ...next[si],
-                                    plays: next[si].plays.map((p, k) =>
+                                    actions: next[si].actions.map((p, k) =>
                                       k === pi ? { ...p, title: e.target.value } : p
                                     ),
                                   };
-                                  return { ...f, playsSections: next };
+                                  return { ...f, actionSections: next };
                                 })
                               }
-                              placeholder="Play title"
+                              placeholder="Action title"
                               className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
                             />
                             <button
@@ -566,16 +584,16 @@ export default function AdminPlaybookDetailPage({
                               onClick={() =>
                                 setForm((f) => {
                                   if (!f) return f;
-                                  const next = [...f.playsSections];
+                                  const next = [...f.actionSections];
                                   next[si] = {
                                     ...next[si],
-                                    plays: next[si].plays.filter((_, k) => k !== pi),
+                                    actions: next[si].actions.filter((_, k) => k !== pi),
                                   };
-                                  return { ...f, playsSections: next };
+                                  return { ...f, actionSections: next };
                                 })
                               }
                               className="text-slate-400 hover:text-rose-600"
-                              aria-label="Remove play"
+                              aria-label="Remove action"
                             >
                               ×
                             </button>
@@ -585,20 +603,122 @@ export default function AdminPlaybookDetailPage({
                             onChange={(e) =>
                               setForm((f) => {
                                 if (!f) return f;
-                                const next = [...f.playsSections];
+                                const next = [...f.actionSections];
                                 next[si] = {
                                   ...next[si],
-                                  plays: next[si].plays.map((p, k) =>
+                                  actions: next[si].actions.map((p, k) =>
                                     k === pi ? { ...p, description: e.target.value } : p
                                   ),
                                 };
-                                return { ...f, playsSections: next };
+                                return { ...f, actionSections: next };
                               })
                             }
                             rows={2}
                             placeholder="Description"
                             className="mt-2 w-full rounded border border-slate-300 px-2 py-1 text-sm"
                           />
+                          <details className="mt-3 rounded border border-dashed border-slate-200 bg-slate-50/80 px-2 py-2">
+                            <summary className="cursor-pointer text-xs font-medium text-slate-600">
+                              Expanded sections (on-site expand)
+                            </summary>
+                            <div className="mt-2 space-y-3">
+                              {(play.detailSections ?? []).map((ds, di) => (
+                                <div
+                                  key={di}
+                                  className="rounded border border-slate-200 bg-white p-2 space-y-1"
+                                >
+                                  <input
+                                    type="text"
+                                    value={ds.title}
+                                    onChange={(e) =>
+                                      setForm((f) => {
+                                        if (!f) return f;
+                                        const next = [...f.actionSections];
+                                        const cur = next[si].actions[pi];
+                                        const list = [...(cur.detailSections ?? [])];
+                                        list[di] = { ...list[di]!, title: e.target.value };
+                                        next[si] = {
+                                          ...next[si],
+                                          actions: next[si].actions.map((p, k) =>
+                                            k === pi ? { ...p, detailSections: list } : p
+                                          ),
+                                        };
+                                        return { ...f, actionSections: next };
+                                      })
+                                    }
+                                    placeholder="Heading (e.g. What to Do)"
+                                    className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                                  />
+                                  <textarea
+                                    value={ds.content}
+                                    onChange={(e) =>
+                                      setForm((f) => {
+                                        if (!f) return f;
+                                        const next = [...f.actionSections];
+                                        const cur = next[si].actions[pi];
+                                        const list = [...(cur.detailSections ?? [])];
+                                        list[di] = { ...list[di]!, content: e.target.value };
+                                        next[si] = {
+                                          ...next[si],
+                                          actions: next[si].actions.map((p, k) =>
+                                            k === pi ? { ...p, detailSections: list } : p
+                                          ),
+                                        };
+                                        return { ...f, actionSections: next };
+                                      })
+                                    }
+                                    rows={4}
+                                    placeholder="Markdown body"
+                                    className="w-full rounded border border-slate-300 px-2 py-1 text-xs font-mono"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setForm((f) => {
+                                        if (!f) return f;
+                                        const next = [...f.actionSections];
+                                        const cur = next[si].actions[pi];
+                                        const list = (cur.detailSections ?? []).filter((_, j) => j !== di);
+                                        next[si] = {
+                                          ...next[si],
+                                          actions: next[si].actions.map((p, k) =>
+                                            k === pi
+                                              ? { ...p, detailSections: list.length ? list : undefined }
+                                              : p
+                                          ),
+                                        };
+                                        return { ...f, actionSections: next };
+                                      })
+                                    }
+                                    className="text-xs text-rose-600 hover:underline"
+                                  >
+                                    Remove section
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setForm((f) => {
+                                    if (!f) return f;
+                                    const next = [...f.actionSections];
+                                    const cur = next[si].actions[pi];
+                                    const list = [...(cur.detailSections ?? []), { title: "", content: "" }];
+                                    next[si] = {
+                                      ...next[si],
+                                      actions: next[si].actions.map((p, k) =>
+                                        k === pi ? { ...p, detailSections: list } : p
+                                      ),
+                                    };
+                                    return { ...f, actionSections: next };
+                                  })
+                                }
+                                className="text-xs font-medium text-sky-600 hover:text-sky-700"
+                              >
+                                + Add expanded section
+                              </button>
+                            </div>
+                          </details>
                         </div>
                       ))}
                     </div>
@@ -607,21 +727,21 @@ export default function AdminPlaybookDetailPage({
                       onClick={() =>
                         setForm((f) => {
                           if (!f) return f;
-                          const next = [...f.playsSections];
-                          const num = next[si].plays.length + 1;
+                          const next = [...f.actionSections];
+                          const num = next[si].actions.length + 1;
                           next[si] = {
                             ...next[si],
-                            plays: [
-                              ...next[si].plays,
+                            actions: [
+                              ...next[si].actions,
                               { number: num, title: "", description: "" },
                             ],
                           };
-                          return { ...f, playsSections: next };
+                          return { ...f, actionSections: next };
                         })
                       }
                       className="mt-2 text-sm font-medium text-sky-600 hover:text-sky-700"
                     >
-                      + Add play to this section
+                      + Add action to this section
                     </button>
                   </div>
                 ))}
@@ -632,9 +752,9 @@ export default function AdminPlaybookDetailPage({
                       f
                         ? {
                             ...f,
-                            playsSections: [
-                              ...f.playsSections,
-                              { title: "", description: "", plays: [] },
+                            actionSections: [
+                              ...f.actionSections,
+                              { title: "", description: "", actions: [] },
                             ],
                           }
                         : f
@@ -648,7 +768,7 @@ export default function AdminPlaybookDetailPage({
             ) : (
               <>
               <div className="mt-3 space-y-4">
-              {form.plays.map((play, i) => (
+              {form.actions.map((play, i) => (
                 <div key={i} className="rounded-lg border border-slate-200 p-4">
                   <div className="flex flex-wrap gap-3">
                     <label className="flex items-center gap-1 text-xs text-slate-600">
@@ -660,10 +780,10 @@ export default function AdminPlaybookDetailPage({
                         onChange={(e) =>
                           setForm((f) => {
                             if (!f) return f;
-                            const next = f.plays.map((p, j) =>
+                            const next = f.actions.map((p, j) =>
                               j === i ? { ...p, number: parseInt(e.target.value, 10) || 1 } : p
                             );
-                            return { ...f, plays: next };
+                            return { ...f, actions: next };
                           })
                         }
                         className="w-16 rounded border border-slate-300 px-2 py-1 text-sm"
@@ -677,10 +797,10 @@ export default function AdminPlaybookDetailPage({
                         onChange={(e) =>
                           setForm((f) => {
                             if (!f) return f;
-                            const next = f.plays.map((p, j) =>
+                            const next = f.actions.map((p, j) =>
                               j === i ? { ...p, title: e.target.value } : p
                             );
-                            return { ...f, plays: next };
+                            return { ...f, actions: next };
                           })
                         }
                         className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
@@ -690,11 +810,11 @@ export default function AdminPlaybookDetailPage({
                       type="button"
                       onClick={() =>
                         setForm((f) =>
-                          f ? { ...f, plays: f.plays.filter((_, j) => j !== i) } : f
+                          f ? { ...f, actions: f.actions.filter((_, j) => j !== i) } : f
                         )
                       }
                       className="shrink-0 text-slate-400 hover:text-rose-600"
-                      aria-label="Remove play"
+                      aria-label="Remove action"
                     >
                       ×
                     </button>
@@ -706,16 +826,102 @@ export default function AdminPlaybookDetailPage({
                       onChange={(e) =>
                         setForm((f) => {
                           if (!f) return f;
-                          const next = f.plays.map((p, j) =>
+                          const next = f.actions.map((p, j) =>
                             j === i ? { ...p, description: e.target.value } : p
                           );
-                          return { ...f, plays: next };
+                          return { ...f, actions: next };
                         })
                       }
                       rows={2}
                       className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm"
                     />
                   </label>
+                  <details className="mt-3 rounded border border-dashed border-slate-200 bg-slate-50/80 px-2 py-2">
+                    <summary className="cursor-pointer text-xs font-medium text-slate-600">
+                      Expanded sections (on-site expand)
+                    </summary>
+                    <div className="mt-2 space-y-3">
+                      {(play.detailSections ?? []).map((ds, di) => (
+                        <div
+                          key={di}
+                          className="rounded border border-slate-200 bg-white p-2 space-y-1"
+                        >
+                          <input
+                            type="text"
+                            value={ds.title}
+                            onChange={(e) =>
+                              setForm((f) => {
+                                if (!f) return f;
+                                const cur = f.actions[i]!;
+                                const list = [...(cur.detailSections ?? [])];
+                                list[di] = { ...list[di]!, title: e.target.value };
+                                const next = f.actions.map((p, j) =>
+                                  j === i ? { ...p, detailSections: list } : p
+                                );
+                                return { ...f, actions: next };
+                              })
+                            }
+                            placeholder="Heading (e.g. What to Do)"
+                            className="w-full rounded border border-slate-300 px-2 py-1 text-xs"
+                          />
+                          <textarea
+                            value={ds.content}
+                            onChange={(e) =>
+                              setForm((f) => {
+                                if (!f) return f;
+                                const cur = f.actions[i]!;
+                                const list = [...(cur.detailSections ?? [])];
+                                list[di] = { ...list[di]!, content: e.target.value };
+                                const next = f.actions.map((p, j) =>
+                                  j === i ? { ...p, detailSections: list } : p
+                                );
+                                return { ...f, actions: next };
+                              })
+                            }
+                            rows={4}
+                            placeholder="Markdown body"
+                            className="w-full rounded border border-slate-300 px-2 py-1 text-xs font-mono"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((f) => {
+                                if (!f) return f;
+                                const cur = f.actions[i]!;
+                                const list = (cur.detailSections ?? []).filter((_, j) => j !== di);
+                                const next = f.actions.map((p, j) =>
+                                  j === i
+                                    ? { ...p, detailSections: list.length ? list : undefined }
+                                    : p
+                                );
+                                return { ...f, actions: next };
+                              })
+                            }
+                            className="text-xs text-rose-600 hover:underline"
+                          >
+                            Remove section
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => {
+                            if (!f) return f;
+                            const cur = f.actions[i]!;
+                            const list = [...(cur.detailSections ?? []), { title: "", content: "" }];
+                            const next = f.actions.map((p, j) =>
+                              j === i ? { ...p, detailSections: list } : p
+                            );
+                            return { ...f, actions: next };
+                          })
+                        }
+                        className="text-xs font-medium text-sky-600 hover:text-sky-700"
+                      >
+                        + Add expanded section
+                      </button>
+                    </div>
+                  </details>
                 </div>
               ))}
             </div>
@@ -726,10 +932,10 @@ export default function AdminPlaybookDetailPage({
                   f
                     ? {
                         ...f,
-                        plays: [
-                          ...f.plays,
+                        actions: [
+                          ...f.actions,
                           {
-                            number: f.plays.length + 1,
+                            number: f.actions.length + 1,
                             title: "",
                             description: "",
                           },
@@ -740,7 +946,7 @@ export default function AdminPlaybookDetailPage({
               }
               className="mt-2 text-sm font-medium text-sky-600 hover:text-sky-700"
             >
-              + Add play
+              + Add action
             </button>
               </>
             )}

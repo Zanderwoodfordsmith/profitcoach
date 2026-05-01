@@ -1,0 +1,216 @@
+{
+  "ref": "5.2",
+  "level": 5,
+  "area": 2,
+  "name": "Exit Strategy",
+  "subtitle": "Level 5 · Owner · Defined Strategy",
+  "whatThisIs": "Exit strategy is about building optionality. Not necessarily leaving your business, but creating the choice to leave — which paradoxically makes the business more valuable whether you stay or go.\n\nMost owners avoid thinking about exit because it feels like giving up or because it seems decades away. But preparing for exit makes you a better business owner today. It forces you to reduce dependencies, strengthen systems, and build real value. Every exit-ready business is a better business to run.\n\nThis playbook is not about retirement planning. It is about building a business so valuable and independent that selling becomes a strategic choice rather than a desperate necessity.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "The business cannot survive without you for more than a few weeks. All major decisions flow through you, key relationships are tied to your personal connections, and critical processes exist only in your head. The idea of selling feels impossible because there is nothing to sell beyond a job that requires you to show up every day. Your business has no value independent of your labour."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "The business can run without you for short periods but struggles with bigger decisions or unexpected situations. Some processes are documented and systems exist, but key relationships and knowledge are still concentrated around you. You have thought about eventual exit but have not taken concrete steps to prepare for it."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your business could be sold within 24 months if needed. Clear exit routes have been identified and evaluated. The business generates strong cash flows independently of your daily involvement, systems and teams handle operations, and value exists in transferable assets rather than personal relationships. You have genuine options — sell, scale, or step back — because optionality has been deliberately built."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What would a buyer actually be purchasing? If someone bought your business tomorrow, would they be buying systems, processes, and cash flows — or would they be buying a job that requires them to work as hard as you do? Real value lies in what works without you.",
+    "How many realistic exit routes do you have? Trade sale to a competitor, management buyout by your team, transition to passive income, or strategic partnership — each requires different preparation. Most owners assume there is only one way out when there are actually several paths worth exploring.",
+    "Could your business survive and thrive if you disappeared for six months? This is the ultimate test of exit readiness. If the answer is no, your first job is not finding a buyer — it is building a business that does not need you for daily decisions.",
+    "What drives value in your industry? Revenue multiples, profit margins, customer retention, market position — different industries value different things. Understanding what buyers pay for in your sector tells you exactly what to build and optimise.",
+    "Do you know what your business is actually worth? Most owners dramatically overestimate their business value because they confuse revenue with value or effort with worth. Getting a proper valuation early tells you what gaps need closing before any exit conversation."
+  ],
+  "quickWins": [
+    "This week: List every decision you made in the last month that required your personal approval. Circle the ones that could have been made by someone else with clear criteria.",
+    "This week: Research three businesses similar to yours that have been sold in the last two years. What did the buyers highlight as valuable? What drove the purchase price?",
+    "This week: Book a conversation with a business broker or M\\&A advisor in your industry. Not to sell, but to understand what buyers are looking for and what your business would need to be attractive."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.2",
+      "description": ""
+    },
+    {
+      "ref": "5.7",
+      "description": ""
+    },
+    {
+      "ref": "5.3",
+      "description": ""
+    },
+    {
+      "ref": "5.4",
+      "description": ""
+    },
+    {
+      "ref": "1.8",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Exit Route Assessment",
+          "description": "Map and evaluate all realistic exit options for your business. Different routes require different preparation timelines and value different assets. Know your options before you need them.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map and evaluate all realistic exit options available to you. Different exit routes require different preparation timelines and value different business assets. Before you can prepare for an exit, you need to understand your options clearly - including routes you may not have considered.\n\nWork through each exit type, assess its viability for your specific business, and identify what preparation each route would require. You are not committing to a route yet. You are building a menu of informed options."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners have a vague idea about \"selling the business someday\" but have never mapped out what that actually means. John Warrillow's research for \"Built to Sell\" found that 75% of owners who put their business on the market fail to sell. The primary reason is not that the business is unsaleable - it is that the owner did not prepare for the specific route they eventually chose.\n\nDifferent exits create radically different outcomes. A trade sale might maximise price but eliminate your brand. A management buyout preserves culture but may limit valuation. An ESOP builds loyalty but is complex to structure. Knowing the options and their trade-offs lets you prepare intentionally, not reactively."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each exit route assessment honestly. Some routes will not be viable for your business - that is useful information. For the ones that are viable, note what preparation they would require and how long it would take.\n\n---"
+            },
+            {
+              "title": "Exit Routes to Evaluate",
+              "content": "### Trade Sale (Acquisition by Another Company)\n- [ ] **Identify 5-10 potential acquirers in your industry** - Competitors, complementary businesses, private equity portfolio companies. Who would benefit from owning your business?\n- [ ] **Assess what they would value most** - Client base? Technology? Team? Market position? IP? Different buyers care about different things.\n- [ ] **Estimate preparation timeline** - Trade sales typically require 2-3 years of preparation to maximise value. Where are you on that timeline?\n\n### Management Buyout (MBO)\n- [ ] **Assess whether your leadership team has the capability and desire to buy** - Not everyone wants to be an owner. Have honest conversations.\n- [ ] **Consider funding options** - Can the team fund the purchase through earn-out, seller financing, or external investment? Most MBOs require creative structuring.\n- [ ] **Evaluate whether the business can sustain the debt** - An MBO often means the business borrows to fund the purchase. Can cash flow support that?\n\n### Employee Ownership (ESOP/EOT)\n- [ ] **Research the tax advantages of Employee Ownership Trusts (EOTs)** - In the UK, selling to an EOT can be CGT-free. Significant financial benefit worth understanding.\n- [ ] **Assess cultural readiness** - Does your team want ownership responsibility? Employee ownership works best in cultures that already share information and accountability.\n\n### Private Equity Investment\n- [ ] **Determine whether PE is a realistic option for your size and sector** - PE firms typically look for businesses with EBITDA above a certain threshold. Know whether you qualify.\n- [ ] **Understand what PE investors want** - Scalable model, strong management team, growth potential, clean financials. Assess your gaps honestly.\n- [ ] ⚡ Quick Win: **Talk to one business owner in your network who has taken PE investment** - First-hand experience is worth more than any article.\n\n### Family Succession\n- [ ] **Assess whether family members are willing and capable** - Willingness without capability is dangerous. Capability without willingness is pointless.\n- [ ] **Consider the impact on non-family team members** - Key people may leave if they see family succession as a ceiling on their growth.\n\n### Lifestyle Hold (Keep and Optimise)\n- [ ] **Evaluate the \"do nothing\" option honestly** - What if the best exit is not to exit? A business that generates strong cash flow, runs without you, and funds your life may be the best asset you can own.\n- [ ] ⚡ Quick Win: **Calculate your annual return on equity if you kept the business forever** - Compare that to what you would earn investing the sale proceeds. Sometimes keeping is better than selling.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear understanding of all viable exit routes for your specific business\n- Honest assessment of preparation required for each route\n- Identification of the 2-3 most attractive options to explore further\n- Understanding of timelines and what needs to happen next\n- Foundation for making an informed exit strategy decision"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Many owners have never seriously considered anything beyond \"sell the business.\" Expanding their thinking to include MBOs, EOTs, PE, and lifestyle holds often changes their perspective significantly. The best exit is not always the most lucrative - it is the one that serves their life vision.\n\nWatch for emotional attachment distorting the assessment. Some owners overvalue their business because it is their life's work. Others undervalue it because they are tired and want out. Neither perspective produces good decisions. Push for objective assessment - ideally backed by professional valuation.\n\nThis is also a good time to introduce the concept of preparation timeline. If the owner wants to exit in 3 years, some routes are already off the table because they require longer preparation. Clarity on timing narrows the options helpfully."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Value Driver Analysis",
+          "description": "Identify what actually drives value in your industry and business model. Focus your efforts on the specific factors that buyers pay premiums for rather than generic business improvements.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify what actually drives value in your industry and business model, then assess how your business performs against each driver. Buyers pay premiums for specific characteristics. This action identifies those characteristics and shows you where to focus your preparation effort for maximum impact on valuation.\n\nThis is not about inflating numbers. It is about understanding what makes a business genuinely valuable and building those qualities intentionally."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "John Warrillow identified eight key drivers of company value in \"Built to Sell.\" Businesses that score well across these drivers sell for 3-6x more than comparable businesses that do not. The difference is rarely about revenue - it is about the quality and sustainability of that revenue.\n\nMost owners focus on growing revenue when preparing for exit. But a buyer looking at two businesses with the same revenue will pay dramatically more for the one with recurring contracts, diversified clients, documented systems, and a strong management team. Value drivers are the multiplier, not the multiple."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Score your business against each value driver honestly (1-5 scale). Identify the 3 drivers with the biggest gap between current score and potential. Focus your preparation effort there.\n\n---"
+            },
+            {
+              "title": "Core Value Drivers",
+              "content": "### Revenue Quality\n- [ ] **Calculate your recurring revenue percentage** - What share of revenue comes from contracts, subscriptions, or retainers versus one-off projects? Higher recurring revenue = higher valuation. Score yourself 1-5.\n- [ ] **Measure revenue concentration** - What percentage comes from your top 3 clients? If any single client represents more than 15% of revenue, that is a risk factor buyers will discount.\n- [ ] **Assess revenue predictability** - Can you forecast next quarter's revenue within 10%? Predictable businesses command premium multiples.\n- [ ] ⚡ Quick Win: **Calculate your top-client concentration right now** - Revenue from top 3 clients divided by total revenue. If it is above 30%, this becomes a priority to address.\n\n### Growth Trajectory\n- [ ] **Document your 3-year revenue trend** - Consistent growth is more valuable than spiky performance. A buyer wants to see a pattern they believe will continue.\n- [ ] **Identify untapped growth opportunities** - New markets, products, or channels you have not yet pursued. These represent upside a buyer can capture.\n- [ ] **Assess the sustainability of current growth** - Is it dependent on your personal relationships, a single marketing channel, or market conditions that could change?\n\n### Operational Independence\n- [ ] **Score your owner-dependency (1-5)** - 1 = nothing works without you. 5 = the business runs smoothly when you are away for a month. Be honest.\n- [ ] **Assess management team depth** - Could your current leadership team run the business for 12 months without you? If not, what is missing?\n- [ ] **Review system documentation** - Are your key processes documented and repeatable? Or do they live in people's heads?\n\n### Financial Health\n- [ ] **Clean up your financial statements** - Ensure P&L, balance sheet, and cash flow statements are accurate, up to date, and professionally prepared. Messy financials kill deals.\n- [ ] **Identify and adjust owner-specific expenses** - Personal expenses running through the business distort profitability. Identify them and calculate \"normalised\" EBITDA.\n- [ ] **Assess working capital requirements** - Businesses that require heavy working capital are worth less than asset-light models. Know your position.\n\n### Competitive Position\n- [ ] **Define your competitive moat** - What makes it hard for competitors to replicate what you do? Brand, IP, relationships, data, network effects? If the answer is \"nothing,\" that is a problem for valuation.\n- [ ] **Assess market position** - Are you a leader, a strong challenger, or a commodity player? Position affects multiple.\n- [ ] ⚡ Quick Win: **List your top 3 competitive advantages and ask: \"Would these survive without me?\"** - If they depend on you personally, they are not value drivers for a buyer.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Honest scorecard of your business across all major value drivers\n- Clear picture of where the biggest valuation gaps exist\n- Prioritised list of 3 value drivers to improve over the next 12-24 months\n- Understanding of what buyers in your industry actually pay premiums for\n- Foundation for a focused exit preparation plan"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part of this exercise is honesty. Owners tend to score themselves generously, especially on operational independence (\"My team could handle it\" when they have never actually tested this). Push for evidence, not feelings.\n\nRevenue quality is almost always the highest-impact area to improve. Converting project revenue to recurring revenue, or diversifying away from a concentrated client base, can dramatically increase valuation. These changes take time, which is why starting early matters.\n\nIf an owner scores low across most drivers, the conversation may need to shift from \"How do I prepare for exit?\" to \"Is the business ready to be valuable at all?\" That is a harder but more useful conversation. Sometimes the best exit preparation is spending 2-3 years building a genuinely better business."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Dependency Audit",
+          "description": "Systematically identify and eliminate your personal dependencies. Map every decision, relationship, and process that currently requires you and create plans to transfer or systematise each one.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically identify and eliminate every personal dependency in your business. Map every decision, relationship, process, and piece of knowledge that requires you specifically. Then build a plan to transfer, document, or restructure each one so the business can operate independently.\n\nThis is the most practical exit preparation action. A business that depends on its owner is not a saleable asset - it is a job with a fancy title."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Bo Burlingham found in \"Finish Big\" that the number one reason business sales collapse after due diligence is owner dependency. The buyer discovers that key clients have personal relationships with the owner, that critical decisions cannot be made without the owner, and that institutional knowledge lives nowhere but the owner's head. The deal either dies or the valuation drops significantly.\n\nEven if you are not planning to sell soon, reducing dependency is valuable. It gives you freedom now - the ability to take holidays, focus on strategy, or simply step back when you need to. Owner dependency is not just an exit problem. It is a quality-of-life problem."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each dependency category methodically. For each item you identify, classify it as Critical (must fix before any exit), Important (should fix within 12 months), or Minor (nice to fix). Start with the Critical items.\n\n---"
+            },
+            {
+              "title": "Relationship Dependencies",
+              "content": "- [ ] **List every key client who would leave if you left** - Be honest. If clients buy from you personally rather than from the company, that is a dependency. Name each one.\n- [ ] **List every supplier or partner relationship that depends on your personal connection** - Who would stop returning calls if you were not the one calling?\n- [ ] **Identify key referral sources that are tied to you personally** - Referral networks built on personal trust are valuable but fragile. They need to be transferred or institutionalised.\n- [ ] **Start introducing your team to key relationships** - Do not wait until exit. Begin transitioning relationships now by having team members join calls, attend meetings, and build their own connections.\n- [ ] ⚡ Quick Win: **Introduce one key client to a senior team member this week** - Frame it as \"I want you to have more than one point of contact.\" Start the transition casually."
+            },
+            {
+              "title": "Decision Dependencies",
+              "content": "- [ ] **Track every decision that comes to you in a normal week** - Keep a log for 5 working days. Every question, approval, sign-off, or consultation. Count them.\n- [ ] **Categorise each decision: Must be me / Could be someone else / Should not be me at all** - Most owners find 70-80% of decisions reaching them could be made by someone else.\n- [ ] **Create decision authority levels** - Define who can decide what, up to what value, without your approval. Write it down. Share it. Enforce it.\n- [ ] **Identify the 3 decisions your team is most afraid to make without you** - That fear is the dependency. Address it through training, clear criteria, or explicit permission."
+            },
+            {
+              "title": "Knowledge Dependencies",
+              "content": "- [ ] **List everything you know that nobody else does** - Pricing logic, client history, product rationale, supplier arrangements, market insights, financial context. All of it.\n- [ ] **Prioritise by risk: what would hurt most if lost?** - If you were hit by a bus tomorrow, which missing knowledge would cause the biggest problems? Start there.\n- [ ] **Document the top 10 items** - Not in perfect detail. A rough document that captures 80% of the knowledge is infinitely better than nothing. Use video recordings if writing takes too long.\n- [ ] **Create \"run books\" for critical processes** - Step-by-step guides for the processes only you currently manage. Invoicing, pricing, client renewals, board reporting, whatever only you do.\n- [ ] ⚡ Quick Win: **Record a 10-minute video explaining the one thing only you understand** - Loom, phone video, anything. Store it somewhere the team can access."
+            },
+            {
+              "title": "Process Dependencies",
+              "content": "- [ ] **Identify processes that stop when you are away** - What grinds to a halt during your holidays? Those are your process dependencies.\n- [ ] **Map your involvement in each core business process** - Sales, delivery, finance, hiring, strategy. Where are you a bottleneck?\n- [ ] **Assign a backup for every process you are involved in** - Not just a name on a chart. A person who has been trained and has actually done the work at least once.\n- [ ] **Test independence: take a full week off with no contact** - The problems that surface reveal your remaining dependencies. Do this at least once a year.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Complete inventory of personal dependencies across relationships, decisions, knowledge, and processes\n- Each dependency classified by severity (Critical, Important, Minor)\n- Transfer or elimination plan for all Critical dependencies\n- Decision authority framework that empowers the team\n- Measurable reduction in owner involvement over 12 months"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is often uncomfortable work. The owner's identity is wrapped up in being needed. Being the person who knows everything, who makes the final call, who has the key relationships - that feels like importance. Letting go of it can feel like becoming irrelevant. Help them reframe: reducing dependency is not reducing importance. It is upgrading from operator to architect.\n\nThe \"bus test\" is a useful but harsh framing. A gentler version: \"Could you take 3 months off to travel and come back to a healthy business?\" If the answer is no, the dependencies are real and need addressing.\n\nRelationship dependencies are the hardest to fix and the most damaging to valuation. They take 12-24 months to transition. Start early. The owner needs to gradually introduce team members to key relationships without alarming clients or partners."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Exit Readiness Scorecard",
+          "description": "Assess your current readiness across financial, operational, legal, and strategic dimensions. Track progress over time and identify the biggest gaps blocking a potential sale.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Assess your current readiness for exit across four dimensions: financial, operational, legal, and strategic. Score each area honestly, identify gaps, and track progress over time. This is the dashboard that tells you how close you are to being able to exit on your terms.\n\nUpdate the scorecard quarterly to track progress and ensure preparation stays on track. A score below 3 in any dimension means that dimension would either block a deal or significantly reduce valuation."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Exit readiness is not binary - you are not simply \"ready\" or \"not ready.\" It is a spectrum across multiple dimensions, and weakness in any single area can derail an otherwise strong exit. Owners who track readiness over time prepare more effectively than those who try to get ready in a rush when an opportunity appears.\n\nThe owners who achieve the best exits are those who started preparing 3-5 years before they sold. Not because the preparation takes that long, but because the changes that increase value - reducing dependency, diversifying revenue, building management depth - compound over time. This scorecard keeps that long-term preparation focused and measurable."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Score each item 1-5, where 1 is \"not started\" and 5 is \"fully ready.\" Calculate an average for each dimension. Any dimension averaging below 3 is a priority. Review and rescore quarterly.\n\n---"
+            },
+            {
+              "title": "Financial Readiness",
+              "content": "- [ ] **Financial statements are clean, accurate, and professionally prepared (score 1-5)** - A buyer's accountant will scrutinise every number. Messy accounts either kill deals or invite aggressive price reductions.\n- [ ] **3+ years of consistent or growing revenue documented (score 1-5)** - Buyers want evidence of a trend, not a single good year. Consistency matters more than peak performance.\n- [ ] **Owner compensation is at market rate (score 1-5)** - If you are overpaying or underpaying yourself, normalise it. Buyers calculate value from normalised earnings.\n- [ ] **No significant off-balance-sheet liabilities or tax issues (score 1-5)** - Outstanding tax disputes, pending claims, or undisclosed liabilities will surface in due diligence and destroy trust.\n- [ ] **Working capital requirements are understood and manageable (score 1-5)** - Can you clearly explain how much cash the business needs to operate? Buyers need this for their financial model.\n- [ ] ⚡ Quick Win: **Ask your accountant: \"If someone wanted to buy this business, what would concern you about our financials?\"** - Their answer becomes your financial readiness to-do list."
+            },
+            {
+              "title": "Operational Readiness",
+              "content": "- [ ] **Business operates without daily owner involvement (score 1-5)** - Can you be absent for a month without performance declining? If not, you are the product, and that limits value.\n- [ ] **Key processes are documented and repeatable (score 1-5)** - A buyer needs to see that operations are systematic, not dependent on tribal knowledge.\n- [ ] **Management team is capable and retained (score 1-5)** - Strong leadership with contracts, incentives, and commitment to stay through a transition. Key person risk is a major buyer concern.\n- [ ] **Technology and systems are current and scalable (score 1-5)** - Outdated systems or technical debt reduce valuation. Buyers factor in the cost to modernise.\n- [ ] **No single points of failure in operations (score 1-5)** - One person, one system, one supplier that everything depends on. Any single point of failure is a risk buyers will discount."
+            },
+            {
+              "title": "Legal Readiness",
+              "content": "- [ ] **All contracts are current, documented, and transferable (score 1-5)** - Client contracts, supplier agreements, leases, partnerships. Are they written, signed, and assignable?\n- [ ] **IP is properly protected and owned by the company (score 1-5)** - Trademarks, patents, copyrights, domain names. Owned by the company, not by you personally.\n- [ ] **Employment contracts and policies are compliant and up to date (score 1-5)** - Including non-compete clauses, IP assignment, and data protection compliance.\n- [ ] **No outstanding or potential legal disputes (score 1-5)** - Pending litigation, regulatory issues, or unresolved disputes. Buyers walk away from legal risk.\n- [ ] ⚡ Quick Win: **Check whether your key client contracts have a \"change of ownership\" clause** - Some contracts allow clients to terminate on ownership change. Know this before a buyer finds it."
+            },
+            {
+              "title": "Strategic Readiness",
+              "content": "- [ ] **Clear growth story for the next buyer (score 1-5)** - A buyer is purchasing the future, not the past. Can you articulate a compelling growth plan they can execute?\n- [ ] **Customer base is diversified (score 1-5)** - No single client represents more than 10-15% of revenue. Concentration risk is one of the most common deal-killers.\n- [ ] **Competitive position is defensible (score 1-5)** - The business has something that makes it hard to replicate: brand, data, network, IP, or market position.\n- [ ] **Market conditions favour a sale (score 1-5)** - Is your industry growing or contracting? Are multiples in your sector trending up or down? Timing matters.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Quantified readiness score across four dimensions with specific item-level detail\n- Clear identification of the weakest areas requiring immediate attention\n- Quarterly trend data showing preparation progress over time\n- Prioritised action plan for closing the biggest gaps\n- Confidence in understanding exactly where you stand and what remains to be done"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The scorecard is most valuable when used honestly over time. Encourage clients to score conservatively - it is better to be pleasantly surprised during due diligence than to discover gaps you did not know existed.\n\nQuarterly reviews should be short and focused: \"What improved? What did not? Why?\" If scores are not improving, the preparation plan is not working and needs adjustment.\n\nThe legal dimension often gets neglected because owners find it boring and expensive. But legal issues are the most common reason deals collapse in due diligence. Push clients to engage a solicitor early, even if exit is 2-3 years away. A legal health check now is far cheaper than a failed deal later.\n\nIf a client's overall score is below 2.5, they are likely 3+ years from a strong exit. Frame that honestly but constructively - it means there is time to build real value, not just cosmetic improvements."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,464 @@
+{
+  "ref": "4.2",
+  "level": 4,
+  "area": 2,
+  "name": "Growth Strategy",
+  "subtitle": "Level 4 · Overseer · Defined Strategy",
+  "whatThisIs": "Growth strategy is about making deliberate choices on where and how to expand your business. Not chasing every opportunity that appears, but designing expansion that strengthens your position rather than diluting it. It is the difference between growth that builds resilience and growth that creates fragility.\n\nAt Level 4, you are working ON your business, not IN it. You have the capacity to think strategically about what comes next. This playbook helps you evaluate expansion opportunities against clear criteria so every growth decision protects your margins, maintains your positioning, and builds scalable momentum.\n\nThis is about resource allocation, not wishful thinking. Where you put your time, money, and attention determines whether growth strengthens your business or stretches it beyond breaking point.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You chase every growth opportunity that appears because more revenue feels like progress. You enter new markets or launch new products without clear criteria or adequate resources. Growth comes at the expense of profitability, operational quality, or team capacity. You are growing wider but weaker, adding complexity faster than you are adding capability."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some growth initiatives running but the decision-making is inconsistent. Sometimes you pick winners, sometimes you waste resources on dead ends, and you are not sure what made the difference. You can see opportunities but struggle to prioritise between them. Growth happens but it feels reactive rather than strategic."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every expansion decision flows from clear strategic criteria. You know whether to grow deeper with existing customers or broader into new markets, and the choice is based on evidence, not instinct. New initiatives strengthen your core business rather than distracting from it. Growth is designed to be scalable from day one, with the systems and resources to support it properly. You say no to good opportunities to say yes to great ones."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Are you growing from strength or desperation? The best expansion decisions come from a position of stability, not pressure. If you are growing to solve a cash flow problem or because competitors are moving, you are likely to make poor strategic choices. Growth should amplify what is already working.",
+    "Does this expansion reinforce your positioning or confuse it? Every new market, product, or partnership sends a signal about who you are. If a potential expansion would make it harder for customers to understand what you do best, it probably dilutes more than it delivers. Clarity beats reach every time.",
+    "Can your current systems handle the complexity this creates? Growth without the infrastructure to support it leads to quality problems, team burnout, and customer dissatisfaction. Before you expand, ask whether your operational capacity can scale with the opportunity. If not, you are borrowing from future stability to fund present growth.",
+    "Where could leverage replace effort? The most powerful growth often comes from partnerships, referrals, or systems that multiply your reach without multiplying your workload. Before building something new, ask whether someone else has already built what you need and would share the value.",
+    "What would you stop doing to make room for this? Resources are finite. Every yes to a new initiative is a no to something else. If you cannot identify what you would stop or reduce to fund new growth, you are probably trying to do too much at once."
+  ],
+  "actionsIntro": "This is a larger playbook organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "This week: List every growth opportunity you are currently considering. Score each one from 1-5 on strategic fit, resource requirements, and scalability potential. Focus your energy on the highest scoring option.",
+    "This week: Identify one thing you would need to stop doing or delegate to properly resource your most promising growth initiative. Make that change before you commit more resources to expansion.",
+    "This week: Choose three potential partners who could help you reach your target market more efficiently than direct effort. Reach out to start one conversation about mutual value creation."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "4.1",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    },
+    {
+      "ref": "3.2",
+      "description": ""
+    },
+    {
+      "ref": "2.5",
+      "description": ""
+    },
+    {
+      "ref": "2.9",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Strategic Assessment",
+      "description": "Evaluating where and how to grow next.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Growth Lever Analysis",
+          "description": "Map your current expansion options across depth (existing customers) versus breadth (new markets) to identify the highest-impact opportunities with the lowest complexity cost.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map your expansion options across two dimensions: depth (getting more from existing customers) and breadth (reaching new markets or segments). Then score each option for impact, feasibility, and risk so you can focus on the growth levers that deliver the highest return with the lowest complexity cost."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners default to one growth approach - usually chasing new customers - because it feels like the most obvious path. But Jay Abraham's three ways to grow a business still hold true: get more customers, increase transaction value, or increase purchase frequency. The cheapest, fastest growth almost always comes from depth - selling more to people who already trust you. Breadth is necessary for long-term growth, but it costs more and takes longer. Without a structured analysis, you miss the easy wins and overspend on the hard ones."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map all your growth options first, then score and prioritise. Resist the urge to jump straight to the most exciting idea. The most exciting idea is rarely the most impactful.\n\n---"
+            },
+            {
+              "title": "Depth Levers (Existing Customers)",
+              "content": "- [ ] **Calculate your customer retention rate** - What percentage of customers stay year to year? A 5% improvement in retention often delivers more profit than a 20% increase in new customers.\n- [ ] **Identify upsell and cross-sell opportunities** - What else could your existing customers buy from you? What problems do they have that you could solve but currently do not?\n- [ ] ⚡ Quick Win: **List your top 10 customers and ask: \"Are they buying everything they should be?\"** - Most businesses have immediate revenue sitting in existing relationships. One conversation could unlock it.\n- [ ] **Assess your pricing power** - When did you last raise prices? Could you increase by 5-10% without losing customers? For most service businesses, the answer is yes, but fear prevents the conversation.\n- [ ] **Map referral potential** - How many of your existing customers actively refer new business? What would it take to increase that? A structured referral programme costs almost nothing to run."
+            },
+            {
+              "title": "Breadth Levers (New Markets)",
+              "content": "- [ ] **Identify adjacent customer segments** - Who is similar to your ideal customer but not currently being served? What would it take to reach them?\n- [ ] **Assess geographic expansion options** - Could you serve a wider geographic area? What infrastructure would that require? Is the opportunity worth the complexity?\n- [ ] **Evaluate new product or service opportunities** - What could you add that serves a different need for a different audience? Be cautious here - new products for new markets is the highest risk combination.\n- [ ] **Consider channel expansion** - Could you reach new customers through different channels? Partnerships, online delivery, licensing, white-labelling?"
+            },
+            {
+              "title": "Scoring and Prioritisation",
+              "content": "- [ ] **Score each lever on four criteria** - (1) Revenue potential (1-10), (2) Cost to implement (1-10, where 10 is cheapest), (3) Time to results (1-10, where 10 is fastest), (4) Alignment with core strengths (1-10).\n- [ ] **Plot your top options on a 2x2 matrix** - Impact (high/low) vs Effort (high/low). Focus on high impact, low effort first. Park high impact, high effort for later. Drop low impact entirely.\n- [ ] ⚡ Quick Win: **Pick the single growth lever you could activate this month** - The one that scores highest on the matrix with the lowest barrier to starting. Do not wait for the perfect plan.\n- [ ] **Create a sequenced growth roadmap** - Order your chosen levers by quarter. Depth levers typically come first (faster, cheaper), followed by breadth levers as capacity and confidence build.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete map of growth options across depth and breadth\n- Honest scoring that separates exciting ideas from genuinely impactful ones\n- A prioritised shortlist of 3-5 growth levers to pursue\n- A sequenced roadmap showing which levers to activate and when\n- Immediate action on at least one quick-win growth lever"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common mistake is chasing breadth when depth opportunities are untapped. Challenge clients who want to expand into new markets before they have maximised their existing customer base. Ask: \"If you could only grow from existing customers for the next 12 months, what would you do?\" This question often reveals surprising opportunities. The second mistake is trying to pull too many levers at once. Each growth initiative needs resources and management attention. Two well-executed initiatives beat five half-hearted ones."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Market Entry Framework",
+          "description": "A systematic process for evaluating new markets against strategic fit, resource requirements, competitive position, and scalability potential.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a systematic process for evaluating new markets before you commit resources. For every potential market, assess strategic fit, resource requirements, competitive position, and scalability. This prevents the common pattern of chasing a shiny opportunity, investing heavily, then discovering it does not work after the money is spent."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Entering the wrong market is one of the most expensive mistakes a growing business can make. It is not just the direct cost. It is the distraction, the team fatigue, the brand dilution, and the opportunity cost of what you could have done instead. Clayton Christensen's research shows that most market entry failures are not caused by bad products - they are caused by misunderstanding the market. A structured evaluation catches the problems before you commit, not after."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Run every potential new market through this framework. If it does not pass all four tests, do not enter. Discipline here saves enormous pain later.\n\n---"
+            },
+            {
+              "title": "Strategic Fit Assessment",
+              "content": "- [ ] **Define why you are considering this market** - Is it pull (customers are asking for it) or push (you want to grow into it)? Pull is safer. Push requires more validation.\n- [ ] **Check alignment with your strategic arena** - Does this market sit within or adjacent to your defined competitive space? The further you drift from your arena, the higher the risk.\n- [ ] **Assess brand fit** - Will your brand credibility transfer to this market? If your reputation was built serving manufacturers, entering professional services requires a different kind of trust.\n- [ ] ⚡ Quick Win: **Ask yourself: \"Would I enter this market if I were starting from scratch today?\"** - If the answer is no, you are probably being pulled by momentum rather than strategy."
+            },
+            {
+              "title": "Resource Requirements",
+              "content": "- [ ] **Estimate total investment needed** - Not just money, but time, attention, and team capacity. Be honest about hidden costs: learning curve, relationship building, marketing in a new space, and inevitable mistakes.\n- [ ] **Identify capability gaps** - What skills, knowledge, or infrastructure do you need that you do not currently have? How long will it take to build or buy?\n- [ ] **Assess impact on existing operations** - Will entering this market take resources away from your core business? Can your current team absorb the additional workload, or do you need to hire?\n- [ ] **Define the minimum viable commitment** - What is the smallest investment you can make to test whether this market works before going all in?"
+            },
+            {
+              "title": "Competitive Position",
+              "content": "- [ ] **Map existing competitors in this market** - Who already serves these customers? How entrenched are they? What would it take to win business from them?\n- [ ] **Identify your entry advantage** - Why would customers in this market choose a newcomer over established providers? You need a compelling answer. \"We are good at what we do\" is not enough.\n- [ ] **Assess barriers to entry** - Regulatory requirements, established relationships, technical standards, long sales cycles. The higher the barriers, the longer and more expensive your entry will be.\n- [ ] **Evaluate competitive response** - How will incumbents react to your entry? Will they compete on price, service, or relationships? Can you withstand that response?"
+            },
+            {
+              "title": "Scalability Check",
+              "content": "- [ ] **Estimate market size and growth trajectory** - Is this market growing, stable, or declining? Is it large enough to justify the entry investment?\n- [ ] ⚡ Quick Win: **Talk to 3-5 potential customers in this market before committing anything** - Ask what they need, what frustrates them about current providers, and what would make them switch. Real conversations beat market research reports.\n- [ ] **Define success metrics and timeline** - What does a successful entry look like at 6 months, 12 months, and 24 months? Be specific about revenue targets, customer numbers, and profitability.\n- [ ] **Set a kill date** - If you have not hit defined milestones by a specific date, you will exit. Decide this before you start so sunk cost bias does not keep you going too long.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A structured evaluation of each potential market across four dimensions\n- Clear understanding of resource requirements before committing\n- Honest assessment of competitive position and right to win\n- Defined success metrics and a kill date to prevent indefinite investment in underperforming markets\n- Confidence to say no to markets that do not pass the test"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest risk in market entry is overconfidence. Owners who have succeeded in one market assume their skills transfer directly. Sometimes they do, sometimes they do not. Push for evidence over assumption. The \"talk to 3-5 potential customers\" step is the single most valuable thing they can do, and the step most often skipped. Insist on it. Also watch for the \"strategic creep\" pattern where a client enters one new market, then another, then another, until they are spread across five markets and dominant in none. Each entry should be fully validated and resourced before the next one is considered."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Resource Allocation Matrix",
+          "description": "Prioritise growth initiatives based on strategic impact, investment required, time to results, and alignment with core strengths.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Prioritise your growth initiatives by scoring each one against four dimensions: strategic impact, investment required, time to results, and alignment with core strengths. The output is a ranked list that tells you where to invest first, what to defer, and what to drop entirely. This is not a wishlist. It is a forced prioritisation that matches ambition to reality."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Growing businesses have more ideas than resources. Without a disciplined allocation process, resources flow to whoever argues loudest or whatever feels most urgent, rather than what is most strategically important. Keith Cunningham calls this \"the tyranny of the urgent over the important.\" A resource allocation matrix forces objectivity into a process that is usually driven by emotion, politics, or habit. It ensures your best resources go to your best opportunities."
+            },
+            {
+              "title": "How to Use This",
+              "content": "List all growth initiatives on the table, score them honestly, then use the output to make allocation decisions. Update quarterly as initiatives progress and new opportunities emerge.\n\n---"
+            },
+            {
+              "title": "Initiative Inventory",
+              "content": "- [ ] **List every active growth initiative** - Include everything that is consuming time, money, or attention. Marketing campaigns, new product development, market expansion, partnership projects, technology investments. Nothing is too small to list.\n- [ ] **Add proposed initiatives not yet started** - Include ideas that are being discussed or planned. They need to compete for resources alongside existing commitments.\n- [ ] ⚡ Quick Win: **Remove anything that has been \"in progress\" for more than 6 months without clear results** - These are resource drains disguised as initiatives. Either commit properly or stop.\n- [ ] **Confirm the owner of each initiative** - Every initiative needs one person accountable. If it does not have a clear owner, it will not get done regardless of how well it scores."
+            },
+            {
+              "title": "Scoring Framework",
+              "content": "- [ ] **Score strategic impact (1-10)** - How much will this initiative move the needle on your most important strategic goals? A 10 is transformative. A 3 is incremental.\n- [ ] **Score investment required (1-10, inverted)** - How much will it cost in money, time, and people? Score 10 for low cost, 1 for high cost. This inverts the scale so higher is always better.\n- [ ] **Score time to results (1-10, inverted)** - How quickly will you see meaningful returns? Score 10 for quick payback, 1 for long-horizon bets.\n- [ ] **Score alignment with core strengths (1-10)** - Does this play to your existing capabilities, or does it require building new ones? Initiatives that leverage what you already do well have a higher probability of success.\n- [ ] **Calculate a composite score** - Add the four scores for each initiative. Maximum possible is 40. Rank from highest to lowest."
+            },
+            {
+              "title": "Allocation Decisions",
+              "content": "- [ ] **Divide initiatives into three tiers** - Tier 1 (top 3): Full investment, best resources, active leadership attention. Tier 2 (next 3): Moderate investment, clear milestones, review monthly. Tier 3 (everything else): Defer, reduce, or stop.\n- [ ] **Assign specific resources to Tier 1** - Name the people, define the budget, block the time. If you cannot assign specific resources, the initiative is not really Tier 1.\n- [ ] **Set milestone checkpoints for Tier 2** - Define what needs to happen before Tier 2 initiatives get promoted to Tier 1 or demoted to Tier 3.\n- [ ] ⚡ Quick Win: **Identify one Tier 3 initiative to stop this week** - Free up the resources and redirect them to Tier 1. Stopping is the fastest way to create capacity."
+            },
+            {
+              "title": "Review Rhythm",
+              "content": "- [ ] **Schedule quarterly matrix reviews** - Scores change as initiatives progress, market conditions shift, and new opportunities appear. The matrix should be a living tool, not a one-time exercise.\n- [ ] **Track actual resource spend against allocation** - Are Tier 1 initiatives actually getting the resources you allocated? If not, something is pulling resources away. Find it and fix it.\n- [ ] **Celebrate Tier 1 progress publicly** - The team needs to see that strategic priorities get attention, results, and recognition. This reinforces the allocation discipline.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every growth initiative scored objectively on four dimensions\n- A clear ranking that separates high-value initiatives from resource drains\n- Specific resource commitments for top-tier initiatives\n- At least one low-performing initiative stopped to free up capacity\n- A quarterly review rhythm that keeps allocation aligned with strategy"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most powerful moment in this exercise is when clients see that their current resource allocation does not match their stated priorities. They will have Tier 3 initiatives consuming Tier 1 resources, often because of emotional attachment or historical momentum. Help them confront this without judgement. The hardest part is stopping things. Owners hate stopping because it feels like failure. Reframe it: stopping a low-priority initiative to fund a high-priority one is the definition of good strategy. If a client cannot rank their initiatives (everything is a \"10 for strategic impact\"), push back firmly. Forced ranking is the whole point. Without it, the exercise is just a list."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Partnership Strategy",
+      "description": "Building leverage through strategic relationships.",
+      "actions": [
+        {
+          "number": 4,
+          "title": "Partnership Opportunity Audit",
+          "description": "Identify potential partners who could accelerate growth through referrals, joint ventures, channel partnerships, or strategic alliances.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify potential partners who could accelerate your growth through referrals, joint ventures, channel partnerships, or strategic alliances. This is a systematic scan of your business ecosystem to find organisations and individuals who serve the same customer you serve but do not compete with you directly. The goal is a prioritised shortlist of partnership opportunities worth pursuing."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Partnerships can be the fastest and cheapest growth lever available to a small business. Instead of building an audience from scratch, you access someone else's established trust and distribution. Ryan Deiss calls these \"before and after\" partners - businesses that serve your customer either before they need you or after you are done with them. A single strong partnership can deliver more qualified leads than months of cold outreach. But most business owners either ignore partnerships entirely or pursue them randomly. A structured audit changes that."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map your customer journey, identify the gaps where partners could add value, then build a prioritised target list.\n\n---"
+            },
+            {
+              "title": "Ecosystem Mapping",
+              "content": "- [ ] **Map your customer's journey before they reach you** - What problem do they solve before yours becomes urgent? Who helps them with that problem? Those businesses are potential referral partners.\n- [ ] **Map what happens after you finish** - What does your customer need next? Who provides that? These are your \"after\" partners.\n- [ ] **Identify complementary service providers** - Who serves the same customer with a different service? Accountants and solicitors. Marketing agencies and web developers. Your combination will be different, but the logic is the same.\n- [ ] ⚡ Quick Win: **List 5 businesses that already send you referrals informally** - These are your warmest partnership opportunities. Formalising what already happens is far easier than building from scratch."
+            },
+            {
+              "title": "Partnership Types",
+              "content": "- [ ] **Referral partnerships** - Simple introductions in both directions. Low commitment, low complexity, easy to start. Score each potential partner on: quality of their audience, strength of their relationship with that audience, and their willingness to refer.\n- [ ] **Joint ventures** - Collaborative projects, co-created content, shared events, or bundled offerings. Higher commitment but higher value. Only pursue with partners whose quality and values match yours.\n- [ ] **Channel partnerships** - A partner sells or distributes your service as part of their offering. Higher complexity and requires clear agreements on pricing, delivery, and quality control.\n- [ ] **Strategic alliances** - Deep, long-term relationships where both businesses invest in shared outcomes. Rare but transformative when they work. Only appropriate with partners who share your strategic direction."
+            },
+            {
+              "title": "Opportunity Assessment",
+              "content": "- [ ] **Create a target list of 10-15 potential partners** - Combine names from your ecosystem map, existing informal relationships, and industry connections.\n- [ ] **Score each partner on three criteria** - (1) Audience overlap: Do they serve your ideal customer? (2) Reputation quality: Would you be proud to be associated with them? (3) Reciprocity potential: Can you offer genuine value back?\n- [ ] **Rank your top 5** - These are your priority targets. Focus your energy here rather than spreading across all 15.\n- [ ] ⚡ Quick Win: **Reach out to your number one prospect this week** - A simple message: \"I have been thinking about how we could help each other's clients. Fancy a coffee?\" Do not overthink it.\n- [ ] **Identify what you bring to the table** - Before approaching any partner, be clear about what value you offer them. If the answer is \"we would like their referrals,\" that is not a partnership. That is asking for a favour."
+            },
+            {
+              "title": "Risk Check",
+              "content": "- [ ] **Assess reputational risk for each partner** - If this partner has a public failure, how does it affect your brand? Only partner with businesses whose quality you trust completely.\n- [ ] **Check for competitive overlap** - Could this partner become a competitor? If they are building capability in your space, a partnership might help them more than it helps you.\n- [ ] **Evaluate dependency risk** - If a single partner accounts for more than 25% of your leads, you are too dependent. Diversify.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A mapped ecosystem showing where partnership opportunities exist\n- A scored and ranked list of 10-15 potential partners\n- A prioritised top 5 with clear reasoning for each\n- At least one outreach conversation initiated this week\n- A clear understanding of what you offer partners in return"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Many clients have untapped referral relationships sitting right in front of them. The quick win of formalising existing informal referrals almost always produces immediate results. Push them to act on it before building complex new partnerships. The most common failure in partnerships is one-sidedness. If the client cannot clearly articulate what value they bring to the partner, the partnership will not last. Spend time on this before any outreach. Also watch for clients who want to pursue too many partnerships at once. Partnerships require relationship investment. Three well-managed partnerships beat ten neglected ones."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Partnership Criteria Framework",
+          "description": "Define clear standards for evaluating partnership opportunities so you invest time in relationships that create genuine mutual value.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define clear, written standards for evaluating partnership opportunities so you invest in relationships that create genuine mutual value. This framework becomes your decision filter - every potential partnership gets measured against the same criteria before you commit time, energy, or reputation. No more gut-feel decisions about who to work with."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Bad partnerships cost more than they deliver, and the damage is often invisible until it is too late. A partner who sends low-quality referrals erodes your brand. A joint venture with someone whose values do not match yours creates customer confusion. A channel partner who underdelivers on your service destroys trust you spent years building. Having clear criteria before you need them prevents emotional or opportunistic decisions that look good in the moment but fail over time."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build your criteria framework once, then apply it to every partnership opportunity. Review and update the framework annually or whenever a partnership fails - failures teach you what criteria were missing.\n\n---"
+            },
+            {
+              "title": "Non-Negotiable Requirements",
+              "content": "- [ ] **Define your quality threshold** - What minimum standard must a partner meet in how they deliver to their own customers? If their customers are unhappy, your shared customers will be too.\n- [ ] **Define your values alignment test** - List 3-4 values that a partner must share. Not identical values, but compatible ones. If you prioritise transparency and they prioritise aggressive selling, it will not work.\n- [ ] **Set your reputation test** - Would you be comfortable with your best customer knowing about this partnership? If not, it is not the right partner.\n- [ ] ⚡ Quick Win: **Write one sentence describing your ideal partner** - \"We partner with businesses that...\" This becomes your quick screening filter before any detailed evaluation."
+            },
+            {
+              "title": "Evaluation Criteria",
+              "content": "- [ ] **Audience quality and overlap** - Does their customer base match your ideal customer profile? A large audience of the wrong people is worse than a small audience of the right ones.\n- [ ] **Mutual value balance** - Can you clearly define what each party gives and gets? If the value flows primarily in one direction, it is not sustainable.\n- [ ] **Operational compatibility** - How do they communicate? How quickly do they move? How do they handle problems? If your working styles clash, the partnership will create friction, not growth.\n- [ ] **Financial transparency** - Are they financially stable? Will revenue-sharing or referral fees work for both parties? Can you have an honest conversation about money?\n- [ ] **Track record check** - Have they partnered successfully before? What happened with previous partnerships? A pattern of failed partnerships is a red flag regardless of how good the opportunity looks."
+            },
+            {
+              "title": "Scoring System",
+              "content": "- [ ] **Create a simple scorecard** - List your 8-10 criteria. Score each potential partner 1-5 on each criterion. Set a minimum total score for partnership approval.\n- [ ] **Weight the criteria** - Not all criteria matter equally. Reputation and values alignment might be weighted 2x because the downside of getting them wrong is severe.\n- [ ] **Define your \"automatic no\" triggers** - Any single criterion that, if scored 1, means you walk away regardless of total score. Reputation and values alignment should probably be automatic nos.\n- [ ] ⚡ Quick Win: **Score your current partnerships against your criteria** - How do they hold up? This often reveals partnerships that should be restructured or gracefully ended."
+            },
+            {
+              "title": "Application Process",
+              "content": "- [ ] **Build a partnership proposal template** - When someone approaches you (or you approach them), capture: What they offer, what they want, how it works, what success looks like, and what happens if it does not work out.\n- [ ] **Define a trial period** - Every new partnership starts with a 90-day trial. Defined scope, clear metrics, and a review date. This protects both parties from over-committing before the relationship is proven.\n- [ ] **Set review dates** - Every partnership gets a formal review at 90 days, 6 months, and annually. No partnership should run on autopilot indefinitely.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A written criteria framework you can apply to any partnership opportunity\n- A scoring system that brings objectivity to relationship decisions\n- Clear non-negotiable standards that prevent costly mismatches\n- An audit of existing partnerships against your criteria\n- A trial period structure that reduces risk on new partnerships"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The trial period is the most important practical element. Many clients resist it because they do not want to offend a potential partner by suggesting one. Reframe it: professionals expect due diligence. A partner who is offended by a trial period probably would not survive a real evaluation either. Also watch for clients who have partnerships running purely on goodwill with no structure, no metrics, and no review dates. These relationships drift and often become net negatives without anyone noticing. Help them formalise the good partnerships and gracefully exit the underperforming ones."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Partnership Structure Design",
+          "description": "Create partnership models that protect your brand, maintain quality standards, and ensure sustainable economics for both parties.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create partnership models that protect your brand, maintain quality, and ensure sustainable economics for both parties. This is the practical architecture of how a partnership actually works day to day - who does what, how money flows, how quality is maintained, and what happens when things go wrong. Without this structure, even the best-matched partners will eventually run into problems that could have been prevented."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most partnerships fail not because the partners are wrong for each other, but because the structure is unclear. Ambiguity about roles, money, and expectations creates friction that slowly erodes the relationship. Well-designed structure does the opposite - it reduces friction, builds trust, and allows both parties to focus on creating value instead of negotiating terms every time something comes up. The time you invest in structure upfront saves ten times that in conflict resolution later."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each section for every partnership you are formalising. Adapt the depth of structure to the partnership type - a simple referral arrangement needs less than a full joint venture. But every partnership needs clarity on the fundamentals.\n\n---"
+            },
+            {
+              "title": "Roles and Responsibilities",
+              "content": "- [ ] **Define who owns the customer relationship** - At every stage of the customer journey, one partner must be the primary contact. Shared ownership of customer relationships leads to confusion and dropped balls.\n- [ ] **Map the handoff points** - Where does one partner's responsibility end and the other's begin? Be specific. \"We handle the sales conversation up to proposal stage, then hand over to [partner] for implementation\" is clear. \"We collaborate on delivery\" is not.\n- [ ] **Assign quality control responsibilities** - Who monitors and maintains service quality for the shared customer? What happens if quality drops below agreed standards?\n- [ ] ⚡ Quick Win: **Write a one-paragraph description of how the partnership works from the customer's perspective** - If you cannot explain it simply to a customer, the structure is too complicated."
+            },
+            {
+              "title": "Financial Model",
+              "content": "- [ ] **Choose your commercial structure** - Options: referral fee (fixed or percentage per introduction), revenue share (ongoing split), joint pricing (bundled offering), or value exchange (no money changes hands, you trade access to each other's audiences).\n- [ ] **Define payment terms and triggers** - When does a referral fee get paid? On introduction, on closed deal, or on delivery? Each option creates different incentives. Be deliberate about which incentive you want.\n- [ ] **Set minimum viability thresholds** - What volume of referrals or revenue makes this partnership worth the management overhead? If the answer is \"one or two a year,\" it is probably not worth formalising.\n- [ ] **Agree how to handle disputes about attribution** - When a customer comes from multiple sources, how do you decide who gets credit? Agreeing this in advance prevents the most common commercial argument in partnerships."
+            },
+            {
+              "title": "Brand and Quality Protection",
+              "content": "- [ ] **Define how your brand is represented** - Can the partner use your name, logo, or testimonials? Under what conditions? Who approves materials before they go out?\n- [ ] **Set quality standards for the partner's delivery** - If a partner delivers a service under your brand or alongside your offering, what minimum standards must they meet? Put it in writing.\n- [ ] **Create an escalation process** - When a shared customer has a problem, who do they contact? How quickly must it be resolved? What happens if one partner drops the ball?\n- [ ] ⚡ Quick Win: **Draft a simple one-page partnership summary** - Cover: what each party does, how money works, how quality is maintained, and how either party can exit. This is not a legal contract - it is a clear agreement you both sign before lawyers get involved."
+            },
+            {
+              "title": "Exit and Evolution",
+              "content": "- [ ] **Define exit terms from day one** - How much notice is required? What happens to existing shared customers? Can either party exit for any reason, or only for cause?\n- [ ] **Build in review and renewal points** - Every partnership should have a formal review date. Good partnerships get renewed and strengthened. Underperforming ones get restructured or ended.\n- [ ] **Plan for evolution** - How will the partnership grow if it works well? More services? Deeper integration? Geographic expansion? Having a growth path keeps both parties invested.\n- [ ] **Document everything** - Even informal partnerships need written agreements. Memories differ. Circumstances change. People leave. Written records protect both parties.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear structure for each partnership covering roles, money, quality, and exit\n- Reduced friction because expectations are documented, not assumed\n- Brand protection through defined quality standards and approval processes\n- Financial arrangements that incentivise the right behaviour from both parties\n- Exit terms that allow graceful separation if the partnership stops working"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The financial model conversation is where most clients get uncomfortable. They either want to be overly generous (giving away too much to avoid awkwardness) or overly aggressive (trying to minimise what they pay). Help them find the zone where both parties feel the arrangement is fair and motivating. If one side feels short-changed, the partnership will not last regardless of how good the structure looks on paper. The exit clause is equally important and equally avoided. Nobody wants to talk about ending a partnership before it starts. But defining exit terms upfront is a sign of professionalism, not pessimism. It actually makes both parties more comfortable committing because they know there is a way out."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Scalable Growth Design",
+      "description": "Ensuring expansion strengthens rather than weakens the business.\n\n---",
+      "actions": [
+        {
+          "number": 7,
+          "title": "Scalability Stress Test",
+          "description": "Evaluate whether proposed growth initiatives can scale without proportional increases in complexity, cost, or management overhead.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Evaluate whether your proposed growth initiatives can scale without proportional increases in complexity, cost, or management overhead. For each initiative, stress test it at 2x, 5x, and 10x current volume to identify where it breaks. The goal is to find the bottlenecks and structural limitations before you hit them, not after."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Many businesses grow into a wall they did not see coming. What works at £500K revenue breaks at £1M. What works with 5 employees creates chaos with 20. The problem is rarely the growth itself - it is that the business was not designed to handle it. Michael Gerber's E-Myth work shows this clearly: businesses built around the owner's personal capacity hit a ceiling that no amount of harder work can break through. Scalability has to be designed, not hoped for."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Take each significant growth initiative and run it through the stress test. Be honest about where the cracks appear. The point is not to avoid growth but to prepare for it.\n\n---"
+            },
+            {
+              "title": "Volume Stress Test",
+              "content": "- [ ] **Define your current baseline** - For the initiative being tested, what is the current volume? Customers served, transactions processed, projects delivered, or whatever your relevant unit is.\n- [ ] **Project 2x volume** - What changes at double the current volume? Can your team handle it with current headcount? Do your systems and processes still work? Where does strain first appear?\n- [ ] **Project 5x volume** - This is where most businesses break. What completely stops working? What needs to be rebuilt from scratch rather than patched? Be specific about the failure points.\n- [ ] ⚡ Quick Win: **Identify the single biggest bottleneck at 2x** - This is your most urgent scalability issue. If you can solve it before you reach 2x, you buy yourself significant runway."
+            },
+            {
+              "title": "Cost Scaling Analysis",
+              "content": "- [ ] **Map your cost structure at current volume** - What are the fixed costs (do not change with volume) and variable costs (increase with each unit)?\n- [ ] **Identify costs that scale linearly** - These increase at the same rate as volume. If you need one more person for every 10 new customers, that scales linearly. It works but caps your margins.\n- [ ] **Identify costs that scale exponentially** - These increase faster than volume. Coordination costs in large teams. Quality control overhead. Management layers. These are the dangerous ones.\n- [ ] **Find opportunities for economies of scale** - Where do costs decrease per unit as volume grows? Technology, purchasing power, shared infrastructure. These are your scalability advantages."
+            },
+            {
+              "title": "People and Process Test",
+              "content": "- [ ] **Assess management span** - How many people does each manager oversee? At 2x and 5x, does the management structure still work, or do you need additional layers? Each layer adds cost and slows communication.\n- [ ] **Test your processes at scale** - Walk through your core delivery process assuming 5x volume. Where do manual steps become unsustainable? Where does quality slip because there are too many tasks for too few people?\n- [ ] **Evaluate key person dependencies** - Which parts of the initiative depend on a specific individual? If that person is sick, on holiday, or leaves, what happens? Single points of failure become critical risks at scale.\n- [ ] ⚡ Quick Win: **Document the one process that most depends on tribal knowledge** - If it only works because one person knows how to do it, it will not scale. Write it down this week."
+            },
+            {
+              "title": "Technology and Systems",
+              "content": "- [ ] **Audit current systems capacity** - Can your CRM, project management tools, communication platforms, and financial systems handle 5x volume? Many tools have limits that only become visible under load.\n- [ ] **Identify manual workarounds** - Where are people doing things manually that a system should handle? These workarounds multiply with volume and eventually collapse.\n- [ ] **Estimate technology investment needed** - What systems upgrades or new tools will you need at each growth milestone? Factor these into your growth budget, not as an afterthought.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear picture of where each growth initiative breaks under increased volume\n- Identified bottlenecks ranked by urgency and impact\n- Understanding of how costs scale with growth (linear, exponential, or leveraged)\n- Key person dependencies and process risks documented\n- A prioritised list of scalability investments to make before growth outpaces capacity"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Clients often resist this exercise because it feels like looking for problems instead of celebrating opportunities. Reframe it: you are stress-testing to protect the growth, not to prevent it. The most common finding is key person dependency. Almost every business in the £200K-£2M range has at least one person (often the owner) who is a bottleneck for multiple processes. Addressing this is usually the highest-leverage scalability improvement they can make. If a client's growth initiative fails the stress test at 2x, they should not be scaling it yet. They should be redesigning it first. Scaling a broken process just creates a bigger mess faster."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Growth vs. Stability Balance",
+          "description": "Create decision criteria that ensure expansion opportunities strengthen operational resilience rather than compromising it.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create decision criteria that ensure your expansion strengthens operational resilience rather than compromising it. Growth that destabilises your core business is not growth - it is risk accumulation. This action helps you find the right pace and sequence of expansion so you grow sustainably without breaking what already works."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The graveyard of small businesses is full of companies that grew too fast. They added customers they could not serve well, hired people they did not have time to train, and expanded into markets they did not understand - all while their core operations slowly deteriorated. Verne Harnish identifies this as one of the primary causes of the \"valley of death\" between £1M and £5M. The paradox is that growth feels like success right up until the moment it causes failure. Balancing growth with stability is not about being cautious. It is about being smart."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each assessment honestly. The output should be a clear view of how much growth your business can absorb right now, and what needs to be true before you accelerate further.\n\n---"
+            },
+            {
+              "title": "Stability Assessment",
+              "content": "- [ ] **Rate your current operational stability (1-10)** - Are your core processes running smoothly? Is quality consistent? Are customers satisfied? If you are already struggling at current volume, adding growth will make everything worse.\n- [ ] **Check your team's capacity** - Are your people working at 70%, 90%, or 110%? A team already at capacity cannot absorb growth without quality declining or people burning out.\n- [ ] **Assess your financial buffer** - Do you have enough cash reserves to fund growth and survive a setback? Growth costs more than expected and takes longer to pay back. Without a buffer, a delay becomes a crisis.\n- [ ] ⚡ Quick Win: **Ask your team: \"What would break if we doubled our volume next month?\"** - They know where the weaknesses are. Listen to them before pushing for growth.\n- [ ] **Review customer satisfaction trends** - Is your NPS, retention rate, or complaint rate improving, stable, or declining? Declining customer satisfaction is a clear signal that your operational foundation needs attention before growth."
+            },
+            {
+              "title": "Growth Capacity Assessment",
+              "content": "- [ ] **Define your growth absorption rate** - How many new customers, projects, or transactions can you add per month without degrading quality or burning out the team? This is your sustainable growth ceiling.\n- [ ] **Identify your leading constraint** - What is the single factor that limits how fast you can grow? Is it people, cash, systems, management bandwidth, or something else? This constraint determines your maximum pace.\n- [ ] **Map your growth dependencies** - What must be true before you can grow? Hired and trained new staff? Upgraded systems? Secured additional funding? List the prerequisites and check whether they are in place.\n- [ ] **Assess management bandwidth** - Do you and your leaders have the capacity to manage growth while maintaining operations? Growth without management attention is just chaos."
+            },
+            {
+              "title": "Balance Criteria",
+              "content": "- [ ] **Set your quality floor** - Define the minimum acceptable quality level. If growth pushes quality below this line, you slow down until quality recovers. No exceptions.\n- [ ] **Set your team health floor** - Define maximum acceptable overtime, minimum time off, and maximum staff turnover. If growth pushes these past your limits, you slow down.\n- [ ] **Set your cash reserve minimum** - Define the minimum cash buffer you will maintain. If growth investments push cash below this level, you pause until reserves rebuild.\n- [ ] ⚡ Quick Win: **Write your \"growth speed limit\" for the next quarter** - One number: how many new [customers/projects/units] you will add per month, maximum. Share it with your team so everyone knows the pace.\n- [ ] **Create your \"red flag\" indicators** - What early warning signs tell you that growth is outpacing stability? Staff complaints increasing, quality issues multiplying, cash getting tight, customer complaints rising. Name them and monitor them weekly."
+            },
+            {
+              "title": "Ongoing Balance",
+              "content": "- [ ] **Review growth vs. stability monthly** - A 10-minute check: Are we stable enough to keep growing at this pace? If not, what needs to change?\n- [ ] **Communicate the balance to your team** - They need to understand that you value sustainable growth, not growth at any cost. This prevents the culture where everyone is afraid to raise concerns about pace.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear, honest assessment of how much growth your business can absorb right now\n- Defined floors for quality, team health, and cash reserves that growth must not breach\n- A specific growth speed limit for the current quarter\n- Early warning indicators that tell you when growth is threatening stability\n- A monthly review rhythm that keeps growth and stability in balance"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a crucial counterbalance to the natural enthusiasm around growth. Many owners resist setting speed limits because it feels like holding themselves back. Help them see it differently: a speed limit protects the growth by ensuring the business can sustain it. The analogy that often works is driving - going 100mph feels fast until you crash. Going 70mph and arriving safely is actually faster. The team capacity question is usually the most revealing. Ask the owner how their team is doing, then ask the team the same question. The answers rarely match. The team's answer is the one that matters for this assessment."
+            }
+          ]
+        },
+        {
+          "number": 9,
+          "title": "Growth Metrics Dashboard",
+          "description": "Track the right indicators to know whether growth initiatives are delivering strategic value or just consuming resources.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a focused dashboard that tracks whether your growth initiatives are delivering strategic value or just consuming resources. This is not a comprehensive business dashboard. It is specifically designed to measure the health and performance of your growth efforts, so you can double down on what works and cut what does not before it drains your business."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Peter Drucker's principle holds: what gets measured gets managed. But the inverse is equally true - what gets measured badly gets managed badly. Most businesses either track too many metrics (drowning in data but starving for insight) or track vanity metrics that look impressive but do not connect to value. For growth specifically, you need leading indicators that tell you what is about to happen, not just lagging indicators that tell you what already happened. A well-designed growth dashboard gives you early warning signals and clear evidence for decision-making."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Select metrics that match your specific growth initiatives. Build the simplest possible tracking system. Review weekly. Act on what you see.\n\n---"
+            },
+            {
+              "title": "Metric Selection",
+              "content": "- [ ] **Define 3-5 growth-specific metrics** - These should directly measure the performance of your active growth initiatives. Not general business health metrics. Growth-specific. Examples: new customer acquisition rate, expansion revenue from existing customers, partnership-sourced leads, new market conversion rate.\n- [ ] **Include at least one leading indicator per initiative** - A leading indicator predicts future results. Pipeline value predicts revenue. Website traffic predicts lead volume. Customer satisfaction predicts retention. Leading indicators give you time to act.\n- [ ] **Include at least one efficiency metric** - Growth that costs more than it returns is not growth. Track customer acquisition cost, revenue per employee, or margin on new business. This prevents the trap of growing revenue while shrinking profit.\n- [ ] ⚡ Quick Win: **Pick the single most important metric for your top growth initiative** - If you could only track one number, what would tell you whether the initiative is working? Start there.\n- [ ] **Set targets for each metric** - What does good look like? Be specific. \"More leads\" is not a target. \"15 qualified leads per month from partnership channel\" is."
+            },
+            {
+              "title": "Dashboard Design",
+              "content": "- [ ] **Keep it to one page** - If your growth dashboard does not fit on one page (or one screen), it is too complex. Simplicity forces focus.\n- [ ] **Use a simple tracking tool** - A spreadsheet is fine. A whiteboard is fine. Do not let tool selection delay the work. The best dashboard is the one you actually look at.\n- [ ] **Show trends, not just snapshots** - Display at least 12 weeks of history for each metric so you can see direction, not just current position. A metric that is below target but trending up tells a different story than one that is below target and falling.\n- [ ] **Include a red/amber/green status for each metric** - Green: on or above target. Amber: within 10% of target. Red: more than 10% below target. Simple visual status makes weekly reviews fast and focused."
+            },
+            {
+              "title": "Review Rhythm",
+              "content": "- [ ] **Review weekly in 15 minutes or less** - Look at each metric. Note the status. Identify anything that needs action. Do not turn the review into a meeting about the meeting.\n- [ ] ⚡ Quick Win: **Add a 5-minute growth metrics check to your existing weekly meeting** - Do not create a separate meeting. Bolt it onto what you already do.\n- [ ] **Act on red metrics within one week** - If a metric is red, something needs to change. Either adjust the initiative, increase resources, or reconsider whether the initiative is viable.\n- [ ] **Monthly deeper analysis** - Once a month, spend 30 minutes looking at the trends. Are your growth initiatives collectively delivering the results you planned? Is the cost of growth justified by the returns?"
+            },
+            {
+              "title": "Evolution",
+              "content": "- [ ] **Retire metrics that stop being useful** - If a metric has been green for 12 consecutive weeks, it might not need weekly tracking anymore. Replace it with something that needs attention.\n- [ ] **Add metrics as new initiatives launch** - Every new growth initiative should come with its own metrics from day one. If you cannot define how you will measure success, you are not ready to start.\n- [ ] **Connect growth metrics to financial outcomes** - At least quarterly, trace your growth metrics back to revenue and profit impact. Activity metrics are only valuable if they connect to financial results.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A one-page growth dashboard with 5-8 metrics maximum\n- Clear targets and red/amber/green status for each metric\n- A weekly review habit that takes 15 minutes or less\n- Early warning signals that allow you to adjust before problems become crises\n- Evidence-based decisions about which growth initiatives to continue, expand, or stop"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The most common mistake is tracking too many metrics. Clients want to measure everything because it feels thorough. Push them to choose the vital few. Ask: \"If this metric changed significantly, would you do something different?\" If the answer is no, drop it. The second mistake is building the dashboard but not reviewing it. Build the review habit first, even before the dashboard is complete. A quick verbal check of three numbers every Monday is more valuable than a beautiful dashboard that nobody opens. Watch for clients who focus exclusively on lagging indicators (revenue, profit, customer count). These are important but tell you what happened last month, not what will happen next month. Push for at least one leading indicator per growth initiative."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

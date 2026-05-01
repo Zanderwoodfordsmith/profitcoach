@@ -1,0 +1,182 @@
+{
+  "ref": "1.7",
+  "level": 1,
+  "area": 7,
+  "name": "Finance Fundamentals",
+  "subtitle": "Level 1 · Overwhelm · Financials & Metrics",
+  "whatThisIs": "Financial ignorance creates strategic blindness. When you do not understand your numbers, every decision feels like guessing. You react emotionally instead of responding strategically. You cannot tell if you are actually making money or just keeping busy.\n\nThis playbook is about financial literacy for business owners. Not accounting theory or complex spreadsheets — the fundamental concepts you need to read your numbers, understand what they mean, and use them to make better decisions.\n\nWhen you understand your finances, you stop being surprised by your bank balance. You know the difference between being busy and being profitable. You can see problems coming instead of stumbling into them.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You check your bank balance to see if you can afford something instead of knowing from your numbers. You confuse profit and cash — thinking you are making money when you are actually bleeding it. You have no idea what your break-even point is. When someone asks about your gross margin or cost structure, you guess or avoid the question. Financial decisions feel like gambling because you are working with incomplete information."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have a rough sense of whether the business is profitable but you cannot explain why. You know some of your key numbers but not how they connect to each other. You understand the basics but get confused when your accountant starts talking about margins, cash flow, or tax planning. Your financial knowledge is good enough for simple decisions but not for strategic ones."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You understand the core financial concepts that drive your business. You can read a profit and loss statement and know immediately what it is telling you. You know your break-even point, your gross margin, and which costs scale with revenue. You understand the difference between profit and cash flow and plan for both. When your accountant or financial advisor explains something, you follow the conversation and ask intelligent questions."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Do you know the difference between profit and cash? Profit is what your P\\&L says you made. Cash is what actually hit your bank account. You can be profitable and run out of cash. You can have cash and be unprofitable. Confusing the two leads to terrible decisions about spending, hiring, and growth.",
+    "What is your actual break-even point? This is not your revenue target or your growth goal. This is the minimum amount of money that needs to come in each month just to keep the doors open. If you cannot state this number confidently, you are flying blind.",
+    "Which costs move with revenue and which costs stay fixed? Understanding your cost structure tells you what happens when revenue goes up or down. Fixed costs stay the same whether you sell nothing or everything. Variable costs scale with sales. The mix between them determines how profitable growth will be.",
+    "Is your gross margin improving or getting worse? Gross margin is revenue minus the direct costs of delivering your product or service. This number tells you if your core business model is getting stronger or weaker. If gross margin is dropping, growth will not save you — it will just make the problem bigger.",
+    "Are you planning for taxes or hoping for the best? Tax obligations do not disappear because you did not plan for them. Understanding when taxes are due and how much you will owe lets you set money aside instead of scrambling when the bill comes."
+  ],
+  "quickWins": [
+    "This week: Find your latest profit and loss statement. Identify your gross margin — revenue minus direct costs of delivery. If it is below 50%, that is your first priority to fix.",
+    "This week: List all your monthly fixed costs — rent, insurance, software, wages. Add them up. That total is the minimum you need to generate before you make any profit.",
+    "This week: Look at your cash flow from last month. Identify one invoice that took longer than 30 days to get paid. Put a system in place to chase it earlier next time."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.4",
+      "description": ""
+    },
+    {
+      "ref": "2.7",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "2.4",
+      "description": ""
+    },
+    {
+      "ref": "1.2",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Financial Foundations",
+          "description": "The core concepts every business owner needs to know: profit vs cash, fixed vs variable costs, gross margin, break-even. Simple explanations with examples from real businesses.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Learn and calculate the 6 numbers every business owner must know without checking a spreadsheet. These are the vital signs of your business — if you do not know them, you are making decisions blind."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners can tell you their revenue but not their profit. They know what is in the bank but not their break-even. They have a \"feeling\" about whether the business is healthy but cannot back it up with a single number. Michalowicz puts it simply: if you cannot see the numbers, you cannot manage the business. You do not need an accounting degree. You need 6 numbers and the habit of checking them."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each number below. If you do not know it, find it. If you cannot find it, that itself is important information — it means your financial visibility is broken.\n\n---"
+            },
+            {
+              "title": "The 6 Numbers",
+              "content": "### 1. Monthly Revenue\n\n- [ ] ⚡ Quick Win · **What was your total revenue last month?** — Not a rough guess. The actual number from your accounts. If you cannot answer this within 60 seconds, your financial tracking needs work.\n- [ ] **What is the trend — growing, flat, or declining over the last 6 months?** — A single month means nothing. The trend tells you whether the business is heading in the right direction.\n\n### 2. Monthly Fixed Costs\n\n- [ ] **List every cost that stays the same regardless of how much you sell** — Rent, salaries, insurance, software subscriptions, loan repayments, utilities. Add them up. This is your minimum monthly burn.\n- [ ] ⚡ Quick Win · **Can you state this number from memory?** — You should know your fixed cost base the way you know your phone number. It is the most important number in your business because it tells you how much you must earn before you make a single pound of profit.\n\n### 3. Break-Even Point\n\n- [ ] **Calculate: Fixed Costs ÷ Gross Margin % = Break-Even Revenue** — If your fixed costs are £15K/month and your gross margin is 60%, your break-even is £25K/month. Below that, you are losing money. Above it, you are profitable.\n- [ ] **How many clients/jobs/sales does that represent?** — Convert the number into something tangible. \"I need 12 clients per month at £2,000 to break even.\" That is more useful than a revenue figure.\n\n### 4. Gross Margin\n\n- [ ] **Calculate: (Revenue − Direct Costs) ÷ Revenue × 100** — Direct costs are what it costs to deliver your product or service (materials, subcontractors, direct labour). Everything else is overhead. Your gross margin tells you how much of every pound earned is available to cover overheads and generate profit.\n- [ ] **Is it above 50%?** — For service businesses, a gross margin below 50% is a warning sign. It means more than half of every pound you earn goes directly to delivering the work, leaving little for the rest of the business.\n\n### 5. Cash Runway\n\n- [ ] **How many months could you operate if revenue stopped today?** — Cash in bank ÷ monthly fixed costs = months of runway. Below 1 month is a crisis. 1-2 months is fragile. 3+ months gives you breathing room to make strategic decisions rather than desperate ones.\n- [ ] **What is your target runway?** — For most £200K-£5M businesses, 3 months of fixed costs in reserve is the minimum. Set this as a savings target.\n\n### 6. Revenue Per Employee (or Per Head)\n\n- [ ] **Calculate: Annual Revenue ÷ Total Number of People** — Include everyone: employees, regular contractors, part-time staff. This tells you how efficiently your team generates revenue.\n- [ ] **Is it improving or declining?** — If revenue per head is dropping as you hire, your growth is creating complexity faster than value. This number should hold steady or improve as you scale.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- 6 critical numbers you can state from memory\n- A clear picture of whether your business is financially healthy or just busy\n- Early warning signals visible (low margin, short runway, declining revenue per head)\n- Confidence in financial conversations with your accountant, bank, or business partner\n- The foundation for Reading Your P&L and Break-Even Analysis"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Start every coaching session with \"What are your numbers this month?\" It takes 2 minutes and sets the tone for a data-driven conversation rather than a feelings-driven one.\n\nThe most common revelation: clients who think they are profitable discover their gross margin is lower than expected, or their break-even is higher than they thought. This is not bad news — it is useful news. You cannot fix what you cannot see.\n\nIf a client cannot find these numbers, the first action is not financial literacy — it is getting their bookkeeping sorted (which is a Level 2 action). For now, even rough estimates are better than nothing."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Reading Your P\\&L",
+          "description": "How to understand your profit and loss statement. What each line means, what to look for, and how to spot problems or opportunities quickly.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Open your latest Profit & Loss statement and learn to read it — what each section means, what to look for, and how to spot problems or opportunities in under 5 minutes."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your P&L tells the story of your business — where money comes in, where it goes, and what is left. Most business owners either ignore it entirely (leaving it to the accountant) or glance at the bottom line without understanding the detail. Learning to read your P&L is not about becoming an accountant — it is about having a 5-minute conversation with your numbers every month that could save you thousands."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Get your latest P&L from your bookkeeper, accountant, or accounting software (Xero, QuickBooks, FreshBooks). Open it in front of you and work through this action step by step.\n\n---"
+            },
+            {
+              "title": "Understand the Structure",
+              "content": "- [ ] ⚡ Quick Win · **Find these 4 lines on your P&L** — Revenue (top line), Cost of Sales / Direct Costs, Gross Profit, and Net Profit (bottom line). These are the only 4 lines you need to understand to start.\n- [ ] **Revenue** — Everything your business earned in the period. Check: does this match what you expected? Any surprises up or down?\n- [ ] **Cost of Sales / Direct Costs** — What it cost to deliver your product or service. Materials, subcontractor fees, direct labour. These go up and down with revenue.\n- [ ] **Gross Profit** — Revenue minus Cost of Sales. This is what you have left to run the business after paying for delivery. If this number is thin, no amount of cost-cutting elsewhere will save you.\n- [ ] **Overheads / Operating Expenses** — Everything else: rent, admin, marketing, software, salaries (non-delivery), insurance. These are relatively fixed.\n- [ ] **Net Profit** — What is left after everything. This is what the business actually earned."
+            },
+            {
+              "title": "The 5-Minute Monthly Check",
+              "content": "Do this every month when your P&L is ready:\n\n- [ ] **Is revenue up, down, or flat versus last month?** — And versus the same month last year if you have the data. One bad month is noise. Three declining months is a trend.\n- [ ] **Is gross margin holding?** — Calculate Gross Profit ÷ Revenue. Compare to last month. If gross margin is dropping, you are either charging less or your delivery costs are rising. Both need attention.\n- [ ] **Are any overhead categories growing faster than revenue?** — Scan the expense categories. If marketing spend doubled but revenue did not increase, that is a signal. If software costs creep up every month, something is being added without being questioned.\n- [ ] ⚡ Quick Win · **Circle the 3 largest expense lines** — Are they earning their place? Could any be reduced without affecting quality or revenue? Often the biggest expenses are the ones that go longest without being questioned.\n- [ ] **Is net profit where you expected?** — If not, the explanation is always in the lines above. Either revenue was lower, costs were higher, or overheads grew. The P&L tells you which one."
+            },
+            {
+              "title": "What to Watch For",
+              "content": "- [ ] **Revenue growing but profit shrinking** — This means your costs are growing faster than your revenue. Common during expansion if not managed. Growth without profit is just more expensive chaos.\n- [ ] **Gross margin below 50%** — For most service businesses, this is a warning. It means more than half of every pound goes to delivery before you pay for anything else.\n- [ ] **One client representing more than 25% of revenue** — Not always visible on a P&L, but worth checking. If one client disappears, how bad is the damage? Concentration risk is a hidden threat.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Ability to read your P&L in under 5 minutes and know whether the business is healthy\n- A monthly habit of reviewing your numbers that catches problems early\n- Confidence in conversations with your accountant — you understand what they are telling you\n- Clear signals about where to focus: pricing, costs, overhead, or revenue growth"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Many clients are embarrassed that they do not understand their P&L. Normalise this — most business owners were never taught financial literacy. The coaching value is making it simple, not making them feel stupid.\n\nDo this together in a session with their actual P&L on screen. Walk through each line. Ask them what surprises them. The conversation that follows will reveal more about their business health than an hour of general discussion.\n\nIf their P&L is a mess or months out of date, the problem is bookkeeping, not financial literacy. Flag it and address it separately — but do not let \"my books aren't ready\" become an excuse to avoid learning this."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Break-Even Analysis",
+          "description": "Calculate your true break-even point and understand how changes to revenue or costs affect your bottom line. The one number that changes how you think about every decision.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Calculate your exact break-even point — the minimum revenue you need each month just to keep the doors open. Then use it as your baseline for every financial decision: hiring, spending, pricing, and growth."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Break-even is the single most clarifying number in your business. Above it, you are making money. Below it, you are losing money. Most business owners cannot state this number, which means every spending decision is based on hope rather than maths. Once you know your break-even, a question like \"can I afford to hire?\" becomes simple arithmetic instead of anxiety."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need two inputs: your monthly fixed costs and your gross margin percentage. If you have done the Know Your Numbers action, you already have both.\n\n---"
+            },
+            {
+              "title": "Calculate Your Break-Even",
+              "content": "- [ ] **Enter your total monthly fixed costs** — Everything that gets paid regardless of sales: rent, salaries, insurance, subscriptions, loan repayments, utilities. This is the number from Know Your Numbers.\n- [ ] **Enter your gross margin percentage** — (Revenue − Direct Costs) ÷ Revenue × 100. If your revenue is £50K and direct costs are £20K, your gross margin is 60%.\n- [ ] ⚡ Quick Win · **Calculate: Fixed Costs ÷ Gross Margin % = Monthly Break-Even Revenue** — Example: £15,000 fixed costs ÷ 0.60 gross margin = £25,000 break-even. You need £25K in revenue every month before you earn a penny of profit.\n- [ ] **Convert to units** — How many clients, projects, or sales is that? £25K break-even ÷ £2,000 average sale = 12.5 sales per month. Now you know exactly how many deals you need."
+            },
+            {
+              "title": "Stress Test It",
+              "content": "- [ ] **What happens if you lose your biggest client?** — Subtract their revenue. Are you still above break-even? If one client loss puts you below break-even, you have a concentration risk problem.\n- [ ] **What happens if you hire one person?** — Add their full cost (salary + NI + pension + equipment) to your fixed costs. Recalculate. How much additional revenue does the hire need to generate just to cover themselves?\n- [ ] **What happens if your margin drops 10%?** — Recalculate with a lower margin. This shows how sensitive your break-even is to pricing or cost changes. Some businesses have so little margin cushion that a small change makes them unprofitable.\n- [ ] **What happens if you raise prices 10%?** — Recalculate. How many fewer sales would you need? Often the maths reveals that a price increase with a small volume drop is more profitable than the current situation."
+            },
+            {
+              "title": "Set Your Targets",
+              "content": "- [ ] **Your break-even is your floor, not your target** — Profitable businesses aim for revenue at least 20-30% above break-even. That buffer funds growth, builds reserves, and absorbs surprises.\n- [ ] ⚡ Quick Win · **Write your break-even number on a sticky note and put it where you see it daily** — Not to create anxiety. To create awareness. Every deal you close above this number is profit. Every month below it is a withdrawal from your future.\n- [ ] **Review quarterly** — Your fixed costs change (new hires, rent increases, new tools). Your margin changes (pricing, efficiency, supplier costs). Recalculate every quarter to keep the number accurate.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Your exact monthly break-even revenue, stated with confidence\n- The number of clients or sales you need per month to stay profitable\n- Clarity on the financial impact of hiring, pricing, and spending decisions\n- A stress-tested view of how resilient your business is to changes\n- A baseline that makes every financial decision simpler"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is one of the most powerful 15-minute exercises in the entire Profit System. Clients who have never calculated their break-even often have a moment of genuine clarity — either relief (\"we're healthier than I thought\") or alarm (\"we're closer to the edge than I realised\"). Both are valuable.\n\nUse the stress tests to make strategic conversations concrete. Instead of \"should I hire someone?\" the conversation becomes \"hiring adds £3,500/month to fixed costs, which raises break-even by £5,800/month. Can you generate that?\" Maths beats gut feel.\n\nIf a client's break-even is very close to their current revenue, that is an urgent signal. They have no margin for error. Address pricing or costs before pursuing growth — growing a business with no margin just creates a bigger problem."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Cash Flow Basics",
+          "description": "Why profitable businesses run out of cash and how to prevent it. The connection between profit, cash flow, and timing. Simple forecasting to avoid nasty surprises."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,291 @@
+{
+  "ref": "4.6",
+  "level": 4,
+  "area": 6,
+  "name": "Lifetime Value",
+  "subtitle": "Level 4 · Overseer · Operations & Delivery",
+  "whatThisIs": "Lifetime value transforms how you think about marketing and customer acquisition. When you know exactly what each customer is worth over their entire relationship with you, spending money to acquire new customers becomes a strategic decision instead of a hope-and-pray gamble.\n\nThis playbook shifts your focus from transaction thinking to relationship thinking. Instead of asking \"how much profit did we make this month?\" you start asking \"how much profit will this customer generate over the next two years?\" That change in perspective unlocks marketing budgets, drives better retention strategies, and reshapes how you invest in growth.\n\nThis is not about complex financial modelling or customer analytics. It is about understanding the economics of your customer relationships so you can make smarter decisions about where to invest your time and money.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have no idea what a customer is worth beyond their first purchase. Your marketing spend is based on gut feel or what you can afford right now, not what makes financial sense. You focus obsessively on acquisition cost while ignoring how much customers spend over time. Growth feels expensive because you are treating every customer like a one-off transaction instead of the start of a valuable relationship."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have a rough sense that some customers are more valuable than others but no clear numbers to guide your decisions. You track repeat purchases but have not calculated average lifespan or total value per customer. You know retention matters but you are not systematically investing in keeping customers longer or increasing what they spend."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You know exactly what each customer is worth over their lifetime relationship with you. You can confidently spend on marketing because you know the return you will get. Your retention strategies are deliberate and measured — you invest in keeping valuable customers because you know what losing them costs. Your pricing, product development, and marketing decisions are all informed by lifetime value, not just immediate profit."
+    }
+  },
+  "thingsToThinkAbout": [
+    "How long do your customers actually stay with you? Most business owners guess at customer lifespan, but the real number is often very different from what you expect. The difference between an 18-month customer and a 3-year customer completely changes what you can afford to spend on acquisition.",
+    "Where are you leaving money on the table with existing customers? Your highest lifetime value often comes not from finding new customers but from getting existing customers to buy more often, spend more per transaction, or stay longer. Each of these levers multiplies the others.",
+    "Is your marketing spend economically sensible? If you spend £500 to acquire a customer worth £2,000 over two years, that is a great investment. If that same customer is only worth £400, it will bankrupt you. Without knowing lifetime value, you are making marketing decisions blind.",
+    "What makes some customers more valuable than others? Not all customers are created equal. The ones who stay longest, buy most frequently, or spend the most per purchase are your gold mine. Understanding what they have in common lets you find more like them.",
+    "Are you building loyalty or just processing transactions? A customer who buys once and disappears has very different value from one who becomes a regular. Your systems, communication, and follow-up should be designed to move people from the first category to the second."
+  ],
+  "quickWins": [
+    "This week: List your last 20 customers and mark how many times each one has bought from you. Calculate the percentage who have made repeat purchases — this is your starting point.",
+    "This week: Pick your three most valuable customers and write down what they have in common. Industry, size, buying behaviour, needs — find the patterns.",
+    "This week: Calculate your average customer spend and multiply it by your repeat purchase rate. Even this rough lifetime value number will change how you think about marketing investment."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.6",
+      "description": ""
+    },
+    {
+      "ref": "4.5",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
+      "description": ""
+    },
+    {
+      "ref": "2.5",
+      "description": ""
+    },
+    {
+      "ref": "2.2",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Customer Lifespan Calculator",
+          "description": "Calculate the average length of your customer relationships so you know how long your customers typically stay with you and can project future revenue.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Calculate the average length of your customer relationships so you can project future revenue, identify retention problems early, and make smarter decisions about how much to invest in acquiring and keeping customers. You will analyse your existing customer data to determine how long customers stay, whether lifespan is improving or declining, and which factors predict longer or shorter relationships."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most business owners think about revenue in monthly or annual snapshots. They rarely consider the full duration of a customer relationship. But the difference between a customer who stays 6 months and one who stays 3 years is enormous. A 3-year customer generates 6x the revenue of a 6-month customer, and the cost of serving them typically decreases over time because they need less hand-holding. Knowing your average customer lifespan changes every calculation in your business: how much you can spend to acquire a customer, how much you should invest in retention, and what your business is actually worth."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need access to your customer records showing start dates and, for customers who have left, end dates. A CRM, accounting software, or even a spreadsheet will work.\n\n---"
+            },
+            {
+              "title": "Gather Your Customer Data",
+              "content": "- [ ] List all customers who started in the last 2-3 years with their start date\n- [ ] For customers who have left, note their end date (last purchase, cancellation date, or last active date)\n- [ ] For customers still active, note their current tenure (they will be included differently in the calculation)\n- [ ] ⚡ Quick Win: If your data is messy, start with your last 20 customers. Even a small sample gives useful directional insight.\n- [ ] Remove any one-off or project-based customers that were never intended to be ongoing relationships"
+            },
+            {
+              "title": "Calculate Average Customer Lifespan",
+              "content": "- [ ] For churned customers: calculate the average duration from start to end date (in months)\n- [ ] For active customers: calculate their current average tenure (in months)\n- [ ] Your blended average customer lifespan sits between these two numbers\n- [ ] If you have subscription or retainer customers, calculate a churn rate instead: (Customers Lost in Period / Total Customers at Start of Period) x 100\n- [ ] Convert churn rate to lifespan: Average Lifespan = 1 / Monthly Churn Rate (in months)"
+            },
+            {
+              "title": "Analyse Trends and Segments",
+              "content": "- [ ] Compare lifespan by customer segment: industry, size, product purchased, acquisition channel\n- [ ] ⚡ Quick Win: Sort your customer list by tenure, longest to shortest. Look at the top 10 and bottom 10. What is different about them? The patterns are usually obvious once you look.\n- [ ] Check whether lifespan is improving or declining over time (compare customers acquired this year vs. last year)\n- [ ] Identify your \"danger zone\": the point in the relationship where most customers leave. This is where retention efforts should focus.\n- [ ] Note any customers with unusually long lifespans. What makes them different?"
+            },
+            {
+              "title": "Calculate Lifespan Value",
+              "content": "- [ ] Multiply your average lifespan by your average monthly revenue per customer\n- [ ] This gives you a rough lifetime revenue figure (refined in Action 2: Lifetime Value Formula)\n- [ ] Compare this number to your cost of acquisition. If lifespan revenue is less than 3x acquisition cost, you have a problem.\n- [ ] Project: if you increased average lifespan by just 2 months, what would that mean in total revenue?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Average customer lifespan calculated in months\n- Monthly churn rate calculated (if applicable)\n- Lifespan analysed by segment to identify high-value and at-risk groups\n- The \"danger zone\" identified where most churn occurs\n- A rough lifetime revenue number per customer"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This exercise often produces uncomfortable truths. Clients who believe their customers stay for years discover the average is much shorter. That is useful information, not bad news. The \"danger zone\" insight is particularly actionable. If most customers leave between months 3 and 6, that is where retention interventions should focus. Common data challenges: clients without clean records, businesses with mixed one-off and recurring customers, and seasonal businesses where \"inactive\" does not mean \"gone.\" Help them define clear rules for what counts as an active vs. churned customer before running the numbers. Connect this directly to the Lifetime Value Formula (Action 2) and the Churn Analysis (3.6) for a complete retention picture."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Lifetime Value Formula",
+          "description": "Build a simple model that shows exactly what each customer is worth over their entire relationship, factoring in repeat purchases, average spend, and relationship duration.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple model showing what each customer is worth over their entire relationship with your business. The formula combines three variables: how often they buy (frequency), how much they spend per transaction (monetary value), and how long they stay (lifespan). This single number becomes the foundation for every marketing, pricing, and retention decision you make."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without knowing your customer lifetime value (LTV), you are guessing on every major business decision. How much can you spend to acquire a customer? How much should you invest in keeping them? Should you discount to win a deal? Should you fire a difficult customer? LTV answers all of these questions. It is the most important number in your business that you probably do not know. A business with a £500 LTV and a business with a £15,000 LTV require completely different strategies, even if they have the same monthly revenue."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Customer Lifespan Calculator (Action 1) completed and access to your revenue data by customer. Work through the sections below.\n\n---"
+            },
+            {
+              "title": "Calculate Your Three Variables",
+              "content": "- [ ] **Average Purchase Frequency**: How many times does a customer buy from you per year? (Total transactions / Total customers in the period)\n- [ ] **Average Order Value (AOV)**: What is the average revenue per transaction? (Total revenue / Total transactions)\n- [ ] **Average Customer Lifespan**: How long does a customer stay in years? (From Action 1)\n- [ ] ⚡ Quick Win: If you have recurring revenue (retainers, subscriptions), simplify this. Monthly recurring revenue per customer x Average lifespan in months = LTV. Done."
+            },
+            {
+              "title": "Build Your LTV Formula",
+              "content": "- [ ] Simple LTV = Average Purchase Frequency x Average Order Value x Average Customer Lifespan\n- [ ] Example: 4 purchases/year x £500/purchase x 3 years = £6,000 LTV\n- [ ] Calculate this number and write it down. This is your headline LTV.\n- [ ] If you have multiple products or services, calculate LTV per product line\n- [ ] If you have distinct customer segments, calculate LTV per segment"
+            },
+            {
+              "title": "Add Gross Margin for Profit-Based LTV",
+              "content": "- [ ] Calculate your gross margin percentage: (Revenue - Direct Costs) / Revenue\n- [ ] Multiply your revenue-based LTV by your gross margin percentage\n- [ ] This gives you your profit-based LTV, which is what each customer is actually worth after costs\n- [ ] ⚡ Quick Win: If you do not know your exact gross margin, use 50% as a starting estimate for service businesses or 30% for product businesses. Refine later.\n- [ ] Example: £6,000 revenue LTV x 60% gross margin = £3,600 profit LTV"
+            },
+            {
+              "title": "Validate and Sense-Check",
+              "content": "- [ ] Compare your calculated LTV against your gut feeling. If it seems too high or too low, check the inputs.\n- [ ] Look at your top 5 customers by total revenue. Does the average LTV feel right relative to them?\n- [ ] Look at your bottom 5 customers. Are they dragging the average down significantly?\n- [ ] Calculate the range: what is the LTV of your best customer vs. your worst? A wide range means segments matter more than averages.\n- [ ] Recalculate LTV excluding your bottom 20% of customers. This is the LTV you should be targeting with your marketing."
+            },
+            {
+              "title": "Document and Use",
+              "content": "- [ ] Record your LTV number prominently (dashboard, wall, wherever you track key metrics)\n- [ ] Set a maximum customer acquisition cost (CAC) at no more than one-third of your LTV\n- [ ] Calculate your LTV:CAC ratio. Aim for 3:1 or better.\n- [ ] Set a reminder to recalculate LTV quarterly as your data improves\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Your headline LTV number calculated (revenue-based)\n- Your profit-based LTV calculated (adjusted for gross margin)\n- LTV calculated per segment or product line if applicable\n- A maximum CAC derived from your LTV\n- LTV:CAC ratio calculated and benchmarked\n- LTV documented and integrated into decision-making"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "LTV is one of those numbers that changes how business owners think once they see it. A coaching client who learns their LTV is £12,000 suddenly sees a £1,500 acquisition cost differently. The number gives them permission to invest in marketing. Conversely, a client with a £2,000 LTV who is spending £1,800 to acquire customers needs to fix retention before scaling. Common mistakes: using revenue LTV when profit LTV is the real number, averaging across wildly different customer types (segment instead), and treating LTV as a fixed number rather than something to improve. Always connect this to the three levers in Action 3 (Value Maximiser Framework): frequency, monetary value, and retention. LTV is the outcome. Those three levers are how you improve it."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Value Maximiser Framework",
+          "description": "Systematically increase lifetime value through three proven levers: frequency (how often they buy), monetary value (how much they spend), and retention (how long they stay).",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically increase customer lifetime value by working three levers: frequency (how often they buy), monetary value (how much they spend per transaction), and retention (how long they stay). Instead of trying to grow revenue only through new customers, this framework focuses on getting more value from customers you already have. You will assess your current position on each lever and identify the highest-impact opportunities."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Acquiring a new customer costs 5-7 times more than keeping an existing one. Yet most businesses spend the vast majority of their marketing budget on acquisition and almost nothing on maximising the value of customers they already have. A 10% improvement across all three levers (frequency, value, retention) compounds to a 33% increase in lifetime value, with no additional acquisition cost. This is the most capital-efficient growth strategy available to any business."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Lifetime Value Formula (Action 2) completed. Work through each lever below and identify 2-3 specific actions per lever.\n\n---"
+            },
+            {
+              "title": "Lever 1: Increase Purchase Frequency",
+              "content": "- [ ] Calculate your current average purchase frequency (purchases per customer per year)\n- [ ] Identify what triggers repeat purchases in your business. Is it a schedule, a need, a prompt, or a habit?\n- [ ] ⚡ Quick Win: Send a re-engagement message to every customer who has not purchased in the last 60 days. A simple \"How is everything going?\" often triggers a conversation that leads to a sale.\n- [ ] Consider adding a recurring element to your offering: retainer, subscription, maintenance plan, membership\n- [ ] Create a natural buying rhythm: quarterly reviews, annual renewals, seasonal check-ins\n- [ ] Design a \"next purchase\" prompt that happens automatically after each sale (e.g. \"Your next session should be in 4 weeks. I have held a slot for you.\")\n- [ ] Review whether your current customers know about all your products and services. Many do not."
+            },
+            {
+              "title": "Lever 2: Increase Monetary Value (Average Spend)",
+              "content": "- [ ] Calculate your current average order value / average revenue per customer per transaction\n- [ ] Identify upsell opportunities: premium versions, add-ons, extended services\n- [ ] Identify cross-sell opportunities: complementary products or services the customer might need\n- [ ] ⚡ Quick Win: At your next customer meeting, ask: \"Is there anything else we could help with?\" This question alone surfaces revenue opportunities in at least 30% of conversations.\n- [ ] Review your pricing. When did you last increase prices? If it has been more than 12 months, you are probably undercharging.\n- [ ] Create tiered offerings: good, better, best. Most customers choose the middle tier, which should be higher than your current single offering.\n- [ ] Bundle complementary services together at a slight discount to the individual price (higher total spend, better perceived value)"
+            },
+            {
+              "title": "Lever 3: Increase Retention (Customer Lifespan)",
+              "content": "- [ ] Review your churn data from the Customer Lifespan Calculator (Action 1). Where do most customers leave?\n- [ ] Build an early warning system: what signals indicate a customer is about to leave? (Reduced engagement, missed meetings, delayed payments, complaints)\n- [ ] Create an intervention plan for at-risk customers: who reaches out, what do they say, what do they offer?\n- [ ] ⚡ Quick Win: Call your 3 most at-risk customers this week. A personal call from the business owner often saves relationships that automated systems cannot.\n- [ ] Design \"sticky\" moments in the customer journey: milestones, celebrations, exclusive access, results reviews\n- [ ] Invest in onboarding quality. The first 30-90 days determine whether a customer stays long-term.\n- [ ] Ask departing customers why they left. Track the reasons and fix the top two.\n- [ ] Create switching costs (positively): the deeper a customer is embedded in your service, the harder it is to leave. Integrations, shared history, personalised service."
+            },
+            {
+              "title": "Prioritise Your Actions",
+              "content": "- [ ] For each lever, rate your current performance: strong, average, or weak\n- [ ] Focus first on the weakest lever, as it has the most room for improvement\n- [ ] Choose 2-3 specific actions to implement this quarter\n- [ ] Set a measurable target: what LTV number are you aiming for?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Current performance assessed across all three levers (frequency, value, retention)\n- 2-3 specific improvement actions identified per lever\n- The weakest lever prioritised for immediate focus\n- A quarterly LTV target set\n- A plan to implement the highest-impact actions first"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Clients instinctively reach for the acquisition lever (more new customers) because it feels like growth. The value maximiser framework redirects energy to where the returns are highest. The frequency lever is usually the quickest win for service businesses - most clients simply do not ask existing customers to buy again. The retention lever has the biggest long-term impact but requires patience. Walk clients through the maths: show them what a 10% improvement in each lever does to their total revenue. The compounding effect is what makes this framework powerful. Help clients pick one action per lever and execute it well rather than trying to do everything at once. Connect this to the Customer Retention playbook (3.6) for the retention-specific tactics."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Acquisition Economics",
+          "description": "Compare your cost to acquire customers against their lifetime value to determine what you can afford to spend on marketing and still be profitable.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Compare what it costs you to acquire a customer against what that customer is worth over their lifetime. This gives you a clear answer to the most important marketing question: how much can you afford to spend to win a customer? You will calculate your customer acquisition cost (CAC) by channel, compare it to your lifetime value (LTV), and use the ratio to make smarter spending decisions."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses set marketing budgets based on what feels comfortable rather than what the maths supports. This leads to two equally damaging outcomes: underspending (missing growth because you are too cautious) or overspending (burning cash on channels that do not return enough). When you know your LTV:CAC ratio, marketing becomes a maths problem instead of a guessing game. If you know a customer is worth £10,000 and costs £2,000 to acquire, you can confidently invest in growth. If they cost £8,000 to acquire, you know to fix retention before scaling spend."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Lifetime Value Formula (Action 2) completed. You also need your marketing spend data by channel for the last 6-12 months.\n\n---"
+            },
+            {
+              "title": "Calculate Your Customer Acquisition Cost",
+              "content": "- [ ] List every marketing and sales expense from the last 6-12 months: advertising, content production, sales team costs, software, agency fees, events, sponsorships\n- [ ] Count the total number of new customers acquired in the same period\n- [ ] Divide total spend by total new customers. This is your blended CAC.\n- [ ] ⚡ Quick Win: Even a rough CAC is better than no CAC. If your data is messy, use total marketing spend / new customers from last quarter. Refine later.\n- [ ] Important: include sales team time and cost in CAC, not just marketing spend. Acquisition includes everything from first touch to signed deal."
+            },
+            {
+              "title": "Calculate CAC by Channel",
+              "content": "- [ ] Break out your marketing spend by channel: organic social, paid ads, referrals, content marketing, networking, cold outreach, partnerships, etc.\n- [ ] For each channel, count the number of customers it generated\n- [ ] Calculate CAC per channel: Channel Spend / Customers from Channel\n- [ ] Rank channels from lowest to highest CAC\n- [ ] ⚡ Quick Win: Identify your lowest-CAC channel and ask: can I double my investment here before it hits diminishing returns? That is usually your fastest growth opportunity.\n- [ ] Note: some channels (content marketing, SEO) have high upfront costs but declining CAC over time. Factor in the long-term trajectory."
+            },
+            {
+              "title": "Calculate Your LTV:CAC Ratio",
+              "content": "- [ ] Divide your LTV (from Action 2) by your blended CAC\n- [ ] Benchmark: LTV:CAC of 3:1 or higher is healthy. Below 3:1 means you are spending too much relative to what customers are worth. Above 5:1 might mean you are underinvesting in growth.\n- [ ] Calculate the ratio per channel to see which channels are most efficient\n- [ ] Calculate your payback period: how many months until a customer's revenue covers their acquisition cost?\n- [ ] A payback period under 12 months is ideal. Over 18 months creates cash flow pressure."
+            },
+            {
+              "title": "Set Your Maximum CAC",
+              "content": "- [ ] Based on your LTV:CAC analysis, set a maximum CAC you are willing to pay per customer\n- [ ] Set a maximum CAC per channel (some channels can have higher CAC if they bring higher-LTV customers)\n- [ ] Use these maximums as guardrails for all marketing investment decisions\n- [ ] Review and adjust quarterly as your LTV data improves"
+            },
+            {
+              "title": "Make Spending Decisions",
+              "content": "- [ ] For each active marketing channel, compare actual CAC against your maximum\n- [ ] Increase investment in channels well below your CAC ceiling\n- [ ] Reduce or pause channels above your CAC ceiling unless they bring disproportionately high-LTV customers\n- [ ] Before starting any new marketing initiative, estimate the expected CAC and compare to your ceiling\n- [ ] Track CAC trends monthly. Rising CAC is an early warning sign that a channel is saturating.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Blended CAC calculated for the whole business\n- CAC calculated per marketing channel\n- LTV:CAC ratio calculated (blended and per channel)\n- Payback period calculated in months\n- A maximum CAC set as a guardrail for marketing spend\n- Clear decisions on which channels to scale, maintain, or reduce"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Acquisition economics is where marketing stops being a cost centre and starts being an investment with measurable returns. For many clients, this is the first time they have ever calculated CAC. The reaction is usually surprise, either that they are spending far more than they realised per customer or, occasionally, that they are drastically underinvesting. The LTV:CAC ratio gives them a rational basis for marketing decisions rather than gut feel. Common pitfalls: ignoring organic and time-based costs (your time has a value even if you do not pay yourself for it), attributing all customers to a single channel when the journey was multi-touch, and comparing short-term CAC against long-term LTV without considering cash flow timing. Connect this to the Lead Generation playbook (2.5) for channel-specific tactics and the Cash Flow Forecast (1.4) to model the cash impact of acquisition investments."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "High-Value Customer Profile",
+          "description": "Identify the characteristics of your most valuable customers so you can find more people like them and tailor your retention efforts to keep them longer.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify the characteristics of your most valuable customers so you can find more people like them and tailor your retention efforts to keep them. You will analyse your top customers across revenue, profitability, ease of service, and referral behaviour to build a profile of what your best customers have in common. Then you will use that profile to sharpen your marketing, improve your sales qualification, and focus retention resources where they matter most."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Not all customers are equal. In most businesses, the top 20% of customers generate 60-80% of revenue and an even higher share of profit. Yet most businesses treat all customers the same: same marketing, same service level, same retention effort. A high-value customer profile lets you be deliberately unequal. You invest more in attracting and retaining the customers who drive your business, and you stop over-investing in customers who drain it. This is not about ignoring smaller customers. It is about allocating resources proportionally to value."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Lifetime Value Formula (Action 2) and your customer data. Sort your customers by total value and work through the analysis below.\n\n---"
+            },
+            {
+              "title": "Identify Your Top Customers",
+              "content": "- [ ] Rank all customers by total lifetime revenue (or total revenue in the last 24 months if you do not have full lifetime data)\n- [ ] Identify your top 20% by revenue\n- [ ] ⚡ Quick Win: Write down the names of your best 5 customers right now, without looking at the data. Then check the data. If your gut list does not match the revenue list, that tells you something important about how you perceive value.\n- [ ] Calculate what percentage of total revenue this top 20% represents\n- [ ] Now filter for profitability: are your highest-revenue customers also your most profitable? (Some high-revenue customers cost disproportionately more to serve.)"
+            },
+            {
+              "title": "Analyse Common Characteristics",
+              "content": "### Demographics and Firmographics\n\n- [ ] Company size (revenue, employee count)\n- [ ] Industry or sector\n- [ ] Geography or location\n- [ ] Years in business\n- [ ] Business stage (startup, growth, established, scaling)\n\n### Behavioural Characteristics\n\n- [ ] How did they find you? (Referral, organic search, advertising, networking, etc.)\n- [ ] How long did the sales cycle take?\n- [ ] What product or service did they buy first?\n- [ ] How quickly did they expand or buy again?\n- [ ] ⚡ Quick Win: Look at your top 5 customers and note how they originally found you. If 3 out of 5 came from the same channel, that channel deserves more investment.\n\n### Attitudinal Characteristics\n\n- [ ] What problem were they trying to solve when they found you?\n- [ ] How urgent was their need?\n- [ ] Were they comparison shopping or ready to commit?\n- [ ] Do they refer others? How actively?\n- [ ] How engaged are they with your content, events, or community?"
+            },
+            {
+              "title": "Build Your High-Value Profile",
+              "content": "- [ ] Summarise the 5-7 characteristics that your best customers have in common\n- [ ] Create a one-page profile: \"Our best customers tend to be [description]\"\n- [ ] Note any anti-patterns: characteristics that predict low-value or difficult customers\n- [ ] Compare your high-value profile against your current Customer Avatar (1.5). Are they the same or different?\n- [ ] If different, your marketing may be attracting the wrong audience"
+            },
+            {
+              "title": "Apply the Profile",
+              "content": "- [ ] Share the profile with your marketing team or person. Targeting should favour high-value characteristics.\n- [ ] Update your sales qualification criteria. Prospects matching the high-value profile should get priority.\n- [ ] Design a premium retention programme for existing customers who match the profile\n- [ ] Review your current customer base: which existing customers match the profile but are under-served?\n- [ ] ⚡ Quick Win: Identify 3 current customers who match your high-value profile and are not getting enough attention. Reach out to them this week with something valuable.\n- [ ] Set a quarterly review to update the profile as your customer base evolves\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Your top 20% of customers identified and their revenue contribution calculated\n- Common characteristics identified across demographics, behaviour, and attitude\n- A one-page high-value customer profile documented\n- Marketing targeting adjusted to favour high-value characteristics\n- Sales qualification criteria updated to prioritise high-value prospects\n- A premium retention approach for high-value customers"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This exercise often challenges assumptions. Clients think they know who their best customers are, but the data sometimes tells a different story. The most valuable insight is usually the acquisition channel pattern. If your best customers all came from referrals but you are spending most of your budget on paid ads, that is a misalignment worth fixing. The anti-pattern analysis is equally valuable. Knowing which customer characteristics predict low value or high hassle lets you qualify out poor-fit prospects earlier. This is not about being elitist. It is about focus. A business that serves everyone equally serves no one well. Connect this to the Customer Avatar (1.5) and the Customer Grade Analysis (1.5 Action 4) for a complete picture of who to pursue and who to let go."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

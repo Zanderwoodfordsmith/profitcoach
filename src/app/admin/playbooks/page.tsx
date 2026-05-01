@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PLAYBOOKS, LEVELS, AREAS, type BossPlaybook } from "@/lib/bossData";
 import type { PlaybookTabStats, TabStatus } from "@/lib/playbookTabStatus";
@@ -154,28 +155,23 @@ export default function AdminPlaybooksPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="border-b border-slate-200 pb-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-          BOSS Dashboard
-        </p>
-        <h1 className="mt-1 text-xl font-semibold text-slate-900">
-          Playbooks
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Browse the full Profit System playbook library.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium text-slate-600">Group by</span>
-          <select
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-          >
-            <option value="level">Level (Overwhelm → Owner)</option>
-            <option value="area">Area (Owner Performance, Aligned Vision, …)</option>
-          </select>
-        </div>
-      </header>
+      <StickyPageHeader
+        title="Playbooks"
+        description="Browse the full Profit System playbook library."
+        below={
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-medium text-slate-600">Group by</span>
+            <select
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            >
+              <option value="level">Level (Overwhelm → Owner)</option>
+              <option value="area">Area (Owner Performance, Aligned Vision, …)</option>
+            </select>
+          </div>
+        }
+      />
 
       {loading && (
         <p className="text-sm text-slate-600">Loading…</p>

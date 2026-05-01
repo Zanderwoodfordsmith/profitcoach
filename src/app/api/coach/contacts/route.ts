@@ -34,11 +34,15 @@ async function requireCoach(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profileError || !profile || profile.role !== "coach") {
+  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
+  const effectiveId =
+    profile?.role === "admin" && impersonateId ? impersonateId : user.id;
+
+  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
     return { error: "Not authorized." as const, userId: null };
   }
 
-  return { error: null, userId: user.id as string };
+  return { error: null, userId: effectiveId as string };
 }
 
 export async function POST(request: Request) {

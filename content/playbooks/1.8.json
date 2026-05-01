@@ -1,0 +1,182 @@
+{
+  "ref": "1.8",
+  "level": 1,
+  "area": 8,
+  "name": "Processes",
+  "subtitle": "Level 1 · Overwhelm · Infrastructure & Systems",
+  "whatThisIs": "If it lives in your head, it is fragile. Processes are not bureaucracy — they are leverage. When your business knowledge sits only in memory, every mistake is a crisis, every holiday is a risk, and every new person needs months of hand-holding.\n\nThis playbook is about getting your essential workflows out of your head and onto paper. Not to create red tape, but to create reliability. When key tasks are documented, mistakes drop, quality improves, and your business becomes less dependent on any single person — including you.\n\nThis is not about documenting everything you do. It is about documenting the things that matter most: the workflows that touch customers, generate revenue, or could break the business if done wrong.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "Everything depends on who is in the office that day. You constantly explain the same tasks over and over. Mistakes happen regularly because people \"forgot that step\" or \"didn't know we do it that way.\" Quality varies wildly depending on who does the work. When key people are away, urgent work sits waiting because no one else knows the process."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "Some things are documented but most exist only in people's heads. You have written down the obvious steps but missed the nuances that make the difference. New team members take ages to get up to speed because they have to learn by watching and asking questions. You know processes need documenting but only get around to it when something goes wrong."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Your essential workflows are documented, up to date, and actually used by your team. New people can follow a checklist and get consistent results. Quality is predictable across different people doing the same work. When someone is away or leaves, the work continues without drama. You spend time improving processes, not explaining them repeatedly."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What knowledge exists only in your memory? Walk through your key workflows and ask: if I was not here tomorrow, who would know how to do this properly? The gaps you find are your biggest risks. Start there.",
+    "Where do mistakes keep happening? Recurring errors are usually process problems, not people problems. If the same mistake happens more than twice, you need a checklist, not better staff.",
+    "Is quality consistent across different people? When the same task produces different results depending on who does it, that is a process gap. Good processes create consistent outcomes regardless of who runs them.",
+    "Who owns keeping processes current? Documents that nobody maintains become outdated fast. Every process needs an owner — someone responsible for updating it when things change.",
+    "What happens when someone new starts? If onboarding means sitting with someone for weeks while they learn by watching, your processes are not doing their job. Good processes turn learning from art into science."
+  ],
+  "quickWins": [
+    "This week: Pick your most important customer-facing process. Write down every step from start to finish, even the \"obvious\" ones. Ask someone else to follow your checklist and see where they get stuck.",
+    "This week: Look at the last three mistakes that happened in your business. Ask: would a simple checklist have prevented this? If yes, write that checklist today.",
+    "This week: Identify one process that only you know how to do properly. Spend 30 minutes documenting it well enough that someone else could handle it in an emergency."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.9",
+      "description": ""
+    },
+    {
+      "ref": "2.8",
+      "description": ""
+    },
+    {
+      "ref": "3.8",
+      "description": ""
+    },
+    {
+      "ref": "1.6",
+      "description": ""
+    },
+    {
+      "ref": "1.3",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Process Audit",
+          "description": "Identify and list all the key workflows that currently exist only in people's heads. Focus on customer-facing processes, revenue-generating activities, and anything that could break the business if done wrong.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify every key workflow in your business and assess which ones live only in people's heads, which are partially documented, and which are properly systematised. This reveals your biggest risks and shows you where to focus your documentation effort."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Michael Gerber's E-Myth insight is foundational: most small businesses are not businesses — they are jobs the owner has created for themselves. The reason is that every critical process depends on one person's memory and expertise. When that person is unavailable, sick, or leaves, the process breaks. David Jenyns builds on this with SYSTEMology: you do not need to document everything. You need to document the things that touch customers, generate revenue, or could break the business if done wrong. The audit identifies which processes those are."
+            },
+            {
+              "title": "How to Use This",
+              "content": "List your processes, assess each one, and prioritise which to document first. This is a diagnostic — you are not documenting anything yet, just mapping what needs attention.\n\n---"
+            },
+            {
+              "title": "List Your Processes",
+              "content": "- [ ] ⚡ Quick Win · **Write down every process you can think of in 10 minutes** — Sales, marketing, delivery, invoicing, hiring, onboarding, client communication, purchasing, reporting, quality control. Brain-dump everything. You will organise later.\n- [ ] **Group them into 4 categories:**\n  - **Customer-facing** — Anything the client sees, touches, or experiences\n  - **Revenue-generating** — Anything that directly brings in money\n  - **Operations** — Internal workflows that keep things running\n  - **Support** — Admin, finance, HR, IT"
+            },
+            {
+              "title": "Assess Each Process",
+              "content": "For every process on your list, answer these 3 questions:\n\n- [ ] **Is it documented?** — Yes (written down and up to date), Partial (something exists but it is outdated or incomplete), or No (lives entirely in someone's head).\n- [ ] **Who knows how to do it?** — If the answer is one person (especially you), that process is fragile. If it is \"everyone sort of knows,\" that means no one does it consistently.\n- [ ] **What happens if it fails?** — High impact (client loses trust, revenue stops, or something breaks badly), Medium (causes delays or extra work), or Low (inconvenient but not damaging)."
+            },
+            {
+              "title": "Prioritise",
+              "content": "- [ ] **Flag every process that is: undocumented + one person + high impact** — These are your critical risks. They are the processes that can break your business and no one else can step in. Document these first.\n- [ ] ⚡ Quick Win · **Pick the top 3 most critical processes** — You will document these in the next action. Do not try to do all of them at once — Jenyns recommends starting with your \"Critical Client Flow\" (the core delivery process) and expanding from there.\n- [ ] **Note any processes that are documented but outdated** — These need updating, not writing from scratch. Often easier and faster than creating new documentation.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete map of all key processes in your business\n- A clear picture of which processes are documented, partially documented, or undocumented\n- Identified critical risks — the processes that would break the business if the key person disappeared\n- A prioritised list of the top 3 processes to document first\n- The foundation for your documentation work in the next action"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This audit often produces an \"oh no\" moment when clients realise how much of their business lives only in their head. That reaction is useful — it creates urgency to start documenting. But channel it into action on 3 processes, not panic about all of them.\n\nJenyns' key principle: you do not need to document everything. Start with the processes that touch customers and generate revenue. Internal processes can wait until the external ones are solid.\n\nIf a client says \"I don't have time to document processes,\" point out that they are currently spending hours explaining, fixing, and re-doing work because processes are not documented. Documentation saves time — it does not cost it."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Priority Process Documentation",
+          "description": "Document your most critical 3-5 processes first using simple checklists and workflow diagrams. Cover the what, when, who, and quality standards that make the difference between good and poor execution.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Take the top 3 processes identified in your Process Audit and document them well enough that someone else could follow them and get a consistent result. Not perfect documentation — minimum viable documentation that reduces your risk and frees up your time."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Jenyns' SYSTEMology method is built on a simple insight: the best person to run a process is rarely the best person to document it. The expert does things on autopilot and skips the \"obvious\" steps. But those obvious steps are exactly what a new person needs. The documentation method below captures the real process — including the bits the expert does not think to mention — by recording first and writing second.\n\nGerber's Franchise Prototype principle applies here too: document every process as if you were going to franchise the business. Not because you will, but because the discipline of making it teachable makes it reliable."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the 3 processes you identified in the Process Audit. Do them one at a time — complete one before starting the next.\n\n---"
+            },
+            {
+              "title": "For Each Process",
+              "content": "### Capture\n\n- [ ] **Record yourself doing the process** — Screen recording for digital work, video for physical work, or audio narration as you go through it. Talk through every step including the \"obvious\" ones. Jenyns' method: the expert records, someone else documents.\n- [ ] **If recording is not practical, walk someone through it while they take notes** — Have a team member or VA watch you do it and write down every step. They will catch things you skip because \"everyone knows that.\"\n- [ ] ⚡ Quick Win · **Alternatively, write it as a simple numbered checklist** — Step 1, Step 2, Step 3. No paragraphs, no explanations, just \"do this, then do this, then do this.\" You can add detail later.\n\n### Document\n\n- [ ] **Turn the recording or notes into a step-by-step checklist** — Numbered steps in order. Each step should be a single action, not a paragraph. \"Open the client folder in Google Drive\" not \"Access the relevant documentation.\"\n- [ ] **Add decision points** — Where in the process do you make a choice? \"If the client has paid, proceed to Step 5. If not, send payment reminder email.\" These branching points are where mistakes happen if not documented.\n- [ ] **Include the quality check** — How do you know the process was done correctly? What does \"done well\" look like? Add this as the final step.\n- [ ] **Note the tools used** — Which software, templates, or resources are needed? Link to them directly in the document so the person following the process does not have to hunt for them.\n\n### Test\n\n- [ ] **Have someone else follow your documentation without your help** — Give them the checklist and walk away. Where they get stuck reveals gaps in your documentation.\n- [ ] **Note every question they ask** — Each question is a missing step or unclear instruction. Add the answer to the document.\n- [ ] ⚡ Quick Win · **Update the document based on the test** — One round of testing and updating typically catches 80% of the gaps. The document does not need to be perfect — it needs to be good enough that someone can follow it.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- 3 critical processes documented as step-by-step checklists\n- Documentation tested by someone other than the expert and refined\n- Reduced dependency on you or any single person for these processes\n- A template and method you can use to document additional processes over time\n- The beginning of a process library that grows with your business"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest barrier is perfectionism. Clients want the documentation to be comprehensive and beautiful. Push for \"good enough to follow\" — a rough checklist that works is infinitely more valuable than a polished document that never gets written.\n\nJenyns recommends documenting one process per week as an ongoing habit. After 12 weeks, you have 12 documented processes and your business is fundamentally more resilient. Frame it as a weekly habit, not a project.\n\nIf the client does not have anyone to test the documentation with, they can test it themselves — wait a week, then follow their own checklist as if they were new. The gaps will be obvious because they will have forgotten the \"obvious\" steps."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Process Testing & Refinement",
+          "description": "Test your documented processes with team members to find gaps, unclear steps, and missing details. Refine them until someone new can follow them and get consistent results.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Assign a named owner to every documented process and set up a simple review schedule so your documentation stays current as the business evolves. Unowned processes decay quickly — within months they become outdated guides that nobody trusts or follows."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Documentation without ownership is temporary. Jenyns makes this point clearly: the value of a process document is not in writing it — it is in maintaining it. Businesses change constantly: software updates, team members change, client expectations evolve. A process document from 6 months ago that has not been reviewed might actively cause problems because the process has changed but the document has not."
+            },
+            {
+              "title": "How to Use This",
+              "content": "This is quick to set up but only works if you follow through on the review schedule. Keep it simple.\n\n---"
+            },
+            {
+              "title": "Assign Ownership",
+              "content": "- [ ] ⚡ Quick Win · **For each documented process, assign one person as the owner** — The owner does not have to be the person who does the work. They are the person responsible for keeping the document accurate and up to date. In a small team, this might be you for everything — that is fine at Level 1.\n- [ ] **The owner's responsibilities are:**\n  - Update the document when the process changes\n  - Review the document on schedule (see below)\n  - Flag when the process needs redesigning, not just updating\n  - Answer questions from anyone following the process\n- [ ] **Write the owner's name on the document** — Literally at the top of the process document. No ambiguity about who maintains it."
+            },
+            {
+              "title": "Set the Review Schedule",
+              "content": "- [ ] **Choose a review frequency for each process** — Customer-facing processes: review monthly. Internal operations: review quarterly. Support/admin: review every 6 months.\n- [ ] ⚡ Quick Win · **Add process review dates to your calendar** — Not as a \"I should probably look at this\" reminder. As a 15-minute calendar block that actually happens. Treat it like a recurring meeting.\n- [ ] **Each review asks 3 questions:**\n  - Has anything changed in how we actually do this? (If yes, update the document)\n  - Has anyone had trouble following this process? (If yes, clarify the documentation)\n  - Is this process still necessary? (If not, archive it)"
+            },
+            {
+              "title": "Track It",
+              "content": "- [ ] **Create a simple process register** — A single document or spreadsheet that lists: Process Name, Owner, Last Reviewed, Next Review Date. This is your control panel for all your documented processes.\n- [ ] **Review the register monthly** — Takes 5 minutes. Are any reviews overdue? Are any processes missing from the register? This keeps the whole system honest.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every documented process has a named owner\n- A review schedule that keeps documentation current without being burdensome\n- A process register that gives you oversight of all documented processes in one place\n- Documentation that stays trustworthy because it is maintained, not just created\n- The foundation for scaling — as you add team members, they inherit maintained processes"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action is the one most likely to be skipped because it feels like admin rather than progress. Reframe it: the 5-minute monthly register check is what prevents the 5-hour crisis when someone follows an outdated process and delivers wrong.\n\nFor solo operators, they own everything — and that is fine. The value of this action for solos is the review schedule. Without it, they write processes once and never update them, which means in 6 months the documentation is useless and they are back to doing everything from memory.\n\nAs the team grows, ownership transfers from the founder to the person closest to the work. This is one of the first real delegation moments — and it is a safe one because it is low risk and highly structured."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Process Ownership System",
+          "description": "Assign ownership for maintaining and updating each process. Create a simple review schedule so processes stay current as your business evolves."
+        }
+      ]
+    }
+  ]
+}

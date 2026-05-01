@@ -1,0 +1,236 @@
+{
+  "ref": "3.6",
+  "level": 3,
+  "area": 6,
+  "name": "Customer Retention",
+  "subtitle": "Level 3 · Organised · Operations & Delivery",
+  "whatThisIs": "Customer retention is where lifetime value is built. It costs far more to find a new customer than to keep an existing one, yet most business owners spend all their time hunting for new clients while the good ones quietly slip away.\n\nThis playbook is about turning one-time buyers into repeat customers and advocates. It covers understanding why customers leave, designing systems that keep them engaged, and creating pathways for them to spend more with you over time.\n\nThis is not about desperate discounts or loyalty cards that nobody uses. It is about building genuine relationships and delivering ongoing value that makes customers choose you again and again.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have no idea why customers stop buying from you — they just disappear. Most of your revenue comes from new customers because existing ones rarely come back. When clients do leave, you find out too late to do anything about it. You have no systematic way to stay in touch with past customers or encourage repeat business."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You track some basic retention numbers and occasionally follow up with past customers. You notice patterns in why people leave but do not have a structured approach to address it. You have a few loyal customers who buy repeatedly, but it feels more like luck than strategy. Your retention efforts are reactive rather than proactive."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You track retention rates and can predict when customers are at risk of leaving. You have clear systems to stay in touch, deliver ongoing value, and encourage repeat purchases. Most customers buy from you multiple times, and many become advocates who refer others. When customers do leave, you understand exactly why and use that insight to improve the experience for everyone else."
+    }
+  },
+  "thingsToThinkAbout": [
+    "What are your real churn patterns? Look beyond \"they stopped buying\" and dig into the when, why, and how. Are customers leaving after their first purchase, after six months, or when specific things happen? Patterns reveal the real problems.",
+    "Is staying with you a deliberate choice or just inertia? There is a difference between customers who actively choose to stay and those who simply have not bothered to leave yet. Active retention means they see ongoing value. Passive retention means you are vulnerable to the first competitor who makes an effort.",
+    "Where can you create more value without creating more cost? The best retention strategies give existing customers more reason to stay and buy more, without dramatically increasing your delivery burden. This might be access, convenience, information, or community — not just more stuff.",
+    "Do you reward loyalty or just hope for it? Your best customers should be treated differently from one-time buyers. This does not mean expensive gifts — it means recognition, priority access, or simply acknowledgment that their ongoing business matters to you.",
+    "Are you asking the right questions soon enough? Most businesses only ask for feedback when it is too late. The best retention systems spot trouble early through regular check-ins, satisfaction monitoring, and watching early warning signals in customer behavior."
+  ],
+  "quickWins": [
+    "This week: Send a personal message to your top 10 customers this quarter. Ask them one simple question: \"What could we do better?\" Listen to the answers.",
+    "This week: List everyone who bought from you 6-12 months ago but has not purchased since. Pick five and call them to understand why they stopped.",
+    "This week: Look at your customer data and find one obvious pattern in who leaves and when. It might be after a specific service, at a certain time period, or following a particular interaction."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "2.6",
+      "description": ""
+    },
+    {
+      "ref": "4.6",
+      "description": ""
+    },
+    {
+      "ref": "3.5",
+      "description": ""
+    },
+    {
+      "ref": "3.7",
+      "description": ""
+    },
+    {
+      "ref": "1.2",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Churn Analysis",
+          "description": "Map exactly when and why customers leave so you can address the real problems, not the obvious ones. You will discover patterns you never noticed and fix issues before they cost you more customers.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Pull together every customer you have lost in the last 12 months and work out exactly when in the relationship they left and why. You are looking for patterns, not individual stories. Most businesses assume they know why customers leave. This exercise almost always reveals surprises."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You cannot fix retention if you do not know where the leaks are. A business losing customers at month 3 has a completely different problem than one losing them at month 12. One is an onboarding failure, the other is a value perception issue. Until you map the actual data, you are guessing. And guessing leads to expensive fixes aimed at the wrong problem."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Gather your customer records, cancellations, and any exit feedback you have. Work through the analysis below. Be honest about the numbers, even if they are uncomfortable.\n\n---"
+            },
+            {
+              "title": "Churn Data Collection",
+              "content": "- [ ] **List every customer lost in the last 12 months** - Name, date they started, date they left, and revenue they represented.\n- [ ] **Calculate your churn rate** - Number of customers lost divided by total customers at the start of the period. Write this number down. This is your baseline.\n- [ ] **Record the reason each customer gave for leaving** - Use their words, not your interpretation. If they gave no reason, mark it as \"no reason given.\"\n- [ ] ⚡ Quick Win: **Sort lost customers by tenure** - Group them: left within 0-3 months, 3-6 months, 6-12 months, 12+ months. The biggest group tells you where your biggest leak is.\n- [ ] **Calculate the revenue impact of each group** - Not all churn is equal. Losing ten small clients is different from losing two large ones."
+            },
+            {
+              "title": "Pattern Analysis",
+              "content": "- [ ] **Identify your top 3 stated reasons for leaving** - Look across all the reasons and group them. Price, service quality, changed circumstances, competitor, outgrew you, or something else.\n- [ ] **Cross-reference reasons with tenure** - Do early leavers give different reasons than long-term leavers? They almost always do.\n- [ ] **Check for seasonal patterns** - Is there a month or quarter where you lose more customers? Budget cycles, contract renewal dates, and industry cycles often drive this.\n- [ ] **Look at who sold the account** - If one salesperson's clients churn at twice the rate, you have a promise-delivery gap, not a retention problem.\n- [ ] **Identify your \"silent churners\"** - Customers who stopped buying or engaging but never formally cancelled. These are often the biggest hidden group.\n- [ ] **Map the last 3 touchpoints before each departure** - What happened (or did not happen) in the weeks before they left? Look for patterns of disengagement."
+            },
+            {
+              "title": "Action Planning",
+              "content": "- [ ] **Rank your churn causes by revenue impact** - The biggest revenue leak gets fixed first, regardless of how many customers it affects.\n- [ ] ⚡ Quick Win: **Pick the single easiest pattern to fix** - There is usually one cause that is simple to address. Fix it this week.\n- [ ] **Set a target churn rate for next quarter** - Based on what you have learned, what is a realistic improvement? Write it down and track it monthly.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear, data-backed picture of when and why customers leave\n- Churn grouped by tenure, reason, and revenue impact\n- Seasonal and salesperson patterns identified\n- A prioritised list of retention problems to fix, ranked by revenue impact\n- A baseline churn rate you can measure improvement against"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most business owners resist this exercise because they think they already know why people leave. Push past that. The data almost always tells a different story. Common surprise: the biggest churn driver is not price or service quality. It is neglect. Customers who feel forgotten leave quietly.\n\nIf the client does not have good records, start with whatever they have. Even a rough analysis of 10-15 lost customers will reveal patterns. Do not let \"we don't have perfect data\" become an excuse to skip this entirely."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Retention Pathway Design",
+          "description": "Build deliberate touchpoints and renewal systems so staying with you becomes the natural choice. This covers everything from follow-up sequences to subscription models to loyalty frameworks.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a deliberate sequence of touchpoints, check-ins, and renewal mechanisms so that staying with you becomes the natural, easy choice. Right now, most of your retention is accidental. Customers stay because they have not got around to leaving. This action replaces that with a designed experience where customers feel valued, see ongoing results, and never have to wonder whether they should stay."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Acquiring a new customer costs 5-7 times more than keeping an existing one. Yet most businesses spend 90% of their energy on acquisition and almost nothing on retention. A well-designed retention pathway does not just reduce churn. It turns satisfied customers into loyal ones and loyal ones into advocates. The compound effect of keeping customers even a few months longer is enormous."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through each stage in order. You are building a system, not a one-off campaign. Each touchpoint should be something you can repeat consistently for every customer.\n\n---"
+            },
+            {
+              "title": "Stage 1: First 90 Days (The Critical Window)",
+              "content": "- [ ] **Design your onboarding welcome sequence** - What happens in the first 48 hours after someone becomes a customer? Map every communication, delivery step, and check-in.\n- [ ] ⚡ Quick Win: **Add a personal check-in at Day 7** - A quick call or message asking \"How is everything going? Anything you need?\" This single touchpoint dramatically reduces early churn.\n- [ ] **Set a \"first result\" milestone** - Identify the earliest moment a customer gets a tangible result from working with you. Ensure your process accelerates them toward it.\n- [ ] **Create a 30-day review point** - Formal or informal, check in to confirm they are on track and address any concerns before they become reasons to leave.\n- [ ] **Build a 90-day success check** - At the end of the critical window, review what they have achieved. Reinforce the value they have received."
+            },
+            {
+              "title": "Stage 2: Ongoing Engagement (Months 3-12)",
+              "content": "- [ ] **Schedule regular value touchpoints** - Monthly or quarterly contact that is not a sales pitch. Share insights, check progress, offer help. Put these in a calendar so they actually happen.\n- [ ] **Create content or resources exclusively for existing customers** - Give them something prospects do not get. This reinforces the value of being a customer.\n- [ ] **Build a community or peer connection** - Even a simple private group or quarterly meetup creates stickiness that a transactional relationship cannot match.\n- [ ] ⚡ Quick Win: **Set up automated anniversary or milestone messages** - \"You have been with us for 6 months, here is what you have achieved.\" Takes 30 minutes to set up, runs forever."
+            },
+            {
+              "title": "Stage 3: Renewal and Recommitment",
+              "content": "- [ ] **Design your renewal conversation** - Do not let contracts auto-expire and hope people re-sign. Build a deliberate renewal process that starts 30-60 days before the end date.\n- [ ] **Create a renewal incentive** - Loyalty pricing, bonus access, or an upgrade offer that rewards staying. Make it genuinely valuable, not a gimmick.\n- [ ] **Offer flexible commitment options** - Some customers want annual contracts, others prefer monthly. Offer both and let the relationship quality do the retaining, not the contract lock-in.\n- [ ] **Build a win-back sequence for lapsed customers** - Not everyone who leaves is gone forever. A 30/60/90-day re-engagement sequence brings some back."
+            },
+            {
+              "title": "Stage 4: Advocacy",
+              "content": "- [ ] **Ask for referrals at peak satisfaction moments** - Right after a big result or positive interaction, not at random. Timing matters.\n- [ ] **Make leaving a referral easy** - A simple link, a template message, or a \"bring a friend\" offer removes friction from the referral process.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A mapped, repeatable retention pathway from Day 1 through renewal\n- Deliberate touchpoints at every critical stage of the customer journey\n- A renewal process that starts well before contract expiry\n- Referral and advocacy built into the natural customer experience\n- Reduced reliance on new acquisition to maintain revenue"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest mistake clients make here is designing a pathway that is too complicated to maintain. Start with 5-6 touchpoints they can actually deliver consistently. A simple pathway that runs every time beats an elaborate one that gets abandoned after two months.\n\nPush clients to automate what they can (email sequences, reminders, milestone messages) but keep the high-impact moments personal. An automated \"happy anniversary\" email is fine. An automated renewal conversation is not. The human touch matters most when money is on the table."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Expansion Strategy",
+          "description": "Create natural opportunities for existing customers to buy more, upgrade, or expand their relationship with you. The easiest sale is always to someone who already trusts you.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify and create natural opportunities for existing customers to buy more, upgrade, or expand their relationship with you. This is not about being pushy. It is about recognising that your best customers often want more from you but nobody has asked. The easiest sale you will ever make is to someone who already trusts you and has seen results."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most businesses treat each sale as a standalone event. They close the deal, deliver the work, and then go hunting for the next new customer. Meanwhile, their existing customers are buying complementary products and services from other providers. Expansion revenue typically converts at 3-5 times the rate of new business and costs almost nothing to acquire. Ignoring it is leaving money on the table every single month."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Review each category below and tick off the ones that apply to your business. Not everything will be relevant. Focus on the 2-3 expansion paths that are most natural for your customers and easiest for you to deliver.\n\n---"
+            },
+            {
+              "title": "Upsell Opportunities",
+              "content": "- [ ] **Identify your natural \"next step\" offer** - What do customers typically need after they finish working with you? If you do not offer it, someone else will.\n- [ ] ⚡ Quick Win: **Review your last 10 completed projects or engagements** - How many customers asked for something extra that you either could not provide or did not offer? That is your upsell gap.\n- [ ] **Create a premium tier or enhanced version of your core offer** - More access, faster delivery, additional support, or deeper involvement. Some customers will always want the best option.\n- [ ] **Bundle complementary services** - Two things you sell separately that most customers eventually buy together should be offered as a package from the start."
+            },
+            {
+              "title": "Cross-Sell Opportunities",
+              "content": "- [ ] **Map all the problems your customers face, not just the one you solve** - Which of those adjacent problems could you credibly address?\n- [ ] **Survey your best customers** - Ask: \"What else do you wish we could help you with?\" The answers will tell you exactly what to build next.\n- [ ] **Review what your customers buy from other providers** - If they are paying someone else for something you could deliver, that is a cross-sell opportunity hiding in plain sight.\n- [ ] ⚡ Quick Win: **Introduce one complementary recommendation this month** - Even if you do not deliver it yourself, recommending a trusted partner shows you care about their bigger picture. And you can build a referral arrangement."
+            },
+            {
+              "title": "Pricing and Packaging for Growth",
+              "content": "- [ ] **Offer annual or long-term commitment options** - Give a meaningful discount for longer commitment. You get predictable revenue, they get better pricing. Both sides win.\n- [ ] **Create usage-based expansion** - If your service scales with the customer's business (more users, more locations, more volume), build pricing that grows with them naturally.\n- [ ] **Introduce a loyalty or rewards programme** - Does not need to be complicated. Even a simple \"10% off your next purchase after 12 months\" rewards continued business."
+            },
+            {
+              "title": "Expansion Conversations",
+              "content": "- [ ] **Train your team to spot expansion signals** - Customers mentioning new challenges, growing their team, entering new markets, or asking about capabilities they have not used are all buying signals.\n- [ ] **Build expansion into your review rhythm** - Every quarterly or annual review should include \"What is coming next for your business?\" This naturally surfaces expansion opportunities.\n- [ ] **Track expansion revenue separately** - Know exactly how much revenue comes from existing customers buying more versus new customers. Set a target and measure it monthly.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear map of upsell, cross-sell, and expansion opportunities in your business\n- At least 2-3 expansion paths identified and ready to offer\n- Pricing and packaging that encourages customers to spend more over time\n- Your team trained to recognise and act on expansion signals\n- Expansion revenue tracked as a distinct metric alongside new business"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest resistance here is the fear of being \"salesy\" with existing customers. Reframe it for the client: \"You are not selling to them. You are serving them better. If they need something and you can provide it, staying quiet is a disservice.\"\n\nStart with the lowest-friction option. Usually that is a simple conversation during an existing review meeting. \"What else is on your plate right now?\" often opens the door without any hard selling. Help the client script these conversations if they are uncomfortable with them."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Satisfaction Monitoring",
+          "description": "Install early warning systems to spot problems before customers leave. This includes feedback loops, satisfaction surveys, and behavioral triggers that tell you when someone is at risk.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up early warning systems that spot dissatisfied customers before they leave. By the time a customer tells you they are unhappy, the relationship is usually beyond saving. This action builds feedback loops, behavioural triggers, and regular check-ins so you catch problems early, when they are still fixable."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Research consistently shows that for every customer who complains, 26 leave without saying a word. They just quietly stop buying, stop engaging, and eventually stop responding. A satisfaction monitoring system does not just measure happiness. It gives you a window of opportunity to intervene. Catching a problem at week 2 is a quick conversation. Catching it at month 6 is a rescue mission."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the steps in order. Start with the quick feedback mechanisms, then layer on the behavioural monitoring and formal survey process.\n\n---"
+            },
+            {
+              "title": "Step 1: Quick Feedback Mechanisms",
+              "content": "- [ ] ⚡ Quick Win: **Add a one-question check-in to your delivery process** - After each interaction, project milestone, or session, ask: \"How was that for you? Anything we should adjust?\" Simple, fast, and surprisingly revealing.\n- [ ] **Set up a Net Promoter Score (NPS) survey** - One question: \"How likely are you to recommend us to a colleague?\" Run it quarterly. Track the trend, not the absolute number.\n- [ ] **Create a \"traffic light\" system for your team** - After every customer interaction, team members flag the customer as green (happy), amber (something off), or red (problem). Takes seconds and builds a real-time picture.\n- [ ] **Make it easy to give feedback** - A link in your email signature, a feedback button in your portal, or a QR code on printed materials. Remove every barrier between the customer and their honest opinion."
+            },
+            {
+              "title": "Step 2: Behavioural Warning Signs",
+              "content": "- [ ] **Define your engagement baseline** - How often does a healthy customer interact with you? Log in? Open emails? Attend sessions? You need to know what \"normal\" looks like before you can spot a drop.\n- [ ] **Identify your early warning triggers** - Map the specific behaviours that precede churn. Common ones: stopped opening emails, missed two sessions in a row, stopped using the product, or went quiet after a complaint.\n- [ ] **Set up alerts for trigger behaviours** - Use your CRM, email platform, or a simple spreadsheet to flag when a customer hits a warning trigger. Do not rely on memory.\n- [ ] **Build a re-engagement protocol for each trigger** - When a customer goes quiet, what happens? Define the specific outreach: who contacts them, when, and what they say."
+            },
+            {
+              "title": "Step 3: Formal Survey Process",
+              "content": "- [ ] **Design a short quarterly satisfaction survey** - 5-7 questions maximum. Mix rating scales with one open-ended question. Keep it under 3 minutes to complete.\n- [ ] **Ask the right questions** - Cover: overall satisfaction, likelihood to continue, perceived value, responsiveness, and one open-ended \"what could we do better?\"\n- [ ] **Close the loop on every response** - Anyone who gives negative feedback gets a personal follow-up within 48 hours. Not an automated reply. A real conversation.\n- [ ] **Share results with your team** - Monthly or quarterly review of satisfaction trends. Celebrate improvements. Address declining areas immediately."
+            },
+            {
+              "title": "Step 4: Act on What You Learn",
+              "content": "- [ ] **Create a \"save\" protocol for at-risk customers** - When monitoring flags a problem, what are the specific steps? Define who owns the recovery, what they offer, and what the timeline looks like.\n- [ ] ⚡ Quick Win: **Call your 3 most at-risk customers this week** - You probably already know who they are. A proactive call before they decide to leave is worth more than any survey.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Multiple feedback channels running so customers can tell you how they feel\n- Behavioural triggers defined and monitored so you spot disengagement early\n- A quarterly survey process that takes minutes to run and gives you actionable data\n- A clear protocol for intervening when a customer shows warning signs\n- Fewer surprise departures and more opportunities to fix problems before they become cancellations"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Clients often overcomplicate this. They want to build a perfect feedback system before launching anything. Push them to start with one mechanism this week - the one-question check-in is the fastest to implement and gives immediate signal.\n\nWatch out for \"survey fatigue\" as an excuse to avoid asking for feedback at all. The real issue is usually fear of hearing negative things. Remind the client that problems exist whether you measure them or not. Measuring them just means you can actually fix them.\n\nFor clients with small customer bases (under 50), skip the formal survey and rely on direct conversations. At that scale, you should know every customer by name and be able to read the room."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,8 @@ import {
   buildFakeScores,
   type AnswersMap,
 } from "@/lib/bossScores";
+import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
+import { useWheelViewMode } from "@/lib/useWheelViewMode";
 
 const STORAGE_KEY = "boss_assessment_result";
 
@@ -22,6 +24,8 @@ export default function AssessmentThankYouPage() {
   const searchParams = useSearchParams();
   const coachSlug = params?.coachSlug as string;
 
+  const [wheelColorScheme] = useWheelColorScheme();
+  const [wheelViewMode] = useWheelViewMode();
   const [answers, setAnswers] = useState<AnswersMap | null>(null);
   const [totalScore, setTotalScore] = useState<number | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -122,7 +126,7 @@ export default function AssessmentThankYouPage() {
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-8 md:grid-cols-[1fr_auto] lg:grid-cols-[1fr_1fr_1fr]">
             <div className="flex justify-center">
-              <BossWheel areaScores={areaScores} totalScore={totalScore} />
+              <BossWheel areaScores={areaScores} totalScore={totalScore} answers={answers} colorScheme={wheelColorScheme} viewMode={wheelViewMode} />
             </div>
             <div className="flex justify-center">
               <BossDoughnut scores={answers} />
@@ -133,10 +137,7 @@ export default function AssessmentThankYouPage() {
           </div>
         </section>
 
-        <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold text-slate-900">
-            Your BOSS grid
-          </h2>
+        <section className="overflow-x-auto">
           <BossGrid
             answers={answers}
             showDials

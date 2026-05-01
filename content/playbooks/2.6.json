@@ -1,0 +1,236 @@
+{
+  "ref": "2.6",
+  "level": 2,
+  "area": 6,
+  "name": "Customer Experience",
+  "subtitle": "Level 2 · Overworked · Operations & Delivery",
+  "whatThisIs": "Customer experience is what happens between \"hello\" and \"goodbye\" — and every moment in between. It influences whether customers renew, refer, or just disappear quietly. Small friction points compound over time, turning good customers into ex-customers.\n\nThis playbook is about deliberately designing client interactions instead of hoping they work out. It covers the entire journey: how they first encounter you, how quickly you respond, how clearly you onboard them, and how personally you treat them along the way.\n\nWhen customer experience is broken, you lose clients without knowing why. When it is working, customers stay longer, buy more, and bring their friends.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You hear about unhappy customers through complaints or cancellations, never through proactive feedback. Response times are inconsistent — sometimes fast, sometimes forgotten. New clients are left to figure things out on their own. Every interaction feels generic and rushed. You have no idea why customers leave because no one ever asks them."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "Some parts of the client journey work well, others create friction. You respond quickly when you remember to check messages, but there is no system. Onboarding happens differently each time depending on who handles it. You collect feedback occasionally but do not use it consistently to improve. Most clients are satisfied but few are delighted."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "Every client interaction is designed, not accidental. Response times are fast and consistent because there are systems in place. New clients have a structured onboarding experience that gets them results quickly. Regular touchpoints make clients feel known and valued. You collect feedback systematically and use it to remove friction before it costs you customers."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Where does friction appear in your client journey? Map every touchpoint from first contact to project completion. The moments that frustrate you as the business owner are probably frustrating your clients too. Friction hides in plain sight — slow responses, unclear next steps, or having to repeat information.",
+    "How fast is \"fast\" in your business? Every industry has different expectations. In some sectors, 24 hours is lightning speed. In others, 2 hours feels slow. Know your client's definition of fast and build your response times around their expectations, not yours.",
+    "Is the first experience structured or improvised? The first 48 hours after someone becomes a client shapes their entire relationship with you. Do they get a clear welcome sequence with next steps, or are they left wondering what happens next? First impressions compound.",
+    "Do clients feel known or processed? There is a difference between personalised and automated. Good systems make personalisation scalable — remembering their preferences, using their name, referencing their specific situation. When clients feel like just another account number, they start shopping around.",
+    "How are patterns identified? One complaint is feedback. Three identical complaints is a pattern that needs fixing. Are you collecting feedback in a way that lets you spot trends, or are you only hearing the loudest voices?"
+  ],
+  "quickWins": [
+    "This week: List every way clients can contact you. Check each channel right now and respond to anything waiting. Set a daily reminder to check all channels.",
+    "This week: Write down the three most common questions new clients ask in their first week. Create a simple FAQ document and send it to every new client on day one.",
+    "This week: Text or email your three most recent clients. Ask them: \"What is one thing we could have done differently to make working with us even better?\" Use their answers to fix something this month."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "1.6",
+      "description": ""
+    },
+    {
+      "ref": "3.6",
+      "description": ""
+    },
+    {
+      "ref": "4.6",
+      "description": ""
+    },
+    {
+      "ref": "5.5",
+      "description": ""
+    },
+    {
+      "ref": "2.8",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "When you open this playbook in the Profit System, you will find:",
+      "description": "---",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Client Journey Mapping",
+          "description": "Identify every touchpoint from first contact to completion and spot where friction appears. You cannot improve what you cannot see.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Identify every touchpoint from first contact to project completion and beyond, then spot where friction appears. This is similar to the Customer Journey Map in 2.3, but focused specifically on the client experience: how they feel at each stage, where they get frustrated, and where you can delight them."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Clients do not experience your business as a series of processes. They experience it as a series of moments - and the moments that frustrate, confuse, or disappoint them are the moments that cost you renewals and referrals. Mapping the journey from the client's perspective reveals friction you have been blind to because you are too close to the business to see it."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Walk through the journey as if you were a client. Better yet, ask a recent client to walk you through their experience.\n\n---"
+            },
+            {
+              "title": "Map Every Touchpoint",
+              "content": "- [ ] List every interaction a client has with your business from first contact to completion:\n  - First enquiry / first impression\n  - Response to enquiry\n  - Discovery call or sales conversation\n  - Proposal or quote\n  - Contract / sign-up\n  - Welcome / onboarding\n  - Kickoff meeting or first session\n  - Regular delivery interactions\n  - Progress updates or check-ins\n  - Issue resolution (when things go wrong)\n  - Project completion or contract end\n  - Follow-up / ongoing relationship\n- [ ] For each touchpoint, note: who handles it, how it happens (email, call, meeting, automated), and how consistent it is"
+            },
+            {
+              "title": "Rate the Experience",
+              "content": "For each touchpoint:\n\n- [ ] **How does the client feel?** (Excited, confident, confused, frustrated, ignored, valued?)\n- [ ] **Is there waiting involved?** How long? Is the wait communicated or does the client wonder what is happening?\n- [ ] **Is it personalised or generic?** Does the client feel known, or do they feel like account #47?\n- [ ] **Is it consistent?** Does the same thing happen every time, or does it depend on who handles it?\n- [ ] ⚡ Quick Win: Identify the single touchpoint where clients are most likely to feel confused or ignored. Fix that one this week."
+            },
+            {
+              "title": "Find the Friction",
+              "content": "- [ ] Circle every touchpoint where clients have to: wait without explanation, repeat information, figure something out themselves, or chase you for an update\n- [ ] Identify the three worst friction points by impact on client satisfaction\n- [ ] For each, ask: is this a process problem (no system), a people problem (inconsistent execution), or a communication problem (client does not know what to expect)?"
+            },
+            {
+              "title": "Design Improvements",
+              "content": "- [ ] For each of the top 3 friction points, design a simple fix:\n  - Missing communication? Create a template email or message for that stage\n  - Inconsistent experience? Write a brief checklist for whoever handles it\n  - Long wait? Set an expectation upfront (\"You will hear from us within 48 hours\")\n- [ ] Implement one improvement this week and the other two within 30 days\n- [ ] After implementing, ask the next 3 clients who go through that touchpoint: \"How was that experience?\"\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A complete map of every client touchpoint with experience ratings\n- The top 3 friction points identified and diagnosed\n- Simple fixes designed and implementation started\n- A foundation for ongoing experience improvement\n- Better client retention and referrals through a smoother journey"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "If possible, get the client to interview 2-3 of their own clients about their experience. The owner's perception of the journey and the client's actual experience are often very different. The most common gap: the space between \"they signed up\" and \"we started work.\" This is where new clients feel most uncertain and where many businesses go silent. A simple welcome email with clear next steps can transform the experience. This action overlaps with the Customer Journey Map in 2.3 but is focused on feelings and experience rather than process efficiency."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Response Standards",
+          "description": "Set clear expectations for how quickly you respond to different types of client communication and build simple systems to hit those standards consistently.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set clear expectations for how quickly you respond to different types of client communication and build simple systems to hit those standards consistently. Response time is one of the most visible indicators of how much a business values its clients. Make it deliberate, not accidental."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Slow or inconsistent responses are the number one silent killer of client relationships. A client who waits 3 days for a reply to an important question does not complain - they just start looking at alternatives. Fast, consistent response builds trust and confidence. It signals \"we are organised, we care, and you are a priority.\" The standard does not need to be \"instant.\" It needs to be defined, communicated, and consistently met."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Define your standards, set up the systems to meet them, and communicate them to your clients and team.\n\n---"
+            },
+            {
+              "title": "Define Your Standards",
+              "content": "- [ ] ⚡ Quick Win: Set one rule right now and tell your team: \"Every client email gets a reply within [X hours].\" Even an acknowledgement (\"Got this, will respond properly by [date]\") counts.\n- [ ] Set response time targets for different communication types:\n  - **Urgent issues** (service down, major problem): ___ hours\n  - **Standard client emails**: ___ hours (recommendation: same business day or within 24 hours)\n  - **Proposals / quotes**: ___ business days\n  - **General enquiries from prospects**: ___ hours (speed matters most here - first responder often wins)\n  - **Social media messages**: ___ hours\n  - **Phone calls / voicemails**: ___ hours for callback"
+            },
+            {
+              "title": "Build Systems to Hit Them",
+              "content": "- [ ] Assign clear ownership: who monitors each communication channel and when?\n- [ ] Set up notifications so nothing sits unread (but batch-process at defined times, do not react to every ping)\n- [ ] Create template responses for common situations: \"Thanks for your message, I will get back to you by [date]\" - a fast acknowledgement buys you time for a proper response\n- [ ] If you have a team, create a simple rota: who is covering email/phone during business hours?\n- [ ] Set up an auto-responder for out-of-hours enquiries: \"We have received your message and will respond within [X hours] on the next business day\""
+            },
+            {
+              "title": "Communicate and Measure",
+              "content": "- [ ] Tell clients what to expect: include response times in your welcome pack, on your website, or in your email signature\n- [ ] Track your actual response times for 2 weeks: are you hitting the standards?\n- [ ] If you consistently miss a standard, either improve the system or adjust the standard to something realistic\n- [ ] Review monthly: ask your team (or yourself) - did any client wait too long this month? What caused it?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear, defined response time standards for every type of client communication\n- Systems in place to meet those standards consistently\n- Clients informed of what to expect\n- Measurable tracking of whether standards are being met\n- Improved client confidence and satisfaction through reliable responsiveness"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Response standards are deceptively simple but surprisingly powerful. Many clients resist formalising them (\"I just reply when I can\"). Push back with: \"If your clients could choose between 'whenever you can' and 'within 4 hours, guaranteed,' which would they pick?\" The standard creates accountability. The most important standard for growth: prospect enquiry response time. Research shows that responding to a new enquiry within 5 minutes vs. 30 minutes increases contact rates by 100x. For service businesses, speed of first response is often the differentiator between winning and losing the sale."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Onboarding Experience Design",
+          "description": "Create a structured first-week experience for new clients that gets them quick wins and sets clear expectations for what happens next.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a structured first-week experience for new clients that gets them a quick win, sets clear expectations, and makes them feel confident they made the right decision. The first 48 hours after someone becomes a client shapes their entire relationship with you. Design it deliberately."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Buyer's remorse peaks in the first 72 hours. The client has just committed money and is wondering \"did I make the right choice?\" If they hear nothing, feel confused about what happens next, or have to chase you for information, the doubt grows. A structured onboarding experience squashes that doubt immediately. It says: \"You are in good hands. Here is exactly what happens next. And here is a quick result to prove this is already working.\""
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design your onboarding sequence step by step, then implement it for every new client going forward.\n\n---"
+            },
+            {
+              "title": "The First 24 Hours",
+              "content": "- [ ] **Immediate confirmation:** Within 1 hour of sign-up, send a welcome email or message. Include: thank you, what happens next, and a specific timeline.\n- [ ] ⚡ Quick Win: Write your welcome email right now. Template: \"Welcome to [business]. Here is what happens next: [step 1 by day], [step 2 by day], [step 3 by day]. If you have any questions, reply to this email.\"\n- [ ] **Set expectations:** Tell them exactly what to expect in the first week, who they will hear from, and what they need to prepare\n- [ ] **Provide access:** Send logins, links, documents, or whatever they need to get started. Do not make them ask."
+            },
+            {
+              "title": "The First Week",
+              "content": "- [ ] **Day 1-2: Kickoff.** Schedule a kickoff call or meeting. Use it to: review their goals, explain how you work together, answer their questions, and identify their first quick win.\n- [ ] **Day 2-3: Quick win.** Give them something valuable early. A useful template, a quick assessment, an insight from your kickoff conversation, or a simple action they can take today. The goal: make them feel \"this is already worth it\" before the first week is over.\n- [ ] **Day 5-7: Check-in.** A brief message or call: \"How is everything so far? Do you have any questions? Is there anything you need?\" This shows you care and catches problems before they grow."
+            },
+            {
+              "title": "Standardise the Process",
+              "content": "- [ ] Write out your onboarding process as a simple checklist that anyone on your team could follow\n- [ ] Create templates for each communication: welcome email, kickoff agenda, quick win delivery, week-one check-in\n- [ ] Decide who owns each step (you, a team member, or automated)\n- [ ] Time-stamp the sequence: what happens on Day 0, Day 1, Day 3, Day 5, Day 7\n- [ ] Test the experience: run through it yourself as if you were the client. Does it feel good?"
+            },
+            {
+              "title": "Measure and Improve",
+              "content": "- [ ] After onboarding the next 5 clients with the new process, ask each: \"How was your first week experience? What could we improve?\"\n- [ ] Track early engagement: are onboarded clients more active and responsive than before the process existed?\n- [ ] Track early issues: are fewer clients confused, frustrated, or silent in week 1?\n- [ ] Refine the process quarterly based on feedback\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A repeatable, structured onboarding process that runs the same way for every client\n- New clients feeling confident, informed, and excited within the first week\n- A quick win delivered before the first week is over\n- Reduced buyer's remorse and fewer early cancellations\n- Templates and checklists that make onboarding effortless for your team"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Onboarding is where you protect your sale. A client who has a great first week is 3x more likely to stay for the full engagement. A client who feels ignored in week one is already mentally preparing to leave. The quick win is the most important element: it turns \"I hope this works\" into \"this is already working.\" For coaching businesses, the quick win might be a specific insight from the first session. For service businesses, it might be a deliverable or a report. Whatever it is, make it tangible and fast. Hold clients accountable to building their onboarding process and then to using it consistently."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Client Feedback System",
+          "description": "Build a simple way to collect, track, and act on feedback so you fix problems before they become patterns and turn insights into improvements.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build a simple way to collect, track, and act on client feedback so you fix problems before they become patterns and turn insights into improvements. This is not an annual survey. It is a continuous loop: ask, listen, act, repeat."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most businesses hear about problems through complaints or cancellations - both of which come too late. For every client who complains, 10 more just leave quietly. A feedback system catches issues when they are small and fixable, surfaces patterns you would never spot from individual conversations, and shows clients that you care about improving. The businesses with the best retention are not the ones with the fewest problems - they are the ones that find and fix problems fastest."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design your feedback collection points, set up a simple tracking system, and commit to acting on what you learn.\n\n---"
+            },
+            {
+              "title": "Collection Points",
+              "content": "- [ ] ⚡ Quick Win: Send one message today to a current client: \"What is one thing we could do differently to make working with us even better?\" One question, one client, real feedback.\n- [ ] Build feedback collection into your client journey at these natural moments:\n  - **After onboarding** (week 2): \"How was your first-week experience?\"\n  - **Mid-engagement** (monthly or at project midpoint): \"What is working well? What could be better?\"\n  - **At completion** (project end or contract end): \"What would you change about the experience?\"\n  - **After issues** (whenever something goes wrong): \"We resolved [issue]. Was the resolution satisfactory?\"\n- [ ] Choose your method for each: quick email, short survey (3-5 questions max), phone call, or in-person conversation\n- [ ] Keep it short. One powerful question beats a 20-question survey nobody completes."
+            },
+            {
+              "title": "The Power Questions",
+              "content": "Use one or two of these at each collection point:\n\n- [ ] \"On a scale of 1-10, how likely are you to recommend us to a colleague?\" (NPS-style - tracks overall satisfaction over time)\n- [ ] \"What is the one thing we could improve?\" (Identifies actionable issues)\n- [ ] \"What has been most valuable about working with us?\" (Identifies what to protect and amplify)\n- [ ] \"Is there anything we promised that we have not delivered?\" (Catches gaps before they become resentment)\n- [ ] \"Would you work with us again? Why or why not?\" (Binary clarity on overall relationship health)"
+            },
+            {
+              "title": "Track and Act",
+              "content": "- [ ] Create a simple feedback log: Date, Client, Feedback, Category (Service / Communication / Quality / Timing / Other), Action Taken\n- [ ] Review feedback monthly: look for patterns. One complaint is feedback. Three similar complaints is a systemic issue.\n- [ ] For every pattern you spot, create an improvement action and assign an owner\n- [ ] Close the loop: when you fix something based on feedback, tell the client who raised it. \"You mentioned X - we have now changed Y. Thank you for flagging it.\"\n- [ ] Track your NPS score (or equivalent) quarterly. Is client satisfaction improving, flat, or declining?"
+            },
+            {
+              "title": "Make It Cultural",
+              "content": "- [ ] Share feedback (anonymised if needed) with your team regularly\n- [ ] Celebrate positive feedback publicly - it reinforces good behaviour\n- [ ] Treat negative feedback as a gift, not a problem - it is free consulting on how to improve\n- [ ] Set a team goal: respond to every piece of feedback within 48 hours, even if the fix takes longer\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Feedback collection built into your client journey at natural moments\n- A simple tracking system that captures feedback and actions taken\n- Patterns identified and systemic issues fixed before they cost clients\n- Clients who feel heard and valued because their feedback produces visible changes\n- A continuous improvement loop that gets stronger over time"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest barrier is not collecting feedback - it is acting on it. Many businesses survey clients and then do nothing with the results, which is worse than not asking at all (it signals \"we asked but do not care\"). Push clients to close the loop: act on the top finding each month and tell clients what changed. The NPS-style question is useful for tracking trends, but the real value is in the qualitative responses. Watch for clients who stop giving feedback - silence is not satisfaction, it is often disengagement. If a previously vocal client goes quiet, reach out proactively."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

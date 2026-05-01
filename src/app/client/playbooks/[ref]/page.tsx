@@ -1,11 +1,13 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabaseClient } from "@/lib/supabaseClient";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useRouter } from "next/navigation";
+
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
+import { StickyPageHeader } from "@/components/layout";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { PlaybookContent as PlaybookContentType } from "@/lib/playbookContentTypes";
 
@@ -23,16 +25,6 @@ export default function ClientPlaybookDetailPage({
   const [error, setError] = useState<string | null>(null);
 
   const meta = getPlaybookMeta(ref);
-  if (!meta) {
-    return (
-      <div className="flex flex-col gap-4">
-        <p className="text-sm text-rose-600">Playbook not found.</p>
-        <Link href="/client/playbooks" className="text-sm text-sky-700 underline">
-          Back to Playbooks
-        </Link>
-      </div>
-    );
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -105,6 +97,17 @@ export default function ClientPlaybookDetailPage({
     };
   }, [ref, router, impersonatingContactId]);
 
+  if (!meta) {
+    return (
+      <div className="flex flex-col gap-4">
+        <p className="text-sm text-rose-600">Playbook not found.</p>
+        <Link href="/client/playbooks" className="text-sm text-sky-700 underline">
+          Back to Playbooks
+        </Link>
+      </div>
+    );
+  }
+
   if (loading || !content) {
     return (
       <div className="flex flex-col gap-4">
@@ -124,58 +127,28 @@ export default function ClientPlaybookDetailPage({
     );
   }
 
-  if (!unlocked) {
-    return (
-      <div className="flex flex-col gap-4">
-        <header className="border-b border-slate-200 pb-3">
+  return (
+    <div className="flex flex-col gap-4">
+      <StickyPageHeader
+        leading={
           <Link
             href="/client/playbooks"
             className="text-xs text-slate-500 hover:text-slate-700"
           >
             ← Back to Playbooks
           </Link>
-          <h1 className="mt-2 text-xl font-semibold text-slate-900">
-            {content.ref} {content.name} Playbook
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">{content.subtitle}</p>
-        </header>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-          <p className="font-medium text-amber-900">
-            This playbook is locked
-          </p>
-          <p className="mt-2 text-sm text-amber-800">
-            Ask your coach to unlock it for you to access the full content,
-            checklists, and materials.
-          </p>
-          <Link
-            href="/client/playbooks"
-            className="mt-4 inline-block text-sm font-medium text-sky-700 underline hover:text-sky-800"
-          >
-            Back to Playbooks
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <header className="border-b border-slate-200 pb-3">
-        <Link
-          href="/client/playbooks"
-          className="text-xs text-slate-500 hover:text-slate-700"
-        >
-          ← Back to Playbooks
-        </Link>
-        <h1 className="mt-2 text-xl font-semibold text-slate-900">
-          {content.ref} {content.name} Playbook
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">{content.subtitle}</p>
-      </header>
+        }
+        eyebrow="Profit System"
+        title={`${content.ref} ${content.name} Playbook`}
+        descriptionPlacement="below"
+        description={
+          <span className="text-slate-500">{content.subtitle}</span>
+        }
+      />
 
       <PlaybookTabs
         content={content}
-        showClientTab={true}
+        showClientTab={unlocked}
         showCoachesTab={false}
         basePath="/client/playbooks"
       />

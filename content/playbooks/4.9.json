@@ -1,0 +1,530 @@
+{
+  "ref": "4.9",
+  "level": 4,
+  "area": 9,
+  "name": "Developing Leaders",
+  "subtitle": "Level 4 · Overseer · Team & Leadership",
+  "whatThisIs": "Your legacy is not what you build yourself. It is what others can build without you. Developing leaders means turning your best people into capable decision-makers who can own outcomes, solve problems, and run parts of the business independently.\n\nThis is about creating leadership depth beyond the founder. Strong organisations have multiple people who can think strategically, manage through others, and maintain standards when the owner steps back. It strengthens resilience, improves succession readiness, and unlocks performance stability across the business.\n\nThis playbook covers the full journey: identifying who has leadership potential, intentionally developing their capability, and gradually expanding their authority. It is not about promoting everyone or creating titles for the sake of it. It is about building genuine leadership capacity in the people who have earned it.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You are the only person who can make decisions or solve complex problems. Team members constantly bring you issues they should handle themselves. When you go away, things either wait for your return or fall apart without your input. You have titles like \"manager\" but they are just senior doers, not genuine leaders who can think and act independently."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have identified a few people with leadership potential but their development is informal and inconsistent. Some team members can handle more responsibility, others still need constant direction. You delegate authority occasionally but often step back in when things get difficult. There is emerging leadership capability but it is not systematic or reliable."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear pipeline of leadership talent developing at different stages. Your best people can make decisions within their areas without checking with you first. They handle problems, manage conflict, and maintain standards independently. When you delegate responsibility, it stays delegated because they have the capability to own it. The business can run and grow through the strength of multiple leaders, not just you."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Who demonstrates good judgement when things go wrong? Leadership potential shows up most clearly under pressure. Look for the people who stay calm, think clearly, and make sensible decisions when everything else is chaos. Those are your future leaders, not necessarily your highest performers in normal conditions.",
+    "Is leadership development happening by accident or by design? Most SMEs hope leadership emerges naturally. It rarely does. The people with potential need structured mentorship, deliberate skill-building, and increasing responsibility over time. If you are not being intentional about it, you are leaving leadership development to chance.",
+    "Are you creating decision-makers or permission-seekers? There is a difference between delegating tasks and delegating authority. True leaders need to be trained to think independently, weigh options, and make judgement calls. If your people still come to you for every decision, you are not developing leaders — you are developing better assistants.",
+    "What would happen if your strongest leader left tomorrow? This is the succession depth test. If losing one key person would create a leadership vacuum, you have not built deep enough capability. Strong organisations have multiple people who can step up, not just one obvious successor.",
+    "How are you measuring leadership growth? Leadership development needs clear milestones and measurement. What specific capabilities are you building? How do you know when someone is ready for more responsibility? Without measurement, development becomes wishful thinking."
+  ],
+  "actionsIntro": "This is a larger playbook organised into three sections. When you open it in the Profit System, you will find:",
+  "quickWins": [
+    "This week: List your top 3–5 performers and ask yourself: who shows good judgement when problems arise? That is your starting point for leadership development.",
+    "This week: Pick one decision you make regularly that someone else could handle. Give it to them with clear boundaries and authority to act.",
+    "This week: Schedule a career conversation with your most promising potential leader. Ask what they want to achieve and how leadership fits into their plans."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.9",
+      "description": ""
+    },
+    {
+      "ref": "4.8",
+      "description": ""
+    },
+    {
+      "ref": "5.9",
+      "description": ""
+    },
+    {
+      "ref": "5.3",
+      "description": ""
+    },
+    {
+      "ref": "4.0",
+      "description": ""
+    }
+  ],
+  "actions": [],
+  "actionSections": [
+    {
+      "title": "Identifying & Assessing Potential",
+      "description": "Spotting the people who can become leaders and evaluating their readiness.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Leadership Potential Matrix",
+          "description": "A structured assessment to identify who has the judgement, character, and capability to become a leader. Look beyond current performance to future potential.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a structured assessment to identify who in your team has the judgement, character, and capability to become a leader. This goes beyond current job performance. A brilliant technician isn't necessarily a future leader. You're looking for people who think beyond their own role, take responsibility without being asked, and make good decisions under pressure.\n\nThe output is a simple matrix plotting each person's current performance against their leadership potential."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most businesses promote based on technical skill. The best salesperson becomes sales manager. The best developer becomes tech lead. And half the time, it's a disaster - you lose a great specialist and gain a mediocre manager. A leadership potential matrix separates \"good at their job\" from \"could lead others.\" It prevents costly promotion mistakes and ensures you're investing development time in the right people."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Assess each team member against the criteria below, then plot them on a 2x2 grid. Be honest - this is a private working document, not a public ranking.\n\n---"
+            },
+            {
+              "title": "Leadership Potential Assessment",
+              "content": "- [ ] **List every team member** - Include everyone, even those you wouldn't initially consider for leadership. Sometimes potential hides in unexpected places.\n- [ ] **Rate current performance (1-5)** - Based on their actual output in their current role. Are they delivering what's expected, exceeding it, or falling short? Use evidence, not impressions.\n- [ ] **Assess judgement quality** - When this person faces an ambiguous situation, do they generally make sensible decisions? Do they weigh trade-offs or jump to conclusions? Rate 1-5.\n- [ ] **Assess ownership mentality** - Do they take responsibility for outcomes, or just for tasks? When something goes wrong in their area, do they fix it or wait to be told? Rate 1-5.\n- [ ] **Assess people influence** - Do others naturally follow this person? Do they bring people together or create friction? Can they persuade without relying on authority? Rate 1-5.\n- [ ] ⚡ Quick Win: **Ask yourself \"who would I trust to run things if I was away for two weeks?\"** - The names that come to mind are your starting point for leadership potential. The gap between those names and your current management team tells you where to focus.\n- [ ] **Assess learning agility** - When faced with something new, do they figure it out or freeze? Do they seek feedback and adjust, or defend and resist? Leaders need to keep growing. Rate 1-5.\n- [ ] **Assess emotional steadiness** - How do they handle pressure, conflict, and uncertainty? Leaders who spiral under stress create chaos. Leaders who stay calm create confidence. Rate 1-5.\n- [ ] **Plot the 2x2 matrix** - X-axis: Current performance (low to high). Y-axis: Leadership potential (low to high). Place each person on the grid.\n- [ ] **Identify your \"high potential\" quadrant** - Top right: high performance AND high leadership potential. These are your priority development candidates.\n- [ ] **Watch for the \"hidden gems\"** - Top left: high potential but currently underperforming. They might be in the wrong role, bored, or lacking development. Worth investigating before writing them off.\n- [ ] **Be cautious about the \"star performers\"** - Bottom right: high performance but low leadership potential. Brilliant specialists. Promote them into leadership and you may lose what makes them great. Consider senior individual contributor paths instead.\n- [ ] ⚡ Quick Win: **Share your assessment with a trusted colleague or advisor** - Get a second opinion. Your blind spots are real. Someone who sees the team differently can challenge your ratings.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You have a clear, evidence-based view of leadership potential across your team\n- Promotion decisions are based on leadership capability, not just technical performance\n- You know exactly who to invest development time and resources in\n- Hidden potential gets surfaced before it walks out the door\n- You avoid the common mistake of promoting great doers into bad leaders"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is a sensitive exercise. Handle it privately. Never share the full matrix with the team - it would create politics and resentment. Use it as a working tool between owner and coach to guide development conversations and succession planning. Reassess every 6-12 months. People grow. Some people who show low potential now may develop rapidly with the right support. Others who look promising may plateau. The matrix is a snapshot, not a sentence."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "360-Degree Leadership Review",
+          "description": "Gather feedback from peers, direct reports, and customers to understand how someone is perceived as a potential leader. Leadership is as much about influence and trust as it is about capability.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Gather structured feedback from peers, direct reports, and customers about how a potential leader is perceived across the business. Your view of someone is only one perspective. A 360-degree review shows you how they operate when you're not in the room. It reveals blind spots, strengths they don't know they have, and gaps that only surface in day-to-day interactions."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Owners often overestimate or underestimate their people because they only see one dimension of their work. The person who's brilliant with you in meetings might be dismissive with their team. The person who seems quiet might be the one everyone turns to when things go wrong. A 360 review gives you the full picture so you make leadership development decisions based on reality, not your limited viewpoint."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Choose a potential leader to assess, select reviewers, collect feedback, and synthesise it. Keep it simple - this isn't an HR exercise. It's a practical tool.\n\n---"
+            },
+            {
+              "title": "Step 1: Prepare the Review",
+              "content": "- [ ] **Choose who you're reviewing** - This should be someone already identified as having leadership potential. Don't run 360s on everyone. Start with your top 2-3 candidates.\n- [ ] **Select 5-8 reviewers per person** - Mix of peers (same level), direct reports (if they have any), people they collaborate with frequently, and 1-2 clients if appropriate.\n- [ ] **Explain the purpose clearly** - Tell reviewers: \"We're exploring leadership development for [name]. Your honest feedback helps us support them better. Responses are confidential.\" People give better feedback when they understand why.\n- [ ] ⚡ Quick Win: **Use a simple form, not a complex survey** - 5-7 open-ended questions beat 50 rating scales. You want stories and observations, not averages."
+            },
+            {
+              "title": "Step 2: Ask the Right Questions",
+              "content": "- [ ] **Question 1: What does this person do well that others should learn from?** - Surfaces strengths they might not recognise in themselves.\n- [ ] **Question 2: When things get difficult, how does this person respond?** - Reveals character under pressure. This is the single most important leadership trait.\n- [ ] **Question 3: How well does this person communicate - especially when delivering bad news or managing disagreements?** - Communication is where most new leaders struggle first.\n- [ ] **Question 4: Would you want to work for this person? Why or why not?** - Direct and revealing. The reasons behind \"yes\" or \"no\" are more valuable than the answer itself.\n- [ ] **Question 5: What one thing would make this person a stronger leader?** - Forces specific, actionable feedback rather than vague praise or criticism.\n- [ ] **Question 6: Rate overall leadership readiness on a scale of 1-10** - Gives you a quick benchmark across reviewers. Big variance in scores is itself a finding worth exploring."
+            },
+            {
+              "title": "Step 3: Collect and Synthesise",
+              "content": "- [ ] **Give reviewers a deadline** - One week is enough. Any longer and it gets forgotten. Send one reminder at day 5.\n- [ ] **Read all responses looking for patterns** - One person saying \"they don't listen\" is an opinion. Three people saying it is a trend. Look for themes that appear across multiple reviewers.\n- [ ] **Separate facts from feelings** - \"They interrupted me in the meeting on Tuesday\" is a fact. \"They don't respect people\" is an interpretation. Focus on the facts.\n- [ ] **Create a one-page summary** - Three sections: Key strengths (what everyone agrees they do well), Development areas (patterns in what needs work), and Surprises (anything unexpected or contradictory).\n- [ ] ⚡ Quick Win: **Look for the gap between self-perception and team perception** - If the candidate thinks they're a great communicator but three peers say they don't listen, that gap is your coaching priority."
+            },
+            {
+              "title": "Step 4: Deliver the Feedback",
+              "content": "- [ ] **Share the summary with the candidate in a one-to-one** - Not via email. In person or video. Allow time for questions and reactions.\n- [ ] **Lead with strengths** - Start with what people value about them. Then move to development areas. This isn't a performance review. It's a development conversation.\n- [ ] **Keep responses anonymous** - Never reveal who said what. The moment you do, people stop being honest in future reviews.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You understand how potential leaders are perceived across the business, not just by you\n- Blind spots surface before they become leadership problems\n- The candidate gets specific, actionable feedback to guide their development\n- You make better decisions about who to invest in and how to develop them\n- A culture of feedback starts forming, making future reviews easier"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "First-time 360s can feel threatening. The candidate may get defensive or upset. That's normal. Coach the owner to deliver feedback with care and frame it as investment in the person's growth, not criticism. If the business has never done anything like this before, start with one person who's confident and receptive. Let the positive experience spread. For businesses under 10 people, a full 360 may feel too formal. In that case, the owner can have informal conversations with 3-4 people and synthesise the themes. The structure matters more than the formality."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Readiness Conversation",
+          "description": "A direct discussion with potential leaders about their interest in leadership, career aspirations, and readiness to take on broader responsibility.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Sit down with each potential leader and have a direct, honest discussion about their interest in leadership, their career aspirations, and how ready they feel for broader responsibility. Don't assume people want to lead just because they're good at their job. Some do. Some don't. And some want to but have concerns they haven't voiced. This conversation surfaces all of that."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You can build the best development plan in the world, but if the person doesn't actually want to be a leader, it's wasted effort. Worse, promoting someone who didn't really want the role creates resentment, underperformance, and often a resignation. The readiness conversation prevents that by checking alignment before you invest. It also signals to the person that you're thinking about their future, which builds loyalty and engagement."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Schedule a private, unhurried conversation. Not in a corridor. Not at the end of a busy day. Give it proper time and space. Follow the conversation guide below.\n\n---"
+            },
+            {
+              "title": "Before the Conversation",
+              "content": "- [ ] **Review their leadership potential assessment** - Know where they sit on your matrix. What are their strengths? Where are the gaps? What does their 360 feedback say?\n- [ ] **Prepare your honest view** - What role or level could you see this person growing into? In what timeframe? Be realistic, not aspirational.\n- [ ] ⚡ Quick Win: **Think about what you'd want to hear if you were in their position** - People want to know: Am I valued? Is there a future for me here? What would it look like? That's what you're addressing."
+            },
+            {
+              "title": "During the Conversation",
+              "content": "- [ ] **Start by sharing why you wanted to talk** - \"I've been thinking about the future of the business and your role in it. I wanted to have an honest conversation about where you see yourself heading.\"\n- [ ] **Ask about their career aspirations** - \"Where do you see yourself in 2-3 years? What kind of work excites you? What would your ideal role look like?\" Listen. Don't pitch your plan yet.\n- [ ] **Explore their interest in leadership specifically** - \"How do you feel about managing people? Leading a team? Taking on broader responsibility beyond your current role?\" Some people light up. Others hesitate. Both responses are useful information.\n- [ ] **Ask about concerns or barriers** - \"Is there anything that worries you about stepping into a leadership role? What would need to be true for you to feel confident doing it?\" This is where the real conversation happens.\n- [ ] **Share your perspective honestly** - \"Here's what I see in you. Here's the opportunity I think exists. Here's what development would look like.\" Be specific. Vague promises don't land.\n- [ ] **Discuss the trade-offs openly** - Leadership means less hands-on work, more meetings, harder conversations, and being responsible for other people's performance. Not everyone wants that. Make sure they understand what they're signing up for.\n- [ ] **Ask for their honest answer** - \"Given all of that, is this something you genuinely want to pursue? It's completely fine to say no or not yet.\" Give them permission to be honest. Pressure creates false yeses.\n- [ ] **Agree on next steps** - If yes: outline the development plan and timeline. If no: discuss what growth looks like in their current track. If not yet: agree what would need to change for them to feel ready."
+            },
+            {
+              "title": "After the Conversation",
+              "content": "- [ ] **Document what was agreed** - Brief notes: aspirations discussed, interest level, concerns raised, next steps agreed.\n- [ ] **Follow through on whatever you committed to** - If you said you'd create a development plan, do it within a week. Broken promises after a readiness conversation destroy trust faster than anything.\n- [ ] ⚡ Quick Win: **Send a brief follow-up message within 24 hours** - \"Thanks for the conversation yesterday. Here's what we agreed on...\" This shows you take their development seriously.\n- [ ] **Revisit in 3 months** - Things change. Someone who said \"not yet\" might be ready. Someone who said \"yes\" might be having second thoughts. Keep the dialogue open.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You know who genuinely wants leadership responsibility, not just who seems capable\n- Potential leaders feel valued and invested in, which increases retention\n- You avoid promoting people into roles they don't want\n- Concerns and barriers are surfaced early so you can address them\n- Development plans are built on genuine alignment, not assumptions"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This conversation requires vulnerability from both sides. The owner needs to be honest about what they see and what they can offer. The potential leader needs to be honest about what they want. Coach the owner to create space for honesty by being open themselves. \"Here's what I think your strengths are. Here's where I see a gap. And here's what I can commit to.\" That kind of directness invites directness in return. Watch for the \"yes person\" who agrees because they think they should. Probe deeper. \"What specifically excites you about this?\" If they can't answer, the yes might not be real."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Building Leadership Capability",
+      "description": "Developing the skills, mindset, and confidence to lead effectively.",
+      "actions": [
+        {
+          "number": 4,
+          "title": "Leadership Development Plan",
+          "description": "Create an individualised development path covering communication, decision-making, conflict resolution, and strategic thinking. Make it specific and measurable.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build an individualised development path for each emerging leader covering the four core areas: communication, decision-making, conflict resolution, and strategic thinking. This isn't a generic training programme. Each person gets a plan tailored to their specific gaps, strengths, and the leadership role they're growing into."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "\"Develop your leaders\" sounds obvious. But without a specific plan, development becomes a vague intention that never happens. People attend a workshop, feel inspired for a week, and go back to old habits. A structured plan with specific activities, timelines, and milestones turns intention into progress. It also shows your emerging leaders that their development is a priority, not an afterthought."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use the potential matrix and 360 feedback to identify each person's priorities. Then build a plan using the framework below. Review progress monthly.\n\n---"
+            },
+            {
+              "title": "Development Plan Framework",
+              "content": "- [ ] **Start with their biggest gap** - From their assessment and 360 feedback, identify the one area that would make the most difference if they improved. That's where the plan starts. Not four areas at once. One.\n- [ ] **Set a 90-day development goal for that area** - Specific and observable. \"Improve communication\" is too vague. \"Run the weekly team meeting solo for 8 consecutive weeks and collect team feedback\" is a development goal.\n- [ ] ⚡ Quick Win: **Pair the goal with a real business challenge** - Don't create artificial exercises. Find a real project, conversation, or decision that lets them practice the skill in context. Learning by doing always beats learning by studying."
+            },
+            {
+              "title": "Communication Development",
+              "content": "- [ ] **Practice: Lead one team meeting per week** - Running meetings builds confidence in public communication, agenda management, and facilitation.\n- [ ] **Practice: Deliver feedback to a team member (with coaching)** - Have the emerging leader prepare feedback, rehearse it with you, deliver it, and debrief afterwards.\n- [ ] **Practice: Present a recommendation to you or the leadership team** - Forces them to structure their thinking, anticipate questions, and communicate concisely."
+            },
+            {
+              "title": "Decision-Making Development",
+              "content": "- [ ] **Practice: Make one decision per week that would normally come to you** - Start with low-risk decisions and gradually increase stakes. Debrief each decision: what did you consider? What would you do differently?\n- [ ] **Practice: Write a decision memo** - For one significant decision, have them write: the decision, the options considered, the trade-offs, and their recommendation. This builds rigour.\n- [ ] **Practice: Handle an ambiguous situation without clear answers** - Give them a real business problem with no obvious right answer. See how they navigate uncertainty."
+            },
+            {
+              "title": "Conflict Resolution Development",
+              "content": "- [ ] **Practice: Observe you handling a difficult conversation, then debrief** - Model the behaviour first. Discuss what you did, why, and what you were thinking.\n- [ ] **Practice: Handle a minor team disagreement independently** - With your support available but not in the room. Debrief afterwards.\n- [ ] **Study: Learn one conflict framework** - Something simple like \"describe the behaviour, explain the impact, agree the change.\" Give them a tool, not just encouragement."
+            },
+            {
+              "title": "Strategic Thinking Development",
+              "content": "- [ ] **Practice: Join one strategic discussion or planning session** - Let them observe how decisions are made at a higher level. Ask for their input.\n- [ ] **Practice: Analyse a competitor or market trend and present findings** - Forces them to look beyond day-to-day operations and think about the bigger picture.\n- [ ] ⚡ Quick Win: **Ask them \"what would you do if you were running this area?\" once per month** - This single question shifts their mindset from executor to leader faster than any training programme."
+            },
+            {
+              "title": "Review and Adjust",
+              "content": "- [ ] **Monthly development check-in (30 minutes)** - What have they practiced? What's improved? What's still hard? Adjust the plan based on real progress.\n- [ ] **Quarterly milestone review** - Are they on track for the 90-day goal? Set the next one.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Each emerging leader has a specific, practical development plan\n- Development happens through real work, not just training courses\n- Progress is visible and measurable within 90 days\n- Emerging leaders feel supported and invested in\n- You build a bench of capable leaders ready for increasing responsibility"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The biggest risk is overloading the plan. Most owners want to develop all four areas simultaneously. Push back. One area per quarter is plenty. Deep development in one skill beats shallow exposure to four. Also watch for the \"too busy to develop\" trap. Development activities should be woven into regular work, not added on top. If someone is too busy to run one meeting per week as a development exercise, the issue is workload, not development. Address that first."
+            }
+          ]
+        },
+        {
+          "number": 5,
+          "title": "Mentorship & Coaching",
+          "description": "Establish regular one-to-one sessions focused on leadership challenges, decision-making practice, and skill development. This is where real leadership growth happens.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Establish regular one-to-one sessions with each emerging leader focused specifically on their leadership development. These are not operational check-ins about projects and deadlines. They're dedicated time to discuss leadership challenges, practice decision-making, and build the skills outlined in their development plan."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Leadership isn't learned in a classroom. It's learned through experience, reflection, and guided practice. The mentorship session is where learning actually happens. It's the space where an emerging leader can say \"I handled this situation and I'm not sure I got it right\" and get honest, constructive feedback. Without this dedicated time, leadership development gets crowded out by day-to-day urgency. Every week."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up the sessions, follow the structure below, and commit to consistency. Missing sessions sends a clear message that development isn't a real priority.\n\n---"
+            },
+            {
+              "title": "Step 1: Set Up the Sessions",
+              "content": "- [ ] **Schedule a fixed time slot** - Every week or fortnight, 30-45 minutes. Same day, same time. Put it in both calendars as recurring and non-negotiable.\n- [ ] **Separate from operational one-to-ones** - If you already have a weekly catch-up about their work, keep that. This is different. This is about their growth as a leader, not their task list.\n- [ ] ⚡ Quick Win: **Book the first 8 sessions right now** - Booking one at a time leads to cancellations and drift. Block out 8 weeks and protect them.\n- [ ] **Choose the right setting** - Private, unhurried, no interruptions. Not at a desk between emails. Coffee shop, walking meeting, or a closed office door all work well."
+            },
+            {
+              "title": "Step 2: Run Effective Sessions",
+              "content": "- [ ] **Start with their agenda, not yours** - \"What's on your mind this week?\" lets them bring real challenges. If they have nothing, they're not reflecting enough between sessions, and that's worth discussing.\n- [ ] **Ask more than you tell** - Your job is to help them think, not to give them answers. \"What options did you consider?\" \"What would you do differently?\" \"What's the risk of each approach?\" These questions build their judgement.\n- [ ] **Use real situations as teaching moments** - When they describe a challenge, resist the urge to solve it. Instead, guide them through their own thinking. \"What do you think the right move is? Why?\"\n- [ ] **Practice difficult conversations in the session** - If they need to give tough feedback, hold a difficult meeting, or deliver bad news, rehearse it together first. Role-play the conversation. This feels awkward at first but dramatically improves the real conversation.\n- [ ] **Review decisions they've made since last session** - Not to judge, but to build a habit of reflection. \"What went well? What would you change? What did you learn?\"\n- [ ] **End with one specific action for the next session** - Something to practice, try, or reflect on. Small, concrete, and connected to their development plan."
+            },
+            {
+              "title": "Step 3: Build the Coaching Relationship",
+              "content": "- [ ] **Be honest, not just supportive** - Encouragement matters, but sugarcoating doesn't help. If they handled something poorly, say so clearly and help them see what they'd do differently.\n- [ ] **Share your own mistakes** - Nothing builds trust faster than \"I made a similar mistake three years ago. Here's what happened.\" Vulnerability models the honesty you want from them.\n- [ ] **Celebrate progress genuinely** - When they handle something well, name it specifically. \"The way you managed that disagreement between Tom and Sarah was really effective because you listened to both sides before proposing a solution.\" Specific praise builds confidence.\n- [ ] ⚡ Quick Win: **After each session, send a one-line message noting something they did well that week** - Takes 30 seconds. Impact is significant. People rarely hear specific positive feedback about their leadership."
+            },
+            {
+              "title": "Step 4: Evaluate and Evolve",
+              "content": "- [ ] **Review session quality every 8 weeks** - Are the conversations getting deeper? Is the person bringing more complex challenges? That's growth. If every session feels the same, the format needs adjusting.\n- [ ] **Increase challenge over time** - Early sessions might be about basic management skills. Over months, push towards strategic decisions, cross-functional thinking, and bigger accountability.\n- [ ] **Know when to step back** - The goal is independence, not dependence. As they grow, sessions can become fortnightly, then monthly. The best outcome is a leader who no longer needs you in the room.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Emerging leaders have dedicated, protected time for development\n- Leadership challenges are processed and learned from, not just experienced\n- Decision-making quality improves visibly within 2-3 months\n- Trust between owner and emerging leader deepens significantly\n- A coaching culture starts spreading through the business"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This is where your coaching skills as a profit coach transfer directly. Help the business owner become a coach to their own emerging leaders. Many owners default to directive mode (\"do it this way\") instead of coaching mode (\"what do you think?\"). Model the coaching approach in your sessions with the owner so they can replicate it with their team. If the owner genuinely doesn't have time for regular mentorship sessions, that's a signal that their own workload needs addressing first. You can't develop leaders while drowning in operations."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Leadership Challenge Projects",
+          "description": "Give emerging leaders specific projects that require them to influence without authority, manage complexity, and deliver results through others.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Give emerging leaders specific projects that require them to influence without authority, manage complexity, and deliver results through others. These aren't their normal work. They're stretch assignments designed to build leadership muscles in a controlled way. The project is real (it matters to the business), but the primary purpose is development."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "You can't coach someone into being a leader through conversation alone. At some point, they need to lead something. Challenge projects create that opportunity with a safety net. The emerging leader gets to practice leading a cross-functional effort, managing ambiguity, and being accountable for an outcome - while you provide support and coaching throughout. It's leadership training that also produces business results."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Select a project, brief the emerging leader, provide support throughout, and debrief at the end. The debrief is where most of the learning happens.\n\n---"
+            },
+            {
+              "title": "Project Selection Checklist",
+              "content": "- [ ] **Choose a project that matters but isn't mission-critical** - Important enough that effort is taken seriously. Not so critical that failure would cause real damage. Improving a process, launching a small initiative, or solving a persistent problem all work well.\n- [ ] ⚡ Quick Win: **Think about what's been on your \"I should really sort this out\" list for months** - Those neglected-but-important projects are perfect challenge assignments. You get it handled and they get development.\n- [ ] **Make sure the project requires working across teams or functions** - Leading people who don't report to you is the hardest and most valuable leadership skill. Pick projects that force collaboration with people outside their usual area.\n- [ ] **Set a clear objective and deadline** - \"Improve client onboarding\" is too vague. \"Reduce client onboarding time from 3 weeks to 1 week by end of Q2\" gives them a clear target to lead towards.\n- [ ] **Define the boundaries** - What resources can they use? What decisions can they make? Who do they report to? What's the budget? Clear boundaries prevent frustration and scope creep."
+            },
+            {
+              "title": "Briefing the Leader",
+              "content": "- [ ] **Explain why you've chosen this project for them specifically** - Connect it to their development plan. \"This project requires you to influence the ops team without having authority over them. That's exactly the skill we identified as your priority.\"\n- [ ] **Be honest about the development purpose** - \"This is a real project and I need it done well. It's also a deliberate stretch assignment for your growth. Both things are true.\"\n- [ ] **Agree on check-in points** - Weekly or fortnightly touchpoints where they update you on progress and you provide coaching. Not micromanaging. Supporting.\n- [ ] **Set them up for success, not failure** - Introduce them to key stakeholders. Give them context they'll need. Remove obvious obstacles upfront. The challenge should be in the leadership, not in navigating politics without a map."
+            },
+            {
+              "title": "During the Project",
+              "content": "- [ ] **Resist the urge to intervene** - Unless something is going seriously wrong, let them lead. Mistakes are learning opportunities. Jumping in tells them (and everyone else) that you don't trust them.\n- [ ] **Coach, don't direct** - When they come to you with a problem, ask \"what do you think?\" before giving your view. If they're heading for a mistake, ask questions that help them see it rather than telling them the answer.\n- [ ] **Watch how they handle setbacks** - Do they blame, panic, withdraw, or problem-solve? How they respond to adversity tells you more about their leadership potential than how they handle success.\n- [ ] ⚡ Quick Win: **Ask the people they're working with how it's going** - Quick, informal check. \"How's the onboarding project going? How's [name] doing leading it?\" This gives you data the emerging leader might not share."
+            },
+            {
+              "title": "After the Project",
+              "content": "- [ ] **Run a proper debrief (60-90 minutes)** - What was the objective? What happened? What went well? What would they do differently? What did they learn about leadership? This conversation is where development crystallises.\n- [ ] **Acknowledge the result and the growth** - Celebrate what they achieved and name the specific leadership skills they demonstrated. \"You got the ops team on board despite initial resistance. That's influence without authority. That's leadership.\"\n- [ ] **Agree on the next challenge** - Each project should be slightly harder than the last. More stakeholders, bigger scope, higher stakes. Progressive difficulty builds capability.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Emerging leaders gain real leadership experience in a supported environment\n- Business problems get solved by people other than you\n- You see how people perform under leadership pressure before promoting them\n- The team sees emerging leaders stepping up, which normalises growth\n- Each completed project builds confidence for the next, bigger challenge"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Project selection is everything. Too easy and there's no development. Too hard and they fail, lose confidence, and the business suffers. Aim for about 70% difficulty - hard enough to stretch them, achievable enough that success is likely with effort. The most common mistake owners make is rescuing too early. When the project hits a rough patch (and it will), the owner swoops in and takes over. Coach the owner to sit on their hands. The struggle IS the development. If they rescue, the emerging leader learns: \"When it gets hard, someone else will handle it.\" That's the opposite of leadership."
+            }
+          ]
+        },
+        {
+          "number": 7,
+          "title": "Cross-Functional Exposure",
+          "description": "Rotate potential leaders through different areas of the business so they understand how everything connects and can think strategically about the whole organisation.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Rotate potential leaders through different areas of the business so they understand how everything connects and learn to think strategically about the whole, not just their area. This doesn't mean moving someone full-time into a new department. It means giving them structured time in another function - attending their meetings, working on a project, shadowing a team lead - so they build a broader perspective."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Leaders who only understand one area make narrow decisions. A sales leader who doesn't understand operations creates promises the team can't deliver. An ops leader who doesn't understand finance cuts costs in the wrong places. Cross-functional exposure builds the strategic thinking that separates managers (who run one area) from leaders (who see the whole picture). It also builds empathy and relationships across the business, which makes collaboration smoother long after the rotation ends."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Pick the right people, choose meaningful rotations, and set them up properly. A badly planned rotation wastes everyone's time. A well-planned one creates lasting understanding.\n\n---"
+            },
+            {
+              "title": "Planning the Rotation",
+              "content": "- [ ] **Select who rotates** - Focus on your highest-potential leaders. People already identified through your potential matrix and readiness conversations. Don't rotate everyone - it's disruptive. Pick 1-2 people at a time.\n- [ ] **Choose rotation areas that fill their blind spots** - A sales-focused person should spend time in operations. An ops person should spend time with finance. Pick the area that would most broaden their understanding.\n- [ ] ⚡ Quick Win: **Start with meeting attendance, not full rotations** - Have the person attend another department's weekly meeting for 4 weeks. Costs almost nothing. Creates immediate perspective shift.\n- [ ] **Set a clear learning objective** - \"Understand how the ops team handles capacity planning and how sales commitments affect delivery schedules.\" Specific objectives prevent the rotation from becoming aimless observation.\n- [ ] **Brief the receiving team** - Tell the host department who's joining, why, and what they should include them in. Without a brief, the visitor gets sidelined or treated as an extra pair of hands for grunt work.\n- [ ] **Agree on a time commitment** - One day per week for 6 weeks? Two hours per week for 12 weeks? Full immersion for 2 weeks? Match the depth to what you're trying to achieve and what the business can afford."
+            },
+            {
+              "title": "During the Rotation",
+              "content": "- [ ] **Give them a real task or project in the new area** - Observation is useful but doing is better. Have them contribute something meaningful so they experience the area's challenges firsthand.\n- [ ] **Pair them with someone in the host team** - A buddy who can explain context, answer questions, and include them naturally. Without this, they sit in meetings feeling like an outsider.\n- [ ] **Schedule a weekly reflection conversation** - 15 minutes. \"What surprised you? What did you learn? How does this area connect to yours?\" These questions turn experience into insight.\n- [ ] **Watch for resistance from the home team** - \"We can't spare them\" is the most common pushback. Address it upfront by adjusting workload, not just adding the rotation on top.\n- [ ] ⚡ Quick Win: **Ask them to present one insight from the rotation at your next leadership meeting** - This forces reflection and creates value for the wider team. It also signals that cross-functional understanding matters."
+            },
+            {
+              "title": "After the Rotation",
+              "content": "- [ ] **Run a debrief with the person** - What did they learn? How has their thinking changed? What would they do differently in their own area based on what they saw?\n- [ ] **Capture specific insights that benefit the business** - Rotations often surface inefficiencies, miscommunications, and opportunities that neither department saw on its own. Don't let those insights disappear.\n- [ ] **Build on the relationships formed** - The connections made during a rotation often become the informal collaboration channels that make the business run better. Encourage them to maintain those relationships.\n- [ ] **Plan the next rotation** - Each exposure should build on the last. After ops, try finance. After finance, try customer-facing work. The goal is a leader who understands the full business.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Emerging leaders develop strategic, whole-business thinking\n- Decisions in one area start accounting for impact on other areas\n- Cross-team collaboration improves because people have personal relationships and shared understanding\n- You develop leaders who can genuinely step into general management, not just functional management\n- Hidden inefficiencies and opportunities surface as fresh eyes examine each area"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This works best in businesses with at least 10-15 people and clear functional areas. In very small teams (under 10), everyone already has some cross-functional exposure by necessity. For those businesses, focus the rotation on specific skills or client-facing work rather than departments. The most common failure is treating the rotation as a holiday from real work. Set clear expectations: this is development, not downtime. They should come back with insights, not just stories. Some owners resist rotations because they feel disruptive. Challenge that: \"Is the short-term disruption worse than having leaders who can only think about one piece of the business?\""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Strategic Delegation & Authority",
+      "description": "Gradually expanding responsibility and creating genuine decision-making authority.\n\n---",
+      "actions": [
+        {
+          "number": 8,
+          "title": "Authority Mapping",
+          "description": "Define clear boundaries around what decisions each leader can make independently, what requires consultation, and what needs your approval. Remove ambiguity.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define clear boundaries around what decisions each leader in your business can make independently, what requires consultation with others, and what needs your approval. The output is a documented authority map for each leader showing their decision rights in black and white. No ambiguity. No guessing.\n\nThis builds on the Decision Authority Matrix (4.8) but goes deeper - giving each individual leader a personalised view of their authority that matches their capability and role."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Undefined authority creates two equally damaging problems. Some leaders hold back and check everything with you, creating bottlenecks and slowing the business down. Others charge ahead and make decisions they shouldn't, creating risk and cleaning up messes. Authority mapping eliminates both by making the boundaries explicit. Leaders move faster within their boundaries. They stop before crossing them. And you stop getting interrupted for things that don't need you."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through the checklist for each leader individually. Their authority map should reflect their current capability, not where you hope they'll be in a year.\n\n---"
+            },
+            {
+              "title": "Authority Mapping Checklist",
+              "content": "- [ ] **List each leader and their area of responsibility** - Operations lead, sales manager, finance manager, whoever holds a leadership role. Each gets their own authority map.\n- [ ] **Define three authority zones for each person** - Zone 1: Full authority (decide and act, no approval needed). Zone 2: Consult first (discuss with specific people, then decide). Zone 3: Escalate (bring to the owner for decision).\n- [ ] ⚡ Quick Win: **Start by listing the 10 most common decisions that come to you from each leader** - These are your candidates for Zone 1 (push down) or Zone 2 (share). Most of them don't need you.\n- [ ] **Map spending authority** - What can each leader spend without approval? Set a specific number. \"Jane can approve any operational spend under £500 without checking.\" Clear. Simple. Effective.\n- [ ] **Map people decisions** - Can they approve leave? Assign work? Give informal feedback? Initiate a disciplinary process? Each of these needs a clear zone.\n- [ ] **Map client-facing decisions** - Can they resolve a complaint? Offer a discount? Change a delivery date? Reject a request? Client decisions often need speed, so push authority as far down as capability allows.\n- [ ] **Map process decisions** - Can they change how their team works? Adopt a new tool? Restructure a workflow? Process authority is where many leaders feel most constrained unnecessarily.\n- [ ] **Set financial signing limits** - Purchases, invoices, expenses, and contracts. Each leader should know their exact limit without having to ask.\n- [ ] **Document exceptions clearly** - \"Full authority for all hiring except senior roles\" is better than \"authority for hiring\" because it removes ambiguity about where the boundary is.\n- [ ] **Review each map with the leader** - Walk through it together. Ask: \"Does this feel right? Is there anything here that would slow you down unnecessarily? Anything that feels like too much?\" Their input matters.\n- [ ] **Put it in writing** - A simple one-page document per leader. Post it somewhere accessible. Authority that lives only in conversation gets forgotten or reinterpreted.\n- [ ] ⚡ Quick Win: **Expand one authority zone this week for your most capable leader** - Something they've been checking with you about but could clearly handle alone. Tell them: \"This is yours now. You don't need to ask.\"\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every leader knows exactly what they can decide independently\n- Bottlenecks reduce because people aren't waiting for unnecessary approvals\n- Risk reduces because boundaries are clear and documented\n- You get interrupted less for decisions that don't need your input\n- New authority can be granted deliberately as leaders develop, not accidentally"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Authority mapping often reveals that the owner's biggest frustration (\"nobody makes decisions\") is actually the owner's own creation (\"I've never told them what they can decide\"). The conversation itself is therapeutic. Many owners discover they've been holding authority they didn't even realise they were holding. Start conservative and expand. It's much easier to grant more authority over time than to pull it back. Pulling authority back after granting it damages trust and confidence. Review authority maps every 6 months as leaders grow and the business evolves."
+            }
+          ]
+        },
+        {
+          "number": 9,
+          "title": "Graduated Responsibility",
+          "description": "Systematically increase the scope and complexity of what each leader is accountable for, building their confidence and capability progressively.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Systematically increase the scope and complexity of what each leader is accountable for, building confidence and capability progressively. Think of it as a structured series of steps - not one big leap from \"team member\" to \"leader of everything.\" Each step adds a little more responsibility, a little more complexity, and a little more independence. Each step is only taken when the previous one is solid."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "The most common way leaders fail is by being given too much, too fast. They get promoted from managing 3 people to managing 12 overnight. Or they go from handling one function to being responsible for three. The result: overwhelm, mistakes, and loss of confidence. Graduated responsibility prevents this by matching the increase in scope to the person's growing capability. It's how you build leaders who are genuinely ready for each next level, not just thrown into the deep end."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Map out the levels of responsibility for each leader, assess where they are now, and create a deliberate plan for what comes next. Move them up only when they've demonstrated readiness.\n\n---"
+            },
+            {
+              "title": "Step 1: Define the Levels",
+              "content": "- [ ] **Map 4-5 levels of responsibility for each leadership role** - Example for an operations leader: Level 1 - manage daily tasks for a small team. Level 2 - own weekly team meetings and reporting. Level 3 - manage department budget and resource allocation. Level 4 - lead cross-functional projects. Level 5 - full P&L responsibility for the area.\n- [ ] **Make each level specific and observable** - \"More responsibility\" is not a level. \"Accountable for monthly department reporting and budget variance explanations\" is a level.\n- [ ] ⚡ Quick Win: **Identify what level each current leader is genuinely operating at** - Not where their job title suggests they should be. Where they actually are. The gap between title and reality is your starting point.\n- [ ] **Define what \"ready to move up\" looks like at each level** - What evidence would you need to see before adding the next layer? Consistent delivery? Good decision-making? Positive team feedback? Write it down."
+            },
+            {
+              "title": "Step 2: Assess Current Position",
+              "content": "- [ ] **Place each leader on their level map** - Be honest. Some people are at Level 2 but their title says Level 4. That mismatch causes problems for everyone.\n- [ ] **Discuss the assessment with each person** - \"Here's where I see you right now. Here's the next level. Here's what I'd need to see to move you there.\" Transparency builds trust and motivation.\n- [ ] **Identify any leaders who've been over-promoted** - Sometimes people are already in roles beyond their current capability. That's not a failure - it's a gap to address. Pull back support where needed, or adjust the role."
+            },
+            {
+              "title": "Step 3: Plan the Next Step",
+              "content": "- [ ] **Choose one additional responsibility to add for each leader** - Just one. Not three. The next logical step from where they are now.\n- [ ] **Set a timeframe** - \"Over the next 6-8 weeks, you'll take on weekly team reporting. I'll support you through the first 3 weeks, then you'll run it independently.\"\n- [ ] **Provide support structures** - Templates, coaching time, a peer to consult with. The responsibility is new. The support should be there until it's not needed.\n- [ ] ⚡ Quick Win: **Hand over one thing you currently do to your most ready leader this week** - Something specific, bounded, and within their capability. \"From this week, you run the Monday team stand-up.\" Immediate growth, immediate relief for you.\n- [ ] **Monitor without micromanaging** - Check in on how it's going, but resist the urge to hover. If you're reviewing their every decision, you haven't actually delegated."
+            },
+            {
+              "title": "Step 4: Review and Progress",
+              "content": "- [ ] **Evaluate after the agreed timeframe** - Did they handle it? What went well? What was hard? Are they ready for the next step?\n- [ ] **Celebrate each successful step** - Moving up a level is a genuine achievement. Acknowledge it publicly and privately.\n- [ ] **Adjust pace to the individual** - Some people move through levels quickly. Others need more time at each stage. That's fine. This isn't a race. Pushing someone up before they're ready creates problems for everyone.\n- [ ] **Document the progression** - Keep a simple record of what each leader has taken on and when. This becomes valuable evidence for future promotion decisions, pay reviews, and succession planning.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Leaders grow into bigger roles gradually, with high success rates\n- Overwhelm and burnout from sudden responsibility jumps are eliminated\n- You have a clear, documented view of each leader's progression\n- Promotion decisions are backed by evidence of demonstrated capability\n- The business builds leadership capacity systematically, not accidentally"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part is patience. Owners who are ready to step back want to hand over everything at once. Coach them to resist that urge. Each step should feel slightly uncomfortable for the emerging leader but not overwhelming. If they're not slightly stretched, the step isn't big enough. If they're drowning, it's too big. Watch for the \"snap-back\" pattern: the owner delegates something, the leader struggles, and the owner takes it back. That's worse than never delegating at all. Instead, provide coaching and support through the struggle. The struggle is the growth."
+            }
+          ]
+        },
+        {
+          "number": 10,
+          "title": "Leadership Accountability System",
+          "description": "Install regular review meetings where leaders report on their outcomes, decisions, and challenges. Hold them accountable for results, not just effort.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up regular review meetings where your leaders report on outcomes, decisions made, and challenges faced. This is the system that holds leaders accountable for results, not just activity or effort. Each leader presents what happened in their area, what decisions they made, what worked, what didn't, and what they're doing about it. You listen, ask questions, and coach."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Delegation without accountability is abdication. You can grant authority, build development plans, and assign challenge projects, but without a consistent system for reviewing outcomes, you have no idea whether it's working. Leaders who know they'll be asked to account for their decisions make better decisions. Leaders who know nobody's watching drift. An accountability system keeps everyone sharp and gives you the visibility you need without being in the middle of everything."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up the structure, run the first few meetings yourself to establish the standard, then make it self-sustaining.\n\n---"
+            },
+            {
+              "title": "Step 1: Design the Review Structure",
+              "content": "- [ ] **Choose the review frequency** - Monthly for most leaders. Fortnightly for those in critical or fast-changing areas. Weekly is too frequent for leadership reviews and creates micromanagement. Monthly is the sweet spot.\n- [ ] **Set a fixed meeting slot** - Same day, same time, every month. Leaders plan their reporting around it. Consistency is the foundation of accountability.\n- [ ] ⚡ Quick Win: **Start with a simple standing agenda** - Every leader presents: (1) Key results this period. (2) Decisions made and rationale. (3) Challenges and how they were handled. (4) What's planned for next period. Same structure every time.\n- [ ] **Decide on individual or group format** - Individual reviews give depth and privacy. Group reviews create peer accountability and shared learning. Best practice: monthly individual reviews with quarterly group leadership reviews.\n- [ ] **Set the tone clearly from the start** - This is not a tribunal. It's a professional review focused on outcomes and learning. The atmosphere should be direct but supportive. Hard questions asked with genuine curiosity, not judgement."
+            },
+            {
+              "title": "Step 2: Define What Leaders Report On",
+              "content": "- [ ] **Outcomes, not activities** - \"We delivered 15 client projects on time\" is an outcome. \"The team was really busy\" is not. Push leaders to quantify results wherever possible.\n- [ ] **Decisions made** - Every leader should come prepared to discuss 2-3 significant decisions they made. What were the options? Why did they choose this path? What was the result? This builds decision-making rigour over time.\n- [ ] **Variances from plan** - What was supposed to happen vs what actually happened? If there's a gap, what caused it and what's being done? This isn't about blame. It's about understanding reality.\n- [ ] **People and team health** - How is their team performing? Any issues? Any wins? Leaders who only talk about numbers and never mention people aren't leading.\n- [ ] **Help needed** - What's stuck? What decisions need escalation? What resources are missing? This is where you add value without taking back control."
+            },
+            {
+              "title": "Step 3: Hold the Right Standard",
+              "content": "- [ ] **Praise outcomes publicly, address problems privately** - In group settings, celebrate wins. Take performance concerns offline to individual conversations.\n- [ ] **Challenge excuses constructively** - \"The market was tough\" might be true, but \"what could you have done differently given those conditions?\" is the leadership question.\n- [ ] ⚡ Quick Win: **End each review with one specific commitment from the leader for next period** - Written down, specific, with a deadline. This creates natural accountability for the next meeting.\n- [ ] **Track commitments from meeting to meeting** - Start each review by checking last meeting's commitments. Were they delivered? This simple practice transforms accountability from theoretical to real.\n- [ ] **Distinguish between results and effort** - Good effort with bad results still needs addressing. Good results from lucky breaks shouldn't be over-praised. Look at the quality of thinking and decision-making, not just the outcome."
+            },
+            {
+              "title": "Step 4: Make It Self-Sustaining",
+              "content": "- [ ] **Have leaders prepare a one-page written report before each meeting** - This forces them to reflect and organise their thinking. A verbal-only review lets people ramble and dodge.\n- [ ] **Keep records of each review** - Brief notes: key outcomes reported, decisions discussed, commitments made. Over time, this creates a valuable record of each leader's development and performance.\n- [ ] **Evolve the format based on what works** - After 3-4 cycles, ask: \"What's adding value and what's just process?\" Cut what doesn't work. Add what's missing. The system should serve the leaders, not burden them.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Leaders report on outcomes and decisions consistently, creating a clear performance record\n- Decision-making quality improves because leaders know they'll be asked to explain their reasoning\n- Problems surface faster because reviews create a natural checkpoint\n- You maintain visibility without micromanaging day-to-day operations\n- A culture of accountability and transparency develops across the leadership team"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The first 2-3 reviews will feel uncomfortable. Leaders aren't used to presenting their outcomes formally, and owners aren't used to reviewing without jumping in to solve problems. Coach the owner to ask questions, not give answers. The review meeting is where leaders practise being leaders, not where the owner takes back control. If a leader consistently arrives unprepared, that's the first accountability conversation. If they consistently report poor results with no improvement plan, that's the second. The system only works if the standards are maintained. Inconsistency kills accountability faster than anything."
+            }
+          ]
+        },
+        {
+          "number": 11,
+          "title": "Succession Planning Matrix",
+          "description": "Map out who could step into key roles if needed, identify skill gaps, and create development plans to fill them. Always have a Plan B.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Map who could step into each key role if needed, identify the skill gaps between where they are and where they'd need to be, and create development plans to close those gaps. This isn't about expecting people to leave. It's about making sure the business isn't fragile. If your best salesperson resigned tomorrow, who would pick up their clients? If your operations lead went on maternity leave, who would keep things running? Succession planning answers those questions before you need to answer them in a crisis."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses have at least 2-3 roles where one person leaving would cause serious disruption. The owner knows this but avoids thinking about it because the answer is uncomfortable (\"nobody could replace them\"). A succession matrix forces that conversation now, when you have time to develop people, rather than later, when you're scrambling. It also reduces your dependency on any single individual, which makes the business more resilient and more valuable."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Identify your critical roles, assess backup readiness, and create development plans for the gaps. Update the matrix every 6 months.\n\n---"
+            },
+            {
+              "title": "Step 1: Identify Critical Roles",
+              "content": "- [ ] **List every role where one person leaving would cause significant disruption** - Think about: who holds critical client relationships, who has knowledge nobody else has, who runs a process that would break without them, and who makes decisions that would stall.\n- [ ] ⚡ Quick Win: **Apply the \"hit by a bus\" test** - For each person, ask: \"If they were suddenly unavailable for 3 months, what would break?\" Any answer other than \"we'd manage fine\" means the role needs a succession plan.\n- [ ] **Include your own role** - This is the one most owners skip. Who could run the business if you needed to step away? If the answer is \"nobody,\" that's your most urgent succession gap.\n- [ ] **Rank roles by criticality** - Not all gaps are equal. A role that would shut down revenue is more critical than a role that would slow down admin. Prioritise accordingly."
+            },
+            {
+              "title": "Step 2: Assess Backup Readiness",
+              "content": "- [ ] **For each critical role, name potential successors** - Who could step in? They don't need to be perfect. They need to be the best available option. Sometimes the answer is: \"nobody internal, we'd need to hire.\"\n- [ ] **Rate each successor's readiness** - Ready now (could step in tomorrow). Ready in 6 months (with focused development). Ready in 12+ months (significant gaps to close). Not viable (wrong skills or temperament).\n- [ ] **Identify the specific gaps between current capability and role requirements** - Not vague gaps like \"needs more experience.\" Specific gaps like \"doesn't understand client pricing model\" or \"has never managed more than 2 people.\"\n- [ ] **Check for single points of failure** - Any role where only one person holds the knowledge? Any process that only one person can run? These are your highest-risk areas.\n- [ ] ⚡ Quick Win: **Identify one piece of critical knowledge that lives in only one person's head and document it this week** - A process document, a client relationship brief, a pricing methodology. Getting it out of one head reduces risk immediately."
+            },
+            {
+              "title": "Step 3: Build the Matrix",
+              "content": "- [ ] **Create a simple grid** - Rows: Critical roles. Columns: Potential successors, readiness rating, key gaps, development actions.\n- [ ] **Fill in every cell honestly** - Empty cells (no successor identified) are the most important finding. They show you where the business is most exposed.\n- [ ] **Highlight the highest-risk combinations** - Critical role + no ready successor = urgent. Critical role + successor ready in 6 months = manageable. Critical role + successor ready now = strong position.\n- [ ] **For each gap, write one development action** - Something specific that would move the successor closer to readiness. Shadow the current role-holder for a month. Take over one responsibility. Complete a specific training."
+            },
+            {
+              "title": "Step 4: Act on It",
+              "content": "- [ ] **Start development for your top 2-3 succession priorities** - You can't develop everyone at once. Focus on the highest-risk gaps first.\n- [ ] **Cross-train where possible** - Two people who can do one job is always better than one. Cross-training doesn't require formal succession planning. It just requires sharing knowledge.\n- [ ] **Build \"run books\" for critical roles** - Document how the role operates: key processes, important contacts, regular commitments, access credentials, and where to find things. If someone had to step in tomorrow, what would they need?\n- [ ] **Review the matrix every 6 months** - People leave. People grow. Priorities shift. The matrix is a living document, not a one-off exercise.\n- [ ] ⚡ Quick Win: **Pick one critical role and have the current holder spend 30 minutes teaching their backup one key process this week** - Knowledge transfer starts with a single conversation. Don't wait for a formal programme.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- You know exactly where the business is exposed if key people leave\n- Development plans are in place for the most critical succession gaps\n- Critical knowledge is documented and shared, not locked in individual heads\n- The business becomes more resilient and less dependent on any single person\n- You can make future hiring and development decisions with a clear view of what the business needs"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "This action often triggers anxiety. Owners don't want to think about key people leaving, and they especially don't want to think about their own succession. Normalise it: \"This isn't about expecting the worst. It's about building a business that's strong enough to handle anything.\" For very small businesses (under 10 people), full succession planning may feel excessive. Scale it down: focus on the 2-3 most critical roles and identify one backup action for each. That's enough to dramatically reduce risk. The most valuable outcome is often the knowledge documentation, not the matrix itself. Getting critical processes out of people's heads and into written form pays dividends far beyond succession planning."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

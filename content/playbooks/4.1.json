@@ -1,0 +1,226 @@
+{
+  "ref": "4.1",
+  "level": 4,
+  "area": 1,
+  "name": "Strategic Intent",
+  "subtitle": "Level 4 · Overseer · Aligned Vision",
+  "whatThisIs": "Strategic intent is where vision becomes decision-making power. It is not enough to have a nice picture of the future, you need a measurable, time-bound target that forces choices every single day. Strategic intent defines where you will win and, just as importantly, where you will not compete.\n\nWithout this clarity, growth becomes opportunistic. You chase whatever walks through the door, dilute your focus, and spread resources too thin. Strategic intent concentrates your efforts like a laser beam, it tells you exactly what to say yes to and gives you a reason to say no to everything else.\n\nThis playbook turns your vision into a strategic filter that drives every resource allocation decision, every project choice, and every hiring decision in your business.",
+  "whatItLooksLike": {
+    "broken": {
+      "emoji": "🔴",
+      "label": "When this is broken",
+      "content": "You have a vision but it feels abstract and difficult to act on. Growth comes from whatever opportunities appear rather than deliberate choices about where to compete. You find yourself pursuing multiple directions at once, wondering which projects actually matter. Resource allocation happens by accident or urgency rather than strategic priority."
+    },
+    "ok": {
+      "emoji": "🟠",
+      "label": "When this is OK",
+      "content": "You have some sense of direction but your strategic choices are not sharp enough to drive daily decisions. You know roughly where you want to go but you still say yes to projects and opportunities that do not clearly align. Your team understands the vision but struggles to prioritise when trade-offs need to be made."
+    },
+    "working": {
+      "emoji": "🟢",
+      "label": "When this is working",
+      "content": "You have a clear, measurable strategic target that everyone understands and can act on. Every resource allocation decision gets filtered through your strategic intent. You confidently say no to good opportunities that do not fit. Your team makes decisions independently because they understand exactly where the business is trying to win. Growth is concentrated and deliberate."
+    }
+  },
+  "thingsToThinkAbout": [
+    "Where specifically are you choosing to dominate? This is about focus, not ambition. Most businesses try to be good at everything and end up being great at nothing. Your strategic intent should define a specific arena, market, customer type, problem, where you will be the obvious choice.",
+    "What competitive advantage can you actually sustain? Not what you hope to build, but what you can realistically defend over three to five years. Strategic intent only works if it is built on advantages that competitors cannot easily copy or undercut.",
+    "What opportunities are you deliberately walking away from? The most important strategic decisions are about what you will not do. If your strategic intent does not force you to say no to profitable opportunities, it is not sharp enough.",
+    "Does your resource allocation reflect your stated priorities? Look at where your time, money, and best people actually go. If there is a gap between your strategic intent and your investment patterns, one of them is wrong.",
+    "What could completely undermine your position in the next five years? Strategic intent is about winning, but it also needs to account for how you could lose. What technology, competitor, or market shift would make your strategy irrelevant?"
+  ],
+  "actionsIntro": "When you open this playbook in the Profit System, you will find:",
+  "quickWins": [
+    "This week: Write a one-sentence description of exactly where your business will be the obvious choice in three years. Make it specific enough that someone else could use it to make decisions.",
+    "This week: List the three best opportunities you have said yes to in the past six months. Do they all clearly support the same strategic direction? If not, you need sharper intent.",
+    "This week: Identify one profitable project or opportunity you should stop pursuing because it does not align with where you want to win. Make the decision to stop it."
+  ],
+  "relatedPlaybooks": [
+    {
+      "ref": "3.1",
+      "description": ""
+    },
+    {
+      "ref": "4.2",
+      "description": ""
+    },
+    {
+      "ref": "4.3",
+      "description": ""
+    },
+    {
+      "ref": "3.2",
+      "description": ""
+    }
+  ],
+  "actions": [
+    {
+      "number": 1,
+      "title": "Strategic Arena Definition",
+      "description": "Strategic Arena Definition",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Define the specific domain where you will compete to win. Not your market in general, but the precise customer problem, competitive space, and geographic or demographic boundary you are claiming as yours. This is about drawing a clear line around what you are fighting for so every decision, investment, and hire serves that territory."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Most small businesses try to serve everyone and end up being average for all of them. Roger Martin's work on strategy makes this point sharply: strategy is not about what you will do, it is about what you will not do. A clearly defined arena focuses your resources, sharpens your messaging, and makes it possible to genuinely dominate a space. Without it, you spread thin, compete on price, and lose to specialists. Verne Harnish puts it simply - the goal is to own a niche so completely that customers have no reason to look elsewhere."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through each section to draw the boundaries of your competitive arena. Be as specific as possible. Vague answers mean you have not made the hard choices yet.\n\n---"
+        },
+        {
+          "title": "Customer Problem Definition",
+          "content": "- [ ] **Name the specific problem you solve** - Not your service category, but the actual pain your customer experiences. \"We do accounting\" is a category. \"We help owner-managed businesses stop losing money to poor financial visibility\" is a problem.\n- [ ] **Define who has this problem** - Be precise about company size, stage, industry, geography, and decision-maker profile. The tighter this is, the more powerful your positioning becomes.\n- [ ] ⚡ Quick Win: **Write one sentence that captures your arena** - \"[We help] [specific customer] [solve specific problem] [in specific context].\" If you cannot finish this sentence clearly, your arena is not defined.\n- [ ] **Identify what makes this problem urgent** - Why would someone act now rather than later? What is the trigger that moves them from \"I should deal with this\" to \"I need to deal with this today\"?"
+        },
+        {
+          "title": "Competitive Boundaries",
+          "content": "- [ ] **Name your direct competitors** - Not every business in your category. The 3-5 businesses that your ideal customer would consider instead of you. If you cannot name them, you do not understand your arena well enough.\n- [ ] **Define how you win against each one** - For each competitor, what is the specific reason a customer would choose you? Price, expertise, speed, relationship, methodology, guarantee? Be honest about where you are genuinely stronger and where you are not.\n- [ ] **Draw geographic or demographic boundaries** - Where does your arena start and stop? Local, regional, national, or specific verticals? Trying to compete everywhere is the same as competing nowhere.\n- [ ] **Identify adjacent arenas you are choosing NOT to enter** - This is the hard part. What opportunities will you say no to because they fall outside your arena? Write them down so when they come up (and they will), you have already decided."
+        },
+        {
+          "title": "Arena Validation",
+          "content": "- [ ] **Test with existing customers** - Ask your best 3-5 customers: \"Why did you choose us? What problem were we solving?\" If their answers do not match your arena definition, listen to them - they know something you do not.\n- [ ] **Check for sufficient market size** - Is your defined arena big enough to support your revenue goals? A perfectly defined arena with 50 potential customers might not be viable. Estimate the total addressable market.\n- [ ] ⚡ Quick Win: **Review your last 10 new customers** - How many fit your defined arena perfectly? How many were outside it? This tells you whether you are already competing in your arena or drifting.\n- [ ] **Assess your right to win** - Do you have (or can you build) genuine advantages in this arena? Credentials, experience, proprietary methodology, relationships, reputation? Wanting to compete in an arena is not enough. You need a credible path to winning.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A clearly defined competitive arena in one paragraph or less\n- Specific boundaries around customer, problem, geography, and competitive set\n- A list of adjacent opportunities you are choosing to decline\n- Confidence that the arena is large enough and that you have a credible right to win\n- A strategic filter for every future decision: \"Does this serve our arena?\""
+        },
+        {
+          "title": "Coach Notes",
+          "content": "The hardest part of this action is getting the client to be specific enough. Most will resist narrowing because it feels like leaving money on the table. Reframe it: you are not excluding customers, you are concentrating your advantage. A business that dominates a defined arena attracts customers from adjacent spaces naturally. Watch for arenas defined too broadly (\"we help businesses grow\") or too narrowly (\"we help left-handed dentists in Sheffield\"). The right size arena feels slightly uncomfortable - specific enough to be distinctive but large enough to build a real business."
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "Competitive Advantage Assessment",
+      "description": "Competitive Advantage Assessment",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Identify and test the sustainable advantages you can build and defend over time. This is not about listing what you are good at today. It is about finding the advantages that will compound over years and become increasingly difficult for competitors to replicate. You need to know what makes you genuinely different, whether that difference matters to customers, and whether you can protect it."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Michael Porter's research is clear: the only way to sustain above-average profitability is through durable competitive advantage. Without it, you are competing on price, and someone will always be willing to go lower. Most business owners confuse temporary advantages (a good location, a loyal customer base, being first to market) with sustainable ones. Temporary advantages erode. Sustainable advantages compound. The difference between the two determines whether your business grows or gets slowly commoditised."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Work through the assessment honestly. Score each potential advantage. Then focus your investment on the 1-2 advantages that score highest and can genuinely be defended.\n\n---"
+        },
+        {
+          "title": "Advantage Identification",
+          "content": "- [ ] **List everything you believe makes you different** - Products, services, people, processes, relationships, reputation, methodology, technology, culture. Get it all out without filtering.\n- [ ] **For each item, ask: \"Could a competitor replicate this within 12 months?\"** - If the answer is yes, it is not a sustainable advantage. It might be valuable today, but it will not protect you long-term. Mark these as temporary.\n- [ ] ⚡ Quick Win: **Circle the 2-3 items that would be hardest for anyone to copy** - These are your candidates for sustainable advantage. They usually involve some combination of time, relationships, proprietary knowledge, or compounding effects.\n- [ ] **Categorise your advantages** - Sort them into: (1) Cost advantages - you can deliver at lower cost without sacrificing quality. (2) Differentiation advantages - you deliver something customers value that others cannot match. (3) Network advantages - your value increases as your customer base or ecosystem grows."
+        },
+        {
+          "title": "Customer Validation",
+          "content": "- [ ] **Ask your best customers why they stay** - Not why they bought initially, but why they have not left. The answer to \"why do you stay?\" reveals your real advantage, which is often different from what you think it is.\n- [ ] **Ask lost prospects why they chose someone else** - This is uncomfortable but essential. The reasons you lose deals reveal where your advantages are not strong enough.\n- [ ] **Test willingness to pay** - Would your customers pay more for what makes you different? If your advantage does not translate into pricing power, it is not as valuable as you think.\n- [ ] **Compare your self-assessment to customer perception** - Where do they match? Where do they diverge? Customer perception is reality, regardless of what you believe internally."
+        },
+        {
+          "title": "Sustainability Testing",
+          "content": "- [ ] **Rate each advantage on three dimensions** - (1) Value: How much do customers care? (2) Rarity: How few competitors can match it? (3) Durability: How long will it take to erode? Score each 1-10. Multiply the three scores for a composite ranking.\n- [ ] **Identify what feeds your advantage** - Sustainable advantages have reinforcing loops. A strong reputation attracts better talent, which produces better work, which strengthens the reputation further. Map the loop for your top advantages.\n- [ ] ⚡ Quick Win: **Identify one thing you could do this month to strengthen your top advantage** - Small, consistent investment in your advantage compounds faster than occasional big moves.\n- [ ] **Assess vulnerability** - What could erode or destroy each advantage? A technology shift, a regulatory change, a competitor with deep pockets, key person dependency? Name the threats so you can monitor them."
+        },
+        {
+          "title": "Investment Plan",
+          "content": "- [ ] **Decide where to concentrate resources** - Pick 1-2 advantages to invest in heavily. Spreading investment across five advantages means none of them become dominant.\n- [ ] **Define how you will measure advantage strength over time** - Customer retention, pricing power, win rate against specific competitors, time to replicate. Pick metrics that tell you whether your advantage is growing or shrinking.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A clear, honest view of what actually makes you different\n- Separation of temporary advantages from sustainable ones\n- Customer-validated understanding of why people choose and stay with you\n- A focused investment plan for strengthening your 1-2 most defensible advantages\n- Early warning indicators for when advantages are eroding"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Most clients overestimate their competitive advantage. They believe their service quality or customer care is genuinely different when, in reality, their competitors say the exact same thing. Push for specificity and evidence. The question \"Would your customers say the same thing?\" is a powerful reality check. The most common sustainable advantages for SMEs are: deep expertise in a narrow domain, proprietary methodology or IP, long-standing customer relationships with high switching costs, and employer brand that attracts talent competitors cannot get. Help the client identify which of these they can realistically build and defend."
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "title": "Strategic Trade-Off Framework",
+      "description": "Strategic Trade-Off Framework",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Build a clear, reusable decision filter for what your business will and will not pursue. Strategy is fundamentally about trade-offs. Every yes has a cost. This framework turns your strategic intent into a practical tool you can use every time an opportunity, partnership, or new idea lands on your desk. Instead of evaluating each opportunity from scratch, you run it through your filter and get a clear answer."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "The biggest threat to a growing business is not lack of opportunity. It is too much opportunity. Every new idea that \"could work\" pulls resources, attention, and energy away from what is already working. Michael Porter argues that the essence of strategy is choosing what not to do. Greg McKeown calls it \"the disciplined pursuit of less.\" Without a trade-off framework, you end up with a bloated product line, an overstretched team, and a business that does many things adequately but nothing exceptionally."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Define your strategic filters once, then apply them to every significant opportunity or initiative. The framework should make most decisions obvious and fast, leaving only genuinely difficult calls for deeper analysis.\n\n---"
+        },
+        {
+          "title": "Define Your Filters",
+          "content": "- [ ] **Write your strategic intent in one sentence** - What are you building, for whom, and why? This is the anchor that every trade-off is tested against.\n- [ ] **List your 3-5 \"always yes\" criteria** - What characteristics must an opportunity have for you to consider it? Examples: serves existing customer segment, builds on current capability, generates recurring revenue, strengthens competitive advantage.\n- [ ] **List your 3-5 \"always no\" criteria** - What characteristics automatically disqualify an opportunity? Examples: requires a new team capability you do not have, competes with your core offering, depends on a single customer, has margins below X%.\n- [ ] ⚡ Quick Win: **Apply your filters to the last opportunity you said yes to** - Does it pass? If not, you may already be drifting from your strategy."
+        },
+        {
+          "title": "Build the Decision Tool",
+          "content": "- [ ] **Create a simple scoring card** - List your \"always yes\" criteria down the left. For each opportunity, score it 1-5 against each criterion. Set a minimum total score for a \"yes.\"\n- [ ] **Add a resource impact check** - Even if an opportunity scores well, ask: \"What will we stop doing or deprioritise to pursue this?\" If the answer is \"nothing - we will just add it on top,\" that is a warning sign.\n- [ ] **Define your \"not now\" process** - Good opportunities that fail the filter today might be right later. Create a parking list and review it quarterly so nothing valuable gets permanently lost.\n- [ ] **Build in a \"regret test\"** - For borderline decisions, ask: \"If we say no to this and a competitor does it successfully, will we regret it?\" If the answer is no, decline confidently."
+        },
+        {
+          "title": "Apply to Current Commitments",
+          "content": "- [ ] **Audit your current initiatives** - List everything you are actively investing time and resources in. Run each one through your filter. How many would you say yes to if they were proposed today?\n- [ ] ⚡ Quick Win: **Identify one current activity that fails your filter** - Start the conversation about stopping, reducing, or handing it off. Sunk cost is not a reason to continue.\n- [ ] **Review your pipeline of ideas and opportunities** - Apply the filter to everything you have been considering. Clear out the ones that do not pass so they stop consuming mental energy.\n- [ ] **Check for commitment creep** - Are there projects that started small but gradually expanded beyond their original scope? These are particularly dangerous because they grow without a conscious decision."
+        },
+        {
+          "title": "Team Communication",
+          "content": "- [ ] **Share the framework with your leadership team** - They need to understand not just what the filters are, but why each one matters. Context prevents workarounds.\n- [ ] **Empower your team to use it** - If someone brings you an opportunity that clearly fails the filter, they should be able to see that themselves before it reaches you.\n- [ ] **Celebrate good \"no\" decisions** - Saying no is harder than saying yes. When someone on your team identifies and declines an off-strategy opportunity, recognise it publicly.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A one-page decision filter you can apply to any opportunity in under 5 minutes\n- Faster, more consistent strategic decisions across the business\n- Fewer off-strategy commitments draining resources\n- Your team learns to self-filter, reducing the number of decisions that reach you\n- Greater focus on the initiatives that genuinely build your competitive position"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "Clients often struggle with the \"always no\" list because it feels like closing doors. Reframe it: every door you close focuses more energy on the doors you have chosen to walk through. The most powerful coaching moment in this action is the current commitments audit. Most owners discover they are already invested in 2-3 things that would fail their own filter. Helping them gracefully exit or wind down those commitments frees up significant capacity. Watch for clients who create filters so broad that everything passes. If the filter does not force hard choices, it is not doing its job. Push for specificity until the filter actually says no to things."
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "title": "Resource Alignment Audit",
+      "description": "Resource Alignment Audit",
+      "detailSections": [
+        {
+          "title": "What to Do",
+          "content": "Review how your current allocation of time, money, and talent matches your strategic priorities. Most businesses say one thing is important but spend their resources on something else entirely. This audit closes that gap by mapping where resources actually go, comparing it to where they should go, and creating a plan to redirect."
+        },
+        {
+          "title": "Why It Matters",
+          "content": "Verne Harnish's work on scaling shows that misaligned resources are one of the primary reasons businesses stall between £1M and £5M. You have enough resources to grow, but they are spread across too many priorities, some of which no longer serve your strategy. Every pound and every hour spent on a low-priority activity is unavailable for a high-priority one. The cost is not just the money. It is the opportunity cost of what you could have done with those resources if they were properly focused."
+        },
+        {
+          "title": "How to Use This",
+          "content": "Map your current resource allocation across three dimensions: time, money, and talent. Then compare each to your stated strategic priorities. The gaps will be obvious. Closing them is the hard part.\n\n---"
+        },
+        {
+          "title": "Time Audit",
+          "content": "- [ ] **Track your own time for one week** - Not what you planned to do, but what you actually did. Log in 30-minute blocks. Be honest about time spent on email, meetings, reactive tasks, and strategic work.\n- [ ] **Calculate the percentage split** - What percentage of your time goes to: (1) Strategic/growth work, (2) Operational/delivery work, (3) Administrative/reactive work, (4) Low-value or habitual tasks?\n- [ ] ⚡ Quick Win: **Identify your biggest time leak this week** - The single activity that consumed the most time relative to its strategic importance. What would happen if you stopped or delegated it?\n- [ ] **Map your team's time allocation** - Ask each direct report to estimate their split across the same four categories. Where is strategic capacity being consumed by operational demands?"
+        },
+        {
+          "title": "Financial Audit",
+          "content": "- [ ] **List your top 10 expense categories** - Include staff costs, marketing spend, technology, professional services, premises, and any other significant line items.\n- [ ] **Tag each expense as strategic, operational, or legacy** - Strategic expenses directly serve your growth priorities. Operational expenses keep the business running. Legacy expenses serve a priority that is no longer current.\n- [ ] **Calculate the ratio** - What percentage of your total spend is genuinely strategic versus maintaining the status quo? Most businesses discover 70-80% of spend is operational or legacy, leaving very little fuel for growth.\n- [ ] **Identify legacy expenses you can redirect** - These are the easiest wins. You are already spending the money. You just need to point it somewhere better."
+        },
+        {
+          "title": "Talent Audit",
+          "content": "- [ ] **Map your team's skills against your strategic priorities** - Do you have the right people in the right roles to execute your strategy? Where are the gaps?\n- [ ] **Identify your most strategically valuable people** - Who on your team has the greatest impact on your strategic priorities? Are they spending their time on strategic work, or are they buried in operations?\n- [ ] ⚡ Quick Win: **Free up 5 hours per week for your most strategic person** - What could you take off their plate so they spend more time on what matters most? Even a small shift compounds quickly.\n- [ ] **Assess whether hiring plans match strategic needs** - Is your next hire the person your strategy needs, or the person who fills the most obvious operational gap? These are often different people."
+        },
+        {
+          "title": "Realignment Plan",
+          "content": "- [ ] **Rank your strategic priorities** - Force a strict ranking, not a tier. Number one gets the most resources. Number five gets what is left. If everything is equally important, nothing is.\n- [ ] **Define specific resource shifts** - For each priority, state what time, money, or talent will be redirected to it and where those resources are coming from. Every increase must have a corresponding decrease somewhere.\n- [ ] **Set a 90-day reallocation target** - You cannot restructure overnight. Pick the 2-3 most impactful shifts and commit to completing them within 90 days.\n- [ ] **Schedule a quarterly resource review** - Alignment drifts naturally as the business changes. Build a quarterly check to compare allocation against priorities and adjust.\n\n---"
+        },
+        {
+          "title": "Expected Outcome",
+          "content": "- A clear, honest picture of where your resources actually go today\n- Visible gaps between what you say matters and what you fund with time, money, and talent\n- Specific reallocation decisions that shift resources toward strategic priorities\n- Identification of legacy spending that can be redirected immediately\n- A quarterly rhythm for maintaining alignment as priorities evolve"
+        },
+        {
+          "title": "Coach Notes",
+          "content": "This action is often a wake-up call. Most owners believe their resources are well-allocated until they do the actual audit. The time tracking exercise is particularly revealing - expect clients to be surprised and slightly embarrassed by how little time goes to strategic work. Do not let them skip it or estimate. Actual tracking for one week is essential. The financial audit can be sensitive, especially if the business is tight. Focus on reallocation rather than reduction. You are not asking them to spend less, you are asking them to spend better. The biggest resistance usually comes from cutting legacy activities. There is always a reason something started, and emotional attachment to past decisions makes it hard to stop."
+        }
+      ]
+    }
+  ]
+}
