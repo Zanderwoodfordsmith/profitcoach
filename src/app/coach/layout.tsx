@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Filter, MessageSquare } from "lucide-react";
+import { Filter, LogOut, MessageSquare } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 function IconCog({ className }: { className?: string }) {
   return (
@@ -71,8 +72,13 @@ export default function CoachLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { impersonatingCoachId, clearImpersonation } = useImpersonation();
+  const {
+    impersonatingCoachId,
+    clearImpersonation,
+    clearContactImpersonation,
+  } = useImpersonation();
   const [coachName, setCoachName] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!impersonatingCoachId) {
@@ -109,6 +115,19 @@ export default function CoachLayout({
   function handleExit() {
     clearImpersonation();
     router.push("/admin");
+  }
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      clearImpersonation();
+      clearContactImpersonation();
+      await supabaseClient.auth.signOut();
+      router.replace("/login");
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   const isImpersonatingCoach = Boolean(impersonatingCoachId);
@@ -189,6 +208,17 @@ export default function CoachLayout({
             <span className="text-xs opacity-80">Profile &amp; prospect link</span>
           </div>
         </Link>
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          disabled={signingOut}
+          className="flex w-full shrink-0 items-center gap-3 border-t border-white/10 px-4 py-3 text-left text-sm text-slate-100/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          <span className="font-semibold">
+            {signingOut ? "Signing out…" : "Log out"}
+          </span>
+        </button>
       </aside>
       <main className="min-h-screen min-w-0 w-full px-6 pb-6 pt-0">
         <div

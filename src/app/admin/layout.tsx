@@ -1,8 +1,12 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 type NavItem = {
   href: string;
@@ -73,6 +77,22 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { clearImpersonation, clearContactImpersonation } = useImpersonation();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      clearImpersonation();
+      clearContactImpersonation();
+      await supabaseClient.auth.signOut();
+      router.replace("/login");
+    } finally {
+      setSigningOut(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
@@ -129,6 +149,17 @@ export default function AdminLayout({
             <span className="text-xs opacity-80">Settings &amp; links</span>
           </div>
         </Link>
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          disabled={signingOut}
+          className="flex w-full shrink-0 items-center gap-3 border-t border-white/10 px-4 py-3 text-left text-sm text-slate-100/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          <span className="font-semibold">
+            {signingOut ? "Signing out…" : "Log out"}
+          </span>
+        </button>
       </aside>
       <main className="min-h-screen min-w-0 w-full px-6 pb-6 pt-0">
         <div className="flex w-full min-w-0 flex-col gap-4">

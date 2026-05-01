@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -57,8 +58,13 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { impersonatingContactId, clearContactImpersonation } = useImpersonation();
+  const {
+    impersonatingContactId,
+    clearContactImpersonation,
+    clearImpersonation,
+  } = useImpersonation();
   const [checking, setChecking] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [impersonatingContactName, setImpersonatingContactName] = useState<string | null>(null);
@@ -171,6 +177,19 @@ export default function ClientLayout({
     router.push(role === "admin" ? "/admin" : "/coach");
   }
 
+  async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      clearImpersonation();
+      clearContactImpersonation();
+      await supabaseClient.auth.signOut();
+      router.replace("/login");
+    } finally {
+      setSigningOut(false);
+    }
+  }
+
   const hasBanner = Boolean(impersonatingContactId);
   const sidebarTop = hasBanner ? "top-12" : "top-0";
 
@@ -230,12 +249,25 @@ export default function ClientLayout({
             })}
           </ul>
         </nav>
-        <div className="flex shrink-0 items-center gap-3 border-t border-white/10 px-4 py-4 text-sm text-slate-100/80">
-          <IconCog className="h-5 w-5 shrink-0" />
-          <div className="flex flex-col">
-            <span className="font-semibold">Account</span>
-            <span className="text-xs opacity-80">Client dashboard</span>
+        <div className="shrink-0 border-t border-white/10">
+          <div className="flex items-center gap-3 px-4 py-4 text-sm text-slate-100/80">
+            <IconCog className="h-5 w-5 shrink-0" />
+            <div className="flex flex-col">
+              <span className="font-semibold">Account</span>
+              <span className="text-xs opacity-80">Client dashboard</span>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            disabled={signingOut}
+            className="flex w-full items-center gap-3 border-t border-white/10 px-4 py-3 text-left text-sm text-slate-100/70 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            <span className="font-semibold">
+              {signingOut ? "Signing out…" : "Log out"}
+            </span>
+          </button>
         </div>
       </aside>
       <main
