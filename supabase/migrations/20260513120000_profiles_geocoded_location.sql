@@ -56,3 +56,4 @@ as $$
 $$;
 
 grant execute on function public.community_members_map() to authenticated;
+grant execute on function public.community_members_map() to service_role;

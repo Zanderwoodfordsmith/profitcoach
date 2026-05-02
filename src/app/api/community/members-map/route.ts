@@ -81,16 +81,23 @@ export async function GET(request: Request) {
   const { data, error } = await supabaseAdmin.rpc("community_members_map");
 
   if (error) {
-    if (
-      error.message?.includes("function") &&
-      error.message?.includes("does not exist")
-    ) {
+    const msg = error.message ?? "";
+    if (msg.includes("function") && msg.includes("does not exist")) {
       return NextResponse.json(
         {
           error:
             "Members map is not available until database migrations are applied.",
         },
         { status: 503 }
+      );
+    }
+    if (/permission denied.*community_members_map/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "Members map database permission is missing. Apply the latest Supabase migrations (grant execute on community_members_map to service_role).",
+        },
+        { status: 500 }
       );
     }
     console.error("members-map rpc error:", error);
