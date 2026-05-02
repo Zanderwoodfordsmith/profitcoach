@@ -21,6 +21,7 @@ import {
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
@@ -82,6 +83,7 @@ export type CommunityPostRow = {
 };
 
 export function CommunityFeed() {
+  const { impersonatingCoachId } = useImpersonation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -357,7 +359,7 @@ export function CommunityFeed() {
         }
 
         try {
-          const uid = session.user.id;
+          const uid = impersonatingCoachId ?? session.user.id;
           const map = await fetchStaffAvatarMap([uid], session.access_token);
           let url: string | null = map[uid] ?? null;
           if (!url) {
@@ -418,7 +420,7 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [loadCategories, loadPosts]);
+  }, [impersonatingCoachId, loadCategories, loadPosts]);
 
   const filteredPosts = useMemo(() => {
     if (filterSlug === "all") return posts;

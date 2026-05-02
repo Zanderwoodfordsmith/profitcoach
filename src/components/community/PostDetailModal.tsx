@@ -42,6 +42,8 @@ import {
   communityAccessHint,
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCommunityAuthorId } from "@/lib/communityEffectiveAuthorId";
 
 type CommentRow = {
   id: string;
@@ -85,6 +87,7 @@ export function PostDetailModal({
   onPostsChanged,
 }: Props) {
   const pathname = usePathname();
+  const { impersonatingCoachId } = useImpersonation();
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [nameById, setNameById] = useState<Record<string, string>>({});
@@ -163,8 +166,13 @@ export function PostDetailModal({
     [post.body]
   );
 
-  const isAuthor =
-    Boolean(currentUserId && post.author?.id === currentUserId);
+  const isAuthor = Boolean(
+    post.author?.id &&
+      (post.author.id === currentUserId ||
+        Boolean(
+          impersonatingCoachId && post.author.id === impersonatingCoachId
+        ))
+  );
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -419,10 +427,8 @@ export function PostDetailModal({
     const text = newComment.trim();
     if (!text || submitting) return;
     setSubmitting(true);
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-    if (!user) {
+    const authorId = await getCommunityAuthorId(impersonatingCoachId);
+    if (!authorId) {
       setSubmitting(false);
       return;
     }
@@ -430,7 +436,7 @@ export function PostDetailModal({
       .from("community_post_comments")
       .insert({
         post_id: post.id,
-        author_id: user.id,
+        author_id: authorId,
         body: text,
         parent_comment_id: null,
       });
@@ -440,7 +446,14 @@ export function PostDetailModal({
       await loadComments();
       await onPostsChanged();
     }
-  }, [newComment, onPostsChanged, post.id, submitting, loadComments]);
+  }, [
+    impersonatingCoachId,
+    newComment,
+    onPostsChanged,
+    post.id,
+    submitting,
+    loadComments,
+  ]);
 
   const handleToggleLike = useCallback(async () => {
     if (likeBusy) return;
@@ -465,10 +478,8 @@ export function PostDetailModal({
       const text = (replyDrafts[parentId] ?? "").trim();
       if (!text || submitting) return;
       setSubmitting(true);
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      if (!user) {
+      const authorId = await getCommunityAuthorId(impersonatingCoachId);
+      if (!authorId) {
         setSubmitting(false);
         return;
       }
@@ -476,7 +487,7 @@ export function PostDetailModal({
         .from("community_post_comments")
         .insert({
           post_id: post.id,
-          author_id: user.id,
+          author_id: authorId,
           body: text,
           parent_comment_id: parentId,
         });
@@ -488,7 +499,14 @@ export function PostDetailModal({
         await onPostsChanged();
       }
     },
-    [replyDrafts, submitting, post.id, loadComments, onPostsChanged]
+    [
+      impersonatingCoachId,
+      replyDrafts,
+      submitting,
+      post.id,
+      loadComments,
+      onPostsChanged,
+    ]
   );
 
   return (

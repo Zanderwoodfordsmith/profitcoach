@@ -10,6 +10,8 @@ import {
   communityAccessHint,
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCommunityAuthorId } from "@/lib/communityEffectiveAuthorId";
 
 type Props = {
   categories: CommunityCategory[];
@@ -18,6 +20,7 @@ type Props = {
 };
 
 export function CreatePostModal({ categories, onClose, onCreated }: Props) {
+  const { impersonatingCoachId } = useImpersonation();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
@@ -42,10 +45,8 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
     if (!canSubmit) return;
     setSaving(true);
     setError(null);
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-    if (!user) {
+    const authorId = await getCommunityAuthorId(impersonatingCoachId);
+    if (!authorId) {
       setError("Not signed in.");
       setSaving(false);
       return;
@@ -66,7 +67,7 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
     }
 
     const { error: insErr } = await supabaseClient.from("community_posts").insert({
-      author_id: user.id,
+      author_id: authorId,
       category_id: categoryId,
       title: title.trim(),
       body: body.trim(),
@@ -83,7 +84,7 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
 
     await onCreated();
     setSaving(false);
-  }, [body, canSubmit, categoryId, imageFile, onCreated, title]);
+  }, [body, canSubmit, categoryId, imageFile, impersonatingCoachId, onCreated, title]);
 
   return (
     <div
