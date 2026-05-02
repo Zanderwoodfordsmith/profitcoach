@@ -1,15 +1,32 @@
-/** Postgrest errors are plain objects with `message`, not always `instanceof Error`. */
+/** PostgREST errors are plain objects (`message`, `details`, `hint`, `code`), not always `instanceof Error`. */
 export function supabaseErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
-  if (
-    error &&
-    typeof error === "object" &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  ) {
-    return (error as { message: string }).message;
+  if (error && typeof error === "object") {
+    const o = error as Record<string, unknown>;
+    const lines: string[] = [];
+    if (typeof o.message === "string" && o.message.length > 0) {
+      lines.push(o.message);
+    }
+    if (typeof o.details === "string" && o.details.length > 0) {
+      lines.push(`Details: ${o.details}`);
+    }
+    if (typeof o.hint === "string" && o.hint.length > 0) {
+      lines.push(`Hint: ${o.hint}`);
+    }
+    if (typeof o.code === "string" && o.code.length > 0) {
+      lines.push(`Code: ${o.code}`);
+    }
+    if (lines.length > 0) {
+      return lines.join("\n");
+    }
+    try {
+      return JSON.stringify(o);
+    } catch {
+      /* ignore */
+    }
   }
-  return String(error);
+  const s = String(error);
+  return s === "[object Object]" ? "Unknown error (empty message)." : s;
 }
 
 export function communityAccessHint(errorMessage: string): string | null {
@@ -28,6 +45,13 @@ export function communityAccessHint(errorMessage: string): string | null {
     m.includes("permission denied")
   ) {
     return "Your profiles.role must be coach or admin. Ask a DB admin to check RLS and your profile row.";
+  }
+  if (
+    m.includes("jwt") ||
+    (m.includes("token") && m.includes("expired")) ||
+    m.includes("not authorized")
+  ) {
+    return "Try signing out and signing in again, then refresh this page.";
   }
   return null;
 }

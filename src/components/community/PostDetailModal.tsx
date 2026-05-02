@@ -74,7 +74,7 @@ export function PostDetailModal({
         body,
         created_at,
         parent_comment_id,
-        author:profiles ( id, full_name, first_name, last_name, avatar_url )
+        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
       `
       )
       .eq("post_id", post.id)

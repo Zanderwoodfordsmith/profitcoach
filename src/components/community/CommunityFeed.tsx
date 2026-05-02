@@ -54,6 +54,7 @@ export function CommunityFeed() {
   }, []);
 
   const loadPosts = useCallback(async () => {
+    /* Explicit FK hints avoid PostgREST “could not find relationship” when inference fails. */
     const { data, error } = await supabaseClient
       .from("community_posts")
       .select(
@@ -64,8 +65,8 @@ export function CommunityFeed() {
         is_pinned,
         created_at,
         category_id,
-        category:community_categories ( id, slug, label ),
-        author:profiles ( id, full_name, first_name, last_name, avatar_url )
+        category:community_categories!category_id ( id, slug, label ),
+        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
       `
       )
       .order("is_pinned", { ascending: false })
@@ -97,15 +98,55 @@ export function CommunityFeed() {
     setLoadError(null);
     void (async () => {
       try {
-        await loadCategories();
-        await loadPosts();
-      } catch (e) {
-        if (!cancelled) {
-          const msg = supabaseErrorMessage(e);
-          const hint = communityAccessHint(msg);
-          setLoadError(
-            hint ? `${msg}\n\n${hint}` : msg || "Could not load community."
-          );
+        const {
+          data: { session },
+        } = await supabaseClient.auth.getSession();
+        if (!session?.user) {
+          if (!cancelled) {
+            setLoadError(
+              "No active session. Open the app from a logged-in tab, or sign in again and refresh."
+            );
+          }
+          return;
+        }
+
+        try {
+          await loadCategories();
+        } catch (e) {
+          if (!cancelled) {
+            const msg = supabaseErrorMessage(e);
+            const hint = communityAccessHint(msg);
+            setLoadError(
+              [
+                "Failed while loading categories (table community_categories).",
+                "",
+                msg,
+                hint ?? "",
+              ]
+                .filter(Boolean)
+                .join("\n")
+            );
+          }
+          return;
+        }
+
+        try {
+          await loadPosts();
+        } catch (e) {
+          if (!cancelled) {
+            const msg = supabaseErrorMessage(e);
+            const hint = communityAccessHint(msg);
+            setLoadError(
+              [
+                "Failed while loading posts (table community_posts or joined profiles).",
+                "",
+                msg,
+                hint ?? "",
+              ]
+                .filter(Boolean)
+                .join("\n")
+            );
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -136,13 +177,16 @@ export function CommunityFeed() {
       </div>
 
       {loadError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 whitespace-pre-wrap">
-          <strong className="font-semibold">Could not load community.</strong>
-          <span className="mt-1 block">{loadError}</span>
-          <span className="mt-2 block text-xs text-rose-700/90">
-            Note: an empty feed does not cause this error—loading fails only when
-            the database request errors (see message above).
-          </span>
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <p className="font-semibold text-rose-900">Community data could not be loaded</p>
+          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white/80 px-3 py-2 font-mono text-xs leading-relaxed text-rose-950 ring-1 ring-rose-100">
+            {loadError}
+          </pre>
+          <p className="mt-2 text-xs text-rose-700/90">
+            An empty feed does not produce this screen—the Supabase request returned an error.
+            Use the message above (often “relation does not exist” = run the migration, or RLS =
+            check profiles.role is coach or admin).
+          </p>
         </div>
       ) : null}
 
