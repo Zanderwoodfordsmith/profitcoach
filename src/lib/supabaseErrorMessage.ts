@@ -32,7 +32,7 @@ export function supabaseErrorMessage(error: unknown): string {
 export function communityAccessHint(errorMessage: string): string | null {
   const m = errorMessage.toLowerCase();
   if (m.includes("infinite recursion") && m.includes("profiles")) {
-    return "Apply community migrations through supabase/migrations/20260505120000_community_is_staff_superuser_bypass.sql (SECURITY DEFINER owned by postgres bypasses RLS on the inner profiles check). Run earlier community migrations first if this is a new database.";
+    return "Apply supabase/migrations/20260506120000_community_staff_snapshot_break_recursion.sql — staff checks must use community_staff_snapshot (not profiles) to avoid RLS recursion. Ensure earlier community_* migrations are applied first.";
   }
   if (m.includes("set is not allowed in a non-volatile function")) {
     return "Apply migration supabase/migrations/20260504120000_community_rls_functions_volatile.sql (community helpers must be VOLATILE when using SET LOCAL).";
