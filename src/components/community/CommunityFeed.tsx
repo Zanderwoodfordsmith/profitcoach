@@ -20,7 +20,36 @@ import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
+import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { StickyPageHeader } from "@/components/layout";
+
+/** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
+async function fetchAvatarUrlsFromProfiles(
+  ids: string[]
+): Promise<Record<string, string | null>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", ids);
+  if (error || !data?.length) return {};
+  const out: Record<string, string | null> = {};
+  for (const r of data as { id: string; avatar_url: string | null }[]) {
+    out[r.id] = r.avatar_url ?? null;
+  }
+  return out;
+}
+
+function applyAvatarFallback<P extends ProfileRow | null>(
+  author: P,
+  authorId: string,
+  fb: Record<string, string | null>
+): P {
+  const url = fb[authorId];
+  if (!url) return author;
+  if (!author) return { id: authorId, avatar_url: url } as P;
+  return { ...author, avatar_url: url };
+}
 
 export type ProfileRow = {
   id: string;
@@ -241,10 +270,7 @@ export function CommunityFeed() {
         : row.author ?? null,
     }));
 
-    const {
-      data: { session: avatarSession },
-    } = await supabaseClient.auth.getSession();
-    const avatarToken = avatarSession?.access_token;
+    const avatarToken = await getValidSupabaseAccessToken();
     const avatarUserIds = [
       ...new Set([
         ...normalized.flatMap((p) => (p.author?.id ? [p.author.id] : [])),
@@ -253,19 +279,44 @@ export function CommunityFeed() {
     ];
     const avatarMap = await fetchStaffAvatarMap(avatarUserIds, avatarToken);
 
-    const normalizedWithAvatars = normalized.map((row) => ({
+    let normalizedWithAvatars = normalized.map((row) => ({
       ...row,
       author: row.author?.id
         ? mergeAuthorAvatar(row.author.id, row.author, avatarMap)
         : row.author,
     }));
 
-    const commentsWithAvatars: CommentAuthorRow[] = commentsNormalized.map(
+    let commentsWithAvatars: CommentAuthorRow[] = commentsNormalized.map(
       (c) => ({
         ...c,
         author: mergeAuthorAvatar(c.author_id, c.author, avatarMap),
       })
     );
+
+    const stillMissing = new Set<string>();
+    for (const row of normalizedWithAvatars) {
+      if (row.author?.id && !row.author.avatar_url) {
+        stillMissing.add(row.author.id);
+      }
+    }
+    for (const c of commentsWithAvatars) {
+      if (c.author_id && !c.author?.avatar_url) {
+        stillMissing.add(c.author_id);
+      }
+    }
+    if (stillMissing.size > 0) {
+      const fb = await fetchAvatarUrlsFromProfiles([...stillMissing]);
+      normalizedWithAvatars = normalizedWithAvatars.map((row) => ({
+        ...row,
+        author: row.author?.id
+          ? applyAvatarFallback(row.author, row.author.id, fb)
+          : row.author,
+      }));
+      commentsWithAvatars = commentsWithAvatars.map((c) => ({
+        ...c,
+        author: applyAvatarFallback(c.author, c.author_id, fb),
+      }));
+    }
 
     const commentsByPost = new Map<string, CommentAuthorRow[]>();
     for (const c of commentsWithAvatars) {
