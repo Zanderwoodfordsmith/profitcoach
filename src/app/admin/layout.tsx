@@ -34,8 +34,8 @@ function IconCommunity({ className }: { className?: string }) {
 }
 
 const navItems: NavItem[] = [
-  { href: "/admin/playbooks", label: "Playbooks", icon: IconBook },
   { href: "/admin/community", label: "Community", icon: IconCommunity },
+  { href: "/admin/playbooks", label: "Playbooks", icon: IconBook },
   { href: "/admin/academy", label: "Academy", icon: IconAcademy },
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/clients", label: "Clients", icon: IconBriefcase },

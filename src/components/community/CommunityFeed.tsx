@@ -5,6 +5,10 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
 import { PostDetailModal } from "@/components/community/PostDetailModal";
 import { PostCard } from "@/components/community/PostCard";
+import {
+  communityAccessHint,
+  supabaseErrorMessage,
+} from "@/lib/supabaseErrorMessage";
 
 export type ProfileRow = {
   id: string;
@@ -97,8 +101,10 @@ export function CommunityFeed() {
         await loadPosts();
       } catch (e) {
         if (!cancelled) {
+          const msg = supabaseErrorMessage(e);
+          const hint = communityAccessHint(msg);
           setLoadError(
-            e instanceof Error ? e.message : "Could not load community."
+            hint ? `${msg}\n\n${hint}` : msg || "Could not load community."
           );
         }
       } finally {
@@ -130,15 +136,21 @@ export function CommunityFeed() {
       </div>
 
       {loadError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-          {loadError}
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 whitespace-pre-wrap">
+          <strong className="font-semibold">Could not load community.</strong>
+          <span className="mt-1 block">{loadError}</span>
+          <span className="mt-2 block text-xs text-rose-700/90">
+            Note: an empty feed does not cause this error—loading fails only when
+            the database request errors (see message above).
+          </span>
         </div>
       ) : null}
 
       <button
         type="button"
         onClick={() => setComposeOpen(true)}
-        className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300"
+        disabled={Boolean(loadError) || categories.length === 0}
+        className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
           +

@@ -4,6 +4,10 @@ import { useCallback, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
+import {
+  communityAccessHint,
+  supabaseErrorMessage,
+} from "@/lib/supabaseErrorMessage";
 
 type Props = {
   categories: CommunityCategory[];
@@ -42,7 +46,9 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
     });
 
     if (insErr) {
-      setError(insErr.message);
+      const msg = supabaseErrorMessage(insErr);
+      const hint = communityAccessHint(msg);
+      setError(hint ? `${msg}\n\n${hint}` : msg);
       setSaving(false);
       return;
     }
@@ -69,6 +75,13 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
         >
           New post
         </h2>
+
+        {categories.length === 0 ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Categories did not load (Community failed to load from the database).
+            Fix the error on the page, refresh, then try again.
+          </p>
+        ) : null}
 
         <div className="mt-4 space-y-3">
           <input
@@ -104,7 +117,9 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
         </div>
 
         {error ? (
-          <p className="mt-3 text-sm text-rose-600">{error}</p>
+          <p className="mt-3 whitespace-pre-wrap text-sm text-rose-600">
+            {error}
+          </p>
         ) : null}
 
         <div className="mt-5 flex justify-end gap-2">
