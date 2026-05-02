@@ -1,5 +1,6 @@
 "use client";
 
+import type { RefObject } from "react";
 import {
   useCallback,
   useEffect,
@@ -84,6 +85,115 @@ async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
   return (data ?? []) as ProfileRow[];
 }
 
+function PostDetailOverflowMenu({
+  menuRef,
+  menuOpen,
+  setMenuOpen,
+  isAuthor,
+  deleteBusy,
+  onEdit,
+  onCopyLink,
+  onReport,
+  onDelete,
+}: {
+  menuRef: RefObject<HTMLDivElement | null>;
+  menuOpen: boolean;
+  setMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isAuthor: boolean;
+  deleteBusy: boolean;
+  onEdit: () => void;
+  onCopyLink: () => void | Promise<void>;
+  onReport: () => void;
+  onDelete: () => void | Promise<void>;
+}) {
+  return (
+    <div className="relative shrink-0" ref={menuRef}>
+      <button
+        type="button"
+        className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        aria-label="Post actions"
+        onClick={() => setMenuOpen((o) => !o)}
+      >
+        <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
+      </button>
+      {menuOpen ? (
+        <div
+          role="menu"
+          className="absolute right-0 z-30 mt-1 min-w-[11rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+        >
+          {isAuthor ? (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                onClick={() => {
+                  onEdit();
+                  setMenuOpen(false);
+                }}
+              >
+                <Pencil className="h-4 w-4 shrink-0 opacity-70" />
+                Edit
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                onClick={() => void onCopyLink()}
+              >
+                <Link2 className="h-4 w-4 shrink-0 opacity-70" />
+                Copy link
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                onClick={onReport}
+              >
+                <Flag className="h-4 w-4 shrink-0 opacity-70" />
+                Report to admins
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={deleteBusy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                onClick={() => void onDelete()}
+              >
+                <Trash2 className="h-4 w-4 shrink-0 opacity-80" />
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                onClick={() => void onCopyLink()}
+              >
+                <Link2 className="h-4 w-4 shrink-0 opacity-70" />
+                Copy link
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                onClick={onReport}
+              >
+                <Flag className="h-4 w-4 shrink-0 opacity-70" />
+                Report to admins
+              </button>
+            </>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function PostDetailModal({
   post,
   categories,
@@ -115,6 +225,9 @@ export function PostDetailModal({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const postTitleRef = useRef<HTMLHeadingElement>(null);
+  const [showCompactPostHeader, setShowCompactPostHeader] = useState(false);
 
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -189,6 +302,25 @@ export function PostDetailModal({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (editing) {
+      setShowCompactPostHeader(false);
+      return;
+    }
+    const root = scrollContainerRef.current;
+    const titleEl = postTitleRef.current;
+    if (!root || !titleEl) return;
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        setShowCompactPostHeader(!entry.isIntersecting);
+      },
+      { root, threshold: 0 }
+    );
+    io.observe(titleEl);
+    return () => io.disconnect();
+  }, [editing, post.id, post.title]);
 
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -551,7 +683,7 @@ export function PostDetailModal({
       aria-labelledby="post-detail-title"
     >
       <div
-        className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className="relative flex max-h-[90vh] min-h-0 w-full max-w-2xl flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -562,7 +694,52 @@ export function PostDetailModal({
         >
           <X className="h-3 w-3" strokeWidth={2.5} />
         </button>
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5">
+        <div
+          className={`shrink-0 overflow-hidden border-slate-200 bg-white/95 backdrop-blur transition-[max-height,opacity] duration-200 ease-out ${
+            showCompactPostHeader && !editing
+              ? "max-h-24 border-b opacity-100"
+              : "pointer-events-none max-h-0 border-b-0 opacity-0"
+          }`}
+        >
+          <div className="flex items-center gap-2.5 px-5 py-2.5 pr-10">
+            {headerAuthor?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={headerAuthor.avatar_url}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
+              />
+            ) : (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                {authorName.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-slate-900">
+              {post.title}
+            </p>
+            {showCompactPostHeader && !editing ? (
+              <PostDetailOverflowMenu
+                menuRef={menuRef}
+                menuOpen={menuOpen}
+                setMenuOpen={setMenuOpen}
+                isAuthor={isAuthor}
+                deleteBusy={deleteBusy}
+                onEdit={() => {
+                  setActionError(null);
+                  setEditing(true);
+                }}
+                onCopyLink={copyPostLink}
+                onReport={reportPost}
+                onDelete={handleDeletePost}
+              />
+            ) : null}
+          </div>
+        </div>
+        <div
+          ref={scrollContainerRef}
+          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5"
+        >
           <div className="flex items-start gap-3">
             {headerAuthor?.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -595,91 +772,22 @@ export function PostDetailModal({
                     ) : null}
                   </p>
                 </div>
-                <div className="relative shrink-0" ref={menuRef}>
-                  <button
-                    type="button"
-                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                    aria-expanded={menuOpen}
-                    aria-haspopup="menu"
-                    aria-label="Post actions"
-                    onClick={() => setMenuOpen((o) => !o)}
-                  >
-                    <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
-                  </button>
-                  {menuOpen ? (
-                    <div
-                      role="menu"
-                      className="absolute right-0 z-20 mt-1 min-w-[11rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-                    >
-                      {isAuthor ? (
-                        <>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
-                            onClick={() => {
-                              setActionError(null);
-                              setEditing(true);
-                              setMenuOpen(false);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4 shrink-0 opacity-70" />
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
-                            onClick={() => void copyPostLink()}
-                          >
-                            <Link2 className="h-4 w-4 shrink-0 opacity-70" />
-                            Copy link
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
-                            onClick={reportPost}
-                          >
-                            <Flag className="h-4 w-4 shrink-0 opacity-70" />
-                            Report to admins
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            disabled={deleteBusy}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                            onClick={() => void handleDeletePost()}
-                          >
-                            <Trash2 className="h-4 w-4 shrink-0 opacity-80" />
-                            Delete
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
-                            onClick={() => void copyPostLink()}
-                          >
-                            <Link2 className="h-4 w-4 shrink-0 opacity-70" />
-                            Copy link
-                          </button>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
-                            onClick={reportPost}
-                          >
-                            <Flag className="h-4 w-4 shrink-0 opacity-70" />
-                            Report to admins
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  ) : null}
-                </div>
+                {(!showCompactPostHeader || editing) ? (
+                  <PostDetailOverflowMenu
+                    menuRef={menuRef}
+                    menuOpen={menuOpen}
+                    setMenuOpen={setMenuOpen}
+                    isAuthor={isAuthor}
+                    deleteBusy={deleteBusy}
+                    onEdit={() => {
+                      setActionError(null);
+                      setEditing(true);
+                    }}
+                    onCopyLink={copyPostLink}
+                    onReport={reportPost}
+                    onDelete={handleDeletePost}
+                  />
+                ) : null}
               </div>
             </div>
           </div>
@@ -835,6 +943,7 @@ export function PostDetailModal({
               ) : (
                 <>
                   <h2
+                    ref={postTitleRef}
                     id="post-detail-title"
                     className="text-2xl font-semibold leading-snug tracking-tight text-slate-900"
                   >
