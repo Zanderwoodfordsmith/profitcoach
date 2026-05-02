@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { User } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -24,7 +23,7 @@ import {
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
-import { StickyPageHeader } from "@/components/layout";
+import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
 import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
@@ -441,41 +440,29 @@ export function CommunityFeed() {
     [posts, selectedPostId]
   );
 
-  const tabShell =
-    "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors";
-  const tabActive = `${tabShell} bg-white text-sky-800 shadow-sm`;
-  const tabInactive = `${tabShell} text-slate-600 hover:text-slate-900`;
-
   return (
     <>
       <StickyPageHeader
         title="Community"
         description="Browse posts or see where coaches and admins are based."
         tabs={
-          <div
-            className="flex rounded-lg bg-slate-100/90 p-1 ring-1 ring-slate-200/80"
-            role="tablist"
-            aria-label="Community views"
-          >
-            <Link
-              href={pathname}
-              scroll={false}
-              role="tab"
-              aria-selected={communityTab === "feed"}
-              className={communityTab === "feed" ? tabActive : tabInactive}
-            >
-              Feed
-            </Link>
-            <Link
-              href={`${pathname}?tab=map`}
-              scroll={false}
-              role="tab"
-              aria-selected={communityTab === "map"}
-              className={communityTab === "map" ? tabActive : tabInactive}
-            >
-              Map
-            </Link>
-          </div>
+          <PageHeaderUnderlineTabs
+            ariaLabel="Community views"
+            items={[
+              {
+                kind: "link",
+                href: pathname,
+                label: "Feed",
+                active: communityTab === "feed",
+              },
+              {
+                kind: "link",
+                href: `${pathname}?tab=map`,
+                label: "Map",
+                active: communityTab === "map",
+              },
+            ]}
+          />
         }
       />
 

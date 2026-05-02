@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { StickyPageHeader } from "@/components/layout";
+import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
 import { adminExtraNavLinks } from "@/config/adminExtraNavLinks";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -107,7 +107,7 @@ export default function AdminAccountPage() {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
 
-  const tabs: { id: TabId; label: string }[] = [
+  const tabDefs: { id: TabId; label: string }[] = [
     { id: "links", label: "Links" },
     { id: "settings", label: "Settings" },
   ];
@@ -117,6 +117,18 @@ export default function AdminAccountPage() {
       <StickyPageHeader
         title="Account"
         description="Admin settings, links, and preferences."
+        tabs={
+          <PageHeaderUnderlineTabs
+            ariaLabel="Account tabs"
+            items={tabDefs.map((tab) => ({
+              kind: "button" as const,
+              id: tab.id,
+              label: tab.label,
+              active: activeTab === tab.id,
+              onClick: () => setActiveTab(tab.id),
+            }))}
+          />
+        }
       />
 
       {checkingRole ? (
@@ -129,25 +141,6 @@ export default function AdminAccountPage() {
 
       {!checkingRole && !error && (
         <>
-          <div className="border-b border-slate-200">
-            <nav className="-mb-px flex gap-6" aria-label="Account tabs">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`border-b-2 px-1 py-3 text-sm font-medium ${
-                    activeTab === tab.id
-                      ? "border-sky-600 text-sky-700"
-                      : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
           {activeTab === "links" && (
             <div className="flex flex-col gap-4">
               <div className="rounded-xl border border-slate-200 bg-white shadow-sm">

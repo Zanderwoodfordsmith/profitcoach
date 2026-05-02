@@ -7,7 +7,10 @@ export type PageHeaderDescriptionPlacement = "info" | "below";
 
 export type StickyPageHeaderProps = {
   title: ReactNode;
-  /** Inline with title (e.g. section tabs) */
+  /**
+   * Inline with title, right side. Prefer `PageHeaderUnderlineTabs` for
+   * underline tabs (Coaches hub, Community, Account).
+   */
   tabs?: ReactNode;
   description?: ReactNode;
   /**
