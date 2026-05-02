@@ -43,7 +43,10 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { getCommunityAuthorId } from "@/lib/communityEffectiveAuthorId";
+import {
+  coachPersonaForCommunity,
+  getCommunityAuthorId,
+} from "@/lib/communityEffectiveAuthorId";
 
 type CommentRow = {
   id: string;
@@ -166,12 +169,14 @@ export function PostDetailModal({
     [post.body]
   );
 
+  const coachPersona = coachPersonaForCommunity(
+    pathname,
+    impersonatingCoachId
+  );
   const isAuthor = Boolean(
     post.author?.id &&
       (post.author.id === currentUserId ||
-        Boolean(
-          impersonatingCoachId && post.author.id === impersonatingCoachId
-        ))
+        Boolean(coachPersona && post.author.id === coachPersona))
   );
 
   const loadComments = useCallback(async () => {
@@ -427,7 +432,7 @@ export function PostDetailModal({
     const text = newComment.trim();
     if (!text || submitting) return;
     setSubmitting(true);
-    const authorId = await getCommunityAuthorId(impersonatingCoachId);
+    const authorId = await getCommunityAuthorId(coachPersona);
     if (!authorId) {
       setSubmitting(false);
       return;
@@ -447,7 +452,7 @@ export function PostDetailModal({
       await onPostsChanged();
     }
   }, [
-    impersonatingCoachId,
+    coachPersona,
     newComment,
     onPostsChanged,
     post.id,
@@ -478,7 +483,7 @@ export function PostDetailModal({
       const text = (replyDrafts[parentId] ?? "").trim();
       if (!text || submitting) return;
       setSubmitting(true);
-      const authorId = await getCommunityAuthorId(impersonatingCoachId);
+      const authorId = await getCommunityAuthorId(coachPersona);
       if (!authorId) {
         setSubmitting(false);
         return;
@@ -499,14 +504,7 @@ export function PostDetailModal({
         await onPostsChanged();
       }
     },
-    [
-      impersonatingCoachId,
-      replyDrafts,
-      submitting,
-      post.id,
-      loadComments,
-      onPostsChanged,
-    ]
+    [coachPersona, replyDrafts, submitting, post.id, loadComments, onPostsChanged]
   );
 
   return (

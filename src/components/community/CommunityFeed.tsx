@@ -22,6 +22,7 @@ import {
 } from "@/lib/communityStaffAvatars";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
 import { StickyPageHeader } from "@/components/layout";
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
@@ -359,7 +360,9 @@ export function CommunityFeed() {
         }
 
         try {
-          const uid = impersonatingCoachId ?? session.user.id;
+          const uid =
+            coachPersonaForCommunity(pathname, impersonatingCoachId) ??
+            session.user.id;
           const map = await fetchStaffAvatarMap([uid], session.access_token);
           let url: string | null = map[uid] ?? null;
           if (!url) {
@@ -420,7 +423,7 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId, loadCategories, loadPosts]);
+  }, [impersonatingCoachId, loadCategories, loadPosts, pathname]);
 
   const filteredPosts = useMemo(() => {
     if (filterSlug === "all") return posts;
@@ -460,26 +463,22 @@ export function CommunityFeed() {
         type="button"
         onClick={() => setComposeOpen(true)}
         disabled={Boolean(loadError) || categories.length === 0}
-        className="mb-4 flex w-full flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <div className="flex shrink-0 items-center">
-          {composeAvatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={composeAvatarUrl}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-            />
-          ) : (
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
-              <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
-            </span>
-          )}
-        </div>
-        <div className="min-w-0 w-full text-left text-base leading-snug text-slate-500">
-          Write something…
-        </div>
+        {composeAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={composeAvatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+          />
+        ) : (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
+            <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
+          </span>
+        )}
+        <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
       </button>
 
       <div className="mb-4 flex flex-wrap gap-2">

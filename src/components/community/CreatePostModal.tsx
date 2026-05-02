@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ImagePlus, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
@@ -11,7 +12,10 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { getCommunityAuthorId } from "@/lib/communityEffectiveAuthorId";
+import {
+  coachPersonaForCommunity,
+  getCommunityAuthorId,
+} from "@/lib/communityEffectiveAuthorId";
 
 type Props = {
   categories: CommunityCategory[];
@@ -20,6 +24,7 @@ type Props = {
 };
 
 export function CreatePostModal({ categories, onClose, onCreated }: Props) {
+  const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -45,7 +50,9 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
     if (!canSubmit) return;
     setSaving(true);
     setError(null);
-    const authorId = await getCommunityAuthorId(impersonatingCoachId);
+    const authorId = await getCommunityAuthorId(
+      coachPersonaForCommunity(pathname, impersonatingCoachId)
+    );
     if (!authorId) {
       setError("Not signed in.");
       setSaving(false);
@@ -84,7 +91,16 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
 
     await onCreated();
     setSaving(false);
-  }, [body, canSubmit, categoryId, imageFile, impersonatingCoachId, onCreated, title]);
+  }, [
+    body,
+    canSubmit,
+    categoryId,
+    imageFile,
+    impersonatingCoachId,
+    onCreated,
+    pathname,
+    title,
+  ]);
 
   return (
     <div

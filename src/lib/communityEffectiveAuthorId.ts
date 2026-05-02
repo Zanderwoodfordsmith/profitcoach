@@ -1,15 +1,25 @@
 import { supabaseClient } from "@/lib/supabaseClient";
 
 /**
- * Who should appear as author for community posts/comments: impersonated coach when
- * admin is viewing as coach, otherwise the signed-in user.
+ * Coach impersonation applies only on `/coach/*`. On `/admin/*` we always use the
+ * signed-in account — sessionStorage may still hold a coach id from “view as coach”.
  */
-export async function getCommunityAuthorId(
+export function coachPersonaForCommunity(
+  pathname: string | null,
   impersonatingCoachId: string | null
+): string | null {
+  if (!impersonatingCoachId) return null;
+  if (!pathname?.startsWith("/coach/")) return null;
+  return impersonatingCoachId;
+}
+
+/** Community author id: coach persona when impersonating on coach routes, else auth user. */
+export async function getCommunityAuthorId(
+  coachPersonaId: string | null
 ): Promise<string | null> {
   const {
     data: { user },
   } = await supabaseClient.auth.getUser();
   if (!user) return null;
-  return impersonatingCoachId ?? user.id;
+  return coachPersonaId ?? user.id;
 }

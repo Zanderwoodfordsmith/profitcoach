@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
@@ -18,6 +18,9 @@ export default function AdminAccountPage() {
   const [activeTab, setActiveTab] = useState<TabId>("links");
   const [checkingRole, setCheckingRole] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +53,14 @@ export default function AdminAccountPage() {
         router.replace("/coach");
         return;
       }
+      const { data: prof } = await supabaseClient
+        .from("profiles")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!cancelled) {
+        setAvatarUrl(prof?.avatar_url ?? null);
+      }
       setCheckingRole(false);
     }
     void init();
@@ -57,6 +68,40 @@ export default function AdminAccountPage() {
       cancelled = true;
     };
   }, [router]);
+
+  const handleAvatarChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setAvatarError(null);
+      setUploadingAvatar(true);
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        setAvatarError("Not signed in.");
+        setUploadingAvatar(false);
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/coach/avatar", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      });
+      setUploadingAvatar(false);
+      if (res.ok) {
+        const body = (await res.json()) as { avatar_url?: string };
+        setAvatarUrl(body.avatar_url ?? null);
+      } else {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setAvatarError(body.error ?? "Upload failed.");
+      }
+      e.target.value = "";
+    },
+    []
+  );
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
@@ -164,9 +209,45 @@ export default function AdminAccountPage() {
 
           {activeTab === "settings" && (
             <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="text-sm text-slate-500">
-                Account settings — coming soon.
+              <h2 className="text-base font-semibold text-slate-900">Profile photo</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Used in Community and anywhere your admin profile appears.
               </p>
+              <div className="mt-4 flex items-center gap-4">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-24 w-24 rounded-lg object-cover ring-1 ring-slate-200"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 text-sm text-slate-400">
+                    No photo
+                  </div>
+                )}
+                <div>
+                  <label className="block">
+                    <span className="sr-only">Upload photo</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleAvatarChange}
+                      disabled={uploadingAvatar}
+                      className="block w-full text-sm text-slate-600 file:mr-4 file:rounded-md file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white file:hover:bg-sky-700"
+                    />
+                  </label>
+                  <p className="mt-1 text-xs text-slate-500">
+                    JPEG, PNG or WebP. Max 2MB.
+                  </p>
+                  {uploadingAvatar ? (
+                    <p className="mt-1 text-xs text-slate-600">Uploading…</p>
+                  ) : null}
+                  {avatarError ? (
+                    <p className="mt-1 text-xs text-rose-600">{avatarError}</p>
+                  ) : null}
+                </div>
+              </div>
             </div>
           )}
         </>
