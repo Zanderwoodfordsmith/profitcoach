@@ -7,6 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
+import {
+  Flag,
+  Link2,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import {
@@ -14,6 +22,7 @@ import {
   extractMentionUserIds,
 } from "@/lib/communityMentions";
 import type {
+  CommunityCategory,
   CommunityPostRow,
   ProfileRow,
 } from "@/components/community/CommunityFeed";
@@ -25,6 +34,11 @@ import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
+import { postBodyNeedsTruncation } from "@/lib/communityPostBodyTruncation";
+import {
+  communityAccessHint,
+  supabaseErrorMessage,
+} from "@/lib/supabaseErrorMessage";
 
 type CommentRow = {
   id: string;
@@ -38,6 +52,7 @@ type CommentRow = {
 
 type Props = {
   post: CommunityPostRow;
+  categories: CommunityCategory[];
   onClose: () => void;
   onPostsChanged: () => void | Promise<void>;
 };
@@ -50,9 +65,7 @@ function formatCommentDate(iso: string): string {
   });
 }
 
-async function fetchProfilesByIds(
-  ids: string[]
-): Promise<ProfileRow[]> {
+async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabaseClient
     .from("profiles")
@@ -64,9 +77,11 @@ async function fetchProfilesByIds(
 
 export function PostDetailModal({
   post,
+  categories,
   onClose,
   onPostsChanged,
 }: Props) {
+  const pathname = usePathname();
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [nameById, setNameById] = useState<Record<string, string>>({});
@@ -82,9 +97,56 @@ export function PostDetailModal({
   const postRef = useRef(post);
   postRef.current = post;
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const [bodyExpanded, setBodyExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title);
+  const [editBody, setEditBody] = useState(post.body);
+  const [editCategoryId, setEditCategoryId] = useState(post.category_id);
+  const [saveEditBusy, setSaveEditBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   useEffect(() => {
     setPostAuthorDisplay(post.author ?? null);
-  }, [post.id, post.author]);
+    setEditTitle(post.title);
+    setEditBody(post.body);
+    setEditCategoryId(post.category_id);
+    setEditing(false);
+    setBodyExpanded(false);
+  }, [post.id, post.author, post.title, post.body, post.category_id]);
+
+  useEffect(() => {
+    void supabaseClient.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
+
+  const shareUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}${pathname}?post=${post.id}`;
+  }, [pathname, post.id]);
+
+  const needsBodyTruncation = useMemo(
+    () => postBodyNeedsTruncation(post.body),
+    [post.body]
+  );
+
+  const isAuthor =
+    Boolean(currentUserId && post.author?.id === currentUserId);
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -196,11 +258,17 @@ export function PostDetailModal({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (menuOpen) {
+        setMenuOpen(false);
+        e.stopPropagation();
+        return;
+      }
+      onClose();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [menuOpen, onClose]);
 
   const headerAuthor = postAuthorDisplay ?? post.author;
   const authorName = headerAuthor
@@ -223,6 +291,85 @@ export function PostDetailModal({
     }
     return m;
   }, [comments]);
+
+  const copyPostLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setMenuOpen(false);
+    } catch {
+      window.prompt("Copy link:", shareUrl);
+      setMenuOpen(false);
+    }
+  }, [shareUrl]);
+
+  const reportPost = useCallback(() => {
+    const body = encodeURIComponent(
+      `Report about a community post:\nTitle: ${post.title}\nPost ID: ${post.id}\nLink: ${shareUrl}\n\nDetails:\n`
+    );
+    window.location.href = `mailto:?subject=${encodeURIComponent("[Community] Report")}&body=${body}`;
+    setMenuOpen(false);
+  }, [post.id, post.title, shareUrl]);
+
+  const handleDeletePost = useCallback(async () => {
+    if (
+      !confirm(
+        "Delete this post? Comments will be removed too. This cannot be undone."
+      )
+    ) {
+      setMenuOpen(false);
+      return;
+    }
+    setActionError(null);
+    setDeleteBusy(true);
+    const { error } = await supabaseClient
+      .from("community_posts")
+      .delete()
+      .eq("id", post.id);
+    setDeleteBusy(false);
+    setMenuOpen(false);
+    if (error) {
+      const msg = supabaseErrorMessage(error);
+      const hint = communityAccessHint(msg);
+      setActionError(hint ? `${msg}\n\n${hint}` : msg);
+      return;
+    }
+    await onPostsChanged();
+    onClose();
+  }, [onClose, onPostsChanged, post.id]);
+
+  const saveEdit = useCallback(async () => {
+    const title = editTitle.trim();
+    const body = editBody.trim();
+    if (!title || !body || saveEditBusy) return;
+    setActionError(null);
+    setSaveEditBusy(true);
+    const { error } = await supabaseClient
+      .from("community_posts")
+      .update({
+        title,
+        body,
+        category_id: editCategoryId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", post.id);
+    setSaveEditBusy(false);
+    if (error) {
+      const msg = supabaseErrorMessage(error);
+      const hint = communityAccessHint(msg);
+      setActionError(hint ? `${msg}\n\n${hint}` : msg);
+      return;
+    }
+    setEditing(false);
+    setMenuOpen(false);
+    await onPostsChanged();
+  }, [
+    editBody,
+    editCategoryId,
+    editTitle,
+    onPostsChanged,
+    post.id,
+    saveEditBusy,
+  ]);
 
   const submitTopComment = useCallback(async () => {
     const text = newComment.trim();
@@ -263,7 +410,10 @@ export function PostDetailModal({
   }, [likeBusy, onPostsChanged, post.id, post.liked_by_me]);
 
   const scrollToComments = useCallback(() => {
-    commentsAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    commentsAnchorRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, []);
 
   const submitReply = useCallback(
@@ -294,13 +444,7 @@ export function PostDetailModal({
         await onPostsChanged();
       }
     },
-    [
-      replyDrafts,
-      submitting,
-      post.id,
-      loadComments,
-      onPostsChanged,
-    ]
+    [replyDrafts, submitting, post.id, loadComments, onPostsChanged]
   );
 
   return (
@@ -330,40 +474,231 @@ export function PostDetailModal({
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-slate-900">{authorName}</div>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {formatCommentDate(post.created_at)}
-                {post.category ? (
-                  <>
-                    <span className="mx-1.5 select-none text-slate-400">·</span>
-                    <span>{post.category.label}</span>
-                  </>
-                ) : null}
-              </p>
-              <h2
-                id="post-detail-title"
-                className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-slate-900"
-              >
-                {post.title}
-              </h2>
-              <div className="mt-3 text-[15px] text-slate-800">
-                <MentionBody body={post.body} nameById={nameById} />
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-semibold text-slate-900">{authorName}</div>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    {formatCommentDate(post.created_at)}
+                    {post.category ? (
+                      <>
+                        <span className="mx-1.5 select-none text-slate-400">
+                          ·
+                        </span>
+                        <span>{post.category.label}</span>
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="relative shrink-0" ref={menuRef}>
+                  <button
+                    type="button"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                    aria-expanded={menuOpen}
+                    aria-haspopup="menu"
+                    aria-label="Post actions"
+                    onClick={() => setMenuOpen((o) => !o)}
+                  >
+                    <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
+                  </button>
+                  {menuOpen ? (
+                    <div
+                      role="menu"
+                      className="absolute right-0 z-20 mt-1 min-w-[11rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                    >
+                      {isAuthor ? (
+                        <>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                            onClick={() => {
+                              setActionError(null);
+                              setEditing(true);
+                              setMenuOpen(false);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 shrink-0 opacity-70" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                            onClick={() => void copyPostLink()}
+                          >
+                            <Link2 className="h-4 w-4 shrink-0 opacity-70" />
+                            Copy link
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                            onClick={reportPost}
+                          >
+                            <Flag className="h-4 w-4 shrink-0 opacity-70" />
+                            Report to admins
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={deleteBusy}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                            onClick={() => void handleDeletePost()}
+                          >
+                            <Trash2 className="h-4 w-4 shrink-0 opacity-80" />
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                            onClick={() => void copyPostLink()}
+                          >
+                            <Link2 className="h-4 w-4 shrink-0 opacity-70" />
+                            Copy link
+                          </button>
+                          <button
+                            type="button"
+                            role="menuitem"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                            onClick={reportPost}
+                          >
+                            <Flag className="h-4 w-4 shrink-0 opacity-70" />
+                            Report to admins
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
               </div>
+
+              {editing ? (
+                <div className="mt-3 space-y-3">
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xl font-semibold text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    aria-label="Post title"
+                  />
+                  <MentionTextarea
+                    value={editBody}
+                    onChange={setEditBody}
+                    placeholder="Body…"
+                    rows={8}
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-[15px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  />
+                  {categories.length > 0 ? (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-600">
+                        Category
+                      </label>
+                      <select
+                        value={editCategoryId}
+                        onChange={(e) => setEditCategoryId(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={
+                        saveEditBusy ||
+                        !editTitle.trim() ||
+                        !editBody.trim()
+                      }
+                      onClick={() => void saveEdit()}
+                      className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                    >
+                      {saveEditBusy ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionError(null);
+                        setEditing(false);
+                        setEditTitle(post.title);
+                        setEditBody(post.body);
+                        setEditCategoryId(post.category_id);
+                      }}
+                      className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {actionError ? (
+                    <p className="whitespace-pre-wrap text-sm text-rose-600">
+                      {actionError}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <h2
+                    id="post-detail-title"
+                    className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-slate-900"
+                  >
+                    {post.title}
+                  </h2>
+                  <div className="mt-3 text-[15px] text-slate-800">
+                    <div
+                      className={
+                        !bodyExpanded && needsBodyTruncation
+                          ? "line-clamp-9 overflow-hidden"
+                          : undefined
+                      }
+                    >
+                      <MentionBody body={post.body} nameById={nameById} />
+                    </div>
+                    {needsBodyTruncation ? (
+                      <button
+                        type="button"
+                        className="mt-1 text-sm font-medium text-sky-700 hover:underline"
+                        onClick={() => setBodyExpanded((e) => !e)}
+                      >
+                        {bodyExpanded ? "See less" : "See more"}
+                      </button>
+                    ) : null}
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          <div className="mt-5">
-            <PostEngagementBar
-              detail
-              likeCount={post.like_count}
-              commentCount={post.comment_count}
-              commentPreviewAuthors={post.comment_preview_authors}
-              likedByMe={post.liked_by_me}
-              disabled={likeBusy}
-              onToggleLike={handleToggleLike}
-              onCommentsClick={scrollToComments}
-            />
-          </div>
+          {actionError && !editing ? (
+            <p
+              className="mt-3 whitespace-pre-wrap text-sm text-rose-700"
+              role="alert"
+            >
+              {actionError}
+            </p>
+          ) : null}
+
+          {!editing ? (
+            <div className="mt-5">
+              <PostEngagementBar
+                detail
+                likeCount={post.like_count}
+                commentCount={post.comment_count}
+                commentPreviewAuthors={post.comment_preview_authors}
+                likedByMe={post.liked_by_me}
+                disabled={likeBusy}
+                onToggleLike={handleToggleLike}
+                onCommentsClick={scrollToComments}
+              />
+            </div>
+          ) : null}
 
           <div
             ref={commentsAnchorRef}

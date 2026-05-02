@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
 import { PostDetailModal } from "@/components/community/PostDetailModal";
@@ -49,6 +50,10 @@ export type CommunityPostRow = {
 };
 
 export function CommunityFeed() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
   const [posts, setPosts] = useState<CommunityPostRow[]>([]);
   const [filterSlug, setFilterSlug] = useState<string | "all">("all");
@@ -56,6 +61,31 @@ export function CommunityFeed() {
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+
+  const closeDetail = useCallback(() => {
+    setSelectedPostId(null);
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.delete("post");
+    const q = sp.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  const openDetail = useCallback(
+    (id: string) => {
+      setSelectedPostId(id);
+      const sp = new URLSearchParams(searchParams.toString());
+      sp.set("post", id);
+      router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  useEffect(() => {
+    const q = searchParams.get("post");
+    if (q && /^[0-9a-f-]{36}$/i.test(q)) {
+      setSelectedPostId(q);
+    }
+  }, [searchParams]);
 
   const loadCategories = useCallback(async () => {
     const { data, error } = await supabaseClient
@@ -399,7 +429,7 @@ export function CommunityFeed() {
             <li key={post.id}>
               <PostCard
                 post={post}
-                onOpen={() => setSelectedPostId(post.id)}
+                onOpen={() => openDetail(post.id)}
                 onPostsChanged={loadPosts}
               />
             </li>
@@ -427,7 +457,8 @@ export function CommunityFeed() {
       {selectedPost ? (
         <PostDetailModal
           post={selectedPost}
-          onClose={() => setSelectedPostId(null)}
+          categories={categories}
+          onClose={closeDetail}
           onPostsChanged={loadPosts}
         />
       ) : null}
