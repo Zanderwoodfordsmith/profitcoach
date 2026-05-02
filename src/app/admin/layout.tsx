@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { Filter, LogOut, MessageSquare } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -33,13 +33,33 @@ function IconCommunity({ className }: { className?: string }) {
   );
 }
 
+function IconFlower({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v3m0 12v3M5.64 5.64l2.12 2.12m8.48 8.48l2.12 2.12M3 12h3m12 0h3M5.64 18.36l2.12-2.12m8.48-8.48l2.12-2.12" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function IconFilter({ className }: { className?: string }) {
+  return <Filter className={className} />;
+}
+
+function IconMessageSquare({ className }: { className?: string }) {
+  return <MessageSquare className={className} />;
+}
+
 const navItems: NavItem[] = [
+  { href: "/admin/signature", label: "Signature", icon: IconFlower },
   { href: "/admin/community", label: "Community", icon: IconCommunity },
-  { href: "/admin/playbooks", label: "Playbooks", icon: IconBook },
   { href: "/admin/academy", label: "Classroom", icon: IconAcademy },
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/clients", label: "Clients", icon: IconBriefcase },
   { href: "/admin/prospects", label: "Prospects", icon: IconUserPlus },
+  { href: "/admin/playbooks", label: "Playbooks", icon: IconBook },
+  { href: "/admin/funnel-analyzer", label: "Funnel Analyzer", icon: IconFilter },
+  { href: "/admin/message-generator", label: "Messages", icon: IconMessageSquare },
   { href: "/admin/settings", label: "Settings", icon: IconCog },
 ];
 

@@ -120,6 +120,42 @@ create policy "Staff read staff profiles for community"
     )
   );
 
+-- -----------------------------------------------------------------------------
+-- Fix profiles admin policies that SELECT profiles (infinite recursion).
+-- "Profiles: admin can view all" uses EXISTS (SELECT FROM profiles ...) — remove it.
+-- "Admins can read all profiles" / is_admin() often query profiles — use snapshot.
+-- -----------------------------------------------------------------------------
+drop policy if exists "Profiles: admin can view all" on public.profiles;
+drop policy if exists "Admins can read all profiles" on public.profiles;
+
+create policy "Admins can read all profiles"
+  on public.profiles for select
+  to authenticated
+  using (
+    exists (
+      select 1
+      from public.community_staff_snapshot s
+      where s.user_id = auth.uid()
+        and s.staff_role = 'admin'
+    )
+  );
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.community_staff_snapshot s
+    where s.user_id = auth.uid()
+      and s.staff_role = 'admin'
+  );
+$$;
+
+grant execute on function public.is_admin() to authenticated;
+
 COMMIT;
 
 -- -----------------------------------------------------------------------------

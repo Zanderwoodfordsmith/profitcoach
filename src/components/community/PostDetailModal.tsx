@@ -1,7 +1,12 @@
-/* eslint-disable react-hooks/set-state-in-effect -- comment thread and mention map load from Supabase in effects */
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import {
@@ -14,6 +19,8 @@ import type {
 } from "@/components/community/CommunityFeed";
 import { MentionBody } from "@/components/community/MentionBody";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
+import { PostEngagementBar } from "@/components/community/PostEngagementBar";
+import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 
 type CommentRow = {
   id: string;
@@ -62,6 +69,8 @@ export function PostDetailModal({
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpenFor, setReplyOpenFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
+  const commentsAnchorRef = useRef<HTMLDivElement>(null);
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -192,6 +201,21 @@ export function PostDetailModal({
     }
   }, [newComment, onPostsChanged, post.id, submitting, loadComments]);
 
+  const handleToggleLike = useCallback(async () => {
+    if (likeBusy) return;
+    setLikeBusy(true);
+    try {
+      await toggleCommunityPostLike(post.id, post.liked_by_me);
+      await onPostsChanged();
+    } finally {
+      setLikeBusy(false);
+    }
+  }, [likeBusy, onPostsChanged, post.id, post.liked_by_me]);
+
+  const scrollToComments = useCallback(() => {
+    commentsAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
   const submitReply = useCallback(
     async (parentId: string) => {
       const text = (replyDrafts[parentId] ?? "").trim();
@@ -256,22 +280,19 @@ export function PostDetailModal({
               </span>
             )}
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-semibold text-slate-900">
-                  {authorName}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {formatCommentDate(post.created_at)}
-                </span>
+              <div className="font-semibold text-slate-900">{authorName}</div>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {formatCommentDate(post.created_at)}
                 {post.category ? (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                    {post.category.label}
-                  </span>
+                  <>
+                    <span className="mx-1.5 select-none text-slate-400">·</span>
+                    <span>{post.category.label}</span>
+                  </>
                 ) : null}
-              </div>
+              </p>
               <h2
                 id="post-detail-title"
-                className="mt-3 text-xl font-semibold text-slate-900"
+                className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-slate-900"
               >
                 {post.title}
               </h2>
@@ -281,7 +302,24 @@ export function PostDetailModal({
             </div>
           </div>
 
-          <div className="mt-8 border-t border-slate-200 pt-6">
+          <div className="mt-5">
+            <PostEngagementBar
+              detail
+              likeCount={post.like_count}
+              commentCount={post.comment_count}
+              commentPreviewAuthors={post.comment_preview_authors}
+              likedByMe={post.liked_by_me}
+              disabled={likeBusy}
+              onToggleLike={handleToggleLike}
+              onCommentsClick={scrollToComments}
+            />
+          </div>
+
+          <div
+            ref={commentsAnchorRef}
+            id="community-post-comments"
+            className="mt-8 border-t border-slate-200 pt-6"
+          >
             <h3 className="text-sm font-semibold text-slate-900">Comments</h3>
 
             {commentsLoading ? (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
 import { SignaturePetalDiagram } from "@/components/signature/SignaturePetalDiagram";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -137,6 +137,8 @@ function HintPopover({
 
 export default function CoachSignaturePage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const clientsHref = pathname?.startsWith("/admin") ? "/admin/clients" : "/coach/clients";
   const { impersonatingCoachId } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -367,9 +369,9 @@ export default function CoachSignaturePage() {
       </div>
 
       <Link
-        href="/coach/clients"
+        href={clientsHref}
         className="fixed bottom-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-sky-600 text-white shadow-lg ring-1 ring-sky-700/20 transition hover:bg-sky-500"
-        aria-label="Open BOSS coach dashboard"
+        aria-label="Open clients"
       >
         <svg
           className="h-5 w-5"

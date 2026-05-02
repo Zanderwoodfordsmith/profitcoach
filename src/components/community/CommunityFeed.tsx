@@ -9,6 +9,10 @@ import {
   communityAccessHint,
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
+import {
+  buildCommentPreviewAvatars,
+  type CommentAuthorRow,
+} from "@/lib/communityCommentPreviewAvatars";
 
 export type ProfileRow = {
   id: string;
@@ -33,6 +37,10 @@ export type CommunityPostRow = {
   category_id: string;
   category: CommunityCategory | null;
   author: ProfileRow | null;
+  like_count: number;
+  comment_count: number;
+  liked_by_me: boolean;
+  comment_preview_authors: ProfileRow[];
 };
 
 export function CommunityFeed() {
@@ -74,20 +82,124 @@ export function CommunityFeed() {
 
     if (error) throw error;
     const rows = (data ?? []) as Array<
-      Omit<CommunityPostRow, "category" | "author"> & {
+      Omit<
+        CommunityPostRow,
+        | "category"
+        | "author"
+        | "like_count"
+        | "comment_count"
+        | "liked_by_me"
+        | "comment_preview_authors"
+      > & {
         category: CommunityCategory | CommunityCategory[] | null;
         author: ProfileRow | ProfileRow[] | null;
       }
     >;
+    const normalized = rows.map((row) => ({
+      ...row,
+      category: Array.isArray(row.category)
+        ? row.category[0] ?? null
+        : row.category ?? null,
+      author: Array.isArray(row.author)
+        ? row.author[0] ?? null
+        : row.author ?? null,
+    }));
+
+    const postIds = normalized.map((p) => p.id);
+    const emptyEngagement = {
+      like_count: 0,
+      comment_count: 0,
+      liked_by_me: false,
+      comment_preview_authors: [] as ProfileRow[],
+    };
+
+    if (postIds.length === 0) {
+      setPosts(
+        normalized.map((row) => ({
+          ...row,
+          ...emptyEngagement,
+        }))
+      );
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+    const uid = user?.id;
+
+    const [likesRes, commentsRes] = await Promise.all([
+      supabaseClient
+        .from("community_post_likes")
+        .select("post_id, user_id")
+        .in("post_id", postIds),
+      supabaseClient
+        .from("community_post_comments")
+        .select(
+          `
+          post_id,
+          author_id,
+          created_at,
+          author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+        `
+        )
+        .in("post_id", postIds)
+        .order("created_at", { ascending: true }),
+    ]);
+
+    if (likesRes.error) throw likesRes.error;
+    if (commentsRes.error) throw commentsRes.error;
+
+    let myLiked = new Set<string>();
+    if (uid) {
+      const myRes = await supabaseClient
+        .from("community_post_likes")
+        .select("post_id")
+        .eq("user_id", uid)
+        .in("post_id", postIds);
+      if (myRes.error) throw myRes.error;
+      myLiked = new Set((myRes.data ?? []).map((r: { post_id: string }) => r.post_id));
+    }
+
+    const likeRows = (likesRes.data ?? []) as {
+      post_id: string;
+      user_id: string;
+    }[];
+    const likeCountByPost = new Map<string, number>();
+    for (const r of likeRows) {
+      likeCountByPost.set(r.post_id, (likeCountByPost.get(r.post_id) ?? 0) + 1);
+    }
+
+    const rawComments = (commentsRes.data ?? []) as Array<
+      Omit<CommentAuthorRow, "author"> & {
+        author: ProfileRow | ProfileRow[] | null;
+      }
+    >;
+    const commentsNormalized: CommentAuthorRow[] = rawComments.map((row) => ({
+      post_id: row.post_id,
+      author_id: row.author_id,
+      created_at: row.created_at,
+      author: Array.isArray(row.author)
+        ? row.author[0] ?? null
+        : row.author ?? null,
+    }));
+
+    const commentsByPost = new Map<string, CommentAuthorRow[]>();
+    for (const c of commentsNormalized) {
+      const arr = commentsByPost.get(c.post_id) ?? [];
+      arr.push(c);
+      commentsByPost.set(c.post_id, arr);
+    }
+
     setPosts(
-      rows.map((row) => ({
+      normalized.map((row) => ({
         ...row,
-        category: Array.isArray(row.category)
-          ? row.category[0] ?? null
-          : row.category ?? null,
-        author: Array.isArray(row.author)
-          ? row.author[0] ?? null
-          : row.author ?? null,
+        like_count: likeCountByPost.get(row.id) ?? 0,
+        comment_count: (commentsByPost.get(row.id) ?? []).length,
+        liked_by_me: myLiked.has(row.id),
+        comment_preview_authors: buildCommentPreviewAvatars(
+          commentsByPost.get(row.id) ?? []
+        ),
       }))
     );
   }, []);
@@ -239,6 +351,7 @@ export function CommunityFeed() {
               <PostCard
                 post={post}
                 onOpen={() => setSelectedPostId(post.id)}
+                onPostsChanged={loadPosts}
               />
             </li>
           ))}

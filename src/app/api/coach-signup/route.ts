@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
     }
 
     const userId = userData.user.id;
+    const { first_name, last_name } = splitFullName(fullName);
 
     // Create profile with coach role
     const { error: profileError } = await supabaseAdmin
@@ -59,6 +61,8 @@ export async function POST(request: Request) {
         id: userId,
         role: "coach",
         full_name: fullName,
+        first_name,
+        last_name,
         coach_business_name: businessName,
       });
 
