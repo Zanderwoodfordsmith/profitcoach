@@ -5,7 +5,7 @@
 create or replace function public.is_staff_community()
 returns boolean
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public
 as $$
@@ -23,7 +23,7 @@ $$;
 create or replace function public.is_community_admin()
 returns boolean
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public
 as $$
