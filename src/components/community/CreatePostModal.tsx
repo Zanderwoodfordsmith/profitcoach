@@ -124,7 +124,7 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
             onChange={setBody}
             placeholder="Write something… Use @ to mention someone."
             rows={6}
-            className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-[15px] text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
           />
           <div className="flex flex-wrap items-center gap-3">
             <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50">

@@ -20,6 +20,7 @@ import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
+import { StickyPageHeader } from "@/components/layout";
 
 export type ProfileRow = {
   id: string;
@@ -307,7 +308,16 @@ export function CommunityFeed() {
         try {
           const uid = session.user.id;
           const map = await fetchStaffAvatarMap([uid], session.access_token);
-          if (!cancelled) setComposeAvatarUrl(map[uid] ?? null);
+          let url: string | null = map[uid] ?? null;
+          if (!url) {
+            const { data: own } = await supabaseClient
+              .from("profiles")
+              .select("avatar_url")
+              .eq("id", uid)
+              .maybeSingle();
+            url = own?.avatar_url ?? null;
+          }
+          if (!cancelled) setComposeAvatarUrl(url);
         } catch {
           if (!cancelled) setComposeAvatarUrl(null);
         }
@@ -370,14 +380,14 @@ export function CommunityFeed() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl pt-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900">Community</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Posts and updates for coaches and admins.
-        </p>
-      </div>
+    <div className="flex flex-col gap-6">
+      <StickyPageHeader
+        title="Community"
+        descriptionPlacement="below"
+        description="Posts and updates for coaches and admins."
+      />
 
+      <div className="mx-auto w-full max-w-3xl">
       {loadError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <p className="font-semibold text-rose-900">Community data could not be loaded</p>
@@ -411,7 +421,7 @@ export function CommunityFeed() {
             <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
           </span>
         )}
-        <span className="text-[15px] text-slate-500">Write something…</span>
+        <span className="text-base text-slate-500">Write something…</span>
       </button>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -483,6 +493,7 @@ export function CommunityFeed() {
           onPostsChanged={loadPosts}
         />
       ) : null}
+      </div>
     </div>
   );
 }
