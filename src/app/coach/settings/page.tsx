@@ -16,6 +16,8 @@ type ProfileData = {
   bio: string | null;
   location: string | null;
   coach_slug: string | null;
+  directory_listed: boolean;
+  directory_level: string | null;
 };
 
 export default function CoachSettingsPage() {
@@ -36,6 +38,10 @@ export default function CoachSettingsPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [directoryListed, setDirectoryListed] = useState(false);
+  const [directoryLevel, setDirectoryLevel] = useState<string | null>(null);
+  const [directoryToggleBusy, setDirectoryToggleBusy] = useState(false);
+  const [directoryError, setDirectoryError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
     const {
@@ -84,6 +90,9 @@ export default function CoachSettingsPage() {
     }
     const data = (await res.json()) as ProfileData;
     setProfile(data);
+    setDirectoryListed(!!data.directory_listed);
+    setDirectoryLevel(data.directory_level ?? null);
+    setDirectoryError(null);
     setFirstName(data.first_name ?? "");
     setLastName(data.last_name ?? "");
     setBusinessName(data.coach_business_name ?? "");
@@ -200,6 +209,50 @@ export default function CoachSettingsPage() {
     }
   }
 
+  async function handleDirectoryToggle(next: boolean) {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) return;
+
+    setDirectoryError(null);
+    setDirectoryToggleBusy(true);
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    };
+    if (impersonatingCoachId) {
+      headers["x-impersonate-coach-id"] = impersonatingCoachId;
+    }
+
+    const prev = directoryListed;
+    setDirectoryListed(next);
+    const res = await fetch("/api/coach/profile", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ directory_listed: next }),
+    });
+    setDirectoryToggleBusy(false);
+    if (!res.ok) {
+      setDirectoryListed(prev);
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setDirectoryError(body.error ?? "Could not update directory preference.");
+      return;
+    }
+    setProfile((p) =>
+      p ? { ...p, directory_listed: next } : null
+    );
+  }
+
+  const levelLabel =
+    directoryLevel === "certified"
+      ? "Certified"
+      : directoryLevel === "professional"
+        ? "Professional"
+        : directoryLevel === "elite"
+          ? "Elite"
+          : null;
+
   if (loading) {
     return <p className="text-sm text-slate-600">Loading…</p>;
   }
@@ -214,7 +267,7 @@ export default function CoachSettingsPage() {
     <div className="flex flex-col gap-6">
       <StickyPageHeader
         title="Settings"
-        description="Profile, photo, and prospect link."
+        description="Profile, photo, prospect link, and directory visibility."
       />
 
       <form
@@ -355,6 +408,47 @@ export default function CoachSettingsPage() {
               )}
             </div>
           </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">
+            Public directory
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            When enabled, your profile can appear in the public coach directory.
+            Your certification level is assigned by an administrator.
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <label className="inline-flex cursor-pointer items-center gap-3">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                checked={directoryListed}
+                disabled={directoryToggleBusy}
+                onChange={(e) => void handleDirectoryToggle(e.target.checked)}
+              />
+              <span className="text-sm font-medium text-slate-800">
+                Show my profile in the public directory
+              </span>
+            </label>
+          </div>
+          <p className="mt-3 text-sm text-slate-600">
+            Certification level:{" "}
+            <span className="font-medium text-slate-900">
+              {levelLabel ?? "Not set yet"}
+            </span>
+          </p>
+          {directoryToggleBusy ? (
+            <p className="mt-2 text-xs text-slate-500">Updating…</p>
+          ) : null}
+          {directoryError ? (
+            <p className="mt-2 text-sm text-rose-600" role="alert">
+              {directoryError}
+            </p>
+          ) : null}
+          <p className="mt-3 text-xs text-slate-500">
+            Public listing still requires your profile to meet directory guidelines.
+          </p>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

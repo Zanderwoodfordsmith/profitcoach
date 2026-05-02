@@ -68,8 +68,33 @@ export async function GET(request: Request) {
   try {
     const { data, error } = await supabaseAdmin
       .from("coaches")
-      .select("id, slug, profiles!inner(full_name, coach_business_name)")
+      .select(
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name)"
+      )
       .order("slug", { ascending: true });
+
+    if (error?.code === "42703") {
+      const fallback = await supabaseAdmin
+        .from("coaches")
+        .select("id, slug, profiles!inner(full_name, coach_business_name)")
+        .order("slug", { ascending: true });
+      if (fallback.error) {
+        return NextResponse.json(
+          { error: "Unable to load coaches." },
+          { status: 500 }
+        );
+      }
+      const coaches =
+        fallback.data?.map((row: any) => ({
+          id: row.id as string,
+          slug: row.slug as string,
+          full_name: row.profiles?.full_name ?? null,
+          coach_business_name: row.profiles?.coach_business_name ?? null,
+          directory_listed: false,
+          directory_level: null as string | null,
+        })) ?? [];
+      return NextResponse.json({ coaches });
+    }
 
     if (error) {
       return NextResponse.json(
@@ -84,6 +109,8 @@ export async function GET(request: Request) {
         slug: row.slug as string,
         full_name: row.profiles?.full_name ?? null,
         coach_business_name: row.profiles?.coach_business_name ?? null,
+        directory_listed: !!row.directory_listed,
+        directory_level: (row.directory_level as string | null) ?? null,
       })) ?? [];
 
     return NextResponse.json({ coaches });

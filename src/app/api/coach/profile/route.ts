@@ -86,11 +86,50 @@ export async function GET(request: Request) {
       );
     }
 
-    const { data: coachRow } = await supabaseAdmin
+    const { data: coachRow, error: coachErr } = await supabaseAdmin
       .from("coaches")
-      .select("slug")
+      .select("slug, directory_listed, directory_level")
       .eq("id", coachId)
       .maybeSingle();
+
+    if (coachErr?.code === "42703") {
+      const { data: fallbackCoach } = await supabaseAdmin
+        .from("coaches")
+        .select("slug")
+        .eq("id", coachId)
+        .maybeSingle();
+      const slug = fallbackCoach?.slug ?? null;
+      const prof = profileRow as {
+        first_name?: string | null;
+        last_name?: string | null;
+        full_name?: string | null;
+        coach_business_name?: string | null;
+        avatar_url?: string | null;
+        linkedin_url?: string | null;
+        bio?: string | null;
+        location?: string | null;
+      } | null;
+
+      return NextResponse.json({
+        first_name: prof?.first_name ?? null,
+        last_name: prof?.last_name ?? null,
+        full_name: prof?.full_name ?? null,
+        coach_business_name: prof?.coach_business_name ?? null,
+        avatar_url: prof?.avatar_url ?? null,
+        linkedin_url: prof?.linkedin_url ?? null,
+        bio: prof?.bio ?? null,
+        location: prof?.location ?? null,
+        coach_slug: slug,
+        directory_listed: false,
+        directory_level: null,
+      });
+    }
+    if (coachErr) {
+      return NextResponse.json(
+        { error: "Could not load profile" },
+        { status: 500 }
+      );
+    }
 
     const slug = coachRow?.slug ?? null;
     const prof = profileRow as {
@@ -114,6 +153,8 @@ export async function GET(request: Request) {
       bio: prof?.bio ?? null,
       location: prof?.location ?? null,
       coach_slug: slug,
+      directory_listed: coachRow?.directory_listed ?? false,
+      directory_level: coachRow?.directory_level ?? null,
     });
   } catch {
     return NextResponse.json(
@@ -131,6 +172,9 @@ type PatchBody = {
   bio?: string | null;
   location?: string | null;
   avatar_url?: string | null;
+  /** Coach may toggle directory visibility; level is admin-only. */
+  directory_listed?: boolean;
+  directory_level?: unknown;
 };
 
 export async function PATCH(request: Request) {
@@ -151,6 +195,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  if (body.directory_level !== undefined) {
+    return NextResponse.json(
+      { error: "Certification level can only be changed by an admin." },
+      { status: 403 }
+    );
+  }
+
   const updates: Record<string, unknown> = {};
 
   if (body.first_name !== undefined) updates.first_name = body.first_name?.trim() ?? null;
@@ -163,11 +214,35 @@ export async function PATCH(request: Request) {
   if (body.location !== undefined) updates.location = body.location?.trim() ?? null;
   if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url || null;
 
+  const coachUpdates: Record<string, unknown> = {};
+  if (body.directory_listed !== undefined) {
+    coachUpdates.directory_listed = !!body.directory_listed;
+  }
+
   if (body.first_name !== undefined || body.last_name !== undefined) {
     const first = (body.first_name ?? "").trim();
     const last = (body.last_name ?? "").trim();
     updates.full_name =
       [first, last].filter(Boolean).join(" ").trim() || null;
+  }
+
+  if (Object.keys(updates).length === 0 && Object.keys(coachUpdates).length === 0) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (Object.keys(coachUpdates).length > 0) {
+    const coachRes = await supabaseAdmin
+      .from("coaches")
+      .update(coachUpdates)
+      .eq("id", coachId);
+    if (coachRes.error) {
+      const msg =
+        coachRes.error.code === "42703"
+          ? "Directory settings require a database migration. Ask your team to deploy latest migrations."
+          : (coachRes.error as { message?: string }).message ??
+            "Could not update directory settings";
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
   }
 
   if (Object.keys(updates).length === 0) {

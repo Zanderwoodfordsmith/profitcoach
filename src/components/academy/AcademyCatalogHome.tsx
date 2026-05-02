@@ -1,4 +1,5 @@
 import { AcademyCourseCard } from "@/components/academy/AcademyCourseCard";
+import { StickyPageHeader } from "@/components/layout";
 import { lessonCount, listCoursesFlat, loadAcademyCatalog } from "@/lib/academy/catalog";
 
 type Props = {
@@ -12,19 +13,19 @@ export async function AcademyCatalogHome({ basePath, showSourceEditHint }: Props
   const rows = listCoursesFlat(catalog);
 
   return (
-    <div className="flex flex-col gap-6 pt-6">
-      <header className="border-b border-slate-200 pb-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-          Internal
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Classroom</h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Training for coaches. Catalog:{" "}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
-            content/academy/catalog.json
-          </code>
-        </p>
-      </header>
+    <div className="flex flex-col gap-6">
+      <StickyPageHeader
+        eyebrow="Internal"
+        title="Classroom"
+        description={
+          <>
+            Training for coaches. Catalog:{" "}
+            <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
+              content/academy/catalog.json
+            </code>
+          </>
+        }
+      />
 
       {showSourceEditHint ? (
         <div

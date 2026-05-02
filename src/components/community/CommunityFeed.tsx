@@ -436,15 +436,13 @@ export function CommunityFeed() {
   );
 
   return (
-    <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6">
+    <>
       <StickyPageHeader
-        bleedInset={false}
-        className="self-start w-full min-w-0"
         title="Community"
-        descriptionPlacement="below"
         description="Posts and updates for coaches and admins."
       />
 
+      <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6">
       {loadError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <p className="font-semibold text-rose-900">Community data could not be loaded</p>
@@ -550,6 +548,7 @@ export function CommunityFeed() {
           onPostsChanged={loadPosts}
         />
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }

@@ -12,6 +12,8 @@ type CoachRow = {
   slug: string;
   full_name: string | null;
   coach_business_name: string | null;
+  directory_listed: boolean;
+  directory_level: string | null;
 };
 
 export default function AdminPage() {
@@ -31,6 +33,9 @@ export default function AdminPage() {
   const [newSlug, setNewSlug] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [sendInvite, setSendInvite] = useState(true);
+  const [directorySavingId, setDirectorySavingId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +111,53 @@ export default function AdminPage() {
     };
   }, [router]);
 
+  async function patchCoachDirectory(
+    coachId: string,
+    body: { directory_listed?: boolean; directory_level?: string | null }
+  ) {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) return;
+    setDirectorySavingId(coachId);
+    try {
+      const res = await fetch(`/api/admin/coaches/${coachId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(errBody.error ?? "Update failed.");
+      }
+      setCoaches((prev) =>
+        prev.map((c) =>
+          c.id === coachId
+            ? {
+                ...c,
+                ...(body.directory_listed !== undefined
+                  ? { directory_listed: body.directory_listed }
+                  : {}),
+                ...(body.directory_level !== undefined
+                  ? { directory_level: body.directory_level }
+                  : {}),
+              }
+            : c
+        )
+      );
+    } catch (e) {
+      console.error(e);
+      setError((e as Error)?.message ?? "Could not update coach.");
+    } finally {
+      setDirectorySavingId(null);
+    }
+  }
+
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
 
@@ -169,8 +221,10 @@ export default function AdminPage() {
       if (listRes.ok && listBody.coaches) {
         setCoaches(listBody.coaches);
       }
-    } catch (err: any) {
-      setCreateError(err?.message ?? "Unable to create coach.");
+    } catch (err: unknown) {
+      setCreateError(
+        err instanceof Error ? err.message : "Unable to create coach."
+      );
     } finally {
       setCreatingCoach(false);
     }
@@ -391,6 +445,8 @@ export default function AdminPage() {
               <th className="px-4 py-2">Coach</th>
               <th className="px-4 py-2">Business</th>
               <th className="px-4 py-2">Slug</th>
+              <th className="px-4 py-2 text-center">Directory</th>
+              <th className="px-4 py-2 min-w-[9rem]">Level</th>
               <th className="px-4 py-2">Landing link</th>
               <th className="px-4 py-2 text-center min-w-[7rem]">Actions</th>
             </tr>
@@ -413,6 +469,39 @@ export default function AdminPage() {
                   </td>
                   <td className="px-4 py-2 text-xs text-slate-500">
                     {coach.slug}
+                  </td>
+                  <td className="px-4 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      title="Listed in public directory"
+                      checked={coach.directory_listed}
+                      disabled={directorySavingId === coach.id}
+                      onChange={(e) =>
+                        void patchCoachDirectory(coach.id, {
+                          directory_listed: e.target.checked,
+                        })
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                  </td>
+                  <td className="px-4 py-2">
+                    <select
+                      title="Certification level (admin only)"
+                      value={coach.directory_level ?? ""}
+                      disabled={directorySavingId === coach.id}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        void patchCoachDirectory(coach.id, {
+                          directory_level: v === "" ? null : v,
+                        });
+                      }}
+                      className="w-full max-w-[11rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="">Not set</option>
+                      <option value="certified">Certified</option>
+                      <option value="professional">Professional</option>
+                      <option value="elite">Elite</option>
+                    </select>
                   </td>
                   <td className="px-4 py-2 text-xs text-sky-700">
                     <a
@@ -442,7 +531,7 @@ export default function AdminPage() {
             {loading && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={7}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   Loading coaches…
