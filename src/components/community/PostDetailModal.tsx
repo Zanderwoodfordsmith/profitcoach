@@ -518,8 +518,7 @@ export function PostDetailModal({
                 {authorName.slice(0, 1).toUpperCase()}
               </span>
             )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold text-slate-900">{authorName}</div>
                   <p className="mt-0.5 text-xs text-slate-500">
@@ -619,7 +618,8 @@ export function PostDetailModal({
                     </div>
                   ) : null}
                 </div>
-              </div>
+            </div>
+          </div>
 
               {editing ? (
                 <div className="mt-3 space-y-3">
@@ -808,8 +808,6 @@ export function PostDetailModal({
                   </div>
                 </>
               )}
-            </div>
-          </div>
 
           {actionError && !editing ? (
             <p

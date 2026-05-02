@@ -52,6 +52,7 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
       }}
       className="flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-slate-300 hover:shadow"
     >
+      {/* Header: avatar + name/meta only (single row). */}
       <div className="flex gap-3">
         {post.author?.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -66,7 +67,7 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
             {authorName.slice(0, 1).toUpperCase()}
           </span>
         )}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="text-[15px] font-semibold leading-tight text-slate-900">
               {authorName}
@@ -84,40 +85,41 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
               </>
             ) : null}
           </p>
+        </div>
+      </div>
 
-          <div className="mt-3 flex gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight text-slate-900">
-                {post.title}
-              </h2>
-              <p className="mt-1 line-clamp-3 text-[15px] leading-relaxed text-slate-600">
-                {preview || " "}
-              </p>
-              <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                <PostEngagementBar
-                  likeCount={post.like_count}
-                  commentCount={post.comment_count}
-                  commentPreviewAuthors={post.comment_preview_authors}
-                  likedByMe={post.liked_by_me}
-                  disabled={likeBusy}
-                  onToggleLike={handleToggleLike}
-                  onCommentsClick={onOpen}
-                />
-              </div>
-            </div>
-            {post.image_url ? (
-              <div className="relative shrink-0 self-start">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={post.image_url}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  className="h-[92px] w-[92px] rounded-xl object-cover ring-1 ring-slate-200"
-                />
-              </div>
-            ) : null}
+      {/* Title, preview, engagement — full card width; left edge aligns with avatar column. */}
+      <div className="mt-3 flex gap-3">
+        <div className="min-w-0 flex-1">
+          <h2 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight text-slate-900">
+            {post.title}
+          </h2>
+          <p className="mt-1.5 line-clamp-3 text-[15px] leading-relaxed text-slate-600">
+            {preview || " "}
+          </p>
+          <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+            <PostEngagementBar
+              likeCount={post.like_count}
+              commentCount={post.comment_count}
+              commentPreviewAuthors={post.comment_preview_authors}
+              likedByMe={post.liked_by_me}
+              disabled={likeBusy}
+              onToggleLike={handleToggleLike}
+              onCommentsClick={onOpen}
+            />
           </div>
         </div>
+        {post.image_url ? (
+          <div className="relative shrink-0 self-start">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={post.image_url}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-[92px] w-[92px] rounded-xl object-cover ring-1 ring-slate-200"
+            />
+          </div>
+        ) : null}
       </div>
     </article>
   );
