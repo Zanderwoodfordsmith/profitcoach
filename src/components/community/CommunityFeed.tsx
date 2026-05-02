@@ -380,14 +380,15 @@ export function CommunityFeed() {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6">
       <StickyPageHeader
+        bleedInset={false}
+        className="self-start w-full min-w-0"
         title="Community"
         descriptionPlacement="below"
         description="Posts and updates for coaches and admins."
       />
 
-      <div className="mx-auto w-full max-w-3xl">
       {loadError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <p className="font-semibold text-rose-900">Community data could not be loaded</p>
@@ -406,22 +407,26 @@ export function CommunityFeed() {
         type="button"
         onClick={() => setComposeOpen(true)}
         disabled={Boolean(loadError) || categories.length === 0}
-        className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mb-4 flex w-full flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {composeAvatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={composeAvatarUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-          />
-        ) : (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
-            <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
-          </span>
-        )}
-        <span className="text-base text-slate-500">Write something…</span>
+        <div className="flex shrink-0 items-center">
+          {composeAvatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={composeAvatarUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+            />
+          ) : (
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
+              <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
+            </span>
+          )}
+        </div>
+        <div className="min-w-0 w-full text-left text-base leading-snug text-slate-500">
+          Write something…
+        </div>
       </button>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -493,7 +498,6 @@ export function CommunityFeed() {
           onPostsChanged={loadPosts}
         />
       ) : null}
-      </div>
     </div>
   );
 }
