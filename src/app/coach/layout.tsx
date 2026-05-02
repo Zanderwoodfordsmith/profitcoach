@@ -58,7 +58,7 @@ function IconAcademy({ className }: { className?: string }) {
 const navItems = [
   { href: "/coach/signature", label: "Signature", icon: IconFlower },
   { href: "/coach/community", label: "Community", icon: MessagesSquare },
-  { href: "/coach/academy", label: "Academy", icon: IconAcademy },
+  { href: "/coach/academy", label: "Classroom", icon: IconAcademy },
   { href: "/coach/clients", label: "Clients", icon: IconBriefcase },
   { href: "/coach/prospects", label: "Prospects", icon: IconUserPlus },
   { href: "/coach/playbooks", label: "Playbooks", icon: IconBookOpen },

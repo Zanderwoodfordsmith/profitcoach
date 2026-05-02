@@ -2,7 +2,7 @@
   "categories": [
     {
       "id": "coach-academy",
-      "title": "Coach Academy",
+      "title": "Classroom",
       "description": "Internal training for coaches. Edit lessons in content/academy/catalog.json.",
       "courses": [
         {

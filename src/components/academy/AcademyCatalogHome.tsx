@@ -17,7 +17,7 @@ export async function AcademyCatalogHome({ basePath, showSourceEditHint }: Props
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
           Internal
         </p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Coach Academy</h1>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Classroom</h1>
         <p className="mt-2 max-w-2xl text-sm text-slate-600">
           Training for coaches. Catalog:{" "}
           <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
@@ -30,7 +30,7 @@ export async function AcademyCatalogHome({ basePath, showSourceEditHint }: Props
         <div
           className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
           role="region"
-          aria-label="How to edit academy content"
+          aria-label="How to edit classroom content"
         >
           <p className="font-semibold text-amber-900">Editing (admins)</p>
           <p className="mt-1 text-amber-950/90">
