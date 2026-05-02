@@ -13,6 +13,7 @@ import {
   buildCommentPreviewAvatars,
   type CommentAuthorRow,
 } from "@/lib/communityCommentPreviewAvatars";
+import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
 
 export type ProfileRow = {
   id: string;
@@ -147,21 +148,39 @@ export function CommunityFeed() {
         .order("created_at", { ascending: true }),
     ]);
 
-    if (likesRes.error) throw likesRes.error;
+    if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
+      throw likesRes.error;
+    }
     if (commentsRes.error) throw commentsRes.error;
 
+    const likesTableMissing = Boolean(
+      likesRes.error && isUndefinedRelationError(likesRes.error)
+    );
+    if (likesTableMissing && process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console -- ops hint until migration is applied
+      console.warn(
+        "[Community] community_post_likes query failed (table missing?). Run migration 20260508120000_community_post_likes.sql. Likes will show as 0 until then."
+      );
+    }
+
     let myLiked = new Set<string>();
-    if (uid) {
+    if (uid && !likesTableMissing) {
       const myRes = await supabaseClient
         .from("community_post_likes")
         .select("post_id")
         .eq("user_id", uid)
         .in("post_id", postIds);
-      if (myRes.error) throw myRes.error;
-      myLiked = new Set((myRes.data ?? []).map((r: { post_id: string }) => r.post_id));
+      if (myRes.error && !isUndefinedRelationError(myRes.error)) {
+        throw myRes.error;
+      }
+      if (!myRes.error) {
+        myLiked = new Set(
+          (myRes.data ?? []).map((r: { post_id: string }) => r.post_id)
+        );
+      }
     }
 
-    const likeRows = (likesRes.data ?? []) as {
+    const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
       post_id: string;
       user_id: string;
     }[];
