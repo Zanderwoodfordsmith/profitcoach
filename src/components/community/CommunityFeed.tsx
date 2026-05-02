@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { User } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
@@ -38,6 +39,7 @@ export type CommunityPostRow = {
   id: string;
   title: string;
   body: string;
+  image_url: string | null;
   is_pinned: boolean;
   created_at: string;
   category_id: string;
@@ -61,6 +63,7 @@ export function CommunityFeed() {
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [composeAvatarUrl, setComposeAvatarUrl] = useState<string | null>(null);
 
   const closeDetail = useCallback(() => {
     setSelectedPostId(null);
@@ -105,6 +108,7 @@ export function CommunityFeed() {
         id,
         title,
         body,
+        image_url,
         is_pinned,
         created_at,
         category_id,
@@ -191,7 +195,6 @@ export function CommunityFeed() {
       likesRes.error && isUndefinedRelationError(likesRes.error)
     );
     if (likesTableMissing && process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console -- ops hint until migration is applied
       console.warn(
         "[Community] community_post_likes query failed (table missing?). Run migration 20260508120000_community_post_likes.sql. Likes will show as 0 until then."
       );
@@ -302,6 +305,14 @@ export function CommunityFeed() {
         }
 
         try {
+          const uid = session.user.id;
+          const map = await fetchStaffAvatarMap([uid], session.access_token);
+          if (!cancelled) setComposeAvatarUrl(map[uid] ?? null);
+        } catch {
+          if (!cancelled) setComposeAvatarUrl(null);
+        }
+
+        try {
           await loadCategories();
         } catch (e) {
           if (!cancelled) {
@@ -387,9 +398,19 @@ export function CommunityFeed() {
         disabled={Boolean(loadError) || categories.length === 0}
         className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
-          +
-        </span>
+        {composeAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={composeAvatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+          />
+        ) : (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
+            <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
+          </span>
+        )}
         <span className="text-[15px] text-slate-500">Write something…</span>
       </button>
 

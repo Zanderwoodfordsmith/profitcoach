@@ -92,6 +92,7 @@ export function PostEngagementBar({
                   <img
                     src={a.avatar_url}
                     alt=""
+                    referrerPolicy="no-referrer"
                     className="h-full w-full object-cover"
                   />
                 ) : (

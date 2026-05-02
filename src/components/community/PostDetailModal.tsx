@@ -10,10 +10,12 @@ import {
 import { usePathname } from "next/navigation";
 import {
   Flag,
+  ImagePlus,
   Link2,
   MoreHorizontal,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { displayNameFromProfile } from "@/lib/communityProfile";
@@ -34,6 +36,7 @@ import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
+import { uploadCommunityPostImage } from "@/lib/communityPostImage";
 import { postBodyNeedsTruncation } from "@/lib/communityPostBodyTruncation";
 import {
   communityAccessHint,
@@ -109,6 +112,19 @@ export function PostDetailModal({
   const [saveEditBusy, setSaveEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [replaceImageFile, setReplaceImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+
+  const replaceImagePreview = useMemo(
+    () =>
+      replaceImageFile ? URL.createObjectURL(replaceImageFile) : null,
+    [replaceImageFile]
+  );
+
+  useEffect(() => {
+    if (!replaceImagePreview) return;
+    return () => URL.revokeObjectURL(replaceImagePreview);
+  }, [replaceImagePreview]);
 
   useEffect(() => {
     setPostAuthorDisplay(post.author ?? null);
@@ -117,6 +133,8 @@ export function PostDetailModal({
     setEditCategoryId(post.category_id);
     setEditing(false);
     setBodyExpanded(false);
+    setReplaceImageFile(null);
+    setRemoveImage(false);
   }, [post.id, post.author, post.title, post.body, post.category_id]);
 
   useEffect(() => {
@@ -343,12 +361,33 @@ export function PostDetailModal({
     if (!title || !body || saveEditBusy) return;
     setActionError(null);
     setSaveEditBusy(true);
+
+    let image_url: string | null = post.image_url;
+    if (replaceImageFile) {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const up = await uploadCommunityPostImage(
+        replaceImageFile,
+        session?.access_token
+      );
+      if ("error" in up) {
+        setActionError(up.error);
+        setSaveEditBusy(false);
+        return;
+      }
+      image_url = up.image_url;
+    } else if (removeImage) {
+      image_url = null;
+    }
+
     const { error } = await supabaseClient
       .from("community_posts")
       .update({
         title,
         body,
         category_id: editCategoryId,
+        image_url,
         updated_at: new Date().toISOString(),
       })
       .eq("id", post.id);
@@ -360,6 +399,8 @@ export function PostDetailModal({
       return;
     }
     setEditing(false);
+    setReplaceImageFile(null);
+    setRemoveImage(false);
     setMenuOpen(false);
     await onPostsChanged();
   }, [
@@ -368,6 +409,9 @@ export function PostDetailModal({
     editTitle,
     onPostsChanged,
     post.id,
+    post.image_url,
+    removeImage,
+    replaceImageFile,
     saveEditBusy,
   ]);
 
@@ -466,7 +510,8 @@ export function PostDetailModal({
               <img
                 src={headerAuthor.avatar_url}
                 alt=""
-                className="h-11 w-11 shrink-0 rounded-full object-cover"
+                referrerPolicy="no-referrer"
+                className="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
               />
             ) : (
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
@@ -610,6 +655,83 @@ export function PostDetailModal({
                       </select>
                     </div>
                   ) : null}
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                      Image (optional)
+                    </label>
+                    <div className="flex flex-wrap items-start gap-3">
+                      {replaceImagePreview ? (
+                        <div className="relative inline-block">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={replaceImagePreview}
+                            alt=""
+                            className="max-h-40 max-w-full rounded-lg object-cover ring-1 ring-slate-200"
+                          />
+                          <button
+                            type="button"
+                            className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-white shadow hover:bg-slate-900"
+                            aria-label="Remove new image"
+                            onClick={() => setReplaceImageFile(null)}
+                          >
+                            <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      ) : post.image_url && !removeImage ? (
+                        <div className="relative inline-block">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={post.image_url}
+                            alt=""
+                            referrerPolicy="no-referrer"
+                            className="max-h-40 max-w-full rounded-lg object-cover ring-1 ring-slate-200"
+                          />
+                          <button
+                            type="button"
+                            className="mt-1 text-xs font-medium text-rose-600 hover:underline"
+                            onClick={() => {
+                              setRemoveImage(true);
+                              setReplaceImageFile(null);
+                            }}
+                          >
+                            Remove image
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-500">No image</p>
+                      )}
+                      {removeImage && !replaceImagePreview ? (
+                        <button
+                          type="button"
+                          className="text-xs font-medium text-sky-700 hover:underline"
+                          onClick={() => setRemoveImage(false)}
+                        >
+                          Undo remove
+                        </button>
+                      ) : null}
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50">
+                        <ImagePlus className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                        <span>
+                          {post.image_url || replaceImagePreview
+                            ? "Replace image"
+                            : "Add image"}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="sr-only"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] ?? null;
+                            if (f) {
+                              setReplaceImageFile(f);
+                              setRemoveImage(false);
+                            }
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -631,6 +753,8 @@ export function PostDetailModal({
                         setEditTitle(post.title);
                         setEditBody(post.body);
                         setEditCategoryId(post.category_id);
+                        setReplaceImageFile(null);
+                        setRemoveImage(false);
                       }}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
@@ -651,6 +775,17 @@ export function PostDetailModal({
                   >
                     {post.title}
                   </h2>
+                  {post.image_url ? (
+                    <div className="mt-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={post.image_url}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="max-h-[min(420px,50vh)] w-full rounded-xl object-cover ring-1 ring-slate-200"
+                      />
+                    </div>
+                  ) : null}
                   <div className="mt-3 text-[15px] text-slate-800">
                     <div
                       className={

@@ -14,7 +14,16 @@ export async function fetchStaffAvatarMap(
     },
     body: JSON.stringify({ userIds: unique }),
   });
-  if (!res.ok) return {};
+  if (!res.ok) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "[Community] staff-avatars API failed:",
+        res.status,
+        await res.clone().text().catch(() => "")
+      );
+    }
+    return {};
+  }
   const body = (await res.json()) as { avatars?: Record<string, string | null> };
   return body.avatars ?? {};
 }
