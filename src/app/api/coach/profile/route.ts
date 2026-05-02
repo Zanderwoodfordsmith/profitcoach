@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { geocodeLocation } from "@/lib/geocodeLocation";
 
 async function requireCoach(request: Request) {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -249,6 +250,18 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  // Capture prior location so we only re-geocode when it actually changes.
+  let previousLocation: string | null = null;
+  if (body.location !== undefined) {
+    const { data: prior } = await supabaseAdmin
+      .from("profiles")
+      .select("location")
+      .eq("id", coachId)
+      .maybeSingle();
+    previousLocation =
+      (prior as { location?: string | null } | null)?.location ?? null;
+  }
+
   let result = await supabaseAdmin
     .from("profiles")
     .update(updates)
@@ -283,6 +296,43 @@ export async function PATCH(request: Request) {
         ? "Some profile fields are not available yet. Run database migrations, or try saving only name and business."
         : (result.error as { message?: string }).message ?? "Could not update profile";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+
+  // Re-geocode when location actually changed. Failures must never break the save.
+  if (body.location !== undefined) {
+    const newLocation =
+      typeof updates.location === "string" ? updates.location : null;
+    const prev = (previousLocation ?? "").trim();
+    const next = (newLocation ?? "").trim();
+    if (prev !== next) {
+      try {
+        if (!next) {
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              latitude: null,
+              longitude: null,
+              location_geocoded_at: new Date().toISOString(),
+              location_geocoded_source: null,
+            })
+            .eq("id", coachId);
+        } else {
+          const coords = await geocodeLocation(next);
+          await supabaseAdmin
+            .from("profiles")
+            .update({
+              latitude: coords?.lat ?? null,
+              longitude: coords?.lng ?? null,
+              location_geocoded_at: new Date().toISOString(),
+              location_geocoded_source: coords ? "nominatim" : null,
+            })
+            .eq("id", coachId);
+        }
+      } catch (err) {
+        // Geocoder columns may not exist if the migration hasn't run yet — log and move on.
+        console.warn("profile geocode persist failed:", err);
+      }
+    }
   }
 
   return NextResponse.json({ ok: true });

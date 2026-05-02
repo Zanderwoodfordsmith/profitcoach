@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import Link from "next/link";
-import { Filter, LogOut, MessageSquare } from "lucide-react";
+import { Filter, LogOut, Map as MapIcon, MessageSquare } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -50,9 +50,14 @@ function IconMessageSquare({ className }: { className?: string }) {
   return <MessageSquare className={className} />;
 }
 
+function IconMap({ className }: { className?: string }) {
+  return <MapIcon className={className} />;
+}
+
 const navItems: NavItem[] = [
   { href: "/admin/signature", label: "Signature", icon: IconFlower },
   { href: "/admin/community", label: "Community", icon: IconCommunity },
+  { href: "/admin/map", label: "Map", icon: IconMap },
   { href: "/admin/academy", label: "Classroom", icon: IconAcademy },
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/clients", label: "Clients", icon: IconBriefcase },

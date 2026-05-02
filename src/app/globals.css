@@ -37,3 +37,65 @@ body {
   color: var(--foreground);
 }
 
+/* ----------------------------------------------------------------------
+ * Members map (Leaflet) overrides — match the BOSS / Skool aesthetic.
+ * Component: src/components/community/MembersMapLeaflet.tsx
+ * --------------------------------------------------------------------*/
+
+.pc-map-pin svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.25));
+}
+
+.pc-map-cluster {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.pc-map-cluster__bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #0c5290;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  box-shadow:
+    0 0 0 4px rgba(12, 82, 144, 0.18),
+    0 4px 10px rgba(12, 82, 144, 0.35);
+  border: 2px solid #ffffff;
+}
+
+/* react-leaflet-cluster wraps our html in a div with these classes — keep
+ * them transparent so only our bubble shows. */
+.marker-cluster,
+.marker-cluster div,
+.marker-cluster span {
+  background: transparent !important;
+  color: #ffffff;
+}
+
+.leaflet-container {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: #f1f5f9;
+}
+
+.leaflet-popup.pc-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  padding: 0;
+  box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.25);
+  border: 1px solid #e2e8f0;
+}
+
+.leaflet-popup.pc-map-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.leaflet-popup.pc-map-popup .leaflet-popup-tip {
+  box-shadow: 0 4px 8px -2px rgba(15, 23, 42, 0.18);
+}
+

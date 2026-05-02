@@ -70,7 +70,7 @@ export function PostEngagementBar({
       <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={detail ? 2 : 1.75} />
       <span>
         <span className="tabular-nums">{commentCount}</span>
-        {" comments"}
+        {commentCount === 1 ? " comment" : " comments"}
       </span>
     </button>
   );

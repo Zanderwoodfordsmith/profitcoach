@@ -16,6 +16,9 @@ export function CoachesHubTabs() {
   const onClientSuccess =
     pathname === "/admin/client-success" ||
     Boolean(pathname?.startsWith("/admin/client-success/"));
+  const onRevenue =
+    pathname === "/admin/client-success/revenue" ||
+    Boolean(pathname?.startsWith("/admin/client-success/revenue/"));
 
   return (
     <nav
@@ -30,9 +33,15 @@ export function CoachesHubTabs() {
       </Link>
       <Link
         href="/admin/client-success"
-        className={`${tabBase} ${onClientSuccess ? tabActive : tabInactive}`}
+        className={`${tabBase} ${onClientSuccess && !onRevenue ? tabActive : tabInactive}`}
       >
         Client success
+      </Link>
+      <Link
+        href="/admin/client-success/revenue"
+        className={`${tabBase} ${onRevenue ? tabActive : tabInactive}`}
+      >
+        Revenue
       </Link>
     </nav>
   );
