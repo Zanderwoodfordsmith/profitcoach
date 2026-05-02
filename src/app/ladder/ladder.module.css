@@ -1,0 +1,312 @@
+.root {
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f4f5f7;
+  color: #1a1a2e;
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: -0.5px;
+  color: #0f2b5b;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #7a8599;
+  margin-bottom: 44px;
+  font-weight: 400;
+}
+
+.phase {
+  margin-bottom: 28px;
+}
+
+.phaseHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.phaseName {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.phaseLine {
+  flex: 1;
+  height: 1px;
+  background: #dde0e6;
+}
+
+.phaseJump {
+  font-size: 10px;
+  font-weight: 500;
+  color: #aab0bc;
+  letter-spacing: 0.5px;
+}
+
+.onramp .phaseName {
+  color: #a07850;
+}
+
+.metals .phaseName {
+  color: #7a8599;
+}
+
+.gemstones .phaseName {
+  color: #1a8a5a;
+}
+
+.diamonds .phaseName {
+  color: #0f2b5b;
+}
+
+.level {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 14px;
+  margin-bottom: 6px;
+  background: #fff;
+  border: 1px solid #e8eaef;
+  transition: all 0.15s;
+}
+
+.level:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-color: #d0d4dd;
+}
+
+.levelIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 14px;
+  font-size: 18px;
+}
+
+.levelName {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  flex: 1;
+}
+
+.levelAmount {
+  font-size: 15px;
+  font-weight: 500;
+  color: #555;
+  flex-shrink: 0;
+}
+
+/* Bronze onramp */
+.bronzeI .levelIcon {
+  background: #f5ebe0;
+  color: #a07850;
+}
+
+.bronzeIi .levelIcon {
+  background: #f5ebe0;
+  color: #b88a60;
+}
+
+.bronzeIii .levelIcon {
+  background: #f0e4d6;
+  color: #c89a70;
+}
+
+.bronzeI .levelName,
+.bronzeIi .levelName,
+.bronzeIii .levelName {
+  color: #a07850;
+}
+
+.bronzeI .levelAmount,
+.bronzeIi .levelAmount,
+.bronzeIii .levelAmount {
+  color: #b89878;
+}
+
+/* Metals */
+.silver .levelIcon {
+  background: #edeef2;
+  color: #8890a0;
+}
+
+.silver .levelName {
+  color: #6a7080;
+}
+
+.gold .levelIcon {
+  background: #faf0d8;
+  color: #c09430;
+}
+
+.gold .levelName {
+  color: #a07e20;
+}
+
+.platinum .levelIcon {
+  background: #e8ecf4;
+  color: #6878a0;
+}
+
+.platinum .levelName {
+  color: #5a6888;
+}
+
+/* Gemstones */
+.emerald .levelIcon {
+  background: #e0f5ea;
+  color: #2a9a5a;
+}
+
+.emerald .levelName {
+  color: #1a8a4a;
+}
+
+.ruby .levelIcon {
+  background: #fce4e6;
+  color: #d03848;
+}
+
+.ruby .levelName {
+  color: #c03040;
+}
+
+.sapphire .levelIcon {
+  background: #e0e8f8;
+  color: #3060c8;
+}
+
+.sapphire .levelName {
+  color: #2850b0;
+}
+
+/* Diamonds */
+.diamond .levelIcon {
+  background: #e8f0fa;
+  color: #5088c8;
+}
+
+.diamond .levelName {
+  color: #3870b0;
+}
+
+.blueDiamond .levelIcon {
+  background: #d8e8f8;
+  color: #2060b8;
+}
+
+.blueDiamond .levelName {
+  color: #1a50a0;
+}
+
+.blackDiamond .levelIcon {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.blackDiamond .levelName {
+  color: #0f2b5b;
+  font-weight: 700;
+}
+
+.blackDiamond {
+  border: 1.5px solid #0f2b5b;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid #dde0e6;
+}
+
+.footerRule {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e8eaef;
+  font-size: 12px;
+  color: #7a8599;
+  margin: 3px;
+}
+
+.footerRule strong {
+  color: #0f2b5b;
+}
+
+.toggleWrap {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e8eaef;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: #7a8599;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.toggleBtn:hover {
+  border-color: #0f2b5b;
+  color: #0f2b5b;
+}
+
+.toggleBtnActive {
+  background: #0f2b5b;
+  color: #fff;
+  border-color: #0f2b5b;
+}
+
+.toggleBtnActive:hover {
+  border-color: #0f2b5b;
+  color: #fff;
+}
+
+.levelClients {
+  font-size: 12px;
+  font-weight: 500;
+  color: #aab0bc;
+  flex-shrink: 0;
+  margin-left: 12px;
+  min-width: 70px;
+  text-align: right;
+  display: none;
+}
+
+.root.showClients .levelClients {
+  display: block;
+}
