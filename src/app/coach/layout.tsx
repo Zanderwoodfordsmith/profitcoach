@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Filter, LogOut, MessageSquare } from "lucide-react";
+import { Filter, LogOut, MessageSquare, MessagesSquare } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -57,6 +57,7 @@ function IconAcademy({ className }: { className?: string }) {
 
 const navItems = [
   { href: "/coach/signature", label: "Signature", icon: IconFlower },
+  { href: "/coach/community", label: "Community", icon: MessagesSquare },
   { href: "/coach/academy", label: "Academy", icon: IconAcademy },
   { href: "/coach/clients", label: "Clients", icon: IconBriefcase },
   { href: "/coach/prospects", label: "Prospects", icon: IconUserPlus },

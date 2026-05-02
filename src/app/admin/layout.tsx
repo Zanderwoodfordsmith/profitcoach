@@ -25,8 +25,17 @@ function IconAcademy({ className }: { className?: string }) {
   );
 }
 
+function IconCommunity({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a48.109 48.109 0 00-3.478-.397m-12 .562c-.34-.059-.68-.114-1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+    </svg>
+  );
+}
+
 const navItems: NavItem[] = [
   { href: "/admin/playbooks", label: "Playbooks", icon: IconBook },
+  { href: "/admin/community", label: "Community", icon: IconCommunity },
   { href: "/admin/academy", label: "Academy", icon: IconAcademy },
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/clients", label: "Clients", icon: IconBriefcase },
