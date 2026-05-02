@@ -31,6 +31,9 @@ export function supabaseErrorMessage(error: unknown): string {
 
 export function communityAccessHint(errorMessage: string): string | null {
   const m = errorMessage.toLowerCase();
+  if (m.includes("infinite recursion") && m.includes("profiles")) {
+    return "Apply migration supabase/migrations/20260503120000_fix_community_profiles_rls_recursion.sql (profiles RLS must not query profiles under RLS without bypass).";
+  }
   if (
     m.includes("does not exist") ||
     m.includes("schema cache") ||
