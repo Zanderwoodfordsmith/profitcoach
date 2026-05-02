@@ -518,7 +518,8 @@ export function PostDetailModal({
                 {authorName.slice(0, 1).toUpperCase()}
               </span>
             )}
-            <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-semibold text-slate-900">{authorName}</div>
                   <p className="mt-0.5 text-xs text-slate-500">
@@ -618,8 +619,7 @@ export function PostDetailModal({
                     </div>
                   ) : null}
                 </div>
-            </div>
-          </div>
+              </div>
 
               {editing ? (
                 <div className="mt-3 space-y-3">
@@ -808,6 +808,22 @@ export function PostDetailModal({
                   </div>
                 </>
               )}
+              {!editing ? (
+                <div className="mt-5">
+                  <PostEngagementBar
+                    detail
+                    likeCount={post.like_count}
+                    commentCount={post.comment_count}
+                    commentPreviewAuthors={post.comment_preview_authors}
+                    likedByMe={post.liked_by_me}
+                    disabled={likeBusy}
+                    onToggleLike={handleToggleLike}
+                    onCommentsClick={scrollToComments}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </div>
 
           {actionError && !editing ? (
             <p
@@ -816,21 +832,6 @@ export function PostDetailModal({
             >
               {actionError}
             </p>
-          ) : null}
-
-          {!editing ? (
-            <div className="mt-5">
-              <PostEngagementBar
-                detail
-                likeCount={post.like_count}
-                commentCount={post.comment_count}
-                commentPreviewAuthors={post.comment_preview_authors}
-                likedByMe={post.liked_by_me}
-                disabled={likeBusy}
-                onToggleLike={handleToggleLike}
-                onCommentsClick={scrollToComments}
-              />
-            </div>
           ) : null}
 
           <div
