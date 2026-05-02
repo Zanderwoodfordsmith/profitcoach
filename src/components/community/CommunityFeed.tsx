@@ -14,6 +14,10 @@ import {
   type CommentAuthorRow,
 } from "@/lib/communityCommentPreviewAvatars";
 import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
+import {
+  fetchStaffAvatarMap,
+  mergeAuthorAvatar,
+} from "@/lib/communityStaffAvatars";
 
 export type ProfileRow = {
   id: string;
@@ -203,15 +207,41 @@ export function CommunityFeed() {
         : row.author ?? null,
     }));
 
+    const {
+      data: { session: avatarSession },
+    } = await supabaseClient.auth.getSession();
+    const avatarToken = avatarSession?.access_token;
+    const avatarUserIds = [
+      ...new Set([
+        ...normalized.flatMap((p) => (p.author?.id ? [p.author.id] : [])),
+        ...commentsNormalized.map((c) => c.author_id),
+      ]),
+    ];
+    const avatarMap = await fetchStaffAvatarMap(avatarUserIds, avatarToken);
+
+    const normalizedWithAvatars = normalized.map((row) => ({
+      ...row,
+      author: row.author?.id
+        ? mergeAuthorAvatar(row.author.id, row.author, avatarMap)
+        : row.author,
+    }));
+
+    const commentsWithAvatars: CommentAuthorRow[] = commentsNormalized.map(
+      (c) => ({
+        ...c,
+        author: mergeAuthorAvatar(c.author_id, c.author, avatarMap),
+      })
+    );
+
     const commentsByPost = new Map<string, CommentAuthorRow[]>();
-    for (const c of commentsNormalized) {
+    for (const c of commentsWithAvatars) {
       const arr = commentsByPost.get(c.post_id) ?? [];
       arr.push(c);
       commentsByPost.set(c.post_id, arr);
     }
 
     setPosts(
-      normalized.map((row) => ({
+      normalizedWithAvatars.map((row) => ({
         ...row,
         like_count: likeCountByPost.get(row.id) ?? 0,
         comment_count: (commentsByPost.get(row.id) ?? []).length,

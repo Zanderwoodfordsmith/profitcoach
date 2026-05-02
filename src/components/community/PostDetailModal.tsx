@@ -21,10 +21,15 @@ import { MentionBody } from "@/components/community/MentionBody";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
+import {
+  fetchStaffAvatarMap,
+  mergeAuthorAvatar,
+} from "@/lib/communityStaffAvatars";
 
 type CommentRow = {
   id: string;
   post_id: string;
+  author_id: string;
   body: string;
   created_at: string;
   parent_comment_id: string | null;
@@ -71,6 +76,15 @@ export function PostDetailModal({
   const [submitting, setSubmitting] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const commentsAnchorRef = useRef<HTMLDivElement>(null);
+  const [postAuthorDisplay, setPostAuthorDisplay] = useState<ProfileRow | null>(
+    null
+  );
+  const postRef = useRef(post);
+  postRef.current = post;
+
+  useEffect(() => {
+    setPostAuthorDisplay(post.author ?? null);
+  }, [post.id, post.author]);
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -80,6 +94,7 @@ export function PostDetailModal({
         `
         id,
         post_id,
+        author_id,
         body,
         created_at,
         parent_comment_id,
@@ -99,14 +114,48 @@ export function PostDetailModal({
         author: ProfileRow | ProfileRow[] | null;
       }
     >;
+    const mapped: CommentRow[] = rows.map((row) => ({
+      id: row.id,
+      post_id: row.post_id,
+      author_id: row.author_id,
+      body: row.body,
+      created_at: row.created_at,
+      parent_comment_id: row.parent_comment_id,
+      author: Array.isArray(row.author)
+        ? row.author[0] ?? null
+        : row.author ?? null,
+    }));
+
+    const currentPost = postRef.current;
+    const avatarIds = [
+      ...new Set([
+        ...mapped.map((r) => r.author_id),
+        ...(currentPost.author?.id ? [currentPost.author.id] : []),
+      ]),
+    ];
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    const avatarMap = await fetchStaffAvatarMap(
+      avatarIds,
+      session?.access_token
+    );
+
     setComments(
-      rows.map((row) => ({
-        ...row,
-        author: Array.isArray(row.author)
-          ? row.author[0] ?? null
-          : row.author ?? null,
+      mapped.map((r) => ({
+        ...r,
+        author: mergeAuthorAvatar(r.author_id, r.author, avatarMap),
       }))
     );
+    if (currentPost.author?.id) {
+      setPostAuthorDisplay(
+        mergeAuthorAvatar(
+          currentPost.author.id,
+          currentPost.author,
+          avatarMap
+        )
+      );
+    }
     setCommentsLoading(false);
   }, [post.id]);
 
@@ -153,8 +202,9 @@ export function PostDetailModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const authorName = post.author
-    ? displayNameFromProfile(post.author)
+  const headerAuthor = postAuthorDisplay ?? post.author;
+  const authorName = headerAuthor
+    ? displayNameFromProfile(headerAuthor)
     : "Unknown";
 
   const topLevel = useMemo(
@@ -267,10 +317,10 @@ export function PostDetailModal({
       >
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
           <div className="flex items-start gap-3">
-            {post.author?.avatar_url ? (
+            {headerAuthor?.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={post.author.avatar_url}
+                src={headerAuthor.avatar_url}
                 alt=""
                 className="h-11 w-11 shrink-0 rounded-full object-cover"
               />
