@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StickyPageHeader } from "@/components/layout";
+import { adminExtraNavLinks } from "@/config/adminExtraNavLinks";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export default function AdminSettingsPage() {
@@ -86,6 +87,39 @@ export default function AdminSettingsPage() {
             </Link>
             — all grid components (transposed, default, glass, bordered).
           </li>
+        </ul>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-900">
+          Pages outside the sidebar
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Same list as{" "}
+          <Link
+            href="/admin/account"
+            className="font-medium text-sky-600 underline hover:text-sky-700"
+          >
+            Account → Links
+          </Link>
+          . Open in a new tab when checking production.
+        </p>
+        <ul className="mt-3 list-inside list-disc space-y-2 text-sm text-slate-700">
+          {adminExtraNavLinks.map((item) => (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sky-600 underline hover:text-sky-700"
+              >
+                {item.label}
+              </Link>
+              {item.hint ? (
+                <span className="text-slate-600"> — {item.hint}</span>
+              ) : null}
+            </li>
+          ))}
         </ul>
       </section>
     </div>

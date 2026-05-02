@@ -6,20 +6,13 @@ import { bodyPreviewWithoutRawUuids } from "@/lib/communityMentions";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import type { CommunityPostRow } from "@/components/community/CommunityFeed";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
+import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
 
 type Props = {
   post: CommunityPostRow;
   onOpen: () => void;
   onPostsChanged: () => void | Promise<void>;
 };
-
-function formatPostDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export function PostCard({ post, onOpen, onPostsChanged }: Props) {
   const authorName = post.author
@@ -77,7 +70,7 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
             ) : null}
           </div>
           <p className="mt-0.5 text-xs leading-snug text-slate-500">
-            {formatPostDate(post.created_at)}
+            {formatCommunityPostTimestamp(post.created_at)}
             {post.category ? (
               <>
                 <span className="mx-1.5 select-none text-slate-400">·</span>

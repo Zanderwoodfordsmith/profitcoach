@@ -13,9 +13,12 @@ import {
   ImagePlus,
   Link2,
   MoreHorizontal,
+  Paperclip,
   Pencil,
+  Smile,
   Trash2,
   X,
+  Youtube,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { displayNameFromProfile } from "@/lib/communityProfile";
@@ -47,6 +50,7 @@ import {
   coachPersonaForCommunity,
   getCommunityAuthorId,
 } from "@/lib/communityEffectiveAuthorId";
+import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
 
 type CommentRow = {
   id: string;
@@ -100,6 +104,11 @@ export function PostDetailModal({
   const [submitting, setSubmitting] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const commentsAnchorRef = useRef<HTMLDivElement>(null);
+  const composerShellRef = useRef<HTMLDivElement>(null);
+  const [composerMultiline, setComposerMultiline] = useState(false);
+  const [composerProfile, setComposerProfile] = useState<ProfileRow | null>(
+    null
+  );
   const [postAuthorDisplay, setPostAuthorDisplay] = useState<ProfileRow | null>(
     null
   );
@@ -147,6 +156,31 @@ export function PostDetailModal({
     void supabaseClient.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
     });
+  }, []);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setComposerProfile(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchProfilesByIds([currentUserId]).then((rows) => {
+      if (!cancelled) setComposerProfile(rows[0] ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const shell = composerShellRef.current;
+    if (!shell) return;
+    const ro = new ResizeObserver(() => {
+      const ta = shell.querySelector("textarea");
+      if (ta) setComposerMultiline(ta.scrollHeight > 52);
+    });
+    ro.observe(shell);
+    return () => ro.disconnect();
   }, []);
 
   useEffect(() => {
@@ -305,6 +339,10 @@ export function PostDetailModal({
   const authorName = headerAuthor
     ? displayNameFromProfile(headerAuthor)
     : "Unknown";
+  const composerDisplayName = composerProfile
+    ? displayNameFromProfile(composerProfile)
+    : "You";
+  const showCommentComposerActions = newComment.trim().length > 0;
 
   const topLevel = useMemo(
     () => comments.filter((c) => c.parent_comment_id === null),
@@ -516,10 +554,18 @@ export function PostDetailModal({
       aria-labelledby="post-detail-title"
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:bg-slate-50 hover:text-slate-800"
+          aria-label="Close"
+        >
+          <X className="h-3 w-3" strokeWidth={2.5} />
+        </button>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5">
           <div className="flex items-start gap-3">
             {headerAuthor?.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -527,19 +573,21 @@ export function PostDetailModal({
                 src={headerAuthor.avatar_url}
                 alt=""
                 referrerPolicy="no-referrer"
-                className="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
+                className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
               />
             ) : (
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
                 {authorName.slice(0, 1).toUpperCase()}
               </span>
             )}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="font-semibold text-slate-900">{authorName}</div>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {formatCommentDate(post.created_at)}
+                  <div className="text-base font-semibold leading-tight text-slate-900">
+                    {authorName}
+                  </div>
+                  <p className="mt-0.5 text-xs leading-snug text-slate-500">
+                    {formatCommunityPostTimestamp(post.created_at)}
                     {post.category ? (
                       <>
                         <span className="mx-1.5 select-none text-slate-400">
@@ -636,9 +684,13 @@ export function PostDetailModal({
                   ) : null}
                 </div>
               </div>
+            </div>
+          </div>
 
+          <div className="mt-3 flex w-full min-w-0 gap-3">
+            <div className="min-w-0 flex-1">
               {editing ? (
-                <div className="mt-3 space-y-3">
+                <div className="space-y-3">
                   <input
                     type="text"
                     value={editTitle}
@@ -787,21 +839,10 @@ export function PostDetailModal({
                 <>
                   <h2
                     id="post-detail-title"
-                    className="mt-3 text-2xl font-semibold leading-snug tracking-tight text-slate-900"
+                    className="text-2xl font-semibold leading-snug tracking-tight text-slate-900"
                   >
                     {post.title}
                   </h2>
-                  {post.image_url ? (
-                    <div className="mt-4">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={post.image_url}
-                        alt=""
-                        referrerPolicy="no-referrer"
-                        className="max-h-[min(420px,50vh)] w-full rounded-xl object-cover ring-1 ring-slate-200"
-                      />
-                    </div>
-                  ) : null}
                   <div className="mt-3 text-base text-slate-800">
                     <div
                       className={
@@ -839,6 +880,17 @@ export function PostDetailModal({
                 </div>
               ) : null}
             </div>
+            {!editing && post.image_url ? (
+              <div className="relative shrink-0 self-start">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={post.image_url}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="h-[92px] w-[92px] rounded-xl object-cover ring-1 ring-slate-200"
+                />
+              </div>
+            ) : null}
           </div>
 
           {actionError && !editing ? (
@@ -1000,33 +1052,75 @@ export function PostDetailModal({
             )}
 
             <div className="mt-6 border-t border-slate-100 pt-4">
-              <MentionTextarea
-                value={newComment}
-                onChange={setNewComment}
-                placeholder="Add a comment… @mention someone"
-                rows={3}
-                className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-              />
-              <button
-                type="button"
-                disabled={submitting || !newComment.trim()}
-                onClick={() => void submitTopComment()}
-                className="mt-2 rounded-xl bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
-              >
-                {submitting ? "Sending…" : "Comment"}
-              </button>
+              <div className="flex items-start gap-3">
+                {composerProfile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={composerProfile.avatar_url}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
+                    {composerDisplayName.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div
+                    ref={composerShellRef}
+                    className={`relative border border-slate-300 bg-slate-50 transition-[border-radius] ${
+                      composerMultiline
+                        ? "rounded-2xl pb-9"
+                        : "rounded-[9999px] pb-2"
+                    }`}
+                  >
+                    <MentionTextarea
+                      value={newComment}
+                      onChange={setNewComment}
+                      placeholder="Your comment"
+                      autoResize
+                      maxAutoHeightPx={220}
+                      className="w-full border-0 bg-transparent px-4 py-2.5 pr-[7.5rem] text-sm leading-snug text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                    />
+                    <div
+                      className={`pointer-events-none absolute right-2 flex items-center gap-1.5 text-slate-400 ${
+                        composerMultiline ? "bottom-2" : "bottom-1.5"
+                      }`}
+                      aria-hidden
+                    >
+                      <Paperclip className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <Link2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <Youtube className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <Smile className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                      <span className="text-[10px] font-bold leading-none tracking-tight">
+                        GIF
+                      </span>
+                    </div>
+                  </div>
+                  {showCommentComposerActions ? (
+                    <div className="mt-2 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setNewComment("")}
+                        className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-800"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={submitting || !newComment.trim()}
+                        onClick={() => void submitTopComment()}
+                        className="rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-sky-700 disabled:opacity-50"
+                      >
+                        {submitting ? "Sending…" : "Comment"}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="flex shrink-0 justify-end border-t border-slate-200 bg-slate-50 px-4 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

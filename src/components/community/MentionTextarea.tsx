@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type MentionUser = {
@@ -18,6 +24,9 @@ type Props = {
   className?: string;
   disabled?: boolean;
   rows?: number;
+  /** Grow height with content (single-line feel when empty). */
+  autoResize?: boolean;
+  maxAutoHeightPx?: number;
 };
 
 /** Parses @mention cursor: contiguous non-whitespace after last `@` before caret. */
@@ -57,6 +66,8 @@ export function MentionTextarea({
   className = "",
   disabled,
   rows = 4,
+  autoResize = false,
+  maxAutoHeightPx = 280,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -144,6 +155,15 @@ export function MentionTextarea({
     syncMentionFromDom();
   }, [syncMentionFromDom]);
 
+  useLayoutEffect(() => {
+    if (!autoResize) return;
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    const next = Math.min(el.scrollHeight, maxAutoHeightPx);
+    el.style.height = `${next}px`;
+  }, [autoResize, maxAutoHeightPx, value]);
+
   const onChangeInner = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       onChange(e.target.value);
@@ -182,8 +202,8 @@ export function MentionTextarea({
         onKeyUp={onSelectOrClick}
         placeholder={placeholder}
         disabled={disabled}
-        rows={rows}
-        className={className}
+        rows={autoResize ? 1 : rows}
+        className={`${className}${autoResize ? " resize-none overflow-hidden" : ""}`}
       />
       {showList ? (
         <ul

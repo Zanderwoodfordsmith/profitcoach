@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
+import { adminExtraNavLinks } from "@/config/adminExtraNavLinks";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const linkItems = [
@@ -202,6 +203,36 @@ export default function AdminAccountPage() {
                       </span>
                     </Link>
                   </li>
+                </ul>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <h2 className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Pages outside the sidebar
+                </h2>
+                <ul className="divide-y divide-slate-100">
+                  {adminExtraNavLinks.map((item) => {
+                    const fullUrl = origin ? `${origin}${item.href}` : item.href;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex flex-col gap-0.5 px-4 py-3 text-sm text-slate-900 hover:bg-slate-50"
+                        >
+                          <span className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="font-medium">{item.label}</span>
+                            <span className="truncate text-xs text-slate-500">
+                              {fullUrl}
+                            </span>
+                          </span>
+                          {item.hint ? (
+                            <span className="text-xs text-slate-500">{item.hint}</span>
+                          ) : null}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>

@@ -1,8 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
+import {
+  AuthSplitShell,
+  authInputClassName,
+  authLabelClassName,
+  authPrimaryButtonClassName,
+} from "@/components/auth/AuthSplitShell";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,7 +35,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Look up profile role on the server (bypasses any RLS issues)
     let role = "coach";
     try {
       const res = await fetch("/api/profile-role", {
@@ -44,7 +50,6 @@ export default function LoginPage() {
         role = json.role;
       }
     } catch {
-      // If this fails, we still let them in as a coach so they can use the app
       role = "coach";
     }
     if (role === "admin") {
@@ -57,73 +62,65 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
-        <h1 className="text-center text-xl font-semibold text-slate-900">
-          BOSS Dashboard
-        </h1>
-        <p className="mt-1 text-center text-sm text-slate-600">
-          Sign in to BOSS Dashboard
-        </p>
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="space-y-1">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          {error ? (
-            <p className="text-sm text-rose-600" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-2 flex w-full items-center justify-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-xs text-slate-600">
+    <AuthSplitShell
+      title="Welcome back"
+      subtitle="Sign in to BOSS Dashboard to continue coaching with clarity."
+      footer={
+        <p className="text-center text-sm text-slate-600">
           New coach?{" "}
-          <a
+          <Link
             href="/join"
-            className="font-medium text-sky-700 underline-offset-2 hover:underline"
+            className="font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
           >
             Create an account
-          </a>
+          </Link>
         </p>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-1.5">
+          <label htmlFor="email" className={authLabelClassName}>
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className={authInputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="password" className={authLabelClassName}>
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            className={authInputClassName}
+          />
+        </div>
+        {error ? (
+          <p className="text-sm text-rose-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <button
+          type="submit"
+          disabled={loading}
+          className={authPrimaryButtonClassName}
+        >
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+    </AuthSplitShell>
   );
 }
-

@@ -68,8 +68,10 @@ export function PostEngagementBar({
       }
     >
       <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={detail ? 2 : 1.75} />
-      {detail ? <span>Comments</span> : null}
-      <span className="tabular-nums">{commentCount}</span>
+      <span>
+        <span className="tabular-nums">{commentCount}</span>
+        {" comments"}
+      </span>
     </button>
   );
 

@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  AuthSplitShell,
+  authInputClassName,
+  authLabelClassName,
+  authPrimaryButtonClassName,
+} from "@/components/auth/AuthSplitShell";
 
 export default function CoachSignupPage() {
   const router = useRouter();
@@ -42,143 +48,125 @@ export default function CoachSignupPage() {
       setTimeout(() => {
         router.push("/login");
       }, 1200);
-    } catch (err: any) {
-      setError(err?.message ?? "Unable to sign up.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unable to sign up.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
-        <h1 className="text-center text-xl font-semibold text-slate-900">
-          Coach sign up
-        </h1>
-        <p className="mt-1 text-center text-sm text-slate-600">
-          Create your BOSS Dashboard coach account.
-        </p>
-        <form
-          onSubmit={handleSubmit}
-          className="mt-6 space-y-4 text-sm"
-        >
-          <div className="space-y-1">
-            <label
-              htmlFor="fullName"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Full name
-            </label>
-            <input
-              id="fullName"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="businessName"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Coaching business name
-            </label>
-            <input
-              id="businessName"
-              type="text"
-              required
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label
-              htmlFor="slug"
-              className="block text-sm font-medium text-slate-800"
-            >
-              Coach link slug
-            </label>
-            <input
-              id="slug"
-              type="text"
-              required
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              placeholder="e.g. alex-smith"
-            />
-            <p className="text-xs text-slate-600">
-              This becomes your unique link, e.g. /assessment/alex-smith.
-              Use only letters, numbers, and hyphens.
-            </p>
-          </div>
-
-          {error && (
-            <p className="text-sm text-rose-600" role="alert">
-              {error}
-            </p>
-          )}
-          {success && (
-            <p className="text-sm text-emerald-600" role="status">
-              {success}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-2 flex w-full items-center justify-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
-          >
-            {loading ? "Creating account…" : "Create coach account"}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-xs text-slate-600">
+    <AuthSplitShell
+      title="Create your account"
+      subtitle="Set up your BOSS Dashboard coach profile in a few steps."
+      footer={
+        <p className="text-center text-sm text-slate-600">
           Already have an account?{" "}
           <button
             type="button"
-            className="text-sky-700 underline-offset-2 hover:underline"
+            className="font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
             onClick={() => router.push("/login")}
           >
             Log in
           </button>
         </p>
-      </div>
-    </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 text-sm">
+        <div className="space-y-1.5">
+          <label htmlFor="fullName" className={authLabelClassName}>
+            Full name
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            required
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Jane Coach"
+            className={authInputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="businessName" className={authLabelClassName}>
+            Coaching business name
+          </label>
+          <input
+            id="businessName"
+            type="text"
+            required
+            value={businessName}
+            onChange={(e) => setBusinessName(e.target.value)}
+            placeholder="Your practice name"
+            className={authInputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="email" className={authLabelClassName}>
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className={authInputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="password" className={authLabelClassName}>
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Choose a secure password"
+            className={authInputClassName}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="slug" className={authLabelClassName}>
+            Coach link slug
+          </label>
+          <input
+            id="slug"
+            type="text"
+            required
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="e.g. alex-smith"
+            className={authInputClassName}
+          />
+          <p className="text-xs leading-relaxed text-slate-500">
+            Your public assessment link uses this slug (letters, numbers, and
+            hyphens only).
+          </p>
+        </div>
+
+        {error ? (
+          <p className="text-sm text-rose-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+        {success ? (
+          <p className="text-sm text-emerald-600" role="status">
+            {success}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className={authPrimaryButtonClassName}
+        >
+          {loading ? "Creating account…" : "Create coach account"}
+        </button>
+      </form>
+    </AuthSplitShell>
   );
 }
-
