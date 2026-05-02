@@ -366,9 +366,23 @@ export default function CoachSettingsPage() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. London, UK"
+              placeholder="City, region, country"
               className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              autoComplete="address-level2"
             />
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+              Use whatever you&apos;re comfortable sharing. A{" "}
+              <span className="font-medium text-slate-700">city and country</span>{" "}
+              is enough for the community map (e.g.{" "}
+              <span className="font-mono text-[11px] text-slate-700">
+                Austin, TX, USA
+              </span>
+              ,{" "}
+              <span className="font-mono text-[11px] text-slate-700">
+                Manchester, UK
+              </span>
+              ). A full street address works too if you prefer.
+            </p>
           </div>
         </section>
 

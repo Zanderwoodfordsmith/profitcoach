@@ -106,8 +106,8 @@ export function CommunityMembersMap() {
           </div>
         ) : state.members.length === 0 ? (
           <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-slate-500">
-            No members have a mappable location yet. Add yours in Settings →
-            Profile.
+            No members have a mappable location yet. Add a city and country (or
+            address) under Settings → Profile, save, and you&apos;ll show up here.
           </div>
         ) : (
           <MembersMapLeaflet members={state.members} />

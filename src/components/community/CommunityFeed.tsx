@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { User } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -24,6 +25,7 @@ import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
 import { StickyPageHeader } from "@/components/layout";
+import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
 async function fetchAvatarUrlsFromProfiles(
@@ -88,6 +90,8 @@ export function CommunityFeed() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const communityTab =
+    searchParams.get("tab") === "map" ? "map" : "feed";
 
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
   const [posts, setPosts] = useState<CommunityPostRow[]>([]);
@@ -120,6 +124,8 @@ export function CommunityFeed() {
     const q = searchParams.get("post");
     if (q && /^[0-9a-f-]{36}$/i.test(q)) {
       setSelectedPostId(q);
+    } else {
+      setSelectedPostId(null);
     }
   }, [searchParams]);
 
@@ -435,13 +441,49 @@ export function CommunityFeed() {
     [posts, selectedPostId]
   );
 
+  const tabShell =
+    "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors";
+  const tabActive = `${tabShell} bg-white text-sky-800 shadow-sm`;
+  const tabInactive = `${tabShell} text-slate-600 hover:text-slate-900`;
+
   return (
     <>
       <StickyPageHeader
         title="Community"
-        description="Posts and updates for coaches and admins."
+        description="Browse posts or see where coaches and admins are based."
+        tabs={
+          <div
+            className="flex rounded-lg bg-slate-100/90 p-1 ring-1 ring-slate-200/80"
+            role="tablist"
+            aria-label="Community views"
+          >
+            <Link
+              href={pathname}
+              scroll={false}
+              role="tab"
+              aria-selected={communityTab === "feed"}
+              className={communityTab === "feed" ? tabActive : tabInactive}
+            >
+              Feed
+            </Link>
+            <Link
+              href={`${pathname}?tab=map`}
+              scroll={false}
+              role="tab"
+              aria-selected={communityTab === "map"}
+              className={communityTab === "map" ? tabActive : tabInactive}
+            >
+              Map
+            </Link>
+          </div>
+        }
       />
 
+      {communityTab === "map" ? (
+        <div className="mx-auto w-full max-w-6xl min-w-0">
+          <CommunityMembersMap />
+        </div>
+      ) : (
       <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6">
       {loadError ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
@@ -540,7 +582,7 @@ export function CommunityFeed() {
         />
       ) : null}
 
-      {selectedPost ? (
+      {communityTab === "feed" && selectedPost ? (
         <PostDetailModal
           post={selectedPost}
           categories={categories}
@@ -549,6 +591,7 @@ export function CommunityFeed() {
         />
       ) : null}
       </div>
+      )}
     </>
   );
 }
