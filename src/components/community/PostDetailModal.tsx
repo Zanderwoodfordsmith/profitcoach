@@ -13,12 +13,9 @@ import {
   ImagePlus,
   Link2,
   MoreHorizontal,
-  Paperclip,
   Pencil,
-  Smile,
   Trash2,
   X,
-  Youtube,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { displayNameFromProfile } from "@/lib/communityProfile";
@@ -177,7 +174,7 @@ export function PostDetailModal({
     if (!shell) return;
     const ro = new ResizeObserver(() => {
       const ta = shell.querySelector("textarea");
-      if (ta) setComposerMultiline(ta.scrollHeight > 52);
+      if (ta) setComposerMultiline(ta.scrollHeight > 44);
     });
     ro.observe(shell);
     return () => ro.disconnect();
@@ -1070,9 +1067,7 @@ export function PostDetailModal({
                   <div
                     ref={composerShellRef}
                     className={`relative border border-slate-300 bg-slate-50 transition-[border-radius] ${
-                      composerMultiline
-                        ? "rounded-2xl pb-9"
-                        : "rounded-[9999px] pb-2"
+                      composerMultiline ? "rounded-2xl" : "rounded-[9999px]"
                     }`}
                   >
                     <MentionTextarea
@@ -1081,22 +1076,8 @@ export function PostDetailModal({
                       placeholder="Your comment"
                       autoResize
                       maxAutoHeightPx={220}
-                      className="w-full border-0 bg-transparent px-4 py-2.5 pr-[7.5rem] text-sm leading-snug text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                      className="w-full border-0 bg-transparent px-3.5 py-1.5 text-sm leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
                     />
-                    <div
-                      className={`pointer-events-none absolute right-2 flex items-center gap-1.5 text-slate-400 ${
-                        composerMultiline ? "bottom-2" : "bottom-1.5"
-                      }`}
-                      aria-hidden
-                    >
-                      <Paperclip className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                      <Link2 className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                      <Youtube className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                      <Smile className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                      <span className="text-[10px] font-bold leading-none tracking-tight">
-                        GIF
-                      </span>
-                    </div>
                   </div>
                   {showCommentComposerActions ? (
                     <div className="mt-2 flex justify-end gap-3">
