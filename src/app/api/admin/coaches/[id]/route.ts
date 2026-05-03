@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isValidLadderLevelId } from "@/lib/ladder";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 async function requireAdmin(request: Request): Promise<
@@ -42,10 +43,15 @@ async function requireAdmin(request: Request): Promise<
 }
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 type PatchBody = {
   directory_listed?: boolean;
   directory_level?: string | null;
+  /** Convenience: admin marks the coach's current level. Upserts an achievement. */
+  ladder_level?: string | null;
+  ladder_goal_level?: string | null;
+  ladder_goal_target_date?: string | null;
 };
 
 export async function PATCH(
@@ -73,15 +79,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const updates: Record<string, unknown> = {};
+  const coachUpdates: Record<string, unknown> = {};
   if (body.directory_listed !== undefined) {
-    updates.directory_listed = !!body.directory_listed;
+    coachUpdates.directory_listed = !!body.directory_listed;
   }
   if (body.directory_level !== undefined) {
     if (body.directory_level === null || body.directory_level === "") {
-      updates.directory_level = null;
+      coachUpdates.directory_level = null;
     } else if (typeof body.directory_level === "string" && LEVELS.has(body.directory_level)) {
-      updates.directory_level = body.directory_level;
+      coachUpdates.directory_level = body.directory_level;
     } else {
       return NextResponse.json(
         { error: "directory_level must be certified, professional, elite, or null." },
@@ -90,31 +96,171 @@ export async function PATCH(
     }
   }
 
-  if (Object.keys(updates).length === 0) {
+  const profileUpdates: Record<string, unknown> = {};
+  if (body.ladder_goal_level !== undefined) {
+    if (body.ladder_goal_level === null || body.ladder_goal_level === "") {
+      profileUpdates.ladder_goal_level = null;
+    } else if (
+      typeof body.ladder_goal_level === "string" &&
+      isValidLadderLevelId(body.ladder_goal_level)
+    ) {
+      profileUpdates.ladder_goal_level = body.ladder_goal_level;
+    } else {
+      return NextResponse.json(
+        { error: "ladder_goal_level must be a valid ladder id or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.ladder_goal_target_date !== undefined) {
+    if (
+      body.ladder_goal_target_date === null ||
+      body.ladder_goal_target_date === ""
+    ) {
+      profileUpdates.ladder_goal_target_date = null;
+    } else if (
+      typeof body.ladder_goal_target_date === "string" &&
+      ISO_DATE_RE.test(body.ladder_goal_target_date)
+    ) {
+      profileUpdates.ladder_goal_target_date = body.ladder_goal_target_date;
+    } else {
+      return NextResponse.json(
+        { error: "ladder_goal_target_date must be YYYY-MM-DD or null." },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Admin can also "mark current level" — upserts an achievement (today's date).
+  let currentLevelMark:
+    | { kind: "set"; levelId: string }
+    | { kind: "clear" }
+    | null = null;
+  if (body.ladder_level !== undefined) {
+    if (body.ladder_level === null || body.ladder_level === "") {
+      currentLevelMark = { kind: "clear" };
+    } else if (
+      typeof body.ladder_level === "string" &&
+      isValidLadderLevelId(body.ladder_level)
+    ) {
+      currentLevelMark = { kind: "set", levelId: body.ladder_level };
+    } else {
+      return NextResponse.json(
+        { error: "ladder_level must be a valid ladder id or null." },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (
+    Object.keys(coachUpdates).length === 0 &&
+    Object.keys(profileUpdates).length === 0 &&
+    currentLevelMark === null
+  ) {
     return NextResponse.json({ error: "No valid fields to update." }, { status: 400 });
   }
 
   try {
-    const { error } = await supabaseAdmin
-      .from("coaches")
-      .update(updates)
-      .eq("id", coachId);
+    if (Object.keys(profileUpdates).length > 0) {
+      const { error: pErr } = await supabaseAdmin
+        .from("profiles")
+        .update(profileUpdates)
+        .eq("id", coachId);
 
-    if (error?.code === "42703") {
-      return NextResponse.json(
-        {
-          error:
-            "Directory columns are missing. Deploy the latest database migration.",
-        },
-        { status: 500 }
-      );
+      if (pErr?.code === "42703") {
+        return NextResponse.json(
+          {
+            error:
+              "Ladder columns are missing. Deploy the latest database migration.",
+          },
+          { status: 500 }
+        );
+      }
+      if (pErr) {
+        console.error("admin/coaches/[id] profile update error:", pErr);
+        return NextResponse.json(
+          { error: "Unable to update coach ladder fields." },
+          { status: 500 }
+        );
+      }
     }
-    if (error) {
-      console.error("admin/coaches/[id] update error:", error);
-      return NextResponse.json(
-        { error: "Unable to update coach." },
-        { status: 500 }
-      );
+
+    if (currentLevelMark) {
+      if (currentLevelMark.kind === "set") {
+        const today = new Date().toISOString().slice(0, 10);
+        const { error: aErr } = await supabaseAdmin
+          .from("community_ladder_achievements")
+          .upsert(
+            {
+              user_id: coachId,
+              level_id: currentLevelMark.levelId,
+              achieved_on: today,
+            },
+            { onConflict: "user_id,level_id" }
+          );
+        if (aErr?.code === "42P01") {
+          return NextResponse.json(
+            {
+              error:
+                "Ladder achievements table is missing. Deploy the latest database migration.",
+            },
+            { status: 500 }
+          );
+        }
+        if (aErr) {
+          console.error("admin/coaches/[id] mark_achieved error:", aErr);
+          return NextResponse.json(
+            { error: "Unable to set current ladder level." },
+            { status: 500 }
+          );
+        }
+      } else {
+        // Clear all achievements for this coach.
+        const { error: aErr } = await supabaseAdmin
+          .from("community_ladder_achievements")
+          .delete()
+          .eq("user_id", coachId);
+        if (aErr?.code === "42P01") {
+          return NextResponse.json(
+            {
+              error:
+                "Ladder achievements table is missing. Deploy the latest database migration.",
+            },
+            { status: 500 }
+          );
+        }
+        if (aErr) {
+          console.error("admin/coaches/[id] clear achievements error:", aErr);
+          return NextResponse.json(
+            { error: "Unable to clear ladder achievements." },
+            { status: 500 }
+          );
+        }
+      }
+    }
+
+    if (Object.keys(coachUpdates).length > 0) {
+      const { error } = await supabaseAdmin
+        .from("coaches")
+        .update(coachUpdates)
+        .eq("id", coachId);
+
+      if (error?.code === "42703") {
+        return NextResponse.json(
+          {
+            error:
+              "Directory columns are missing. Deploy the latest database migration.",
+          },
+          { status: 500 }
+        );
+      }
+      if (error) {
+        console.error("admin/coaches/[id] update error:", error);
+        return NextResponse.json(
+          { error: "Unable to update coach." },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json({ ok: true });

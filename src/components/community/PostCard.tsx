@@ -5,6 +5,7 @@ import { displayNameFromProfile } from "@/lib/communityProfile";
 import { bodyPreviewWithoutRawUuids } from "@/lib/communityMentions";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import type { CommunityPostRow } from "@/components/community/CommunityFeed";
+import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
 
@@ -43,23 +44,11 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
           onOpen();
         }
       }}
-      className="flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-slate-300 hover:shadow"
+      className="flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left shadow-sm transition hover:border-slate-300 hover:shadow"
     >
       {/* Row 1: avatar + author only. Row 2: title/body/engagement full width (no blank strip under avatar). */}
       <div className="flex items-start gap-3">
-        {post.author?.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.author.avatar_url}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
-          />
-        ) : (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
-            {authorName.slice(0, 1).toUpperCase()}
-          </span>
-        )}
+        <CommunityAuthorAvatar profile={post.author} size="md" />
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="text-base font-semibold leading-tight text-slate-900">
@@ -69,12 +58,16 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
               <span className="text-xs font-medium text-amber-700">Pinned</span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-xs leading-snug text-slate-500">
-            {formatCommunityPostTimestamp(post.created_at)}
+          <p className="mt-0.5 text-xs leading-snug">
+            <span className="text-slate-500">
+              {formatCommunityPostTimestamp(post.created_at)}
+            </span>
             {post.category ? (
               <>
-                <span className="mx-1.5 select-none text-slate-400">·</span>
-                <span>{post.category.label}</span>
+                <span className="mx-0.5 select-none text-slate-400">·</span>
+                <span className="font-semibold text-slate-500">
+                  {post.category.label}
+                </span>
               </>
             ) : null}
           </p>
@@ -83,7 +76,7 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
 
       <div className="mt-3 flex w-full min-w-0 gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 text-lg font-semibold leading-snug tracking-tight text-slate-900">
+          <h2 className="line-clamp-2 py-1.5 text-xl font-semibold leading-snug tracking-tight text-slate-900">
             {post.title}
           </h2>
           <p className="mt-1.5 line-clamp-3 text-base leading-relaxed text-slate-600">

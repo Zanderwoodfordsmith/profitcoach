@@ -23,8 +23,9 @@ import {
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
-import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
+import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
+import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
 async function fetchAvatarUrlsFromProfiles(
@@ -60,6 +61,8 @@ export type ProfileRow = {
   first_name?: string | null;
   last_name?: string | null;
   avatar_url?: string | null;
+  /** Highest achieved ladder level id; loaded for community UI. */
+  ladder_level?: string | null;
 };
 
 export type CommunityCategory = {
@@ -326,6 +329,28 @@ export function CommunityFeed() {
       }));
     }
 
+    const ladderByUser = await fetchHighestAchievedLevelByUserIds(
+      avatarUserIds
+    );
+    normalizedWithAvatars = normalizedWithAvatars.map((row) => ({
+      ...row,
+      author: row.author?.id
+        ? {
+            ...row.author,
+            ladder_level: ladderByUser.get(row.author.id) ?? null,
+          }
+        : row.author,
+    }));
+    commentsWithAvatars = commentsWithAvatars.map((c) => ({
+      ...c,
+      author: c.author?.id
+        ? {
+            ...c.author,
+            ladder_level: ladderByUser.get(c.author_id) ?? null,
+          }
+        : c.author,
+    }));
+
     const commentsByPost = new Map<string, CommentAuthorRow[]>();
     for (const c of commentsWithAvatars) {
       const arr = commentsByPost.get(c.post_id) ?? [];
@@ -442,143 +467,128 @@ export function CommunityFeed() {
 
   return (
     <>
-      <StickyPageHeader
-        title="Community"
-        description="Browse posts or see where coaches and admins are based."
-        tabs={
-          <PageHeaderUnderlineTabs
-            ariaLabel="Community views"
-            items={[
-              {
-                kind: "link",
-                href: pathname,
-                label: "Feed",
-                active: communityTab === "feed",
-              },
-              {
-                kind: "link",
-                href: `${pathname}?tab=map`,
-                label: "Map",
-                active: communityTab === "map",
-              },
-            ]}
-          />
-        }
-      />
-
-      {communityTab === "map" ? (
-        <div className="mx-auto w-full max-w-6xl min-w-0">
-          <CommunityMembersMap />
-        </div>
-      ) : (
-      <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6">
-      {loadError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-          <p className="font-semibold text-rose-900">Community data could not be loaded</p>
-          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white/80 px-3 py-2 font-mono text-xs leading-relaxed text-rose-950 ring-1 ring-rose-100">
-            {loadError}
-          </pre>
-          <p className="mt-2 text-xs text-rose-700/90">
-            An empty feed does not produce this screen—the Supabase request returned an error.
-            Use the message above (often “relation does not exist” = run the migration, or RLS =
-            check profiles.role is coach or admin).
-          </p>
-        </div>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={() => setComposeOpen(true)}
-        disabled={Boolean(loadError) || categories.length === 0}
-        className="mb-4 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {composeAvatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={composeAvatarUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-          />
+      <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
+        {communityTab === "map" ? (
+          <div className="min-w-0 w-full flex-1">
+            <div className="mx-auto w-full max-w-6xl min-w-0 lg:mx-0">
+              <CommunityMembersMap />
+            </div>
+          </div>
         ) : (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
-            <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
-          </span>
+            <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6 pt-5 lg:mx-0 lg:pt-6">
+              {loadError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  <p className="font-semibold text-rose-900">Community data could not be loaded</p>
+                  <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white/80 px-3 py-2 font-mono text-xs leading-relaxed text-rose-950 ring-1 ring-rose-100">
+                    {loadError}
+                  </pre>
+                  <p className="mt-2 text-xs text-rose-700/90">
+                    An empty feed does not produce this screen—the Supabase request returned an error.
+                    Use the message above (often “relation does not exist” = run the migration, or RLS =
+                    check profiles.role is coach or admin).
+                  </p>
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => setComposeOpen(true)}
+                disabled={Boolean(loadError) || categories.length === 0}
+                className="mb-2 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {composeAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={composeAvatarUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
+                    <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
+              </button>
+
+              <div className="mb-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilterSlug("all")}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                    filterSlug === "all"
+                      ? "bg-sky-700 text-white"
+                      : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setFilterSlug(c.slug)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                      filterSlug === c.slug
+                        ? "bg-sky-700 text-white"
+                        : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+
+              {loading ? (
+                <p className="text-sm text-slate-500">Loading…</p>
+              ) : (
+                <ul className="space-y-3">
+                  {filteredPosts.map((post) => (
+                    <li key={post.id}>
+                      <PostCard
+                        post={post}
+                        onOpen={() => openDetail(post.id)}
+                        onPostsChanged={loadPosts}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {!loading && filteredPosts.length === 0 && !loadError ? (
+                <p className="py-8 text-center text-sm text-slate-500">
+                  No posts yet. Start the conversation.
+                </p>
+              ) : null}
+
+              {composeOpen ? (
+                <CreatePostModal
+                  categories={categories}
+                  onClose={() => setComposeOpen(false)}
+                  onCreated={async () => {
+                    setComposeOpen(false);
+                    await loadPosts();
+                  }}
+                />
+              ) : null}
+
+              {communityTab === "feed" && selectedPost ? (
+                <PostDetailModal
+                  post={selectedPost}
+                  categories={categories}
+                  onClose={closeDetail}
+                  onPostsChanged={loadPosts}
+                />
+              ) : null}
+            </div>
         )}
-        <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
-      </button>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setFilterSlug("all")}
-          className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-            filterSlug === "all"
-              ? "bg-sky-700 text-white"
-              : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-          }`}
-        >
-          All
-        </button>
-        {categories.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setFilterSlug(c.slug)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-              filterSlug === c.slug
-                ? "bg-sky-700 text-white"
-                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <p className="text-sm text-slate-500">Loading…</p>
-      ) : (
-        <ul className="space-y-3">
-          {filteredPosts.map((post) => (
-            <li key={post.id}>
-              <PostCard
-                post={post}
-                onOpen={() => openDetail(post.id)}
-                onPostsChanged={loadPosts}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {!loading && filteredPosts.length === 0 && !loadError ? (
-        <p className="py-8 text-center text-sm text-slate-500">
-          No posts yet. Start the conversation.
-        </p>
-      ) : null}
-
-      {composeOpen ? (
-        <CreatePostModal
-          categories={categories}
-          onClose={() => setComposeOpen(false)}
-          onCreated={async () => {
-            setComposeOpen(false);
-            await loadPosts();
-          }}
+        <CommunitySidebar
+          className={
+            communityTab === "feed" ? "pt-5 lg:pt-6" : undefined
+          }
         />
-      ) : null}
-
-      {communityTab === "feed" && selectedPost ? (
-        <PostDetailModal
-          post={selectedPost}
-          categories={categories}
-          onClose={closeDetail}
-          onPostsChanged={loadPosts}
-        />
-      ) : null}
       </div>
-      )}
     </>
   );
 }

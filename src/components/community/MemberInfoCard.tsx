@@ -13,7 +13,7 @@ export function MemberInfoCard({ member }: { member: MapMember }) {
   const subline = member.coach_business_name?.trim() || null;
   const profileHref =
     member.directory_listed && member.slug
-      ? `/directory/coach/${member.slug}`
+      ? `/directory/${member.slug}`
       : null;
 
   return (

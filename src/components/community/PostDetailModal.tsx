@@ -15,6 +15,7 @@ import {
   Link2,
   MoreHorizontal,
   Pencil,
+  ThumbsUp,
   Trash2,
   X,
 } from "lucide-react";
@@ -31,8 +32,11 @@ import type {
 } from "@/components/community/CommunityFeed";
 import { MentionBody } from "@/components/community/MentionBody";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
+import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
+import { toggleCommunityCommentLike } from "@/lib/communityCommentLike";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
+import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
 import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
@@ -58,7 +62,45 @@ type CommentRow = {
   created_at: string;
   parent_comment_id: string | null;
   author: ProfileRow | null;
+  like_count: number;
+  liked_by_me: boolean;
 };
+
+function CommentLikeButton({
+  likeCount,
+  likedByMe,
+  disabled,
+  onToggle,
+}: {
+  likeCount: number;
+  likedByMe: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation();
+        onToggle();
+      }}
+      className={`inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs tabular-nums transition hover:bg-slate-200/70 disabled:opacity-50 ${
+        likedByMe
+          ? "font-medium text-sky-700"
+          : "text-slate-500 hover:text-slate-800"
+      }`}
+      aria-pressed={likedByMe}
+      aria-label={likedByMe ? "Unlike comment" : "Like comment"}
+    >
+      <ThumbsUp
+        className={`h-3.5 w-3.5 shrink-0 ${likedByMe ? "fill-sky-600 text-sky-600" : ""}`}
+        strokeWidth={2}
+      />
+      <span>{likeCount}</span>
+    </button>
+  );
+}
 
 type Props = {
   post: CommunityPostRow;
@@ -204,7 +246,12 @@ export function PostDetailModal({
   const { impersonatingCoachId } = useImpersonation();
   const [comments, setComments] = useState<CommentRow[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentLikeBusyId, setCommentLikeBusyId] = useState<string | null>(
+    null
+  );
   const [nameById, setNameById] = useState<Record<string, string>>({});
+  const [mentionProfileHrefByUserId, setMentionProfileHrefByUserId] =
+    useState<Record<string, string>>({});
   const [newComment, setNewComment] = useState("");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpenFor, setReplyOpenFor] = useState<string | null>(null);
@@ -366,11 +413,11 @@ export function PostDetailModal({
       return;
     }
     const rows = (data ?? []) as Array<
-      Omit<CommentRow, "author"> & {
+      Omit<CommentRow, "author" | "like_count" | "liked_by_me"> & {
         author: ProfileRow | ProfileRow[] | null;
       }
     >;
-    const mapped: CommentRow[] = rows.map((row) => ({
+    const mapped = rows.map((row) => ({
       id: row.id,
       post_id: row.post_id,
       author_id: row.author_id,
@@ -381,6 +428,46 @@ export function PostDetailModal({
         ? row.author[0] ?? null
         : row.author ?? null,
     }));
+
+    const commentIds = mapped.map((r) => r.id);
+    const likeCountByComment = new Map<string, number>();
+    let myLikedCommentIds = new Set<string>();
+    if (commentIds.length > 0) {
+      const likesRes = await supabaseClient
+        .from("community_comment_likes")
+        .select("comment_id, user_id")
+        .in("comment_id", commentIds);
+
+      if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
+        console.error(likesRes.error);
+      } else {
+        const likesTableMissing = Boolean(
+          likesRes.error && isUndefinedRelationError(likesRes.error)
+        );
+        if (likesTableMissing && process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Community] community_comment_likes query failed (table missing?). Run migration 20260515120000_community_comment_likes.sql."
+          );
+        }
+        const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
+          comment_id: string;
+          user_id: string;
+        }[];
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
+        const uid = user?.id;
+        for (const r of likeRows) {
+          likeCountByComment.set(
+            r.comment_id,
+            (likeCountByComment.get(r.comment_id) ?? 0) + 1
+          );
+          if (uid && r.user_id === uid) {
+            myLikedCommentIds.add(r.comment_id);
+          }
+        }
+      }
+    }
 
     const currentPost = postRef.current;
     const avatarIds = [
@@ -400,6 +487,8 @@ export function PostDetailModal({
     setComments(
       mapped.map((r) => ({
         ...r,
+        like_count: likeCountByComment.get(r.id) ?? 0,
+        liked_by_me: myLikedCommentIds.has(r.id),
         author: mergeAuthorAvatar(r.author_id, r.author, avatarMap),
       }))
     );
@@ -434,15 +523,39 @@ export function PostDetailModal({
     const need = [...new Set([...ids, ...authorIds])];
     if (need.length === 0) {
       setNameById({});
+      setMentionProfileHrefByUserId({});
       return;
     }
     let cancelled = false;
     void (async () => {
       try {
-        const rows = await fetchProfilesByIds(need);
-        if (!cancelled) setNameById(buildNameMap(rows));
+        const [rows, coachRes] = await Promise.all([
+          fetchProfilesByIds(need),
+          supabaseClient
+            .from("coaches")
+            .select("id, slug, directory_listed")
+            .in("id", need),
+        ]);
+        if (cancelled) return;
+        setNameById(buildNameMap(rows));
+        const hrefs: Record<string, string> = {};
+        if (!coachRes.error && coachRes.data) {
+          for (const c of coachRes.data as {
+            id: string;
+            slug: string | null;
+            directory_listed: boolean | null;
+          }[]) {
+            if (c.directory_listed && c.slug) {
+              hrefs[c.id] = `/directory/${c.slug}`;
+            }
+          }
+        }
+        setMentionProfileHrefByUserId(hrefs);
       } catch {
-        if (!cancelled) setNameById({});
+        if (!cancelled) {
+          setNameById({});
+          setMentionProfileHrefByUserId({});
+        }
       }
     })();
     return () => {
@@ -638,6 +751,35 @@ export function PostDetailModal({
     }
   }, [likeBusy, onPostsChanged, post.id, post.liked_by_me]);
 
+  const handleToggleCommentLike = useCallback(
+    async (commentId: string, currentlyLiked: boolean) => {
+      if (commentLikeBusyId !== null) return;
+      setCommentLikeBusyId(commentId);
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                liked_by_me: !currentlyLiked,
+                like_count: Math.max(
+                  0,
+                  c.like_count + (currentlyLiked ? -1 : 1)
+                ),
+              }
+            : c
+        )
+      );
+      try {
+        await toggleCommunityCommentLike(commentId, currentlyLiked);
+      } catch {
+        await loadComments();
+      } finally {
+        setCommentLikeBusyId(null);
+      }
+    },
+    [commentLikeBusyId, loadComments]
+  );
+
   const scrollToComments = useCallback(() => {
     commentsAnchorRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -683,7 +825,7 @@ export function PostDetailModal({
       aria-labelledby="post-detail-title"
     >
       <div
-        className="relative flex max-h-[90vh] min-h-0 w-full max-w-2xl flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className="relative flex max-h-[90vh] min-h-0 w-full max-w-[calc(42rem*1.15)] flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -701,20 +843,8 @@ export function PostDetailModal({
               : "pointer-events-none max-h-0 border-b-0 opacity-0"
           }`}
         >
-          <div className="flex items-center gap-2.5 px-5 py-2.5 pr-10">
-            {headerAuthor?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={headerAuthor.avatar_url}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
-              />
-            ) : (
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                {authorName.slice(0, 1).toUpperCase()}
-              </span>
-            )}
+          <div className="flex items-center gap-2.5 py-2.5 pl-[2.1875rem] pr-[4.375rem]">
+            <CommunityAuthorAvatar profile={headerAuthor} size="sm" />
             <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-slate-900">
               {post.title}
             </p>
@@ -738,36 +868,28 @@ export function PostDetailModal({
         </div>
         <div
           ref={scrollContainerRef}
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5"
+          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-5 px-[2.1875rem]"
         >
           <div className="flex items-start gap-3">
-            {headerAuthor?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={headerAuthor.avatar_url}
-                alt=""
-                referrerPolicy="no-referrer"
-                className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
-              />
-            ) : (
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
-                {authorName.slice(0, 1).toUpperCase()}
-              </span>
-            )}
+            <CommunityAuthorAvatar profile={headerAuthor} size="md" />
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="text-base font-semibold leading-tight text-slate-900">
                     {authorName}
                   </div>
-                  <p className="mt-0.5 text-xs leading-snug text-slate-500">
-                    {formatCommunityPostTimestamp(post.created_at)}
+                  <p className="mt-0.5 text-xs leading-snug">
+                    <span className="text-slate-500">
+                      {formatCommunityPostTimestamp(post.created_at)}
+                    </span>
                     {post.category ? (
                       <>
-                        <span className="mx-1.5 select-none text-slate-400">
+                        <span className="mx-0.5 select-none text-slate-400">
                           ·
                         </span>
-                        <span>{post.category.label}</span>
+                        <span className="font-semibold text-slate-500">
+                          {post.category.label}
+                        </span>
                       </>
                     ) : null}
                   </p>
@@ -800,7 +922,7 @@ export function PostDetailModal({
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xl font-semibold text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-[calc(1.25rem+2px)] font-semibold text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                     aria-label="Post title"
                   />
                   <MentionTextarea
@@ -808,7 +930,7 @@ export function PostDetailModal({
                     onChange={setEditBody}
                     placeholder="Body…"
                     rows={8}
-                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-[calc(1rem+2px)] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                   />
                   {categories.length > 0 ? (
                     <div>
@@ -945,34 +1067,59 @@ export function PostDetailModal({
                   <h2
                     ref={postTitleRef}
                     id="post-detail-title"
-                    className="text-2xl font-semibold leading-snug tracking-tight text-slate-900"
+                    className="mt-2.5 text-[calc(1.5rem+2px)] font-semibold leading-snug tracking-tight text-slate-900"
                   >
                     {post.title}
                   </h2>
-                  <div className="mt-3 text-base text-slate-800">
-                    <div
-                      className={
-                        !bodyExpanded && needsBodyTruncation
-                          ? "line-clamp-9 overflow-hidden"
-                          : undefined
-                      }
-                    >
-                      <MentionBody body={post.body} nameById={nameById} />
-                    </div>
-                    {needsBodyTruncation ? (
-                      <button
-                        type="button"
-                        className="mt-1 text-sm font-medium text-sky-700 hover:underline"
-                        onClick={() => setBodyExpanded((e) => !e)}
-                      >
-                        {bodyExpanded ? "See less" : "See more"}
-                      </button>
-                    ) : null}
+                  <div className="mt-3 text-[calc(1rem+2px)] leading-relaxed text-slate-800">
+                    {bodyExpanded || !needsBodyTruncation ? (
+                      <>
+                        <p className="m-0">
+                          <MentionBody
+                            body={post.body}
+                            nameById={nameById}
+                            profileHrefByUserId={mentionProfileHrefByUserId}
+                          />
+                        </p>
+                        {needsBodyTruncation ? (
+                          <button
+                            type="button"
+                            className="mt-1 inline bg-transparent p-0 font-medium leading-relaxed text-sky-500 hover:text-sky-400 hover:underline"
+                            onClick={() => setBodyExpanded(false)}
+                          >
+                            See less
+                          </button>
+                        ) : null}
+                      </>
+                    ) : (
+                      <div className="text-[calc(1rem+2px)] leading-relaxed">
+                        <div className="line-clamp-9 overflow-hidden break-words">
+                          <MentionBody
+                            body={post.body}
+                            nameById={nameById}
+                            profileHrefByUserId={mentionProfileHrefByUserId}
+                            className="block text-inherit"
+                          />
+                        </div>
+                        <span className="mt-0.5 inline-flex flex-wrap items-baseline gap-1.5">
+                          <span className="text-slate-400" aria-hidden>
+                            …
+                          </span>
+                          <button
+                            type="button"
+                            className="bg-transparent p-0 font-medium leading-relaxed text-sky-500 hover:text-sky-400 hover:underline"
+                            onClick={() => setBodyExpanded(true)}
+                          >
+                            See more
+                          </button>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
               {!editing ? (
-                <div className="mt-5">
+                <div className="mt-3">
                   <PostEngagementBar
                     detail
                     likeCount={post.like_count}
@@ -1011,16 +1158,14 @@ export function PostDetailModal({
           <div
             ref={commentsAnchorRef}
             id="community-post-comments"
-            className="mt-8 border-t border-slate-200 pt-6"
+            className="mt-3 border-t border-slate-200 pt-3"
           >
-            <h3 className="text-sm font-semibold text-slate-900">Comments</h3>
-
             {commentsLoading ? (
-              <p className="mt-3 text-sm text-slate-500">Loading comments…</p>
+              <p className="mt-1 text-sm text-slate-500">Loading comments…</p>
             ) : topLevel.length === 0 ? (
-              <p className="mt-3 text-sm text-slate-500">No comments yet.</p>
+              <p className="mt-1 text-sm text-slate-500">No comments yet.</p>
             ) : (
-              <ul className="mt-4 space-y-6">
+              <ul className="mt-2 space-y-5">
                 {topLevel.map((c) => {
                   const ca = c.author
                     ? displayNameFromProfile(c.author)
@@ -1043,29 +1188,43 @@ export function PostDetailModal({
                         )}
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold text-slate-900">
+                            <span className="text-[15px] font-semibold text-slate-900">
                               {ca}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-[13px] text-slate-500">
                               {formatCommentDate(c.created_at)}
                             </span>
                           </div>
                           <MentionBody
                             body={c.body}
                             nameById={nameById}
-                            className="mt-1 text-sm text-slate-800"
+                            profileHrefByUserId={mentionProfileHrefByUserId}
+                            className="mt-1 text-[15px] text-slate-800"
                           />
-                          <button
-                            type="button"
-                            className="mt-2 text-xs font-medium text-sky-700 hover:underline"
-                            onClick={() =>
-                              setReplyOpenFor((x) =>
-                                x === c.id ? null : c.id
-                              )
-                            }
-                          >
-                            Reply
-                          </button>
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <button
+                              type="button"
+                              className="text-[13px] font-medium text-sky-700 hover:underline"
+                              onClick={() =>
+                                setReplyOpenFor((x) =>
+                                  x === c.id ? null : c.id
+                                )
+                              }
+                            >
+                              Reply
+                            </button>
+                            <CommentLikeButton
+                              likeCount={c.like_count}
+                              likedByMe={c.liked_by_me}
+                              disabled={commentLikeBusyId !== null}
+                              onToggle={() =>
+                                void handleToggleCommentLike(
+                                  c.id,
+                                  c.liked_by_me
+                                )
+                              }
+                            />
+                          </div>
 
                           {replyOpenFor === c.id ? (
                             <div className="mt-2 space-y-2">
@@ -1130,18 +1289,36 @@ export function PostDetailModal({
                                       )}
                                       <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <span className="text-xs font-semibold text-slate-900">
+                                          <span className="text-[13px] font-semibold text-slate-900">
                                             {ra}
                                           </span>
-                                          <span className="text-[10px] text-slate-500">
+                                          <span className="text-[11px] text-slate-500">
                                             {formatCommentDate(r.created_at)}
                                           </span>
                                         </div>
                                         <MentionBody
                                           body={r.body}
                                           nameById={nameById}
-                                          className="mt-0.5 text-sm text-slate-800"
+                                          profileHrefByUserId={
+                                            mentionProfileHrefByUserId
+                                          }
+                                          className="mt-0.5 text-[15px] text-slate-800"
                                         />
+                                        <div className="mt-1">
+                                          <CommentLikeButton
+                                            likeCount={r.like_count}
+                                            likedByMe={r.liked_by_me}
+                                            disabled={
+                                              commentLikeBusyId !== null
+                                            }
+                                            onToggle={() =>
+                                              void handleToggleCommentLike(
+                                                r.id,
+                                                r.liked_by_me
+                                              )
+                                            }
+                                          />
+                                        </div>
                                       </div>
                                     </div>
                                   </li>
@@ -1157,7 +1334,7 @@ export function PostDetailModal({
               </ul>
             )}
 
-            <div className="mt-6 border-t border-slate-100 pt-4">
+            <div className="mt-4 border-t border-slate-100 pt-3">
               <div className="flex items-start gap-3">
                 {composerProfile?.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element

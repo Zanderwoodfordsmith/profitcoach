@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "BCA Coaching Ladder",
+  title: "Profit Coach Ladder",
   description:
-    "The BCA Ladder — Promotion, Proof, and Prestige levels for coaching.",
+    "The Profit Coach Ladder — Promotion, Proof, and Prestige levels for coaching.",
 };
 
 export default function LadderLayout({

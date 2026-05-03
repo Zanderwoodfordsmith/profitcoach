@@ -1,26 +1,37 @@
 import type { ProfileNames } from "@/lib/communityProfile";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 
-/** Stored format: @ plus UUID (no brackets). */
+/** Legacy stored format: @ plus UUID (no brackets). */
 export const MENTION_UUID_REGEX =
   /@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;
 
+/**
+ * Readable token: [@Display Name](mention:uuid) — used in composers so UUIDs are not shown.
+ * Legacy @uuid posts still parse.
+ */
+export const MENTION_MARKDOWN_REGEX =
+  /\[@([^\]]+)\]\(mention:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/gi;
+
+const MENTION_ANY_SOURCE =
+  "\\[@([^\\]]+)\\]\\(mention:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\)|@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})";
+
 export function extractMentionUserIds(body: string): string[] {
   const ids = new Set<string>();
+  const re = new RegExp(MENTION_ANY_SOURCE, "gi");
   let m: RegExpExecArray | null;
-  const re = new RegExp(MENTION_UUID_REGEX.source, "gi");
   while ((m = re.exec(body)) !== null) {
-    ids.add(m[1]);
+    if (m[2]) ids.add(m[2]);
+    else if (m[3]) ids.add(m[3]);
   }
   return [...ids];
 }
 
 export type MentionSegment =
   | { kind: "text"; text: string }
-  | { kind: "mention"; userId: string };
+  | { kind: "mention"; userId: string; labelFromToken?: string };
 
 export function splitMentionSegments(body: string): MentionSegment[] {
-  const re = new RegExp(MENTION_UUID_REGEX.source, "gi");
+  const re = new RegExp(MENTION_ANY_SOURCE, "gi");
   const out: MentionSegment[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
@@ -28,7 +39,15 @@ export function splitMentionSegments(body: string): MentionSegment[] {
     if (m.index > last) {
       out.push({ kind: "text", text: body.slice(last, m.index) });
     }
-    out.push({ kind: "mention", userId: m[1] });
+    if (m[1] !== undefined && m[2] !== undefined) {
+      out.push({
+        kind: "mention",
+        userId: m[2],
+        labelFromToken: m[1],
+      });
+    } else if (m[3] !== undefined) {
+      out.push({ kind: "mention", userId: m[3] });
+    }
     last = m.index + m[0].length;
   }
   if (last < body.length) {
@@ -38,10 +57,9 @@ export function splitMentionSegments(body: string): MentionSegment[] {
 }
 
 export function bodyPreviewWithoutRawUuids(body: string): string {
-  return body.replace(
-    /@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi,
-    "@member"
-  );
+  return body
+    .replace(new RegExp(MENTION_MARKDOWN_REGEX.source, "gi"), "@$1")
+    .replace(new RegExp(MENTION_UUID_REGEX.source, "gi"), "@member");
 }
 
 export function buildNameMap(

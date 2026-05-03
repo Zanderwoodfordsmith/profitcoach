@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { deriveCurrentLevelId } from "@/lib/ladder";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -66,52 +67,110 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from("coaches")
-      .select(
-        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name)"
-      )
-      .order("slug", { ascending: true });
+    type CoachQueryRow = Record<string, unknown>;
+    type QueryResult = {
+      data: CoachQueryRow[] | null;
+      error: { code?: string } | null;
+    };
 
-    if (error?.code === "42703") {
-      const fallback = await supabaseAdmin
+    const runSelect = async (selectStr: string): Promise<QueryResult> => {
+      const r = await supabaseAdmin
         .from("coaches")
-        .select("id, slug, profiles!inner(full_name, coach_business_name)")
+        .select(selectStr)
         .order("slug", { ascending: true });
-      if (fallback.error) {
-        return NextResponse.json(
-          { error: "Unable to load coaches." },
-          { status: 500 }
-        );
-      }
-      const coaches =
-        fallback.data?.map((row: any) => ({
-          id: row.id as string,
-          slug: row.slug as string,
-          full_name: row.profiles?.full_name ?? null,
-          coach_business_name: row.profiles?.coach_business_name ?? null,
-          directory_listed: false,
-          directory_level: null as string | null,
-        })) ?? [];
-      return NextResponse.json({ coaches });
+      return {
+        data: (r.data as unknown as CoachQueryRow[] | null) ?? null,
+        error: r.error as { code?: string } | null,
+      };
+    };
+
+    let res = await runSelect(
+      "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, ladder_goal_level, ladder_goal_target_date)"
+    );
+
+    let goalDateMissing = false;
+    if (res.error?.code === "42703") {
+      res = await runSelect(
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, ladder_goal_level)"
+      );
+      goalDateMissing = true;
     }
 
-    if (error) {
+    let directoryMissing = false;
+    if (res.error?.code === "42703") {
+      res = await runSelect(
+        "id, slug, profiles!inner(full_name, coach_business_name, ladder_goal_level)"
+      );
+      directoryMissing = true;
+    }
+
+    let goalLevelMissing = false;
+    if (res.error?.code === "42703") {
+      res = await runSelect(
+        "id, slug, profiles!inner(full_name, coach_business_name)"
+      );
+      goalLevelMissing = true;
+      directoryMissing = true;
+    }
+
+    if (res.error) {
       return NextResponse.json(
         { error: "Unable to load coaches." },
         { status: 500 }
       );
     }
 
-    const coaches =
-      data?.map((row: any) => ({
-        id: row.id as string,
+    const rows: CoachQueryRow[] = res.data ?? [];
+    const ids = rows.map((r) => r.id as string);
+
+    // Pull achievements in one query and group by user.
+    const achievementsByUser = new Map<string, Array<{ level_id: string }>>();
+    if (ids.length > 0) {
+      const achRes = await supabaseAdmin
+        .from("community_ladder_achievements")
+        .select("user_id, level_id")
+        .in("user_id", ids);
+      if (achRes.error?.code !== "42P01" && !achRes.error) {
+        for (const r of achRes.data ?? []) {
+          const list =
+            achievementsByUser.get(r.user_id as string) ??
+            ([] as Array<{ level_id: string }>);
+          list.push({ level_id: r.level_id as string });
+          achievementsByUser.set(r.user_id as string, list);
+        }
+      }
+    }
+
+    const coaches = rows.map((row) => {
+      const profRaw = row.profiles as
+        | Record<string, unknown>
+        | Array<Record<string, unknown>>
+        | undefined;
+      const prof: Record<string, unknown> | undefined = Array.isArray(profRaw)
+        ? profRaw[0]
+        : profRaw;
+      const id = row.id as string;
+      const ach = achievementsByUser.get(id) ?? [];
+      const currentLevel = deriveCurrentLevelId(ach);
+      return {
+        id,
         slug: row.slug as string,
-        full_name: row.profiles?.full_name ?? null,
-        coach_business_name: row.profiles?.coach_business_name ?? null,
-        directory_listed: !!row.directory_listed,
-        directory_level: (row.directory_level as string | null) ?? null,
-      })) ?? [];
+        full_name: (prof?.full_name as string | null) ?? null,
+        coach_business_name:
+          (prof?.coach_business_name as string | null) ?? null,
+        directory_listed: directoryMissing ? false : !!row.directory_listed,
+        directory_level: directoryMissing
+          ? null
+          : (row.directory_level as string | null) ?? null,
+        ladder_level: currentLevel,
+        ladder_goal_level: goalLevelMissing
+          ? null
+          : (prof?.ladder_goal_level as string | null) ?? null,
+        ladder_goal_target_date: goalDateMissing
+          ? null
+          : (prof?.ladder_goal_target_date as string | null) ?? null,
+      };
+    });
 
     return NextResponse.json({ coaches });
   } catch (err) {
@@ -202,7 +261,6 @@ export async function POST(request: Request) {
       userId = data.user.id;
     }
 
-    // Safety check
     if (!userId) {
       throw new Error("User id missing after creating coach account.");
     }
@@ -248,4 +306,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

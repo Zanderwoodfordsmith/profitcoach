@@ -1,34 +1,57 @@
 "use client";
 
+import Link from "next/link";
 import { splitMentionSegments } from "@/lib/communityMentions";
 
 type Props = {
   body: string;
   nameById: Record<string, string>;
+  /** Public directory profile URL by user id, when listed */
+  profileHrefByUserId?: Record<string, string | undefined>;
   className?: string;
 };
 
-/** Renders plain text + @uuid tokens as styled @DisplayName (plain spans). */
-export function MentionBody({ body, nameById, className = "" }: Props) {
+const mentionClass =
+  "font-medium text-sky-600 underline-offset-2 hover:text-sky-500 hover:underline";
+
+/** Renders plain text + mention tokens as @DisplayName; optional directory profile link. */
+export function MentionBody({
+  body,
+  nameById,
+  profileHrefByUserId,
+  className = "",
+}: Props) {
   const segments = splitMentionSegments(body);
 
   return (
-    <div className={`whitespace-pre-wrap break-words ${className}`}>
+    <span className={`inline whitespace-pre-wrap break-words ${className}`}>
       {segments.map((seg, i) => {
         if (seg.kind === "text") {
           return <span key={i}>{seg.text}</span>;
         }
-        const label = nameById[seg.userId] ?? "member";
+        const label =
+          nameById[seg.userId] ?? seg.labelFromToken ?? "member";
+        const href = profileHrefByUserId?.[seg.userId];
+        const mentionLabel = `@${label}`;
+        if (href) {
+          return (
+            <Link
+              key={i}
+              href={href}
+              className={mentionClass}
+              title={seg.userId}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {mentionLabel}
+            </Link>
+          );
+        }
         return (
-          <span
-            key={i}
-            className="font-medium text-sky-700"
-            title={seg.userId}
-          >
-            @{label}
+          <span key={i} className={mentionClass} title={seg.userId}>
+            {mentionLabel}
           </span>
         );
       })}
-    </div>
+    </span>
   );
 }

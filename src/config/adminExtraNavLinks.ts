@@ -16,7 +16,7 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
   },
   {
     href: "/ladder",
-    label: "BCA Ladder",
+    label: "Profit Coach Ladder",
     hint: "Promotion → proof → prestige",
   },
   {

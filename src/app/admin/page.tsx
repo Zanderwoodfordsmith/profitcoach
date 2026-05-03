@@ -6,6 +6,7 @@ import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
 
 type CoachRow = {
   id: string;
@@ -14,6 +15,9 @@ type CoachRow = {
   coach_business_name: string | null;
   directory_listed: boolean;
   directory_level: string | null;
+  ladder_level: string | null;
+  ladder_goal_level: string | null;
+  ladder_goal_target_date: string | null;
 };
 
 export default function AdminPage() {
@@ -111,9 +115,15 @@ export default function AdminPage() {
     };
   }, [router]);
 
-  async function patchCoachDirectory(
+  async function patchCoachRow(
     coachId: string,
-    body: { directory_listed?: boolean; directory_level?: string | null }
+    body: {
+      directory_listed?: boolean;
+      directory_level?: string | null;
+      ladder_level?: string | null;
+      ladder_goal_level?: string | null;
+      ladder_goal_target_date?: string | null;
+    }
   ) {
     const {
       data: { session },
@@ -145,6 +155,15 @@ export default function AdminPage() {
                   : {}),
                 ...(body.directory_level !== undefined
                   ? { directory_level: body.directory_level }
+                  : {}),
+                ...(body.ladder_level !== undefined
+                  ? { ladder_level: body.ladder_level }
+                  : {}),
+                ...(body.ladder_goal_level !== undefined
+                  ? { ladder_goal_level: body.ladder_goal_level }
+                  : {}),
+                ...(body.ladder_goal_target_date !== undefined
+                  ? { ladder_goal_target_date: body.ladder_goal_target_date }
                   : {}),
               }
             : c
@@ -446,7 +465,10 @@ export default function AdminPage() {
               <th className="px-4 py-2">Business</th>
               <th className="px-4 py-2">Slug</th>
               <th className="px-4 py-2 text-center">Directory</th>
-              <th className="px-4 py-2 min-w-[9rem]">Level</th>
+              <th className="px-4 py-2 min-w-[9rem]">Cert.</th>
+              <th className="px-4 py-2 min-w-[10rem]">Ladder</th>
+              <th className="px-4 py-2 min-w-[10rem]">Ladder goal</th>
+              <th className="px-4 py-2 min-w-[9rem]">Goal by</th>
               <th className="px-4 py-2">Landing link</th>
               <th className="px-4 py-2 text-center min-w-[7rem]">Actions</th>
             </tr>
@@ -477,7 +499,7 @@ export default function AdminPage() {
                       checked={coach.directory_listed}
                       disabled={directorySavingId === coach.id}
                       onChange={(e) =>
-                        void patchCoachDirectory(coach.id, {
+                        void patchCoachRow(coach.id, {
                           directory_listed: e.target.checked,
                         })
                       }
@@ -491,7 +513,7 @@ export default function AdminPage() {
                       disabled={directorySavingId === coach.id}
                       onChange={(e) => {
                         const v = e.target.value;
-                        void patchCoachDirectory(coach.id, {
+                        void patchCoachRow(coach.id, {
                           directory_level: v === "" ? null : v,
                         });
                       }}
@@ -502,6 +524,66 @@ export default function AdminPage() {
                       <option value="professional">Professional</option>
                       <option value="elite">Elite</option>
                     </select>
+                  </td>
+                  <td className="px-4 py-2">
+                    <select
+                      title="Profit Coach ladder — current (admin)"
+                      value={coach.ladder_level ?? ""}
+                      disabled={directorySavingId === coach.id}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        void patchCoachRow(coach.id, {
+                          ladder_level: v === "" ? null : v,
+                        });
+                      }}
+                      className="w-full min-w-[14rem] max-w-[22rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="">Not set</option>
+                      {LADDER_LEVELS.map((lvl) => (
+                        <option key={lvl.id} value={lvl.id}>
+                          {ladderAdminSelectLabel(lvl)}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-2">
+                    <select
+                      title="Profit Coach ladder — goal (admin)"
+                      value={coach.ladder_goal_level ?? ""}
+                      disabled={directorySavingId === coach.id}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        void patchCoachRow(coach.id, {
+                          ladder_goal_level: v === "" ? null : v,
+                        });
+                      }}
+                      className="w-full min-w-[14rem] max-w-[22rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="">Not set</option>
+                      {LADDER_LEVELS.map((lvl) => (
+                        <option key={lvl.id} value={lvl.id}>
+                          {ladderAdminSelectLabel(lvl)}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-2">
+                    <input
+                      type="date"
+                      title="Target date for ultimate goal level"
+                      value={coach.ladder_goal_target_date ?? ""}
+                      disabled={
+                        directorySavingId === coach.id ||
+                        !coach.ladder_goal_level
+                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        void patchCoachRow(coach.id, {
+                          ladder_goal_target_date: v === "" ? null : v,
+                        });
+                      }}
+                      className="w-full max-w-[10rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    />
                   </td>
                   <td className="px-4 py-2 text-xs text-sky-700">
                     <a
@@ -531,7 +613,7 @@ export default function AdminPage() {
             {loading && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={10}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   Loading coaches…

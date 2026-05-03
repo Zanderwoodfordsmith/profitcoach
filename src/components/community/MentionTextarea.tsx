@@ -37,6 +37,8 @@ export function getActiveMentionQuery(
   const before = text.slice(0, selectionStart);
   const lastAt = before.lastIndexOf("@");
   if (lastAt === -1) return null;
+  // Avoid treating `@` inside `[@Name](mention:…)` as a new mention query
+  if (lastAt >= 1 && before[lastAt - 1] === "[") return null;
   const fragment = before.slice(lastAt + 1);
   if (/\s/.test(fragment)) return null;
   return { start: lastAt, query: fragment };
@@ -111,7 +113,13 @@ export function MentionTextarea({
       const ctx = getActiveMentionQuery(value, sel);
       if (!ctx) return;
 
-      const mentionText = `@${user.id}`;
+      const safeName = user.display_name
+        .replace(/\]/g, "")
+        .replace(/\[/g, "")
+        .replace(/\(/g, "")
+        .replace(/\)/g, "")
+        .trim();
+      const mentionText = `[@${safeName || "member"}](mention:${user.id})`;
       const next =
         value.slice(0, ctx.start) + mentionText + " " + value.slice(sel);
       onChange(next);
