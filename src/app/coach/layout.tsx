@@ -75,8 +75,8 @@ function IconMessagesSquare({ className }: { className?: string }) {
 }
 
 const mainNavItems: NavItem[] = [
-  { href: "/coach/signature", label: "Signature", icon: IconFlower },
   { href: "/coach/community", label: "Community", icon: IconMessagesSquare },
+  { href: "/coach/signature", label: "Checklist", icon: IconFlower },
   { href: "/coach/academy", label: "Classroom", icon: IconAcademy },
 ];
 

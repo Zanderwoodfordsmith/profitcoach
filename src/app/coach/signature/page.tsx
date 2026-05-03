@@ -259,7 +259,7 @@ export default function CoachSignaturePage() {
   return (
     <div className="relative w-full pb-20">
       <StickyPageHeader
-        title="Signature snapshot"
+        title="Checklist"
         description="Tap the circle beside each line to score. The model updates as you go."
       />
 
