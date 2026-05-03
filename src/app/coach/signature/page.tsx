@@ -186,10 +186,6 @@ export default function CoachSignaturePage() {
         setLoading(false);
         return;
       }
-      if (roleBody.role === "admin" && !impersonatingCoachId) {
-        router.replace("/admin");
-        return;
-      }
       if (roleBody.role !== "coach" && roleBody.role !== "admin") {
         router.replace("/login");
         return;

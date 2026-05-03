@@ -242,6 +242,7 @@ export function SignaturePetalDiagram({
           fill={p.color}
           stroke="#ffffff"
           strokeWidth={2}
+          style={{ pointerEvents: "none" }}
         />
       ))}
 
@@ -314,6 +315,7 @@ export function SignaturePetalDiagram({
             fill="none"
             stroke="rgba(31,58,102,0.14)"
             strokeWidth={0.9}
+            style={{ pointerEvents: "none" }}
           />
         ))
       )}

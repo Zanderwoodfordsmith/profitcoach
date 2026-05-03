@@ -34,19 +34,14 @@ async function requireCoach(request: Request) {
     .maybeSingle();
 
   const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
-  const effectiveId =
-    profile?.role === "admin" && impersonateId ? impersonateId : user.id;
 
   if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
     return { error: "Not authorized." as const, userId: null };
   }
 
-  if (profile.role === "admin" && !impersonateId) {
-    return {
-      error: "Admin must pass x-impersonate-coach-id for this resource." as const,
-      userId: null,
-    };
-  }
+  /** Admin acting as a coach uses the impersonated id; otherwise own user id (e.g. /admin/signature). */
+  const effectiveId =
+    profile.role === "admin" && impersonateId ? impersonateId : user.id;
 
   return { error: null, userId: effectiveId as string };
 }

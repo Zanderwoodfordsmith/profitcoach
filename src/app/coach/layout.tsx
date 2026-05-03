@@ -1,11 +1,18 @@
 "use client";
 
+import type React from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Filter, LogOut, MessageSquare, MessagesSquare } from "lucide-react";
+import { Filter, LogOut, MessagesSquare, Sparkles } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactElement;
+};
 
 function IconCog({ className }: { className?: string }) {
   return (
@@ -55,16 +62,41 @@ function IconAcademy({ className }: { className?: string }) {
   );
 }
 
-const navItems = [
+function IconFilter({ className }: { className?: string }) {
+  return <Filter className={className} />;
+}
+
+function IconSparkles({ className }: { className?: string }) {
+  return <Sparkles className={className} />;
+}
+
+function IconMessagesSquare({ className }: { className?: string }) {
+  return <MessagesSquare className={className} />;
+}
+
+const mainNavItems: NavItem[] = [
   { href: "/coach/signature", label: "Signature", icon: IconFlower },
-  { href: "/coach/community", label: "Community", icon: MessagesSquare },
+  { href: "/coach/community", label: "Community", icon: IconMessagesSquare },
   { href: "/coach/academy", label: "Classroom", icon: IconAcademy },
-  { href: "/coach/clients", label: "Clients", icon: IconBriefcase },
-  { href: "/coach/prospects", label: "Prospects", icon: IconUserPlus },
-  { href: "/coach/playbooks", label: "Playbooks", icon: IconBookOpen },
-  { href: "/coach/funnel-analyzer", label: "Funnel Analyzer", icon: Filter },
-  { href: "/coach/message-generator", label: "Messages", icon: MessageSquare },
 ];
+
+const marketingNavItems: NavItem[] = [
+  { href: "/coach/prospects", label: "Prospects", icon: IconUserPlus },
+  { href: "/coach/funnel-analyzer", label: "Funnel Analyzer", icon: IconFilter },
+  { href: "/coach/message-generator", label: "AI", icon: IconSparkles },
+];
+
+const deliveryNavItems: NavItem[] = [
+  { href: "/coach/clients", label: "Clients", icon: IconBriefcase },
+  { href: "/coach/playbooks", label: "Playbooks", icon: IconBookOpen },
+];
+
+function navLinkActive(pathname: string | null, href: string) {
+  return (
+    pathname === href ||
+    (href !== "/coach" && Boolean(pathname?.startsWith(`${href}/`)))
+  );
+}
 
 export default function CoachLayout({
   children,
@@ -112,6 +144,35 @@ export default function CoachLayout({
       cancelled = true;
     };
   }, [impersonatingCoachId]);
+
+  /** Admins belong on /admin/signature; /coach/signature is for coaches (or admins while impersonating). */
+  useEffect(() => {
+    if (!pathname?.startsWith("/coach/signature")) return;
+    if (impersonatingCoachId) return;
+    let cancelled = false;
+    async function redirectAdminIfNeeded() {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (cancelled || !user) return;
+      const roleRes = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        role?: string;
+      };
+      if (cancelled) return;
+      if (roleBody.role === "admin") {
+        router.replace("/admin/signature");
+      }
+    }
+    void redirectAdminIfNeeded();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, impersonatingCoachId, router]);
 
   function handleExit() {
     clearImpersonation();
@@ -171,11 +232,8 @@ export default function CoachLayout({
         </div>
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
           <ul className="space-y-1">
-            {navItems.map((item) => {
-              const active =
-                pathname === item.href ||
-                (item.href !== "/coach" &&
-                  Boolean(pathname?.startsWith(`${item.href}/`)));
+            {mainNavItems.map((item) => {
+              const active = navLinkActive(pathname, item.href);
               const Icon = item.icon;
               return (
                 <li key={item.href}>
@@ -194,6 +252,58 @@ export default function CoachLayout({
               );
             })}
           </ul>
+          <div className="mt-5 px-1">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+              Marketing
+            </p>
+            <ul className="space-y-0.5">
+              {marketingNavItems.map((item) => {
+                const active = navLinkActive(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                        active
+                          ? "bg-sky-500/80 text-white"
+                          : "text-slate-100/90 hover:bg-white/10"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="mt-5 px-1">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+              Delivery
+            </p>
+            <ul className="space-y-0.5">
+              {deliveryNavItems.map((item) => {
+                const active = navLinkActive(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                        active
+                          ? "bg-sky-500/80 text-white"
+                          : "text-slate-100/90 hover:bg-white/10"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </nav>
         <Link
           href="/coach/settings"

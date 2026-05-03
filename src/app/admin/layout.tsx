@@ -129,7 +129,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
       <aside
-        className="fixed left-0 top-0 bottom-0 z-10 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white"
+        className="fixed left-0 top-0 bottom-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white"
         style={{ height: "100vh" }}
       >
         <div className="shrink-0 px-4 py-4">
