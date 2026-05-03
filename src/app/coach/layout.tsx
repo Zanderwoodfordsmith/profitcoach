@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Banknote, Filter, LogOut, MessageSquare, MessagesSquare } from "lucide-react";
+import { Filter, LogOut, MessageSquare, MessagesSquare } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -60,7 +60,6 @@ const navItems = [
   { href: "/coach/community", label: "Community", icon: MessagesSquare },
   { href: "/coach/academy", label: "Classroom", icon: IconAcademy },
   { href: "/coach/clients", label: "Clients", icon: IconBriefcase },
-  { href: "/coach/income", label: "Income", icon: Banknote },
   { href: "/coach/prospects", label: "Prospects", icon: IconUserPlus },
   { href: "/coach/playbooks", label: "Playbooks", icon: IconBookOpen },
   { href: "/coach/funnel-analyzer", label: "Funnel Analyzer", icon: Filter },
