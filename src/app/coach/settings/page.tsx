@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
+import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -15,6 +17,7 @@ type ProfileData = {
   linkedin_url: string | null;
   bio: string | null;
   location: string | null;
+  ai_context?: CoachAiContext | null;
   coach_slug: string | null;
   directory_listed: boolean;
   directory_level: string | null;
@@ -43,6 +46,12 @@ export default function CoachSettingsPage() {
   const [directoryToggleBusy, setDirectoryToggleBusy] = useState(false);
   const [directoryError, setDirectoryError] = useState<string | null>(null);
 
+  const [brainSuperpowers, setBrainSuperpowers] = useState("");
+  const [brainHobbies, setBrainHobbies] = useState("");
+  const [brainClientResults, setBrainClientResults] = useState<
+    Array<{ title: string; story: string }>
+  >([]);
+
   const loadProfile = useCallback(async () => {
     const {
       data: { session },
@@ -66,10 +75,6 @@ export default function CoachSettingsPage() {
       setLoading(false);
       return;
     }
-    const effectiveId =
-      roleBody.role === "admin" && impersonatingCoachId
-        ? impersonatingCoachId
-        : session.user.id;
     if (roleBody.role === "admin" && !impersonatingCoachId) {
       router.replace("/admin");
       return;
@@ -99,15 +104,21 @@ export default function CoachSettingsPage() {
     setLinkedinUrl(data.linkedin_url ?? "");
     setBio(data.bio ?? "");
     setLocation(data.location ?? "");
+    const ctx = data.ai_context ?? {};
+    setBrainSuperpowers(ctx.superpowers ?? "");
+    setBrainHobbies(ctx.hobbies_and_recent ?? "");
+    setBrainClientResults(
+      (ctx.client_results ?? []).map((r) => ({
+        title: r.title ?? "",
+        story: r.story ?? "",
+      }))
+    );
     setLoading(false);
   }, [router, impersonatingCoachId]);
 
   useEffect(() => {
-    let cancelled = false;
-    loadProfile();
-    return () => {
-      cancelled = true;
-    };
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data bootstrap after async profile-role + coach profile fetches
+    void loadProfile();
   }, [loadProfile]);
 
   async function handleSave(e: React.FormEvent) {
@@ -138,6 +149,13 @@ export default function CoachSettingsPage() {
         linkedin_url: linkedinUrl.trim() || null,
         bio: bio.trim() || null,
         location: location.trim() || null,
+        ai_context: {
+          superpowers: brainSuperpowers.trim() || undefined,
+          hobbies_and_recent: brainHobbies.trim() || undefined,
+          client_results: brainClientResults.filter(
+            (r) => r.title.trim() || r.story.trim()
+          ),
+        },
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -383,6 +401,117 @@ export default function CoachSettingsPage() {
               </span>
               ). A full street address works too if you prefer.
             </p>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">
+            AI context (your brain)
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            The in-app AI coach reads this into every reply (along with playbook
+            excerpts and your{" "}
+            <Link
+              href="/coach/signature"
+              className="font-medium text-sky-700 underline hover:text-sky-800"
+            >
+              Compass
+            </Link>{" "}
+            scores). Edit here or from the AI Coach screen.
+          </p>
+          <div className="mt-4 space-y-4">
+            <div>
+              <label
+                htmlFor="brain_superpowers"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Superpowers
+              </label>
+              <textarea
+                id="brain_superpowers"
+                rows={4}
+                value={brainSuperpowers}
+                onChange={(e) => setBrainSuperpowers(e.target.value)}
+                placeholder="What you’re uniquely strong at…"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="brain_hobbies"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Hobbies and recent
+              </label>
+              <textarea
+                id="brain_hobbies"
+                rows={3}
+                value={brainHobbies}
+                onChange={(e) => setBrainHobbies(e.target.value)}
+                placeholder="Human details you’re happy to weave into content…"
+                className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-700">Client results</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Short titles plus outcome stories the model can cite as proof.
+              </p>
+              <div className="mt-3 flex flex-col gap-3">
+                {brainClientResults.map((r, i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border border-slate-200 bg-slate-50/80 p-3"
+                  >
+                    <input
+                      type="text"
+                      value={r.title}
+                      onChange={(e) => {
+                        const next = [...brainClientResults];
+                        next[i] = { ...next[i]!, title: e.target.value };
+                        setBrainClientResults(next);
+                      }}
+                      placeholder="Title"
+                      className="mb-2 w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm font-medium text-slate-900 shadow-sm"
+                    />
+                    <textarea
+                      value={r.story}
+                      onChange={(e) => {
+                        const next = [...brainClientResults];
+                        next[i] = { ...next[i]!, story: e.target.value };
+                        setBrainClientResults(next);
+                      }}
+                      placeholder="Outcome / story"
+                      rows={3}
+                      className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-900 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBrainClientResults(
+                          brainClientResults.filter((_, j) => j !== i)
+                        )
+                      }
+                      className="mt-2 text-xs font-medium text-rose-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setBrainClientResults([
+                      ...brainClientResults,
+                      { title: "", story: "" },
+                    ])
+                  }
+                  className="rounded-lg border border-dashed border-slate-300 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  + Add client result
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 

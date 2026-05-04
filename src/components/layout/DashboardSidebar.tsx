@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Compass,
   Filter,
-  Layers,
   LogOut,
   MessagesSquare,
   Sparkles,
@@ -62,10 +61,6 @@ function IconCompass({ className }: { className?: string }) {
   return <Compass className={className} />;
 }
 
-function IconLayers({ className }: { className?: string }) {
-  return <Layers className={className} />;
-}
-
 function IconAcademy({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -99,11 +94,6 @@ function mainNavItems(prefix: "/coach" | "/admin"): NavItem[] {
   return [
     { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
     { href: `${prefix}/signature`, label: "Compass", icon: IconCompass },
-    {
-      href: `${prefix}/community/ladder`,
-      label: "My ladder",
-      icon: IconLayers,
-    },
     { href: `${prefix}/academy`, label: "Classroom", icon: IconAcademy },
   ];
 }
@@ -162,7 +152,6 @@ export function DashboardSidebar({
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const roleLabel = variant === "coach" ? "Coach" : "Admin";
-
   const footer =
     variant === "coach"
       ? {

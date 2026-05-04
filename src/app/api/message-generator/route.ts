@@ -16,12 +16,13 @@ function toAnthropicMessages(messages: ClientMessage[]) {
   }));
 }
 
+/** Public / legacy endpoint (no auth). Coach UI uses `/api/coach/profit-coach-ai`. */
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "Server is not configured with ANTHROPIC_API_KEY." },
-      { status: 500 },
+      { status: 500 }
     );
   }
 
@@ -36,7 +37,7 @@ export async function POST(req: Request) {
   if (!Array.isArray(messages) || messages.length === 0) {
     return NextResponse.json(
       { error: "Expected a non-empty messages array." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
           error:
             "Each message must have role user|assistant and string content.",
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
   }
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
   if (messages[messages.length - 1]?.role !== "user") {
     return NextResponse.json(
       { error: "Last message must be from the user." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
         error:
           "Could not load messaging knowledge on the server. Try redeploying the latest build.",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 

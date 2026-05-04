@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation } from "@/lib/geocodeLocation";
 
@@ -53,7 +55,7 @@ export async function GET(request: Request) {
     const profileResult = await supabaseAdmin
       .from("profiles")
       .select(
-        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location"
+        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location, ai_context"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -109,6 +111,7 @@ export async function GET(request: Request) {
         linkedin_url?: string | null;
         bio?: string | null;
         location?: string | null;
+        ai_context?: CoachAiContext | null;
       } | null;
 
       return NextResponse.json({
@@ -120,6 +123,7 @@ export async function GET(request: Request) {
         linkedin_url: prof?.linkedin_url ?? null,
         bio: prof?.bio ?? null,
         location: prof?.location ?? null,
+        ai_context: prof?.ai_context ?? {},
         coach_slug: slug,
         directory_listed: false,
         directory_level: null,
@@ -142,6 +146,7 @@ export async function GET(request: Request) {
       linkedin_url?: string | null;
       bio?: string | null;
       location?: string | null;
+      ai_context?: CoachAiContext | null;
     } | null;
 
     return NextResponse.json({
@@ -153,6 +158,7 @@ export async function GET(request: Request) {
       linkedin_url: prof?.linkedin_url ?? null,
       bio: prof?.bio ?? null,
       location: prof?.location ?? null,
+      ai_context: prof?.ai_context ?? {},
       coach_slug: slug,
       directory_listed: coachRow?.directory_listed ?? false,
       directory_level: coachRow?.directory_level ?? null,
@@ -173,6 +179,8 @@ type PatchBody = {
   bio?: string | null;
   location?: string | null;
   avatar_url?: string | null;
+  /** Partial merge into existing ai_context jsonb */
+  ai_context?: Partial<CoachAiContext>;
   /** Coach may toggle directory visibility; level is admin-only. */
   directory_listed?: boolean;
   directory_level?: unknown;
@@ -204,6 +212,32 @@ export async function PATCH(request: Request) {
   }
 
   const updates: Record<string, unknown> = {};
+
+  if (body.ai_context !== undefined) {
+    if (body.ai_context === null || typeof body.ai_context !== "object") {
+      return NextResponse.json(
+        { error: "ai_context must be an object." },
+        { status: 400 }
+      );
+    }
+    const { data: curRow, error: curErr } = await supabaseAdmin
+      .from("profiles")
+      .select("ai_context")
+      .eq("id", coachId)
+      .maybeSingle();
+    if (curErr?.code === "42703") {
+      return NextResponse.json(
+        {
+          error:
+            "ai_context is not available yet. Run the latest database migration.",
+        },
+        { status: 503 }
+      );
+    }
+    const prev = ((curRow as { ai_context?: CoachAiContext } | null)?.ai_context ??
+      {}) as CoachAiContext;
+    updates.ai_context = mergeCoachAiContext(prev, body.ai_context);
+  }
 
   if (body.first_name !== undefined) updates.first_name = body.first_name?.trim() ?? null;
   if (body.last_name !== undefined) updates.last_name = body.last_name?.trim() ?? null;

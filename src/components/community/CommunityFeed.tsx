@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { User } from "lucide-react";
+import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
@@ -27,33 +27,56 @@ import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderL
 import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 
-/** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
-async function fetchAvatarUrlsFromProfiles(
-  ids: string[]
-): Promise<Record<string, string | null>> {
-  if (ids.length === 0) return {};
-  const { data, error } = await supabaseClient
-    .from("profiles")
-    .select("id, avatar_url")
-    .in("id", ids);
-  if (error || !data?.length) return {};
-  const out: Record<string, string | null> = {};
-  for (const r of data as { id: string; avatar_url: string | null }[]) {
-    out[r.id] = r.avatar_url ?? null;
+const POSTS_PER_PAGE = 20;
+
+/** Show a community encouragement quote when the current page has fewer posts than a “full” page. */
+const SPARSE_PAGE_POST_THRESHOLD = 10;
+
+type SparseEncouragementQuote = { text: string; author: string };
+
+const COMMUNITY_SPARSE_QUOTES: readonly SparseEncouragementQuote[] = [
+  {
+    text: "Never doubt that a small group of thoughtful, committed citizens can change the world; indeed, it's the only thing that ever has.",
+    author: "Margaret Mead",
+  },
+  {
+    text: "We are not put on this earth for ourselves, but are placed here for each other. If you are there always for others, then in time of need, someone will be there for you.",
+    author: "Jeff Warner",
+  },
+  {
+    text: "Only a life lived for others is a life worthwhile.",
+    author: "Albert Einstein",
+  },
+  {
+    text: "I don't know what your destiny will be, but one thing I do know: the only ones among you who will be really happy are those who have sought and found how to serve.",
+    author: "Albert Schweitzer",
+  },
+];
+
+function sparseEncouragementQuoteIndex(
+  page: number,
+  filterSlug: string,
+  length: number
+): number {
+  if (length <= 0) return 0;
+  let seed = page * 7919;
+  for (let i = 0; i < filterSlug.length; i++) {
+    seed = (seed * 31 + filterSlug.charCodeAt(i)) >>> 0;
   }
-  return out;
+  return seed % length;
 }
 
-function applyAvatarFallback<P extends ProfileRow | null>(
-  author: P,
-  authorId: string,
-  fb: Record<string, string | null>
-): P {
-  const url = fb[authorId];
-  if (!url) return author;
-  if (!author) return { id: authorId, avatar_url: url } as P;
-  return { ...author, avatar_url: url };
-}
+const COMMUNITY_POST_LIST_SELECT = `
+        id,
+        title,
+        body,
+        image_url,
+        is_pinned,
+        created_at,
+        category_id,
+        category:community_categories!category_id ( id, slug, label ),
+        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+      `;
 
 export type ProfileRow = {
   id: string;
@@ -87,6 +110,265 @@ export type CommunityPostRow = {
   comment_preview_authors: ProfileRow[];
 };
 
+type RawCommunityPostRow = Omit<
+  CommunityPostRow,
+  | "category"
+  | "author"
+  | "like_count"
+  | "comment_count"
+  | "liked_by_me"
+  | "comment_preview_authors"
+> & {
+  category: CommunityCategory | CommunityCategory[] | null;
+  author: ProfileRow | ProfileRow[] | null;
+};
+
+type NormalizedPostRow = Omit<
+  CommunityPostRow,
+  | "like_count"
+  | "comment_count"
+  | "liked_by_me"
+  | "comment_preview_authors"
+>;
+
+/** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
+async function fetchAvatarUrlsFromProfiles(
+  ids: string[]
+): Promise<Record<string, string | null>> {
+  if (ids.length === 0) return {};
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", ids);
+  if (error || !data?.length) return {};
+  const out: Record<string, string | null> = {};
+  for (const r of data as { id: string; avatar_url: string | null }[]) {
+    out[r.id] = r.avatar_url ?? null;
+  }
+  return out;
+}
+
+function applyAvatarFallback<P extends ProfileRow | null>(
+  author: P,
+  authorId: string,
+  fb: Record<string, string | null>
+): P {
+  const url = fb[authorId];
+  if (!url) return author;
+  if (!author) return { id: authorId, avatar_url: url } as P;
+  return { ...author, avatar_url: url };
+}
+
+function normalizeRawPostRows(rows: RawCommunityPostRow[]): NormalizedPostRow[] {
+  return rows.map((row) => ({
+    ...row,
+    category: Array.isArray(row.category)
+      ? row.category[0] ?? null
+      : row.category ?? null,
+    author: Array.isArray(row.author)
+      ? row.author[0] ?? null
+      : row.author ?? null,
+  }));
+}
+
+function paginationItems(
+  current: number,
+  total: number
+): Array<number | "ellipsis"> {
+  if (total <= 0) return [];
+  if (total <= 9) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages = new Set<number>();
+  pages.add(1);
+  pages.add(total);
+  for (let i = current - 2; i <= current + 2; i++) {
+    if (i >= 1 && i <= total) pages.add(i);
+  }
+  const sorted = [...pages].sort((a, b) => a - b);
+  const out: Array<number | "ellipsis"> = [];
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+      out.push("ellipsis");
+    }
+    out.push(sorted[i]);
+  }
+  return out;
+}
+
+async function enrichNormalizedCommunityPosts(
+  normalized: NormalizedPostRow[]
+): Promise<CommunityPostRow[]> {
+  if (normalized.length === 0) {
+    return [];
+  }
+
+  const postIds = normalized.map((p) => p.id);
+
+  const {
+    data: { user },
+  } = await supabaseClient.auth.getUser();
+  const uid = user?.id;
+
+  const [likesRes, commentsRes] = await Promise.all([
+    supabaseClient
+      .from("community_post_likes")
+      .select("post_id, user_id")
+      .in("post_id", postIds),
+    supabaseClient
+      .from("community_post_comments")
+      .select(
+        `
+          post_id,
+          author_id,
+          created_at,
+          author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+        `
+      )
+      .in("post_id", postIds)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
+    throw likesRes.error;
+  }
+  if (commentsRes.error) throw commentsRes.error;
+
+  const likesTableMissing = Boolean(
+    likesRes.error && isUndefinedRelationError(likesRes.error)
+  );
+  if (likesTableMissing && process.env.NODE_ENV === "development") {
+    console.warn(
+      "[Community] community_post_likes query failed (table missing?). Run migration 20260508120000_community_post_likes.sql. Likes will show as 0 until then."
+    );
+  }
+
+  let myLiked = new Set<string>();
+  if (uid && !likesTableMissing) {
+    const myRes = await supabaseClient
+      .from("community_post_likes")
+      .select("post_id")
+      .eq("user_id", uid)
+      .in("post_id", postIds);
+    if (myRes.error && !isUndefinedRelationError(myRes.error)) {
+      throw myRes.error;
+    }
+    if (!myRes.error) {
+      myLiked = new Set(
+        (myRes.data ?? []).map((r: { post_id: string }) => r.post_id)
+      );
+    }
+  }
+
+  const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
+    post_id: string;
+    user_id: string;
+  }[];
+  const likeCountByPost = new Map<string, number>();
+  for (const r of likeRows) {
+    likeCountByPost.set(r.post_id, (likeCountByPost.get(r.post_id) ?? 0) + 1);
+  }
+
+  const rawComments = (commentsRes.data ?? []) as Array<
+    Omit<CommentAuthorRow, "author"> & {
+      author: ProfileRow | ProfileRow[] | null;
+    }
+  >;
+  const commentsNormalized: CommentAuthorRow[] = rawComments.map((row) => ({
+    post_id: row.post_id,
+    author_id: row.author_id,
+    created_at: row.created_at,
+    author: Array.isArray(row.author)
+      ? row.author[0] ?? null
+      : row.author ?? null,
+  }));
+
+  const avatarToken = await getValidSupabaseAccessToken();
+  const avatarUserIds = [
+    ...new Set([
+      ...normalized.flatMap((p) => (p.author?.id ? [p.author.id] : [])),
+      ...commentsNormalized.map((c) => c.author_id),
+    ]),
+  ];
+  const avatarMap = await fetchStaffAvatarMap(avatarUserIds, avatarToken);
+
+  let normalizedWithAvatars = normalized.map((row) => ({
+    ...row,
+    author: row.author?.id
+      ? mergeAuthorAvatar(row.author.id, row.author, avatarMap)
+      : row.author,
+  }));
+
+  let commentsWithAvatars: CommentAuthorRow[] = commentsNormalized.map(
+    (c) => ({
+      ...c,
+      author: mergeAuthorAvatar(c.author_id, c.author, avatarMap),
+    })
+  );
+
+  const stillMissing = new Set<string>();
+  for (const row of normalizedWithAvatars) {
+    if (row.author?.id && !row.author.avatar_url) {
+      stillMissing.add(row.author.id);
+    }
+  }
+  for (const c of commentsWithAvatars) {
+    if (c.author_id && !c.author?.avatar_url) {
+      stillMissing.add(c.author_id);
+    }
+  }
+  if (stillMissing.size > 0) {
+    const fb = await fetchAvatarUrlsFromProfiles([...stillMissing]);
+    normalizedWithAvatars = normalizedWithAvatars.map((row) => ({
+      ...row,
+      author: row.author?.id
+        ? applyAvatarFallback(row.author, row.author.id, fb)
+        : row.author,
+    }));
+    commentsWithAvatars = commentsWithAvatars.map((c) => ({
+      ...c,
+      author: applyAvatarFallback(c.author, c.author_id, fb),
+    }));
+  }
+
+  const ladderByUser = await fetchHighestAchievedLevelByUserIds(avatarUserIds);
+  normalizedWithAvatars = normalizedWithAvatars.map((row) => ({
+    ...row,
+    author: row.author?.id
+      ? {
+          ...row.author,
+          ladder_level: ladderByUser.get(row.author.id) ?? null,
+        }
+      : row.author,
+  }));
+  commentsWithAvatars = commentsWithAvatars.map((c) => ({
+    ...c,
+    author: c.author?.id
+      ? {
+          ...c.author,
+          ladder_level: ladderByUser.get(c.author_id) ?? null,
+        }
+      : c.author,
+  }));
+
+  const commentsByPost = new Map<string, CommentAuthorRow[]>();
+  for (const c of commentsWithAvatars) {
+    const arr = commentsByPost.get(c.post_id) ?? [];
+    arr.push(c);
+    commentsByPost.set(c.post_id, arr);
+  }
+
+  return normalizedWithAvatars.map((row) => ({
+    ...row,
+    like_count: likeCountByPost.get(row.id) ?? 0,
+    comment_count: (commentsByPost.get(row.id) ?? []).length,
+    liked_by_me: myLiked.has(row.id),
+    comment_preview_authors: buildCommentPreviewAvatars(
+      commentsByPost.get(row.id) ?? []
+    ),
+  }));
+}
+
 export function CommunityFeed() {
   const { impersonatingCoachId } = useImpersonation();
   const router = useRouter();
@@ -103,9 +385,18 @@ export function CommunityFeed() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [composeAvatarUrl, setComposeAvatarUrl] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [fetchedDetailPost, setFetchedDetailPost] =
+    useState<CommunityPostRow | null>(null);
+  const [feedBootstrapOk, setFeedBootstrapOk] = useState(false);
+  const [postsLoading, setPostsLoading] = useState(false);
+  /** Bumps when the feed should reload while staying on the same page (e.g. new post). */
+  const [postsRefreshNonce, setPostsRefreshNonce] = useState(0);
 
   const closeDetail = useCallback(() => {
     setSelectedPostId(null);
+    setFetchedDetailPost(null);
     const sp = new URLSearchParams(searchParams.toString());
     sp.delete("post");
     const q = sp.toString();
@@ -131,6 +422,41 @@ export function CommunityFeed() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (!selectedPostId) {
+      setFetchedDetailPost(null);
+      return;
+    }
+    if (posts.some((p) => p.id === selectedPostId)) {
+      setFetchedDetailPost(null);
+      return;
+    }
+    let cancelled = false;
+    const id = selectedPostId;
+    void (async () => {
+      try {
+        const { data, error } = await supabaseClient
+          .from("community_posts")
+          .select(COMMUNITY_POST_LIST_SELECT.trim())
+          .eq("id", id)
+          .maybeSingle();
+        if (cancelled || error || !data) return;
+        const normalized = normalizeRawPostRows([
+          data as unknown as RawCommunityPostRow,
+        ]);
+        const enriched = await enrichNormalizedCommunityPosts(normalized);
+        if (!cancelled && enriched[0]?.id === id) {
+          setFetchedDetailPost(enriched[0]);
+        }
+      } catch {
+        if (!cancelled) setFetchedDetailPost(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPostId, posts]);
+
   const loadCategories = useCallback(async () => {
     const { data, error } = await supabaseClient
       .from("community_categories")
@@ -140,241 +466,44 @@ export function CommunityFeed() {
     setCategories((data ?? []) as CommunityCategory[]);
   }, []);
 
-  const loadPosts = useCallback(async () => {
-    /* Explicit FK hints avoid PostgREST “could not find relationship” when inference fails. */
-    const { data, error } = await supabaseClient
-      .from("community_posts")
-      .select(
-        `
-        id,
-        title,
-        body,
-        image_url,
-        is_pinned,
-        created_at,
-        category_id,
-        category:community_categories!category_id ( id, slug, label ),
-        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
-      `
-      )
-      .order("is_pinned", { ascending: false })
-      .order("created_at", { ascending: false });
+  const loadPosts = useCallback(
+    async (pageOverride?: number) => {
+      const effectivePage = pageOverride ?? page;
+      const from = (effectivePage - 1) * POSTS_PER_PAGE;
+      const to = from + POSTS_PER_PAGE - 1;
 
-    if (error) throw error;
-    const rows = (data ?? []) as Array<
-      Omit<
-        CommunityPostRow,
-        | "category"
-        | "author"
-        | "like_count"
-        | "comment_count"
-        | "liked_by_me"
-        | "comment_preview_authors"
-      > & {
-        category: CommunityCategory | CommunityCategory[] | null;
-        author: ProfileRow | ProfileRow[] | null;
+      let q = supabaseClient
+        .from("community_posts")
+        .select(COMMUNITY_POST_LIST_SELECT.trim(), { count: "exact" })
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (filterSlug !== "all") {
+        const cat = categories.find((c) => c.slug === filterSlug);
+        if (cat) {
+          q = q.eq("category_id", cat.id);
+        }
       }
-    >;
-    const normalized = rows.map((row) => ({
-      ...row,
-      category: Array.isArray(row.category)
-        ? row.category[0] ?? null
-        : row.category ?? null,
-      author: Array.isArray(row.author)
-        ? row.author[0] ?? null
-        : row.author ?? null,
-    }));
 
-    const postIds = normalized.map((p) => p.id);
-    const emptyEngagement = {
-      like_count: 0,
-      comment_count: 0,
-      liked_by_me: false,
-      comment_preview_authors: [] as ProfileRow[],
-    };
+      const { data, error, count } = await q;
 
-    if (postIds.length === 0) {
-      setPosts(
-        normalized.map((row) => ({
-          ...row,
-          ...emptyEngagement,
-        }))
-      );
-      return;
-    }
+      if (error) throw error;
+      setTotalCount(count ?? 0);
 
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-    const uid = user?.id;
-
-    const [likesRes, commentsRes] = await Promise.all([
-      supabaseClient
-        .from("community_post_likes")
-        .select("post_id, user_id")
-        .in("post_id", postIds),
-      supabaseClient
-        .from("community_post_comments")
-        .select(
-          `
-          post_id,
-          author_id,
-          created_at,
-          author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
-        `
-        )
-        .in("post_id", postIds)
-        .order("created_at", { ascending: true }),
-    ]);
-
-    if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
-      throw likesRes.error;
-    }
-    if (commentsRes.error) throw commentsRes.error;
-
-    const likesTableMissing = Boolean(
-      likesRes.error && isUndefinedRelationError(likesRes.error)
-    );
-    if (likesTableMissing && process.env.NODE_ENV === "development") {
-      console.warn(
-        "[Community] community_post_likes query failed (table missing?). Run migration 20260508120000_community_post_likes.sql. Likes will show as 0 until then."
-      );
-    }
-
-    let myLiked = new Set<string>();
-    if (uid && !likesTableMissing) {
-      const myRes = await supabaseClient
-        .from("community_post_likes")
-        .select("post_id")
-        .eq("user_id", uid)
-        .in("post_id", postIds);
-      if (myRes.error && !isUndefinedRelationError(myRes.error)) {
-        throw myRes.error;
-      }
-      if (!myRes.error) {
-        myLiked = new Set(
-          (myRes.data ?? []).map((r: { post_id: string }) => r.post_id)
-        );
-      }
-    }
-
-    const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
-      post_id: string;
-      user_id: string;
-    }[];
-    const likeCountByPost = new Map<string, number>();
-    for (const r of likeRows) {
-      likeCountByPost.set(r.post_id, (likeCountByPost.get(r.post_id) ?? 0) + 1);
-    }
-
-    const rawComments = (commentsRes.data ?? []) as Array<
-      Omit<CommentAuthorRow, "author"> & {
-        author: ProfileRow | ProfileRow[] | null;
-      }
-    >;
-    const commentsNormalized: CommentAuthorRow[] = rawComments.map((row) => ({
-      post_id: row.post_id,
-      author_id: row.author_id,
-      created_at: row.created_at,
-      author: Array.isArray(row.author)
-        ? row.author[0] ?? null
-        : row.author ?? null,
-    }));
-
-    const avatarToken = await getValidSupabaseAccessToken();
-    const avatarUserIds = [
-      ...new Set([
-        ...normalized.flatMap((p) => (p.author?.id ? [p.author.id] : [])),
-        ...commentsNormalized.map((c) => c.author_id),
-      ]),
-    ];
-    const avatarMap = await fetchStaffAvatarMap(avatarUserIds, avatarToken);
-
-    let normalizedWithAvatars = normalized.map((row) => ({
-      ...row,
-      author: row.author?.id
-        ? mergeAuthorAvatar(row.author.id, row.author, avatarMap)
-        : row.author,
-    }));
-
-    let commentsWithAvatars: CommentAuthorRow[] = commentsNormalized.map(
-      (c) => ({
-        ...c,
-        author: mergeAuthorAvatar(c.author_id, c.author, avatarMap),
-      })
-    );
-
-    const stillMissing = new Set<string>();
-    for (const row of normalizedWithAvatars) {
-      if (row.author?.id && !row.author.avatar_url) {
-        stillMissing.add(row.author.id);
-      }
-    }
-    for (const c of commentsWithAvatars) {
-      if (c.author_id && !c.author?.avatar_url) {
-        stillMissing.add(c.author_id);
-      }
-    }
-    if (stillMissing.size > 0) {
-      const fb = await fetchAvatarUrlsFromProfiles([...stillMissing]);
-      normalizedWithAvatars = normalizedWithAvatars.map((row) => ({
-        ...row,
-        author: row.author?.id
-          ? applyAvatarFallback(row.author, row.author.id, fb)
-          : row.author,
-      }));
-      commentsWithAvatars = commentsWithAvatars.map((c) => ({
-        ...c,
-        author: applyAvatarFallback(c.author, c.author_id, fb),
-      }));
-    }
-
-    const ladderByUser = await fetchHighestAchievedLevelByUserIds(
-      avatarUserIds
-    );
-    normalizedWithAvatars = normalizedWithAvatars.map((row) => ({
-      ...row,
-      author: row.author?.id
-        ? {
-            ...row.author,
-            ladder_level: ladderByUser.get(row.author.id) ?? null,
-          }
-        : row.author,
-    }));
-    commentsWithAvatars = commentsWithAvatars.map((c) => ({
-      ...c,
-      author: c.author?.id
-        ? {
-            ...c.author,
-            ladder_level: ladderByUser.get(c.author_id) ?? null,
-          }
-        : c.author,
-    }));
-
-    const commentsByPost = new Map<string, CommentAuthorRow[]>();
-    for (const c of commentsWithAvatars) {
-      const arr = commentsByPost.get(c.post_id) ?? [];
-      arr.push(c);
-      commentsByPost.set(c.post_id, arr);
-    }
-
-    setPosts(
-      normalizedWithAvatars.map((row) => ({
-        ...row,
-        like_count: likeCountByPost.get(row.id) ?? 0,
-        comment_count: (commentsByPost.get(row.id) ?? []).length,
-        liked_by_me: myLiked.has(row.id),
-        comment_preview_authors: buildCommentPreviewAvatars(
-          commentsByPost.get(row.id) ?? []
-        ),
-      }))
-    );
-  }, []);
+      const rows = (data ?? []) as unknown as RawCommunityPostRow[];
+      const normalized = normalizeRawPostRows(rows);
+      const enriched = await enrichNormalizedCommunityPosts(normalized);
+      setPosts(enriched);
+    },
+    [page, filterSlug, categories]
+  );
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
+    setFeedBootstrapOk(false);
     void (async () => {
       try {
         const {
@@ -428,24 +557,7 @@ export function CommunityFeed() {
           return;
         }
 
-        try {
-          await loadPosts();
-        } catch (e) {
-          if (!cancelled) {
-            const msg = supabaseErrorMessage(e);
-            const hint = communityAccessHint(msg);
-            setLoadError(
-              [
-                "Failed while loading posts (table community_posts or joined profiles).",
-                "",
-                msg,
-                hint ?? "",
-              ]
-                .filter(Boolean)
-                .join("\n")
-            );
-          }
-        }
+        if (!cancelled) setFeedBootstrapOk(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -453,26 +565,76 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId, loadCategories, loadPosts, pathname]);
+  }, [impersonatingCoachId, loadCategories, pathname]);
 
-  const filteredPosts = useMemo(() => {
-    if (filterSlug === "all") return posts;
-    return posts.filter((p) => p.category?.slug === filterSlug);
-  }, [posts, filterSlug]);
+  useEffect(() => {
+    if (!feedBootstrapOk) return;
+    let cancelled = false;
+    setPostsLoading(true);
+    setLoadError(null);
+    void (async () => {
+      try {
+        await loadPosts();
+      } catch (e) {
+        if (!cancelled) {
+          const msg = supabaseErrorMessage(e);
+          const hint = communityAccessHint(msg);
+          setLoadError(
+            [
+              "Failed while loading posts (table community_posts or joined profiles).",
+              "",
+              msg,
+              hint ?? "",
+            ]
+              .filter(Boolean)
+              .join("\n")
+          );
+        }
+      } finally {
+        if (!cancelled) setPostsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [feedBootstrapOk, page, filterSlug, loadPosts, postsRefreshNonce]);
 
-  const selectedPost = useMemo(
-    () => posts.find((p) => p.id === selectedPostId) ?? null,
-    [posts, selectedPostId]
+  const totalPages = Math.max(1, Math.ceil(totalCount / POSTS_PER_PAGE));
+
+  const feedRangeLabel = useMemo(() => {
+    if (totalCount === 0) return "0 of 0";
+    const start = (page - 1) * POSTS_PER_PAGE + 1;
+    const end = Math.min(page * POSTS_PER_PAGE, totalCount);
+    return `${start}-${end} of ${totalCount.toLocaleString()}`;
+  }, [page, totalCount]);
+
+  const pageNumbers = useMemo(
+    () => paginationItems(page, totalPages),
+    [page, totalPages]
   );
+
+  const sparseQuote = useMemo(() => {
+    const i = sparseEncouragementQuoteIndex(
+      page,
+      filterSlug,
+      COMMUNITY_SPARSE_QUOTES.length
+    );
+    return COMMUNITY_SPARSE_QUOTES[i] ?? COMMUNITY_SPARSE_QUOTES[0];
+  }, [page, filterSlug]);
+
+  const selectedPost = useMemo(() => {
+    const fromList = posts.find((p) => p.id === selectedPostId);
+    if (fromList) return fromList;
+    if (fetchedDetailPost?.id === selectedPostId) return fetchedDetailPost;
+    return null;
+  }, [posts, selectedPostId, fetchedDetailPost]);
 
   return (
     <>
       <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
         {communityTab === "map" ? (
-          <div className="min-w-0 w-full flex-1">
-            <div className="mx-auto w-full max-w-6xl min-w-0 lg:mx-0">
-              <CommunityMembersMap />
-            </div>
+          <div className="min-w-0 w-full flex-1 pt-5 lg:pt-6">
+            <CommunityMembersMap />
           </div>
         ) : (
             <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6 pt-5 lg:mx-0 lg:pt-6">
@@ -515,7 +677,10 @@ export function CommunityFeed() {
               <div className="mb-2 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setFilterSlug("all")}
+                  onClick={() => {
+                    setFilterSlug("all");
+                    setPage(1);
+                  }}
                   className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                     filterSlug === "all"
                       ? "bg-sky-700 text-white"
@@ -528,7 +693,10 @@ export function CommunityFeed() {
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => setFilterSlug(c.slug)}
+                    onClick={() => {
+                      setFilterSlug(c.slug);
+                      setPage(1);
+                    }}
                     className={`rounded-full px-3 py-1.5 text-sm font-medium ${
                       filterSlug === c.slug
                         ? "bg-sky-700 text-white"
@@ -540,35 +708,115 @@ export function CommunityFeed() {
                 ))}
               </div>
 
-              {loading ? (
+              {loading || postsLoading ? (
                 <p className="text-sm text-slate-500">Loading…</p>
               ) : (
                 <ul className="space-y-3">
-                  {filteredPosts.map((post) => (
+                  {posts.map((post) => (
                     <li key={post.id}>
                       <PostCard
                         post={post}
                         onOpen={() => openDetail(post.id)}
-                        onPostsChanged={loadPosts}
+                        onPostsChanged={() => loadPosts()}
                       />
                     </li>
                   ))}
                 </ul>
               )}
 
-              {!loading && filteredPosts.length === 0 && !loadError ? (
-                <p className="py-8 text-center text-sm text-slate-500">
-                  No posts yet. Start the conversation.
-                </p>
+              {!loading &&
+              !postsLoading &&
+              !loadError &&
+              posts.length < SPARSE_PAGE_POST_THRESHOLD ? (
+                <div className="mx-auto mt-10 max-w-xl px-4 text-center">
+                  {posts.length === 0 ? (
+                    <p className="mb-10 text-sm text-slate-500">
+                      No posts yet. Start the conversation.
+                    </p>
+                  ) : null}
+                  <blockquote className="text-xl font-light leading-snug text-slate-800 sm:text-2xl sm:leading-snug">
+                    <span className="select-none text-slate-300">&ldquo;</span>
+                    {sparseQuote.text}
+                    <span className="select-none text-slate-300">&rdquo;</span>
+                  </blockquote>
+                  <p className="mt-5 text-sm font-medium tracking-wide text-slate-400">
+                    {sparseQuote.author}
+                  </p>
+                  <p className="mx-auto mt-8 max-w-sm text-sm leading-relaxed text-slate-500">
+                    Share something useful: a tip, a lesson, or a resource others
+                    can use.
+                  </p>
+                </div>
+              ) : null}
+
+              {!loading && !postsLoading && !loadError && totalPages > 1 ? (
+                <nav
+                  className="flex flex-col gap-3 rounded-xl bg-[#F9F9F9] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  aria-label="Feed pagination"
+                >
+                  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                    <button
+                      type="button"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-[#666666] disabled:cursor-not-allowed disabled:text-[#CCCCCC]"
+                    >
+                      <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                      Previous
+                    </button>
+                    <div className="flex flex-wrap items-center gap-1 pl-1">
+                      {pageNumbers.map((item, idx) =>
+                        item === "ellipsis" ? (
+                          <span
+                            key={`e-${idx}`}
+                            className="px-1.5 text-sm text-[#666666]"
+                            aria-hidden
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => setPage(item)}
+                            className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
+                              item === page
+                                ? "bg-[#F9E4B7] text-[#666666]"
+                                : "text-[#666666] hover:bg-black/[0.04]"
+                            }`}
+                            aria-current={item === page ? "page" : undefined}
+                          >
+                            {item}
+                          </button>
+                        )
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      disabled={page >= totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-[#666666] disabled:cursor-not-allowed disabled:text-[#CCCCCC]"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                    </button>
+                  </div>
+                  <p className="text-sm text-[#666666] sm:text-right">
+                    {feedRangeLabel}
+                  </p>
+                </nav>
               ) : null}
 
               {composeOpen ? (
                 <CreatePostModal
                   categories={categories}
                   onClose={() => setComposeOpen(false)}
-                  onCreated={async () => {
+                  onCreated={() => {
                     setComposeOpen(false);
-                    await loadPosts();
+                    setPage(1);
+                    setPostsRefreshNonce((n) => n + 1);
                   }}
                 />
               ) : null}
@@ -578,16 +826,18 @@ export function CommunityFeed() {
                   post={selectedPost}
                   categories={categories}
                   onClose={closeDetail}
-                  onPostsChanged={loadPosts}
+                  onPostsChanged={() => loadPosts()}
                 />
               ) : null}
             </div>
         )}
-        <CommunitySidebar
-          className={
-            communityTab === "feed" ? "pt-5 lg:pt-6" : undefined
-          }
-        />
+        {communityTab !== "map" ? (
+          <CommunitySidebar
+            className={
+              communityTab === "feed" ? "pt-5 lg:pt-6" : undefined
+            }
+          />
+        ) : null}
       </div>
     </>
   );

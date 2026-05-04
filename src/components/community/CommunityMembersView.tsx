@@ -5,10 +5,7 @@ import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Calendar, MapPin, User } from "lucide-react";
 
-import {
-  COMMUNITY_ONLINE_WINDOW_MS,
-  isCommunityOnline,
-} from "@/lib/communityPresence";
+import { isCommunityOnline } from "@/lib/communityPresence";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 import {
   useCommunityMemberDirectory,
@@ -105,32 +102,15 @@ export function CommunityMembersView() {
     filter === id ? "text-sky-200" : "text-slate-500";
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-      <div className="mx-auto w-full max-w-3xl min-w-0 flex-1 pt-2">
-      <h1 className="text-lg font-semibold text-slate-900">
-        Community members
-      </h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Coaches and staff on Profit Coach.{" "}
-        {presenceUnavailable ? (
-          <span className="text-slate-500">
-            Online status appears after the presence migration is applied.
-          </span>
-        ) : (
-          <>
-            Online means active in the community within{" "}
-            {Math.round(COMMUNITY_ONLINE_WINDOW_MS / 60000)} minutes.
-          </>
-        )}
-      </p>
-
+    <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
+      <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col pt-5 lg:mx-0 lg:pt-6">
       {loadError ? (
-        <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {loadError}
         </p>
       ) : null}
 
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className={`flex flex-wrap gap-2 ${loadError ? "mt-4" : ""}`}>
         <Link href={pillHref("members")} className={pillClass("members")}>
           Members{" "}
           <span className={countClass("members")}>{counts.members}</span>
@@ -162,7 +142,7 @@ export function CommunityMembersView() {
           return (
             <li
               key={m.id}
-              className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 shadow-sm"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow"
             >
               <div className="flex gap-3">
                 <div className="relative h-14 w-14 shrink-0">
@@ -179,7 +159,7 @@ export function CommunityMembersView() {
                       <User className="h-7 w-7" strokeWidth={1.5} />
                     </div>
                   )}
-                  {online ? (
+                  {online && !presenceUnavailable ? (
                     <span
                       className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500"
                       title="Online now"
@@ -188,10 +168,21 @@ export function CommunityMembersView() {
                   ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className="truncate font-semibold text-slate-900">
                       {name}
                     </p>
+                    {!presenceUnavailable ? (
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                          online
+                            ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80"
+                            : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                        }`}
+                      >
+                        {online ? "Online" : "Offline"}
+                      </span>
+                    ) : null}
                     <span className="text-xs font-medium text-sky-600">
                       {roleLabel}
                     </span>
@@ -210,15 +201,14 @@ export function CommunityMembersView() {
                     </p>
                   ) : null}
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
-                    <span
-                      className={
-                        online ? "font-medium text-emerald-700" : undefined
-                      }
-                    >
-                      {online
-                        ? "Active now"
-                        : `Last seen ${formatLastSeen(lastSeenByUserId[m.id], clock)}`}
-                    </span>
+                    {!presenceUnavailable &&
+                    !online &&
+                    lastSeenByUserId[m.id] ? (
+                      <span>
+                        Last seen{" "}
+                        {formatLastSeen(lastSeenByUserId[m.id], clock)}
+                      </span>
+                    ) : null}
                     {joined ? (
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3 w-3 shrink-0" />
@@ -253,7 +243,7 @@ export function CommunityMembersView() {
         </p>
       ) : null}
       </div>
-      <CommunitySidebar />
+      <CommunitySidebar className="pt-5 lg:pt-6" />
     </div>
   );
 }

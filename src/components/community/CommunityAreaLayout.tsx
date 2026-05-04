@@ -16,17 +16,15 @@ export function CommunityAreaLayout({
   const base = pathname.startsWith("/admin")
     ? "/admin/community"
     : "/coach/community";
-  const isLadder = pathname === `${base}/ladder`;
   const isMembers = pathname === `${base}/members`;
   const onCommunityHome =
     pathname === base || pathname === `${base}/`;
 
   const isMap =
-    !isLadder &&
     !isMembers &&
     onCommunityHome &&
     searchParams.get("tab") === "map";
-  const isFeed = !isLadder && !isMembers && onCommunityHome && !isMap;
+  const isFeed = !isMembers && onCommunityHome && !isMap;
 
   const description = isMembers
     ? "Browse all members, see who's online, and find staff admins."
@@ -45,15 +43,15 @@ export function CommunityAreaLayout({
           },
           {
             kind: "link",
-            href: `${base}?tab=map`,
-            label: "Map",
-            active: isMap,
-          },
-          {
-            kind: "link",
             href: `${base}/members`,
             label: "Members",
             active: isMembers,
+          },
+          {
+            kind: "link",
+            href: `${base}?tab=map`,
+            label: "Map",
+            active: isMap,
           },
         ]}
       />

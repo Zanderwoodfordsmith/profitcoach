@@ -79,7 +79,7 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
           <h2 className="line-clamp-2 py-1.5 text-xl font-semibold leading-snug tracking-tight text-slate-900">
             {post.title}
           </h2>
-          <p className="mt-1.5 line-clamp-3 text-base leading-relaxed text-slate-600">
+          <p className="mt-1.5 line-clamp-2 text-base leading-relaxed text-slate-600">
             {preview || " "}
           </p>
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>

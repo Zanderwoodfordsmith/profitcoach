@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { StickyPageHeader } from "@/components/layout";
 import { SignaturePetalDiagram } from "@/components/signature/SignaturePetalDiagram";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -76,7 +75,7 @@ function ScoreCycleDot({
     <button
       type="button"
       onClick={() => onChange(nextScore(value ?? null))}
-      className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-left outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-left outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
       aria-label={`${moduleLabel}: ${scoreAriaLabel(value ?? null)}. Tap to change.`}
     >
       <span
@@ -84,6 +83,93 @@ function ScoreCycleDot({
         aria-hidden
       />
     </button>
+  );
+}
+
+function CompassScoringInfoPopover() {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const legend = [
+    { visual: SCORE_DOT.empty, label: "Not yet" },
+    { visual: SCORE_DOT.red, label: "Needs attention" },
+    { visual: SCORE_DOT.yellow, label: "Building" },
+    { visual: SCORE_DOT.green, label: "On track" },
+  ] as const;
+
+  const jumps = [
+    { href: "#compass-pillar-reach", label: "Connect" },
+    { href: "#compass-pillar-enrol", label: "Enroll" },
+    { href: "#compass-pillar-deliver", label: "Deliver" },
+    { href: "#compass-section-centre", label: "Centre" },
+  ] as const;
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  return (
+    <div className="relative shrink-0" ref={wrapRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+        aria-expanded={open}
+        aria-label="How scoring works"
+      >
+        <IconInfo className="h-4 w-4" />
+      </button>
+      {open ? (
+        <div
+          className="absolute right-0 top-full z-20 mt-1 w-[17.5rem] max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200/90 bg-white px-3.5 py-3 text-sm leading-relaxed text-slate-600 shadow-lg"
+          role="tooltip"
+        >
+          <p className="leading-snug text-slate-700">
+            Tap the circle beside each line to score — it cycles through the
+            states.
+          </p>
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+            States
+          </p>
+          <ul className="mt-2 space-y-2">
+            {legend.map(({ visual, label }) => (
+              <li
+                key={label}
+                className="flex items-center gap-2.5 text-sm text-slate-700"
+              >
+                <span
+                  className={`h-4 w-4 shrink-0 rounded-full ${visual}`}
+                  aria-hidden
+                />
+                {label}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.1em] text-slate-500">
+            Jump to section
+          </p>
+          <ul className="mt-2 space-y-1">
+            {jumps.map(({ href, label }) => (
+              <li key={href}>
+                <a
+                  href={href}
+                  className="font-medium text-sky-700 underline-offset-2 hover:text-sky-600 hover:underline"
+                  onClick={() => setOpen(false)}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -258,109 +344,118 @@ export default function CoachSignaturePage() {
 
   return (
     <div className="relative w-full pb-20">
-      <StickyPageHeader
-        title="Compass"
-        description="Tap the circle beside each line to score. The model updates as you go."
-      />
-
       {error ? (
         <p className="mb-3 mt-3 text-left text-sm text-rose-600" role="alert">
           {error}
         </p>
       ) : null}
 
-      <div className="mb-0 mt-[40px] flex w-full justify-center">
-        <SignaturePetalDiagram scores={scores} onScoreChange={setModuleScore} />
-      </div>
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="mb-0 mt-[40px] flex w-full justify-center">
+          <SignaturePetalDiagram
+            scores={scores}
+            onScoreChange={setModuleScore}
+          />
+        </div>
 
-      <div className="w-full divide-y divide-slate-200/90 border-y border-slate-200/80 bg-white/80 -mt-1 sm:-mt-2">
-        <div className="divide-y divide-slate-100">
-          {SIGNATURE_MODEL_V2.pillars.map((pillar) => (
-            <div key={pillar.id} className="divide-y divide-slate-100">
-              <div className="bg-slate-50/60 px-5 py-3.5 sm:px-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  {pillar.title}
-                </p>
-              </div>
-              {pillar.modules.map((m) => {
-                const v = scores[m.id];
-                return (
-                  <div
-                    key={m.id}
-                    className="flex gap-4 px-4 py-5 sm:gap-5 sm:px-6"
-                  >
-                    <ScoreCycleDot
-                      value={v}
-                      onChange={(val) => setModuleScore(m.id, val)}
-                      moduleLabel={m.diagramTitle}
-                    />
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <p className="text-base leading-[1.55] text-slate-800 sm:text-[17px]">
-                        <span className="font-semibold text-slate-900">
-                          {m.diagramTitle}
-                        </span>
-                        <span className="text-slate-300"> · </span>
-                        {m.question}
-                      </p>
-                      <p className="mt-1.5 font-mono text-xs text-slate-400">
-                        {m.code}
+        <div className="-mt-1 w-full sm:-mt-2">
+          <div className="mt-4 flex items-center justify-end">
+            <CompassScoringInfoPopover />
+          </div>
+          <div className="divide-y divide-slate-200/90 overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-sm">
+              <div className="divide-y divide-slate-100">
+                {SIGNATURE_MODEL_V2.pillars.map((pillar) => (
+                  <div key={pillar.id} className="divide-y divide-slate-100">
+                    <div
+                      id={`compass-pillar-${pillar.id}`}
+                      className="scroll-mt-28 bg-slate-50/60 px-4 py-3 sm:px-5"
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        {pillar.title}
                       </p>
                     </div>
-                    <HintPopover
-                      hint={m.onrampHint}
-                      rowKey={m.id}
-                      openKey={hintRow}
-                      onToggle={setHintRow}
-                    />
+                    {pillar.modules.map((m) => {
+                      const v = scores[m.id];
+                      return (
+                        <div
+                          key={m.id}
+                          className="grid grid-cols-[2.75rem_1fr] grid-rows-[auto_auto] items-center gap-x-2 gap-y-1.5 px-3 py-3.5 sm:grid-cols-[2.75rem_minmax(7rem,11rem)_minmax(0,1fr)] sm:grid-rows-1 sm:gap-x-3 sm:px-4"
+                        >
+                          <div className="row-span-2 flex justify-center self-center sm:row-span-1">
+                            <ScoreCycleDot
+                              value={v}
+                              onChange={(val) => setModuleScore(m.id, val)}
+                              moduleLabel={m.diagramTitle}
+                            />
+                          </div>
+                          <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-semibold leading-snug text-slate-900 sm:text-[17px]">
+                            {m.diagramTitle}
+                          </p>
+                          <div className="col-start-2 row-start-2 flex min-w-0 items-start gap-1.5 sm:col-start-3 sm:row-start-1">
+                            <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-[17px] sm:leading-[1.5]">
+                              {m.question}
+                            </p>
+                            <HintPopover
+                              hint={m.onrampHint}
+                              rowKey={m.id}
+                              openKey={hintRow}
+                              onToggle={setHintRow}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          ))}
+                ))}
 
-          <div className="divide-y divide-slate-100">
-            <div className="bg-slate-50/60 px-5 py-3.5 sm:px-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                Centre — Income, Impact, Freedom
-              </p>
-              <p className="mt-1.5 text-sm leading-snug text-slate-500">
-                Where Connect, Enrol and Deliver overlap.
-              </p>
-            </div>
-            {SIGNATURE_LIFESTYLE_LENSES.map((row) => {
-              const v = scores[row.moduleId];
-              return (
-                <div
-                  key={row.moduleId}
-                  className="flex gap-4 px-4 py-5 sm:gap-5 sm:px-6"
-                >
-                  <ScoreCycleDot
-                    value={v}
-                    onChange={(val) => setModuleScore(row.moduleId, val)}
-                    moduleLabel={row.lensLabel}
-                  />
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-base leading-[1.55] text-slate-800 sm:text-[17px]">
-                      <span className="font-semibold text-slate-900">
-                        {row.lensLabel}
-                      </span>
-                      <span className="text-slate-300"> · </span>
-                      {row.question}
+                <div className="divide-y divide-slate-100">
+                  <div
+                    id="compass-section-centre"
+                    className="scroll-mt-28 bg-slate-50/60 px-4 py-3 sm:px-5"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      Centre — Income, Impact, Freedom
                     </p>
-                    <p className="mt-1.5 font-mono text-xs text-slate-400">
-                      {row.code}
+                    <p className="mt-1 text-sm leading-snug text-slate-500">
+                      Where Connect, Enrol and Deliver overlap.
                     </p>
                   </div>
-                  <HintPopover
-                    hint={row.onrampHint}
-                    rowKey={row.moduleId}
-                    openKey={hintRow}
-                    onToggle={setHintRow}
-                  />
+                  {SIGNATURE_LIFESTYLE_LENSES.map((row) => {
+                    const v = scores[row.moduleId];
+                    return (
+                      <div
+                        key={row.moduleId}
+                        className="grid grid-cols-[2.75rem_1fr] grid-rows-[auto_auto] items-center gap-x-2 gap-y-1.5 px-3 py-3.5 sm:grid-cols-[2.75rem_minmax(7rem,11rem)_minmax(0,1fr)] sm:grid-rows-1 sm:gap-x-3 sm:px-4"
+                      >
+                        <div className="row-span-2 flex justify-center self-center sm:row-span-1">
+                          <ScoreCycleDot
+                            value={v}
+                            onChange={(val) =>
+                              setModuleScore(row.moduleId, val)
+                            }
+                            moduleLabel={row.lensLabel}
+                          />
+                        </div>
+                        <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-semibold leading-snug text-slate-900 sm:text-[17px]">
+                          {row.lensLabel}
+                        </p>
+                        <div className="col-start-2 row-start-2 flex min-w-0 items-start gap-1.5 sm:col-start-3 sm:row-start-1">
+                          <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-[17px] sm:leading-[1.5]">
+                            {row.question}
+                          </p>
+                          <HintPopover
+                            hint={row.onrampHint}
+                            rowKey={row.moduleId}
+                            openKey={hintRow}
+                            onToggle={setHintRow}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
         </div>
       </div>
 
