@@ -29,3 +29,17 @@ export function formatCommunityPostTimestamp(iso: string, now = Date.now()): str
     year: "numeric",
   });
 }
+
+/**
+ * Same buckets as post timestamps. Appends " ago" only for minute/hour/day buckets;
+ * older activity uses the calendar date without " ago".
+ */
+export function formatCommunityRelativeActivityAgo(
+  iso: string,
+  now = Date.now()
+): string {
+  const inner = formatCommunityPostTimestamp(iso, now);
+  if (!inner) return "";
+  if (/^\d+[mhd]$/.test(inner)) return `${inner} ago`;
+  return inner;
+}

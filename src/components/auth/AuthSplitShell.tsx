@@ -53,19 +53,15 @@ export function AuthSplitShell({
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--landing-navy)]/92 via-[var(--landing-navy)]/25 to-transparent" />
             <div className="relative z-10 flex w-full flex-col justify-between p-8 text-white">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/95 shadow-md backdrop-blur-sm">
-                  <Image
-                    src="/landing/v2/icon-vision.png"
-                    alt=""
-                    width={28}
-                    height={28}
-                    className="object-contain"
-                  />
-                </div>
-                <span className="text-lg font-semibold tracking-tight">
-                  BOSS Dashboard
-                </span>
+              <div className="flex items-center">
+                <Image
+                  src="/brand/profit-coach-logo-white.svg"
+                  alt="Profit Coach"
+                  width={240}
+                  height={68}
+                  className="h-10 w-auto max-w-[min(100%,280px)]"
+                  priority
+                />
               </div>
               <div className="mt-auto max-w-md rounded-2xl border border-white/25 bg-white/10 p-6 shadow-lg backdrop-blur-md">
                 <p className="text-lg font-medium leading-relaxed text-white">
@@ -73,7 +69,7 @@ export function AuthSplitShell({
                   results for clients: clear, visible, repeatable.&rdquo;
                 </p>
                 <p className="mt-4 text-sm text-white/85">
-                  Built for coaches who run on the BOSS methodology
+                  Built for coaches who use Profit Coach
                 </p>
               </div>
             </div>

@@ -1,3 +1,6 @@
+/** Pillar ids from My Compass / signature v2 (`reach` = Connect, `enrol` = Enroll). */
+export type AcademyCompassPillarId = "reach" | "enrol" | "deliver";
+
 export type AcademyLesson = {
   id: string;
   title: string;
@@ -13,6 +16,8 @@ export type AcademyCourse = {
   title: string;
   description?: string;
   coverImageUrl?: string;
+  /** When set, course card uses the same solid colour as that pillar on My Compass. */
+  compassPillarId?: AcademyCompassPillarId;
   lessons: AcademyLesson[];
 };
 

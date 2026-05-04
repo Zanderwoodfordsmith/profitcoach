@@ -2,73 +2,138 @@
   "categories": [
     {
       "id": "coach-academy",
-      "title": "Classroom",
-      "description": "Internal training for coaches. Edit lessons in content/academy/catalog.json.",
+      "title": "Coach training",
+      "description": "Classroom lessons aligned with the nine My Compass modules.",
       "courses": [
         {
-          "id": "connect",
-          "title": "Connect",
-          "description": "How you show up, build trust, and open the right conversations before someone enrolls.",
+          "id": "compass",
+          "compassPillarId": "reach",
+          "title": "Client Compass",
+          "description": "I know exactly who I serve, the outcomes I own for them, and my messaging makes the right people lean in.",
           "lessons": [
             {
-              "id": "connect-01",
-              "title": "Placeholder: Mindset & positioning",
-              "emoji": "🔗",
+              "id": "compass-01",
+              "title": "Placeholder: positioning & niche clarity",
+              "emoji": "🧭",
               "videoUrl": null,
-              "bodyMarkdown": "Replace this with your real lesson copy, links, and optional YouTube URL in the catalog."
-            },
-            {
-              "id": "connect-02",
-              "title": "Placeholder: First conversation framework",
-              "emoji": "💬",
-              "videoUrl": null,
-              "bodyMarkdown": "Add your script, examples, or homework for coaches here."
+              "bodyMarkdown": "Replace with your lesson copy, links, and optional YouTube URL in the catalog."
             }
           ]
         },
         {
-          "id": "enroll",
-          "title": "Enroll",
-          "description": "Turning interest into clear next steps and committed clients.",
+          "id": "engine",
+          "compassPillarId": "reach",
+          "title": "Lead Engine",
+          "description": "I have a simple, repeatable way to generate enquiries — not random bursts when I finally post.",
           "lessons": [
             {
-              "id": "enroll-01",
-              "title": "Placeholder: Offer clarity",
+              "id": "engine-01",
+              "title": "Placeholder: repeatable lead flow",
+              "emoji": "⚙️",
+              "videoUrl": null,
+              "bodyMarkdown": "Add your scripts, examples, or homework for coaches here."
+            }
+          ]
+        },
+        {
+          "id": "authority",
+          "compassPillarId": "reach",
+          "title": "Authority Builder",
+          "description": "I put content out that builds trust and authority without leaving me drained or inconsistent.",
+          "lessons": [
+            {
+              "id": "authority-01",
+              "title": "Placeholder: content rhythm & formats",
+              "emoji": "📣",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder — swap in your training when ready."
+            }
+          ]
+        },
+        {
+          "id": "offer",
+          "compassPillarId": "enrol",
+          "title": "Offer Formula",
+          "description": "My offer is clear, compelling, and something I’m proud to present every single time.",
+          "lessons": [
+            {
+              "id": "offer-01",
+              "title": "Placeholder: packaging & pricing clarity",
               "emoji": "📋",
               "videoUrl": null,
-              "bodyMarkdown": "Placeholder content for the Enroll course."
-            },
-            {
-              "id": "enroll-02",
-              "title": "Placeholder: Handling objections",
-              "emoji": "🛡",
-              "videoUrl": null,
-              "bodyMarkdown": "Placeholder content — swap in your training when ready."
+              "bodyMarkdown": "Placeholder content for the Offer Formula module."
             }
           ]
         },
         {
-          "id": "deliver",
-          "title": "Deliver",
-          "description": "Fulfilling powerfully: onboarding, delivery rhythm, and outcomes.",
+          "id": "pipeline",
+          "compassPillarId": "enrol",
+          "title": "Pipeline Accelerator",
+          "description": "I know where every prospect is, and I move them forward with a calm process — nothing falls through the cracks.",
           "lessons": [
             {
-              "id": "deliver-01",
-              "title": "Placeholder: Kickoff & expectations",
+              "id": "pipeline-01",
+              "title": "Placeholder: CRM & follow-up cadence",
+              "emoji": "🔁",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder — swap in your training when ready."
+            }
+          ]
+        },
+        {
+          "id": "value",
+          "compassPillarId": "enrol",
+          "title": "Value Session",
+          "description": "I run value conversations with a proven structure and convert without feeling pushy or apologetic.",
+          "lessons": [
+            {
+              "id": "value-01",
+              "title": "Placeholder: value conversation structure",
+              "emoji": "💬",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder — swap in your training when ready."
+            }
+          ]
+        },
+        {
+          "id": "profit",
+          "compassPillarId": "deliver",
+          "title": "Profit System",
+          "description": "I can run a sharp business diagnostic and show any client exactly where to focus for the biggest payoff.",
+          "lessons": [
+            {
+              "id": "profit-01",
+              "title": "Placeholder: diagnostic & payoff framing",
+              "emoji": "📊",
+              "videoUrl": null,
+              "bodyMarkdown": "Placeholder for Profit System — add video URL when ready."
+            }
+          ]
+        },
+        {
+          "id": "launchpad",
+          "compassPillarId": "deliver",
+          "title": "Client Launchpad",
+          "description": "My first sessions with a new client create clarity, buy-in, and momentum — they know what to do from week one.",
+          "lessons": [
+            {
+              "id": "launchpad-01",
+              "title": "Placeholder: kickoff & early momentum",
               "emoji": "🚀",
               "videoUrl": null,
-              "bodyMarkdown": "Placeholder for Deliver course — onboarding, boundaries, wins."
-            },
-            {
-              "id": "deliver-02",
-              "title": "Placeholder: Check-ins & course-correction",
-              "emoji": "📈",
-              "videoUrl": null,
               "bodyMarkdown": "Placeholder lesson body."
-            },
+            }
+          ]
+        },
+        {
+          "id": "playbook",
+          "compassPillarId": "deliver",
+          "title": "Coaching Playbook",
+          "description": "My sessions are structured and engaging — clients show up, do the work, and keep going because they see progress.",
+          "lessons": [
             {
-              "id": "deliver-03",
-              "title": "Placeholder: Completion & referrals",
+              "id": "playbook-01",
+              "title": "Placeholder: session structure & engagement",
               "emoji": "✨",
               "videoUrl": null,
               "bodyMarkdown": "Placeholder lesson body."

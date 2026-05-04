@@ -12,6 +12,7 @@ import {
 } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
+import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 
 export type CommunityRosterMember = {
   id: string;
@@ -24,8 +25,12 @@ export type CommunityRosterMember = {
   location: string | null;
   role: string;
   created_at: string | null;
+  /** Disco / CSV “Joined Community On” when imported; preferred for “Joined” in UI. */
+  disco_community_joined_on: string | null;
   slug: string | null;
   directory_listed: boolean;
+  /** Highest achieved community ladder level, if any */
+  ladder_level: string | null;
 };
 
 export type CommunityMembersFilter = "members" | "online" | "admins";
@@ -43,6 +48,7 @@ type StaffProfileRow = {
   location: string | null;
   role: string;
   created_at: string | null;
+  disco_community_joined_on: string | null;
 };
 
 function mergeRoster(
@@ -67,18 +73,12 @@ function mergeRoster(
       location: p.location,
       role: p.role,
       created_at: p.created_at,
+      disco_community_joined_on: p.disco_community_joined_on ?? null,
       slug: c?.slug ?? null,
       directory_listed: !!c?.directory_listed,
+      ladder_level: null,
     };
   });
-}
-
-function displayNameShort(m: CommunityRosterMember): string {
-  const n =
-    m.full_name?.trim() ||
-    [m.first_name, m.last_name].filter(Boolean).join(" ").trim() ||
-    m.coach_business_name?.trim();
-  return n || "Member";
 }
 
 type CommunityMemberDirectoryValue = ReturnType<
@@ -135,7 +135,7 @@ function useCommunityMemberDirectoryState() {
     const { data: profiles, error: pErr } = await supabaseClient
       .from("profiles")
       .select(
-        "id, full_name, first_name, last_name, coach_business_name, avatar_url, bio, location, role, created_at"
+        "id, full_name, first_name, last_name, coach_business_name, avatar_url, bio, location, role, created_at, disco_community_joined_on"
       )
       .in("role", ["coach", "admin"]);
 
@@ -156,12 +156,15 @@ function useCommunityMemberDirectoryState() {
       if (!cErr && coachData) coaches = coachData as typeof coaches;
     }
 
+    const merged = mergeRoster(plist as StaffProfileRow[], coaches);
+    const ladderByUser = await fetchHighestAchievedLevelByUserIds(
+      merged.map((m) => m.id)
+    );
     setRoster(
-      mergeRoster(plist as StaffProfileRow[], coaches).sort((a, b) =>
-        displayNameShort(a).localeCompare(displayNameShort(b), undefined, {
-          sensitivity: "base",
-        })
-      )
+      merged.map((m) => ({
+        ...m,
+        ladder_level: ladderByUser.get(m.id) ?? null,
+      }))
     );
   }, []);
 

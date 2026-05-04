@@ -64,7 +64,7 @@ export default function LoginPage() {
   return (
     <AuthSplitShell
       title="Welcome back"
-      subtitle="Sign in to BOSS Dashboard to continue coaching with clarity."
+      subtitle="Sign in to Profit Coach to continue coaching with clarity."
       footer={
         <p className="text-center text-sm text-slate-600">
           New coach?{" "}

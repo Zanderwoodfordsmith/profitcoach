@@ -2,6 +2,7 @@
 
 import type { SignatureModuleId, SignatureScore } from "@/lib/signatureModelV2";
 import {
+  SIGNATURE_COMPASS_PILLAR_COVER_HEX,
   SIGNATURE_LIFESTYLE_LENSES,
   SIGNATURE_MODEL_V2,
 } from "@/lib/signatureModelV2";
@@ -22,8 +23,12 @@ const PETAL_OUTER = rC + 88;
 const LENS_CORE_NAVY = "#1f3a66";
 const LENS_STROKE = "rgba(22, 45, 80, 0.65)";
 
-/** Pillar discs: Connect (BOSS brand blue, lighter than LENS_CORE_NAVY), Enrol (light blue), Deliver (teal) */
-const PILLAR_COLORS = ["#0c5290", "#6eb6f0", "#2a9d8f"];
+/** Pillar discs: Connect, Enroll, Deliver — same hex as classroom module covers */
+const PILLAR_COLORS = [
+  SIGNATURE_COMPASS_PILLAR_COVER_HEX.reach,
+  SIGNATURE_COMPASS_PILLAR_COVER_HEX.enrol,
+  SIGNATURE_COMPASS_PILLAR_COVER_HEX.deliver,
+];
 
 const TEXT_ON_FILL = "#ffffff";
 const TEXT_ON_PETAL = "#1f3a66";

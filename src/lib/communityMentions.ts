@@ -1,6 +1,10 @@
 import type { ProfileNames } from "@/lib/communityProfile";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 
+/** Tailwind classes for @mention chips (hyperlink blue; `!` wins over parent `text-slate-*`). */
+export const COMMUNITY_MENTION_LINK_CLASS =
+  "font-medium !text-blue-600 underline underline-offset-2 decoration-blue-600/40 hover:!text-blue-500 hover:decoration-blue-500";
+
 /** Legacy stored format: @ plus UUID (no brackets). */
 export const MENTION_UUID_REGEX =
   /@([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi;

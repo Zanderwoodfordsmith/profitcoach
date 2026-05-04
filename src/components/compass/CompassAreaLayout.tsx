@@ -17,10 +17,13 @@ export function CompassAreaLayout({
   const onCompassHome =
     pathname === base || pathname === `${base}/`;
   const isLadder = pathname === `${base}/ladder`;
+  const isScorecard = pathname === `${base}/scorecard`;
 
   const description = isLadder
     ? "Track your levels, achievements, and goal on the ladder."
-    : "Tap the circle beside each line to score. The model updates as you go.";
+    : isScorecard
+      ? "Log weekly pipeline and revenue numbers; targets follow your ladder goal."
+      : "Tap the circle beside each line to score. The model updates as you go.";
 
   const tabs = useMemo(
     () => (
@@ -39,10 +42,16 @@ export function CompassAreaLayout({
             label: "My Ladder",
             active: isLadder,
           },
+          {
+            kind: "link",
+            href: `${base}/scorecard`,
+            label: "My Scorecard",
+            active: isScorecard,
+          },
         ]}
       />
     ),
-    [base, isLadder, onCompassHome],
+    [base, isLadder, isScorecard, onCompassHome],
   );
 
   return (

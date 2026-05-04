@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, User } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ChevronLeft, ChevronRight, ListFilter, User } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
@@ -23,9 +29,21 @@ import {
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
+import {
+  useCommunityFeedCardLocalState,
+  type CommunityFeedLocalState,
+} from "@/lib/communityPostFeedLocalState";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
+import { extractMentionUserIds } from "@/lib/communityMentions";
+import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
+import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
+import {
+  firstCommunityPostImageUrl,
+  normalizeCommunityPostMedia,
+  type CommunityPostMediaItem,
+} from "@/lib/communityPostMedia";
 
 const POSTS_PER_PAGE = 20;
 
@@ -71,12 +89,30 @@ const COMMUNITY_POST_LIST_SELECT = `
         title,
         body,
         image_url,
+        media,
         is_pinned,
         created_at,
         category_id,
         category:community_categories!category_id ( id, slug, label ),
         author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
       `;
+
+/** Nested select for `community_post_favourites` feed (order by favourite `created_at`). */
+const COMMUNITY_POST_FAVOURITE_EMBED_SELECT = `
+  created_at,
+  post:community_posts!inner(
+    id,
+    title,
+    body,
+    image_url,
+    media,
+    is_pinned,
+    created_at,
+    category_id,
+    category:community_categories!category_id ( id, slug, label ),
+    author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+  )
+`;
 
 export type ProfileRow = {
   id: string;
@@ -98,6 +134,9 @@ export type CommunityPostRow = {
   id: string;
   title: string;
   body: string;
+  /** Images and videos attached to the post (max 6). */
+  media: CommunityPostMediaItem[];
+  /** First image URL (for thumbnails); null if the post has only videos or no media. */
   image_url: string | null;
   is_pinned: boolean;
   created_at: string;
@@ -107,7 +146,11 @@ export type CommunityPostRow = {
   like_count: number;
   comment_count: number;
   liked_by_me: boolean;
+  /** Starred by the signed-in user (auth uid). */
+  favourited_by_me: boolean;
   comment_preview_authors: ProfileRow[];
+  /** Latest comment `created_at` in this thread, or null if there are no comments. */
+  last_comment_at: string | null;
 };
 
 type RawCommunityPostRow = Omit<
@@ -117,10 +160,14 @@ type RawCommunityPostRow = Omit<
   | "like_count"
   | "comment_count"
   | "liked_by_me"
+  | "favourited_by_me"
   | "comment_preview_authors"
+  | "last_comment_at"
+  | "media"
 > & {
   category: CommunityCategory | CommunityCategory[] | null;
   author: ProfileRow | ProfileRow[] | null;
+  media?: unknown;
 };
 
 type NormalizedPostRow = Omit<
@@ -128,7 +175,9 @@ type NormalizedPostRow = Omit<
   | "like_count"
   | "comment_count"
   | "liked_by_me"
+  | "favourited_by_me"
   | "comment_preview_authors"
+  | "last_comment_at"
 >;
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
@@ -160,15 +209,23 @@ function applyAvatarFallback<P extends ProfileRow | null>(
 }
 
 function normalizeRawPostRows(rows: RawCommunityPostRow[]): NormalizedPostRow[] {
-  return rows.map((row) => ({
-    ...row,
-    category: Array.isArray(row.category)
-      ? row.category[0] ?? null
-      : row.category ?? null,
-    author: Array.isArray(row.author)
-      ? row.author[0] ?? null
-      : row.author ?? null,
-  }));
+  return rows.map((row) => {
+    const media = normalizeCommunityPostMedia(row.media, row.image_url);
+    const image_url = firstCommunityPostImageUrl(media);
+    return {
+      ...row,
+      media,
+      image_url,
+      title: capitalizeFirstUnicodeLetter(row.title),
+      body: capitalizeFirstUnicodeLetter(row.body),
+      category: Array.isArray(row.category)
+        ? row.category[0] ?? null
+        : row.category ?? null,
+      author: Array.isArray(row.author)
+        ? row.author[0] ?? null
+        : row.author ?? null,
+    };
+  });
 }
 
 function paginationItems(
@@ -210,7 +267,19 @@ async function enrichNormalizedCommunityPosts(
   } = await supabaseClient.auth.getUser();
   const uid = user?.id;
 
-  const [likesRes, commentsRes] = await Promise.all([
+  const favPromise =
+    uid && postIds.length > 0
+      ? supabaseClient
+          .from("community_post_favourites")
+          .select("post_id")
+          .eq("user_id", uid)
+          .in("post_id", postIds)
+      : Promise.resolve({
+          data: [] as { post_id: string }[] | null,
+          error: null as null,
+        });
+
+  const [likesRes, commentsRes, favRes] = await Promise.all([
     supabaseClient
       .from("community_post_likes")
       .select("post_id, user_id")
@@ -227,12 +296,16 @@ async function enrichNormalizedCommunityPosts(
       )
       .in("post_id", postIds)
       .order("created_at", { ascending: true }),
+    favPromise,
   ]);
 
   if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
     throw likesRes.error;
   }
   if (commentsRes.error) throw commentsRes.error;
+  if (favRes.error && !isUndefinedRelationError(favRes.error)) {
+    throw favRes.error;
+  }
 
   const likesTableMissing = Boolean(
     likesRes.error && isUndefinedRelationError(likesRes.error)
@@ -240,6 +313,15 @@ async function enrichNormalizedCommunityPosts(
   if (likesTableMissing && process.env.NODE_ENV === "development") {
     console.warn(
       "[Community] community_post_likes query failed (table missing?). Run migration 20260508120000_community_post_likes.sql. Likes will show as 0 until then."
+    );
+  }
+
+  const favTableMissing = Boolean(
+    favRes.error && isUndefinedRelationError(favRes.error)
+  );
+  if (favTableMissing && process.env.NODE_ENV === "development") {
+    console.warn(
+      "[Community] community_post_favourites query failed (table missing?). Run migration 20260607130000_community_post_favourites.sql."
     );
   }
 
@@ -258,6 +340,13 @@ async function enrichNormalizedCommunityPosts(
         (myRes.data ?? []).map((r: { post_id: string }) => r.post_id)
       );
     }
+  }
+
+  let myFavourited = new Set<string>();
+  if (uid && !favTableMissing && !favRes.error) {
+    myFavourited = new Set(
+      (favRes.data ?? []).map((r: { post_id: string }) => r.post_id)
+    );
   }
 
   const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
@@ -358,15 +447,42 @@ async function enrichNormalizedCommunityPosts(
     commentsByPost.set(c.post_id, arr);
   }
 
-  return normalizedWithAvatars.map((row) => ({
-    ...row,
-    like_count: likeCountByPost.get(row.id) ?? 0,
-    comment_count: (commentsByPost.get(row.id) ?? []).length,
-    liked_by_me: myLiked.has(row.id),
-    comment_preview_authors: buildCommentPreviewAvatars(
-      commentsByPost.get(row.id) ?? []
-    ),
-  }));
+  return normalizedWithAvatars.map((row) => {
+    const thread = commentsByPost.get(row.id) ?? [];
+    let last_comment_at: string | null = null;
+    for (const c of thread) {
+      if (
+        !last_comment_at ||
+        new Date(c.created_at) > new Date(last_comment_at)
+      ) {
+        last_comment_at = c.created_at;
+      }
+    }
+    return {
+      ...row,
+      like_count: likeCountByPost.get(row.id) ?? 0,
+      comment_count: thread.length,
+      liked_by_me: myLiked.has(row.id),
+      favourited_by_me: !favTableMissing && myFavourited.has(row.id),
+      comment_preview_authors: buildCommentPreviewAvatars(thread),
+      last_comment_at,
+    };
+  });
+}
+
+function isCommunityPostUnreadOnFeed(
+  post: CommunityPostRow,
+  snapshot: CommunityFeedLocalState
+): boolean {
+  if (!snapshot.readPostIds[post.id]) return true;
+  const last = post.last_comment_at;
+  if (!last) return false;
+  const seen = snapshot.commentsSeenUpTo[post.id];
+  // Opened the thread but no watermark yet (legacy, or modal closed before
+  // comments finished): treat as read for this filter so it matches a dimmed
+  // card. New comments after that still flip to unread via last > seen.
+  if (!seen) return false;
+  return new Date(last).getTime() > new Date(seen).getTime();
 }
 
 export function CommunityFeed() {
@@ -379,7 +495,15 @@ export function CommunityFeed() {
 
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
   const [posts, setPosts] = useState<CommunityPostRow[]>([]);
+  const [feedMentionNameById, setFeedMentionNameById] = useState<
+    Record<string, string>
+  >({});
   const [filterSlug, setFilterSlug] = useState<string | "all">("all");
+  const [readFilter, setReadFilter] = useState<
+    "all" | "read" | "unread" | "favourites"
+  >("all");
+  const [readFilterMenuOpen, setReadFilterMenuOpen] = useState(false);
+  const readFilterMenuRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [composeOpen, setComposeOpen] = useState(false);
@@ -391,9 +515,11 @@ export function CommunityFeed() {
     useState<CommunityPostRow | null>(null);
   const [feedBootstrapOk, setFeedBootstrapOk] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [communityAuthUserId, setCommunityAuthUserId] = useState<
+    string | null
+  >(null);
   /** Bumps when the feed should reload while staying on the same page (e.g. new post). */
   const [postsRefreshNonce, setPostsRefreshNonce] = useState(0);
-
   const closeDetail = useCallback(() => {
     setSelectedPostId(null);
     setFetchedDetailPost(null);
@@ -421,6 +547,24 @@ export function CommunityFeed() {
       setSelectedPostId(null);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("tab") !== "calendar") return;
+    const base = pathname.startsWith("/admin")
+      ? "/admin/community"
+      : "/coach/community";
+    router.replace(`${base}/calendar`);
+  }, [pathname, router, searchParams]);
+
+  useEffect(() => {
+    if (!readFilterMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = readFilterMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setReadFilterMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [readFilterMenuOpen]);
 
   useEffect(() => {
     if (!selectedPostId) {
@@ -472,6 +616,72 @@ export function CommunityFeed() {
       const from = (effectivePage - 1) * POSTS_PER_PAGE;
       const to = from + POSTS_PER_PAGE - 1;
 
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+
+      if (readFilter === "favourites") {
+        if (!user?.id) {
+          setTotalCount(0);
+          setPosts([]);
+          return;
+        }
+
+        let favQ = supabaseClient
+          .from("community_post_favourites")
+          .select(COMMUNITY_POST_FAVOURITE_EMBED_SELECT.trim(), {
+            count: "exact",
+          })
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .range(from, to);
+
+        if (filterSlug !== "all") {
+          const cat = categories.find((c) => c.slug === filterSlug);
+          if (cat) {
+            favQ = favQ.eq("post.category_id", cat.id);
+          }
+        }
+
+        const { data, error, count } = await favQ;
+
+        if (error) {
+          if (isUndefinedRelationError(error)) {
+            if (process.env.NODE_ENV === "development") {
+              console.warn(
+                "[Community] community_post_favourites missing. Run migration 20260607130000_community_post_favourites.sql."
+              );
+            }
+            setTotalCount(0);
+            setPosts([]);
+            return;
+          }
+          throw error;
+        }
+
+        type FavJoinRow = {
+          post: RawCommunityPostRow | RawCommunityPostRow[] | null;
+        };
+        const rawPosts: RawCommunityPostRow[] = ((data ?? []) as unknown as FavJoinRow[])
+          .map((r) => {
+            const p = r.post;
+            if (!p) return null;
+            return Array.isArray(p) ? (p[0] ?? null) : p;
+          })
+          .filter((p): p is RawCommunityPostRow => Boolean(p));
+
+        const normalized = normalizeRawPostRows(rawPosts);
+        const enriched = await enrichNormalizedCommunityPosts(normalized);
+        setTotalCount(count ?? 0);
+        setPosts(
+          enriched.map((p) => ({
+            ...p,
+            favourited_by_me: true,
+          }))
+        );
+        return;
+      }
+
       let q = supabaseClient
         .from("community_posts")
         .select(COMMUNITY_POST_LIST_SELECT.trim(), { count: "exact" })
@@ -496,7 +706,7 @@ export function CommunityFeed() {
       const enriched = await enrichNormalizedCommunityPosts(normalized);
       setPosts(enriched);
     },
-    [page, filterSlug, categories]
+    [page, filterSlug, categories, readFilter]
   );
 
   useEffect(() => {
@@ -511,12 +721,15 @@ export function CommunityFeed() {
         } = await supabaseClient.auth.getSession();
         if (!session?.user) {
           if (!cancelled) {
+            setCommunityAuthUserId(null);
             setLoadError(
               "No active session. Open the app from a logged-in tab, or sign in again and refresh."
             );
           }
           return;
         }
+
+        if (!cancelled) setCommunityAuthUserId(session.user.id);
 
         try {
           const uid =
@@ -597,7 +810,14 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [feedBootstrapOk, page, filterSlug, loadPosts, postsRefreshNonce]);
+  }, [
+    feedBootstrapOk,
+    page,
+    filterSlug,
+    readFilter,
+    loadPosts,
+    postsRefreshNonce,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / POSTS_PER_PAGE));
 
@@ -616,11 +836,11 @@ export function CommunityFeed() {
   const sparseQuote = useMemo(() => {
     const i = sparseEncouragementQuoteIndex(
       page,
-      filterSlug,
+      `${filterSlug}:${readFilter}`,
       COMMUNITY_SPARSE_QUOTES.length
     );
     return COMMUNITY_SPARSE_QUOTES[i] ?? COMMUNITY_SPARSE_QUOTES[0];
-  }, [page, filterSlug]);
+  }, [page, filterSlug, readFilter]);
 
   const selectedPost = useMemo(() => {
     const fromList = posts.find((p) => p.id === selectedPostId);
@@ -628,6 +848,51 @@ export function CommunityFeed() {
     if (fetchedDetailPost?.id === selectedPostId) return fetchedDetailPost;
     return null;
   }, [posts, selectedPostId, fetchedDetailPost]);
+
+  const feedStorageScopeId =
+    coachPersonaForCommunity(pathname, impersonatingCoachId) ??
+    communityAuthUserId;
+
+  const {
+    snapshot: feedLocalSnapshot,
+    markPostRead,
+    markPostUnread,
+    markCommentsSeenUpTo,
+  } = useCommunityFeedCardLocalState(feedStorageScopeId);
+
+  const displayedPosts = useMemo(() => {
+    if (readFilter === "all" || readFilter === "favourites") return posts;
+    return posts.filter((p) =>
+      readFilter === "unread"
+        ? isCommunityPostUnreadOnFeed(p, feedLocalSnapshot)
+        : !isCommunityPostUnreadOnFeed(p, feedLocalSnapshot)
+    );
+  }, [posts, readFilter, feedLocalSnapshot]);
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    for (const p of posts) {
+      for (const id of extractMentionUserIds(p.body)) ids.add(id);
+    }
+    const need = [...ids];
+    if (need.length === 0) {
+      setFeedMentionNameById({});
+      return;
+    }
+    let cancelled = false;
+    void fetchCommunityMentionNameMap(need).then((map) => {
+      if (!cancelled) setFeedMentionNameById(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [posts]);
+
+  const readFilterEmptyOnPage =
+    readFilter !== "all" &&
+    readFilter !== "favourites" &&
+    posts.length > 0 &&
+    displayedPosts.length === 0;
 
   return (
     <>
@@ -674,48 +939,126 @@ export function CommunityFeed() {
                 <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
               </button>
 
-              <div className="mb-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilterSlug("all");
-                    setPage(1);
-                  }}
-                  className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                    filterSlug === "all"
-                      ? "bg-sky-700 text-white"
-                      : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  All
-                </button>
-                {categories.map((c) => (
+              <div className="mb-2 flex items-start gap-2">
+                <div className="flex min-w-0 flex-1 flex-wrap gap-2">
                   <button
-                    key={c.id}
                     type="button"
                     onClick={() => {
-                      setFilterSlug(c.slug);
+                      setFilterSlug("all");
                       setPage(1);
                     }}
                     className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                      filterSlug === c.slug
+                      filterSlug === "all"
                         ? "bg-sky-700 text-white"
                         : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
                     }`}
                   >
-                    {c.label}
+                    All
                   </button>
-                ))}
+                  {categories.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setFilterSlug(c.slug);
+                        setPage(1);
+                      }}
+                      className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                        filterSlug === c.slug
+                          ? "bg-sky-700 text-white"
+                          : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative shrink-0 pt-0.5" ref={readFilterMenuRef}>
+                  <button
+                    type="button"
+                    aria-expanded={readFilterMenuOpen}
+                    aria-haspopup="menu"
+                    aria-label={
+                      readFilter === "all"
+                        ? "Feed filter: all posts"
+                        : readFilter === "favourites"
+                          ? "Feed filter: favourites"
+                          : `Feed filter: ${readFilter}`
+                    }
+                    onClick={() => setReadFilterMenuOpen((o) => !o)}
+                    className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                      readFilter !== "all"
+                        ? "bg-sky-50 text-sky-800 ring-2 ring-sky-600"
+                        : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    <ListFilter
+                      className="h-4 w-4 shrink-0"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  </button>
+                  {readFilterMenuOpen ? (
+                    <div
+                      role="menu"
+                      className="absolute right-0 z-30 mt-1 min-w-[10.5rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                    >
+                      {(
+                        [
+                          ["all", "All posts"],
+                          ["unread", "Unread"],
+                          ["read", "Read"],
+                          ["favourites", "Favourites"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          role="menuitem"
+                          className={`flex w-full px-3 py-2 text-left text-sm ${
+                            readFilter === value
+                              ? "bg-sky-50 font-medium text-sky-900"
+                              : "text-slate-800 hover:bg-slate-50"
+                          }`}
+                          onClick={() => {
+                            setReadFilter(value);
+                            setReadFilterMenuOpen(false);
+                            setPage(1);
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
               {loading || postsLoading ? (
                 <p className="text-sm text-slate-500">Loading…</p>
+              ) : readFilter === "favourites" && posts.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  No favourite posts yet. Open a thread, tap the menu (⋯), and
+                  choose &ldquo;Add to favourites&rdquo;.
+                </p>
+              ) : readFilterEmptyOnPage ? (
+                <p className="text-sm text-slate-500">
+                  No {readFilter} posts on this page. Try another page or set
+                  the filter to All posts.
+                </p>
               ) : (
-                <ul className="space-y-3">
-                  {posts.map((post) => (
+                <ul className="space-y-[1.125rem]">
+                  {displayedPosts.map((post) => (
                     <li key={post.id}>
                       <PostCard
                         post={post}
+                        feedMentionNameById={feedMentionNameById}
+                        feedCardHasBeenRead={Boolean(
+                          feedLocalSnapshot.readPostIds[post.id]
+                        )}
+                        commentsSeenWatermarkIso={
+                          feedLocalSnapshot.commentsSeenUpTo[post.id] ?? null
+                        }
                         onOpen={() => openDetail(post.id)}
                         onPostsChanged={() => loadPosts()}
                       />
@@ -727,7 +1070,9 @@ export function CommunityFeed() {
               {!loading &&
               !postsLoading &&
               !loadError &&
-              posts.length < SPARSE_PAGE_POST_THRESHOLD ? (
+              posts.length < SPARSE_PAGE_POST_THRESHOLD &&
+              !readFilterEmptyOnPage &&
+              !(readFilter === "favourites" && posts.length === 0) ? (
                 <div className="mx-auto mt-10 max-w-xl px-4 text-center">
                   {posts.length === 0 ? (
                     <p className="mb-10 text-sm text-slate-500">
@@ -827,6 +1172,10 @@ export function CommunityFeed() {
                   categories={categories}
                   onClose={closeDetail}
                   onPostsChanged={() => loadPosts()}
+                  feedStorageScopeId={feedStorageScopeId}
+                  onMarkPostRead={markPostRead}
+                  onMarkPostUnread={markPostUnread}
+                  onMarkCommentsSeenUpTo={markCommentsSeenUpTo}
                 />
               ) : null}
             </div>

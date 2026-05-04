@@ -1,7 +1,5 @@
-import { AcademyCatalogHome } from "@/components/academy/AcademyCatalogHome";
+import { redirect } from "next/navigation";
 
-const BASE = "/coach/academy";
-
-export default async function CoachAcademyPage() {
-  return <AcademyCatalogHome basePath={BASE} />;
+export default function CoachAcademyIndexPage() {
+  redirect("/coach/academy/programs");
 }

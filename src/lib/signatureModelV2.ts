@@ -189,6 +189,22 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
   ],
 };
 
+/** Solid fills for module cards (matches `SignaturePetalDiagram` pillar disc colours). */
+export const SIGNATURE_COMPASS_PILLAR_COVER_HEX = {
+  reach: "#0c5290",
+  enrol: "#6eb6f0",
+  deliver: "#2a9d8f",
+} as const;
+
+export type SignatureCompassPillarId = keyof typeof SIGNATURE_COMPASS_PILLAR_COVER_HEX;
+
+export function getSignaturePillarTitleById(
+  pillarId: string | undefined
+): string | undefined {
+  if (!pillarId) return undefined;
+  return SIGNATURE_MODEL_V2.pillars.find((p) => p.id === pillarId)?.title;
+}
+
 export function flattenSignatureModules() {
   return SIGNATURE_MODEL_V2.pillars.flatMap((p) =>
     p.modules.map((m) => ({ pillar: p, ...m }))

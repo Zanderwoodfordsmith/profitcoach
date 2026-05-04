@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { splitMentionSegments } from "@/lib/communityMentions";
+import {
+  COMMUNITY_MENTION_LINK_CLASS,
+  splitMentionSegments,
+} from "@/lib/communityMentions";
+import { stripInlineMarkdownForCommunityPreviewFragment } from "@/lib/communityPostMarkdown";
 
 type Props = {
   body: string;
@@ -9,10 +13,9 @@ type Props = {
   /** Public directory profile URL by user id, when listed */
   profileHrefByUserId?: Record<string, string | undefined>;
   className?: string;
+  /** Strip markdown/list noise from plain text segments (feed card previews). */
+  stripPreviewMarkdown?: boolean;
 };
-
-const mentionClass =
-  "font-medium text-sky-600 underline-offset-2 hover:text-sky-500 hover:underline";
 
 /** Renders plain text + mention tokens as @DisplayName; optional directory profile link. */
 export function MentionBody({
@@ -20,6 +23,7 @@ export function MentionBody({
   nameById,
   profileHrefByUserId,
   className = "",
+  stripPreviewMarkdown = false,
 }: Props) {
   const segments = splitMentionSegments(body);
 
@@ -27,7 +31,10 @@ export function MentionBody({
     <span className={`inline whitespace-pre-wrap break-words ${className}`}>
       {segments.map((seg, i) => {
         if (seg.kind === "text") {
-          return <span key={i}>{seg.text}</span>;
+          const text = stripPreviewMarkdown
+            ? stripInlineMarkdownForCommunityPreviewFragment(seg.text)
+            : seg.text;
+          return <span key={i}>{text}</span>;
         }
         const label =
           nameById[seg.userId] ?? seg.labelFromToken ?? "member";
@@ -38,7 +45,7 @@ export function MentionBody({
             <Link
               key={i}
               href={href}
-              className={mentionClass}
+              className={COMMUNITY_MENTION_LINK_CLASS}
               title={seg.userId}
               onClick={(e) => e.stopPropagation()}
             >
@@ -47,7 +54,7 @@ export function MentionBody({
           );
         }
         return (
-          <span key={i} className={mentionClass} title={seg.userId}>
+          <span key={i} className={COMMUNITY_MENTION_LINK_CLASS} title={seg.userId}>
             {mentionLabel}
           </span>
         );

@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 import type { AcademyCategory, AcademyCourse, AcademyLesson } from "@/lib/academy/types";
+import { getSignaturePillarTitleById } from "@/lib/signatureModelV2";
+import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 
 import { AcademyMarkdown } from "./AcademyMarkdown";
 
@@ -9,13 +10,15 @@ type Props = {
   category: AcademyCategory;
   course: AcademyCourse;
   lesson: AcademyLesson;
-  /** e.g. /coach/academy — used for sidebar and “all courses” links */
+  /** e.g. `/coach/academy/classroom` — used for sidebar and “all courses” links */
   basePath: string;
 };
 
 export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Props) {
   const lessons = course.lessons ?? [];
   const embedUrl = lesson.videoUrl ? toYouTubeEmbedUrl(lesson.videoUrl) : null;
+  const pillarEyebrow =
+    getSignaturePillarTitleById(course.compassPillarId) ?? category.title;
 
   return (
     <div className="flex min-h-[calc(100vh-8rem)] flex-col-reverse gap-6 lg:flex-row lg:gap-8">
@@ -27,8 +30,8 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
           >
             ← All courses
           </Link>
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            {category.title}
+          <p className="mt-3 text-[10px] font-light uppercase tracking-[0.28em] text-slate-500">
+            {pillarEyebrow}
           </p>
           <h2 className="mt-1 text-base font-semibold text-slate-900">{course.title}</h2>
 

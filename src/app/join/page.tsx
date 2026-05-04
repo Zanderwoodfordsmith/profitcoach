@@ -10,7 +10,7 @@ import {
 } from "@/components/auth/AuthSplitShell";
 
 /**
- * Sendable program link: creates the same coach account as /signup (BOSS coach role).
+ * Sendable program link: creates the same coach account as /signup (coach role).
  */
 export default function ProgramJoinPage() {
   const router = useRouter();
@@ -59,7 +59,7 @@ export default function ProgramJoinPage() {
   return (
     <AuthSplitShell
       title="Create your coach account"
-      subtitle="One login for your Signature self-evaluation and your BOSS dashboard."
+      subtitle="One login for your Signature self-evaluation and your Profit Coach workspace."
       footer={
         <p className="text-center text-sm text-slate-600">
           Already have an account?{" "}

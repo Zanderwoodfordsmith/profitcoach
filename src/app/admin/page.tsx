@@ -6,12 +6,50 @@ import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { ExternalLink } from "lucide-react";
+
 import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
+
+function ladderLevelShortName(id: string | null | undefined): string | null {
+  if (!id?.trim()) return null;
+  return LADDER_LEVELS.find((l) => l.id === id)?.name ?? id;
+}
+
+function formatGoalDateDisplay(iso: string): string {
+  const t = Date.parse(`${iso}T12:00:00`);
+  if (Number.isNaN(t)) return iso;
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(t);
+}
+
+function ReadonlyLadderLevelCell({
+  levelId,
+}: {
+  levelId: string | null | undefined;
+}) {
+  const short = ladderLevelShortName(levelId);
+  if (!short) {
+    return <span className="text-xs text-slate-400">Not set</span>;
+  }
+  const lvl = LADDER_LEVELS.find((l) => l.id === levelId);
+  return (
+    <span
+      className="block truncate text-xs text-slate-800"
+      title={lvl ? ladderAdminSelectLabel(lvl) : short}
+    >
+      {short}
+    </span>
+  );
+}
 
 type CoachRow = {
   id: string;
   slug: string;
   full_name: string | null;
+  avatar_url: string | null;
   coach_business_name: string | null;
   directory_listed: boolean;
   directory_level: string | null;
@@ -461,16 +499,16 @@ export default function AdminPage() {
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="w-14 px-2 py-2 text-center" aria-label="Avatar" />
               <th className="px-4 py-2">Coach</th>
-              <th className="px-4 py-2">Business</th>
-              <th className="px-4 py-2">Slug</th>
-              <th className="px-4 py-2 text-center">Directory</th>
-              <th className="px-4 py-2 min-w-[9rem]">Cert.</th>
-              <th className="px-4 py-2 min-w-[10rem]">Ladder</th>
-              <th className="px-4 py-2 min-w-[10rem]">Ladder goal</th>
-              <th className="px-4 py-2 min-w-[9rem]">Goal by</th>
-              <th className="px-4 py-2">Landing link</th>
-              <th className="px-4 py-2 text-center min-w-[7rem]">Actions</th>
+              <th className="px-3 py-2">Slug</th>
+              <th className="px-2 py-2 text-center">Dir.</th>
+              <th className="px-2 py-2">Cert.</th>
+              <th className="w-24 max-w-[6.5rem] px-2 py-2">Current</th>
+              <th className="w-24 max-w-[6.5rem] px-2 py-2">Ideal</th>
+              <th className="w-28 px-2 py-2">Goal by</th>
+              <th className="w-10 px-1 py-2 text-center" aria-label="Landing" />
+              <th className="px-2 py-2 text-center">View as</th>
             </tr>
           </thead>
           <tbody>
@@ -483,13 +521,26 @@ export default function AdminPage() {
                   key={coach.id}
                   className="border-t border-slate-100 hover:bg-slate-50"
                 >
-                  <td className="px-4 py-2 text-slate-900">
+                  <td className="px-2 py-2 align-middle">
+                    {coach.avatar_url ? (
+                      <img
+                        src={coach.avatar_url}
+                        alt=""
+                        className="mx-auto h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+                      />
+                    ) : (
+                      <div
+                        className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-400 ring-1 ring-slate-200"
+                        aria-hidden
+                      >
+                        —
+                      </div>
+                    )}
+                  </td>
+                  <td className="w-max whitespace-nowrap px-4 py-2 font-medium text-slate-900">
                     {coach.full_name ?? "—"}
                   </td>
-                  <td className="px-4 py-2 text-slate-700">
-                    {coach.coach_business_name ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-xs text-slate-500">
+                  <td className="px-3 py-2 font-mono text-xs text-slate-500">
                     {coach.slug}
                   </td>
                   <td className="px-4 py-2 text-center">
@@ -506,7 +557,7 @@ export default function AdminPage() {
                       className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                     />
                   </td>
-                  <td className="px-4 py-2">
+                  <td className="px-2 py-2 align-middle">
                     <select
                       title="Certification level (admin only)"
                       value={coach.directory_level ?? ""}
@@ -517,7 +568,7 @@ export default function AdminPage() {
                           directory_level: v === "" ? null : v,
                         });
                       }}
-                      className="w-full max-w-[11rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className="max-w-full cursor-pointer border-0 border-b border-dotted border-slate-300 bg-transparent py-0.5 pl-0 pr-1 text-xs text-slate-800 shadow-none ring-0 hover:border-slate-500 focus:border-solid focus:border-sky-500 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <option value="">Not set</option>
                       <option value="certified">Certified</option>
@@ -525,84 +576,39 @@ export default function AdminPage() {
                       <option value="elite">Elite</option>
                     </select>
                   </td>
-                  <td className="px-4 py-2">
-                    <select
-                      title="Profit Coach ladder — current (admin)"
-                      value={coach.ladder_level ?? ""}
-                      disabled={directorySavingId === coach.id}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        void patchCoachRow(coach.id, {
-                          ladder_level: v === "" ? null : v,
-                        });
-                      }}
-                      className="w-full min-w-[14rem] max-w-[22rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                    >
-                      <option value="">Not set</option>
-                      {LADDER_LEVELS.map((lvl) => (
-                        <option key={lvl.id} value={lvl.id}>
-                          {ladderAdminSelectLabel(lvl)}
-                        </option>
-                      ))}
-                    </select>
+                  <td className="max-w-[6.5rem] px-2 py-2 align-middle">
+                    <ReadonlyLadderLevelCell levelId={coach.ladder_level} />
                   </td>
-                  <td className="px-4 py-2">
-                    <select
-                      title="Profit Coach ladder — goal (admin)"
-                      value={coach.ladder_goal_level ?? ""}
-                      disabled={directorySavingId === coach.id}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        void patchCoachRow(coach.id, {
-                          ladder_goal_level: v === "" ? null : v,
-                        });
-                      }}
-                      className="w-full min-w-[14rem] max-w-[22rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                    >
-                      <option value="">Not set</option>
-                      {LADDER_LEVELS.map((lvl) => (
-                        <option key={lvl.id} value={lvl.id}>
-                          {ladderAdminSelectLabel(lvl)}
-                        </option>
-                      ))}
-                    </select>
+                  <td className="max-w-[6.5rem] px-2 py-2 align-middle">
+                    <ReadonlyLadderLevelCell levelId={coach.ladder_goal_level} />
                   </td>
-                  <td className="px-4 py-2">
-                    <input
-                      type="date"
-                      title="Target date for ultimate goal level"
-                      value={coach.ladder_goal_target_date ?? ""}
-                      disabled={
-                        directorySavingId === coach.id ||
-                        !coach.ladder_goal_level
-                      }
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        void patchCoachRow(coach.id, {
-                          ladder_goal_target_date: v === "" ? null : v,
-                        });
-                      }}
-                      className="w-full max-w-[10rem] rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-50"
-                    />
+                  <td className="px-2 py-2 align-middle text-xs text-slate-700">
+                    {coach.ladder_goal_target_date ? (
+                      formatGoalDateDisplay(coach.ladder_goal_target_date)
+                    ) : (
+                      <span className="text-slate-400">Not set</span>
+                    )}
                   </td>
-                  <td className="px-4 py-2 text-xs text-sky-700">
+                  <td className="px-1 py-2 text-center align-middle">
                     <a
                       href={link}
                       target="_blank"
                       rel="noreferrer"
-                      className="hover:underline"
+                      className="inline-flex rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-sky-700"
+                      title="Open landing page"
+                      aria-label={`Landing page for ${coach.slug}`}
                     >
-                      {link}
+                      <ExternalLink className="h-4 w-4" aria-hidden />
                     </a>
                   </td>
-                  <td className="px-4 py-2 text-center">
+                  <td className="px-2 py-2 text-center align-middle">
                     <button
                       type="button"
                       onClick={() => {
                         setImpersonatingCoachId(coach.id);
                         router.push("/coach");
                       }}
-                      className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-800 hover:bg-sky-200"
+                      className="rounded px-2 py-1 text-xs text-slate-500 underline-offset-2 hover:bg-slate-100 hover:text-slate-800 hover:underline"
                     >
                       View as coach
                     </button>

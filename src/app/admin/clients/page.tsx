@@ -208,7 +208,7 @@ export default function AdminClientsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        eyebrow="BOSS Dashboard"
+        eyebrow="Profit Coach"
         title="Clients"
         description="Create and manage clients, grouped by coach. View as client to see their portal."
         actions={

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 
 /** Matches admin Coaches hub tabs (Coaches / Client success / Revenue). */
@@ -9,21 +10,30 @@ const tabActive = "border-sky-600 text-sky-700";
 const tabInactive =
   "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800";
 
+const tabSubtleBase =
+  "-mb-px border-b-[3px] pb-2 text-sm font-medium leading-tight transition-colors";
+const tabSubtleActive = "border-slate-400 text-slate-600";
+const tabSubtleInactive =
+  "border-transparent text-slate-400 hover:border-slate-200 hover:text-slate-600";
+
 export type PageHeaderUnderlineTabLinkItem = {
   kind: "link";
   href: string;
-  label: string;
+  label: ReactNode;
   active: boolean;
   /** Passed to Next.js Link; default false for in-page tab switches. */
   scroll?: boolean;
+  /** Lower-emphasis tab (e.g. admin-only preview). */
+  variant?: "default" | "subtle";
 };
 
 export type PageHeaderUnderlineTabButtonItem = {
   kind: "button";
   id: string;
-  label: string;
+  label: ReactNode;
   active: boolean;
   onClick: () => void;
+  variant?: "default" | "subtle";
 };
 
 export type PageHeaderUnderlineTabItem =
@@ -46,11 +56,14 @@ export function PageHeaderUnderlineTabs({
 }: PageHeaderUnderlineTabsProps) {
   return (
     <nav
-      className="flex flex-wrap items-end gap-x-6 gap-y-1"
+      className="flex flex-wrap items-end justify-start gap-x-6 gap-y-1"
       aria-label={ariaLabel}
     >
       {items.map((item) => {
-        const cls = `${tabBase} ${item.active ? tabActive : tabInactive}`;
+        const subtle = item.variant === "subtle";
+        const cls = subtle
+          ? `${tabSubtleBase} ${item.active ? tabSubtleActive : tabSubtleInactive}`
+          : `${tabBase} ${item.active ? tabActive : tabInactive}`;
         if (item.kind === "link") {
           return (
             <Link

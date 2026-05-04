@@ -1,7 +1,5 @@
-import { AcademyCatalogHome } from "@/components/academy/AcademyCatalogHome";
+import { redirect } from "next/navigation";
 
-const BASE = "/admin/academy";
-
-export default async function AdminAcademyPage() {
-  return <AcademyCatalogHome basePath={BASE} showSourceEditHint />;
+export default function AdminAcademyIndexPage() {
+  redirect("/admin/academy/programs");
 }

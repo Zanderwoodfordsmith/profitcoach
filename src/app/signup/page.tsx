@@ -58,7 +58,7 @@ export default function CoachSignupPage() {
   return (
     <AuthSplitShell
       title="Create your account"
-      subtitle="Set up your BOSS Dashboard coach profile in a few steps."
+      subtitle="Set up your Profit Coach profile in a few steps."
       footer={
         <p className="text-center text-sm text-slate-600">
           Already have an account?{" "}

@@ -37,7 +37,7 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
   {
     href: "/signup",
     label: "Signup",
-    hint: "BOSS coach signup",
+    hint: "Profit Coach coach signup",
   },
   {
     href: "/admin/client-success",

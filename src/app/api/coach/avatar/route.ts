@@ -126,3 +126,33 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ avatar_url: publicUrl });
 }
+
+export async function DELETE(request: Request) {
+  const authCheck = await requireCoach(request);
+  if (authCheck.error || !authCheck.userId) {
+    return NextResponse.json(
+      { error: authCheck.error ?? "Unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  const coachId = authCheck.userId;
+  const paths = ["jpg", "png", "webp"].map(
+    (ext) => `${coachId}/avatar.${ext}`
+  );
+
+  await supabaseAdmin.storage.from("avatars").remove(paths);
+
+  const { error: updateError } = await supabaseAdmin
+    .from("profiles")
+    .update({ avatar_url: null })
+    .eq("id", coachId);
+
+  if (updateError) {
+    const msg =
+      (updateError as { message?: string }).message ?? "Profile update failed.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+
+  return NextResponse.json({ avatar_url: null as string | null });
+}

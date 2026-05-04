@@ -1,3 +1,5 @@
+export { DashboardPageSection } from "./DashboardPageSection";
+export type { DashboardPageSectionProps } from "./DashboardPageSection";
 export { StickyPageHeader } from "./StickyPageHeader";
 export type {
   PageHeaderDescriptionPlacement,

@@ -11,6 +11,9 @@ type Props = {
   likedByMe: boolean;
   detail?: boolean;
   disabled?: boolean;
+  /** Shown to the right of comment preview avatars (e.g. “New comment 22h ago”). */
+  commentRecencyLabel?: string | null;
+  commentRecencyVariant?: "new" | "last" | null;
   onToggleLike: () => void | Promise<void>;
   onCommentsClick: () => void;
 };
@@ -22,6 +25,8 @@ export function PostEngagementBar({
   likedByMe,
   detail = false,
   disabled = false,
+  commentRecencyLabel = null,
+  commentRecencyVariant = null,
   onToggleLike,
   onCommentsClick,
 }: Props) {
@@ -79,32 +84,45 @@ export function PostEngagementBar({
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       {likeBtn}
       {commentBtn}
-      {commentPreviewAuthors.length > 0 ? (
-        <div className="flex items-center pl-1">
-          <div className="flex -space-x-2">
-            {commentPreviewAuthors.map((a, i) => (
-              <span
-                key={`${a.id}-${i}`}
-                title={displayNameFromProfile(a)}
-                className="relative inline-flex h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
-                style={{ zIndex: commentPreviewAuthors.length - i }}
-              >
-                {a.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={a.avatar_url}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
-                    {displayNameFromProfile(a).slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-              </span>
-            ))}
-          </div>
+      {commentPreviewAuthors.length > 0 || commentRecencyLabel ? (
+        <div className="flex min-w-0 items-center gap-2 pl-1">
+          {commentPreviewAuthors.length > 0 ? (
+            <div className="flex shrink-0 -space-x-2">
+              {commentPreviewAuthors.map((a, i) => (
+                <span
+                  key={`${a.id}-${i}`}
+                  title={displayNameFromProfile(a)}
+                  className="relative inline-flex h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
+                  style={{ zIndex: commentPreviewAuthors.length - i }}
+                >
+                  {a.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={a.avatar_url}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
+                      {displayNameFromProfile(a).slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {commentRecencyLabel ? (
+            <span
+              className={`min-w-0 truncate text-xs font-medium ${
+                commentRecencyVariant === "new"
+                  ? "text-sky-600"
+                  : "text-slate-400"
+              }`}
+            >
+              {commentRecencyLabel}
+            </span>
+          ) : null}
         </div>
       ) : null}
     </div>

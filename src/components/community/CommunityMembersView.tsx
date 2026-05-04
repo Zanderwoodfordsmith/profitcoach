@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Calendar, MapPin, User } from "lucide-react";
+import { ArrowUpDown, Calendar, MapPin, User } from "lucide-react";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
+import { ladderOrdinal } from "@/lib/ladder";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 import {
   useCommunityMemberDirectory,
@@ -23,7 +24,10 @@ function displayName(m: CommunityRosterMember): string {
 
 function formatJoined(iso: string | null): string | null {
   if (!iso) return null;
-  const d = new Date(iso);
+  const t = iso.trim();
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(t)
+    ? new Date(`${t}T12:00:00Z`)
+    : new Date(t);
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString(undefined, {
     month: "short",
@@ -52,9 +56,98 @@ function parseFilter(raw: string | null): CommunityMembersFilter {
   return "members";
 }
 
+type CommunityMembersSort = "last" | "name" | "level";
+
+function defaultDirForSort(sort: CommunityMembersSort): "asc" | "desc" {
+  if (sort === "name") return "asc";
+  return "desc";
+}
+
+function parseSort(raw: string | null): CommunityMembersSort {
+  if (raw === "name" || raw === "level") return raw;
+  if (raw === "last" || raw === "recent") return "last";
+  return "last";
+}
+
+function parseDir(
+  raw: string | null,
+  sort: CommunityMembersSort
+): "asc" | "desc" {
+  if (raw === "asc" || raw === "desc") return raw;
+  return defaultDirForSort(sort);
+}
+
+function membersQuery(
+  filter: CommunityMembersFilter,
+  sort: CommunityMembersSort,
+  dir: "asc" | "desc"
+): string {
+  const p = new URLSearchParams();
+  if (filter !== "members") p.set("filter", filter);
+  if (sort !== "last") p.set("sort", sort);
+  if (dir !== defaultDirForSort(sort)) p.set("dir", dir);
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
+
+const SORT_MENU_OPTIONS: ReadonlyArray<{
+  sort: CommunityMembersSort;
+  dir: "asc" | "desc";
+  label: string;
+  description: string;
+}> = [
+  {
+    sort: "last",
+    dir: "desc",
+    label: "Last online",
+    description: "Most recently active first",
+  },
+  {
+    sort: "last",
+    dir: "asc",
+    label: "Last online",
+    description: "Longest idle first",
+  },
+  {
+    sort: "name",
+    dir: "asc",
+    label: "Name",
+    description: "Alphabetical A–Z",
+  },
+  {
+    sort: "name",
+    dir: "desc",
+    label: "Name",
+    description: "Reverse alphabetical Z–A",
+  },
+  {
+    sort: "level",
+    dir: "desc",
+    label: "Program level",
+    description: "Highest level first",
+  },
+  {
+    sort: "level",
+    dir: "asc",
+    label: "Program level",
+    description: "Lowest level first",
+  },
+];
+
+function compareName(
+  a: CommunityRosterMember,
+  b: CommunityRosterMember
+): number {
+  return displayName(a).localeCompare(displayName(b), undefined, {
+    sensitivity: "base",
+  });
+}
+
 export function CommunityMembersView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
   const base = pathname.startsWith("/admin")
     ? "/admin/community"
     : "/coach/community";
@@ -62,6 +155,16 @@ export function CommunityMembersView() {
   const filter = useMemo(
     () => parseFilter(searchParams.get("filter")),
     [searchParams]
+  );
+
+  const sort = useMemo(
+    () => parseSort(searchParams.get("sort")),
+    [searchParams]
+  );
+
+  const dir = useMemo(
+    () => parseDir(searchParams.get("dir"), sort),
+    [searchParams, sort]
   );
 
   const {
@@ -80,16 +183,63 @@ export function CommunityMembersView() {
       list = list.filter((m) =>
         isCommunityOnline(lastSeenByUserId[m.id], clock)
       );
-    list.sort((a, b) =>
-      displayName(a).localeCompare(displayName(b), undefined, {
-        sensitivity: "base",
-      })
-    );
+
+    const lastMs = (id: string) => {
+      const iso = lastSeenByUserId[id];
+      if (!iso) return 0;
+      const t = new Date(iso).getTime();
+      return Number.isNaN(t) ? 0 : t;
+    };
+
+    if (sort === "name") {
+      list.sort((a, b) => {
+        const c = compareName(a, b);
+        return dir === "asc" ? c : -c;
+      });
+    } else if (sort === "level") {
+      list.sort((a, b) => {
+        const oa = ladderOrdinal(a.ladder_level) ?? 0;
+        const ob = ladderOrdinal(b.ladder_level) ?? 0;
+        const byLevel = dir === "desc" ? ob - oa : oa - ob;
+        if (byLevel !== 0) return byLevel;
+        return compareName(a, b);
+      });
+    } else {
+      list.sort((a, b) => {
+        const ta = lastMs(a.id);
+        const tb = lastMs(b.id);
+        const bySeen = dir === "desc" ? tb - ta : ta - tb;
+        if (bySeen !== 0) return bySeen;
+        return compareName(a, b);
+      });
+    }
     return list;
-  }, [roster, filter, lastSeenByUserId, clock]);
+  }, [roster, filter, sort, dir, lastSeenByUserId, clock]);
 
   const pillHref = (id: CommunityMembersFilter) =>
-    id === "members" ? `${base}/members` : `${base}/members?filter=${id}`;
+    `${base}/members${membersQuery(id, sort, dir)}`;
+
+  const sortOptionHref = (s: CommunityMembersSort, d: "asc" | "desc") =>
+    `${base}/members${membersQuery(filter, s, d)}`;
+
+  useEffect(() => {
+    if (!sortMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = sortMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setSortMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [sortMenuOpen]);
+
+  const activeSortOption = useMemo(
+    () =>
+      SORT_MENU_OPTIONS.find((o) => o.sort === sort && o.dir === dir) ??
+      SORT_MENU_OPTIONS[0],
+    [sort, dir]
+  );
+
+  const sortMenuIsNonDefault = sort !== "last" || dir !== "desc";
 
   const pillClass = (id: CommunityMembersFilter) =>
     `rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -110,22 +260,81 @@ export function CommunityMembersView() {
         </p>
       ) : null}
 
-      <div className={`flex flex-wrap gap-2 ${loadError ? "mt-4" : ""}`}>
-        <Link href={pillHref("members")} className={pillClass("members")}>
-          Members{" "}
-          <span className={countClass("members")}>{counts.members}</span>
-        </Link>
-        <Link href={pillHref("online")} className={pillClass("online")}>
-          Online{" "}
-          <span className={countClass("online")}>{counts.online}</span>
-        </Link>
-        <Link href={pillHref("admins")} className={pillClass("admins")}>
-          Admins{" "}
-          <span className={countClass("admins")}>{counts.admins}</span>
-        </Link>
+      <div
+        className={`flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 ${
+          loadError ? "mt-4" : ""
+        }`}
+      >
+        <div className="flex min-w-0 flex-wrap gap-2">
+          <Link href={pillHref("members")} className={pillClass("members")}>
+            Members{" "}
+            <span className={countClass("members")}>{counts.members}</span>
+          </Link>
+          <Link href={pillHref("online")} className={pillClass("online")}>
+            Online{" "}
+            <span className={countClass("online")}>{counts.online}</span>
+          </Link>
+          <Link href={pillHref("admins")} className={pillClass("admins")}>
+            Admins{" "}
+            <span className={countClass("admins")}>{counts.admins}</span>
+          </Link>
+        </div>
+        <div className="relative ml-auto shrink-0 pt-0.5" ref={sortMenuRef}>
+          <button
+            type="button"
+            aria-expanded={sortMenuOpen}
+            aria-haspopup="menu"
+            aria-label={`Sort members: ${activeSortOption.label} — ${activeSortOption.description}`}
+            onClick={() => setSortMenuOpen((o) => !o)}
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+              sortMenuIsNonDefault
+                ? "bg-sky-50 text-sky-800 ring-2 ring-sky-600"
+                : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-800"
+            }`}
+          >
+            <ArrowUpDown
+              className="h-4 w-4 shrink-0"
+              strokeWidth={2}
+              aria-hidden
+            />
+          </button>
+          {sortMenuOpen ? (
+            <div
+              role="menu"
+              aria-label="Sort members"
+              className="absolute right-0 z-30 mt-1 w-[min(100vw-1.5rem,17rem)] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+            >
+              {SORT_MENU_OPTIONS.map((opt) => {
+                const selected = opt.sort === sort && opt.dir === dir;
+                return (
+                  <Link
+                    key={`${opt.sort}-${opt.dir}`}
+                    href={sortOptionHref(opt.sort, opt.dir)}
+                    role="menuitem"
+                    onClick={() => setSortMenuOpen(false)}
+                    className={`flex flex-col gap-0.5 px-3 py-2.5 text-left text-sm transition-colors ${
+                      selected
+                        ? "bg-sky-50 font-medium text-sky-900"
+                        : "text-slate-800 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    <span
+                      className={`text-xs font-normal leading-snug ${
+                        selected ? "text-sky-800/90" : "text-slate-500"
+                      }`}
+                    >
+                      {opt.description}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      <ul className="mt-6 space-y-2">
+      <ul className="mt-6 space-y-3">
         {filtered.map((m) => {
           const name = displayName(m);
           const sub =
@@ -136,8 +345,9 @@ export function CommunityMembersView() {
           const online = isCommunityOnline(lastSeenByUserId[m.id], clock);
           const profileHref =
             m.directory_listed && m.slug ? `/directory/${m.slug}` : null;
-          const roleLabel = m.role === "admin" ? "Admin" : "Coach";
-          const joined = formatJoined(m.created_at);
+          const joined = formatJoined(
+            m.disco_community_joined_on ?? m.created_at
+          );
 
           return (
             <li
@@ -183,9 +393,11 @@ export function CommunityMembersView() {
                         {online ? "Online" : "Offline"}
                       </span>
                     ) : null}
-                    <span className="text-xs font-medium text-sky-600">
-                      {roleLabel}
-                    </span>
+                    {m.role === "admin" ? (
+                      <span className="text-xs font-medium text-sky-600">
+                        Admin
+                      </span>
+                    ) : null}
                   </div>
                   {m.slug ? (
                     <p className="truncate text-xs text-slate-500">@{m.slug}</p>

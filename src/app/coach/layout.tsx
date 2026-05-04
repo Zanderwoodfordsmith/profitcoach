@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 
 export default function CoachLayout({
@@ -115,12 +116,7 @@ export default function CoachLayout({
           <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
             Admin
           </span>
-          <span
-            className="min-w-0 truncate text-[11px] font-medium text-amber-950 sm:text-xs"
-            title={`Viewing as ${coachName ?? "Coach"}`}
-          >
-            {coachName ?? "Coach"}
-          </span>
+          <AdminCoachImpersonationSwitcher coachName={coachName} />
           <button
             type="button"
             onClick={handleExit}

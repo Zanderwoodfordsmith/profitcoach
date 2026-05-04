@@ -85,13 +85,13 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, ladder_goal_level, ladder_goal_target_date)"
+      "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
     );
 
     let goalDateMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, ladder_goal_level)"
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level)"
       );
       goalDateMissing = true;
     }
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
     let directoryMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, profiles!inner(full_name, coach_business_name, ladder_goal_level)"
+        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level)"
       );
       directoryMissing = true;
     }
@@ -107,7 +107,7 @@ export async function GET(request: Request) {
     let goalLevelMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, profiles!inner(full_name, coach_business_name)"
+        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url)"
       );
       goalLevelMissing = true;
       directoryMissing = true;
@@ -156,6 +156,7 @@ export async function GET(request: Request) {
         id,
         slug: row.slug as string,
         full_name: (prof?.full_name as string | null) ?? null,
+        avatar_url: (prof?.avatar_url as string | null) ?? null,
         coach_business_name:
           (prof?.coach_business_name as string | null) ?? null,
         directory_listed: directoryMissing ? false : !!row.directory_listed,

@@ -2,13 +2,32 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { randomUUID } from "crypto";
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;
+
 const EXT_BY_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
 };
+
+type MediaKind = "image" | "video";
+
+function mediaKindForMime(mime: string): MediaKind | null {
+  if ((IMAGE_TYPES as readonly string[]).includes(mime)) return "image";
+  if ((VIDEO_TYPES as readonly string[]).includes(mime)) return "video";
+  return null;
+}
+
+function maxBytesForMime(mime: string): number {
+  return mediaKindForMime(mime) === "video" ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+}
 
 async function requireStaff(request: Request) {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -68,21 +87,27 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  const kind = mediaKindForMime(file.type);
+  if (!kind) {
     return NextResponse.json(
-      { error: "File must be JPEG, PNG, or WebP." },
+      {
+        error:
+          "File must be an image (JPEG, PNG, WebP) or video (MP4, WebM, MOV).",
+      },
       { status: 400 }
     );
   }
 
-  if (file.size > MAX_SIZE_BYTES) {
+  const maxBytes = maxBytesForMime(file.type);
+  if (file.size > maxBytes) {
+    const mb = Math.round(maxBytes / (1024 * 1024));
     return NextResponse.json(
-      { error: "File must be 5MB or smaller." },
+      { error: `File must be ${mb}MB or smaller.` },
       { status: 400 }
     );
   }
 
-  const ext = EXT_BY_TYPE[file.type] ?? "jpg";
+  const ext = EXT_BY_TYPE[file.type] ?? (kind === "video" ? "mp4" : "jpg");
   const path = `${userId}/${randomUUID()}.${ext}`;
   const buffer = await file.arrayBuffer();
 
@@ -101,5 +126,7 @@ export async function POST(request: Request) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const publicUrl = `${supabaseUrl}/storage/v1/object/public/community-posts/${path}`;
 
-  return NextResponse.json({ image_url: publicUrl });
+  return NextResponse.json({
+    media: { url: publicUrl, kind },
+  });
 }

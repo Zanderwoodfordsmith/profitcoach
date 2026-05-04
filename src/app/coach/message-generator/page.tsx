@@ -25,7 +25,7 @@ function CoachMessageGeneratorContent() {
   const activeTab = parseProfitCoachAiTab(searchParams.get("tab"));
 
   const settingsHref = pathname.startsWith("/admin")
-    ? "/admin/settings"
+    ? "/admin/account"
     : "/coach/settings";
 
   const tabs = useMemo(

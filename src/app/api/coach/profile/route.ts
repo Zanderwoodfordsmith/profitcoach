@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { geocodeLocation } from "@/lib/geocodeLocation";
+import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
 
 async function requireCoach(request: Request) {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -51,11 +51,22 @@ export async function GET(request: Request) {
 
   const coachId = authCheck.userId;
 
+  const impersonateHeader =
+    request.headers.get("x-impersonate-coach-id")?.trim() ?? "";
+  let account_email: string | null = null;
+  if (impersonateHeader) {
+    const { data: authUserData, error: authUserErr } =
+      await supabaseAdmin.auth.admin.getUserById(coachId);
+    if (!authUserErr) {
+      account_email = authUserData?.user?.email ?? null;
+    }
+  }
+
   try {
     const profileResult = await supabaseAdmin
       .from("profiles")
       .select(
-        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location, ai_context"
+        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location, ai_context, timezone, latitude, longitude, location_geocoded_source"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -112,6 +123,10 @@ export async function GET(request: Request) {
         bio?: string | null;
         location?: string | null;
         ai_context?: CoachAiContext | null;
+        timezone?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
+        location_geocoded_source?: string | null;
       } | null;
 
       return NextResponse.json({
@@ -124,9 +139,14 @@ export async function GET(request: Request) {
         bio: prof?.bio ?? null,
         location: prof?.location ?? null,
         ai_context: prof?.ai_context ?? {},
+        timezone: prof?.timezone ?? null,
+        latitude: prof?.latitude ?? null,
+        longitude: prof?.longitude ?? null,
+        location_geocoded_source: prof?.location_geocoded_source ?? null,
         coach_slug: slug,
         directory_listed: false,
         directory_level: null,
+        account_email,
       });
     }
     if (coachErr) {
@@ -147,6 +167,10 @@ export async function GET(request: Request) {
       bio?: string | null;
       location?: string | null;
       ai_context?: CoachAiContext | null;
+      timezone?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+      location_geocoded_source?: string | null;
     } | null;
 
     return NextResponse.json({
@@ -159,9 +183,14 @@ export async function GET(request: Request) {
       bio: prof?.bio ?? null,
       location: prof?.location ?? null,
       ai_context: prof?.ai_context ?? {},
+      timezone: prof?.timezone ?? null,
+      latitude: prof?.latitude ?? null,
+      longitude: prof?.longitude ?? null,
+      location_geocoded_source: prof?.location_geocoded_source ?? null,
       coach_slug: slug,
       directory_listed: coachRow?.directory_listed ?? false,
       directory_level: coachRow?.directory_level ?? null,
+      account_email,
     });
   } catch {
     return NextResponse.json(
@@ -179,6 +208,13 @@ type PatchBody = {
   bio?: string | null;
   location?: string | null;
   avatar_url?: string | null;
+  /** IANA timezone id, e.g. Europe/London */
+  timezone?: string | null;
+  /** Place community-map pin manually (both required together). */
+  map_latitude?: number | null;
+  map_longitude?: number | null;
+  /** Clear cached coordinates (map + geocoded). */
+  clear_map_pin?: boolean;
   /** Partial merge into existing ai_context jsonb */
   ai_context?: Partial<CoachAiContext>;
   /** Coach may toggle directory visibility; level is admin-only. */
@@ -248,6 +284,52 @@ export async function PATCH(request: Request) {
   if (body.bio !== undefined) updates.bio = body.bio?.trim() ?? null;
   if (body.location !== undefined) updates.location = body.location?.trim() ?? null;
   if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url || null;
+  if (body.timezone !== undefined) {
+    const tz = body.timezone?.trim() ?? "";
+    updates.timezone = tz.length > 0 ? tz : null;
+  }
+
+  if (body.clear_map_pin === true) {
+    updates.latitude = null;
+    updates.longitude = null;
+    updates.location_geocoded_source = null;
+    updates.location_geocoded_at = new Date().toISOString();
+  }
+
+  if (
+    body.map_latitude !== undefined &&
+    body.map_longitude !== undefined &&
+    typeof body.map_latitude === "number" &&
+    Number.isFinite(body.map_latitude) &&
+    typeof body.map_longitude === "number" &&
+    Number.isFinite(body.map_longitude)
+  ) {
+    if (
+      body.map_latitude < -90 ||
+      body.map_latitude > 90 ||
+      body.map_longitude < -180 ||
+      body.map_longitude > 180
+    ) {
+      return NextResponse.json(
+        { error: "Map coordinates are out of range." },
+        { status: 400 }
+      );
+    }
+    updates.latitude = body.map_latitude;
+    updates.longitude = body.map_longitude;
+    updates.location_geocoded_source = "manual";
+    updates.location_geocoded_at = new Date().toISOString();
+
+    if (body.location === undefined) {
+      const label = await reverseGeocodeLocation(
+        body.map_latitude,
+        body.map_longitude
+      );
+      if (label) {
+        updates.location = label;
+      }
+    }
+  }
 
   const coachUpdates: Record<string, unknown> = {};
   if (body.directory_listed !== undefined) {
@@ -261,7 +343,10 @@ export async function PATCH(request: Request) {
       [first, last].filter(Boolean).join(" ").trim() || null;
   }
 
-  if (Object.keys(updates).length === 0 && Object.keys(coachUpdates).length === 0) {
+  if (
+    Object.keys(updates).length === 0 &&
+    Object.keys(coachUpdates).length === 0
+  ) {
     return NextResponse.json({ ok: true });
   }
 
@@ -284,16 +369,20 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  // Capture prior location so we only re-geocode when it actually changes.
+  // Capture prior location + geocode source for smart re-geocode behaviour.
   let previousLocation: string | null = null;
+  let previousGeoSource: string | null = null;
   if (body.location !== undefined) {
     const { data: prior } = await supabaseAdmin
       .from("profiles")
-      .select("location")
+      .select("location, location_geocoded_source")
       .eq("id", coachId)
       .maybeSingle();
     previousLocation =
       (prior as { location?: string | null } | null)?.location ?? null;
+    previousGeoSource =
+      (prior as { location_geocoded_source?: string | null } | null)
+        ?.location_geocoded_source ?? null;
   }
 
   let result = await supabaseAdmin
@@ -350,6 +439,8 @@ export async function PATCH(request: Request) {
               location_geocoded_source: null,
             })
             .eq("id", coachId);
+        } else if (previousGeoSource === "manual") {
+          // User placed a map pin: keep coordinates; location string is display-only.
         } else {
           const coords = await geocodeLocation(next);
           await supabaseAdmin

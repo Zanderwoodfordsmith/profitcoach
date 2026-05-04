@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Check,
-  ChevronDown,
   MapPin,
   Minus,
   Plus,
@@ -26,6 +25,13 @@ import {
   type LadderAchievementDTO,
   type LadderLevelConfig,
 } from "@/lib/ladder";
+import {
+  defaultMonthlyIncomeForLevelId,
+  formatWeeksInterval,
+  monthlyIncomeToLadderLevelId,
+  parseMoneyInput,
+  signClientEveryWeeks,
+} from "@/lib/ladderIncomeGoal";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -86,10 +92,6 @@ function formatGoalDate(iso: string): string {
   return `${day} ${mon} ${y}`;
 }
 
-function goalLevelOptionLabel(l: LadderLevelConfig): string {
-  return `${l.name} · ${l.amountText}`;
-}
-
 function openDatePicker(input: HTMLInputElement | null) {
   if (!input || input.disabled) return;
   try {
@@ -141,7 +143,13 @@ export default function CoachCommunityLadderPage() {
   const [phaseOpen, setPhaseOpen] =
     useState<Record<LadderPhaseKey, boolean>>(INITIAL_PHASE_OPEN);
 
+  const [incomeCurrency, setIncomeCurrency] = useState<"GBP" | "USD">("GBP");
+  const [currentMonthlyIncomeRaw, setCurrentMonthlyIncomeRaw] = useState("");
+  const [monthlyIncomeRaw, setMonthlyIncomeRaw] = useState("");
+  const [perClientMonthlyRaw, setPerClientMonthlyRaw] = useState("2000");
+
   const goalDateInputRef = useRef<HTMLInputElement>(null);
+  const seededIncomeFromGoal = useRef(false);
 
   const authHeaders = useCallback(async (): Promise<Record<
     string,
@@ -286,6 +294,47 @@ export default function CoachCommunityLadderPage() {
     [currentLevelId]
   );
 
+  const incomeParsed = useMemo(
+    () => parseMoneyInput(monthlyIncomeRaw),
+    [monthlyIncomeRaw]
+  );
+  const currentIncomeParsed = useMemo(
+    () => parseMoneyInput(currentMonthlyIncomeRaw),
+    [currentMonthlyIncomeRaw]
+  );
+  const incomeHighlightLevelId = useMemo(() => {
+    if (incomeParsed === null || incomeParsed < 5_000) return null;
+    return monthlyIncomeToLadderLevelId(incomeParsed);
+  }, [incomeParsed]);
+  const currentIncomeTierId = useMemo(() => {
+    if (currentIncomeParsed === null || currentIncomeParsed < 5_000) {
+      return null;
+    }
+    return monthlyIncomeToLadderLevelId(currentIncomeParsed);
+  }, [currentIncomeParsed]);
+
+  const perClientParsed = useMemo(
+    () => parseMoneyInput(perClientMonthlyRaw),
+    [perClientMonthlyRaw]
+  );
+
+  const idealClientCount = useMemo(() => {
+    if (incomeParsed === null || incomeParsed <= 0) return null;
+    if (perClientParsed === null || perClientParsed <= 0) return null;
+    return Math.max(1, Math.round(incomeParsed / perClientParsed));
+  }, [incomeParsed, perClientParsed]);
+
+  const currencySymbol = incomeCurrency === "GBP" ? "£" : "$";
+
+  useEffect(() => {
+    if (loading || seededIncomeFromGoal.current) return;
+    const def = defaultMonthlyIncomeForLevelId(ladderGoalLevel);
+    if (def !== null) {
+      setMonthlyIncomeRaw(String(def));
+    }
+    seededIncomeFromGoal.current = true;
+  }, [loading, ladderGoalLevel]);
+
   async function patchAPI(body: unknown): Promise<boolean> {
     const headers = await authHeaders();
     if (!headers) {
@@ -304,6 +353,9 @@ export default function CoachCommunityLadderPage() {
     }
     return true;
   }
+
+  const patchAPIRef = useRef(patchAPI);
+  patchAPIRef.current = patchAPI;
 
   async function unmarkLevel(level: LadderLevelConfig) {
     if (savingLevelId) return;
@@ -391,17 +443,36 @@ export default function CoachCommunityLadderPage() {
     }
   }
 
-  async function setGoalLevel(levelId: string | null) {
+  const setGoalLevel = useCallback(async (levelId: string | null) => {
     setError(null);
-    const ok = await patchAPI({ ladder_goal_level: levelId });
+    const ok = await patchAPIRef.current({ ladder_goal_level: levelId });
     if (ok) {
       setLadderGoalLevel(levelId);
       if (!levelId) {
-        await patchAPI({ ladder_goal_target_date: null });
-        setLadderGoalTargetDate(null);
+        const ok2 = await patchAPIRef.current({
+          ladder_goal_target_date: null,
+        });
+        if (ok2) setLadderGoalTargetDate(null);
       }
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    if (loading || migrationNeeded) return;
+    const mapped = incomeHighlightLevelId;
+    if (mapped === null) return;
+    if (mapped === ladderGoalLevel) return;
+    const t = setTimeout(() => {
+      void setGoalLevel(mapped);
+    }, 450);
+    return () => clearTimeout(t);
+  }, [
+    incomeHighlightLevelId,
+    ladderGoalLevel,
+    loading,
+    migrationNeeded,
+    setGoalLevel,
+  ]);
 
   async function setGoalDate(iso: string | null) {
     setSavingGoalDate(true);
@@ -422,12 +493,15 @@ export default function CoachCommunityLadderPage() {
     const isNext = nextLevelId === level.id && !achieved;
     const icon = iconForKind(level.iconKind);
     const saving = savingLevelId === level.id;
+    const incomeMatch = incomeHighlightLevelId === level.id;
 
     const ringCls = isCurrent
       ? "ring-2 ring-sky-500 ring-offset-2 ring-offset-slate-100"
-      : isGoal
-        ? "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-slate-100 ring-dashed"
-        : "";
+      : incomeMatch
+        ? "ring-2 ring-violet-500 ring-offset-2 ring-offset-slate-100"
+        : isGoal
+          ? "ring-2 ring-amber-400/80 ring-offset-2 ring-offset-slate-100 ring-dashed"
+          : "";
 
     const incompleteRow = !achieved;
 
@@ -923,40 +997,113 @@ export default function CoachCommunityLadderPage() {
 
             <div className="mt-5 border-t border-slate-100 pt-5 text-left">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Goal
+                Monthly income
               </p>
-              <div className="mt-1 flex flex-nowrap items-end gap-x-3">
-                <div className="relative min-w-0 flex-1">
-                  <label htmlFor="ladder-goal-level" className="sr-only">
-                    Goal level
-                  </label>
-                  <div className="relative min-w-0">
-                    <select
-                      id="ladder-goal-level"
-                      value={ladderGoalLevel ?? ""}
-                      onChange={(e) =>
-                        void setGoalLevel(e.target.value ? e.target.value : null)
-                      }
-                      disabled={migrationNeeded}
-                      className="w-full cursor-pointer appearance-none border-0 border-b border-slate-200 bg-transparent py-1.5 pl-0 pr-7 text-sm font-medium text-slate-900 outline-none transition-[border-color,color] hover:border-slate-300 focus:border-sky-500 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      <option value="">None</option>
-                      {LADDER_LEVELS.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {goalLevelOptionLabel(l)}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown
-                      className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                      aria-hidden
-                    />
-                  </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                  Currency
+                </span>
+                <div
+                  className="inline-flex rounded-full border border-slate-200 p-0.5"
+                  role="group"
+                  aria-label="Income currency"
+                >
+                  <button
+                    type="button"
+                    disabled={migrationNeeded}
+                    onClick={() => setIncomeCurrency("GBP")}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      incomeCurrency === "GBP"
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    £
+                  </button>
+                  <button
+                    type="button"
+                    disabled={migrationNeeded}
+                    onClick={() => setIncomeCurrency("USD")}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      incomeCurrency === "USD"
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    $
+                  </button>
                 </div>
-                <div className="relative w-max max-w-[min(100%,12rem)] shrink-0 self-end">
+              </div>
+
+              <div className="mt-3 flex min-w-0 items-end gap-3">
+                <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
+                  Current
+                </span>
+                <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
+                  <span
+                    className="pb-0.5 text-lg font-semibold tabular-nums text-slate-700"
+                    aria-hidden
+                  >
+                    {currencySymbol}
+                  </span>
+                  <label htmlFor="ladder-current-monthly-income" className="sr-only">
+                    Current monthly income (optional)
+                  </label>
+                  <input
+                    id="ladder-current-monthly-income"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="e.g. 12000"
+                    value={currentMonthlyIncomeRaw}
+                    onChange={(e) => setCurrentMonthlyIncomeRaw(e.target.value)}
+                    disabled={migrationNeeded}
+                    className="min-w-0 flex-1 border-0 bg-transparent py-0.5 text-sm font-medium tabular-nums text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 disabled:opacity-45"
+                  />
+                </div>
+              </div>
+              {currentIncomeTierId ? (
+                <p className="mt-1 pl-[3.25rem] text-[11px] text-slate-600">
+                  ~{" "}
+                  <span className="font-medium text-slate-800">
+                    {getLadderLevel(currentIncomeTierId)?.name}
+                  </span>{" "}
+                  band
+                </p>
+              ) : null}
+
+              <div className="mt-3 flex min-w-0 flex-wrap items-end gap-3">
+                <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
+                  Ideal
+                </span>
+                <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
+                  <span
+                    className="pb-0.5 text-lg font-semibold tabular-nums text-slate-700"
+                    aria-hidden
+                  >
+                    {currencySymbol}
+                  </span>
+                  <label htmlFor="ladder-monthly-income" className="sr-only">
+                    Ideal monthly income
+                  </label>
+                  <input
+                    id="ladder-monthly-income"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="e.g. 20000"
+                    value={monthlyIncomeRaw}
+                    onChange={(e) => setMonthlyIncomeRaw(e.target.value)}
+                    disabled={migrationNeeded}
+                    className="min-w-0 flex-1 border-0 bg-transparent py-0.5 text-sm font-medium tabular-nums text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 disabled:opacity-45"
+                  />
+                </div>
+                <div className="relative w-max max-w-[min(100%,11rem)] shrink-0">
                   <div
                     className={`border-b border-slate-200 text-left transition-[border-color] focus-within:border-sky-500 ${
-                      migrationNeeded || savingGoalDate || !ladderGoalLevel
+                      migrationNeeded ||
+                      savingGoalDate ||
+                      !(ladderGoalLevel || incomeHighlightLevelId)
                         ? "cursor-not-allowed opacity-45"
                         : "hover:border-slate-300"
                     }`}
@@ -970,7 +1117,9 @@ export default function CoachCommunityLadderPage() {
                         void setGoalDate(e.target.value ? e.target.value : null)
                       }
                       disabled={
-                        migrationNeeded || savingGoalDate || !ladderGoalLevel
+                        migrationNeeded ||
+                        savingGoalDate ||
+                        !(ladderGoalLevel || incomeHighlightLevelId)
                       }
                       tabIndex={-1}
                       aria-hidden
@@ -979,12 +1128,14 @@ export default function CoachCommunityLadderPage() {
                     <button
                       type="button"
                       disabled={
-                        migrationNeeded || savingGoalDate || !ladderGoalLevel
+                        migrationNeeded ||
+                        savingGoalDate ||
+                        !(ladderGoalLevel || incomeHighlightLevelId)
                       }
                       aria-label={
                         ladderGoalTargetDate
-                          ? `Goal target date, ${formatGoalDate(ladderGoalTargetDate)}. Open calendar.`
-                          : "Goal target date (optional). Open calendar."
+                          ? `Ideal target date, ${formatGoalDate(ladderGoalTargetDate)}. Open calendar.`
+                          : "Ideal target date (optional). Open calendar."
                       }
                       onClick={() => openDatePicker(goalDateInputRef.current)}
                       className="w-full border-0 bg-transparent px-0.5 py-1.5 text-left text-sm font-medium tabular-nums text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-sky-500/35 focus-visible:ring-offset-0 disabled:cursor-not-allowed"
@@ -1000,15 +1151,96 @@ export default function CoachCommunityLadderPage() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            <p className="mt-4 text-left text-[11px] leading-snug text-slate-500">
-              Tick each step on the ladder. Use + / − on each section to show
-              or hide tiers (Promotion, Proof, and Prestige start collapsed).
-              The pin is your current ceiling; the star is your goal milestone.
-              Unticked steps look slightly muted. Skip-ahead ticks ask about
-              filling earlier steps. Dates are optional.
-            </p>
+              {incomeHighlightLevelId ? (
+                <p className="mt-3 text-xs font-medium text-violet-800">
+                  Ideal ladder match:{" "}
+                  <span className="text-violet-950">
+                    {getLadderLevel(incomeHighlightLevelId)?.name}
+                  </span>
+                </p>
+              ) : incomeParsed !== null &&
+                incomeParsed > 0 &&
+                incomeParsed < 5_000 ? (
+                <p className="mt-3 text-xs text-amber-900">
+                  Income tiers start at 5,000/mo (Silver). Bronze steps are
+                  about client count on the ladder.
+                </p>
+              ) : null}
+
+              <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/90 p-4">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  What It Takes
+                </h3>
+                <p className="mt-2 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-sm leading-relaxed text-slate-800">
+                  {idealClientCount !== null ? (
+                    <span className="font-semibold tabular-nums">
+                      {idealClientCount}{" "}
+                      {idealClientCount === 1 ? "client" : "clients"} at{" "}
+                    </span>
+                  ) : (
+                    <span className="text-slate-600">At </span>
+                  )}
+                  <span className="inline-flex items-baseline gap-0.5 font-semibold tabular-nums text-slate-900">
+                    {currencySymbol}
+                    <label htmlFor="ladder-per-client" className="sr-only">
+                      Average revenue per client per month
+                    </label>
+                    <input
+                      id="ladder-per-client"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      value={perClientMonthlyRaw}
+                      onChange={(e) => setPerClientMonthlyRaw(e.target.value)}
+                      disabled={migrationNeeded}
+                      className="w-[4.5rem] rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-sm font-semibold outline-none focus:border-sky-500 disabled:opacity-45"
+                    />
+                  </span>
+                  <span>/mo per client.</span>
+                </p>
+                <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  Sign a client every…
+                </p>
+                <ul className="mt-1.5 space-y-2">
+                  {([6, 12, 18, 24] as const).map((months) => {
+                    const weeks =
+                      incomeParsed !== null &&
+                      incomeParsed > 0 &&
+                      perClientParsed !== null &&
+                      perClientParsed > 0
+                        ? signClientEveryWeeks({
+                            monthsStay: months,
+                            pricePerClientMonth: perClientParsed,
+                            monthlyIncomeGoal: incomeParsed,
+                          })
+                        : null;
+                    const weeksLabel =
+                      weeks === null ? "—" : formatWeeksInterval(weeks);
+                    return (
+                      <li
+                        key={months}
+                        className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm text-slate-800"
+                      >
+                        <span className="shrink-0 font-medium">
+                          {months} months
+                        </span>
+                        <span
+                          className="min-w-[5.5rem] rounded-md border border-slate-200 bg-white px-2.5 py-1 text-right text-sm font-semibold tabular-nums text-slate-900"
+                          aria-label={
+                            weeks === null
+                              ? undefined
+                              : `Sign a client every ${weeksLabel}`
+                          }
+                        >
+                          {weeksLabel}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
           </section>
         </aside>
       </div>

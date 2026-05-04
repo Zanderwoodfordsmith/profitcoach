@@ -112,8 +112,11 @@ export default function AdminSettingsAICoachPage() {
         description="This system prompt controls how the AI Coach behaves for all clients. The Insight AI (dashboard insights) uses a separate prompt."
         leading={
           <p className="text-sm text-slate-500">
-            <Link href="/admin/settings" className="text-sky-600 hover:text-sky-700">
-              Settings
+            <Link
+              href="/admin/account?tab=site"
+              className="text-sky-600 hover:text-sky-700"
+            >
+              Site tools
             </Link>
             {" / AI Coach"}
           </p>

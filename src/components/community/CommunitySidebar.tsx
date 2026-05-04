@@ -28,7 +28,19 @@ function displayNameShort(m: {
   return n || "Member";
 }
 
-export function CommunitySidebar({ className }: { className?: string } = {}) {
+export type CommunitySidebarCalendarAdd = {
+  show: boolean;
+  onClick: () => void;
+};
+
+export function CommunitySidebar({
+  className,
+  calendarAddEvent,
+}: {
+  className?: string;
+  /** Shown on the community calendar tab for admins only */
+  calendarAddEvent?: CommunitySidebarCalendarAdd;
+} = {}) {
   const pathname = usePathname();
   const base = pathname.startsWith("/admin")
     ? "/admin/community"
@@ -38,7 +50,6 @@ export function CommunitySidebar({ className }: { className?: string } = {}) {
     roster,
     lastSeenByUserId,
     presenceUnavailable,
-    loadError,
     clock,
     counts,
   } = useCommunityMemberDirectory();
@@ -109,17 +120,21 @@ export function CommunitySidebar({ className }: { className?: string } = {}) {
             {COMMUNITY_BLURB}
           </p>
 
-          {loadError ? (
-            <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-800">
-              {loadError}
-            </p>
-          ) : null}
-
           <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 rounded-lg border border-slate-200 bg-slate-50/80">
             {statLink(`${base}/members`, counts.members, "Members")}
             {statLink(`${base}/members?filter=online`, counts.online, "Online")}
             {statLink(`${base}/members?filter=admins`, counts.admins, "Admins")}
           </div>
+
+          {calendarAddEvent?.show ? (
+            <button
+              type="button"
+              onClick={calendarAddEvent.onClick}
+              className="mt-4 w-full rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+            >
+              Add event
+            </button>
+          ) : null}
 
           <div className="mt-4">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">

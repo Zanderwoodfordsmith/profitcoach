@@ -1,9 +1,11 @@
 "use client";
 
 import type React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   Compass,
   Filter,
   LogOut,
@@ -61,6 +63,10 @@ function IconCompass({ className }: { className?: string }) {
   return <Compass className={className} />;
 }
 
+function IconCalendar({ className }: { className?: string }) {
+  return <CalendarDays className={className} />;
+}
+
 function IconAcademy({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -94,6 +100,7 @@ function mainNavItems(prefix: "/coach" | "/admin"): NavItem[] {
   return [
     { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
     { href: `${prefix}/signature`, label: "Compass", icon: IconCompass },
+    { href: `${prefix}/community/calendar`, label: "Calendar", icon: IconCalendar },
     { href: `${prefix}/academy`, label: "Classroom", icon: IconAcademy },
   ];
 }
@@ -115,14 +122,9 @@ function deliveryNavItems(prefix: "/coach" | "/admin"): NavItem[] {
 
 const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
-  { href: "/admin/settings", label: "Settings", icon: IconCog },
 ];
 
-function navLinkActive(
-  pathname: string | null,
-  href: string,
-  coachesHub?: boolean,
-) {
+function navLinkActive(pathname: string | null, href: string, coachesHub?: boolean) {
   if (coachesHub) {
     return (
       pathname === "/admin" ||
@@ -131,10 +133,11 @@ function navLinkActive(
       Boolean(pathname?.startsWith("/admin/client-success/"))
     );
   }
-  const root = href.split("/").slice(0, 2).join("/");
+  const pathOnly = href.split("?")[0] ?? href;
+  const root = pathOnly.split("/").slice(0, 2).join("/");
   return (
-    pathname === href ||
-    (href !== root && Boolean(pathname?.startsWith(`${href}/`)))
+    pathname === pathOnly ||
+    (pathOnly !== root && Boolean(pathname?.startsWith(`${pathOnly}/`)))
   );
 }
 
@@ -151,34 +154,53 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
-  const roleLabel = variant === "coach" ? "Coach" : "Admin";
   const footer =
     variant === "coach"
       ? {
           href: "/coach/settings",
           title: "Settings",
-          subtitle: "Profile & prospect link",
+          subtitle: "Profile & account",
           active: Boolean(pathname?.startsWith("/coach/settings")),
         }
       : {
           href: "/admin/account",
           title: "Account",
-          subtitle: "Settings & links",
+          subtitle: "Profile, account & links",
           active: Boolean(pathname?.startsWith("/admin/account")),
         };
 
   return (
     <aside className="fixed bottom-0 left-0 top-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white">
       <div className="shrink-0 px-4 py-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">
-          BOSS Dashboard
-        </p>
-        <p className="text-sm font-semibold">{roleLabel}</p>
+        <Link
+          href={prefix}
+          className="block rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        >
+          <Image
+            src="/brand/profit-coach-logo-white.svg"
+            alt="Profit Coach"
+            width={352}
+            height={99}
+            className="h-[3.6rem] w-auto max-w-full"
+            priority
+          />
+        </Link>
+        {variant === "coach" ? (
+          <p className="mt-3 text-sm font-semibold text-sky-100">Coach</p>
+        ) : null}
       </div>
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
         <ul className="space-y-1">
           {mainNavItems(prefix).map((item) => {
-            const active = navLinkActive(pathname, item.href);
+            let active = navLinkActive(pathname, item.href);
+            if (
+              item.href === `${prefix}/community` &&
+              Boolean(
+                pathname?.startsWith(`${prefix}/community/calendar`),
+              )
+            ) {
+              active = false;
+            }
             const Icon = item.icon;
             return (
               <li key={item.href}>
@@ -256,11 +278,7 @@ export function DashboardSidebar({
             </p>
             <ul className="space-y-0.5">
               {adminSectionNavItems.map((item) => {
-                const active = navLinkActive(
-                  pathname,
-                  item.href,
-                  item.coachesHub,
-                );
+                const active = navLinkActive(pathname, item.href, item.coachesHub);
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>

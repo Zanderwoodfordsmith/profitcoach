@@ -1,26 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { displayNameFromProfile } from "@/lib/communityProfile";
-import { bodyPreviewWithoutRawUuids } from "@/lib/communityMentions";
+import { MentionBody } from "@/components/community/MentionBody";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import type { CommunityPostRow } from "@/components/community/CommunityFeed";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
-import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
+import {
+  formatCommunityPostTimestamp,
+  formatCommunityRelativeActivityAgo,
+} from "@/lib/communityRelativeTime";
 
 type Props = {
   post: CommunityPostRow;
+  /** Display names for @mentions in the card body (from feed batch lookup). */
+  feedMentionNameById: Record<string, string>;
+  /** From local feed state: user opened this post before. */
+  feedCardHasBeenRead: boolean;
+  /** Max comment `created_at` the user has seen in the thread (local). */
+  commentsSeenWatermarkIso: string | null;
   onOpen: () => void;
   onPostsChanged: () => void | Promise<void>;
 };
 
-export function PostCard({ post, onOpen, onPostsChanged }: Props) {
+export function PostCard({
+  post,
+  feedMentionNameById,
+  feedCardHasBeenRead,
+  commentsSeenWatermarkIso,
+  onOpen,
+  onPostsChanged,
+}: Props) {
   const authorName = post.author
     ? displayNameFromProfile(post.author)
     : "Unknown";
-  const preview = bodyPreviewWithoutRawUuids(post.body);
   const [likeBusy, setLikeBusy] = useState(false);
+
+  const commentActivity = useMemo(() => {
+    const lastIso = post.last_comment_at;
+    if (!lastIso) return null;
+    const last = new Date(lastIso).getTime();
+    const hasUnseen =
+      !commentsSeenWatermarkIso ||
+      last > new Date(commentsSeenWatermarkIso).getTime();
+    const ago = formatCommunityRelativeActivityAgo(lastIso);
+    if (!ago) return null;
+    if (hasUnseen) {
+      return { variant: "new" as const, label: `New comment ${ago}` };
+    }
+    return { variant: "last" as const, label: `Last comment ${ago}` };
+  }, [post.last_comment_at, commentsSeenWatermarkIso]);
 
   const handleToggleLike = async () => {
     if (likeBusy) return;
@@ -44,7 +74,11 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
           onOpen();
         }
       }}
-      className="flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left shadow-sm transition hover:border-slate-300 hover:shadow"
+      className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${
+        feedCardHasBeenRead
+          ? "opacity-50 shadow-sm"
+          : "opacity-100 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]"
+      }`}
     >
       {/* Row 1: avatar + author only. Row 2: title/body/engagement full width (no blank strip under avatar). */}
       <div className="flex items-start gap-3">
@@ -79,9 +113,17 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
           <h2 className="line-clamp-2 py-1.5 text-xl font-semibold leading-snug tracking-tight text-slate-900">
             {post.title}
           </h2>
-          <p className="mt-1.5 line-clamp-2 text-base leading-relaxed text-slate-600">
-            {preview || " "}
-          </p>
+          <div className="mt-1.5 line-clamp-2 text-base leading-relaxed text-slate-600">
+            {post.body.trim() ? (
+              <MentionBody
+                body={post.body}
+                nameById={feedMentionNameById}
+                stripPreviewMarkdown
+              />
+            ) : (
+              "\u00a0"
+            )}
+          </div>
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>
             <PostEngagementBar
               likeCount={post.like_count}
@@ -89,20 +131,37 @@ export function PostCard({ post, onOpen, onPostsChanged }: Props) {
               commentPreviewAuthors={post.comment_preview_authors}
               likedByMe={post.liked_by_me}
               disabled={likeBusy}
+              commentRecencyLabel={commentActivity?.label ?? null}
+              commentRecencyVariant={commentActivity?.variant ?? null}
               onToggleLike={handleToggleLike}
               onCommentsClick={onOpen}
             />
           </div>
         </div>
-        {post.image_url ? (
-          <div className="relative shrink-0 self-start">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.image_url}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="h-[92px] w-[92px] rounded-xl object-cover ring-1 ring-slate-200"
-            />
+        {post.media[0] ? (
+          <div className="relative shrink-0 self-start overflow-hidden rounded-xl ring-1 ring-slate-200">
+            {post.media[0].kind === "video" ? (
+              <video
+                src={post.media[0].url}
+                muted
+                playsInline
+                preload="metadata"
+                className="h-[92px] w-[92px] object-cover"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={post.media[0].url}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-[92px] w-[92px] object-cover"
+              />
+            )}
+            {post.media.length > 1 ? (
+              <span className="absolute bottom-1 right-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                +{post.media.length - 1}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>

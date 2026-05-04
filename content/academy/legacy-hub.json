@@ -1,0 +1,355 @@
+{
+  "lessonPanelNotice": "Video and workbook for this lesson still live on the legacy Business Coach Academy (Disco). Use the button below to open that lesson in a new tab — you may need to sign in there. When your spreadsheet has the exact URL for each row, replace the `academyUrl` values in content/academy/legacy-hub.json (many rows currently share the programme dashboard until you paste the real links).",
+  "courses": [
+    {
+      "id": "kickstart",
+      "title": "Kickstart",
+      "description": "Welcome, members area, and key resources on the legacy academy.",
+      "sections": [
+        {
+          "id": "kickstart-welcome",
+          "title": "Welcome & Getting Started Guide",
+          "lessons": [
+            {
+              "id": "kickstart-welcome-to-business-coach-academy",
+              "title": "Welcome To Business Coach Academy",
+              "duration": "3m",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "kickstart-how-to-use-the-members-area",
+              "title": "How To Use The Members Area",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "kickstart-how-to-get-support",
+              "title": "How to get support",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "kickstart-key-resources",
+              "title": "Key Resources",
+              "duration": "",
+              "hasVideo": false,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "coach-action-plan",
+      "title": "Coach Action Plan",
+      "description": "Plan and foundations for a high-ticket coaching practice.",
+      "sections": [
+        {
+          "id": "coach-action-plan-main",
+          "title": "Programme",
+          "lessons": [
+            {
+              "id": "cap-10k-plan",
+              "title": "The £10K/mo Plan",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "cap-world-class-practice",
+              "title": "Building a World-Class Coaching Practice",
+              "duration": "57m",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "cap-ideal-client",
+              "title": "Choosing your ideal client",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "going-pro",
+      "title": "Going Pro",
+      "description": "Step up from side practice to professional delivery.",
+      "sections": [
+        {
+          "id": "going-pro-main",
+          "title": "Programme",
+          "lessons": [
+            {
+              "id": "gp-one-day-zero",
+              "title": "1 Day Zero",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "gp-pro-business",
+              "title": "Pro Business",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "profit-coach-certification",
+      "title": "Profit Coach Certification",
+      "description": "Certification track for Profit Coach delivery.",
+      "sections": [
+        {
+          "id": "pcc-main",
+          "title": "Programme",
+          "lessons": [
+            {
+              "id": "pcc-welcome",
+              "title": "Welcome To The Profit Coach Certification",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pcc-coaching-foundations",
+              "title": "Coaching Foundations",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pcc-exact-questions",
+              "title": "The EXACT Questions To Ask Clients",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pcc-world-class-coach",
+              "title": "Becoming A World Class Business Coach",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pcc-lasting-transformation",
+              "title": "Create Lasting Transformation",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pcc-client-simulators",
+              "title": "Client Simulators",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-acquisition",
+      "title": "Client Acquisition",
+      "description": "Lead flow, LinkedIn, nurture, and sales conversations.",
+      "sections": [
+        {
+          "id": "ca-main",
+          "title": "Programme",
+          "lessons": [
+            {
+              "id": "ca-ideal-clients",
+              "title": "Ideal Clients",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-linkedin-optimization",
+              "title": "LinkedIn Optimization",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-calendar-setup",
+              "title": "Calendar Setup",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-lead-gen-intro",
+              "title": "Lead Generation Intro",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-lead-gen-ai",
+              "title": "Lead Generation - AI Automation",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-lead-gen-vip",
+              "title": "Lead Generation - Personalised VIP Nurture (Top 100)",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-replying-to-leads",
+              "title": "Replying To Leads",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-value-sessions",
+              "title": "Getting Paid Clients Using Value Sessions",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-sales-pitch",
+              "title": "Sales Pitch",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "ca-faq",
+              "title": "FAQ",
+              "duration": "",
+              "hasVideo": false,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "client-delivery",
+      "title": "Client Delivery",
+      "description": "Onboarding and session structure for coaching delivery.",
+      "sections": [
+        {
+          "id": "cd-main",
+          "title": "Programme",
+          "lessons": [
+            {
+              "id": "cd-onboarding",
+              "title": "Client Onboarding",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "cd-session-structure",
+              "title": "Coaching Session Structure",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "cd-session-faqs",
+              "title": "Coaching Session FAQs",
+              "duration": "",
+              "hasVideo": false,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "cd-other-session-content",
+              "title": "Other Coaching Session Content",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "profit-brand-framework",
+      "title": "PROFIT Brand & Framework",
+      "description": "PROFIT system lenses: brand, planning, cash, marketing, ops, KPIs, leadership.",
+      "sections": [
+        {
+          "id": "pbf-main",
+          "title": "Programme",
+          "lessons": [
+            {
+              "id": "pbf-profit-system-framework",
+              "title": "Profit System Framework",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-dynamic-planning",
+              "title": "Dynamic Planning",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-profit-cash",
+              "title": "Profit & Cash",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-revenue-marketing",
+              "title": "Revenue & Marketing",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-ops-product",
+              "title": "Ops & Product",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-financials-kpis",
+              "title": "Financials & KPIs",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-innovation-management",
+              "title": "Innovation & Management",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            },
+            {
+              "id": "pbf-team-leadership",
+              "title": "Team & Leadership",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

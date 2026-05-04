@@ -10,11 +10,13 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import {
+  CircleDot,
   Flag,
   ImagePlus,
   Link2,
   MoreHorizontal,
   Pencil,
+  Star,
   ThumbsUp,
   Trash2,
   X,
@@ -31,17 +33,27 @@ import type {
   ProfileRow,
 } from "@/components/community/CommunityFeed";
 import { MentionBody } from "@/components/community/MentionBody";
+import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
+import { CommunityPostDetailMedia } from "@/components/community/CommunityPostDetailMedia";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
 import { toggleCommunityCommentLike } from "@/lib/communityCommentLike";
+import { toggleCommunityPostFavourite } from "@/lib/communityPostFavourite";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
 import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
-import { uploadCommunityPostImage } from "@/lib/communityPostImage";
+import {
+  COMMUNITY_POST_MEDIA_MAX,
+  communityPostMediaFingerprint,
+  firstCommunityPostImageUrl,
+  uploadCommunityPostMediaFile,
+  type CommunityPostMediaItem,
+} from "@/lib/communityPostMedia";
+import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
 import { postBodyNeedsTruncation } from "@/lib/communityPostBodyTruncation";
 import {
   communityAccessHint,
@@ -107,6 +119,11 @@ type Props = {
   categories: CommunityCategory[];
   onClose: () => void;
   onPostsChanged: () => void | Promise<void>;
+  /** Effective profile id for community feed localStorage (auth user or impersonated coach). */
+  feedStorageScopeId: string | null;
+  onMarkPostRead: (postId: string) => void;
+  onMarkPostUnread: (postId: string) => void;
+  onMarkCommentsSeenUpTo: (postId: string, latestCommentIso: string) => void;
 };
 
 function formatCommentDate(iso: string): string {
@@ -133,8 +150,13 @@ function PostDetailOverflowMenu({
   setMenuOpen,
   isAuthor,
   deleteBusy,
+  favouriteBusy,
+  favouritedByMe,
+  canMarkUnread,
   onEdit,
   onCopyLink,
+  onToggleFavourite,
+  onMarkUnread,
   onReport,
   onDelete,
 }: {
@@ -143,8 +165,13 @@ function PostDetailOverflowMenu({
   setMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isAuthor: boolean;
   deleteBusy: boolean;
+  favouriteBusy: boolean;
+  favouritedByMe: boolean;
+  canMarkUnread: boolean;
   onEdit: () => void;
   onCopyLink: () => void | Promise<void>;
+  onToggleFavourite: () => void | Promise<void>;
+  onMarkUnread: () => void;
   onReport: () => void;
   onDelete: () => void | Promise<void>;
 }) {
@@ -163,7 +190,7 @@ function PostDetailOverflowMenu({
       {menuOpen ? (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-1 min-w-[11rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 z-30 mt-1 min-w-[13.5rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
         >
           {isAuthor ? (
             <>
@@ -188,6 +215,44 @@ function PostDetailOverflowMenu({
                 <Link2 className="h-4 w-4 shrink-0 opacity-70" />
                 Copy link
               </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={favouriteBusy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                onClick={() => {
+                  void (async () => {
+                    await onToggleFavourite();
+                    setMenuOpen(false);
+                  })();
+                }}
+              >
+                <Star
+                  className={`h-4 w-4 shrink-0 ${
+                    favouritedByMe
+                      ? "fill-amber-400 text-amber-500"
+                      : "text-slate-500 opacity-80"
+                  }`}
+                  strokeWidth={2}
+                />
+                {favouritedByMe
+                  ? "Remove from favourites"
+                  : "Add to favourites"}
+              </button>
+              {canMarkUnread ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                  onClick={() => {
+                    onMarkUnread();
+                    setMenuOpen(false);
+                  }}
+                >
+                  <CircleDot className="h-4 w-4 shrink-0 opacity-70" />
+                  Mark as unread
+                </button>
+              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -222,6 +287,44 @@ function PostDetailOverflowMenu({
               <button
                 type="button"
                 role="menuitem"
+                disabled={favouriteBusy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                onClick={() => {
+                  void (async () => {
+                    await onToggleFavourite();
+                    setMenuOpen(false);
+                  })();
+                }}
+              >
+                <Star
+                  className={`h-4 w-4 shrink-0 ${
+                    favouritedByMe
+                      ? "fill-amber-400 text-amber-500"
+                      : "text-slate-500 opacity-80"
+                  }`}
+                  strokeWidth={2}
+                />
+                {favouritedByMe
+                  ? "Remove from favourites"
+                  : "Add to favourites"}
+              </button>
+              {canMarkUnread ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
+                  onClick={() => {
+                    onMarkUnread();
+                    setMenuOpen(false);
+                  }}
+                >
+                  <CircleDot className="h-4 w-4 shrink-0 opacity-70" />
+                  Mark as unread
+                </button>
+              ) : null}
+              <button
+                type="button"
+                role="menuitem"
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
                 onClick={onReport}
               >
@@ -241,6 +344,10 @@ export function PostDetailModal({
   categories,
   onClose,
   onPostsChanged,
+  feedStorageScopeId,
+  onMarkPostRead,
+  onMarkPostUnread,
+  onMarkCommentsSeenUpTo,
 }: Props) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
@@ -272,6 +379,8 @@ export function PostDetailModal({
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  /** After "Mark as unread", skip auto read until switching posts (mark unread bumps parent state). */
+  const skipAutoMarkPostReadRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const postTitleRef = useRef<HTMLHeadingElement>(null);
   const [showCompactPostHeader, setShowCompactPostHeader] = useState(false);
@@ -283,20 +392,42 @@ export function PostDetailModal({
   const [editCategoryId, setEditCategoryId] = useState(post.category_id);
   const [saveEditBusy, setSaveEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [favouriteBusy, setFavouriteBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [replaceImageFile, setReplaceImageFile] = useState<File | null>(null);
-  const [removeImage, setRemoveImage] = useState(false);
+  type EditMediaSlot =
+    | { key: string; type: "remote"; item: CommunityPostMediaItem }
+    | {
+        key: string;
+        type: "local";
+        file: File;
+        previewUrl: string;
+      };
 
-  const replaceImagePreview = useMemo(
-    () =>
-      replaceImageFile ? URL.createObjectURL(replaceImageFile) : null,
-    [replaceImageFile]
-  );
+  const [editMediaSlots, setEditMediaSlots] = useState<EditMediaSlot[]>([]);
+  const prevEditingRef = useRef(false);
 
   useEffect(() => {
-    if (!replaceImagePreview) return;
-    return () => URL.revokeObjectURL(replaceImagePreview);
-  }, [replaceImagePreview]);
+    if (editing && !prevEditingRef.current) {
+      setEditMediaSlots(
+        post.media.map((item, i) => ({
+          key: `r-${post.id}-${i}-${item.url.slice(-24)}`,
+          type: "remote" as const,
+          item,
+        }))
+      );
+    }
+    prevEditingRef.current = editing;
+  }, [editing, post.id, communityPostMediaFingerprint(post.media)]);
+
+  useEffect(() => {
+    if (editing) return;
+    setEditMediaSlots((slots) => {
+      for (const s of slots) {
+        if (s.type === "local") URL.revokeObjectURL(s.previewUrl);
+      }
+      return [];
+    });
+  }, [editing]);
 
   useEffect(() => {
     setPostAuthorDisplay(post.author ?? null);
@@ -305,9 +436,14 @@ export function PostDetailModal({
     setEditCategoryId(post.category_id);
     setEditing(false);
     setBodyExpanded(false);
-    setReplaceImageFile(null);
-    setRemoveImage(false);
-  }, [post.id, post.author, post.title, post.body, post.category_id]);
+  }, [
+    post.id,
+    post.author,
+    post.title,
+    post.body,
+    post.category_id,
+    communityPostMediaFingerprint(post.media),
+  ]);
 
   useEffect(() => {
     void supabaseClient.auth.getUser().then(({ data }) => {
@@ -508,6 +644,63 @@ export function PostDetailModal({
     void loadComments();
   }, [loadComments]);
 
+  useEffect(() => {
+    skipAutoMarkPostReadRef.current = false;
+  }, [post.id]);
+
+  useEffect(() => {
+    if (!feedStorageScopeId) return;
+    if (skipAutoMarkPostReadRef.current) return;
+    onMarkPostRead(post.id);
+  }, [feedStorageScopeId, post.id, onMarkPostRead]);
+
+  const handleMarkPostUnread = useCallback(() => {
+    if (!feedStorageScopeId) return;
+    skipAutoMarkPostReadRef.current = true;
+    onMarkPostUnread(post.id);
+  }, [feedStorageScopeId, post.id, onMarkPostUnread]);
+
+  const handleToggleFavourite = useCallback(async () => {
+    if (favouriteBusy) return;
+    setFavouriteBusy(true);
+    setActionError(null);
+    try {
+      await toggleCommunityPostFavourite(post.id, post.favourited_by_me);
+      await onPostsChanged();
+    } catch (e) {
+      setActionError(supabaseErrorMessage(e));
+    } finally {
+      setFavouriteBusy(false);
+    }
+  }, [
+    favouriteBusy,
+    post.id,
+    post.favourited_by_me,
+    onPostsChanged,
+  ]);
+
+  useEffect(() => {
+    if (!feedStorageScopeId) return;
+    if (commentsLoading) return;
+    if (comments.length === 0) {
+      onMarkCommentsSeenUpTo(post.id, post.created_at);
+      return;
+    }
+    let latest = comments[0].created_at;
+    for (let i = 1; i < comments.length; i++) {
+      const t = comments[i].created_at;
+      if (new Date(t) > new Date(latest)) latest = t;
+    }
+    onMarkCommentsSeenUpTo(post.id, latest);
+  }, [
+    feedStorageScopeId,
+    commentsLoading,
+    comments,
+    post.id,
+    post.created_at,
+    onMarkCommentsSeenUpTo,
+  ]);
+
   const allBodiesText = useMemo(() => {
     const parts = [post.body, ...comments.map((c) => c.body)];
     return parts.join("\n");
@@ -649,19 +842,24 @@ export function PostDetailModal({
   }, [onClose, onPostsChanged, post.id]);
 
   const saveEdit = useCallback(async () => {
-    const title = editTitle.trim();
-    const body = editBody.trim();
+    const title = capitalizeFirstUnicodeLetter(editTitle.trim());
+    const body = capitalizeFirstUnicodeLetter(editBody.trim());
     if (!title || !body || saveEditBusy) return;
     setActionError(null);
     setSaveEditBusy(true);
 
-    let image_url: string | null = post.image_url;
-    if (replaceImageFile) {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      const up = await uploadCommunityPostImage(
-        replaceImageFile,
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+
+    const finalMedia: CommunityPostMediaItem[] = [];
+    for (const slot of editMediaSlots) {
+      if (slot.type === "remote") {
+        finalMedia.push(slot.item);
+        continue;
+      }
+      const up = await uploadCommunityPostMediaFile(
+        slot.file,
         session?.access_token
       );
       if ("error" in up) {
@@ -669,10 +867,11 @@ export function PostDetailModal({
         setSaveEditBusy(false);
         return;
       }
-      image_url = up.image_url;
-    } else if (removeImage) {
-      image_url = null;
+      finalMedia.push(up.media);
     }
+
+    const mediaPayload = finalMedia.length > 0 ? finalMedia : null;
+    const image_url = firstCommunityPostImageUrl(finalMedia);
 
     const { error } = await supabaseClient
       .from("community_posts")
@@ -681,6 +880,7 @@ export function PostDetailModal({
         body,
         category_id: editCategoryId,
         image_url,
+        media: mediaPayload,
         updated_at: new Date().toISOString(),
       })
       .eq("id", post.id);
@@ -692,19 +892,15 @@ export function PostDetailModal({
       return;
     }
     setEditing(false);
-    setReplaceImageFile(null);
-    setRemoveImage(false);
     setMenuOpen(false);
     await onPostsChanged();
   }, [
     editBody,
     editCategoryId,
+    editMediaSlots,
     editTitle,
     onPostsChanged,
     post.id,
-    post.image_url,
-    removeImage,
-    replaceImageFile,
     saveEditBusy,
   ]);
 
@@ -855,11 +1051,16 @@ export function PostDetailModal({
                 setMenuOpen={setMenuOpen}
                 isAuthor={isAuthor}
                 deleteBusy={deleteBusy}
+                favouriteBusy={favouriteBusy}
+                favouritedByMe={post.favourited_by_me}
+                canMarkUnread={Boolean(feedStorageScopeId)}
                 onEdit={() => {
                   setActionError(null);
                   setEditing(true);
                 }}
                 onCopyLink={copyPostLink}
+                onToggleFavourite={handleToggleFavourite}
+                onMarkUnread={handleMarkPostUnread}
                 onReport={reportPost}
                 onDelete={handleDeletePost}
               />
@@ -901,11 +1102,16 @@ export function PostDetailModal({
                     setMenuOpen={setMenuOpen}
                     isAuthor={isAuthor}
                     deleteBusy={deleteBusy}
+                    favouriteBusy={favouriteBusy}
+                    favouritedByMe={post.favourited_by_me}
+                    canMarkUnread={Boolean(feedStorageScopeId)}
                     onEdit={() => {
                       setActionError(null);
                       setEditing(true);
                     }}
                     onCopyLink={copyPostLink}
+                    onToggleFavourite={handleToggleFavourite}
+                    onMarkUnread={handleMarkPostUnread}
                     onReport={reportPost}
                     onDelete={handleDeletePost}
                   />
@@ -914,8 +1120,8 @@ export function PostDetailModal({
             </div>
           </div>
 
-          <div className="mt-3 flex w-full min-w-0 gap-3">
-            <div className="min-w-0 flex-1">
+          <div className="mt-3 w-full min-w-0 space-y-3">
+            <div className="min-w-0">
               {editing ? (
                 <div className="space-y-3">
                   <input
@@ -932,6 +1138,12 @@ export function PostDetailModal({
                     rows={8}
                     className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-[calc(1rem+2px)] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                   />
+                  <p className="text-xs leading-snug text-slate-500">
+                    Basic{" "}
+                    <span className="font-medium text-slate-600">Markdown</span>{" "}
+                    is supported: **bold**, *italic*, # headings, - bullets,
+                    numbered lists, blockquotes, and links (https://…).
+                  </p>
                   {categories.length > 0 ? (
                     <div>
                       <label className="mb-1 block text-xs font-medium text-slate-600">
@@ -952,79 +1164,100 @@ export function PostDetailModal({
                   ) : null}
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">
-                      Image (optional)
+                      Photos and videos (optional, up to {COMMUNITY_POST_MEDIA_MAX})
                     </label>
-                    <div className="flex flex-wrap items-start gap-3">
-                      {replaceImagePreview ? (
-                        <div className="relative inline-block">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={replaceImagePreview}
-                            alt=""
-                            className="max-h-40 max-w-full rounded-lg object-cover ring-1 ring-slate-200"
-                          />
-                          <button
-                            type="button"
-                            className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-white shadow hover:bg-slate-900"
-                            aria-label="Remove new image"
-                            onClick={() => setReplaceImageFile(null)}
-                          >
-                            <X className="h-3.5 w-3.5" strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      ) : post.image_url && !removeImage ? (
-                        <div className="relative inline-block">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={post.image_url}
-                            alt=""
-                            referrerPolicy="no-referrer"
-                            className="max-h-40 max-w-full rounded-lg object-cover ring-1 ring-slate-200"
-                          />
-                          <button
-                            type="button"
-                            className="mt-1 text-xs font-medium text-rose-600 hover:underline"
-                            onClick={() => {
-                              setRemoveImage(true);
-                              setReplaceImageFile(null);
-                            }}
-                          >
-                            Remove image
-                          </button>
-                        </div>
+                    <div className="space-y-2">
+                      {editMediaSlots.length > 0 ? (
+                        <ul className="flex flex-wrap gap-2">
+                          {editMediaSlots.map((slot) => (
+                            <li key={slot.key} className="relative inline-block">
+                              {slot.type === "remote" ? (
+                                slot.item.kind === "video" ? (
+                                  <video
+                                    src={slot.item.url}
+                                    muted
+                                    playsInline
+                                    preload="metadata"
+                                    className="h-24 w-24 rounded-lg object-cover ring-1 ring-slate-200"
+                                  />
+                                ) : (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={slot.item.url}
+                                    alt=""
+                                    referrerPolicy="no-referrer"
+                                    className="h-24 w-24 rounded-lg object-cover ring-1 ring-slate-200"
+                                  />
+                                )
+                              ) : slot.file.type.startsWith("video/") ? (
+                                <video
+                                  src={slot.previewUrl}
+                                  muted
+                                  playsInline
+                                  className="h-24 w-24 rounded-lg object-cover ring-1 ring-slate-200"
+                                />
+                              ) : (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={slot.previewUrl}
+                                  alt=""
+                                  className="h-24 w-24 rounded-lg object-cover ring-1 ring-slate-200"
+                                />
+                              )}
+                              <button
+                                type="button"
+                                className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-white shadow hover:bg-slate-900"
+                                aria-label="Remove attachment"
+                                onClick={() => {
+                                  setEditMediaSlots((prev) => {
+                                    const x = prev.find((s) => s.key === slot.key);
+                                    if (x?.type === "local") {
+                                      URL.revokeObjectURL(x.previewUrl);
+                                    }
+                                    return prev.filter((s) => s.key !== slot.key);
+                                  });
+                                }}
+                              >
+                                <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       ) : (
-                        <p className="text-sm text-slate-500">No image</p>
+                        <p className="text-sm text-slate-500">No attachments</p>
                       )}
-                      {removeImage && !replaceImagePreview ? (
-                        <button
-                          type="button"
-                          className="text-xs font-medium text-sky-700 hover:underline"
-                          onClick={() => setRemoveImage(false)}
-                        >
-                          Undo remove
-                        </button>
-                      ) : null}
-                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50">
-                        <ImagePlus className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                        <span>
-                          {post.image_url || replaceImagePreview
-                            ? "Replace image"
-                            : "Add image"}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50">
+                          <ImagePlus className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                          <span>Add files</span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+                            multiple
+                            className="sr-only"
+                            disabled={editMediaSlots.length >= COMMUNITY_POST_MEDIA_MAX}
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files ?? []);
+                              e.target.value = "";
+                              if (files.length === 0) return;
+                              setEditMediaSlots((prev) => {
+                                const room = COMMUNITY_POST_MEDIA_MAX - prev.length;
+                                if (room <= 0) return prev;
+                                const add = files.slice(0, room).map((file) => ({
+                                  key: crypto.randomUUID(),
+                                  type: "local" as const,
+                                  file,
+                                  previewUrl: URL.createObjectURL(file),
+                                }));
+                                return [...prev, ...add];
+                              });
+                            }}
+                          />
+                        </label>
+                        <span className="text-xs text-slate-500">
+                          Images max 5MB · videos max 50MB
                         </span>
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="sr-only"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0] ?? null;
-                            if (f) {
-                              setReplaceImageFile(f);
-                              setRemoveImage(false);
-                            }
-                            e.target.value = "";
-                          }}
-                        />
-                      </label>
+                      </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1048,8 +1281,6 @@ export function PostDetailModal({
                         setEditTitle(post.title);
                         setEditBody(post.body);
                         setEditCategoryId(post.category_id);
-                        setReplaceImageFile(null);
-                        setRemoveImage(false);
                       }}
                       className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     >
@@ -1074,13 +1305,11 @@ export function PostDetailModal({
                   <div className="mt-3 text-[calc(1rem+2px)] leading-relaxed text-slate-800">
                     {bodyExpanded || !needsBodyTruncation ? (
                       <>
-                        <p className="m-0">
-                          <MentionBody
-                            body={post.body}
-                            nameById={nameById}
-                            profileHrefByUserId={mentionProfileHrefByUserId}
-                          />
-                        </p>
+                        <CommunityPostMarkdownBody
+                          body={post.body}
+                          nameById={nameById}
+                          profileHrefByUserId={mentionProfileHrefByUserId}
+                        />
                         {needsBodyTruncation ? (
                           <button
                             type="button"
@@ -1094,7 +1323,7 @@ export function PostDetailModal({
                     ) : (
                       <div className="text-[calc(1rem+2px)] leading-relaxed">
                         <div className="line-clamp-9 overflow-hidden break-words">
-                          <MentionBody
+                          <CommunityPostMarkdownBody
                             body={post.body}
                             nameById={nameById}
                             profileHrefByUserId={mentionProfileHrefByUserId}
@@ -1118,29 +1347,29 @@ export function PostDetailModal({
                   </div>
                 </>
               )}
-              {!editing ? (
-                <div className="mt-3">
-                  <PostEngagementBar
-                    detail
-                    likeCount={post.like_count}
-                    commentCount={post.comment_count}
-                    commentPreviewAuthors={post.comment_preview_authors}
-                    likedByMe={post.liked_by_me}
-                    disabled={likeBusy}
-                    onToggleLike={handleToggleLike}
-                    onCommentsClick={scrollToComments}
-                  />
-                </div>
-              ) : null}
             </div>
-            {!editing && post.image_url ? (
-              <div className="relative shrink-0 self-start">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={post.image_url}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  className="h-[92px] w-[92px] rounded-xl object-cover ring-1 ring-slate-200"
+            {!editing && post.media.length > 0 ? (
+              <div className="space-y-3">
+                {post.media.map((m, i) => (
+                  <CommunityPostDetailMedia
+                    key={`${m.url}-${i}`}
+                    url={m.url}
+                    kind={m.kind}
+                  />
+                ))}
+              </div>
+            ) : null}
+            {!editing ? (
+              <div>
+                <PostEngagementBar
+                  detail
+                  likeCount={post.like_count}
+                  commentCount={post.comment_count}
+                  commentPreviewAuthors={post.comment_preview_authors}
+                  likedByMe={post.liked_by_me}
+                  disabled={likeBusy}
+                  onToggleLike={handleToggleLike}
+                  onCommentsClick={scrollToComments}
                 />
               </div>
             ) : null}

@@ -772,7 +772,7 @@ function LandingVariantA(props: LandingVariantLegacyProps) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/landing/v2/dashboard.png"
-                  alt="Example BOSS dashboard"
+                  alt="Example Profit Coach workspace"
                   className="w-full rounded-2xl object-cover"
                 />
               </div>

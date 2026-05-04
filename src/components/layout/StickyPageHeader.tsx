@@ -8,8 +8,8 @@ export type PageHeaderDescriptionPlacement = "info" | "below";
 export type StickyPageHeaderProps = {
   title: ReactNode;
   /**
-   * Inline with title, right side. Prefer `PageHeaderUnderlineTabs` for
-   * underline tabs (Coaches hub, Community, Account).
+   * Inline after the title (same row, left-aligned tab group with a gap from
+   * the title). Prefer `PageHeaderUnderlineTabs` for underline tabs.
    */
   tabs?: ReactNode;
   description?: ReactNode;
@@ -18,7 +18,7 @@ export type StickyPageHeaderProps = {
    * `below`: previous layout—visible under the title (subtitles, contact metadata, etc.).
    */
   descriptionPlacement?: PageHeaderDescriptionPlacement;
-  /** Small label above title (e.g. “BOSS Dashboard”) */
+  /** Small label above title (e.g. “Profit Coach”) */
   eyebrow?: ReactNode;
   /** Block above eyebrow (e.g. back links) */
   leading?: ReactNode;
@@ -69,8 +69,8 @@ export function StickyPageHeader({
           <div
             className={
               eyebrow
-                ? `mt-1 flex flex-wrap gap-x-8 gap-y-2 ${tabs ? "items-end" : "items-center"}`
-                : `flex flex-wrap gap-x-8 gap-y-2 ${tabs ? "items-end" : "items-center"}`
+                ? `mt-1 flex min-w-0 flex-wrap gap-x-6 gap-y-2 ${tabs ? "items-end" : "items-center"}`
+                : `flex min-w-0 flex-wrap gap-x-6 gap-y-2 ${tabs ? "items-end" : "items-center"}`
             }
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -83,7 +83,11 @@ export function StickyPageHeader({
                 </PageHeaderDescriptionInfo>
               ) : null}
             </div>
-            {tabs ? <div className="min-w-0 shrink-0">{tabs}</div> : null}
+            {tabs ? (
+              <div className="min-w-0 shrink-0 overflow-x-auto pb-px">
+                {tabs}
+              </div>
+            ) : null}
           </div>
           {description && descriptionPlacement === "below" ? (
             <div className="mt-1 max-w-2xl text-base leading-snug text-slate-600 sm:mt-1.5">

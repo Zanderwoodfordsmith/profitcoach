@@ -78,10 +78,10 @@ export default function AdminSettingsBossGridPage() {
         description="All grid components with sample data. Transposed (client dashboard) variant at the top."
         leading={
           <Link
-            href="/admin/settings"
+            href="/admin/account?tab=site"
             className="text-xs text-sky-600 hover:text-sky-700"
           >
-            ← Settings
+            ← Site tools
           </Link>
         }
       />

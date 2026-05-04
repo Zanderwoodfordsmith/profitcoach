@@ -19,6 +19,8 @@ export function CommunityAreaLayout({
   const isMembers = pathname === `${base}/members`;
   const onCommunityHome =
     pathname === base || pathname === `${base}/`;
+  const isCalendarPage =
+    pathname === `${base}/calendar` || pathname === `${base}/calendar/`;
 
   const isMap =
     !isMembers &&
@@ -28,7 +30,11 @@ export function CommunityAreaLayout({
 
   const description = isMembers
     ? "Browse all members, see who's online, and find staff admins."
-    : "Browse posts and see where coaches are based.";
+    : isCalendarPage
+      ? "See upcoming community events in calendar or list view."
+      : "Browse posts and see where coaches are based.";
+
+  const pageTitle = isCalendarPage ? "Calendar" : "Community";
 
   const tabs = useMemo(
     () => (
@@ -62,7 +68,7 @@ export function CommunityAreaLayout({
   return (
     <>
       <StickyPageHeader
-        title="Community"
+        title={pageTitle}
         description={description}
         tabs={tabs}
       />
