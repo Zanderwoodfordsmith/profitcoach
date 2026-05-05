@@ -78,6 +78,7 @@ export default function AdminPage() {
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
   );
+  const [deletingCoachId, setDeletingCoachId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -284,6 +285,45 @@ export default function AdminPage() {
       );
     } finally {
       setCreatingCoach(false);
+    }
+  }
+
+  async function handleDeleteCoach(coach: CoachRow) {
+    const label = coach.full_name?.trim() || coach.slug;
+    if (
+      !window.confirm(
+        `Delete coach profile for "${label}"? This removes their account and related coach data. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setError("You must be signed in to delete a coach.");
+      return;
+    }
+
+    setDeletingCoachId(coach.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/coaches/${coach.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Unable to delete coach.");
+      }
+      setCoaches((prev) => prev.filter((c) => c.id !== coach.id));
+    } catch (e) {
+      setError((e as Error)?.message ?? "Unable to delete coach.");
+    } finally {
+      setDeletingCoachId(null);
     }
   }
 
@@ -509,6 +549,7 @@ export default function AdminPage() {
               <th className="w-28 px-2 py-2">Goal by</th>
               <th className="w-10 px-1 py-2 text-center" aria-label="Landing" />
               <th className="px-2 py-2 text-center">View as</th>
+              <th className="px-2 py-2 text-center">Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -613,13 +654,23 @@ export default function AdminPage() {
                       View as coach
                     </button>
                   </td>
+                  <td className="px-2 py-2 text-center align-middle">
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteCoach(coach)}
+                      disabled={deletingCoachId === coach.id}
+                      className="rounded px-2 py-1 text-xs text-rose-600 underline-offset-2 hover:bg-rose-50 hover:text-rose-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingCoachId === coach.id ? "Deleting…" : "Delete"}
+                    </button>
+                  </td>
                 </tr>
               );
             })}
             {loading && (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   Loading coaches…

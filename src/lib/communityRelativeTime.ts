@@ -43,3 +43,26 @@ export function formatCommunityRelativeActivityAgo(
   if (/^\d+[mhd]$/.test(inner)) return `${inner} ago`;
   return inner;
 }
+
+/** Relative future label in long form (e.g. "15 minutes", "2 days"). */
+export function formatCommunityRelativeFutureLong(
+  iso: string,
+  now = Date.now()
+): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const diff = Math.max(0, t - now);
+
+  if (diff < HOUR_MS) {
+    const minutes = Math.max(1, Math.floor(diff / 60_000));
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  }
+
+  if (diff < DAY_MS) {
+    const hours = Math.max(1, Math.floor(diff / HOUR_MS));
+    return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  }
+
+  const days = Math.max(1, Math.floor(diff / DAY_MS));
+  return `${days} ${days === 1 ? "day" : "days"}`;
+}

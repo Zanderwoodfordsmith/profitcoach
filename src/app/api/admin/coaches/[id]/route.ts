@@ -272,3 +272,93 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const authCheck = await requireAdmin(request);
+  if (authCheck.error) {
+    const status = authCheck.error === "Server error." ? 500 : 401;
+    return NextResponse.json({ error: authCheck.error }, { status });
+  }
+
+  const { id: coachId } = await context.params;
+  if (!coachId?.trim()) {
+    return NextResponse.json({ error: "Missing coach id." }, { status: 400 });
+  }
+
+  if (coachId === authCheck.userId) {
+    return NextResponse.json(
+      { error: "You cannot delete your own admin profile." },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("role")
+      .eq("id", coachId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("admin/coaches/[id] delete profile check error:", profileError);
+      return NextResponse.json(
+        { error: "Unable to verify coach profile." },
+        { status: 500 }
+      );
+    }
+    if (!profile) {
+      return NextResponse.json({ error: "Coach not found." }, { status: 404 });
+    }
+    if (profile.role !== "coach") {
+      return NextResponse.json(
+        { error: "Only coach profiles can be deleted here." },
+        { status: 400 }
+      );
+    }
+
+    const { error: coachDeleteError } = await supabaseAdmin
+      .from("coaches")
+      .delete()
+      .eq("id", coachId);
+    if (coachDeleteError) {
+      console.error("admin/coaches/[id] delete coach row error:", coachDeleteError);
+      return NextResponse.json(
+        { error: "Unable to delete coach directory record." },
+        { status: 500 }
+      );
+    }
+
+    const { error: profileDeleteError } = await supabaseAdmin
+      .from("profiles")
+      .delete()
+      .eq("id", coachId);
+    if (profileDeleteError) {
+      console.error("admin/coaches/[id] delete profile row error:", profileDeleteError);
+      return NextResponse.json(
+        { error: "Unable to delete coach profile." },
+        { status: 500 }
+      );
+    }
+
+    const { error: authDeleteError } =
+      await supabaseAdmin.auth.admin.deleteUser(coachId);
+    if (authDeleteError) {
+      console.error("admin/coaches/[id] delete auth user error:", authDeleteError);
+      return NextResponse.json(
+        { error: "Coach profile deleted, but auth account could not be deleted." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("admin/coaches/[id] DELETE catch:", err);
+    return NextResponse.json(
+      { error: "Unable to delete coach profile." },
+      { status: 500 }
+    );
+  }
+}

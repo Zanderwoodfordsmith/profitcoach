@@ -70,6 +70,7 @@ import {
   getCommunityAuthorId,
 } from "@/lib/communityEffectiveAuthorId";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
+import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
 
 type CommentRow = {
   id: string;
@@ -130,14 +131,6 @@ type Props = {
   onMarkPostUnread: (postId: string) => void;
   onMarkCommentsSeenUpTo: (postId: string, latestCommentIso: string) => void;
 };
-
-function formatCommentDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
 
 async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
   if (ids.length === 0) return [];
@@ -415,6 +408,16 @@ export function PostDetailModal({
   const [newComment, setNewComment] = useState("");
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpenFor, setReplyOpenFor] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [commentEditDrafts, setCommentEditDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [commentMenuOpenId, setCommentMenuOpenId] = useState<string | null>(
+    null
+  );
+  const [commentActionBusyId, setCommentActionBusyId] = useState<string | null>(
+    null
+  );
   const [submitting, setSubmitting] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const commentsAnchorRef = useRef<HTMLDivElement>(null);
@@ -430,6 +433,7 @@ export function PostDetailModal({
   postRef.current = post;
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentAuthorId, setCurrentAuthorId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   /** After "Mark as unread", skip auto read until switching posts (mark unread bumps parent state). */
@@ -603,6 +607,7 @@ export function PostDetailModal({
     let cancelled = false;
     void (async () => {
       const authorId = await getCommunityAuthorId(coachPersona);
+      if (!cancelled) setCurrentAuthorId(authorId);
       if (!authorId) {
         if (!cancelled) setEditorRole(null);
         return;
@@ -1126,6 +1131,98 @@ export function PostDetailModal({
     [coachPersona, replyDrafts, submitting, post.id, loadComments, onPostsChanged]
   );
 
+  const canManageComment = useCallback(
+    (comment: CommentRow) =>
+      Boolean(
+        (currentAuthorId && comment.author_id === currentAuthorId) || isEditorAdmin
+      ),
+    [currentAuthorId, isEditorAdmin]
+  );
+
+  const startEditingComment = useCallback((comment: CommentRow) => {
+    setActionError(null);
+    setCommentMenuOpenId(null);
+    setEditingCommentId(comment.id);
+    setReplyOpenFor(null);
+    setCommentEditDrafts((prev) => ({ ...prev, [comment.id]: comment.body }));
+  }, []);
+
+  const cancelEditingComment = useCallback((commentId: string) => {
+    setEditingCommentId((prev) => (prev === commentId ? null : prev));
+    setCommentEditDrafts((prev) => {
+      const next = { ...prev };
+      delete next[commentId];
+      return next;
+    });
+  }, []);
+
+  const saveCommentEdit = useCallback(
+    async (comment: CommentRow) => {
+      const draft = (commentEditDrafts[comment.id] ?? "").trim();
+      if (!draft || commentActionBusyId || !canManageComment(comment)) return;
+      setActionError(null);
+      setCommentActionBusyId(comment.id);
+      const { error } = await supabaseClient
+        .from("community_post_comments")
+        .update({ body: draft })
+        .eq("id", comment.id)
+        .eq("post_id", post.id);
+      setCommentActionBusyId(null);
+      if (error) {
+        const msg = supabaseErrorMessage(error);
+        const hint = communityAccessHint(msg);
+        setActionError(hint ? `${msg}\n\n${hint}` : msg);
+        return;
+      }
+      setCommentMenuOpenId(null);
+      cancelEditingComment(comment.id);
+      await loadComments();
+      await onPostsChanged();
+    },
+    [
+      canManageComment,
+      cancelEditingComment,
+      commentActionBusyId,
+      commentEditDrafts,
+      loadComments,
+      onPostsChanged,
+      post.id,
+    ]
+  );
+
+  const deleteComment = useCallback(
+    async (comment: CommentRow) => {
+      if (!canManageComment(comment) || commentActionBusyId) return;
+      if (!confirm("Delete this comment? This cannot be undone.")) return;
+      setActionError(null);
+      setCommentActionBusyId(comment.id);
+      const { error } = await supabaseClient
+        .from("community_post_comments")
+        .delete()
+        .eq("id", comment.id)
+        .eq("post_id", post.id);
+      setCommentActionBusyId(null);
+      if (error) {
+        const msg = supabaseErrorMessage(error);
+        const hint = communityAccessHint(msg);
+        setActionError(hint ? `${msg}\n\n${hint}` : msg);
+        return;
+      }
+      setCommentMenuOpenId(null);
+      cancelEditingComment(comment.id);
+      await loadComments();
+      await onPostsChanged();
+    },
+    [
+      canManageComment,
+      cancelEditingComment,
+      commentActionBusyId,
+      loadComments,
+      onPostsChanged,
+      post.id,
+    ]
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
@@ -1536,36 +1633,131 @@ export function PostDetailModal({
                     : "Unknown";
                   const caInitials = profileInitialsFromName(ca);
                   const replies = repliesByParent.get(c.id) ?? [];
+                  const topLevelCanManage = canManageComment(c);
+                  const topLevelIsEditing = editingCommentId === c.id;
                   return (
-                    <li key={c.id} className="rounded-xl bg-slate-50/80 p-3">
+                    <li
+                      key={c.id}
+                      className="group/comment relative rounded-xl bg-slate-50/80 p-3"
+                      onMouseLeave={() => setCommentMenuOpenId(null)}
+                    >
                       <div className="flex gap-2">
-                        {c.author?.avatar_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={c.author.avatar_url}
-                            alt=""
-                            className="h-8 w-8 shrink-0 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                            {caInitials}
-                          </span>
-                        )}
+                        <CommunityProfileHoverCard
+                          userId={c.author_id}
+                          profile={{
+                            id: c.author_id,
+                            full_name: c.author?.full_name ?? ca,
+                            first_name: c.author?.first_name ?? null,
+                            last_name: c.author?.last_name ?? null,
+                            avatar_url: c.author?.avatar_url ?? null,
+                            role: c.author?.role ?? null,
+                          }}
+                        >
+                          {c.author?.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={c.author.avatar_url}
+                              alt=""
+                              className="h-8 w-8 shrink-0 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                              {caInitials}
+                            </span>
+                          )}
+                        </CommunityProfileHoverCard>
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[15px] font-semibold text-slate-900">
-                              {ca}
-                            </span>
-                            <span className="text-[13px] text-slate-500">
-                              {formatCommentDate(c.created_at)}
-                            </span>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[15px] font-semibold text-slate-900">
+                                {ca}
+                              </span>
+                              <span className="text-[13px] text-slate-500">
+                                {formatCommunityPostTimestamp(c.created_at)}
+                              </span>
+                            </div>
+                            {topLevelCanManage ? (
+                              <div className="relative shrink-0">
+                                <button
+                                  type="button"
+                                  aria-label="Comment actions"
+                                  aria-expanded={commentMenuOpenId === c.id}
+                                  onClick={() =>
+                                    setCommentMenuOpenId((prev) =>
+                                      prev === c.id ? null : c.id
+                                    )
+                                  }
+                                  className="rounded-md p-1 text-slate-500 opacity-0 transition hover:bg-slate-200 hover:text-slate-800 focus:opacity-100 group-hover/comment:opacity-100"
+                                >
+                                  <MoreHorizontal
+                                    className="h-4 w-4"
+                                    strokeWidth={1.75}
+                                  />
+                                </button>
+                                {commentMenuOpenId === c.id && !topLevelIsEditing ? (
+                                  <div className="absolute right-0 z-20 mt-1 min-w-[8rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                                    <button
+                                      type="button"
+                                      className="flex w-full items-center px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-slate-50"
+                                      onClick={() => startEditingComment(c)}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={commentActionBusyId === c.id}
+                                      className="flex w-full items-center px-3 py-1.5 text-left text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                      onClick={() => void deleteComment(c)}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
                           </div>
-                          <MentionBody
-                            body={c.body}
-                            nameById={nameById}
-                            profileHrefByUserId={mentionProfileHrefByUserId}
-                            className="mt-1 text-[15px] text-slate-800"
-                          />
+                          {topLevelIsEditing ? (
+                            <div className="mt-2 space-y-2">
+                              <MentionTextarea
+                                value={commentEditDrafts[c.id] ?? ""}
+                                onChange={(v) =>
+                                  setCommentEditDrafts((d) => ({
+                                    ...d,
+                                    [c.id]: v,
+                                  }))
+                                }
+                                rows={3}
+                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void saveCommentEdit(c)}
+                                  disabled={
+                                    commentActionBusyId === c.id ||
+                                    !(commentEditDrafts[c.id] ?? "").trim()
+                                  }
+                                  className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => cancelEditingComment(c.id)}
+                                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <MentionBody
+                              body={c.body}
+                              nameById={nameById}
+                              profileHrefByUserId={mentionProfileHrefByUserId}
+                              className="mt-1 text-[15px] text-slate-800"
+                            />
+                          )}
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <button
                               type="button"
@@ -1635,42 +1827,154 @@ export function PostDetailModal({
                                   ? displayNameFromProfile(r.author)
                                   : "Unknown";
                                 const raInitials = profileInitialsFromName(ra);
+                                const replyCanManage = canManageComment(r);
+                                const replyIsEditing = editingCommentId === r.id;
                                 return (
                                   <li
                                     key={r.id}
-                                    className="rounded-lg bg-white px-3 py-2"
+                                    className="group/reply relative rounded-lg bg-white px-3 py-2"
+                                    onMouseLeave={() =>
+                                      setCommentMenuOpenId(null)
+                                    }
                                   >
                                     <div className="flex gap-2">
-                                      {r.author?.avatar_url ? (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                          src={r.author.avatar_url}
-                                          alt=""
-                                          className="h-7 w-7 shrink-0 rounded-full object-cover"
-                                        />
-                                      ) : (
-                                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-600">
-                                          {raInitials}
-                                        </span>
-                                      )}
+                                      <CommunityProfileHoverCard
+                                        userId={r.author_id}
+                                        profile={{
+                                          id: r.author_id,
+                                          full_name: r.author?.full_name ?? ra,
+                                          first_name: r.author?.first_name ?? null,
+                                          last_name: r.author?.last_name ?? null,
+                                          avatar_url: r.author?.avatar_url ?? null,
+                                          role: r.author?.role ?? null,
+                                        }}
+                                      >
+                                        {r.author?.avatar_url ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img
+                                            src={r.author.avatar_url}
+                                            alt=""
+                                            className="h-7 w-7 shrink-0 rounded-full object-cover"
+                                          />
+                                        ) : (
+                                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-600">
+                                            {raInitials}
+                                          </span>
+                                        )}
+                                      </CommunityProfileHoverCard>
                                       <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <span className="text-[13px] font-semibold text-slate-900">
-                                            {ra}
-                                          </span>
-                                          <span className="text-[11px] text-slate-500">
-                                            {formatCommentDate(r.created_at)}
-                                          </span>
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-[13px] font-semibold text-slate-900">
+                                              {ra}
+                                            </span>
+                                            <span className="text-[11px] text-slate-500">
+                                              {formatCommunityPostTimestamp(
+                                                r.created_at
+                                              )}
+                                            </span>
+                                          </div>
+                                          {replyCanManage ? (
+                                            <div className="relative shrink-0">
+                                              <button
+                                                type="button"
+                                                aria-label="Comment actions"
+                                                aria-expanded={
+                                                  commentMenuOpenId === r.id
+                                                }
+                                                onClick={() =>
+                                                  setCommentMenuOpenId((prev) =>
+                                                    prev === r.id ? null : r.id
+                                                  )
+                                                }
+                                                className="rounded-md p-1 text-slate-500 opacity-0 transition hover:bg-slate-100 hover:text-slate-800 focus:opacity-100 group-hover/reply:opacity-100"
+                                              >
+                                                <MoreHorizontal
+                                                  className="h-4 w-4"
+                                                  strokeWidth={1.75}
+                                                />
+                                              </button>
+                                              {commentMenuOpenId === r.id &&
+                                              !replyIsEditing ? (
+                                                <div className="absolute right-0 z-20 mt-1 min-w-[8rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                                                  <button
+                                                    type="button"
+                                                    className="flex w-full items-center px-3 py-1.5 text-left text-xs text-slate-800 hover:bg-slate-50"
+                                                    onClick={() =>
+                                                      startEditingComment(r)
+                                                    }
+                                                  >
+                                                    Edit
+                                                  </button>
+                                                  <button
+                                                    type="button"
+                                                    disabled={
+                                                      commentActionBusyId ===
+                                                      r.id
+                                                    }
+                                                    className="flex w-full items-center px-3 py-1.5 text-left text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                                                    onClick={() =>
+                                                      void deleteComment(r)
+                                                    }
+                                                  >
+                                                    Delete
+                                                  </button>
+                                                </div>
+                                              ) : null}
+                                            </div>
+                                          ) : null}
                                         </div>
-                                        <MentionBody
-                                          body={r.body}
-                                          nameById={nameById}
-                                          profileHrefByUserId={
-                                            mentionProfileHrefByUserId
-                                          }
-                                          className="mt-0.5 text-[15px] text-slate-800"
-                                        />
-                                        <div className="mt-1">
+                                        {replyIsEditing ? (
+                                          <div className="mt-1.5 space-y-2">
+                                            <MentionTextarea
+                                              value={commentEditDrafts[r.id] ?? ""}
+                                              onChange={(v) =>
+                                                setCommentEditDrafts((d) => ({
+                                                  ...d,
+                                                  [r.id]: v,
+                                                }))
+                                              }
+                                              rows={3}
+                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                            />
+                                            <div className="flex gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  void saveCommentEdit(r)
+                                                }
+                                                disabled={
+                                                  commentActionBusyId === r.id ||
+                                                  !(
+                                                    commentEditDrafts[r.id] ?? ""
+                                                  ).trim()
+                                                }
+                                                className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                              >
+                                                Save
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  cancelEditingComment(r.id)
+                                                }
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <MentionBody
+                                            body={r.body}
+                                            nameById={nameById}
+                                            profileHrefByUserId={
+                                              mentionProfileHrefByUserId
+                                            }
+                                            className="mt-0.5 text-[15px] text-slate-800"
+                                          />
+                                        )}
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                                           <CommentLikeButton
                                             likeCount={r.like_count}
                                             likedByMe={r.liked_by_me}

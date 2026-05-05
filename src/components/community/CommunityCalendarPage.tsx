@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CommunityCalendar } from "@/components/community/CommunityCalendar";
-import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 
 export function CommunityCalendarPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -35,21 +34,10 @@ export function CommunityCalendarPage() {
   }, []);
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
-      <div className="min-w-0 w-full flex-1">
-        <CommunityCalendar
-          addModalOpen={addModalOpen}
-          onAddModalOpenChange={setAddModalOpen}
-        />
-      </div>
-      <CommunitySidebar
-        className="pt-5 lg:pt-6"
-        calendarAddEvent={
-          calendarAdmin
-            ? { show: true, onClick: () => setAddModalOpen(true) }
-            : undefined
-        }
-      />
-    </div>
+    <CommunityCalendar
+      addModalOpen={addModalOpen}
+      onAddModalOpenChange={setAddModalOpen}
+      canAddEvent={calendarAdmin}
+    />
   );
 }

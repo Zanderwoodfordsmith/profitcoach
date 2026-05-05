@@ -6,6 +6,7 @@ import {
   splitMentionSegments,
 } from "@/lib/communityMentions";
 import { stripInlineMarkdownForCommunityPreviewFragment } from "@/lib/communityPostMarkdown";
+import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
 
 type Props = {
   body: string;
@@ -42,21 +43,29 @@ export function MentionBody({
         const mentionLabel = `@${label}`;
         if (href) {
           return (
-            <Link
+            <CommunityProfileHoverCard
               key={i}
-              href={href}
-              className={COMMUNITY_MENTION_LINK_CLASS}
-              title={seg.userId}
-              onClick={(e) => e.stopPropagation()}
+              userId={seg.userId}
+              profile={{ id: seg.userId, full_name: label }}
             >
-              {mentionLabel}
-            </Link>
+              <Link
+                href={href}
+                className={COMMUNITY_MENTION_LINK_CLASS}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {mentionLabel}
+              </Link>
+            </CommunityProfileHoverCard>
           );
         }
         return (
-          <span key={i} className={COMMUNITY_MENTION_LINK_CLASS} title={seg.userId}>
-            {mentionLabel}
-          </span>
+          <CommunityProfileHoverCard
+            key={i}
+            userId={seg.userId}
+            profile={{ id: seg.userId, full_name: label }}
+          >
+            <span className={COMMUNITY_MENTION_LINK_CLASS}>{mentionLabel}</span>
+          </CommunityProfileHoverCard>
         );
       })}
     </span>

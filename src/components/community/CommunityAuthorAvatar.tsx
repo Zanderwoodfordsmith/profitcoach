@@ -6,6 +6,7 @@ import {
 } from "@/lib/communityProfile";
 import type { ProfileRow } from "@/components/community/CommunityFeed";
 import { getLadderLevel } from "@/lib/ladder";
+import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
 
 type Props = {
   profile: ProfileRow | null;
@@ -29,7 +30,7 @@ export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
       ? "absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full text-[8px] font-bold tabular-nums shadow-sm ring-[1.5px] ring-white"
       : "absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold tabular-nums shadow-sm ring-[1.5px] ring-white";
 
-  return (
+  const avatar = (
     <div className={`relative shrink-0 ${box}`}>
       {profile?.avatar_url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -59,5 +60,23 @@ export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
         </span>
       ) : null}
     </div>
+  );
+
+  if (!profile?.id) return avatar;
+
+  return (
+    <CommunityProfileHoverCard
+      userId={profile.id}
+      profile={{
+        id: profile.id,
+        full_name: profile.full_name ?? null,
+        first_name: profile.first_name ?? null,
+        last_name: profile.last_name ?? null,
+        avatar_url: profile.avatar_url ?? null,
+        role: profile.role ?? null,
+      }}
+    >
+      {avatar}
+    </CommunityProfileHoverCard>
   );
 }

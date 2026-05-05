@@ -42,36 +42,26 @@ export function AuthSplitShell({
 
       <div className="relative hidden min-h-0 flex-1 lg:flex">
         <div className="flex min-h-screen w-full items-stretch bg-gradient-to-br from-slate-100 via-slate-50 to-[var(--boss-velocity)]/20 p-8 xl:p-12">
-          <div className="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-3xl shadow-xl ring-1 ring-slate-200/80">
-            <Image
-              src="/landing/v2/hero.png"
-              alt=""
-              fill
-              className="object-cover"
-              priority
-              sizes="50vw"
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--landing-navy)]/92 via-[var(--landing-navy)]/25 to-transparent" />
-            <div className="relative z-10 flex w-full flex-col justify-between p-8 text-white">
-              <div className="flex items-center">
-                <Image
-                  src="/brand/profit-coach-logo-white.svg"
-                  alt="Profit Coach"
-                  width={240}
-                  height={68}
-                  className="h-10 w-auto max-w-[min(100%,280px)]"
-                  priority
-                />
-              </div>
-              <div className="mt-auto max-w-md rounded-2xl border border-white/25 bg-white/10 p-6 shadow-lg backdrop-blur-md">
-                <p className="text-lg font-medium leading-relaxed text-white">
-                  &ldquo;Structure your coaching practice the way you structure
-                  results for clients: clear, visible, repeatable.&rdquo;
-                </p>
-                <p className="mt-4 text-sm text-white/85">
-                  Built for coaches who use Profit Coach
-                </p>
-              </div>
+          <div className="relative flex min-h-0 w-full flex-1 flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+            <div className="flex items-start justify-center pt-2">
+              <Image
+                src="/brand/profit-coach-logo-colour-no-bg.png"
+                alt="Profit Coach"
+                width={640}
+                height={180}
+                className="h-auto w-full max-w-xl object-contain"
+                priority
+                sizes="(max-width: 1279px) 44vw, 620px"
+              />
+            </div>
+            <div className="mt-auto max-w-md rounded-2xl border border-[var(--landing-navy)]/15 bg-[var(--landing-navy)]/[0.03] p-6 shadow-sm">
+              <p className="text-lg font-medium leading-relaxed text-slate-900">
+                &ldquo;Structure your coaching practice the way you structure
+                results for clients: clear, visible, repeatable.&rdquo;
+              </p>
+              <p className="mt-4 text-sm text-slate-600">
+                Built for coaches who use Profit Coach
+              </p>
             </div>
           </div>
         </div>

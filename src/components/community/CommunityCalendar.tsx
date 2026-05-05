@@ -36,6 +36,7 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { AddCommunityEventModal } from "@/components/community/AddCommunityEventModal";
+import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 
 const LIST_PAGE_SIZE = 6;
 
@@ -66,6 +67,7 @@ type WeekSegment = {
 type Props = {
   addModalOpen: boolean;
   onAddModalOpenChange: (open: boolean) => void;
+  canAddEvent?: boolean;
 };
 
 function zonedDateKey(iso: string, tz: string): string {
@@ -196,6 +198,7 @@ function formatRangeLabel(
 export function CommunityCalendar({
   addModalOpen,
   onAddModalOpenChange,
+  canAddEvent = false,
 }: Props) {
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [calendarLayout, setCalendarLayout] = useState<CalendarLayout>("week");
@@ -211,6 +214,8 @@ export function CommunityCalendar({
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [nowTick, setNowTick] = useState(0);
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
+  const [selectedOccurrence, setSelectedOccurrence] =
+    useState<CommunityCalendarOccurrence | null>(null);
   const tzPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -597,6 +602,15 @@ export function CommunityCalendar({
                   <ListChecks className="h-5 w-5" strokeWidth={1.75} />
                 </button>
               </div>
+              {canAddEvent ? (
+                <button
+                  type="button"
+                  onClick={() => onAddModalOpenChange(true)}
+                  className="mt-2 w-full rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                >
+                  Add event
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -646,39 +660,22 @@ export function CommunityCalendar({
                         <ul className="mt-1 space-y-0.5">
                           {dayEvents.slice(0, 3).map((ev) => (
                             <li key={`${ev.eventId}-${ev.startsAtIso}`}>
-                              {ev.location_kind === "link" &&
-                              ev.location_url?.startsWith("http") ? (
-                                <a
-                                  href={ev.location_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="line-clamp-2 text-left text-[11px] font-medium leading-snug text-sky-600 hover:underline"
-                                >
-                                  {DateTime.fromISO(ev.startsAtIso, {
-                                    zone: "utc",
-                                  })
-                                    .setZone(viewTz)
-                                    .toLocaleString({
-                                      timeZone: viewTz,
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                    })}{" "}
-                                  — {ev.title}
-                                </a>
-                              ) : (
-                                <span className="line-clamp-2 text-[11px] font-medium leading-snug text-sky-700">
-                                  {DateTime.fromISO(ev.startsAtIso, {
-                                    zone: "utc",
-                                  })
-                                    .setZone(viewTz)
-                                    .toLocaleString({
-                                      timeZone: viewTz,
-                                      hour: "numeric",
-                                      minute: "2-digit",
-                                    })}{" "}
-                                  — {ev.title}
-                                </span>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOccurrence(ev)}
+                                className="line-clamp-2 text-left text-[11px] font-medium leading-snug text-sky-700 hover:underline"
+                              >
+                                {DateTime.fromISO(ev.startsAtIso, {
+                                  zone: "utc",
+                                })
+                                  .setZone(viewTz)
+                                  .toLocaleString({
+                                    timeZone: viewTz,
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  })}{" "}
+                                — {ev.title}
+                              </button>
                             </li>
                           ))}
                           {dayEvents.length > 3 ? (
@@ -846,23 +843,13 @@ export function CommunityCalendar({
                                       width: `calc(${laneW}% - 4px)`,
                                     }}
                                   >
-                                    {ev.location_kind === "link" &&
-                                    ev.location_url?.startsWith("http") ? (
-                                      <a
-                                        href={ev.location_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={`flex h-full flex-col rounded-md px-1.5 py-1 ${blockClass} hover:opacity-95`}
-                                      >
-                                        {inner}
-                                      </a>
-                                    ) : (
-                                      <div
-                                        className={`flex h-full flex-col rounded-md px-1.5 py-1 ${blockClass}`}
-                                      >
-                                        {inner}
-                                      </div>
-                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedOccurrence(ev)}
+                                      className={`flex h-full w-full flex-col rounded-md px-1.5 py-1 text-left ${blockClass} hover:opacity-95`}
+                                    >
+                                      {inner}
+                                    </button>
                                   </div>
                                 );
                               })}
@@ -887,9 +874,11 @@ export function CommunityCalendar({
                   const e = DateTime.fromISO(ev.endsAtIso, { zone: "utc" });
                   const label = formatRangeLabel(s, e, viewTz);
                   return (
-                    <article
+                    <button
+                      type="button"
+                      onClick={() => setSelectedOccurrence(ev)}
                       key={`${ev.eventId}-${ev.startsAtIso}`}
-                      className="flex gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                      className="flex w-full gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-slate-300"
                     >
                       <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-44">
                         {ev.cover_image_url ? (
@@ -932,7 +921,7 @@ export function CommunityCalendar({
                           )}
                         </p>
                       </div>
-                    </article>
+                    </button>
                   );
                 })
               )}
@@ -989,6 +978,12 @@ export function CommunityCalendar({
             onAddModalOpenChange(false);
             setRefreshNonce((n) => n + 1);
           }}
+        />
+      ) : null}
+      {selectedOccurrence ? (
+        <CommunityCalendarEventModal
+          occurrence={selectedOccurrence}
+          onClose={() => setSelectedOccurrence(null)}
         />
       ) : null}
     </>

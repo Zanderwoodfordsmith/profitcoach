@@ -7,7 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
+import { DateTime } from "luxon";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
@@ -50,6 +51,10 @@ import {
 import { devPerfEnd, devPerfStart } from "@/lib/devPerf";
 import { paginationItems } from "@/lib/communityPagination";
 import { profileInitialsFromName } from "@/lib/communityProfile";
+import { expandCommunityCalendar } from "@/lib/communityCalendarExpand";
+import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
+import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
+import { formatCommunityRelativeFutureLong } from "@/lib/communityRelativeTime";
 
 const POSTS_PER_PAGE = 20;
 /** First paint on page 1: load this many posts, then load the rest of the page in a second request. */
@@ -649,6 +654,13 @@ export function CommunityFeed() {
   const feedFetchGeneration = useRef(0);
   /** Page 1: after the first few posts, loading the rest of the page. */
   const [feedLoadingMore, setFeedLoadingMore] = useState(false);
+  const [calendarLiveOccurrence, setCalendarLiveOccurrence] =
+    useState<CommunityCalendarOccurrence | null>(null);
+  const [calendarNextOccurrence, setCalendarNextOccurrence] =
+    useState<CommunityCalendarOccurrence | null>(null);
+  const [selectedCalendarOccurrence, setSelectedCalendarOccurrence] =
+    useState<CommunityCalendarOccurrence | null>(null);
+  const [calendarTick, setCalendarTick] = useState(0);
   const closeDetail = useCallback(() => {
     setSelectedPostId(null);
     setFetchedDetailPost(null);
@@ -667,6 +679,57 @@ export function CommunityFeed() {
     },
     [pathname, router, searchParams]
   );
+
+  useEffect(() => {
+    const id = window.setInterval(() => setCalendarTick((n) => n + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    void calendarTick;
+    let cancelled = false;
+    void (async () => {
+      const now = DateTime.now();
+      const rangeEnd = now.plus({ days: 120 });
+      const { data, error } = await supabaseClient
+        .from("community_calendar_events")
+        .select(
+          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, is_recurring, recurrence, created_at, updated_at"
+        )
+        .order("starts_at", { ascending: true });
+      if (cancelled || error) return;
+      const occurrences = expandCommunityCalendar(
+        (data ?? []) as Parameters<typeof expandCommunityCalendar>[0],
+        now,
+        rangeEnd
+      );
+      const nowMs = now.toMillis();
+      const live =
+        occurrences.find((occ) => {
+          const startMs = DateTime.fromISO(occ.startsAtIso, {
+            zone: "utc",
+          }).toMillis();
+          const endMs = DateTime.fromISO(occ.endsAtIso, {
+            zone: "utc",
+          }).toMillis();
+          return nowMs >= startMs && nowMs < endMs;
+        }) ?? null;
+      const next =
+        live ??
+        occurrences.find((occ) => {
+          const startMs = DateTime.fromISO(occ.startsAtIso, {
+            zone: "utc",
+          }).toMillis();
+          return startMs > nowMs;
+        }) ??
+        null;
+      setCalendarLiveOccurrence(live);
+      setCalendarNextOccurrence(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [calendarTick]);
 
   useEffect(() => {
     const q = searchParams.get("post");
@@ -1272,6 +1335,42 @@ export function CommunityFeed() {
                 <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
               </button>
 
+              {calendarLiveOccurrence ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCalendarOccurrence(calendarLiveOccurrence)}
+                  className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center"
+                >
+                  <span className="inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white">
+                    <span className="h-1 w-1 rounded-full bg-white" />
+                    Live
+                  </span>
+                  <span className="min-w-0 truncate text-[15px] font-semibold text-slate-900">
+                    {calendarLiveOccurrence.title}
+                  </span>
+                  <span className="text-[15px] font-medium text-slate-700">now</span>
+                </button>
+              ) : calendarNextOccurrence ? (
+                <div className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
+                  <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden />
+                  <span className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedCalendarOccurrence(calendarNextOccurrence)
+                      }
+                      className="truncate text-[15px] font-semibold text-slate-900 hover:underline"
+                    >
+                      {calendarNextOccurrence.title}
+                    </button>{" "}
+                    is happening in{" "}
+                    {formatCommunityRelativeFutureLong(
+                      calendarNextOccurrence.startsAtIso
+                    )}
+                  </span>
+                </div>
+              ) : null}
+
               <div className="mb-2 flex items-start gap-2">
                 <div className="flex min-w-0 flex-1 flex-wrap gap-2">
                   <button
@@ -1521,6 +1620,12 @@ export function CommunityFeed() {
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}
                   onMarkCommentsSeenUpTo={markCommentsSeenUpTo}
+                />
+              ) : null}
+              {selectedCalendarOccurrence ? (
+                <CommunityCalendarEventModal
+                  occurrence={selectedCalendarOccurrence}
+                  onClose={() => setSelectedCalendarOccurrence(null)}
                 />
               ) : null}
             </div>

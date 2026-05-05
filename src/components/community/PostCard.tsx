@@ -96,7 +96,7 @@ export function PostCard({
               {authorName}
             </span>
             {post.is_pinned ? (
-              <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-900">
+              <span className="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
                 <Pin className="h-3.5 w-3.5 fill-sky-500 text-sky-500" strokeWidth={1.75} />
                 Pinned
               </span>

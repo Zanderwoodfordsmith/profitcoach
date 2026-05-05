@@ -2,10 +2,10 @@
 
 import { MessageCircle, ThumbsUp } from "lucide-react";
 import {
-  displayNameFromProfile,
   profileInitialsFromProfile,
 } from "@/lib/communityProfile";
 import type { ProfileRow } from "@/components/community/CommunityFeed";
+import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
 
 type Props = {
   likeCount: number;
@@ -92,26 +92,37 @@ export function PostEngagementBar({
           {commentPreviewAuthors.length > 0 ? (
             <div className="flex shrink-0 -space-x-2">
               {commentPreviewAuthors.map((a, i) => (
-                <span
+                <CommunityProfileHoverCard
                   key={`${a.id}-${i}`}
-                  title={displayNameFromProfile(a)}
-                  className="relative inline-flex h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
-                  style={{ zIndex: commentPreviewAuthors.length - i }}
+                  userId={a.id}
+                  profile={{
+                    id: a.id,
+                    full_name: a.full_name ?? null,
+                    first_name: a.first_name ?? null,
+                    last_name: a.last_name ?? null,
+                    avatar_url: a.avatar_url ?? null,
+                    role: a.role ?? null,
+                  }}
                 >
-                  {a.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={a.avatar_url}
-                      alt=""
-                      referrerPolicy="no-referrer"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
-                      {profileInitialsFromProfile(a)}
-                    </span>
-                  )}
-                </span>
+                  <span
+                    className="relative inline-flex h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
+                    style={{ zIndex: commentPreviewAuthors.length - i }}
+                  >
+                    {a.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={a.avatar_url}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
+                        {profileInitialsFromProfile(a)}
+                      </span>
+                    )}
+                  </span>
+                </CommunityProfileHoverCard>
               ))}
             </div>
           ) : null}
