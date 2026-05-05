@@ -172,11 +172,12 @@ export default function CoachCommunityLadderPage() {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${session.access_token}`,
     };
-    if (roleBody.role === "admin" && impersonatingCoachId) {
+    const onAdminSignature = pathname?.startsWith("/admin/signature") ?? false;
+    if (roleBody.role === "admin" && impersonatingCoachId && !onAdminSignature) {
       headers["x-impersonate-coach-id"] = impersonatingCoachId;
     }
     return headers;
-  }, [impersonatingCoachId]);
+  }, [impersonatingCoachId, pathname]);
 
   const loadMain = useCallback(async () => {
     setError(null);

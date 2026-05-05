@@ -22,11 +22,13 @@ export default function CoachLayout({
     clearContactImpersonation,
   } = useImpersonation();
   const [coachName, setCoachName] = useState<string | null>(null);
+  const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!impersonatingCoachId) {
       setCoachName(null);
+      setCoachAvatarUrl(null);
       return;
     }
     let cancelled = false;
@@ -39,6 +41,7 @@ export default function CoachLayout({
       const data = (await res.json().catch(() => ({}))) as {
         full_name?: string | null;
         coach_business_name?: string | null;
+        avatar_url?: string | null;
       };
       if (!cancelled && data) {
         const name =
@@ -46,8 +49,10 @@ export default function CoachLayout({
           data.coach_business_name ??
           "Coach";
         setCoachName(name);
+        setCoachAvatarUrl(data.avatar_url ?? null);
       } else if (!cancelled) {
         setCoachName("Coach");
+        setCoachAvatarUrl(null);
       }
     }
     loadCoachName();
@@ -108,33 +113,43 @@ export default function CoachLayout({
 
   return (
     <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
-      {isImpersonatingCoach && (
-        <div
-          className="fixed right-3 top-3 z-[100] flex max-w-[calc(100vw-17rem)] items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:right-5 sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
-          role="status"
-          aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
-        >
-          <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
-            Admin
-          </span>
-          <AdminCoachImpersonationSwitcher coachName={coachName} />
-          <button
-            type="button"
-            onClick={handleExit}
-            className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
+      <div className="fixed right-3 top-3 z-[100] flex max-w-[calc(100vw-17rem)] flex-col items-end gap-2 sm:right-5">
+        <DashboardTopActions
+          variant="coach"
+          signingOut={signingOut}
+          onSignOut={handleSignOut}
+          avatarOverride={
+            isImpersonatingCoach
+              ? {
+                  name: coachName ?? "Coach",
+                  avatarUrl: coachAvatarUrl,
+                }
+              : null
+          }
+          className="!static !right-auto !top-auto z-0"
+        />
+        {isImpersonatingCoach ? (
+          <div
+            className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
+            role="status"
+            aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
           >
-            Exit
-          </button>
-        </div>
-      )}
+            <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
+              Admin
+            </span>
+            <AdminCoachImpersonationSwitcher coachName={coachName} />
+            <button
+              type="button"
+              onClick={handleExit}
+              className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
+            >
+              Exit
+            </button>
+          </div>
+        ) : null}
+      </div>
       <DashboardSidebar
         variant="coach"
-      />
-      <DashboardTopActions
-        variant="coach"
-        signingOut={signingOut}
-        onSignOut={handleSignOut}
-        className={isImpersonatingCoach ? "top-16" : "top-3"}
       />
       <main className="min-h-screen min-w-0 w-full px-6 pb-6 pt-0">
         <div

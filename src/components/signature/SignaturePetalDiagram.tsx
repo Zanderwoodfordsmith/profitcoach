@@ -377,15 +377,16 @@ export function SignaturePetalDiagram({
         const tcLen = Math.sqrt(toCentreX * toCentreX + toCentreY * toCentreY) || 1;
         const ux = -toCentreX / tcLen;
         const uy = -toCentreY / tcLen;
-        const offset = 58;
+        const offset = 66;
         const x = mx + ux * offset;
         const y = my + uy * offset;
         const code = SIGNATURE_LIFESTYLE_LENSES[o.lensIdx]?.code ?? "";
+        const lensNumber = code.replace(/^O0?/, "");
         return (
           <g key={o.label} style={{ pointerEvents: "none" }}>
             <text
               x={x}
-              y={y + 4}
+              y={y + 2}
               textAnchor="middle"
               fill={TEXT_ON_LENS}
               style={{
@@ -402,19 +403,20 @@ export function SignaturePetalDiagram({
             </text>
             <text
               x={x}
-              y={y + 22}
+              y={y - 14}
               textAnchor="middle"
               fill={TEXT_ON_LENS_MUTED}
               style={{
                 font: '600 11px ui-monospace, monospace',
                 letterSpacing: "0.12em",
+                opacity: 0.6,
                 paintOrder: "stroke fill",
                 stroke: "rgba(15, 23, 42, 0.3)",
                 strokeWidth: 2,
                 strokeLinejoin: "round",
               }}
             >
-              {code}
+              {lensNumber}
             </text>
           </g>
         );
@@ -585,14 +587,14 @@ export function SignaturePetalDiagram({
               }}
             >
               <tspan x={tx} dy="0">
-                {p.green.toLowerCase()}
+                {p.green}
               </tspan>
               <tspan
                 x={tx}
                 dy="22"
                 style={{ opacity: 0.82, fontStyle: "normal", fontSize: 13 }}
               >
-                not {p.red.toLowerCase()}
+                not {p.red}
               </tspan>
             </text>
           </g>

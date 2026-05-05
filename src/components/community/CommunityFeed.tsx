@@ -303,6 +303,18 @@ function normalizeRawPostRows(rows: RawCommunityPostRow[]): NormalizedPostRow[] 
   });
 }
 
+function dedupePostsById(rows: CommunityPostRow[]): CommunityPostRow[] {
+  if (rows.length <= 1) return rows;
+  const seen = new Set<string>();
+  const deduped: CommunityPostRow[] = [];
+  for (const row of rows) {
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    deduped.push(row);
+  }
+  return deduped;
+}
+
 async function enrichNormalizedCommunityPosts(
   normalized: NormalizedPostRow[]
 ): Promise<CommunityPostRow[]> {
@@ -928,7 +940,7 @@ export function CommunityFeed() {
               ...p,
               favourited_by_me: true as const,
             }));
-            setPosts(withFav);
+            setPosts(dedupePostsById(withFav));
             setPostsLoading(false);
             if (total <= FEED_FIRST_SCREEN_COUNT) {
               return;
@@ -965,13 +977,15 @@ export function CommunityFeed() {
               setFeedLoadingMore(false);
               return;
             }
-            setPosts([
-              ...withFav,
-              ...enriched2.map((p) => ({
-                ...p,
-                favourited_by_me: true as const,
-              })),
-            ]);
+            setPosts(
+              dedupePostsById([
+                ...withFav,
+                ...enriched2.map((p) => ({
+                  ...p,
+                  favourited_by_me: true as const,
+                })),
+              ])
+            );
             setFeedLoadingMore(false);
             return;
           }
@@ -1004,10 +1018,12 @@ export function CommunityFeed() {
           );
           setTotalCount(count ?? 0);
           setPosts(
-            enriched.map((p) => ({
-              ...p,
-              favourited_by_me: true,
-            }))
+            dedupePostsById(
+              enriched.map((p) => ({
+                ...p,
+                favourited_by_me: true,
+              }))
+            )
           );
           return;
         }
@@ -1038,7 +1054,7 @@ export function CommunityFeed() {
           if (gen !== feedFetchGeneration.current) return;
           const total = first.count ?? 0;
           setTotalCount(total);
-          setPosts(enriched1);
+          setPosts(dedupePostsById(enriched1));
           setPostsLoading(false);
           if (total <= FEED_FIRST_SCREEN_COUNT) {
             return;
@@ -1075,7 +1091,7 @@ export function CommunityFeed() {
             setFeedLoadingMore(false);
             return;
           }
-          setPosts([...enriched1, ...enriched2]);
+          setPosts(dedupePostsById([...enriched1, ...enriched2]));
           setFeedLoadingMore(false);
           return;
         }
@@ -1095,7 +1111,7 @@ export function CommunityFeed() {
         const rows = (data ?? []) as unknown as RawCommunityPostRow[];
         const normalized = normalizeRawPostRows(rows);
         const enriched = await enrichNormalizedCommunityPosts(normalized);
-        setPosts(enriched);
+        setPosts(dedupePostsById(enriched));
       } finally {
         devPerfEnd("communityFeed:loadPosts", perfMark);
       }

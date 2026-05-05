@@ -12,9 +12,12 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Ellipsis,
   ListChecks,
+  Pencil,
   MapPin,
   Link as LinkIcon,
+  Trash2,
 } from "lucide-react";
 import { DateTime } from "luxon";
 
@@ -216,7 +219,12 @@ export function CommunityCalendar({
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
   const [selectedOccurrence, setSelectedOccurrence] =
     useState<CommunityCalendarOccurrence | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CommunityCalendarEventRow | null>(
+    null
+  );
+  const [eventMenuOpenId, setEventMenuOpenId] = useState<string | null>(null);
   const tzPickerRef = useRef<HTMLDivElement>(null);
+  const eventMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => setNowTick((n) => n + 1), 60_000);
@@ -232,6 +240,16 @@ export function CommunityCalendar({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [tzPickerOpen]);
+
+  useEffect(() => {
+    if (!eventMenuOpenId) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = eventMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setEventMenuOpenId(null);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [eventMenuOpenId]);
 
   useEffect(() => {
     setFocusDate((d) => d.setZone(viewTz).startOf("day"));
@@ -440,6 +458,36 @@ export function CommunityCalendar({
 
   const periodNavLabel =
     viewMode === "list" || calendarLayout === "month" ? "month" : "week";
+
+  const deleteEvent = useCallback(
+    async (eventId: string) => {
+      if (!canAddEvent) return;
+      const confirmed = window.confirm(
+        "Delete this event? This cannot be undone."
+      );
+      if (!confirmed) return;
+      try {
+        const { error } = await supabaseClient
+          .from("community_calendar_events")
+          .delete()
+          .eq("id", eventId);
+        if (error) throw error;
+        setEventMenuOpenId(null);
+        setSelectedOccurrence((occ) =>
+          occ?.eventId === eventId ? null : occ
+        );
+        setRefreshNonce((n) => n + 1);
+      } catch (e) {
+        const msg = supabaseErrorMessage(e);
+        const hint = communityAccessHint(msg);
+        setLoadError(
+          [msg, hint ?? ""].filter(Boolean).join("\n\n") ||
+            "Could not delete event."
+        );
+      }
+    },
+    [canAddEvent]
+  );
 
   return (
     <>
@@ -873,13 +921,69 @@ export function CommunityCalendar({
                   const s = DateTime.fromISO(ev.startsAtIso, { zone: "utc" });
                   const e = DateTime.fromISO(ev.endsAtIso, { zone: "utc" });
                   const label = formatRangeLabel(s, e, viewTz);
+                  const sourceEventRow =
+                    rows.find((row) => row.id === ev.eventId) ?? null;
                   return (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedOccurrence(ev)}
+                    <div
                       key={`${ev.eventId}-${ev.startsAtIso}`}
-                      className="flex w-full gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-slate-300"
+                      className="relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300"
                     >
+                      {canAddEvent && sourceEventRow ? (
+                        <div className="absolute right-3 top-3 z-10" ref={eventMenuRef}>
+                          <button
+                            type="button"
+                            aria-haspopup="menu"
+                            aria-expanded={eventMenuOpenId === ev.eventId}
+                            aria-label="Event options"
+                            onClick={(evt) => {
+                              evt.stopPropagation();
+                              setEventMenuOpenId((id) =>
+                                id === ev.eventId ? null : ev.eventId
+                              );
+                            }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                          >
+                            <Ellipsis className="h-4 w-4" />
+                          </button>
+                          {eventMenuOpenId === ev.eventId ? (
+                            <div
+                              role="menu"
+                              className="absolute right-0 mt-1 min-w-[9rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                            >
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={(evt) => {
+                                  evt.stopPropagation();
+                                  setEditingEvent(sourceEventRow);
+                                  setEventMenuOpenId(null);
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={(evt) => {
+                                  evt.stopPropagation();
+                                  void deleteEvent(ev.eventId);
+                                }}
+                                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                                Delete
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOccurrence(ev)}
+                        className="flex w-full gap-4 pr-8 text-left"
+                      >
                       <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-44">
                         {ev.cover_image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -921,7 +1025,8 @@ export function CommunityCalendar({
                           )}
                         </p>
                       </div>
-                    </button>
+                      </button>
+                    </div>
                   );
                 })
               )}
@@ -974,8 +1079,18 @@ export function CommunityCalendar({
       {addModalOpen ? (
         <AddCommunityEventModal
           onClose={() => onAddModalOpenChange(false)}
-          onCreated={async () => {
+          onSaved={async () => {
             onAddModalOpenChange(false);
+            setRefreshNonce((n) => n + 1);
+          }}
+        />
+      ) : null}
+      {editingEvent ? (
+        <AddCommunityEventModal
+          initialEvent={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onSaved={async () => {
+            setEditingEvent(null);
             setRefreshNonce((n) => n + 1);
           }}
         />

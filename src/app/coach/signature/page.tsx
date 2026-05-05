@@ -570,14 +570,14 @@ export default function CoachSignaturePage() {
   }
 
   return (
-    <div className="relative w-full pb-20">
+    <div className="relative w-full pb-8">
       {error ? (
         <p className="mb-3 mt-3 text-left text-sm text-rose-600" role="alert">
           {error}
         </p>
       ) : null}
 
-      <div className="mx-auto w-full max-w-4xl">
+      <div className="mx-auto w-full max-w-4xl origin-top scale-[1.05]">
         <div className="mb-1 mt-2 flex w-full justify-end pr-1">
           <CompassActionsMenu
             onClearAll={clearAllScores}
@@ -587,7 +587,7 @@ export default function CoachSignaturePage() {
             }
           />
         </div>
-        <div className="mb-0 mt-[40px] flex w-full justify-center">
+        <div className="mb-0 mt-5 flex w-full justify-center">
           <SignaturePetalDiagram
             scores={scores}
             onScoreChange={setModuleScore}
@@ -605,7 +605,7 @@ export default function CoachSignaturePage() {
           />
         </div>
 
-        <div className="-mt-3 mx-auto w-[90%] sm:-mt-4">
+        <div className="-mt-5 mx-auto w-[90%] sm:-mt-6">
           <div className="mt-2 flex items-center justify-end">
             <CompassScoringInfoPopover />
           </div>

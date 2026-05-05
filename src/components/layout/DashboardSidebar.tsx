@@ -1,10 +1,12 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Compass, Filter, MessagesSquare, Sparkles } from "lucide-react";
+import { CalendarDays, Compass, Filter, MessagesSquare, Sparkles, X } from "lucide-react";
+import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 
 export type DashboardSidebarVariant = "coach" | "admin";
 
@@ -106,6 +108,7 @@ function deliveryNavItems(prefix: "/coach" | "/admin"): NavItem[] {
 
 const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
+  { href: "/admin/community/feedback", label: "Feedback inbox", icon: IconMessagesSquare },
 ];
 
 function navLinkActive(pathname: string | null, href: string, coachesHub?: boolean) {
@@ -134,6 +137,7 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   return (
     <aside className="fixed bottom-0 left-0 top-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white">
       <div className="shrink-0 px-4 py-4">
@@ -150,9 +154,6 @@ export function DashboardSidebar({
             priority
           />
         </Link>
-        {variant === "coach" ? (
-          <p className="mt-3 text-sm font-semibold text-sky-100">Coach</p>
-        ) : null}
       </div>
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
         <ul className="space-y-1">
@@ -184,58 +185,62 @@ export function DashboardSidebar({
             );
           })}
         </ul>
-        <div className="mt-5 px-1">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-            Marketing
-          </p>
-          <ul className="space-y-0.5">
-            {marketingNavItems(prefix).map((item) => {
-              const active = navLinkActive(pathname, item.href);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-                      active
-                        ? "bg-sky-500/80 text-white"
-                        : "text-slate-100/90 hover:bg-white/10"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-        <div className="mt-5 px-1">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-            Delivery
-          </p>
-          <ul className="space-y-0.5">
-            {deliveryNavItems(prefix).map((item) => {
-              const active = navLinkActive(pathname, item.href);
-              const Icon = item.icon;
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-                      active
-                        ? "bg-sky-500/80 text-white"
-                        : "text-slate-100/90 hover:bg-white/10"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {variant === "admin" ? (
+          <>
+            <div className="mt-5 px-1">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                Marketing
+              </p>
+              <ul className="space-y-0.5">
+                {marketingNavItems(prefix).map((item) => {
+                  const active = navLinkActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                          active
+                            ? "bg-sky-500/80 text-white"
+                            : "text-slate-100/90 hover:bg-white/10"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="mt-5 px-1">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                Delivery
+              </p>
+              <ul className="space-y-0.5">
+                {deliveryNavItems(prefix).map((item) => {
+                  const active = navLinkActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                          active
+                            ? "bg-sky-500/80 text-white"
+                            : "text-slate-100/90 hover:bg-white/10"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </>
+        ) : null}
         {variant === "admin" && (
           <div className="mt-5 px-1">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
@@ -265,6 +270,42 @@ export function DashboardSidebar({
           </div>
         )}
       </nav>
+      <div className="shrink-0 border-t border-white/15 px-3 py-3">
+        <button
+          type="button"
+          onClick={() => setFeedbackOpen(true)}
+          className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+            feedbackOpen ? "bg-sky-500/80 text-white" : "text-slate-100/90 hover:bg-white/10"
+          }`}
+        >
+          <IconMessagesSquare className="h-5 w-5 shrink-0 opacity-95" />
+          Feedback
+        </button>
+      </div>
+      {feedbackOpen ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setFeedbackOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Feedback"
+        >
+          <div
+            className="relative w-full max-w-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setFeedbackOpen(false)}
+              className="absolute -right-1 -top-1 z-10 rounded-full border border-slate-200 bg-white p-1 text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+              aria-label="Close feedback"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <FeedbackFormCard />
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 }

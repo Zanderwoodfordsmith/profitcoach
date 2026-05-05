@@ -24,6 +24,17 @@ function displayName(e: CommunityLadderEventDTO): string {
   return "Member";
 }
 
+function isZanderEvent(e: CommunityLadderEventDTO): boolean {
+  const full = (e.full_name ?? "").toLowerCase();
+  const first = (e.first_name ?? "").toLowerCase();
+  const last = (e.last_name ?? "").toLowerCase();
+  return (
+    full.includes("zander") ||
+    first.includes("zander") ||
+    last.includes("zander")
+  );
+}
+
 
 export function LadderLevelUpsCard() {
   const pathname = usePathname();
@@ -88,6 +99,20 @@ export function LadderLevelUpsCard() {
     return () => window.clearInterval(id);
   }, [load]);
 
+  const visibleEvents = (() => {
+    let zanderSeen = false;
+    const out: CommunityLadderEventDTO[] = [];
+    for (const ev of events) {
+      if (isZanderEvent(ev)) {
+        if (zanderSeen) continue;
+        zanderSeen = true;
+      }
+      out.push(ev);
+    }
+    return out;
+  })();
+  const showEarlyPlaceholder = visibleEvents.length <= 3;
+
   return (
     <div className="mt-4 rounded-xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm">
       <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -104,52 +129,60 @@ export function LadderLevelUpsCard() {
         </p>
       ) : loading ? (
         <p className="mt-3 text-xs text-slate-500">Loading…</p>
-      ) : events.length === 0 ? (
+      ) : visibleEvents.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">
           No level-ups yet. Set your ladder level on the Profit Coach Ladder
           page.
         </p>
       ) : (
-        <ul className="mt-3 space-y-3">
-          {events.map((ev) => {
-            const lvl = getLadderLevel(ev.to_level);
-            const ordinal = lvl?.ordinal ?? 0;
-            const initials = profileInitialsFromName(displayName(ev));
-            return (
-              <li key={ev.id} className="flex items-center gap-3">
-                <div
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${lvl?.chipClassName ?? "border border-slate-200 bg-slate-50 text-slate-700"}`}
-                  title={lvl?.name ?? ev.to_level}
-                >
-                  {ordinal || "—"}
-                </div>
-                <div className="relative h-9 w-9 shrink-0">
-                  {ev.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={ev.avatar_url}
-                      alt=""
-                      referrerPolicy="no-referrer"
-                      className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
-                    />
-                  ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
-                      {initials}
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[0.9375rem] font-semibold leading-snug text-slate-900">
-                    {displayName(ev)}
-                  </p>
-                  <p className="mt-0.5 truncate text-[0.8125rem] leading-snug text-slate-600">
-                    {lvl?.name ?? ev.to_level}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          <ul className="mt-3 space-y-3">
+            {visibleEvents.map((ev) => {
+              const lvl = getLadderLevel(ev.to_level);
+              const ordinal = lvl?.ordinal ?? 0;
+              const initials = profileInitialsFromName(displayName(ev));
+              return (
+                <li key={ev.id} className="flex items-center gap-3">
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums ${lvl?.chipClassName ?? "border border-slate-200 bg-slate-50 text-slate-700"}`}
+                    title={lvl?.name ?? ev.to_level}
+                  >
+                    {ordinal || "—"}
+                  </div>
+                  <div className="relative h-9 w-9 shrink-0">
+                    {ev.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={ev.avatar_url}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+                      />
+                    ) : (
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                        {initials}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[0.9375rem] font-semibold leading-snug text-slate-900">
+                      {displayName(ev)}
+                    </p>
+                    <p className="mt-0.5 truncate text-[0.8125rem] leading-snug text-slate-600">
+                      {lvl?.name ?? ev.to_level}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {showEarlyPlaceholder ? (
+            <p className="mt-3 text-xs leading-relaxed text-slate-500">
+              More coach results will appear here as members continue tracking
+              progress in the Profit Coach Ladder.
+            </p>
+          ) : null}
+        </>
       )}
 
       <div className="mt-4 border-t border-slate-100 pt-3 text-center">

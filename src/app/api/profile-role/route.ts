@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("role, full_name, coach_business_name")
+      .select("role, full_name, coach_business_name, avatar_url")
       .eq("id", body.userId)
       .maybeSingle();
 
@@ -45,6 +45,7 @@ export async function POST(request: Request) {
         role,
         full_name: profile?.full_name ?? null,
         coach_business_name: profile?.coach_business_name ?? null,
+        avatar_url: profile?.avatar_url ?? null,
         coach_slug,
       },
       { status: 200 }

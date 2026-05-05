@@ -11,6 +11,7 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import type {
+  CommunityCalendarEventRow,
   RecurrencePayload,
   WeekdayMon0Sun6,
 } from "@/lib/communityCalendarTypes";
@@ -34,15 +35,33 @@ const WEEKDAY_LABELS: readonly { id: WeekdayMon0Sun6; label: string }[] = [
 ];
 
 type Props = {
+  initialEvent?: CommunityCalendarEventRow | null;
   onClose: () => void;
-  onCreated: () => void | Promise<void>;
+  onSaved: () => void | Promise<void>;
 };
 
 function luxonToMon0Sun6(weekday: number): number {
   return (weekday + 6) % 7;
 }
 
-export function AddCommunityEventModal({ onClose, onCreated }: Props) {
+export function AddCommunityEventModal({
+  initialEvent = null,
+  onClose,
+  onSaved,
+}: Props) {
+  const isEdit = Boolean(initialEvent);
+  const initialStart = useMemo(() => {
+    if (!initialEvent) return null;
+    return DateTime.fromISO(initialEvent.starts_at, { zone: "utc" }).setZone(
+      initialEvent.display_timezone || "UTC"
+    );
+  }, [initialEvent]);
+  const initialDuration = useMemo(() => {
+    if (!initialEvent) return 60;
+    const start = DateTime.fromISO(initialEvent.starts_at, { zone: "utc" });
+    const end = DateTime.fromISO(initialEvent.ends_at, { zone: "utc" });
+    return Math.max(15, Math.round(end.diff(start, "minutes").minutes));
+  }, [initialEvent]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dateStr, setDateStr] = useState(() =>
@@ -55,6 +74,7 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
     "link"
   );
   const [locationUrl, setLocationUrl] = useState("");
+  const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [recurring, setRecurring] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState(1);
@@ -72,6 +92,29 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
     () => (coverFile ? URL.createObjectURL(coverFile) : null),
     [coverFile]
   );
+
+  useEffect(() => {
+    if (!initialEvent) return;
+    setTitle(initialEvent.title ?? "");
+    setDescription(initialEvent.description ?? "");
+    setDateStr(initialStart?.toISODate() ?? "");
+    setTimeStr(initialStart?.toFormat("HH:mm") ?? "17:00");
+    setDurationMin(initialDuration);
+    setTimezone(initialEvent.display_timezone || defaultCommunityCalendarTimezone());
+    setLocationKind(initialEvent.location_kind ?? "link");
+    setLocationUrl(initialEvent.location_url ?? "");
+    setExistingCoverUrl(initialEvent.cover_image_url ?? null);
+    setCoverFile(null);
+    setRecurring(Boolean(initialEvent.is_recurring));
+    setRepeatInterval(Math.max(1, initialEvent.recurrence?.interval ?? 1));
+    setRepeatUnit(initialEvent.recurrence?.unit ?? "week");
+    setRepeatWeekdays(initialEvent.recurrence?.weekdays ?? []);
+    setEndMode(initialEvent.recurrence?.end ?? "never");
+    setEndDateStr(
+      initialEvent.recurrence?.endDate ?? (DateTime.now().toISODate() ?? "")
+    );
+    setEndAfterCount(Math.max(1, initialEvent.recurrence?.maxOccurrences ?? 10));
+  }, [initialDuration, initialEvent, initialStart]);
 
   useEffect(() => {
     if (!coverPreview) return;
@@ -151,7 +194,7 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
       return;
     }
 
-    let coverUrl: string | null = null;
+    let coverUrl: string | null = existingCoverUrl;
     if (coverFile) {
       const up = await uploadCommunityPostImage(
         coverFile,
@@ -201,31 +244,39 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
       }
     }
 
-    const { error: insErr } = await supabaseClient
-      .from("community_calendar_events")
-      .insert({
-        created_by: session.user.id,
-        title: title.trim().slice(0, TITLE_MAX),
-        description: description.trim().slice(0, DESCRIPTION_MAX),
-        cover_image_url: coverUrl,
-        starts_at: startUtc.toISO(),
-        ends_at: endUtc.toISO(),
-        display_timezone: timezone,
-        location_kind: locationKind,
-        location_url: locationKind === "link" ? locationUrl.trim() : null,
-        is_recurring: Boolean(recurring && rec),
-        recurrence: recurring && rec ? rec : null,
-      });
+    const payload = {
+      title: title.trim().slice(0, TITLE_MAX),
+      description: description.trim().slice(0, DESCRIPTION_MAX),
+      cover_image_url: coverUrl,
+      starts_at: startUtc.toISO(),
+      ends_at: endUtc.toISO(),
+      display_timezone: timezone,
+      location_kind: locationKind,
+      location_url: locationKind === "link" ? locationUrl.trim() : null,
+      is_recurring: Boolean(recurring && rec),
+      recurrence: recurring && rec ? rec : null,
+    };
 
-    if (insErr) {
-      const msg = supabaseErrorMessage(insErr);
+    const query = initialEvent
+      ? supabaseClient
+          .from("community_calendar_events")
+          .update(payload)
+          .eq("id", initialEvent.id)
+      : supabaseClient.from("community_calendar_events").insert({
+          ...payload,
+          created_by: session.user.id,
+        });
+    const { error: saveErr } = await query;
+
+    if (saveErr) {
+      const msg = supabaseErrorMessage(saveErr);
       const hint = communityAccessHint(msg);
       setError(hint ? `${msg}\n\n${hint}` : msg);
       setSaving(false);
       return;
     }
 
-    await onCreated();
+    await onSaved();
     setSaving(false);
   }, [
     canSubmit,
@@ -233,6 +284,8 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
     dateStr,
     description,
     durationMin,
+    existingCoverUrl,
+    initialEvent,
     locationKind,
     locationUrl,
     recurrencePayload,
@@ -240,7 +293,7 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
     timeStr,
     timezone,
     title,
-    onCreated,
+    onSaved,
   ]);
 
   const tzOptions = useMemo(() => {
@@ -267,7 +320,7 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
           id="add-event-title"
           className="text-xl font-bold text-slate-900"
         >
-          Add event
+          {isEdit ? "Edit event" : "Add event"}
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           Need ideas? Try{" "}
@@ -535,11 +588,11 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
                 }}
               />
             </label>
-            {coverPreview ? (
+            {coverPreview || existingCoverUrl ? (
               <div className="relative mt-2 inline-block">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={coverPreview}
+                  src={coverPreview ?? existingCoverUrl ?? ""}
                   alt=""
                   className="max-h-40 rounded-lg object-cover ring-1 ring-slate-200"
                 />
@@ -547,7 +600,10 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
                   type="button"
                   className="absolute -right-1.5 -top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-slate-800 text-white shadow hover:bg-slate-900"
                   aria-label="Remove cover"
-                  onClick={() => setCoverFile(null)}
+                  onClick={() => {
+                    setCoverFile(null);
+                    setExistingCoverUrl(null);
+                  }}
                 >
                   <X className="h-4 w-4" strokeWidth={2.5} />
                 </button>
@@ -576,7 +632,7 @@ export function AddCommunityEventModal({ onClose, onCreated }: Props) {
             onClick={() => void submit()}
             className="rounded-lg bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {saving ? "Adding…" : "Add"}
+            {saving ? (isEdit ? "Saving…" : "Adding…") : isEdit ? "Save" : "Add"}
           </button>
         </div>
       </div>

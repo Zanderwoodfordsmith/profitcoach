@@ -15,6 +15,10 @@ type DashboardTopActionsProps = {
   variant: "coach" | "admin";
   signingOut: boolean;
   onSignOut: () => void | Promise<void>;
+  avatarOverride?: {
+    name: string;
+    avatarUrl: string | null;
+  } | null;
   className?: string;
 };
 
@@ -112,6 +116,7 @@ export function DashboardTopActions({
   variant,
   signingOut,
   onSignOut,
+  avatarOverride,
   className,
 }: DashboardTopActionsProps) {
   const [profile, setProfile] = useState<TopProfile | null>(null);
@@ -353,9 +358,12 @@ export function DashboardTopActions({
   }, [notifications, readState]);
 
   const avatarLabel = useMemo(() => {
+    if (avatarOverride?.name) return avatarOverride.name;
     if (!profile) return "Account";
     return displayNameFromProfile(profile);
-  }, [profile]);
+  }, [avatarOverride?.name, profile]);
+
+  const avatarImageUrl = avatarOverride?.avatarUrl ?? profile?.avatar_url ?? null;
 
   const markAllAsRead = useCallback(() => {
     if (!profile?.id) return;
@@ -385,7 +393,7 @@ export function DashboardTopActions({
 
   return (
     <div
-      className={`fixed right-5 z-[90] flex items-center gap-3 ${className ?? "top-3"}`}
+      className={`fixed right-5 top-3 z-[90] flex items-center gap-3 ${className ?? ""}`}
     >
       <div className="relative" ref={notificationsRef}>
         <button
@@ -532,10 +540,10 @@ export function DashboardTopActions({
           }}
           className="flex items-center rounded-full bg-white p-1 transition hover:bg-slate-50"
         >
-          {profile?.avatar_url ? (
+          {avatarImageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={profile.avatar_url}
+              src={avatarImageUrl}
               alt=""
               className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200"
             />
