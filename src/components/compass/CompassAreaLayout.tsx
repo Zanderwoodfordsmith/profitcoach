@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { FlaskConical } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
 
@@ -18,11 +19,15 @@ export function CompassAreaLayout({
     pathname === base || pathname === `${base}/`;
   const isLadder = pathname === `${base}/ladder`;
   const isScorecard = pathname === `${base}/scorecard`;
+  const isActions = pathname === `${base}/actions`;
+  const isAdminArea = base.startsWith("/admin");
 
   const description = isLadder
     ? "Track your levels, achievements, and goal on the ladder."
     : isScorecard
       ? "Log weekly pipeline and revenue numbers; targets follow your ladder goal."
+      : isActions
+        ? "A simple place to capture actions, organize sub-actions, and tick off progress."
       : "Tap the circle beside each line to score. The model updates as you go.";
 
   const tabs = useMemo(
@@ -44,14 +49,30 @@ export function CompassAreaLayout({
           },
           {
             kind: "link",
-            href: `${base}/scorecard`,
-            label: "My Scorecard",
-            active: isScorecard,
+            href: `${base}/actions`,
+            label: "My Actions",
+            active: isActions,
           },
+          ...(isAdminArea
+            ? [
+                {
+                  kind: "link" as const,
+                  href: `${base}/scorecard`,
+                  label: (
+                    <span className="inline-flex items-center gap-1.5">
+                      <FlaskConical className="h-3.5 w-3.5 opacity-45" aria-hidden />
+                      My Scorecard
+                    </span>
+                  ),
+                  active: isScorecard,
+                  variant: "subtle" as const,
+                },
+              ]
+            : []),
         ]}
       />
     ),
-    [base, isLadder, isScorecard, onCompassHome],
+    [base, isActions, isAdminArea, isLadder, isScorecard, onCompassHome],
   );
 
   return (

@@ -83,6 +83,15 @@ body {
   background: #f1f5f9;
 }
 
+/* Keep popup/menu UI above avatar pins and clusters. */
+.leaflet-container .leaflet-pane.leaflet-popup-pane {
+  z-index: 850 !important;
+}
+
+.leaflet-container .leaflet-popup.pc-map-popup {
+  z-index: 851 !important;
+}
+
 .leaflet-popup.pc-map-popup .leaflet-popup-content-wrapper {
   border-radius: 14px;
   padding: 0;
