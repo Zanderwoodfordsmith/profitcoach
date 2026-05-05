@@ -16,13 +16,17 @@ import {
   Link2,
   MoreHorizontal,
   Pencil,
+  Pin,
   Star,
   ThumbsUp,
   Trash2,
   X,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { displayNameFromProfile } from "@/lib/communityProfile";
+import {
+  displayNameFromProfile,
+  profileInitialsFromName,
+} from "@/lib/communityProfile";
 import {
   buildNameMap,
   extractMentionUserIds,
@@ -41,6 +45,7 @@ import { PostEngagementBar } from "@/components/community/PostEngagementBar";
 import { toggleCommunityCommentLike } from "@/lib/communityCommentLike";
 import { toggleCommunityPostFavourite } from "@/lib/communityPostFavourite";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
+import { setCommunityPostPinned } from "@/lib/communityPostPin";
 import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
 import {
   fetchStaffAvatarMap,
@@ -138,7 +143,7 @@ async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
   if (ids.length === 0) return [];
   const { data, error } = await supabaseClient
     .from("profiles")
-    .select("id, full_name, first_name, last_name, avatar_url")
+    .select("id, full_name, first_name, last_name, avatar_url, role")
     .in("id", ids);
   if (error) throw error;
   return (data ?? []) as ProfileRow[];
@@ -151,11 +156,15 @@ function PostDetailOverflowMenu({
   isAuthor,
   deleteBusy,
   favouriteBusy,
+  pinBusy,
   favouritedByMe,
+  isPinned,
+  canPin,
   canMarkUnread,
   onEdit,
   onCopyLink,
   onToggleFavourite,
+  onTogglePin,
   onMarkUnread,
   onReport,
   onDelete,
@@ -166,11 +175,15 @@ function PostDetailOverflowMenu({
   isAuthor: boolean;
   deleteBusy: boolean;
   favouriteBusy: boolean;
+  pinBusy: boolean;
   favouritedByMe: boolean;
+  isPinned: boolean;
+  canPin: boolean;
   canMarkUnread: boolean;
   onEdit: () => void;
   onCopyLink: () => void | Promise<void>;
   onToggleFavourite: () => void | Promise<void>;
+  onTogglePin: () => void | Promise<void>;
   onMarkUnread: () => void;
   onReport: () => void;
   onDelete: () => void | Promise<void>;
@@ -239,6 +252,26 @@ function PostDetailOverflowMenu({
                   ? "Remove from favourites"
                   : "Add to favourites"}
               </button>
+              {canPin ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={pinBusy}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  onClick={() => {
+                    void (async () => {
+                      await onTogglePin();
+                      setMenuOpen(false);
+                    })();
+                  }}
+                >
+                  <Pin
+                    className={`h-4 w-4 shrink-0 ${isPinned ? "fill-sky-500 text-sky-600" : "text-slate-500 opacity-80"}`}
+                    strokeWidth={2}
+                  />
+                  {isPinned ? "Unpin post" : "Pin post"}
+                </button>
+              ) : null}
               {canMarkUnread ? (
                 <button
                   type="button"
@@ -308,6 +341,26 @@ function PostDetailOverflowMenu({
                   ? "Remove from favourites"
                   : "Add to favourites"}
               </button>
+              {canPin ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={pinBusy}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+                  onClick={() => {
+                    void (async () => {
+                      await onTogglePin();
+                      setMenuOpen(false);
+                    })();
+                  }}
+                >
+                  <Pin
+                    className={`h-4 w-4 shrink-0 ${isPinned ? "fill-sky-500 text-sky-600" : "text-slate-500 opacity-80"}`}
+                    strokeWidth={2}
+                  />
+                  {isPinned ? "Unpin post" : "Pin post"}
+                </button>
+              ) : null}
               {canMarkUnread ? (
                 <button
                   type="button"
@@ -393,7 +446,9 @@ export function PostDetailModal({
   const [saveEditBusy, setSaveEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [favouriteBusy, setFavouriteBusy] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [editorRole, setEditorRole] = useState<string | null>(null);
   type EditMediaSlot =
     | { key: string; type: "remote"; item: CommunityPostMediaItem }
     | {
@@ -524,6 +579,45 @@ export function PostDetailModal({
       (post.author.id === currentUserId ||
         Boolean(coachPersona && post.author.id === coachPersona))
   );
+  const isEditorAdmin = editorRole === "admin";
+  const canPin = isEditorAdmin;
+  const announcementsCategory = useMemo(
+    () => categories.find((c) => c.slug === "announcements") ?? null,
+    [categories]
+  );
+  const editableCategories = useMemo(
+    () =>
+      isEditorAdmin
+        ? categories
+        : categories.filter((c) => c.slug !== "announcements"),
+    [categories, isEditorAdmin]
+  );
+
+  useEffect(() => {
+    if (!editableCategories.some((c) => c.id === editCategoryId)) {
+      setEditCategoryId(editableCategories[0]?.id ?? "");
+    }
+  }, [editCategoryId, editableCategories]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const authorId = await getCommunityAuthorId(coachPersona);
+      if (!authorId) {
+        if (!cancelled) setEditorRole(null);
+        return;
+      }
+      const { data } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", authorId)
+        .maybeSingle();
+      if (!cancelled) setEditorRole((data?.role as string | null) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachPersona]);
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -537,7 +631,7 @@ export function PostDetailModal({
         body,
         created_at,
         parent_comment_id,
-        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
       `
       )
       .eq("post_id", post.id)
@@ -678,6 +772,20 @@ export function PostDetailModal({
     post.favourited_by_me,
     onPostsChanged,
   ]);
+
+  const handleTogglePin = useCallback(async () => {
+    if (pinBusy || !canPin) return;
+    setPinBusy(true);
+    setActionError(null);
+    try {
+      await setCommunityPostPinned(post.id, !post.is_pinned);
+      await onPostsChanged();
+    } catch (e) {
+      setActionError(supabaseErrorMessage(e));
+    } finally {
+      setPinBusy(false);
+    }
+  }, [canPin, onPostsChanged, pinBusy, post.id, post.is_pinned]);
 
   useEffect(() => {
     if (!feedStorageScopeId) return;
@@ -845,6 +953,10 @@ export function PostDetailModal({
     const title = capitalizeFirstUnicodeLetter(editTitle.trim());
     const body = capitalizeFirstUnicodeLetter(editBody.trim());
     if (!title || !body || saveEditBusy) return;
+    if (announcementsCategory && editCategoryId === announcementsCategory.id && !isEditorAdmin) {
+      setActionError("Only admins can post in Announcements.");
+      return;
+    }
     setActionError(null);
     setSaveEditBusy(true);
 
@@ -895,10 +1007,12 @@ export function PostDetailModal({
     setMenuOpen(false);
     await onPostsChanged();
   }, [
+    announcementsCategory,
     editBody,
     editCategoryId,
     editMediaSlots,
     editTitle,
+    isEditorAdmin,
     onPostsChanged,
     post.id,
     saveEditBusy,
@@ -1014,7 +1128,7 @@ export function PostDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -1052,7 +1166,10 @@ export function PostDetailModal({
                 isAuthor={isAuthor}
                 deleteBusy={deleteBusy}
                 favouriteBusy={favouriteBusy}
+                pinBusy={pinBusy}
                 favouritedByMe={post.favourited_by_me}
+                isPinned={post.is_pinned}
+                canPin={canPin}
                 canMarkUnread={Boolean(feedStorageScopeId)}
                 onEdit={() => {
                   setActionError(null);
@@ -1060,6 +1177,7 @@ export function PostDetailModal({
                 }}
                 onCopyLink={copyPostLink}
                 onToggleFavourite={handleToggleFavourite}
+                onTogglePin={handleTogglePin}
                 onMarkUnread={handleMarkPostUnread}
                 onReport={reportPost}
                 onDelete={handleDeletePost}
@@ -1076,8 +1194,16 @@ export function PostDetailModal({
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-base font-semibold leading-tight text-slate-900">
-                    {authorName}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-base font-semibold leading-tight text-slate-900">
+                      {authorName}
+                    </div>
+                    {post.is_pinned ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700">
+                        <Pin className="h-3.5 w-3.5 fill-sky-500 text-sky-500" strokeWidth={1.75} />
+                        Pinned
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-0.5 text-xs leading-snug">
                     <span className="text-slate-500">
@@ -1103,7 +1229,10 @@ export function PostDetailModal({
                     isAuthor={isAuthor}
                     deleteBusy={deleteBusy}
                     favouriteBusy={favouriteBusy}
+                    pinBusy={pinBusy}
                     favouritedByMe={post.favourited_by_me}
+                    isPinned={post.is_pinned}
+                    canPin={canPin}
                     canMarkUnread={Boolean(feedStorageScopeId)}
                     onEdit={() => {
                       setActionError(null);
@@ -1111,6 +1240,7 @@ export function PostDetailModal({
                     }}
                     onCopyLink={copyPostLink}
                     onToggleFavourite={handleToggleFavourite}
+                    onTogglePin={handleTogglePin}
                     onMarkUnread={handleMarkPostUnread}
                     onReport={reportPost}
                     onDelete={handleDeletePost}
@@ -1154,12 +1284,17 @@ export function PostDetailModal({
                         onChange={(e) => setEditCategoryId(e.target.value)}
                         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                       >
-                        {categories.map((c) => (
+                        {editableCategories.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.label}
                           </option>
                         ))}
                       </select>
+                      {!isEditorAdmin && announcementsCategory ? (
+                        <p className="mt-1 text-xs text-slate-500">
+                          Announcements are admin-only.
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                   <div>
@@ -1399,6 +1534,7 @@ export function PostDetailModal({
                   const ca = c.author
                     ? displayNameFromProfile(c.author)
                     : "Unknown";
+                  const caInitials = profileInitialsFromName(ca);
                   const replies = repliesByParent.get(c.id) ?? [];
                   return (
                     <li key={c.id} className="rounded-xl bg-slate-50/80 p-3">
@@ -1412,7 +1548,7 @@ export function PostDetailModal({
                           />
                         ) : (
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                            {ca.slice(0, 1).toUpperCase()}
+                            {caInitials}
                           </span>
                         )}
                         <div className="min-w-0 flex-1">
@@ -1498,6 +1634,7 @@ export function PostDetailModal({
                                 const ra = r.author
                                   ? displayNameFromProfile(r.author)
                                   : "Unknown";
+                                const raInitials = profileInitialsFromName(ra);
                                 return (
                                   <li
                                     key={r.id}
@@ -1513,7 +1650,7 @@ export function PostDetailModal({
                                         />
                                       ) : (
                                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-600">
-                                          {ra.slice(0, 1).toUpperCase()}
+                                          {raInitials}
                                         </span>
                                       )}
                                       <div className="min-w-0 flex-1">
@@ -1575,7 +1712,7 @@ export function PostDetailModal({
                   />
                 ) : (
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
-                    {composerDisplayName.slice(0, 1).toUpperCase()}
+                    {profileInitialsFromName(composerDisplayName)}
                   </span>
                 )}
                 <div className="min-w-0 flex-1">

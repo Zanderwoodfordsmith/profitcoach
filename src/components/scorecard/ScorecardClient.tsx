@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import {
+  Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -31,17 +33,15 @@ import {
 import {
   defaultScorecardPeriodStartMonday,
   mondayOfWeekContaining,
-  rollScorecardStartMonday,
+  SCORECARD_FETCH_WEEKS,
+  SCORECARD_VIEWPORT_WEEKS,
   thisMondayIsoFromDate,
   toIsoDate,
 } from "@/lib/scorecardWeeks";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { ScorecardManualWeek } from "@/lib/scorecardManual";
 
-import {
-  ScorecardComboChart,
-  SCORECARD_VISIBLE_WEEKS,
-} from "@/components/scorecard/ScorecardComboChart";
+import { ScorecardComboChart } from "@/components/scorecard/ScorecardComboChart";
 
 const LIGHT_CLASS: Record<TrafficLight, string> = {
   green: "bg-emerald-500 ring-1 ring-emerald-500/35",
@@ -59,135 +59,172 @@ type RowSpec =
       manualKey?: ScorecardManualKey;
     };
 
-const ROWS: RowSpec[] = [
-  { kind: "section", label: "Evergreen" },
+type ScorecardSection = { title: string; rows: RowSpec[] };
+
+const SCORECARD_SECTIONS: ScorecardSection[] = [
   {
-    kind: "input",
-    id: "cashNew",
-    label: "Cash from new clients",
-    manualKey: "cashNew",
+    title: "Cash & clients",
+    rows: [
+      {
+        kind: "input",
+        id: "newClientsWon",
+        label: "New clients",
+        manualKey: "newClientsWon",
+      },
+      {
+        kind: "input",
+        id: "oldClients",
+        label: "Old clients",
+        manualKey: "oldClients",
+      },
+      {
+        kind: "input",
+        id: "cashNew",
+        label: "Cash from new clients",
+        manualKey: "cashNew",
+      },
+      {
+        kind: "input",
+        id: "cashOld",
+        label: "Cash from old clients",
+        manualKey: "cashOld",
+      },
+      { kind: "calc", id: "cashIn", label: "Cash in" },
+    ],
   },
   {
-    kind: "input",
-    id: "cashOld",
-    label: "Cash from old clients",
-    manualKey: "cashOld",
-  },
-  { kind: "calc", id: "cashIn", label: "Cash in (calculated)" },
-  {
-    kind: "input",
-    id: "cashOut",
-    label: "Cash out",
-    manualKey: "cashOut",
-  },
-  { kind: "calc", id: "netCash", label: "Net cash (calculated)" },
-  { kind: "section", label: "North Star" },
-  {
-    kind: "input",
-    id: "newClientsWon",
-    label: "New clients won",
-    manualKey: "newClientsWon",
-  },
-  {
-    kind: "calc",
-    id: "salesOpportunities",
-    label: "Sales opportunities (calculated)",
-  },
-  { kind: "calc", id: "closeRate", label: "Close rate % (calculated)" },
-  { kind: "section", label: "Marketing" },
-  {
-    kind: "input",
-    id: "connectionRequestsSent",
-    label: "Connection requests sent",
-    manualKey: "connectionRequestsSent",
-  },
-  {
-    kind: "input",
-    id: "newConnections",
-    label: "New connections",
-    manualKey: "newConnections",
-  },
-  {
-    kind: "input",
-    id: "otherOutreach",
-    label: "Other outreach",
-    manualKey: "otherOutreach",
-  },
-  { kind: "input", id: "replied", label: "Replied", manualKey: "replied" },
-  {
-    kind: "input",
-    id: "interested",
-    label: "Interested",
-    manualKey: "interested",
+    title: "Marketing",
+    rows: [
+      {
+        kind: "input",
+        id: "connectionRequestsSent",
+        label: "Connection requests sent",
+        manualKey: "connectionRequestsSent",
+      },
+      {
+        kind: "input",
+        id: "newConnections",
+        label: "New connections",
+        manualKey: "newConnections",
+      },
+      {
+        kind: "input",
+        id: "otherOutreach",
+        label: "Other outreach",
+        manualKey: "otherOutreach",
+      },
+      { kind: "input", id: "replied", label: "Replied", manualKey: "replied" },
+      {
+        kind: "input",
+        id: "interested",
+        label: "Interested",
+        manualKey: "interested",
+      },
+      {
+        kind: "calc",
+        id: "connectionRate",
+        label: "Connection rate %",
+      },
+      {
+        kind: "calc",
+        id: "interestRate",
+        label: "Interest rate %",
+      },
+      {
+        kind: "calc",
+        id: "interestedToValueSession",
+        label: "Interested → Value session %",
+      },
+    ],
   },
   {
-    kind: "calc",
-    id: "connectionRate",
-    label: "Connection rate % (calculated)",
-  },
-  {
-    kind: "calc",
-    id: "interestRate",
-    label: "Interest rate % (calculated)",
-  },
-  {
-    kind: "calc",
-    id: "interestedToValueSession",
-    label: "Interested → Value session % (calculated)",
-  },
-  { kind: "section", label: "Sales calls — value sessions" },
-  {
-    kind: "input",
-    id: "valueSessionsAdded",
-    label: "Added",
-    manualKey: "valueSessionsAdded",
-  },
-  {
-    kind: "input",
-    id: "valueSessionsScheduled",
-    label: "Scheduled",
-    manualKey: "valueSessionsScheduled",
-  },
-  {
-    kind: "input",
-    id: "valueSessionsShowed",
-    label: "Showed",
-    manualKey: "valueSessionsShowed",
-  },
-  {
-    kind: "calc",
-    id: "valueShowRate",
-    label: "Show rate % (calculated)",
-  },
-  { kind: "section", label: "Sales calls — follow-up" },
-  {
-    kind: "input",
-    id: "followUpAdded",
-    label: "Added",
-    manualKey: "followUpAdded",
-  },
-  {
-    kind: "input",
-    id: "followUpScheduled",
-    label: "Scheduled",
-    manualKey: "followUpScheduled",
-  },
-  {
-    kind: "input",
-    id: "followUpShowed",
-    label: "Showed",
-    manualKey: "followUpShowed",
-  },
-  {
-    kind: "calc",
-    id: "followUpShowRate",
-    label: "Show rate % (calculated)",
-  },
-  {
-    kind: "input",
-    id: "overlappingCalls",
-    label: "Overlapping value / follow-up calls",
-    manualKey: "overlappingCalls",
+    title: "Sales calls",
+    rows: [
+      {
+        kind: "calc",
+        id: "salesOpportunities",
+        label: "Sales opportunities",
+      },
+      { kind: "calc", id: "closeRate", label: "Close rate %" },
+      { kind: "section", label: "Discovery calls" },
+      {
+        kind: "input",
+        id: "discoveryCallsAdded",
+        label: "Added",
+        manualKey: "discoveryCallsAdded",
+      },
+      {
+        kind: "input",
+        id: "discoveryCallsScheduled",
+        label: "Scheduled",
+        manualKey: "discoveryCallsScheduled",
+      },
+      {
+        kind: "input",
+        id: "discoveryCallsShowed",
+        label: "Showed",
+        manualKey: "discoveryCallsShowed",
+      },
+      {
+        kind: "calc",
+        id: "discoveryShowRate",
+        label: "Show rate %",
+      },
+      { kind: "section", label: "Value sessions" },
+      {
+        kind: "input",
+        id: "valueSessionsAdded",
+        label: "Added",
+        manualKey: "valueSessionsAdded",
+      },
+      {
+        kind: "input",
+        id: "valueSessionsScheduled",
+        label: "Scheduled",
+        manualKey: "valueSessionsScheduled",
+      },
+      {
+        kind: "input",
+        id: "valueSessionsShowed",
+        label: "Showed",
+        manualKey: "valueSessionsShowed",
+      },
+      {
+        kind: "calc",
+        id: "valueShowRate",
+        label: "Show rate %",
+      },
+      { kind: "section", label: "Follow-up calls" },
+      {
+        kind: "input",
+        id: "followUpAdded",
+        label: "Added",
+        manualKey: "followUpAdded",
+      },
+      {
+        kind: "input",
+        id: "followUpScheduled",
+        label: "Scheduled",
+        manualKey: "followUpScheduled",
+      },
+      {
+        kind: "input",
+        id: "followUpShowed",
+        label: "Showed",
+        manualKey: "followUpShowed",
+      },
+      {
+        kind: "calc",
+        id: "followUpShowRate",
+        label: "Show rate %",
+      },
+      {
+        kind: "input",
+        id: "overlappingCalls",
+        label: "Overlapping value / follow-up calls",
+        manualKey: "overlappingCalls",
+      },
+    ],
   },
 ];
 
@@ -296,9 +333,9 @@ export function ScorecardClient() {
   const hydratedSavedAnchor = useRef(false);
   const [leftMetric, setLeftMetric] = useState<ScorecardRowId>("newClientsWon");
   const [rightMetric, setRightMetric] = useState<ScorecardRowId>("cashIn");
-  const [tick, setTick] = useState(0);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scorecardScrollRef = useRef<HTMLDivElement | null>(null);
 
   const authHeaders = useCallback(async (): Promise<Record<
     string,
@@ -360,21 +397,6 @@ export function ScorecardClient() {
     [authHeaders]
   );
 
-  const effectiveStartMonday = useMemo(
-    () =>
-      rollScorecardStartMonday(
-        anchorMonday,
-        thisMondayIsoFromDate(),
-        SCORECARD_VISIBLE_WEEKS
-      ),
-    [anchorMonday, tick]
-  );
-
-  useEffect(() => {
-    if (effectiveStartMonday === anchorMonday) return;
-    setAnchorMonday(effectiveStartMonday);
-  }, [effectiveStartMonday, anchorMonday]);
-
   const load = useCallback(async () => {
     setError(null);
     const headers = await authHeaders();
@@ -384,13 +406,8 @@ export function ScorecardClient() {
     }
     setLoading(true);
     try {
-      const start = rollScorecardStartMonday(
-        anchorMonday,
-        thisMondayIsoFromDate(),
-        SCORECARD_VISIBLE_WEEKS
-      );
       const res = await fetch(
-        `/api/coach/scorecard?startMonday=${encodeURIComponent(start)}`,
+        `/api/coach/scorecard?startMonday=${encodeURIComponent(anchorMonday)}`,
         { headers }
       );
       const body = (await res.json().catch(() => ({}))) as {
@@ -409,13 +426,8 @@ export function ScorecardClient() {
       setProfileAnchor(saved);
       if (saved && !hydratedSavedAnchor.current) {
         hydratedSavedAnchor.current = true;
-        const rolledSaved = rollScorecardStartMonday(
-          saved,
-          thisMondayIsoFromDate(),
-          SCORECARD_VISIBLE_WEEKS
-        );
-        if (rolledSaved !== start) {
-          setAnchorMonday(rolledSaved);
+        if (saved !== anchorMonday) {
+          setAnchorMonday(saved);
           return;
         }
       }
@@ -432,36 +444,29 @@ export function ScorecardClient() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 60_000);
-    return () => window.clearInterval(id);
-  }, []);
+  /** Scroll so “today” is in view when possible; historical-only windows start at left. */
+  useLayoutEffect(() => {
+    if (loading || weekStarts.length === 0) return;
+    const el = scorecardScrollRef.current;
+    if (!el) return;
+    const thisM = thisMondayIsoFromDate();
+    const idx = weekStarts.indexOf(thisM);
+    const metricW = 220;
+    const weekW = 64;
+    const sw = el.scrollWidth;
+    const cw = el.clientWidth;
 
-  useEffect(() => {
-    if (tick === 0) return;
-    if (!profileAnchor) return;
-    const rolled = rollScorecardStartMonday(
-      profileAnchor,
-      thisMondayIsoFromDate(),
-      SCORECARD_VISIBLE_WEEKS
-    );
-    if (rolled === profileAnchor) return;
-    void (async () => {
-      const headers = await authHeaders();
-      if (!headers) return;
-      const res = await fetch("/api/coach/scorecard", {
-        method: "PATCH",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scorecard_period_start_monday: rolled,
-        }),
-      });
-      if (res.ok) {
-        setProfileAnchor(rolled);
-        setAnchorMonday(rolled);
-      }
-    })();
-  }, [tick, profileAnchor, authHeaders]);
+    if (idx < 0) {
+      el.scrollLeft = 0;
+      return;
+    }
+    const last = weekStarts.length - 1;
+    if (idx >= last - 2) {
+      el.scrollLeft = Math.max(0, sw - cw);
+      return;
+    }
+    el.scrollLeft = Math.max(0, metricW + idx * weekW - weekW);
+  }, [loading, weekStarts, anchorMonday]);
 
   const { targets, monthlyIncomeGoal } = useMemo(
     () =>
@@ -580,12 +585,23 @@ export function ScorecardClient() {
         </p>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[1380px] border-collapse text-left text-sm">
+      <div
+        ref={scorecardScrollRef}
+        className="max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"
+        style={{
+          maxWidth: `min(100%, ${220 + SCORECARD_VIEWPORT_WEEKS * 64 + 5 * 64}px)`,
+        }}
+      >
+        <table
+          className="w-full border-collapse text-left text-sm"
+          style={{
+            minWidth: 220 + SCORECARD_FETCH_WEEKS * 64 + 5 * 64,
+          }}
+        >
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 align-top">
+            <tr className="border-b border-slate-200 bg-slate-50">
               <th
-                className="w-[220px] min-w-[200px] max-w-[240px] border-r border-slate-200 px-3 py-2 align-top"
+                className="sticky left-0 z-30 w-[220px] min-w-[200px] max-w-[240px] border-r border-slate-200 bg-slate-50 px-3 py-2 align-top shadow-[2px_0_8px_rgba(15,23,42,0.06)]"
                 scope="col"
               >
                 <div className="flex flex-col gap-3 pr-1">
@@ -622,33 +638,39 @@ export function ScorecardClient() {
                     </button>
                     {profileAnchor ? (
                       <p className="text-[10px] leading-snug text-slate-500">
-                        Saved start; advances when the grid needs another week
-                        ahead.
+                        Saved first Monday; scroll sideways for all{" "}
+                        {SCORECARD_FETCH_WEEKS} weeks.
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className="text-[10px] leading-snug text-slate-500">
+                        Rolling window: {SCORECARD_FETCH_WEEKS} weeks; scroll
+                        right for this week + next two.
+                      </p>
+                    )}
                   </div>
                 </div>
               </th>
               <th
-                className="border-b border-slate-200 p-0"
+                className="border-b border-slate-200 p-0 align-bottom"
                 colSpan={n}
                 scope="colgroup"
               >
                 <ScorecardComboChart
                   weekStarts={weekStarts}
-                  weeks={manualWeeks}
+                  weeks={weeks}
                   leftMetric={leftMetric}
                   rightMetric={rightMetric}
+                  metricColumnPx={220}
                 />
               </th>
               <th
                 colSpan={5}
-                className="border-l border-slate-200 bg-slate-50"
+                className="border-l border-slate-200 bg-slate-50 align-top"
                 aria-hidden
               />
             </tr>
             <tr className="border-b border-slate-200 bg-slate-50 text-xs font-medium uppercase tracking-wide text-slate-500">
-              <th className="sticky left-0 z-10 min-w-[220px] bg-slate-50 px-3 py-2">
+              <th className="sticky left-0 z-30 min-w-[220px] bg-slate-50 px-3 py-2 shadow-[2px_0_8px_rgba(15,23,42,0.06)]">
                 Metric
               </th>
               {weekStarts.map((iso) => (
@@ -664,124 +686,162 @@ export function ScorecardClient() {
             </tr>
           </thead>
           <tbody>
-            {ROWS.map((row, idx) => {
-              if (row.kind === "section") {
-                return (
-                  <tr key={`s-${idx}`} className="bg-slate-100/90">
+            {SCORECARD_SECTIONS.map((section, si) => (
+              <Fragment key={section.title}>
+                {si > 0 ? (
+                  <tr aria-hidden className="pointer-events-none">
                     <td
                       colSpan={n + 6}
-                      className="sticky left-0 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700"
-                    >
-                      {row.label}
-                    </td>
+                      className="h-7 border-0 bg-slate-50/90 p-0"
+                    />
                   </tr>
-                );
-              }
-
-              const tid = row.id;
-              const trow = targets[tid];
-              const avg = averageWeeklyActual(tid, manualWeeks);
-              const sum = sumWeeklyActual(tid, manualWeeks);
-              const light = scorecardTrafficLight({
-                actualAvg: avg,
-                weeklyTarget: monthlyIncomeGoal !== null ? trow.weekly : null,
-                direction: SCORECARD_ROW_DIRECTION[tid],
-              });
-
-              return (
-                <tr
-                  key={tid}
-                  className="border-b border-slate-100 odd:bg-white even:bg-slate-50/50"
-                >
+                ) : null}
+                <tr>
                   <td
-                    className={`sticky left-0 z-10 border-r border-slate-100 px-3 py-1.5 text-slate-800 ${
-                      row.kind === "calc" ? "bg-slate-100" : "bg-white"
+                    className={`sticky left-0 z-10 border-b border-r border-slate-200 bg-slate-100 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-800 ${
+                      si > 0 ? "pt-1" : ""
                     }`}
                   >
-                    {row.label}
+                    {section.title}
                   </td>
-                  {weekStarts.map((iso, wi) => {
-                    const w = weeks[wi];
-                    const display = rowWeeklyValue(tid, w?.manual_values ?? {});
-                    if (row.kind === "input" && row.manualKey) {
-                      const mk = row.manualKey;
-                      const rawV = w?.manual_values?.[mk];
-                      const displayStr =
-                        typeof rawV === "number" && Number.isFinite(rawV)
-                          ? String(rawV)
-                          : "";
-                      return (
-                        <td key={iso} className="px-0.5 py-0.5">
-                          <input
-                            className="w-full min-w-[56px] rounded border border-white bg-white px-1 py-1 text-center text-sm tabular-nums outline-none ring-sky-400 focus:ring-2"
-                            inputMode="decimal"
-                            value={displayStr}
-                            onChange={(e) => {
-                              const t = e.target.value;
-                              setWeeks((prev) => {
-                                const next = [...prev];
-                                const roww = { ...next[wi] };
-                                let num = 0;
-                                if (t.trim() !== "") {
-                                  const n0 = Number(t);
-                                  if (!Number.isFinite(n0) || n0 < 0) {
-                                    return prev;
-                                  }
-                                  num = n0;
-                                }
-                                roww.manual_values = {
-                                  ...roww.manual_values,
-                                  [mk]: num,
-                                };
-                                next[wi] = roww;
-                                queueSave(
-                                  roww.week_start_date,
-                                  roww.manual_values
-                                );
-                                return next;
-                              });
-                            }}
-                            aria-label={`${row.label} ${iso}`}
-                          />
-                        </td>
-                      );
-                    }
-                    return (
-                      <td
-                        key={iso}
-                        className="bg-slate-100 px-1 py-1.5 text-center tabular-nums text-slate-700"
-                      >
-                        {formatCell(tid, display)}
-                      </td>
-                    );
-                  })}
-                  <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-700">
-                    {sum === null ? "—" : formatCell(tid, sum)}
-                  </td>
-                  <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-700">
-                    {avg === null ? "—" : formatCell(tid, avg)}
-                  </td>
-                  <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-600">
-                    {monthlyIncomeGoal === null
-                      ? "—"
-                      : formatCell(tid, trow.weekly)}
-                  </td>
-                  <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-600">
-                    {monthlyIncomeGoal === null ||
-                    chartUnitForRow(tid) === "ratio"
-                      ? "—"
-                      : formatCell(tid, trow.quarterly)}
-                  </td>
-                  <td className="bg-slate-50 px-1 py-1 text-center">
-                    <span
-                      className={`mx-auto inline-block h-3.5 w-3.5 rounded-full ${LIGHT_CLASS[light]}`}
-                      title={light}
-                      aria-label={`Status: ${light}`}
-                    />
-                  </td>
+                  <td
+                    colSpan={n + 5}
+                    className="border-b border-slate-200 bg-white"
+                    aria-hidden
+                  />
                 </tr>
-              );
-            })}
+                {section.rows.map((row, ri) => {
+                  if (row.kind === "section") {
+                    return (
+                      <tr
+                        key={`${section.title}-sub-${ri}-${row.label}`}
+                        className="bg-slate-50"
+                      >
+                        <td
+                          colSpan={n + 6}
+                          className="border-b border-slate-100 px-3 py-1.5 pl-5 text-[11px] font-semibold uppercase tracking-wide text-slate-600"
+                        >
+                          {row.label}
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  const tid = row.id;
+                  const trow = targets[tid];
+                  const avg = averageWeeklyActual(tid, manualWeeks);
+                  const sum = sumWeeklyActual(tid, manualWeeks);
+                  const light = scorecardTrafficLight({
+                    actualAvg: avg,
+                    weeklyTarget:
+                      monthlyIncomeGoal !== null ? trow.weekly : null,
+                    direction: SCORECARD_ROW_DIRECTION[tid],
+                  });
+                  const dataIdx = section.rows
+                    .slice(0, ri)
+                    .filter((r) => r.kind !== "section").length;
+                  const stripe =
+                    dataIdx % 2 === 0 ? "bg-white" : "bg-slate-50/50";
+
+                  return (
+                    <tr
+                      key={`${section.title}-${tid}`}
+                      className={`border-b border-slate-100 ${stripe}`}
+                    >
+                      <td
+                        className={`sticky left-0 z-10 border-r border-slate-100 px-3 py-1.5 text-slate-800 ${
+                          row.kind === "calc" ? "bg-slate-100" : stripe
+                        }`}
+                      >
+                        {row.label}
+                      </td>
+                      {weekStarts.map((iso, wi) => {
+                        const w = weeks[wi];
+                        const display = rowWeeklyValue(
+                          tid,
+                          w?.manual_values ?? {}
+                        );
+                        if (row.kind === "input" && row.manualKey) {
+                          const mk = row.manualKey;
+                          const rawV = w?.manual_values?.[mk];
+                          const displayStr =
+                            typeof rawV === "number" && Number.isFinite(rawV)
+                              ? String(rawV)
+                              : "";
+                          return (
+                            <td key={iso} className="px-0.5 py-0.5">
+                              <input
+                                className="w-full min-w-[56px] rounded border border-white bg-white px-1 py-1 text-center text-sm tabular-nums outline-none ring-sky-400 focus:ring-2"
+                                inputMode="decimal"
+                                value={displayStr}
+                                onChange={(e) => {
+                                  const t = e.target.value;
+                                  setWeeks((prev) => {
+                                    const next = [...prev];
+                                    const roww = { ...next[wi] };
+                                    let num = 0;
+                                    if (t.trim() !== "") {
+                                      const n0 = Number(t);
+                                      if (!Number.isFinite(n0) || n0 < 0) {
+                                        return prev;
+                                      }
+                                      num = n0;
+                                    }
+                                    roww.manual_values = {
+                                      ...roww.manual_values,
+                                      [mk]: num,
+                                    };
+                                    next[wi] = roww;
+                                    queueSave(
+                                      roww.week_start_date,
+                                      roww.manual_values
+                                    );
+                                    return next;
+                                  });
+                                }}
+                                aria-label={`${row.label} ${iso}`}
+                              />
+                            </td>
+                          );
+                        }
+                        return (
+                          <td
+                            key={iso}
+                            className="bg-slate-100 px-1 py-1.5 text-center tabular-nums text-slate-700"
+                          >
+                            {formatCell(tid, display)}
+                          </td>
+                        );
+                      })}
+                      <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-700">
+                        {sum === null ? "—" : formatCell(tid, sum)}
+                      </td>
+                      <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-700">
+                        {avg === null ? "—" : formatCell(tid, avg)}
+                      </td>
+                      <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-600">
+                        {monthlyIncomeGoal === null
+                          ? "—"
+                          : formatCell(tid, trow.weekly)}
+                      </td>
+                      <td className="bg-slate-50 px-1 py-1.5 text-center tabular-nums text-slate-600">
+                        {monthlyIncomeGoal === null ||
+                        chartUnitForRow(tid) === "ratio"
+                          ? "—"
+                          : formatCell(tid, trow.quarterly)}
+                      </td>
+                      <td className="bg-slate-50 px-1 py-1 text-center">
+                        <span
+                          className={`mx-auto inline-block h-3.5 w-3.5 rounded-full ${LIGHT_CLASS[light]}`}
+                          title={light}
+                          aria-label={`Status: ${light}`}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </Fragment>
+            ))}
           </tbody>
         </table>
       </div>

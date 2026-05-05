@@ -45,6 +45,13 @@ export type SignaturePillar = {
   }[];
 };
 
+export type SignatureModuleMeta = {
+  id: SignatureModuleId;
+  code: string;
+  title: string;
+  question: string;
+};
+
 /** Centre lenses: display order Income → Impact (client results) → Freedom. Same moduleIds for stored scores. */
 export type SignatureLifestyleLens = {
   moduleId: SignatureModuleId;
@@ -99,7 +106,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "R1",
           diagramTitle: "Client Compass",
           question:
-            "I know exactly who I serve, the outcomes I own for them, and my messaging makes the right people lean in.",
+            "I know exactly who I serve, I can find them easily, and my messaging makes the right people lean in.",
           onrampHint: "Often green or yellow right after a strong positioning session.",
         },
         {
@@ -107,7 +114,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "R2",
           diagramTitle: "Lead Engine",
           question:
-            "I have a simple, repeatable way to generate enquiries — not random bursts when I finally post.",
+            "I have a simple, repeatable way to generate enquiries that keeps my pipeline full and growing.",
           onrampHint: "Typically yellow while the engine is new but running.",
         },
         {
@@ -115,7 +122,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "R3",
           diagramTitle: "Authority Builder",
           question:
-            "I put content out that builds trust and authority without leaving me drained or inconsistent.",
+            "I put out content regularly that builds trust, sparks conversations, and attracts the right people.",
           onrampHint: "Often red until a rhythm and format that fits you is locked in.",
         },
       ],
@@ -132,7 +139,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "E1",
           diagramTitle: "Offer Formula",
           question:
-            "My offer is clear, compelling, and something I’m proud to present every single time.",
+            "My offer is clear, compelling, and something I'm proud to present every time.",
           onrampHint: "Often green or yellow once packaging and price feel settled.",
         },
         {
@@ -140,7 +147,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "E2",
           diagramTitle: "Pipeline Accelerator",
           question:
-            "I know where every prospect is, and I move them forward with a calm process — nothing falls through the cracks.",
+            "My sales pipeline is simple and clear, and prospects move through it smoothly with minimal leaks or bottlenecks.",
           onrampHint: "Yellow or red early while CRM and follow-ups are still forming.",
         },
         {
@@ -148,7 +155,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "E3",
           diagramTitle: "Value Session",
           question:
-            "I run value conversations with a proven structure and convert without feeling pushy or apologetic.",
+            "I run value sessions with a proven structure that feels natural and converts consistently.",
           onrampHint: "Yellow or red when you’re trained but haven’t had enough reps yet.",
         },
       ],
@@ -163,9 +170,9 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
         {
           id: "profit",
           code: "D1",
-          diagramTitle: "Profit System",
+          diagramTitle: "COACH Method",
           question:
-            "I can run a sharp business diagnostic and show any client exactly where to focus for the biggest payoff.",
+            "I feel confident in my coaching skills and I have a proven method I trust to guide any conversation.",
           onrampHint: "Often yellow once certification lands; green with repetition.",
         },
         {
@@ -173,15 +180,15 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "D2",
           diagramTitle: "Client Launchpad",
           question:
-            "My first sessions with a new client create clarity, buy-in, and momentum — they know what to do from week one.",
+            "My first sessions create clarity, buy-in, direction and momentum so clients know exactly what to do from week one.",
           onrampHint: "Session one may be strong while sessions two to four are still in build.",
         },
         {
           id: "playbook",
           code: "D3",
-          diagramTitle: "Coaching Playbook",
+          diagramTitle: "Profit System",
           question:
-            "My sessions are structured and engaging — clients show up, do the work, and keep going because they see progress.",
+            "I know the tools and frameworks inside out, my clients see real progress, and they stay month after month.",
           onrampHint: "Often red before you have a steady client load to refine against.",
         },
       ],
@@ -209,6 +216,23 @@ export function flattenSignatureModules() {
   return SIGNATURE_MODEL_V2.pillars.flatMap((p) =>
     p.modules.map((m) => ({ pillar: p, ...m }))
   );
+}
+
+export function getSignatureModuleMetaById(
+  moduleId: SignatureModuleId
+): SignatureModuleMeta | null {
+  for (const pillar of SIGNATURE_MODEL_V2.pillars) {
+    const mod = pillar.modules.find((m) => m.id === moduleId);
+    if (mod) {
+      return {
+        id: mod.id,
+        code: mod.code,
+        title: mod.diagramTitle,
+        question: mod.question,
+      };
+    }
+  }
+  return null;
 }
 
 export function getSignatureMatrixColumns(): SignatureMatrixColumn[] {

@@ -42,6 +42,15 @@ export function communityAccessHint(errorMessage: string): string | null {
     m.includes("schema cache") ||
     m.includes("undefined_table")
   ) {
+    if (
+      m.includes("feed_comment_count") ||
+      m.includes("feed_like_count") ||
+      (m.includes("last_comment_at") &&
+        m.includes("community_posts") &&
+        m.includes("column"))
+    ) {
+      return "Apply feed counter columns on community_posts: run supabase/migrations/20260608120000_community_posts_feed_counters.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
     if (m.includes("community_posts.media")) {
       return "Add the community post media column: run supabase/migrations/20260607120000_community_posts_media.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
     }

@@ -1,26 +1,30 @@
 "use client";
 
-import { useMemo, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { rowWeeklyValue } from "@/lib/scorecardCompute";
 import type { ScorecardManualWeek } from "@/lib/scorecardManual";
 import { chartUnitForRow, type ScorecardRowId } from "@/lib/scorecardTargets";
 
-export const SCORECARD_VISIBLE_WEEKS = 16;
+type WeekColumn = {
+  week_start_date: string;
+  manual_values: Partial<ScorecardManualWeek>;
+};
 
 type Props = {
   weekStarts: string[];
-  weeks: Partial<ScorecardManualWeek>[];
+  /** Full week rows — values are matched by `week_start_date`, not array index. */
+  weeks: WeekColumn[];
   leftMetric: ScorecardRowId;
   rightMetric: ScorecardRowId;
+  /** Width (px) of the sticky metric column to the left of the chart — used for the sticky left Y-axis strip. */
+  metricColumnPx?: number;
 };
-
-function shortWeekLabel(iso: string) {
-  const [y, mo, d] = iso.split("-").map(Number);
-  return new Date(y, mo - 1, d).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
-}
 
 function fmtMoney(n: number) {
   return new Intl.NumberFormat("en-GB", {
@@ -45,6 +49,14 @@ function fmtAxis(rowId: ScorecardRowId, v: number) {
   return fmtCount(v);
 }
 
+/** Hover label — slightly more precision for ratios. */
+function fmtTooltip(rowId: ScorecardRowId, v: number) {
+  const u = chartUnitForRow(rowId);
+  if (u === "money") return fmtMoney(v);
+  if (u === "ratio") return `${(v * 100).toFixed(1)}%`;
+  return fmtCount(v);
+}
+
 function buildScale(
   rowId: ScorecardRowId,
   vals: (number | null)[]
@@ -52,16 +64,31 @@ function buildScale(
   const isRatio = chartUnitForRow(rowId) === "ratio";
   const nums = vals.filter((v): v is number => v !== null && Number.isFinite(v));
   if (nums.length === 0) {
-    return isRatio ? { min: 0, max: 1 } : { min: 0, max: 1 };
+    return { min: 0, max: 1 };
   }
-  let min = Math.min(...nums);
-  let max = Math.max(...nums);
+
+  let lo = Math.min(...nums);
+  let hi = Math.max(...nums);
+
   if (isRatio) {
-    min = Math.max(0, min);
-    max = Math.min(1, Math.max(max, min + 0.05));
+    /** Ratios are 0–1; zoom to data with padding, clamped to [0, 1]. */
+    const span = hi - lo;
+    const pad =
+      span < 1e-9
+        ? 0.02
+        : Math.max(span * 0.15, 0.005);
+    const min = Math.max(0, lo - pad);
+    const max = Math.min(1, hi + pad);
+    if (max - min < 1e-9) {
+      return { min: 0, max: 1 };
+    }
+    return { min, max };
   }
+
+  let min = lo;
+  let max = hi;
   if (max - min < 1e-9) {
-    max = min + (isRatio ? 0.05 : 1);
+    max = min + 1;
   }
   return { min, max };
 }
@@ -82,19 +109,78 @@ function polylinePath(
   vals: (number | null)[],
   min: number,
   max: number,
-  padL: number,
-  cellW: number,
+  plotW: number,
   innerTop: number,
-  innerH: number
+  innerH: number,
+  xOffset = 0
 ): string {
+  const n = vals.length;
+  const cellW = plotW / Math.max(1, n);
   let d = "";
   for (let i = 0; i < vals.length; i++) {
     const y = yFromVal(vals[i], min, max, innerTop, innerH);
     if (y === null) continue;
-    const x = padL + (i + 0.5) * cellW;
+    const x = (i + 0.5) * cellW + xOffset;
     d += d === "" ? `M${x},${y}` : `L${x},${y}`;
   }
   return d;
+}
+
+type LineHover = {
+  x: number;
+  y: number;
+  label: string;
+  stroke: string;
+};
+
+function LineHoverCallout({
+  lineHover,
+  plotW,
+  innerTop,
+  axisY,
+}: {
+  lineHover: LineHover;
+  plotW: number;
+  innerTop: number;
+  axisY: number;
+}) {
+  const tw = Math.max(40, lineHover.label.length * 5.8 + 12);
+  const th = 16;
+  const pad = 6;
+  let tx = lineHover.x + pad;
+  if (tx + tw > plotW - 2) tx = lineHover.x - tw - 2;
+  tx = Math.max(2, tx);
+  let ty = lineHover.y - th - 8;
+  if (ty < innerTop + 2) {
+    ty = lineHover.y + 10;
+  }
+  if (ty + th > axisY - 2) {
+    ty = axisY - th - 2;
+  }
+  ty = Math.max(innerTop + 2, ty);
+  return (
+    <g pointerEvents="none">
+      <rect
+        x={tx}
+        y={ty}
+        width={tw}
+        height={th}
+        rx={3}
+        fill="#ffffff"
+        stroke={lineHover.stroke}
+        strokeWidth={0.9}
+        opacity={0.98}
+      />
+      <text
+        x={tx + tw / 2}
+        y={ty + th - 4}
+        textAnchor="middle"
+        className="fill-slate-800 text-[9px] font-medium"
+      >
+        {lineHover.label}
+      </text>
+    </g>
+  );
 }
 
 export function ScorecardComboChart({
@@ -102,13 +188,49 @@ export function ScorecardComboChart({
   weeks,
   leftMetric,
   rightMetric,
+  metricColumnPx = 220,
 }: Props) {
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [measuredW, setMeasuredW] = useState(0);
+  const [lineHover, setLineHover] = useState<LineHover | null>(null);
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (typeof w === "number" && Number.isFinite(w)) {
+        setMeasuredW(Math.max(0, Math.round(w)));
+      }
+    });
+    ro.observe(el);
+    setMeasuredW(Math.round(el.getBoundingClientRect().width));
+    return () => ro.disconnect();
+  }, []);
+
+  const manualByIso = useMemo(() => {
+    const m = new Map<string, Partial<ScorecardManualWeek>>();
+    for (const w of weeks) {
+      m.set(w.week_start_date, w.manual_values);
+    }
+    return m;
+  }, [weeks]);
+
   const n = weekStarts.length;
-  const valsL = weekStarts.map((_, i) =>
-    rowWeeklyValue(leftMetric, weeks[i] ?? {})
+  const valsL = useMemo(
+    () =>
+      weekStarts.map((iso) =>
+        rowWeeklyValue(leftMetric, manualByIso.get(iso) ?? {})
+      ),
+    [weekStarts, manualByIso, leftMetric]
   );
-  const valsR = weekStarts.map((_, i) =>
-    rowWeeklyValue(rightMetric, weeks[i] ?? {})
+  const valsR = useMemo(
+    () =>
+      weekStarts.map((iso) =>
+        rowWeeklyValue(rightMetric, manualByIso.get(iso) ?? {})
+      ),
+    [weekStarts, manualByIso, rightMetric]
   );
 
   const leftRatio = chartUnitForRow(leftMetric) === "ratio";
@@ -123,42 +245,116 @@ export function ScorecardComboChart({
     [rightMetric, valsR]
   );
 
-  const CW = 22;
-  const W = Math.max(360, n * CW + 88);
-  const H = 132;
-  const padL = 46;
-  const padR = 46;
-  const padT = 6;
-  const padB = 22;
-  const innerW = W - padL - padR;
-  const innerH = H - padT - padB;
-  const cellW = innerW / Math.max(1, n);
+  /** ViewBox height: x-axis is the bottom edge (touches date row below). */
+  const VB_H = 120;
+  const padT = 8;
+  const axisY = VB_H - 1;
+  const innerTop = padT;
+  const innerH = axisY - padT;
+
+  const W = Math.max(320, measuredW || Math.max(360, n * 64));
+  const plotW = W;
+  const cellW = plotW / Math.max(1, n);
+
+  const bothRatioLines = leftRatio && rightRatio;
+  const lineXOffL = bothRatioLines ? -4 : 0;
+  const lineXOffR = bothRatioLines ? 4 : 0;
 
   const pathL = useMemo(
     () =>
       leftRatio
-        ? polylinePath(valsL, scaleL.min, scaleL.max, padL, cellW, padT, innerH)
+        ? polylinePath(
+            valsL,
+            scaleL.min,
+            scaleL.max,
+            plotW,
+            innerTop,
+            innerH,
+            lineXOffL
+          )
         : "",
-    [leftRatio, valsL, scaleL, padL, cellW, padT, innerH]
+    [leftRatio, valsL, scaleL, plotW, innerTop, innerH, lineXOffL]
   );
   const pathR = useMemo(
     () =>
       rightRatio
-        ? polylinePath(valsR, scaleR.min, scaleR.max, padL, cellW, padT, innerH)
+        ? polylinePath(
+            valsR,
+            scaleR.min,
+            scaleR.max,
+            plotW,
+            innerTop,
+            innerH,
+            lineXOffR
+          )
         : "",
-    [rightRatio, valsR, scaleR, padL, cellW, padT, innerH]
+    [rightRatio, valsR, scaleR, plotW, innerTop, innerH, lineXOffR]
   );
+
+  const linePointsL = useMemo(() => {
+    if (!leftRatio) return [];
+    const out: Array<{ cx: number; y: number; v: number }> = [];
+    for (let i = 0; i < n; i++) {
+      const v = valsL[i];
+      if (v === null || !Number.isFinite(v)) continue;
+      const y = yFromVal(v, scaleL.min, scaleL.max, innerTop, innerH);
+      if (y === null) continue;
+      out.push({
+        cx: (i + 0.5) * cellW + lineXOffL,
+        y,
+        v,
+      });
+    }
+    return out;
+  }, [
+    leftRatio,
+    n,
+    cellW,
+    valsL,
+    scaleL.min,
+    scaleL.max,
+    innerTop,
+    innerH,
+    lineXOffL,
+  ]);
+
+  const linePointsR = useMemo(() => {
+    if (!rightRatio) return [];
+    const out: Array<{ cx: number; y: number; v: number }> = [];
+    for (let i = 0; i < n; i++) {
+      const v = valsR[i];
+      if (v === null || !Number.isFinite(v)) continue;
+      const y = yFromVal(v, scaleR.min, scaleR.max, innerTop, innerH);
+      if (y === null) continue;
+      out.push({
+        cx: (i + 0.5) * cellW + lineXOffR,
+        y,
+        v,
+      });
+    }
+    return out;
+  }, [
+    rightRatio,
+    n,
+    cellW,
+    valsR,
+    scaleR.min,
+    scaleR.max,
+    innerTop,
+    innerH,
+    lineXOffR,
+  ]);
 
   const bars = useMemo(() => {
     const out: ReactNode[] = [];
     for (let i = 0; i < n; i++) {
-      const cx = padL + (i + 0.5) * cellW;
+      const cx = (i + 0.5) * cellW;
       const bw = cellW * 0.3;
       const g: ReactNode[] = [];
       if (!leftRatio) {
-        const yl = yFromVal(valsL[i], scaleL.min, scaleL.max, padT, innerH);
+        const yl = yFromVal(valsL[i], scaleL.min, scaleL.max, innerTop, innerH);
         if (yl !== null && valsL[i] !== null) {
-          const bh = padT + innerH - yl;
+          const bh = axisY - yl;
           g.push(
             <rect
               key="bl"
@@ -173,9 +369,9 @@ export function ScorecardComboChart({
         }
       }
       if (!rightRatio) {
-        const yr = yFromVal(valsR[i], scaleR.min, scaleR.max, padT, innerH);
+        const yr = yFromVal(valsR[i], scaleR.min, scaleR.max, innerTop, innerH);
         if (yr !== null && valsR[i] !== null) {
-          const bh = padT + innerH - yr;
+          const bh = axisY - yr;
           g.push(
             <rect
               key="br"
@@ -194,10 +390,10 @@ export function ScorecardComboChart({
     return out;
   }, [
     n,
-    padL,
     cellW,
-    padT,
+    innerTop,
     innerH,
+    axisY,
     leftRatio,
     rightRatio,
     valsL,
@@ -206,95 +402,141 @@ export function ScorecardComboChart({
     scaleR,
   ]);
 
+  /**
+   * Y-axis labels use zero-width sticky columns so the SVG stays full chart-th
+   * width (week columns stay aligned). Strips overlay the outer ~36px of the plot.
+   */
   return (
-    <div className="w-full min-w-0">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="h-32 w-full text-slate-600"
-        preserveAspectRatio="xMidYMid meet"
-        role="img"
-        aria-label="Scorecard weekly chart"
+    <div
+      className="relative flex w-full min-w-0 leading-none"
+      style={{ minHeight: VB_H }}
+    >
+      <div
+        className="pointer-events-none sticky z-20 w-0 shrink-0 self-stretch overflow-visible"
+        style={{ left: metricColumnPx }}
       >
-        <rect
-          x={padL}
-          y={padT}
-          width={innerW}
-          height={innerH}
-          fill="#f8fafc"
-          rx={4}
-        />
-        {[0, 0.5, 1].map((t) => {
-          const y = padT + innerH * (1 - t);
-          return (
-            <line
-              key={t}
-              x1={padL}
-              x2={padL + innerW}
-              y1={y}
-              y2={y}
-              stroke="#e2e8f0"
-              strokeWidth={0.6}
+        <div className="flex h-full w-9 flex-col justify-between border-r border-slate-200/90 bg-slate-50/95 py-1 pr-0.5 text-right text-[8px] leading-tight text-slate-400 backdrop-blur-[2px]">
+          <span>{fmtAxis(leftMetric, scaleL.max)}</span>
+          <span>{fmtAxis(leftMetric, scaleL.min)}</span>
+        </div>
+      </div>
+      <div ref={wrapRef} className="min-w-0 flex-1">
+        <svg
+          viewBox={`0 0 ${W} ${VB_H}`}
+          className="block w-full overflow-visible text-slate-600"
+          style={{ height: VB_H }}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="Scorecard weekly chart"
+          onMouseLeave={() => setLineHover(null)}
+        >
+          <rect
+            x={0}
+            y={innerTop}
+            width={plotW}
+            height={innerH}
+            fill="#f8fafc"
+            rx={2}
+          />
+          {[0, 0.5, 1].map((t) => {
+            const y = innerTop + innerH * (1 - t);
+            return (
+              <line
+                key={t}
+                x1={0}
+                x2={plotW}
+                y1={y}
+                y2={y}
+                stroke="#e2e8f0"
+                strokeWidth={0.6}
+              />
+            );
+          })}
+          {bars}
+          {pathL ? (
+            <path
+              d={pathL}
+              fill="none"
+              stroke="#0284c7"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
             />
-          );
-        })}
-        {bars}
-        {pathL ? (
-          <path
-            d={pathL}
-            fill="none"
-            stroke="#0284c7"
-            strokeWidth={2}
-            strokeLinejoin="round"
-            strokeLinecap="round"
+          ) : null}
+          {pathR ? (
+            <path
+              d={pathR}
+              fill="none"
+              stroke="#7c3aed"
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
+          ) : null}
+          <line
+            x1={0}
+            x2={plotW}
+            y1={axisY}
+            y2={axisY}
+            stroke="#64748b"
+            strokeWidth={1.2}
           />
-        ) : null}
-        {pathR ? (
-          <path
-            d={pathR}
-            fill="none"
-            stroke="#7c3aed"
-            strokeWidth={2}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        ) : null}
-        {weekStarts.map((iso, i) => {
-          const x = padL + (i + 0.5) * cellW;
-          return (
-            <text
-              key={iso}
-              x={x}
-              y={H - 4}
-              textAnchor="middle"
-              className="fill-slate-500 text-[9px]"
-            >
-              {shortWeekLabel(iso)}
-            </text>
-          );
-        })}
-        <text x={4} y={padT + 10} className="fill-slate-400 text-[8px]">
-          {fmtAxis(leftMetric, scaleL.max)}
-        </text>
-        <text x={4} y={padT + innerH} className="fill-slate-400 text-[8px]">
-          {fmtAxis(leftMetric, scaleL.min)}
-        </text>
-        <text
-          x={W - 4}
-          y={padT + 10}
-          textAnchor="end"
-          className="fill-slate-400 text-[8px]"
-        >
-          {fmtAxis(rightMetric, scaleR.max)}
-        </text>
-        <text
-          x={W - 4}
-          y={padT + innerH}
-          textAnchor="end"
-          className="fill-slate-400 text-[8px]"
-        >
-          {fmtAxis(rightMetric, scaleR.min)}
-        </text>
-      </svg>
+          {linePointsL.map((p, idx) => (
+            <circle
+              key={`dotL-${idx}`}
+              cx={p.cx}
+              cy={p.y}
+              r={5}
+              fill="#ffffff"
+              stroke="#0284c7"
+              strokeWidth={2}
+              className="cursor-pointer"
+              onMouseEnter={() =>
+                setLineHover({
+                  x: p.cx,
+                  y: p.y,
+                  label: fmtTooltip(leftMetric, p.v),
+                  stroke: "#0284c7",
+                })
+              }
+            />
+          ))}
+          {linePointsR.map((p, idx) => (
+            <circle
+              key={`dotR-${idx}`}
+              cx={p.cx}
+              cy={p.y}
+              r={5}
+              fill="#ffffff"
+              stroke="#7c3aed"
+              strokeWidth={2}
+              className="cursor-pointer"
+              onMouseEnter={() =>
+                setLineHover({
+                  x: p.cx,
+                  y: p.y,
+                  label: fmtTooltip(rightMetric, p.v),
+                  stroke: "#7c3aed",
+                })
+              }
+            />
+          ))}
+          {lineHover ? (
+            <LineHoverCallout
+              lineHover={lineHover}
+              plotW={plotW}
+              innerTop={innerTop}
+              axisY={axisY}
+            />
+          ) : null}
+        </svg>
+      </div>
+      <div className="pointer-events-none sticky right-0 z-20 w-0 shrink-0 self-stretch overflow-visible">
+        <div className="flex h-full w-9 -translate-x-full flex-col justify-between border-l border-slate-200/90 bg-slate-50/95 py-1 pl-0.5 text-left text-[8px] leading-tight text-slate-400 backdrop-blur-[2px]">
+          <span>{fmtAxis(rightMetric, scaleR.max)}</span>
+          <span>{fmtAxis(rightMetric, scaleR.min)}</span>
+        </div>
+      </div>
     </div>
   );
 }

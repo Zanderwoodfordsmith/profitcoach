@@ -80,35 +80,23 @@ export function addWeeksIso(iso: string, weeks: number): string {
   return addDaysIso(iso, weeks * 7);
 }
 
-/** First Monday of the default rolling scorecard window (16 cols ending `thisMonday + 3w`). */
+/** Total week columns loaded (from the chosen start Monday, scroll horizontally). */
+export const SCORECARD_FETCH_WEEKS = 26;
+
+/** Roughly how many week columns fit in the viewport before scrolling (~12). */
+export const SCORECARD_VIEWPORT_WEEKS = 12;
+
+/**
+ * Default first Monday when using “rolling window” (no saved anchor):
+ * start far enough back that the last 3 columns are this week + next 2
+ * (within a {@link SCORECARD_FETCH_WEEKS}-week span).
+ */
 export function defaultScorecardPeriodStartMonday(now = new Date()): string {
-  const m = mondayOfWeekContaining(now);
-  return addWeeksIso(toIsoDate(m), -12);
+  const thisMon = toIsoDate(mondayOfWeekContaining(now));
+  return addWeeksIso(thisMon, -(SCORECARD_FETCH_WEEKS - 3));
 }
 
 /** Monday of the week containing `now` (local calendar), as YYYY-MM-DD. */
 export function thisMondayIsoFromDate(now = new Date()): string {
   return toIsoDate(mondayOfWeekContaining(now));
-}
-
-/**
- * Advance `startMondayIso` by whole weeks until the last visible Monday
- * (`start + (visibleWeeks - 1) * 7`) is at least `thisMondayIso + 3 weeks`
- * (three planning weeks ahead).
- */
-export function rollScorecardStartMonday(
-  startMondayIso: string,
-  thisMondayIso: string,
-  visibleWeeks: number
-): string {
-  const targetEnd = addWeeksIso(thisMondayIso, 3);
-  let s = startMondayIso;
-  for (let guard = 0; guard < 104; guard++) {
-    const last = addWeeksIso(s, visibleWeeks - 1);
-    const lastD = parseIsoDate(last);
-    const targetD = parseIsoDate(targetEnd);
-    if (!lastD || !targetD || lastD.getTime() >= targetD.getTime()) break;
-    s = addWeeksIso(s, 7);
-  }
-  return s;
 }

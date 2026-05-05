@@ -7,11 +7,15 @@ export type ScorecardManualWeek = {
   cashOld?: number;
   cashOut?: number;
   newClientsWon?: number;
+  oldClients?: number;
   connectionRequestsSent?: number;
   newConnections?: number;
   otherOutreach?: number;
   replied?: number;
   interested?: number;
+  discoveryCallsAdded?: number;
+  discoveryCallsScheduled?: number;
+  discoveryCallsShowed?: number;
   valueSessionsAdded?: number;
   valueSessionsScheduled?: number;
   valueSessionsShowed?: number;
@@ -26,11 +30,15 @@ export const SCORECARD_MANUAL_KEYS = [
   "cashOld",
   "cashOut",
   "newClientsWon",
+  "oldClients",
   "connectionRequestsSent",
   "newConnections",
   "otherOutreach",
   "replied",
   "interested",
+  "discoveryCallsAdded",
+  "discoveryCallsScheduled",
+  "discoveryCallsShowed",
   "valueSessionsAdded",
   "valueSessionsScheduled",
   "valueSessionsShowed",

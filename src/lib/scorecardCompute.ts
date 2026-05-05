@@ -55,6 +55,14 @@ export function valueShowRate(m: Partial<ScorecardManualWeek>): number | null {
   return num(m, "valueSessionsShowed") / sch;
 }
 
+export function discoveryShowRate(
+  m: Partial<ScorecardManualWeek>
+): number | null {
+  const sch = num(m, "discoveryCallsScheduled");
+  if (sch <= 0) return null;
+  return num(m, "discoveryCallsShowed") / sch;
+}
+
 export function followUpShowRate(
   m: Partial<ScorecardManualWeek>
 ): number | null {
@@ -80,6 +88,8 @@ export function rowWeeklyValue(
       return netCash(m);
     case "newClientsWon":
       return num(m, "newClientsWon");
+    case "oldClients":
+      return num(m, "oldClients");
     case "salesOpportunities":
       return salesOpportunities(m);
     case "closeRate":
@@ -100,6 +110,14 @@ export function rowWeeklyValue(
       return interestRate(m);
     case "interestedToValueSession":
       return interestedToValueSession(m);
+    case "discoveryCallsAdded":
+      return num(m, "discoveryCallsAdded");
+    case "discoveryCallsScheduled":
+      return num(m, "discoveryCallsScheduled");
+    case "discoveryCallsShowed":
+      return num(m, "discoveryCallsShowed");
+    case "discoveryShowRate":
+      return discoveryShowRate(m);
     case "valueSessionsAdded":
       return num(m, "valueSessionsAdded");
     case "valueSessionsScheduled":

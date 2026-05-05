@@ -166,9 +166,16 @@ function lensScore(
 export function SignaturePetalDiagram({
   scores,
   onScoreChange,
+  onScorePickRequest,
+  hideOuterModules = false,
 }: {
   scores: Partial<Record<SignatureModuleId, SignatureScore>>;
   onScoreChange: (moduleId: SignatureModuleId, score: SignatureScore) => void;
+  onScorePickRequest?: (
+    moduleId: SignatureModuleId,
+    anchor: { x: number; y: number }
+  ) => void;
+  hideOuterModules?: boolean;
 }) {
   const data = SIGNATURE_MODEL_V2;
   const pillars: PillarGeom[] = data.pillars.map((p, i) => {
@@ -208,35 +215,54 @@ export function SignaturePetalDiagram({
       role="img"
       aria-label="Signature Model: nine modules and three lifestyle lenses"
     >
-      {pillars.flatMap((p, pi) =>
-        [0, 1, 2].map((mi) => {
-          const pillarDef = data.pillars[pi];
-          const moduleId = pillarDef.modules[mi].id;
-          const status = scoreForPetal(scores, p.id, mi);
-          const statusFill = status ? STATUS_FILL[status] : null;
-          const baseFill = "#ffffff";
-          return (
-            <path
-              key={`petal-${p.id}-${mi}`}
-              d={petalPath(p, mi, pillars)}
-              fill={statusFill ?? baseFill}
-              stroke="rgba(31,58,102,0.14)"
-              strokeWidth={0.9}
-              onClick={() =>
-                onScoreChange(moduleId, nextScore(status ?? null))
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onScoreChange(moduleId, nextScore(status ?? null));
-                }
-              }}
-              tabIndex={0}
-              className="cursor-pointer outline-none transition-[fill] duration-200 focus-visible:ring-2 focus-visible:ring-sky-400"
-            />
-          );
-        })
-      )}
+      {!hideOuterModules
+        ? pillars.flatMap((p, pi) =>
+            [0, 1, 2].map((mi) => {
+              const pillarDef = data.pillars[pi];
+              const moduleId = pillarDef.modules[mi].id;
+              const status = scoreForPetal(scores, p.id, mi);
+              const statusFill = status ? STATUS_FILL[status] : null;
+              const baseFill = "#ffffff";
+              return (
+                <path
+                  key={`petal-${p.id}-${mi}`}
+                  d={petalPath(p, mi, pillars)}
+                  fill={statusFill ?? baseFill}
+                  stroke="rgba(31,58,102,0.14)"
+                  strokeWidth={0.9}
+                  onClick={(e) => {
+                    if (onScorePickRequest) {
+                      onScorePickRequest(moduleId, {
+                        x: e.clientX,
+                        y: e.clientY,
+                      });
+                      return;
+                    }
+                    onScoreChange(moduleId, nextScore(status ?? null));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      if (onScorePickRequest) {
+                        const rect = (
+                          e.currentTarget as SVGPathElement
+                        ).getBoundingClientRect();
+                        onScorePickRequest(moduleId, {
+                          x: rect.left + rect.width / 2,
+                          y: rect.top + rect.height / 2,
+                        });
+                        return;
+                      }
+                      onScoreChange(moduleId, nextScore(status ?? null));
+                    }
+                  }}
+                  tabIndex={0}
+                  className="cursor-pointer outline-none transition-[fill] duration-200 focus-visible:ring-2 focus-visible:ring-sky-400"
+                />
+              );
+            })
+          )
+        : null}
 
       {pillars.map((p) => (
         <circle
@@ -312,18 +338,20 @@ export function SignaturePetalDiagram({
         );
       })()}
 
-      {pillars.flatMap((p) =>
-        [0, 1, 2].map((mi) => (
-          <path
-            key={`petal-stroke-${p.id}-${mi}`}
-            d={petalPath(p, mi, pillars)}
-            fill="none"
-            stroke="rgba(31,58,102,0.14)"
-            strokeWidth={0.9}
-            style={{ pointerEvents: "none" }}
-          />
-        ))
-      )}
+      {!hideOuterModules
+        ? pillars.flatMap((p) =>
+            [0, 1, 2].map((mi) => (
+              <path
+                key={`petal-stroke-${p.id}-${mi}`}
+                d={petalPath(p, mi, pillars)}
+                fill="none"
+                stroke="rgba(31,58,102,0.14)"
+                strokeWidth={0.9}
+                style={{ pointerEvents: "none" }}
+              />
+            ))
+          )
+        : null}
 
       {pillars.map((p) => (
         <circle
@@ -392,9 +420,10 @@ export function SignaturePetalDiagram({
         );
       })}
 
-      {pillars.flatMap((p, pi) =>
-        [0, 1, 2].map((mi) => {
-          const num = String(pi * 3 + mi + 1).padStart(2, "0");
+      {!hideOuterModules
+        ? pillars.flatMap((p, pi) =>
+            [0, 1, 2].map((mi) => {
+          const num = String(pi * 3 + mi + 1);
           const m = data.pillars[pi]?.modules[mi];
           if (!m) return null;
           const cleaned = m.diagramTitle.replace(/^The /, "");
@@ -419,8 +448,8 @@ export function SignaturePetalDiagram({
           const a1r = (a1 * Math.PI) / 180;
           const a2r = (a2 * Math.PI) / 180;
           const isLower = Math.sin((aCenter * Math.PI) / 180) > 0;
-          const rOuter = (PETAL_INNER + PETAL_OUTER) / 2 + 11 - 4;
-          const rInner = (PETAL_INNER + PETAL_OUTER) / 2 - 11 - 4;
+          const rOuter = (PETAL_INNER + PETAL_OUTER) / 2 + 10 - 4;
+          const rInner = (PETAL_INNER + PETAL_OUTER) / 2 - 10 - 4;
           const rLine1 = isLower ? rInner : rOuter;
           const rLine2 = isLower ? rOuter : rInner;
           function arc(rr: number) {
@@ -432,7 +461,7 @@ export function SignaturePetalDiagram({
               ? `M ${x2} ${y2} A ${rr} ${rr} 0 0 0 ${x1} ${y1}`
               : `M ${x1} ${y1} A ${rr} ${rr} 0 0 1 ${x2} ${y2}`;
           }
-          const rNum = isLower ? PETAL_INNER + 12 : PETAL_OUTER - 12;
+          const rNum = isLower ? PETAL_INNER + 12 : PETAL_OUTER - 22;
           function numArc() {
             const x1 = p.pos.x + rNum * Math.cos(a1r);
             const y1 = p.pos.y + rNum * Math.sin(a1r);
@@ -444,7 +473,7 @@ export function SignaturePetalDiagram({
           }
           const fill = TEXT_ON_PETAL;
           const fontStyle = {
-            font: '500 15px system-ui, "Segoe UI", sans-serif',
+            font: '600 16px system-ui, "Segoe UI", sans-serif',
             letterSpacing: "0.01em",
           };
           const numStyle = {
@@ -519,8 +548,9 @@ export function SignaturePetalDiagram({
               </text>
             </g>
           );
-        })
-      )}
+            })
+          )
+        : null}
 
       {pillars.map((p) => {
         const dx = p.pos.x - cx;
@@ -589,7 +619,7 @@ export function SignaturePetalDiagram({
           fill="#1f3a66"
           style={{ font: '600 21px system-ui, "Segoe UI", sans-serif' }}
         >
-          Effortless
+          Leveraged
         </text>
         <text
           x={cx}
@@ -598,7 +628,7 @@ export function SignaturePetalDiagram({
           fill="#1f3a66"
           style={{ font: '600 21px system-ui, "Segoe UI", sans-serif' }}
         >
-          Impact
+          Lifestyle
         </text>
       </g>
     </svg>

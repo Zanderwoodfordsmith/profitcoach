@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 
 export default function AdminLayout({
   children,
@@ -32,6 +33,9 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
       <DashboardSidebar
+        variant="admin"
+      />
+      <DashboardTopActions
         variant="admin"
         signingOut={signingOut}
         onSignOut={handleSignOut}

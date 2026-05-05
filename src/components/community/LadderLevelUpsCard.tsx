@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Trophy, User } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 import {
   type CommunityLadderEventDTO,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/ladder";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 
 function displayName(e: CommunityLadderEventDTO): string {
   const fromParts = [e.first_name, e.last_name]
@@ -113,6 +114,7 @@ export function LadderLevelUpsCard() {
           {events.map((ev) => {
             const lvl = getLadderLevel(ev.to_level);
             const ordinal = lvl?.ordinal ?? 0;
+            const initials = profileInitialsFromName(displayName(ev));
             return (
               <li key={ev.id} className="flex items-center gap-3">
                 <div
@@ -131,8 +133,8 @@ export function LadderLevelUpsCard() {
                       className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
                     />
                   ) : (
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200 text-slate-400">
-                      <User className="h-4 w-4" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                      {initials}
                     </div>
                   )}
                 </div>

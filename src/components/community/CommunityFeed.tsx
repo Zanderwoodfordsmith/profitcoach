@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ChevronLeft, ChevronRight, ListFilter, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
@@ -21,7 +21,10 @@ import {
   buildCommentPreviewAvatars,
   type CommentAuthorRow,
 } from "@/lib/communityCommentPreviewAvatars";
-import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
+import {
+  isMissingFeedCounterColumnError,
+  isUndefinedRelationError,
+} from "@/lib/communitySupabaseErrors";
 import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
@@ -44,8 +47,13 @@ import {
   normalizeCommunityPostMedia,
   type CommunityPostMediaItem,
 } from "@/lib/communityPostMedia";
+import { devPerfEnd, devPerfStart } from "@/lib/devPerf";
+import { paginationItems } from "@/lib/communityPagination";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 
 const POSTS_PER_PAGE = 20;
+/** First paint on page 1: load this many posts, then load the rest of the page in a second request. */
+const FEED_FIRST_SCREEN_COUNT = 3;
 
 /** Show a community encouragement quote when the current page has fewer posts than a “full” page. */
 const SPARSE_PAGE_POST_THRESHOLD = 10;
@@ -93,8 +101,24 @@ const COMMUNITY_POST_LIST_SELECT = `
         is_pinned,
         created_at,
         category_id,
+        feed_comment_count,
+        feed_like_count,
+        last_comment_at,
         category:community_categories!category_id ( id, slug, label ),
-        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
+      `;
+
+const COMMUNITY_POST_LIST_SELECT_LEGACY = `
+        id,
+        title,
+        body,
+        image_url,
+        media,
+        is_pinned,
+        created_at,
+        category_id,
+        category:community_categories!category_id ( id, slug, label ),
+        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
       `;
 
 /** Nested select for `community_post_favourites` feed (order by favourite `created_at`). */
@@ -109,8 +133,27 @@ const COMMUNITY_POST_FAVOURITE_EMBED_SELECT = `
     is_pinned,
     created_at,
     category_id,
+    feed_comment_count,
+    feed_like_count,
+    last_comment_at,
     category:community_categories!category_id ( id, slug, label ),
-    author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+    author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
+  )
+`;
+
+const COMMUNITY_POST_FAVOURITE_EMBED_SELECT_LEGACY = `
+  created_at,
+  post:community_posts!inner(
+    id,
+    title,
+    body,
+    image_url,
+    media,
+    is_pinned,
+    created_at,
+    category_id,
+    category:community_categories!category_id ( id, slug, label ),
+    author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
   )
 `;
 
@@ -120,6 +163,7 @@ export type ProfileRow = {
   first_name?: string | null;
   last_name?: string | null;
   avatar_url?: string | null;
+  role?: string | null;
   /** Highest achieved ladder level id; loaded for community UI. */
   ladder_level?: string | null;
 };
@@ -168,6 +212,10 @@ type RawCommunityPostRow = Omit<
   category: CommunityCategory | CommunityCategory[] | null;
   author: ProfileRow | ProfileRow[] | null;
   media?: unknown;
+  /** Present after migration `20260608120000_community_posts_feed_counters`. */
+  feed_comment_count?: number;
+  feed_like_count?: number;
+  last_comment_at?: string | null;
 };
 
 type NormalizedPostRow = Omit<
@@ -178,7 +226,14 @@ type NormalizedPostRow = Omit<
   | "favourited_by_me"
   | "comment_preview_authors"
   | "last_comment_at"
->;
+> & {
+  /** Server-maintained counts when migration is applied; otherwise null → legacy enrich queries. */
+  prefillEngagement: {
+    likeCount: number;
+    commentCount: number;
+    lastCommentAt: string | null;
+  } | null;
+};
 
 /** Direct profiles read when staff-avatars/embed left avatar_url empty (token/API gaps). */
 async function fetchAvatarUrlsFromProfiles(
@@ -210,10 +265,24 @@ function applyAvatarFallback<P extends ProfileRow | null>(
 
 function normalizeRawPostRows(rows: RawCommunityPostRow[]): NormalizedPostRow[] {
   return rows.map((row) => {
+    const {
+      feed_comment_count: feedCommentCount,
+      feed_like_count: feedLikeCount,
+      last_comment_at: lastCommentAtCol,
+      ...rowCore
+    } = row;
     const media = normalizeCommunityPostMedia(row.media, row.image_url);
     const image_url = firstCommunityPostImageUrl(media);
+    const prefillEngagement =
+      typeof feedCommentCount === "number" && typeof feedLikeCount === "number"
+        ? {
+            likeCount: feedLikeCount,
+            commentCount: feedCommentCount,
+            lastCommentAt: lastCommentAtCol ?? null,
+          }
+        : null;
     return {
-      ...row,
+      ...rowCore,
       media,
       image_url,
       title: capitalizeFirstUnicodeLetter(row.title),
@@ -224,33 +293,9 @@ function normalizeRawPostRows(rows: RawCommunityPostRow[]): NormalizedPostRow[] 
       author: Array.isArray(row.author)
         ? row.author[0] ?? null
         : row.author ?? null,
+      prefillEngagement,
     };
   });
-}
-
-function paginationItems(
-  current: number,
-  total: number
-): Array<number | "ellipsis"> {
-  if (total <= 0) return [];
-  if (total <= 9) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  const pages = new Set<number>();
-  pages.add(1);
-  pages.add(total);
-  for (let i = current - 2; i <= current + 2; i++) {
-    if (i >= 1 && i <= total) pages.add(i);
-  }
-  const sorted = [...pages].sort((a, b) => a - b);
-  const out: Array<number | "ellipsis"> = [];
-  for (let i = 0; i < sorted.length; i++) {
-    if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
-      out.push("ellipsis");
-    }
-    out.push(sorted[i]);
-  }
-  return out;
 }
 
 async function enrichNormalizedCommunityPosts(
@@ -279,36 +324,29 @@ async function enrichNormalizedCommunityPosts(
           error: null as null,
         });
 
-  const [likesRes, commentsRes, favRes] = await Promise.all([
-    supabaseClient
-      .from("community_post_likes")
-      .select("post_id, user_id")
-      .in("post_id", postIds),
-    supabaseClient
-      .from("community_post_comments")
-      .select(
-        `
-          post_id,
-          author_id,
-          created_at,
-          author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
-        `
-      )
-      .in("post_id", postIds)
-      .order("created_at", { ascending: true }),
-    favPromise,
-  ]);
+  const myLikesPromise =
+    uid && postIds.length > 0
+      ? supabaseClient
+          .from("community_post_likes")
+          .select("post_id")
+          .eq("user_id", uid)
+          .in("post_id", postIds)
+      : Promise.resolve({
+          data: [] as { post_id: string }[] | null,
+          error: null,
+        });
 
-  if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
-    throw likesRes.error;
-  }
-  if (commentsRes.error) throw commentsRes.error;
+  const [favRes, myLikesRes] = await Promise.all([favPromise, myLikesPromise]);
+
   if (favRes.error && !isUndefinedRelationError(favRes.error)) {
     throw favRes.error;
   }
+  if (myLikesRes.error && !isUndefinedRelationError(myLikesRes.error)) {
+    throw myLikesRes.error;
+  }
 
   const likesTableMissing = Boolean(
-    likesRes.error && isUndefinedRelationError(likesRes.error)
+    myLikesRes.error && isUndefinedRelationError(myLikesRes.error)
   );
   if (likesTableMissing && process.env.NODE_ENV === "development") {
     console.warn(
@@ -326,20 +364,10 @@ async function enrichNormalizedCommunityPosts(
   }
 
   let myLiked = new Set<string>();
-  if (uid && !likesTableMissing) {
-    const myRes = await supabaseClient
-      .from("community_post_likes")
-      .select("post_id")
-      .eq("user_id", uid)
-      .in("post_id", postIds);
-    if (myRes.error && !isUndefinedRelationError(myRes.error)) {
-      throw myRes.error;
-    }
-    if (!myRes.error) {
-      myLiked = new Set(
-        (myRes.data ?? []).map((r: { post_id: string }) => r.post_id)
-      );
-    }
+  if (uid && !likesTableMissing && !myLikesRes.error) {
+    myLiked = new Set(
+      (myLikesRes.data ?? []).map((r: { post_id: string }) => r.post_id)
+    );
   }
 
   let myFavourited = new Set<string>();
@@ -349,28 +377,110 @@ async function enrichNormalizedCommunityPosts(
     );
   }
 
-  const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
-    post_id: string;
-    user_id: string;
-  }[];
-  const likeCountByPost = new Map<string, number>();
-  for (const r of likeRows) {
-    likeCountByPost.set(r.post_id, (likeCountByPost.get(r.post_id) ?? 0) + 1);
+  let denormFastPath =
+    normalized.length > 0 &&
+    normalized.every((n) => n.prefillEngagement !== null);
+
+  let commentsNormalized: CommentAuthorRow[] = [];
+  let likeCountByPost = new Map<string, number>();
+
+  if (denormFastPath) {
+    const previewRpc = await supabaseClient.rpc(
+      "community_feed_comment_preview_rows",
+      { p_post_ids: postIds }
+    );
+    if (!previewRpc.error && Array.isArray(previewRpc.data)) {
+      type RpcRow = {
+        post_id: string;
+        author_id: string;
+        created_at: string;
+        full_name: string | null;
+        first_name: string | null;
+        last_name: string | null;
+        avatar_url: string | null;
+      };
+      commentsNormalized = (previewRpc.data as RpcRow[]).map((r) => ({
+        post_id: r.post_id,
+        author_id: r.author_id,
+        created_at: r.created_at,
+        author: {
+          id: r.author_id,
+          full_name: r.full_name,
+          first_name: r.first_name,
+          last_name: r.last_name,
+          avatar_url: r.avatar_url,
+        },
+      }));
+    } else {
+      denormFastPath = false;
+      if (process.env.NODE_ENV === "development" && previewRpc.error) {
+        console.warn(
+          "[Community] community_feed_comment_preview_rows RPC failed; using legacy comment fetch.",
+          previewRpc.error.message
+        );
+      }
+    }
   }
 
-  const rawComments = (commentsRes.data ?? []) as Array<
-    Omit<CommentAuthorRow, "author"> & {
-      author: ProfileRow | ProfileRow[] | null;
+  if (!denormFastPath) {
+    const [likesRes, commentsRes] = await Promise.all([
+      supabaseClient
+        .from("community_post_likes")
+        .select("post_id, user_id")
+        .in("post_id", postIds),
+      supabaseClient
+        .from("community_post_comments")
+        .select(
+          `
+          post_id,
+          author_id,
+          created_at,
+          author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
+        `
+        )
+        .in("post_id", postIds)
+        .order("created_at", { ascending: true }),
+    ]);
+
+    if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
+      throw likesRes.error;
     }
-  >;
-  const commentsNormalized: CommentAuthorRow[] = rawComments.map((row) => ({
-    post_id: row.post_id,
-    author_id: row.author_id,
-    created_at: row.created_at,
-    author: Array.isArray(row.author)
-      ? row.author[0] ?? null
-      : row.author ?? null,
-  }));
+    if (commentsRes.error) throw commentsRes.error;
+
+    const likesMissingLegacy = Boolean(
+      likesRes.error && isUndefinedRelationError(likesRes.error)
+    );
+    if (likesMissingLegacy && process.env.NODE_ENV === "development") {
+      console.warn(
+        "[Community] community_post_likes bulk query failed (legacy path)."
+      );
+    }
+
+    const likeRows = (likesMissingLegacy ? [] : likesRes.data ?? []) as {
+      post_id: string;
+      user_id: string;
+    }[];
+    for (const r of likeRows) {
+      likeCountByPost.set(
+        r.post_id,
+        (likeCountByPost.get(r.post_id) ?? 0) + 1
+      );
+    }
+
+    const rawComments = (commentsRes.data ?? []) as Array<
+      Omit<CommentAuthorRow, "author"> & {
+        author: ProfileRow | ProfileRow[] | null;
+      }
+    >;
+    commentsNormalized = rawComments.map((row) => ({
+      post_id: row.post_id,
+      author_id: row.author_id,
+      created_at: row.created_at,
+      author: Array.isArray(row.author)
+        ? row.author[0] ?? null
+        : row.author ?? null,
+    }));
+  }
 
   const avatarToken = await getValidSupabaseAccessToken();
   const avatarUserIds = [
@@ -449,19 +559,33 @@ async function enrichNormalizedCommunityPosts(
 
   return normalizedWithAvatars.map((row) => {
     const thread = commentsByPost.get(row.id) ?? [];
-    let last_comment_at: string | null = null;
-    for (const c of thread) {
-      if (
-        !last_comment_at ||
-        new Date(c.created_at) > new Date(last_comment_at)
-      ) {
-        last_comment_at = c.created_at;
+    const pre = row.prefillEngagement;
+    let last_comment_at: string | null;
+    let like_count: number;
+    let comment_count: number;
+    if (denormFastPath && pre) {
+      like_count = pre.likeCount;
+      comment_count = pre.commentCount;
+      last_comment_at = pre.lastCommentAt;
+    } else {
+      like_count = likeCountByPost.get(row.id) ?? 0;
+      comment_count = thread.length;
+      last_comment_at = null;
+      for (const c of thread) {
+        if (
+          !last_comment_at ||
+          new Date(c.created_at) > new Date(last_comment_at)
+        ) {
+          last_comment_at = c.created_at;
+        }
       }
     }
+    const { prefillEngagement: _omitPrefill, ...rest } = row;
+    void _omitPrefill;
     return {
-      ...row,
-      like_count: likeCountByPost.get(row.id) ?? 0,
-      comment_count: thread.length,
+      ...rest,
+      like_count,
+      comment_count,
       liked_by_me: myLiked.has(row.id),
       favourited_by_me: !favTableMissing && myFavourited.has(row.id),
       comment_preview_authors: buildCommentPreviewAvatars(thread),
@@ -515,11 +639,16 @@ export function CommunityFeed() {
     useState<CommunityPostRow | null>(null);
   const [feedBootstrapOk, setFeedBootstrapOk] = useState(false);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [feedCountersAvailable, setFeedCountersAvailable] = useState(true);
   const [communityAuthUserId, setCommunityAuthUserId] = useState<
     string | null
   >(null);
   /** Bumps when the feed should reload while staying on the same page (e.g. new post). */
   const [postsRefreshNonce, setPostsRefreshNonce] = useState(0);
+  /** Cancels in-flight split-page loads when filters or nonce change. */
+  const feedFetchGeneration = useRef(0);
+  /** Page 1: after the first few posts, loading the rest of the page. */
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
   const closeDetail = useCallback(() => {
     setSelectedPostId(null);
     setFetchedDetailPost(null);
@@ -581,9 +710,23 @@ export function CommunityFeed() {
       try {
         const { data, error } = await supabaseClient
           .from("community_posts")
-          .select(COMMUNITY_POST_LIST_SELECT.trim())
+          .select(
+            (
+              feedCountersAvailable
+                ? COMMUNITY_POST_LIST_SELECT
+                : COMMUNITY_POST_LIST_SELECT_LEGACY
+            ).trim()
+          )
           .eq("id", id)
           .maybeSingle();
+        if (
+          error &&
+          feedCountersAvailable &&
+          isMissingFeedCounterColumnError(error)
+        ) {
+          setFeedCountersAvailable(false);
+          return;
+        }
         if (cancelled || error || !data) return;
         const normalized = normalizeRawPostRows([
           data as unknown as RawCommunityPostRow,
@@ -599,7 +742,7 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [selectedPostId, posts]);
+  }, [selectedPostId, posts, feedCountersAvailable]);
 
   const loadCategories = useCallback(async () => {
     const { data, error } = await supabaseClient
@@ -612,101 +755,289 @@ export function CommunityFeed() {
 
   const loadPosts = useCallback(
     async (pageOverride?: number) => {
-      const effectivePage = pageOverride ?? page;
-      const from = (effectivePage - 1) * POSTS_PER_PAGE;
-      const to = from + POSTS_PER_PAGE - 1;
+      feedFetchGeneration.current += 1;
+      const gen = feedFetchGeneration.current;
+      const perfMark = devPerfStart();
+      setFeedLoadingMore(false);
+      try {
+        const effectivePage = pageOverride ?? page;
+        const from = (effectivePage - 1) * POSTS_PER_PAGE;
+        const to = from + POSTS_PER_PAGE - 1;
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
 
-      if (readFilter === "favourites") {
-        if (!user?.id) {
-          setTotalCount(0);
-          setPosts([]);
-          return;
-        }
+        const mapFavRows = (data: unknown) => {
+          type FavJoinRow = {
+            post: RawCommunityPostRow | RawCommunityPostRow[] | null;
+          };
+          return ((data ?? []) as unknown as FavJoinRow[])
+            .map((r) => {
+              const p = r.post;
+              if (!p) return null;
+              return Array.isArray(p) ? (p[0] ?? null) : p;
+            })
+            .filter((p): p is RawCommunityPostRow => Boolean(p));
+        };
 
-        let favQ = supabaseClient
-          .from("community_post_favourites")
-          .select(COMMUNITY_POST_FAVOURITE_EMBED_SELECT.trim(), {
-            count: "exact",
-          })
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .range(from, to);
-
-        if (filterSlug !== "all") {
-          const cat = categories.find((c) => c.slug === filterSlug);
-          if (cat) {
-            favQ = favQ.eq("post.category_id", cat.id);
-          }
-        }
-
-        const { data, error, count } = await favQ;
-
-        if (error) {
-          if (isUndefinedRelationError(error)) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn(
-                "[Community] community_post_favourites missing. Run migration 20260607130000_community_post_favourites.sql."
-              );
+        const buildFavouritesQuery = (userId: string) => {
+          let favQ = supabaseClient
+            .from("community_post_favourites")
+            .select(
+              (
+                feedCountersAvailable
+                  ? COMMUNITY_POST_FAVOURITE_EMBED_SELECT
+                  : COMMUNITY_POST_FAVOURITE_EMBED_SELECT_LEGACY
+              ).trim(),
+              { count: "exact" }
+            )
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+          if (filterSlug !== "all") {
+            const cat = categories.find((c) => c.slug === filterSlug);
+            if (cat) {
+              favQ = favQ.eq("post.category_id", cat.id);
             }
+          }
+          return favQ;
+        };
+
+        const buildPostsQuery = () => {
+          let q = supabaseClient
+            .from("community_posts")
+            .select(
+              (
+                feedCountersAvailable
+                  ? COMMUNITY_POST_LIST_SELECT
+                  : COMMUNITY_POST_LIST_SELECT_LEGACY
+              ).trim(),
+              { count: "exact" }
+            )
+            .order("is_pinned", { ascending: false })
+            .order("created_at", { ascending: false });
+          if (filterSlug !== "all") {
+            const cat = categories.find((c) => c.slug === filterSlug);
+            if (cat) {
+              q = q.eq("category_id", cat.id);
+            }
+          }
+          return q;
+        };
+
+        if (readFilter === "favourites") {
+          if (!user?.id) {
             setTotalCount(0);
             setPosts([]);
             return;
           }
+
+          const splitFirst =
+            effectivePage === 1 && POSTS_PER_PAGE > FEED_FIRST_SCREEN_COUNT;
+
+          if (splitFirst) {
+            const first = await buildFavouritesQuery(user.id).range(
+              0,
+              FEED_FIRST_SCREEN_COUNT - 1
+            );
+            if (gen !== feedFetchGeneration.current) return;
+            if (first.error) {
+              if (isUndefinedRelationError(first.error)) {
+                if (process.env.NODE_ENV === "development") {
+                  console.warn(
+                    "[Community] community_post_favourites missing. Run migration 20260607130000_community_post_favourites.sql."
+                  );
+                }
+                setTotalCount(0);
+                setPosts([]);
+                return;
+              }
+              throw first.error;
+            }
+            const raw1 = mapFavRows(first.data);
+            const enriched1 = await enrichNormalizedCommunityPosts(
+              normalizeRawPostRows(raw1)
+            );
+            if (gen !== feedFetchGeneration.current) return;
+            const total = first.count ?? 0;
+            setTotalCount(total);
+            const withFav = enriched1.map((p) => ({
+              ...p,
+              favourited_by_me: true as const,
+            }));
+            setPosts(withFav);
+            setPostsLoading(false);
+            if (total <= FEED_FIRST_SCREEN_COUNT) {
+              return;
+            }
+            setFeedLoadingMore(true);
+            if (gen !== feedFetchGeneration.current) {
+              setFeedLoadingMore(false);
+              return;
+            }
+            const second = await buildFavouritesQuery(user.id).range(
+              FEED_FIRST_SCREEN_COUNT,
+              POSTS_PER_PAGE - 1
+            );
+            if (gen !== feedFetchGeneration.current) {
+              setFeedLoadingMore(false);
+              return;
+            }
+            if (second.error) {
+              if (
+                feedCountersAvailable &&
+                isMissingFeedCounterColumnError(second.error)
+              ) {
+                setFeedCountersAvailable(false);
+                setFeedLoadingMore(false);
+                return;
+              }
+              throw second.error;
+            }
+            const raw2 = mapFavRows(second.data);
+            const enriched2 = await enrichNormalizedCommunityPosts(
+              normalizeRawPostRows(raw2)
+            );
+            if (gen !== feedFetchGeneration.current) {
+              setFeedLoadingMore(false);
+              return;
+            }
+            setPosts([
+              ...withFav,
+              ...enriched2.map((p) => ({
+                ...p,
+                favourited_by_me: true as const,
+              })),
+            ]);
+            setFeedLoadingMore(false);
+            return;
+          }
+
+          const { data, error, count } = await buildFavouritesQuery(
+            user.id
+          ).range(from, to);
+
+          if (error) {
+            if (feedCountersAvailable && isMissingFeedCounterColumnError(error)) {
+              setFeedCountersAvailable(false);
+              return;
+            }
+            if (isUndefinedRelationError(error)) {
+              if (process.env.NODE_ENV === "development") {
+                console.warn(
+                  "[Community] community_post_favourites missing. Run migration 20260607130000_community_post_favourites.sql."
+                );
+              }
+              setTotalCount(0);
+              setPosts([]);
+              return;
+            }
+            throw error;
+          }
+
+          const rawPosts = mapFavRows(data);
+          const enriched = await enrichNormalizedCommunityPosts(
+            normalizeRawPostRows(rawPosts)
+          );
+          setTotalCount(count ?? 0);
+          setPosts(
+            enriched.map((p) => ({
+              ...p,
+              favourited_by_me: true,
+            }))
+          );
+          return;
+        }
+
+        const splitFirst =
+          effectivePage === 1 && POSTS_PER_PAGE > FEED_FIRST_SCREEN_COUNT;
+
+        if (splitFirst) {
+          const first = await buildPostsQuery().range(
+            0,
+            FEED_FIRST_SCREEN_COUNT - 1
+          );
+          if (gen !== feedFetchGeneration.current) return;
+          if (first.error) {
+            if (
+              feedCountersAvailable &&
+              isMissingFeedCounterColumnError(first.error)
+            ) {
+              setFeedCountersAvailable(false);
+              return;
+            }
+            throw first.error;
+          }
+          const raw1 = (first.data ?? []) as unknown as RawCommunityPostRow[];
+          const enriched1 = await enrichNormalizedCommunityPosts(
+            normalizeRawPostRows(raw1)
+          );
+          if (gen !== feedFetchGeneration.current) return;
+          const total = first.count ?? 0;
+          setTotalCount(total);
+          setPosts(enriched1);
+          setPostsLoading(false);
+          if (total <= FEED_FIRST_SCREEN_COUNT) {
+            return;
+          }
+          setFeedLoadingMore(true);
+          if (gen !== feedFetchGeneration.current) {
+            setFeedLoadingMore(false);
+            return;
+          }
+          const second = await buildPostsQuery().range(
+            FEED_FIRST_SCREEN_COUNT,
+            POSTS_PER_PAGE - 1
+          );
+          if (gen !== feedFetchGeneration.current) {
+            setFeedLoadingMore(false);
+            return;
+          }
+          if (second.error) {
+            if (
+              feedCountersAvailable &&
+              isMissingFeedCounterColumnError(second.error)
+            ) {
+              setFeedCountersAvailable(false);
+              setFeedLoadingMore(false);
+              return;
+            }
+            throw second.error;
+          }
+          const raw2 = (second.data ?? []) as unknown as RawCommunityPostRow[];
+          const enriched2 = await enrichNormalizedCommunityPosts(
+            normalizeRawPostRows(raw2)
+          );
+          if (gen !== feedFetchGeneration.current) {
+            setFeedLoadingMore(false);
+            return;
+          }
+          setPosts([...enriched1, ...enriched2]);
+          setFeedLoadingMore(false);
+          return;
+        }
+
+        const q = buildPostsQuery().range(from, to);
+        const { data, error, count } = await q;
+
+        if (error) {
+          if (feedCountersAvailable && isMissingFeedCounterColumnError(error)) {
+            setFeedCountersAvailable(false);
+            return;
+          }
           throw error;
         }
-
-        type FavJoinRow = {
-          post: RawCommunityPostRow | RawCommunityPostRow[] | null;
-        };
-        const rawPosts: RawCommunityPostRow[] = ((data ?? []) as unknown as FavJoinRow[])
-          .map((r) => {
-            const p = r.post;
-            if (!p) return null;
-            return Array.isArray(p) ? (p[0] ?? null) : p;
-          })
-          .filter((p): p is RawCommunityPostRow => Boolean(p));
-
-        const normalized = normalizeRawPostRows(rawPosts);
-        const enriched = await enrichNormalizedCommunityPosts(normalized);
         setTotalCount(count ?? 0);
-        setPosts(
-          enriched.map((p) => ({
-            ...p,
-            favourited_by_me: true,
-          }))
-        );
-        return;
+
+        const rows = (data ?? []) as unknown as RawCommunityPostRow[];
+        const normalized = normalizeRawPostRows(rows);
+        const enriched = await enrichNormalizedCommunityPosts(normalized);
+        setPosts(enriched);
+      } finally {
+        devPerfEnd("communityFeed:loadPosts", perfMark);
       }
-
-      let q = supabaseClient
-        .from("community_posts")
-        .select(COMMUNITY_POST_LIST_SELECT.trim(), { count: "exact" })
-        .order("is_pinned", { ascending: false })
-        .order("created_at", { ascending: false })
-        .range(from, to);
-
-      if (filterSlug !== "all") {
-        const cat = categories.find((c) => c.slug === filterSlug);
-        if (cat) {
-          q = q.eq("category_id", cat.id);
-        }
-      }
-
-      const { data, error, count } = await q;
-
-      if (error) throw error;
-      setTotalCount(count ?? 0);
-
-      const rows = (data ?? []) as unknown as RawCommunityPostRow[];
-      const normalized = normalizeRawPostRows(rows);
-      const enriched = await enrichNormalizedCommunityPosts(normalized);
-      setPosts(enriched);
     },
-    [page, filterSlug, categories, readFilter]
+    [page, filterSlug, categories, readFilter, feedCountersAvailable]
   );
 
   useEffect(() => {
@@ -933,7 +1264,9 @@ export function CommunityFeed() {
                   />
                 ) : (
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200">
-                    <User className="h-5 w-5 text-slate-400" strokeWidth={1.75} aria-hidden />
+                    <span className="text-sm font-semibold text-slate-600">
+                      {profileInitialsFromName("Me")}
+                    </span>
                   </span>
                 )}
                 <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
@@ -1034,7 +1367,7 @@ export function CommunityFeed() {
                 </div>
               </div>
 
-              {loading || postsLoading ? (
+              {loading || (postsLoading && posts.length === 0) ? (
                 <p className="text-sm text-slate-500">Loading…</p>
               ) : readFilter === "favourites" && posts.length === 0 ? (
                 <p className="text-sm text-slate-500">
@@ -1047,28 +1380,36 @@ export function CommunityFeed() {
                   the filter to All posts.
                 </p>
               ) : (
-                <ul className="space-y-[1.125rem]">
-                  {displayedPosts.map((post) => (
-                    <li key={post.id}>
-                      <PostCard
-                        post={post}
-                        feedMentionNameById={feedMentionNameById}
-                        feedCardHasBeenRead={Boolean(
-                          feedLocalSnapshot.readPostIds[post.id]
-                        )}
-                        commentsSeenWatermarkIso={
-                          feedLocalSnapshot.commentsSeenUpTo[post.id] ?? null
-                        }
-                        onOpen={() => openDetail(post.id)}
-                        onPostsChanged={() => loadPosts()}
-                      />
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul className="space-y-[1.125rem]">
+                    {displayedPosts.map((post) => (
+                      <li key={post.id}>
+                        <PostCard
+                          post={post}
+                          feedMentionNameById={feedMentionNameById}
+                          feedCardHasBeenRead={Boolean(
+                            feedLocalSnapshot.readPostIds[post.id]
+                          )}
+                          commentsSeenWatermarkIso={
+                            feedLocalSnapshot.commentsSeenUpTo[post.id] ?? null
+                          }
+                          onOpen={() => openDetail(post.id)}
+                          onPostsChanged={() => loadPosts()}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  {feedLoadingMore ? (
+                    <p className="mt-3 text-center text-xs text-slate-500">
+                      Loading more posts…
+                    </p>
+                  ) : null}
+                </>
               )}
 
               {!loading &&
               !postsLoading &&
+              !feedLoadingMore &&
               !loadError &&
               posts.length < SPARSE_PAGE_POST_THRESHOLD &&
               !readFilterEmptyOnPage &&
@@ -1094,7 +1435,11 @@ export function CommunityFeed() {
                 </div>
               ) : null}
 
-              {!loading && !postsLoading && !loadError && totalPages > 1 ? (
+              {!loading &&
+              !postsLoading &&
+              !feedLoadingMore &&
+              !loadError &&
+              totalPages > 1 ? (
                 <nav
                   className="flex flex-col gap-3 rounded-xl bg-[#F9F9F9] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                   aria-label="Feed pagination"

@@ -1,6 +1,9 @@
 "use client";
 
-import { displayNameFromProfile } from "@/lib/communityProfile";
+import {
+  displayNameFromProfile,
+  profileInitialsFromName,
+} from "@/lib/communityProfile";
 import type { ProfileRow } from "@/components/community/CommunityFeed";
 import { getLadderLevel } from "@/lib/ladder";
 
@@ -12,6 +15,8 @@ type Props = {
 
 export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
   const name = profile ? displayNameFromProfile(profile) : "Member";
+  const initials = profileInitialsFromName(name);
+  const isAdmin = profile?.role === "admin";
   const lvl = profile?.ladder_level
     ? getLadderLevel(profile.ladder_level)
     : null;
@@ -32,13 +37,17 @@ export function CommunityAuthorAvatar({ profile, size = "md" }: Props) {
           src={profile.avatar_url}
           alt=""
           referrerPolicy="no-referrer"
-          className={`${box} rounded-full object-cover ring-1 ring-slate-100`}
+          className={`${box} rounded-full object-cover ring-2 ring-white ${
+            isAdmin ? "shadow-[0_0_0_3px_rgb(2_132_199)]" : "shadow-[0_0_0_1px_rgb(226_232_240)]"
+          }`}
         />
       ) : (
         <span
-          className={`flex ${box} items-center justify-center rounded-full bg-slate-200 ${textSm} font-medium text-slate-600`}
+          className={`flex ${box} items-center justify-center rounded-full bg-slate-200 ${textSm} font-medium text-slate-600 ring-2 ring-white ${
+            isAdmin ? "shadow-[0_0_0_3px_rgb(2_132_199)]" : "shadow-[0_0_0_1px_rgb(226_232_240)]"
+          }`}
         >
-          {name.slice(0, 1).toUpperCase()}
+          {initials}
         </span>
       )}
       {showBadge && lvl ? (

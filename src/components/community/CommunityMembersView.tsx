@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ArrowUpDown, Calendar, MapPin, User } from "lucide-react";
+import {
+  ArrowUpDown,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+} from "lucide-react";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { ladderOrdinal } from "@/lib/ladder";
@@ -13,6 +19,10 @@ import {
   type CommunityMembersFilter,
   type CommunityRosterMember,
 } from "@/components/community/useCommunityMemberDirectory";
+import { paginationItems } from "@/lib/communityPagination";
+import { profileInitialsFromName } from "@/lib/communityProfile";
+
+const MEMBERS_PER_PAGE = 20;
 
 function displayName(m: CommunityRosterMember): string {
   const n =
@@ -146,6 +156,7 @@ function compareName(
 export function CommunityMembersView() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [membersListPage, setMembersListPage] = useState(1);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const base = pathname.startsWith("/admin")
@@ -215,6 +226,32 @@ export function CommunityMembersView() {
     }
     return list;
   }, [roster, filter, sort, dir, lastSeenByUserId, clock]);
+
+  useEffect(() => {
+    setMembersListPage(1);
+  }, [filter, sort, dir]);
+
+  const membersTotalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / MEMBERS_PER_PAGE)
+  );
+
+  const pagedMembers = useMemo(() => {
+    const start = (membersListPage - 1) * MEMBERS_PER_PAGE;
+    return filtered.slice(start, start + MEMBERS_PER_PAGE);
+  }, [filtered, membersListPage]);
+
+  const membersRangeLabel = useMemo(() => {
+    if (filtered.length === 0) return "0 of 0";
+    const start = (membersListPage - 1) * MEMBERS_PER_PAGE + 1;
+    const end = Math.min(membersListPage * MEMBERS_PER_PAGE, filtered.length);
+    return `${start}-${end} of ${filtered.length.toLocaleString()}`;
+  }, [filtered.length, membersListPage]);
+
+  const membersPageNumbers = useMemo(
+    () => paginationItems(membersListPage, membersTotalPages),
+    [membersListPage, membersTotalPages]
+  );
 
   const pillHref = (id: CommunityMembersFilter) =>
     `${base}/members${membersQuery(id, sort, dir)}`;
@@ -335,8 +372,9 @@ export function CommunityMembersView() {
       </div>
 
       <ul className="mt-6 space-y-3">
-        {filtered.map((m) => {
+        {pagedMembers.map((m) => {
           const name = displayName(m);
+          const initials = profileInitialsFromName(name);
           const sub =
             m.coach_business_name?.trim() &&
             m.coach_business_name.trim() !== name
@@ -362,11 +400,21 @@ export function CommunityMembersView() {
                       src={m.avatar_url}
                       alt=""
                       referrerPolicy="no-referrer"
-                      className="h-14 w-14 rounded-full object-cover ring-1 ring-slate-200"
+                      className={`h-14 w-14 rounded-full object-cover ring-2 ring-white ${
+                        m.role === "admin"
+                          ? "shadow-[0_0_0_3px_rgb(2_132_199)]"
+                          : "shadow-[0_0_0_1px_rgb(226_232_240)]"
+                      }`}
                     />
                   ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200 text-slate-400">
-                      <User className="h-7 w-7" strokeWidth={1.5} />
+                    <div
+                      className={`flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-base font-semibold text-slate-600 ring-2 ring-white ${
+                        m.role === "admin"
+                          ? "shadow-[0_0_0_3px_rgb(2_132_199)]"
+                          : "shadow-[0_0_0_1px_rgb(226_232_240)]"
+                      }`}
+                    >
+                      {initials}
                     </div>
                   )}
                   {online && !presenceUnavailable ? (
@@ -448,6 +496,72 @@ export function CommunityMembersView() {
           );
         })}
       </ul>
+
+      {!loadError && membersTotalPages > 1 ? (
+        <nav
+          className="mt-6 flex flex-col gap-3 rounded-xl bg-[#F9F9F9] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+          aria-label="Members pagination"
+        >
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              disabled={membersListPage <= 1}
+              onClick={() =>
+                setMembersListPage((p) => Math.max(1, p - 1))
+              }
+              className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-[#666666] disabled:cursor-not-allowed disabled:text-[#CCCCCC]"
+            >
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+              Previous
+            </button>
+            <div className="flex flex-wrap items-center gap-1 pl-1">
+              {membersPageNumbers.map((item, idx) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`e-${idx}`}
+                    className="px-1.5 text-sm text-[#666666]"
+                    aria-hidden
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setMembersListPage(item)}
+                    className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
+                      item === membersListPage
+                        ? "bg-[#F9E4B7] text-[#666666]"
+                        : "text-[#666666] hover:bg-black/[0.04]"
+                    }`}
+                    aria-current={
+                      item === membersListPage ? "page" : undefined
+                    }
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={membersListPage >= membersTotalPages}
+              onClick={() =>
+                setMembersListPage((p) =>
+                  Math.min(membersTotalPages, p + 1)
+                )
+              }
+              className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-[#666666] disabled:cursor-not-allowed disabled:text-[#CCCCCC]"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+            </button>
+          </div>
+          <p className="text-sm text-[#666666] sm:text-right">
+            {membersRangeLabel}
+          </p>
+        </nav>
+      ) : null}
 
       {!loadError && filtered.length === 0 ? (
         <p className="mt-8 py-6 text-center text-sm text-slate-500">

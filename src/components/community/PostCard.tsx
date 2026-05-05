@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Pin } from "lucide-react";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import { MentionBody } from "@/components/community/MentionBody";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
@@ -63,6 +64,8 @@ export function PostCard({
     }
   };
 
+  const pinnedChromeClass = post.is_pinned ? "border-sky-200" : "";
+
   return (
     <article
       role="button"
@@ -74,22 +77,29 @@ export function PostCard({
           onOpen();
         }
       }}
-      className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${
+      className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${pinnedChromeClass} ${
         feedCardHasBeenRead
-          ? "opacity-50 shadow-sm"
-          : "opacity-100 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]"
+          ? post.is_pinned
+            ? "opacity-50 shadow-[0_1px_2px_rgb(2_132_199/0.18)]"
+            : "opacity-50 shadow-sm"
+          : post.is_pinned
+            ? "opacity-100 shadow-[0_0_0_1px_rgb(186_230_253/0.7),0_8px_20px_-12px_rgb(2_132_199/0.45)]"
+            : "opacity-100 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]"
       }`}
     >
       {/* Row 1: avatar + author only. Row 2: title/body/engagement full width (no blank strip under avatar). */}
       <div className="flex items-start gap-3">
         <CommunityAuthorAvatar profile={post.author} size="md" />
         <div className="min-w-0 flex-1 pt-0.5">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <div className="flex items-start justify-between gap-2">
             <span className="text-base font-semibold leading-tight text-slate-900">
               {authorName}
             </span>
             {post.is_pinned ? (
-              <span className="text-xs font-medium text-amber-700">Pinned</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-slate-900">
+                <Pin className="h-3.5 w-3.5 fill-sky-500 text-sky-500" strokeWidth={1.75} />
+                Pinned
+              </span>
             ) : null}
           </div>
           <p className="mt-0.5 text-xs leading-snug">

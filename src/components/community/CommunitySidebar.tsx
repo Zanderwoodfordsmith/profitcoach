@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { User } from "lucide-react";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { useCommunityMemberDirectory } from "@/components/community/useCommunityMemberDirectory";
 import { LadderLevelUpsCard } from "@/components/community/LadderLevelUpsCard";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 
 const BANNER_SRC = "/landing/v2/hero.png";
 
@@ -26,6 +26,18 @@ function displayNameShort(m: {
     [m.first_name, m.last_name].filter(Boolean).join(" ").trim() ||
     m.coach_business_name?.trim();
   return n || "Member";
+}
+
+function formatLastSeenBrief(lastSeenAt: string | undefined, nowMs: number): string {
+  if (!lastSeenAt) return "Recently active";
+  const diffMs = Math.max(0, nowMs - new Date(lastSeenAt).getTime());
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return "Active now";
+  if (mins < 60) return `Seen ${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Seen ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `Seen ${days}d ago`;
 }
 
 export type CommunitySidebarCalendarAdd = {
@@ -157,11 +169,18 @@ export function CommunitySidebar({
                     lastSeenByUserId[m.id],
                     clock
                   );
+                  const name = displayNameShort(m);
+                  const initials = profileInitialsFromName(name);
+                  const subline =
+                    m.coach_business_name?.trim() &&
+                    m.coach_business_name.trim() !== name
+                      ? m.coach_business_name.trim()
+                      : null;
                   return (
                     <div
                       key={m.id}
-                      className="relative h-9 w-9 shrink-0"
-                      title={displayNameShort(m)}
+                      className="group relative h-9 w-9 shrink-0"
+                      title={name}
                     >
                       {m.avatar_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -172,8 +191,8 @@ export function CommunitySidebar({
                           className="h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
                         />
                       ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 ring-1 ring-slate-200 text-slate-400">
-                          <User className="h-4 w-4" />
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                          {initials}
                         </div>
                       )}
                       {online ? (
@@ -182,6 +201,58 @@ export function CommunitySidebar({
                           aria-label="Online"
                         />
                       ) : null}
+
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 w-56 -translate-x-1/2 rounded-xl border border-slate-200 bg-white p-3 shadow-xl opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                        <div className="flex items-start gap-2.5">
+                          {m.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={m.avatar_url}
+                              alt=""
+                              referrerPolicy="no-referrer"
+                              className="h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
+                              {initials}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-slate-900">
+                              {name}
+                            </p>
+                            {m.slug ? (
+                              <p className="truncate text-xs text-slate-500">
+                                @{m.slug}
+                              </p>
+                            ) : null}
+                            {subline ? (
+                              <p className="truncate text-xs text-slate-600">
+                                {subline}
+                              </p>
+                            ) : null}
+                            {m.role === "admin" ? (
+                              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                                Admin
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                        {m.bio ? (
+                          <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-600">
+                            {m.bio}
+                          </p>
+                        ) : null}
+                        <p
+                          className={`mt-2 text-[11px] font-medium ${
+                            online ? "text-emerald-700" : "text-slate-500"
+                          }`}
+                        >
+                          {online
+                            ? "Online now"
+                            : formatLastSeenBrief(lastSeenByUserId[m.id], clock)}
+                        </p>
+                      </div>
                     </div>
                   );
                 })}

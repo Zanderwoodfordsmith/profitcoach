@@ -40,6 +40,47 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authorRole, setAuthorRole] = useState<string | null>(null);
+  const isAuthorAdmin = authorRole === "admin";
+  const announcementsCategory = useMemo(
+    () => categories.find((c) => c.slug === "announcements") ?? null,
+    [categories]
+  );
+  const selectableCategories = useMemo(
+    () =>
+      isAuthorAdmin
+        ? categories
+        : categories.filter((c) => c.slug !== "announcements"),
+    [categories, isAuthorAdmin]
+  );
+
+  useEffect(() => {
+    if (!selectableCategories.some((c) => c.id === categoryId)) {
+      setCategoryId(selectableCategories[0]?.id ?? "");
+    }
+  }, [categoryId, selectableCategories]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const authorId = await getCommunityAuthorId(
+        coachPersonaForCommunity(pathname, impersonatingCoachId)
+      );
+      if (!authorId) {
+        if (!cancelled) setAuthorRole(null);
+        return;
+      }
+      const { data } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", authorId)
+        .maybeSingle();
+      if (!cancelled) setAuthorRole((data?.role as string | null) ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [impersonatingCoachId, pathname]);
 
   const revokeAllPending = useCallback((items: PendingMedia[]) => {
     for (const p of items) {
@@ -87,6 +128,10 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
 
   const submit = useCallback(async () => {
     if (!canSubmit) return;
+    if (announcementsCategory && categoryId === announcementsCategory.id && !isAuthorAdmin) {
+      setError("Only admins can post in Announcements.");
+      return;
+    }
     setSaving(true);
     setError(null);
     const authorId = await getCommunityAuthorId(
@@ -165,7 +210,7 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -274,12 +319,17 @@ export function CreatePostModal({ categories, onClose, onCreated }: Props) {
               onChange={(e) => setCategoryId(e.target.value)}
               className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
-              {categories.map((c) => (
+              {selectableCategories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
                 </option>
               ))}
             </select>
+            {!isAuthorAdmin && announcementsCategory ? (
+              <p className="mt-1 text-xs text-slate-500">
+                Announcements are admin-only.
+              </p>
+            ) : null}
           </div>
         </div>
 

@@ -12,6 +12,9 @@ const RATIOS = {
   otherOutreach: 50,
   replied: 25,
   interested: 10,
+  discoveryCallsAdded: 6,
+  discoveryCallsScheduled: 6,
+  discoveryCallsShowed: 5,
   valueSessionsAdded: 5,
   valueSessionsScheduled: 5,
   valueSessionsShowed: 4,
@@ -28,6 +31,7 @@ export type ScorecardRowId =
   | "cashOut"
   | "netCash"
   | "newClientsWon"
+  | "oldClients"
   | "salesOpportunities"
   | "closeRate"
   | "connectionRequestsSent"
@@ -38,6 +42,10 @@ export type ScorecardRowId =
   | "connectionRate"
   | "interestRate"
   | "interestedToValueSession"
+  | "discoveryCallsAdded"
+  | "discoveryCallsScheduled"
+  | "discoveryCallsShowed"
+  | "discoveryShowRate"
   | "valueSessionsAdded"
   | "valueSessionsScheduled"
   | "valueSessionsShowed"
@@ -60,6 +68,7 @@ export const SCORECARD_ROW_DIRECTION: Record<
   cashOut: "lower",
   netCash: "higher",
   newClientsWon: "higher",
+  oldClients: "higher",
   salesOpportunities: "higher",
   closeRate: "higher",
   connectionRequestsSent: "higher",
@@ -70,6 +79,10 @@ export const SCORECARD_ROW_DIRECTION: Record<
   connectionRate: "higher",
   interestRate: "higher",
   interestedToValueSession: "higher",
+  discoveryCallsAdded: "higher",
+  discoveryCallsScheduled: "higher",
+  discoveryCallsShowed: "higher",
+  discoveryShowRate: "higher",
   valueSessionsAdded: "higher",
   valueSessionsScheduled: "higher",
   valueSessionsShowed: "higher",
@@ -87,7 +100,8 @@ export const SCORECARD_CHART_METRICS: Array<{
   label: string;
   defaultOn: boolean;
 }> = [
-  { id: "newClientsWon", label: "New clients won", defaultOn: true },
+  { id: "newClientsWon", label: "New clients", defaultOn: true },
+  { id: "oldClients", label: "Old clients", defaultOn: false },
   { id: "cashIn", label: "Cash in (new + old)", defaultOn: true },
   { id: "netCash", label: "Net cash", defaultOn: false },
   { id: "cashNew", label: "Cash from new clients", defaultOn: false },
@@ -97,6 +111,7 @@ export const SCORECARD_CHART_METRICS: Array<{
   { id: "connectionRequestsSent", label: "Connection requests sent", defaultOn: false },
   { id: "newConnections", label: "New connections", defaultOn: false },
   { id: "interested", label: "Interested", defaultOn: false },
+  { id: "discoveryCallsShowed", label: "Discovery calls showed", defaultOn: false },
   { id: "valueSessionsShowed", label: "Value sessions showed", defaultOn: false },
   { id: "followUpShowed", label: "Follow-up calls showed", defaultOn: false },
 ];
@@ -152,6 +167,7 @@ export function buildScorecardTargets(params: {
   };
 
   set("newClientsWon", weeklyNew);
+  set("oldClients", roundCount(weeklyNew * 1.5));
   set(
     "salesOpportunities",
     roundCount(weeklyNew * RATIOS.salesOpportunities)
@@ -164,6 +180,18 @@ export function buildScorecardTargets(params: {
   set("otherOutreach", roundCount(weeklyNew * RATIOS.otherOutreach));
   set("replied", roundCount(weeklyNew * RATIOS.replied));
   set("interested", roundCount(weeklyNew * RATIOS.interested));
+  set(
+    "discoveryCallsAdded",
+    roundCount(weeklyNew * RATIOS.discoveryCallsAdded)
+  );
+  set(
+    "discoveryCallsScheduled",
+    roundCount(weeklyNew * RATIOS.discoveryCallsScheduled)
+  );
+  set(
+    "discoveryCallsShowed",
+    roundCount(weeklyNew * RATIOS.discoveryCallsShowed)
+  );
   set(
     "valueSessionsAdded",
     roundCount(weeklyNew * RATIOS.valueSessionsAdded)
@@ -232,6 +260,14 @@ export function buildScorecardTargets(params: {
     vsSchW > 0 ? (vsShowW / vsSchW) * WEEKS_ON_CARD : 0
   );
 
+  const dcSchW = t.discoveryCallsScheduled.weekly;
+  const dcShowW = t.discoveryCallsShowed.weekly;
+  set(
+    "discoveryShowRate",
+    dcSchW > 0 ? dcShowW / dcSchW : 0,
+    dcSchW > 0 ? (dcShowW / dcSchW) * WEEKS_ON_CARD : 0
+  );
+
   const fuSchW = t.followUpScheduled.weekly;
   const fuShowW = t.followUpShowed.weekly;
   set(
@@ -252,6 +288,7 @@ function emptyTargets(): ScorecardTargets {
     cashOut: z,
     netCash: z,
     newClientsWon: z,
+    oldClients: z,
     salesOpportunities: z,
     closeRate: z,
     connectionRequestsSent: z,
@@ -262,6 +299,10 @@ function emptyTargets(): ScorecardTargets {
     connectionRate: z,
     interestRate: z,
     interestedToValueSession: z,
+    discoveryCallsAdded: z,
+    discoveryCallsScheduled: z,
+    discoveryCallsShowed: z,
+    discoveryShowRate: z,
     valueSessionsAdded: z,
     valueSessionsScheduled: z,
     valueSessionsShowed: z,
@@ -291,6 +332,7 @@ export function chartUnitForRow(rowId: ScorecardRowId): ScorecardChartUnit {
     rowId === "connectionRate" ||
     rowId === "interestRate" ||
     rowId === "interestedToValueSession" ||
+    rowId === "discoveryShowRate" ||
     rowId === "valueShowRate" ||
     rowId === "followUpShowRate"
   ) {

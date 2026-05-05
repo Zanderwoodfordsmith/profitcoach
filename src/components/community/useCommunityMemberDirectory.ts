@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
@@ -112,6 +113,22 @@ export function useCommunityMemberDirectory(): CommunityMemberDirectoryValue {
 }
 
 function useCommunityMemberDirectoryState() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const needsFullRoster = useMemo(() => {
+    if (!pathname) return true;
+    if (pathname.includes("/community/members")) return true;
+    if (pathname.includes("/community/calendar")) return true;
+    const onCommunityRoot =
+      pathname === "/coach/community" ||
+      pathname === "/coach/community/" ||
+      pathname === "/admin/community" ||
+      pathname === "/admin/community/";
+    if (onCommunityRoot && searchParams.get("tab") === "map") return true;
+    return false;
+  }, [pathname, searchParams]);
+
   const [roster, setRoster] = useState<CommunityRosterMember[]>([]);
   const [presenceRows, setPresenceRows] = useState<PresenceRow[]>([]);
   const [presenceUnavailable, setPresenceUnavailable] = useState(false);
@@ -229,32 +246,56 @@ function useCommunityMemberDirectoryState() {
 
   useEffect(() => {
     let cancelled = false;
+    let rosterDelayId: number | undefined;
     void (async () => {
-      await refresh();
-      if (!cancelled) await touchPresence();
-      if (!cancelled) await loadPresence();
+      try {
+        setLoadError(null);
+        if (needsFullRoster) {
+          await Promise.all([loadRoster(), loadPresence()]);
+        } else {
+          await loadPresence();
+          rosterDelayId = window.setTimeout(() => {
+            if (!cancelled) void loadRoster();
+          }, 2500);
+        }
+        if (!cancelled) await touchPresence();
+        if (!cancelled) await loadPresence();
+      } catch (e) {
+        if (!cancelled) {
+          setLoadError(
+            e instanceof Error ? e.message : "Could not load community members."
+          );
+        }
+      }
     })();
     return () => {
       cancelled = true;
+      if (rosterDelayId !== undefined) window.clearTimeout(rosterDelayId);
     };
-  }, [loadPresence, refresh, touchPresence]);
+  }, [
+    needsFullRoster,
+    loadRoster,
+    loadPresence,
+    touchPresence,
+    pathname,
+    searchParams,
+  ]);
 
   useEffect(() => {
+    const tickMs = needsFullRoster ? 45_000 : 90_000;
     const id = window.setInterval(() => {
-      void refresh();
-    }, 45_000);
+      if (document.visibilityState !== "visible") return;
+      if (needsFullRoster) {
+        void refresh();
+      } else {
+        void (async () => {
+          await touchPresence();
+          await loadPresence();
+        })();
+      }
+    }, tickMs);
     return () => window.clearInterval(id);
-  }, [refresh]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      void (async () => {
-        await touchPresence();
-        await loadPresence();
-      })();
-    }, 60_000);
-    return () => window.clearInterval(id);
-  }, [loadPresence, touchPresence]);
+  }, [needsFullRoster, refresh, loadPresence, touchPresence]);
 
   const counts = useMemo(() => {
     const members = roster.length;

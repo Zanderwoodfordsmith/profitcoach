@@ -1,7 +1,10 @@
 "use client";
 
 import { MessageCircle, ThumbsUp } from "lucide-react";
-import { displayNameFromProfile } from "@/lib/communityProfile";
+import {
+  displayNameFromProfile,
+  profileInitialsFromProfile,
+} from "@/lib/communityProfile";
 import type { ProfileRow } from "@/components/community/CommunityFeed";
 
 type Props = {
@@ -105,7 +108,7 @@ export function PostEngagementBar({
                     />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
-                      {displayNameFromProfile(a).slice(0, 1).toUpperCase()}
+                      {profileInitialsFromProfile(a)}
                     </span>
                   )}
                 </span>

@@ -2,12 +2,15 @@
 
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { MENTION_MARKDOWN_REGEX } from "@/lib/communityMentions";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 
 export type MentionUser = {
   id: string;
@@ -28,6 +31,55 @@ type Props = {
   autoResize?: boolean;
   maxAutoHeightPx?: number;
 };
+
+type KnownMention = {
+  id: string;
+  label: string;
+};
+
+function normalizeMentionLabel(label: string): string {
+  return label.trim().replace(/\s+/g, " ");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractKnownMentionsFromRaw(raw: string): KnownMention[] {
+  const out: KnownMention[] = [];
+  const re = new RegExp(MENTION_MARKDOWN_REGEX.source, "gi");
+  const seen = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) {
+    const label = normalizeMentionLabel(m[1] ?? "");
+    const id = (m[2] ?? "").trim();
+    if (!label || !id) continue;
+    const key = `${id}::${label.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ id, label });
+  }
+  return out;
+}
+
+function rawToDisplayText(raw: string): string {
+  return raw.replace(new RegExp(MENTION_MARKDOWN_REGEX.source, "gi"), (_m, label) => {
+    const clean = normalizeMentionLabel(String(label ?? ""));
+    return clean ? `@${clean}` : "@member";
+  });
+}
+
+function displayToRawText(display: string, knownMentions: KnownMention[]): string {
+  if (knownMentions.length === 0) return display;
+  let out = display;
+  const sorted = [...knownMentions].sort((a, b) => b.label.length - a.label.length);
+  for (const mention of sorted) {
+    const needle = `@${mention.label}`;
+    const replacement = `[@${mention.label}](mention:${mention.id})`;
+    out = out.replace(new RegExp(escapeRegExp(needle), "g"), replacement);
+  }
+  return out;
+}
 
 /** Parses @mention cursor: contiguous non-whitespace after last `@` before caret. */
 export function getActiveMentionQuery(
@@ -72,11 +124,20 @@ export function MentionTextarea({
   maxAutoHeightPx = 280,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const [displayValue, setDisplayValue] = useState(() => rawToDisplayText(value));
+  const [knownMentions, setKnownMentions] = useState<KnownMention[]>(() =>
+    extractKnownMentionsFromRaw(value)
+  );
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
   const fetchSeq = useRef(0);
+
+  useEffect(() => {
+    setDisplayValue(rawToDisplayText(value));
+    setKnownMentions(extractKnownMentionsFromRaw(value));
+  }, [value]);
 
   const safeHighlightIdx = useMemo(
     () =>
@@ -89,7 +150,7 @@ export function MentionTextarea({
   const syncMentionFromDom = useCallback(() => {
     const el = taRef.current;
     if (!el) return;
-    const q = getActiveMentionQuery(value, el.selectionStart ?? 0);
+    const q = getActiveMentionQuery(displayValue, el.selectionStart ?? 0);
     if (!q) {
       setMentionOpen(false);
       return;
@@ -103,14 +164,14 @@ export function MentionTextarea({
       setMentionUsers(users);
       setMentionLoading(false);
     });
-  }, [value]);
+  }, [displayValue]);
 
   const insertMention = useCallback(
     (user: MentionUser) => {
       const el = taRef.current;
       if (!el) return;
       const sel = el.selectionStart ?? 0;
-      const ctx = getActiveMentionQuery(value, sel);
+      const ctx = getActiveMentionQuery(displayValue, sel);
       if (!ctx) return;
 
       const safeName = user.display_name
@@ -119,10 +180,13 @@ export function MentionTextarea({
         .replace(/\(/g, "")
         .replace(/\)/g, "")
         .trim();
-      const mentionText = `[@${safeName || "member"}](mention:${user.id})`;
-      const next =
-        value.slice(0, ctx.start) + mentionText + " " + value.slice(sel);
-      onChange(next);
+      const mentionText = `@${safeName || "member"}`;
+      const nextDisplay =
+        displayValue.slice(0, ctx.start) + mentionText + " " + displayValue.slice(sel);
+      const nextKnown = [...knownMentions, { id: user.id, label: safeName || "member" }];
+      setKnownMentions(nextKnown);
+      setDisplayValue(nextDisplay);
+      onChange(displayToRawText(nextDisplay, nextKnown));
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
@@ -131,7 +195,7 @@ export function MentionTextarea({
         el.setSelectionRange(pos, pos);
       });
     },
-    [onChange, value]
+    [displayValue, knownMentions, onChange]
   );
 
   const onKeyDown = useCallback(
@@ -174,9 +238,11 @@ export function MentionTextarea({
 
   const onChangeInner = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      onChange(e.target.value);
+      const nextDisplay = e.target.value;
+      setDisplayValue(nextDisplay);
+      onChange(displayToRawText(nextDisplay, knownMentions));
       const ctx = getActiveMentionQuery(
-        e.target.value,
+        nextDisplay,
         e.target.selectionStart ?? 0
       );
       if (!ctx) {
@@ -193,7 +259,7 @@ export function MentionTextarea({
         setMentionLoading(false);
       });
     },
-    [onChange]
+    [knownMentions, onChange]
   );
 
   const showList = mentionOpen;
@@ -202,7 +268,7 @@ export function MentionTextarea({
     <div className="relative">
       <textarea
         ref={taRef}
-        value={value}
+        value={displayValue}
         onChange={onChangeInner}
         onKeyDown={onKeyDown}
         onClick={onSelectOrClick}
@@ -244,7 +310,7 @@ export function MentionTextarea({
                     />
                   ) : (
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                      {u.display_name.slice(0, 1).toUpperCase()}
+                      {profileInitialsFromName(u.display_name)}
                     </span>
                   )}
                   <span className="min-w-0 flex-1">

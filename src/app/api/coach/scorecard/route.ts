@@ -5,9 +5,11 @@ import {
   SCORECARD_MANUAL_KEYS,
   type ScorecardManualWeek,
 } from "@/lib/scorecardManual";
-import { isMondayIso, mondaySequenceFromStart } from "@/lib/scorecardWeeks";
-
-const VISIBLE_WEEKS = 16;
+import {
+  isMondayIso,
+  mondaySequenceFromStart,
+  SCORECARD_FETCH_WEEKS,
+} from "@/lib/scorecardWeeks";
 
 async function requireCoach(request: Request) {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -72,8 +74,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const sequence = mondaySequenceFromStart(startMonday, VISIBLE_WEEKS);
-  if (sequence.length !== VISIBLE_WEEKS) {
+  const sequence = mondaySequenceFromStart(
+    startMonday,
+    SCORECARD_FETCH_WEEKS
+  );
+  if (sequence.length !== SCORECARD_FETCH_WEEKS) {
     return NextResponse.json(
       { error: "Unable to build week range." },
       { status: 400 }
@@ -120,7 +125,7 @@ export async function GET(request: Request) {
       period: {
         start_monday: startMonday,
         week_starts: sequence,
-        visible_weeks: VISIBLE_WEEKS,
+        fetch_weeks: SCORECARD_FETCH_WEEKS,
       },
     });
   } catch (e) {

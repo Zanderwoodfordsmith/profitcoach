@@ -7,6 +7,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 
 export default function CoachLayout({
   children,
@@ -128,8 +129,12 @@ export default function CoachLayout({
       )}
       <DashboardSidebar
         variant="coach"
+      />
+      <DashboardTopActions
+        variant="coach"
         signingOut={signingOut}
         onSignOut={handleSignOut}
+        className={isImpersonatingCoach ? "top-16" : "top-3"}
       />
       <main className="min-h-screen min-w-0 w-full px-6 pb-6 pt-0">
         <div

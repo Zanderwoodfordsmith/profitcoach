@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { User, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
+import { profileInitialsFromName } from "@/lib/communityProfile";
 
 import type { MapMember } from "./CommunityMembersMap";
 
@@ -15,6 +16,7 @@ export function MemberInfoCard({ member }: { member: MapMember }) {
     member.directory_listed && member.slug
       ? `/directory/${member.slug}`
       : null;
+  const initials = profileInitialsFromName(displayName);
 
   return (
     <div className="flex w-full flex-col gap-3 p-3 text-slate-900">
@@ -27,8 +29,8 @@ export function MemberInfoCard({ member }: { member: MapMember }) {
             className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
           />
         ) : (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 ring-1 ring-slate-200">
-            <User className="h-6 w-6" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
+            {initials}
           </div>
         )}
         <div className="min-w-0 flex-1">
