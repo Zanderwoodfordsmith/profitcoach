@@ -489,9 +489,14 @@ export function CommunityCalendar({
     [canAddEvent]
   );
 
+  const selectedEventRow = useMemo(
+    () => rows.find((row) => row.id === selectedOccurrence?.eventId) ?? null,
+    [rows, selectedOccurrence]
+  );
+
   return (
     <>
-      <div className="mx-auto flex min-h-0 w-full max-w-4xl min-w-0 flex-col gap-5 pt-5 lg:mx-0 lg:pt-6">
+      <div className="mx-auto flex min-h-0 w-full max-w-[62rem] min-w-0 flex-col gap-5 pt-5 lg:mx-0 lg:pt-6">
         {loadError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             <p className="font-semibold text-rose-900">
@@ -1098,6 +1103,17 @@ export function CommunityCalendar({
       {selectedOccurrence ? (
         <CommunityCalendarEventModal
           occurrence={selectedOccurrence}
+          canManage={canAddEvent && Boolean(selectedEventRow)}
+          onEdit={() => {
+            if (!selectedEventRow) return;
+            setSelectedOccurrence(null);
+            setEditingEvent(selectedEventRow);
+          }}
+          onDelete={async () => {
+            if (!selectedEventRow) return;
+            setSelectedOccurrence(null);
+            await deleteEvent(selectedEventRow.id);
+          }}
           onClose={() => setSelectedOccurrence(null)}
         />
       ) : null}
