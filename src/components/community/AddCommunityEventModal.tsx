@@ -12,6 +12,7 @@ import {
 } from "@/lib/supabaseErrorMessage";
 import type {
   CommunityCalendarEventRow,
+  MonthWeekOrdinal,
   RecurrencePayload,
   WeekdayMon0Sun6,
 } from "@/lib/communityCalendarTypes";
@@ -34,6 +35,18 @@ const WEEKDAY_LABELS: readonly { id: WeekdayMon0Sun6; label: string }[] = [
   { id: 6, label: "Sun" },
 ];
 
+const MONTH_ORDINAL_OPTIONS: readonly {
+  id: MonthWeekOrdinal;
+  label: string;
+}[] = [
+  { id: 1, label: "First" },
+  { id: 2, label: "Second" },
+  { id: 3, label: "Third" },
+  { id: 4, label: "Fourth" },
+  { id: 5, label: "Fifth" },
+  { id: -1, label: "Last" },
+];
+
 type Props = {
   initialEvent?: CommunityCalendarEventRow | null;
   onClose: () => void;
@@ -42,6 +55,12 @@ type Props = {
 
 function luxonToMon0Sun6(weekday: number): number {
   return (weekday + 6) % 7;
+}
+
+function monthWeekOrdinalForDate(dt: DateTime): MonthWeekOrdinal {
+  const nth = Math.floor((dt.day - 1) / 7) + 1;
+  if (dt.plus({ days: 7 }).month !== dt.month) return -1;
+  return Math.min(5, Math.max(1, nth)) as Exclude<MonthWeekOrdinal, -1>;
 }
 
 export function AddCommunityEventModal({
@@ -80,6 +99,11 @@ export function AddCommunityEventModal({
   const [repeatInterval, setRepeatInterval] = useState(1);
   const [repeatUnit, setRepeatUnit] = useState<"week" | "month">("week");
   const [repeatWeekdays, setRepeatWeekdays] = useState<WeekdayMon0Sun6[]>([]);
+  const [repeatMonthMode, setRepeatMonthMode] = useState<
+    "day_of_month" | "ordinal_weekday"
+  >("day_of_month");
+  const [repeatMonthWeekday, setRepeatMonthWeekday] = useState<WeekdayMon0Sun6>(0);
+  const [repeatMonthOrdinal, setRepeatMonthOrdinal] = useState<MonthWeekOrdinal>(1);
   const [endMode, setEndMode] = useState<"never" | "on" | "after">("never");
   const [endDateStr, setEndDateStr] = useState(() =>
     DateTime.now().toISODate() ?? ""
@@ -109,6 +133,9 @@ export function AddCommunityEventModal({
     setRepeatInterval(Math.max(1, initialEvent.recurrence?.interval ?? 1));
     setRepeatUnit(initialEvent.recurrence?.unit ?? "week");
     setRepeatWeekdays(initialEvent.recurrence?.weekdays ?? []);
+    setRepeatMonthMode(initialEvent.recurrence?.monthMode ?? "day_of_month");
+    setRepeatMonthWeekday(initialEvent.recurrence?.monthWeekday ?? 0);
+    setRepeatMonthOrdinal(initialEvent.recurrence?.monthOrdinal ?? 1);
     setEndMode(initialEvent.recurrence?.end ?? "never");
     setEndDateStr(
       initialEvent.recurrence?.endDate ?? (DateTime.now().toISODate() ?? "")
@@ -127,6 +154,8 @@ export function AddCommunityEventModal({
     if (!dt.isValid) return;
     const wd = luxonToMon0Sun6(dt.weekday) as WeekdayMon0Sun6;
     setRepeatWeekdays((prev) => (prev.length === 0 ? [wd] : prev));
+    setRepeatMonthWeekday(wd);
+    setRepeatMonthOrdinal(monthWeekOrdinalForDate(dt));
   }, [recurring, dateStr, timezone]);
 
   const toggleWeekday = (id: WeekdayMon0Sun6) => {
@@ -143,6 +172,9 @@ export function AddCommunityEventModal({
       interval: Math.max(1, Math.floor(repeatInterval)),
       unit: repeatUnit,
       weekdays: repeatUnit === "week" ? [...repeatWeekdays] : [],
+      monthMode: repeatUnit === "month" ? repeatMonthMode : undefined,
+      monthWeekday: repeatUnit === "month" ? repeatMonthWeekday : undefined,
+      monthOrdinal: repeatUnit === "month" ? repeatMonthOrdinal : undefined,
       end: endMode,
     };
     if (endMode === "on") payload.endDate = endDateStr;
@@ -153,6 +185,9 @@ export function AddCommunityEventModal({
     repeatInterval,
     repeatUnit,
     repeatWeekdays,
+    repeatMonthMode,
+    repeatMonthWeekday,
+    repeatMonthOrdinal,
     endMode,
     endDateStr,
     endAfterCount,
@@ -460,7 +495,61 @@ export function AddCommunityEventModal({
                     ))}
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-slate-600">
+                    Monthly pattern
+                  </p>
+                  <label className="flex items-center gap-2 text-sm text-slate-800">
+                    <input
+                      type="radio"
+                      name="monthMode"
+                      checked={repeatMonthMode === "day_of_month"}
+                      onChange={() => setRepeatMonthMode("day_of_month")}
+                      className="text-sky-600"
+                    />
+                    Same date each month
+                  </label>
+                  <label className="flex flex-wrap items-center gap-2 text-sm text-slate-800">
+                    <input
+                      type="radio"
+                      name="monthMode"
+                      checked={repeatMonthMode === "ordinal_weekday"}
+                      onChange={() => setRepeatMonthMode("ordinal_weekday")}
+                      className="text-sky-600"
+                    />
+                    <span>Same weekday each month:</span>
+                    <select
+                      value={repeatMonthOrdinal}
+                      onChange={(e) =>
+                        setRepeatMonthOrdinal(Number(e.target.value) as MonthWeekOrdinal)
+                      }
+                      disabled={repeatMonthMode !== "ordinal_weekday"}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm disabled:opacity-50"
+                    >
+                      {MONTH_ORDINAL_OPTIONS.map((opt) => (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={repeatMonthWeekday}
+                      onChange={(e) =>
+                        setRepeatMonthWeekday(Number(e.target.value) as WeekdayMon0Sun6)
+                      }
+                      disabled={repeatMonthMode !== "ordinal_weekday"}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm disabled:opacity-50"
+                    >
+                      {WEEKDAY_LABELS.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
 
               <div>
                 <p className="mb-2 text-xs font-medium text-slate-600">End</p>

@@ -2,11 +2,15 @@ export type CommunityCalendarLocationKind = "link" | "in_person";
 
 /** Mon = 0 … Sun = 6 (matches UI checkboxes). */
 export type WeekdayMon0Sun6 = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type MonthWeekOrdinal = 1 | 2 | 3 | 4 | 5 | -1;
 
 export type RecurrencePayload = {
   interval: number;
   unit: "week" | "month";
   weekdays: WeekdayMon0Sun6[];
+  monthMode?: "day_of_month" | "ordinal_weekday";
+  monthWeekday?: WeekdayMon0Sun6;
+  monthOrdinal?: MonthWeekOrdinal;
   end: "never" | "on" | "after";
   /** yyyy-MM-dd interpreted in display_timezone */
   endDate?: string;

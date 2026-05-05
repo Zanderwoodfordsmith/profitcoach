@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import type {
   CommunityCalendarEventRow,
   CommunityCalendarOccurrence,
+  MonthWeekOrdinal,
   RecurrencePayload,
 } from "@/lib/communityCalendarTypes";
 
@@ -66,7 +67,21 @@ function matchesMonthRecurrence(
   );
   if (months < 0) return false;
   if (months % interval !== 0) return false;
+  if (rec.monthMode === "ordinal_weekday") {
+    const weekday =
+      rec.monthWeekday ?? (luxonToMon0Sun6(anchor.weekday) as 0 | 1 | 2 | 3 | 4 | 5 | 6);
+    const ordinal = rec.monthOrdinal ?? (monthWeekOrdinal(anchor) as MonthWeekOrdinal);
+    const startWeekday = luxonToMon0Sun6(startInst.weekday);
+    if (startWeekday !== weekday) return false;
+    return monthWeekOrdinal(startInst) === ordinal;
+  }
   return startInst.day === anchor.day;
+}
+
+function monthWeekOrdinal(dt: DateTime): number {
+  const nth = Math.floor((dt.day - 1) / 7) + 1;
+  if (dt.plus({ days: 7 }).month !== dt.month) return -1;
+  return nth;
 }
 
 function collectRecurringStarts(

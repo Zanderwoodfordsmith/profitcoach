@@ -36,8 +36,9 @@ export function CommunityAreaLayout({
 
   const pageTitle = isCalendarPage ? "Calendar" : "Community";
 
-  const tabs = useMemo(
-    () => (
+  const tabs = useMemo(() => {
+    if (isCalendarPage) return undefined;
+    return (
       <PageHeaderUnderlineTabs
         ariaLabel="Community views"
         items={[
@@ -61,9 +62,8 @@ export function CommunityAreaLayout({
           },
         ]}
       />
-    ),
-    [base, isFeed, isMap, isMembers],
-  );
+    );
+  }, [base, isCalendarPage, isFeed, isMap, isMembers]);
 
   return (
     <>
