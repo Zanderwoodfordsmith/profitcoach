@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function DirectoryLayout({
   children,
@@ -11,9 +12,17 @@ export default function DirectoryLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
           <Link
             href="/directory"
-            className="text-sm font-semibold tracking-tight text-slate-900"
+            className="inline-flex items-center"
+            aria-label="Profit Coach directory"
           >
-            Coach directory
+            <Image
+              src="/profit-coach-logo.svg"
+              alt="Profit Coach"
+              width={260}
+              height={58}
+              className="h-10 w-auto object-contain sm:h-11"
+              priority
+            />
           </Link>
           <Link
             href="/login"

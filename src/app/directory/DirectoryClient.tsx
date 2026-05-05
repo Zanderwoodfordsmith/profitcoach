@@ -202,7 +202,7 @@ export default function DirectoryClient() {
           </div>
           <button
             type="submit"
-            className="rounded-md bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-500"
+            className="rounded-md bg-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-600"
           >
             Search
           </button>
@@ -264,7 +264,7 @@ export default function DirectoryClient() {
                     <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
                       <Link
                         href={`/directory/${encodeURIComponent(c.slug)}`}
-                        className="inline-flex flex-1 justify-center rounded-md bg-amber-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-amber-500"
+                        className="inline-flex flex-1 justify-center rounded-md bg-sky-700 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-sky-600"
                       >
                         View profile
                       </Link>

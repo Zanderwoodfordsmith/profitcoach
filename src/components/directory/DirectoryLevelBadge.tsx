@@ -1,7 +1,7 @@
 const STYLES: Record<string, string> = {
   certified: "bg-sky-700 text-white",
-  professional: "bg-emerald-700 text-white",
-  elite: "bg-amber-600 text-white",
+  professional: "bg-blue-700 text-white",
+  elite: "bg-indigo-700 text-white",
 };
 
 export function DirectoryLevelBadge({
