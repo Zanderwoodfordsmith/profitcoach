@@ -99,7 +99,7 @@ export default function CoachDashboardPage() {
 
   useEffect(() => {
     if (!loading && profile && !error) {
-      router.replace("/coach/signature");
+      router.replace("/coach/community");
     }
   }, [loading, profile, error, router]);
 

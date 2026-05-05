@@ -450,8 +450,9 @@ export function SignaturePetalDiagram({
           const a1r = (a1 * Math.PI) / 180;
           const a2r = (a2 * Math.PI) / 180;
           const isLower = Math.sin((aCenter * Math.PI) / 180) > 0;
-          const rOuter = (PETAL_INNER + PETAL_OUTER) / 2 + 10 - 4;
-          const rInner = (PETAL_INNER + PETAL_OUTER) / 2 - 10 - 4;
+          const titleLineSpread = 8;
+          const rOuter = (PETAL_INNER + PETAL_OUTER) / 2 + titleLineSpread - 4;
+          const rInner = (PETAL_INNER + PETAL_OUTER) / 2 - titleLineSpread - 4;
           const rLine1 = isLower ? rInner : rOuter;
           const rLine2 = isLower ? rOuter : rInner;
           function arc(rr: number) {

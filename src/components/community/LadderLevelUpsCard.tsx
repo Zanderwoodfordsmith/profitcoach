@@ -35,6 +35,33 @@ function isZanderEvent(e: CommunityLadderEventDTO): boolean {
   );
 }
 
+function isHiddenLevelUpEvent(e: CommunityLadderEventDTO): boolean {
+  const full = (e.full_name ?? "").toLowerCase();
+  const first = (e.first_name ?? "").toLowerCase();
+  const last = (e.last_name ?? "").toLowerCase();
+  return (
+    (first.includes("laur") && last.includes("shak")) ||
+    (full.includes("laur") && full.includes("shak"))
+  );
+}
+
+/**
+ * When a coach bulk-ticks earlier steps, we can get a burst of consecutive
+ * level-up rows for the same user. Keep only the latest/top row in that burst.
+ */
+function collapseConsecutiveEvents(
+  rows: CommunityLadderEventDTO[]
+): CommunityLadderEventDTO[] {
+  const out: CommunityLadderEventDTO[] = [];
+  let lastUserId: string | null = null;
+  for (const row of rows) {
+    if (row.user_id === lastUserId) continue;
+    out.push(row);
+    lastUserId = row.user_id;
+  }
+  return out;
+}
+
 
 export function LadderLevelUpsCard() {
   const pathname = usePathname();
@@ -103,13 +130,14 @@ export function LadderLevelUpsCard() {
     let zanderSeen = false;
     const out: CommunityLadderEventDTO[] = [];
     for (const ev of events) {
+      if (isHiddenLevelUpEvent(ev)) continue;
       if (isZanderEvent(ev)) {
         if (zanderSeen) continue;
         zanderSeen = true;
       }
       out.push(ev);
     }
-    return out;
+    return collapseConsecutiveEvents(out);
   })();
   const showEarlyPlaceholder = visibleEvents.length <= 3;
 

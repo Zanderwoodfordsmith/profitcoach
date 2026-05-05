@@ -41,7 +41,7 @@ const stylesMap = styles as Record<string, string>;
 /** Collapsible ladder phases: onramp open by default; Promotion / Proof / Prestige start closed */
 const INITIAL_PHASE_OPEN: Record<LadderPhaseKey, boolean> = {
   onramp: true,
-  metals: false,
+  metals: true,
   gemstones: false,
   diamonds: false,
 };
@@ -61,8 +61,50 @@ function eventDisplayName(e: CommunityLadderEventDTO): string {
   return coachDisplayName(e);
 }
 
+function isHiddenLevelUpEvent(e: CommunityLadderEventDTO): boolean {
+  const full = (e.full_name ?? "").toLowerCase();
+  const first = (e.first_name ?? "").toLowerCase();
+  const last = (e.last_name ?? "").toLowerCase();
+  return (
+    (first.includes("laur") && last.includes("shak")) ||
+    (full.includes("laur") && full.includes("shak"))
+  );
+}
+
+/**
+ * Collapse consecutive same-user level-ups so "tick earlier steps" bursts only
+ * show the latest/highest row for that coach in the recent feed.
+ */
+function collapseConsecutiveFeedEvents(
+  rows: CommunityLadderEventDTO[]
+): CommunityLadderEventDTO[] {
+  const out: CommunityLadderEventDTO[] = [];
+  let lastUserId: string | null = null;
+  for (const row of rows) {
+    if (row.user_id === lastUserId) continue;
+    out.push(row);
+    lastUserId = row.user_id;
+  }
+  return out;
+}
+
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function parseClientCountInput(raw: string): number | null {
+  const t = raw.trim();
+  if (t === "") return null;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.floor(n);
+}
+
+function clientsToBronzeLevelId(clients: number): LadderLevelConfig["id"] | null {
+  if (!Number.isFinite(clients) || clients < 1) return null;
+  if (clients >= 3) return "bronze_iii";
+  if (clients >= 2) return "bronze_ii";
+  return "bronze_i";
 }
 
 const GOAL_DATE_MONTHS = [
@@ -145,6 +187,7 @@ export default function CoachCommunityLadderPage() {
 
   const [incomeCurrency, setIncomeCurrency] = useState<"GBP" | "USD">("GBP");
   const [currentMonthlyIncomeRaw, setCurrentMonthlyIncomeRaw] = useState("");
+  const [currentClientsRaw, setCurrentClientsRaw] = useState("");
   const [monthlyIncomeRaw, setMonthlyIncomeRaw] = useState("");
   const [perClientMonthlyRaw, setPerClientMonthlyRaw] = useState("2000");
 
@@ -294,6 +337,13 @@ export default function CoachCommunityLadderPage() {
     () => getLadderLevel(currentLevelId),
     [currentLevelId]
   );
+  const visibleFeedEvents = useMemo(
+    () =>
+      collapseConsecutiveFeedEvents(
+        feedEvents.filter((event) => !isHiddenLevelUpEvent(event))
+      ),
+    [feedEvents]
+  );
 
   const incomeParsed = useMemo(
     () => parseMoneyInput(monthlyIncomeRaw),
@@ -313,6 +363,15 @@ export default function CoachCommunityLadderPage() {
     }
     return monthlyIncomeToLadderLevelId(currentIncomeParsed);
   }, [currentIncomeParsed]);
+  const currentClientsParsed = useMemo(
+    () => parseClientCountInput(currentClientsRaw),
+    [currentClientsRaw]
+  );
+  const currentBronzeTierId = useMemo(() => {
+    if (currentClientsParsed === null) return null;
+    return clientsToBronzeLevelId(currentClientsParsed);
+  }, [currentClientsParsed]);
+  const currentEstimatedTierId = currentIncomeTierId ?? currentBronzeTierId;
 
   const perClientParsed = useMemo(
     () => parseMoneyInput(perClientMonthlyRaw),
@@ -324,6 +383,23 @@ export default function CoachCommunityLadderPage() {
     if (perClientParsed === null || perClientParsed <= 0) return null;
     return Math.max(1, Math.round(incomeParsed / perClientParsed));
   }, [incomeParsed, perClientParsed]);
+  const closeRateCallScenarios = useMemo(
+    () => [
+      {
+        label: "17%",
+        calls: idealClientCount === null ? null : idealClientCount * 6,
+      },
+      {
+        label: "25%",
+        calls: idealClientCount === null ? null : idealClientCount * 4,
+      },
+      {
+        label: "33%",
+        calls: idealClientCount === null ? null : idealClientCount * 3,
+      },
+    ],
+    [idealClientCount]
+  );
 
   const currencySymbol = incomeCurrency === "GBP" ? "£" : "$";
 
@@ -885,17 +961,16 @@ export default function CoachCommunityLadderPage() {
               Recent ladder level-ups
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Celebrating coaches who leveled up (all time). Downgrades are not
-              shown here.
+              Celebrating coaches who leveled up.
             </p>
 
-            {feedEvents.length === 0 ? (
+            {visibleFeedEvents.length === 0 ? (
               <p className="mt-4 text-sm text-slate-500">
                 No level-ups recorded yet.
               </p>
             ) : (
               <ul className="mt-4 divide-y divide-slate-100">
-                {feedEvents.map((ev) => {
+                {visibleFeedEvents.map((ev) => {
                   const lvl = getLadderLevel(ev.to_level);
                   return (
                     <li
@@ -1036,13 +1111,13 @@ export default function CoachCommunityLadderPage() {
                 </div>
               </div>
 
-              <div className="mt-3 flex min-w-0 items-end gap-3">
+              <div className="mt-2.5 flex min-w-0 items-end gap-2">
                 <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
                   Current
                 </span>
                 <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
                   <span
-                    className="pb-0.5 text-lg font-semibold tabular-nums text-slate-700"
+                    className="pb-0.5 text-base font-semibold leading-none tabular-nums text-slate-600"
                     aria-hidden
                   >
                     {currencySymbol}
@@ -1063,23 +1138,44 @@ export default function CoachCommunityLadderPage() {
                   />
                 </div>
               </div>
-              {currentIncomeTierId ? (
+              <div className="mt-2.5 flex min-w-0 items-end gap-2">
+                <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
+                  Clients
+                </span>
+                <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
+                  <label htmlFor="ladder-current-clients" className="sr-only">
+                    Current number of clients
+                  </label>
+                  <input
+                    id="ladder-current-clients"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="e.g. 2"
+                    value={currentClientsRaw}
+                    onChange={(e) => setCurrentClientsRaw(e.target.value)}
+                    disabled={migrationNeeded}
+                    className="min-w-0 flex-1 border-0 bg-transparent py-0.5 text-sm font-medium tabular-nums text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 disabled:opacity-45"
+                  />
+                </div>
+              </div>
+              {currentEstimatedTierId ? (
                 <p className="mt-1 pl-[3.25rem] text-[11px] text-slate-600">
                   ~{" "}
                   <span className="font-medium text-slate-800">
-                    {getLadderLevel(currentIncomeTierId)?.name}
+                    {getLadderLevel(currentEstimatedTierId)?.name}
                   </span>{" "}
                   band
                 </p>
               ) : null}
 
-              <div className="mt-3 flex min-w-0 flex-wrap items-end gap-3">
+              <div className="mt-2.5 flex min-w-0 flex-wrap items-end gap-2">
                 <span className="w-14 shrink-0 pb-1 text-xs font-semibold text-slate-800">
                   Ideal
                 </span>
                 <div className="flex min-w-0 flex-1 items-end gap-1.5 border-b border-slate-200 pb-1 focus-within:border-sky-500">
                   <span
-                    className="pb-0.5 text-lg font-semibold tabular-nums text-slate-700"
+                    className="pb-0.5 text-base font-semibold leading-none tabular-nums text-slate-600"
                     aria-hidden
                   >
                     {currencySymbol}
@@ -1173,15 +1269,11 @@ export default function CoachCommunityLadderPage() {
                 <h3 className="text-sm font-semibold text-slate-900">
                   What It Takes
                 </h3>
-                <p className="mt-2 flex flex-wrap items-baseline gap-x-1 gap-y-1 text-sm leading-relaxed text-slate-800">
-                  {idealClientCount !== null ? (
-                    <span className="font-semibold tabular-nums">
-                      {idealClientCount}{" "}
-                      {idealClientCount === 1 ? "client" : "clients"} at{" "}
-                    </span>
-                  ) : (
-                    <span className="text-slate-600">At </span>
-                  )}
+                <p className="mt-2 flex items-baseline gap-1 text-sm leading-relaxed text-slate-800">
+                  <span className="font-semibold tabular-nums">
+                    {idealClientCount ?? "—"}{" "}
+                    {idealClientCount === 1 ? "client" : "clients"} at
+                  </span>
                   <span className="inline-flex items-baseline gap-0.5 font-semibold tabular-nums text-slate-900">
                     {currencySymbol}
                     <label htmlFor="ladder-per-client" className="sr-only">
@@ -1195,16 +1287,20 @@ export default function CoachCommunityLadderPage() {
                       value={perClientMonthlyRaw}
                       onChange={(e) => setPerClientMonthlyRaw(e.target.value)}
                       disabled={migrationNeeded}
-                      className="w-[4.5rem] rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-sm font-semibold outline-none focus:border-sky-500 disabled:opacity-45"
+                      className="w-[4.5rem] border-0 border-b border-slate-300 bg-transparent px-0 py-0.5 text-sm font-semibold outline-none focus:border-sky-500 disabled:opacity-45"
                     />
                   </span>
-                  <span>/mo per client.</span>
+                  <span>/mo.</span>
                 </p>
-                <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                  Sign a client every…
+                <p className="mt-4 text-xs font-semibold text-slate-900">
+                  Client retention pace
                 </p>
-                <ul className="mt-1.5 space-y-2">
-                  {([6, 12, 18, 24] as const).map((months) => {
+                <div className="mt-1.5 grid grid-cols-[1fr_auto] items-center border-b border-slate-200 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <span>Keep clients</span>
+                  <span className="text-right">Sign a client every...</span>
+                </div>
+                <ul className="mt-2 space-y-1.5">
+                  {([12, 24, 36] as const).map((months) => {
                     const weeks =
                       incomeParsed !== null &&
                       incomeParsed > 0 &&
@@ -1223,11 +1319,11 @@ export default function CoachCommunityLadderPage() {
                         key={months}
                         className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm text-slate-800"
                       >
-                        <span className="shrink-0 font-medium">
+                        <span className="shrink-0 text-slate-700">
                           {months} months
                         </span>
                         <span
-                          className="min-w-[5.5rem] rounded-md border border-slate-200 bg-white px-2.5 py-1 text-right text-sm font-semibold tabular-nums text-slate-900"
+                          className="min-w-[5.5rem] text-right font-semibold tabular-nums text-slate-900"
                           aria-label={
                             weeks === null
                               ? undefined
@@ -1240,6 +1336,76 @@ export default function CoachCommunityLadderPage() {
                     );
                   })}
                 </ul>
+
+                <div className="mt-5 border-t border-slate-200 pt-4">
+                  <p className="text-xs font-semibold text-slate-900">
+                    Calls needed by close rate
+                  </p>
+                  <div className="mt-2 grid grid-cols-[1fr_auto] items-center border-b border-slate-200 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <span>Close rate</span>
+                    <span className="text-right">Number of calls</span>
+                  </div>
+                  <ul className="mt-2 space-y-1.5">
+                    {closeRateCallScenarios.map((row) => {
+                      return (
+                        <li
+                          key={row.label}
+                          className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm text-slate-800"
+                        >
+                          <span className="shrink-0 text-slate-700">{row.label}</span>
+                          <span className="min-w-[5.5rem] text-right font-semibold tabular-nums text-slate-900">
+                            {row.calls === null ? "—" : row.calls}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                <div className="mt-5 border-t border-slate-200 pt-4">
+                  <p className="text-xs font-semibold text-slate-900">
+                    Lead volume required
+                  </p>
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="min-w-full border-collapse text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <th className="py-1.5 pr-3 text-left">Lead to call ratio</th>
+                          {closeRateCallScenarios.map((row) => (
+                            <th key={`calls-${row.label}`} className="py-1.5 px-2 text-center">
+                              <span className="block">
+                                {row.calls === null ? "—" : row.calls}
+                              </span>
+                              <span className="block text-[10px] font-medium normal-case tracking-normal text-slate-400">
+                                calls
+                              </span>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[5, 10, 15].map((ratio) => (
+                          <tr
+                            key={`lead-ratio-${ratio}`}
+                            className="border-b border-slate-100 last:border-b-0"
+                          >
+                            <td className="py-1.5 pr-3 text-slate-700">
+                              {ratio} → 1 call
+                            </td>
+                            {closeRateCallScenarios.map((row) => (
+                              <td
+                                key={`lead-${ratio}-${row.label}`}
+                                className="py-1.5 px-2 text-right font-semibold tabular-nums text-slate-900"
+                              >
+                                {row.calls === null ? "—" : row.calls * ratio}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </section>

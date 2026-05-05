@@ -41,26 +41,26 @@ export function AuthSplitShell({
       </div>
 
       <div className="relative hidden min-h-0 flex-1 lg:flex">
-        <div className="flex min-h-screen w-full flex-col bg-slate-100 px-10 py-12 xl:px-14">
-          <div className="flex flex-1 items-center justify-center">
+        <div className="flex min-h-screen w-full bg-slate-100 px-10 py-12 xl:px-14">
+          <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center">
             <Image
-              src="/brand/profit-coach-logo-colour-no-bg.png"
+              src="/profit-coach-logo.svg"
               alt="Profit Coach"
               width={640}
               height={180}
-              className="h-auto w-full max-w-xl object-contain"
+              className="h-auto w-full max-w-xl rounded-xl bg-slate-100 object-contain"
               priority
               sizes="(max-width: 1279px) 44vw, 620px"
             />
-          </div>
-          <div className="mx-auto mt-8 max-w-md rounded-xl border border-slate-200 bg-white p-5">
-            <p className="text-lg font-medium leading-relaxed text-slate-900">
-              &ldquo;Structure your coaching practice the way you structure
-              results for clients: clear, visible, repeatable.&rdquo;
-            </p>
-            <p className="mt-4 text-sm text-slate-600">
-              Built for coaches who use Profit Coach
-            </p>
+            <div className="mt-6 max-w-md rounded-xl border border-slate-200 bg-white p-5">
+              <p className="text-lg font-medium leading-relaxed text-slate-900">
+                &ldquo;Structure your coaching practice the way you structure
+                results for clients: clear, visible, repeatable.&rdquo;
+              </p>
+              <p className="mt-4 text-sm text-slate-600">
+                Built for coaches who use Profit Coach
+              </p>
+            </div>
           </div>
         </div>
       </div>

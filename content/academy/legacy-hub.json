@@ -1,5 +1,5 @@
 {
-  "lessonPanelNotice": "Video and workbook for this lesson still live on the Business Coach Academy (Disco). Use the button below to open that programme in a new tab — you may need to sign in. Per-lesson deep links can be pasted into `academyUrl` in content/academy/legacy-hub.json when you have them from Disco.",
+  "lessonPanelNotice": "The video and workbook for each lesson are hosted in Business Coach Academy (Disco). Use the button below to open the full course curriculum in a new tab (you may need to sign in), rather than a direct link to an individual lesson.",
   "courses": [
     {
       "id": "kickstart",
@@ -15,21 +15,21 @@
               "title": "Welcome To Business Coach Academy",
               "duration": "3m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             },
             {
               "id": "kickstart-welcome-getting-started-guide-speed-up-your-learning",
               "title": "Speed Up Your Learning",
               "duration": "3m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             },
             {
               "id": "kickstart-welcome-getting-started-guide-earn-1000-for-every-referal",
               "title": "Earn £1000 for every referal",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             }
           ]
         },
@@ -42,21 +42,21 @@
               "title": "Adjust email notifications from the academy",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             },
             {
               "id": "kickstart-how-to-use-the-members-area-how-to-watch-the-training",
               "title": "How to watch the training",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             },
             {
               "id": "kickstart-how-to-use-the-members-area-how-to-make-a-post-in-the-community",
               "title": "How to make a post in the community",
               "duration": "3m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             }
           ]
         },
@@ -69,14 +69,14 @@
               "title": "How to get support",
               "duration": "0.5m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             },
             {
               "id": "kickstart-how-to-get-support-how-to-access-support-calls",
               "title": "How to access support calls",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             }
           ]
         },
@@ -89,7 +89,7 @@
               "title": "Key links and resources",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
             }
           ]
         }
@@ -109,21 +109,21 @@
               "title": "The £10k/mo blueprint: your bridge to success",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             },
             {
               "id": "coach-action-plan-the-10k-mo-plan-how-to-achieve-results-the-formula-for-business-coach-success",
               "title": "How to achieve results: The Formula for business coach success",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             },
             {
               "id": "coach-action-plan-the-10k-mo-plan-wip-conversion-calculator-mastering-procoach-kpis-for-10k-mo-success",
               "title": "(WIP) Conversion Calculator: Mastering ProCoach KPIs for £10k/mo success",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             }
           ]
         },
@@ -136,35 +136,35 @@
               "title": "What are people actually buying... The gap",
               "duration": "19m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             },
             {
               "id": "coach-action-plan-building-a-world-class-coaching-practice-57m-structuring-your-coaching-offer-what-are-you-actually-selling",
               "title": "Structuring your coaching offer: What are you actually selling?",
               "duration": "11m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             },
             {
               "id": "coach-action-plan-building-a-world-class-coaching-practice-57m-pricing-setting-the-right-packages-investment-for-your-coaching",
               "title": "Pricing: Setting the right packages & Investment for your coaching",
               "duration": "20m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             },
             {
               "id": "coach-action-plan-building-a-world-class-coaching-practice-57m-daily-checklist-of-a-world-class-coach",
               "title": "Daily Checklist of a world class coach",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             },
             {
               "id": "coach-action-plan-building-a-world-class-coaching-practice-57m-what-is-your-coaching-style-3-traits-that-define-how-you-coach",
               "title": "What is your coaching style? 3 traits that define how you coach",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             }
           ]
         },
@@ -177,7 +177,7 @@
               "title": "How to choose your core client",
               "duration": "23m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/coach-action-plan/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
             }
           ]
         }
@@ -197,42 +197,42 @@
               "title": "Foreword to Day Zero: Going Pro",
               "duration": "19m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-1-day-zero-pro-energy",
               "title": "PRO Energy",
               "duration": "44m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-1-day-zero-pro-time-management",
               "title": "PRO Time-Management",
               "duration": "35m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-1-day-zero-pro-focus",
               "title": "PRO Focus",
               "duration": "65m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-1-day-zero-pro-productivity",
               "title": "PRO Productivity",
               "duration": "27m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-1-day-zero-pro-mindset",
               "title": "PRO Mindset",
               "duration": "87m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             }
           ]
         },
@@ -245,28 +245,28 @@
               "title": "Selecting the Right Business Structure",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-2-pro-business-setting-up-a-business-bank-account",
               "title": "Setting Up a Business Bank Account",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-2-pro-business-securing-business-insurance",
               "title": "Securing Business Insurance",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             },
             {
               "id": "going-pro-iii-2-pro-business-understand-tax-implications",
               "title": "Understand Tax Implications",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
             }
           ]
         }
@@ -286,35 +286,35 @@
               "title": "Welcome To Your Coaching Transformation",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-welcome-to-the-profit-coach-certification-how-to-maximise-your-certification-experience",
               "title": "How to Maximise Your Certification Experience",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-welcome-to-the-profit-coach-certification-meet-your-faculty-our-coaching-philosophy",
               "title": "Meet Your Faculty & Our Coaching Philosophy",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-welcome-to-the-profit-coach-certification-profit-coacbh-roi-calculator",
               "title": "Profit Coacbh ROI Calculator",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-welcome-to-the-profit-coach-certification-profit-coach-certification-workbook",
               "title": "Profit Coach certification Workbook",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         },
@@ -327,91 +327,91 @@
               "title": "What is Coaching",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-the-power-of-effective-feedback",
               "title": "The Power of Effective Feedback",
               "duration": "11m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-the-use-it-or-lose-it-principle",
               "title": "The Use It or Lose It Principle",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-core-skill-active-listening-demo",
               "title": "Core Skill: Active Listening + Demo",
               "duration": "12m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-the-coach-method-overview",
               "title": "The COACH Method Overview",
               "duration": "4m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-using-the-coach-method",
               "title": "Using the COACH Method",
               "duration": "23m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-the-coaching-cube",
               "title": "The Coaching Cube",
               "duration": "3m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-client-simulator-coach-practice",
               "title": "Client Simulator: Coach Practice",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-live-coaching-session-demo",
               "title": "Live Coaching Session Demo",
               "duration": "14m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-ideal-session-structure",
               "title": "Ideal Session Structure",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-how-coach-creates-more-sessions",
               "title": "How COACH Creates More Sessions",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-coach-foundations-review",
               "title": "Coach Foundations Review",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-coaching-foundations-week-1-quiz-introduction-and-coach",
               "title": "Week 1 Quiz - Introduction and COACH",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         },
@@ -424,77 +424,77 @@
               "title": "ICF 8 Core Competencies",
               "duration": "17m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-the-power-framework-overview",
               "title": "The POWER Framework Overview",
               "duration": "4m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-how-to-ask-powerful-questions-exercises",
               "title": "How To Ask Powerful Questions + Exercises",
               "duration": "15m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-powerful-vs-transformational-questions",
               "title": "Powerful Vs Transformational Questions",
               "duration": "14m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-communication-skills-assessment",
               "title": "Communication Skills Assessment",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-the-power-framework-detail",
               "title": "The POWER Framework Detail",
               "duration": "11m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-week-2-coach-superpowers-review",
               "title": "Week 2: Coach Superpowers Review",
               "duration": "9m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-client-simullator-profitabilty-issues-management-consultant",
               "title": "Client Simullator: Profitabilty Issues - Management Consultant",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-becoming-a-great-coach-quiz",
               "title": "Becoming  A Great Coach Quiz",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-superpowers-quiz",
               "title": "SuperPOWERs Quiz",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-the-exact-questions-to-ask-clients-questioning-and-listening-quiz",
               "title": "Questioning and Listening Quiz",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         },
@@ -507,77 +507,77 @@
               "title": "Coaching As A Leader",
               "duration": "23m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-coaching-as-a-leader-quiz",
               "title": "Coaching As A Leader Quiz",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-ethical-dilemmas-and-difficult-situations",
               "title": "Ethical Dilemmas and difficult situations",
               "duration": "14m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-ethical-dilemas-quiz",
               "title": "Ethical Dilemas Quiz",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-client-sessions-using-tools",
               "title": "Client Sessions & Using Tools",
               "duration": "20m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-example-using-tools-coach-method",
               "title": "Example Using tools & COACH Method",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-master-coach-to-master-selling",
               "title": "Master COACH to Master Selling",
               "duration": "12m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-business-coach-certification-assessment",
               "title": "Business Coach Certification Assessment",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-certification-feedback-survey",
               "title": "Certification Feedback Survey",
               "duration": "11m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-certificaiton-round-up-next-steps",
               "title": "Certificaiton Round-up & Next Steps",
               "duration": "6m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-becoming-a-world-class-business-coach-business-blueprint",
               "title": "Business Blueprint",
               "duration": "13m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         },
@@ -590,91 +590,91 @@
               "title": "Sprint Week 3 Overview",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-creating-sustainable-transformation",
               "title": "Creating Sustainable Transformation",
               "duration": "13m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-how-to-continually-add-value",
               "title": "How To Continually Add Value",
               "duration": "18m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-coaching-mindset",
               "title": "Coaching Mindset",
               "duration": "13m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-controlling-your-state-of-mind",
               "title": "Controlling Your State Of Mind",
               "duration": "22m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-how-psychology-affects-mindset",
               "title": "How Psychology Affects Mindset",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-use-vocabulary-to-change-perception",
               "title": "Use Vocabulary to Change Perception",
               "duration": "6m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-coaching-mindset-quiz",
               "title": "Coaching Mindset Quiz",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-how-to-use-the-coaching-sheet-in-sessions",
               "title": "How To Use The Coaching Sheet In Sessions",
               "duration": "9m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-coachin-a-person-feedback-review",
               "title": "Coachin a Person Feedback Review",
               "duration": "9m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-pros-cons-coachin-ai-vs-person",
               "title": "Pros & Cons Coachin AI vs Person",
               "duration": "15m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-advanced-coaching-skills-selling",
               "title": "Advanced Coaching Skills & \"Selling\"",
               "duration": "5m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-sprint-week-3-review-homework",
               "title": "Sprint Week 3 Review + Homework",
               "duration": "6m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         },
@@ -687,49 +687,49 @@
               "title": "Client Simulator: Coach Practice 1",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-client-simulators-revenue-optmisation-thai-restaurant",
               "title": "Revenue Optmisation - Thai Restaurant",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-client-simulators-client-simulator-profitability-issues-management-consultant",
               "title": "Client Simulator: Profitability Issues - Management Consultant",
               "duration": "2m",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-client-simulators-multi-location-operaitons-issues-chiropractor",
               "title": "Multi-Location Operaitons Issues - Chiropractor",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-client-simulators-business-pressure-manufacturing-engineering",
               "title": "Business pressure - Manufacturing/Engineering",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-client-simulators-diverse-business-units-legal-saas",
               "title": "Diverse Business Units - Legal SaaS",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-client-simulators-business-coach-certificaiton-assessment",
               "title": "Business Coach Certificaiton Assessment",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             }
           ]
         }
@@ -749,84 +749,84 @@
               "title": "How To Choose Your Core Client",
               "duration": "23m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-proactive-prospecting-your-path-to-finding-ideal-clients",
               "title": "Proactive Prospecting: Your Path to Finding Ideal Clients",
               "duration": "10m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-principles-of-effective-prospect-search-find",
               "title": "Principles of Effective Prospect Search (FIND)",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-evaluating-prospect-list-kpis",
               "title": "Evaluating Prospect List KPIs",
               "duration": "9m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-linkedin-sales-navigator-sign-up",
               "title": "LinkedIn Sales Navigator: Sign Up",
               "duration": "4m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-linkedin-sales-navigator-build-your-base-search",
               "title": "LinkedIn Sales Navigator: Build Your Base Search",
               "duration": "11m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-linkedin-sales-navigator-build-your-ideal-prospect-list",
               "title": "LinkedIn Sales Navigator: Build Your Ideal Prospect List",
               "duration": "15m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-linkedin-sales-navigator-refining-your-ideal-prospect-list-blacklisting",
               "title": "LinkedIn Sales Navigator: Refining Your Ideal Prospect List (Blacklisting) (15m)",
               "duration": "15m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-linkedin-sales-navigator-find-more-prospects-with-keyword-search",
               "title": "LinkedIn Sales Navigator: Find More Prospects With Keyword Search",
               "duration": "33m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-finding-ideal-clients-beyond-traditional-methods",
               "title": "Finding Ideal Clients: Beyond Traditional Methods",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-give-them-what-they-want-understanding-your-client-s-day",
               "title": "Give Them What They Want: Understanding Your Client's Day",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-ideal-clients-the-mentor-exercise",
               "title": "The Mentor Exercise",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -839,42 +839,42 @@
               "title": "LinkedIn Profile: Checklist To Optimise Your Profile",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-linkedin-optimization-linkedin-profile-checklist-to-optimise-your-profile-2",
               "title": "LinkedIn Profile: Checklist To Optimise Your Profile",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-linkedin-optimization-linkedin-profile-setup-a-professional-headshot",
               "title": "LinkedIn Profile: Setup A Professional Headshot",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-linkedin-optimization-linkedin-profile-designing-your-banner",
               "title": "LinkedIn Profile: Designing Your Banner",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-linkedin-optimization-linkedin-profile-dfy-write-your-about-section",
               "title": "LinkedIn Profile: DFY Write Your About Section",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-linkedin-optimization-profit-coach-linkedin-announcement-post",
               "title": "Profit Coach LinkedIn Announcement Post",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -887,7 +887,7 @@
               "title": "How To Simplify Scheduling Meetins With Prospects",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -900,21 +900,21 @@
               "title": "Traffic: The Best Wat to Get Leads",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-intro-lead-generation-workflow",
               "title": "Lead Generation Workflow",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-intro-testing-is-key-to-lead-generation",
               "title": "Testing Is Key To Lead Generation",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -927,77 +927,77 @@
               "title": "What is Connector & How To Register for Connector Ai",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-connector-campaign-overview",
               "title": "Connector Campaign: Overview",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-write-a-linkedin-connection-message",
               "title": "Write A LinkedIn Connection Message",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-connector-campaign-overview-4",
               "title": "Connector Campaign: Overview",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-write-a-linkedin-connection-message-5",
               "title": "Write A LinkedIn Connection Message",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-connector-campaign-editing-follow-up-message-templates",
               "title": "Connector Campaign: Editing Follow-up Message Templates",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-how-to-create-campaigns-in-connect-ai",
               "title": "How to Create Campaigns in Connect Ai",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-how-to-remove-undesired-profiles-blocklist-people",
               "title": "How to remove undesired profiles & blocklist people",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-targeted-open-inmail-craft-open-inmail-message",
               "title": "Targeted Open InMail: Craft Open InMail Message",
               "duration": "6m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-how-to-create-a-campaign-for-prospects-you-are-already-connected-with",
               "title": "How to Create a Campaign for Prospects you are Already Connected With",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-how-to-export-a-sales-nav-list-to-csv",
               "title": "How to Export a Sales Nav List to CSV",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -1010,28 +1010,28 @@
               "title": "VIP Nurture Overview",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-personalised-vip-nurture-top-100-how-to-identify-your-top-100-prospects",
               "title": "How to Identify Your Top 100 Prospects",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-personalised-vip-nurture-top-100-how-to-craft-personalized-insightful-messages",
               "title": "How To Craft Personalized Insightful Messages",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-lead-generation-personalised-vip-nurture-top-100-how-to-use-multiple-channels-to-engage",
               "title": "How To Use Multiple Channels To Engage",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -1044,28 +1044,28 @@
               "title": "How to Set Up Connector Ai Co-Pilot",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-replying-to-leads-choosing-between-ai-co-pilot-auto-pilot",
               "title": "Choosing between Ai Co-Pilot & Auto-Pilot",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-replying-to-leads-how-to-activate-the-ai-and-test",
               "title": "How to Activate The Ai and Test",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-replying-to-leads-mistakse-to-avoid-when-replying-to-prospects",
               "title": "Mistakse To Avoid When Replying To Prospects",
               "duration": "12m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -1078,49 +1078,49 @@
               "title": "What Is A Value Session",
               "duration": "5m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-getting-paid-clients-using-value-sessions-how-do-value-sessions-get-you-clients",
               "title": "How Do Value Sessions Get You Clients",
               "duration": "4m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-getting-paid-clients-using-value-sessions-messages-to-book-value-session",
               "title": "Messages To Book Value Session",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-getting-paid-clients-using-value-sessions-how-to-create-cvalue-session-calendar-in-the-crm",
               "title": "How To Create CValue Session Calendar In The CRM",
               "duration": "3m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-getting-paid-clients-using-value-sessions-how-to-deliver-a-value-session",
               "title": "How To Deliver A Value Session",
               "duration": "15m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-getting-paid-clients-using-value-sessions-how-value-sessions-improve-your-business",
               "title": "How Value Sessions Improve Your Business",
               "duration": "10m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-getting-paid-clients-using-value-sessions-how-to-sell-on-a-value-session",
               "title": "How To \"Sell\" On A Value Session",
               "duration": "4m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -1133,84 +1133,84 @@
               "title": "Sales Pitch Overview",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-call-pitching-principles",
               "title": "Sales Call: Pitching Principles",
               "duration": "6m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-call-transition-into-pitch",
               "title": "Sales Call: Transition Into Pitch",
               "duration": "4m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-call-the-pitch",
               "title": "Sales Call: The Pitch",
               "duration": "34m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-call-asking-questions-in-the-pitch",
               "title": "Sales Call: Asking Questions In The Pitch",
               "duration": "3m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-pitch-demo-perfecting-your-pitch-performance",
               "title": "Sales Pitch Demo: Perfecting Your Pitch Performance",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-how-to-share-slides-on-a-sales-call-so-they-don-t-see-your-script",
               "title": "How To Share Slides On A Sales Call (So They Don't See Your Script",
               "duration": "9m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-call-post-pitch-checking-for-questions",
               "title": "Sales Call: Post Pitch - Checking For Questions",
               "duration": "7m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-call-post-pitch-framework-for-answering-questions",
               "title": "Sales Call: Post Pitch - Framework For Answering Questions",
               "duration": "6m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-post-pitch-process",
               "title": "Post Pitch Process",
               "duration": "69m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-price-pitch",
               "title": "Price Pitch",
               "duration": "35m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-sales-pitch-sales-process-questions-when-should-you-discuss-price",
               "title": "Sales Process Questions: When Should You Discuss Price",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         },
@@ -1223,14 +1223,14 @@
               "title": "How To Add More Prospects to a Connector Campaign",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
               "id": "client-acquisition-faq-how-to-remove-connections-from-a-campaign",
               "title": "How to Remove Connections from a Campaign",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-acquisition/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         }
@@ -1250,42 +1250,42 @@
               "title": "How To Setup A New Client",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-client-onboarding-session-1-profit-systems-dashboard",
               "title": "Session 1: Profit Systems & Dashboard",
               "duration": "32m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-client-onboarding-session-2-leverage-critical-issues",
               "title": "Session 2: Leverage & Critical Issues",
               "duration": "18m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-client-onboarding-session-3-align-3-year-plan",
               "title": "Session 3: Align 3-Year Plan",
               "duration": "23m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-client-onboarding-session-4-ninety-day-plan",
               "title": "Session 4: Ninety Day Plan",
               "duration": "24m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-client-onboarding-quiz-client-onboarding",
               "title": "Quiz: Client Onboarding",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             }
           ]
         },
@@ -1298,28 +1298,28 @@
               "title": "How To Use The Coaching Sheet In Sessions",
               "duration": "9m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coachiing-session-structure-how-to-start-a-coaching-session",
               "title": "How To Start A Coaching Session",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coachiing-session-structure-how-eo-end-a-coaching-session",
               "title": "How Eo End A Coaching Session",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coachiing-session-structure-quiz-coaching-session-structure",
               "title": "Quiz: Coaching Session Structure",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             }
           ]
         },
@@ -1332,63 +1332,63 @@
               "title": "Coaching FAQ: Should I stick to the coaching sessions exactly in the order?",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-to-handle-clients-in-crisis",
               "title": "Coaching FAQ: How to handle clients in crisis?",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-to-handle-a-client-with-a-new-priority-that-is-off-plan",
               "title": "Coaching FAQ: How to handle a client with a new priority that is off plan?",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-do-you-run-a-typical-coaching-session-james-baker",
               "title": "Coaching FAQ: How do you run a typical coaching session? (James Baker)",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-to-handle-clients-who-don-t-want-to-grow-the-business",
               "title": "Coaching FAQ: How to handle clients who don't want to grow the business?",
               "duration": "2m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-to-handle-clients-giving-false-or-uncertain-answers",
               "title": "Coaching FAQ: How to handle clients giving \"false\" or \"uncertain\" answers?",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-do-you-end-a-coaching-session-ashley-maile",
               "title": "Coaching FAQ: How do you end a coaching session? (Ashley Maile)",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-do-you-handle-clients-who-don-t-do-cashflow-or-other-to",
               "title": "Coaching FAQ: How do you handle clients who don't do cashflow or other tools?",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-coaching-session-faqs-coaching-faq-how-to-handle-a-client-with-low-energy-and-commitment",
               "title": "Coaching FAQ: How to handle a client with low energy and commitment",
               "duration": "1m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             }
           ]
         },
@@ -1401,14 +1401,14 @@
               "title": "Coaching Session: Business Growth Matrix by Pam",
               "duration": "93m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             },
             {
               "id": "client-delivery-other-coachin-session-content-session-3-align-the-3-year-plan",
               "title": "Session 3: Align The 3 Year Plan",
               "duration": "72m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             }
           ]
         },
@@ -1421,7 +1421,7 @@
               "title": "Where is the Profit System?",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/client-delivery/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
             }
           ]
         }
@@ -1441,7 +1441,7 @@
               "title": "Pairwise Prioritisation",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         },
@@ -1454,56 +1454,56 @@
               "title": "Cashflow Forecaster",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-cashflow-allocation",
               "title": "Cashflow Allocation",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-cashflow-maximiser",
               "title": "Cashflow Maximiser",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-profit-maximiser",
               "title": "Profit Maximiser",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-proft-first-philosophy-implmentation",
               "title": "Proft First Philosophy & Implmentation",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-debt-eradication",
               "title": "Debt Eradication",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-profitability-engine-short-term",
               "title": "Profitability Engine - Short Term",
               "duration": "50m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-profit-cash-profitability-engine-long-term",
               "title": "Profitability Engine - Long Term",
               "duration": "58m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         },
@@ -1516,182 +1516,182 @@
               "title": "PLAYBOOK: 5.1 Customers",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-revenue-growth-accelerator",
               "title": "Revenue Growth Accelerator",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-marketing-g-o-a-l-strategy",
               "title": "Marketing G.O.A.L. & Strategy",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-the-5-s-of-marketing",
               "title": "The 5 s of Marketing",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-target-market-audience",
               "title": "Target Market & Audience",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-price-pitch",
               "title": "Price Pitch",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-priduct-value-proposition",
               "title": "Priduct & Value Proposition",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-positioning-and-messaging",
               "title": "Positioning and Messaging",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-platforms",
               "title": "Platforms",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-playbook-5-2-lead-generation",
               "title": "PLAYBOOK: 5.2 Lead Generation",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-the-3-ways-to-grow-leads",
               "title": "The 3 Ways To Grow Leads",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-the-perfect-website",
               "title": "The Perfect Website",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-build-a-high-converting-landing-page",
               "title": "Build a High Converting Landing Page",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-create-a-lead-magnet",
               "title": "Create A Lead Magnet",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-build-a-lead-nurturing-system",
               "title": "Build A Lead Nurturing System",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-optimise-your-conversion-rate",
               "title": "Optimise Your Conversion Rate",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-3-greatest-offers-of-all-time",
               "title": "3 Greatest offers of all time",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-the-7-ways-to-use-free-offers",
               "title": "The 7 ways to use \"Free offers\"",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-6-ways-to-increase-lead-quality",
               "title": "6 ways to increase lead quality",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-15-ways-to-get-referrals",
               "title": "15 Ways to get referrals",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-increase-b2b-sales",
               "title": "Increase B2B Sales",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-customers",
               "title": "Customers",
               "duration": "8m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-offer",
               "title": "Offer",
               "duration": "10m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-marketing-strategy",
               "title": "Marketing Strategy",
               "duration": "20m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-sales-strategies-part-1",
               "title": "Sales Strategies Part 1",
               "duration": "44m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-revenue-marketing-sales-strategies-part-2",
               "title": "Sales Strategies Part 2",
               "duration": "52m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         },
@@ -1704,35 +1704,35 @@
               "title": "Systems: Best Practices",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-ops-product-use-these-3-steps-to-create-systems",
               "title": "Use these 3 Steps to Create Systems",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-ops-product-90-day-planning",
               "title": "90-Day Planning",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-ops-product-customer-lifetime-value",
               "title": "Customer Lifetime Value",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-ops-product-systematising-the-business",
               "title": "Systematising The Business",
               "duration": "22m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         },
@@ -1745,63 +1745,63 @@
               "title": "Finance Fundamentals (Income statement, Balance sheet, Cashflow Statement)",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-210-essential-financial-kpis",
               "title": "210 Essential Financial KPIs",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-management-accounts-review-template",
               "title": "Management Accounts Review template",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-ultimate-guide-to-kpis-bernie-smith",
               "title": "Ultimate Guide to KPIs (Bernie Smith)",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-7-steps-to-designing-effectiev-kpis-infographic",
               "title": "7 Steps To Designing Effectiev KPIs (Infographic)",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-know-your-critical-drivers",
               "title": "Know Your Critical Drivers",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-how-to-build-a-kpi-tree",
               "title": "How to build a KPI Tree",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-shorten-and-simplify-your-number-of-kpis",
               "title": "Shorten and simplify your number of KPIs",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-financlails-kpis-financial-kpi-summary",
               "title": "Financial KPI Summary",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         },
@@ -1814,28 +1814,28 @@
               "title": "The Meeting Rhythm",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-innovation-management-how-to-conduct-an-effective-meeting",
               "title": "How to Conduct an Effective Meeting",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-innovation-management-management",
               "title": "Management",
               "duration": "105m",
               "hasVideo": true,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-innovation-management-innovation-part-1-discontinuous-improvement-david-hall",
               "title": "Innovation Part 1: Discontinuous Improvement (David Hall)",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         },
@@ -1848,49 +1848,49 @@
               "title": "Recruitment Process: Topgrading",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-team-leadership-job-post-format",
               "title": "Job Post Format",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-team-leadership-define-your-strategic-intent",
               "title": "Define Your Strategic Intent",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-team-leadership-keep-your-talent-engaged",
               "title": "Keep Your Talent Engaged",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-team-leadership-accountability-responsibility-and-authority",
               "title": "Accountability, Responsibility, and Authority",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-team-leadership-function-accountability",
               "title": "Function Accountability",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             },
             {
               "id": "profit-brand-framework-team-leadership-process-accountability",
               "title": "Process Accountability",
               "duration": "",
               "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/profit-brand-framework/dashboard?u=bef9907e-5d73-428b-b9bf-533719f75c55"
+              "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-system/curriculum/overview"
             }
           ]
         }

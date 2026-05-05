@@ -58,7 +58,7 @@ export default function LoginPage() {
     } else if (role === "client") {
       router.push("/client");
     } else {
-      router.push("/coach/signature");
+      router.push("/coach/community");
     }
   }
 
@@ -67,15 +67,21 @@ export default function LoginPage() {
       title="Welcome back"
       subtitle="Sign in to Profit Coach to continue coaching with clarity."
       footer={
-        <p className="text-center text-sm text-slate-600">
-          New coach?{" "}
-          <Link
-            href="/join"
-            className="font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
-          >
-            Create an account
-          </Link>
-        </p>
+        <div className="space-y-2 text-center text-sm text-slate-600">
+          <p className="text-base text-slate-600">
+            Use your Academy email login and password{" "}
+            <span className="font-bold text-emerald-600">bcalogin</span>.
+          </p>
+          <p>
+            New coach?{" "}
+            <Link
+              href="/join"
+              className="font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
+            >
+              Create an account
+            </Link>
+          </p>
+        </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">

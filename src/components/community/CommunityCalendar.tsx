@@ -49,8 +49,10 @@ const WEEK_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 const WEEK_PX_PER_HOUR = 52;
 const WEEK_TOTAL_MINUTES = 24 * 60;
 const WEEK_HEADER_ROW_PX = 52;
-const weekBodyHeightPx = 24 * WEEK_PX_PER_HOUR;
-const weekMinuteScale = weekBodyHeightPx / WEEK_TOTAL_MINUTES;
+const WEEK_DEFAULT_START_MINUTES = 8 * 60;
+const WEEK_DEFAULT_END_MINUTES = 20 * 60;
+const WEEK_EVENT_PADDING_MINUTES = 60;
+const WEEK_MIN_VISIBLE_SPAN_MINUTES = 6 * 60;
 
 /** Time gutter + seven equal day columns (header + body share this template). */
 const WEEK_GRID_CLASS =
@@ -357,6 +359,75 @@ export function CommunityCalendar({
     return `Week of ${a.toFormat("MMM d")} to ${b.toFormat("MMM d, yyyy")}`;
   }, [weekMonday, viewTz]);
 
+  const weekVisibleRange = useMemo(() => {
+    let minMinutes = Number.POSITIVE_INFINITY;
+    let maxMinutes = Number.NEGATIVE_INFINITY;
+    for (const seg of weekSegments) {
+      minMinutes = Math.min(minMinutes, minutesInDay(seg.start));
+      maxMinutes = Math.max(maxMinutes, minutesInDay(seg.end));
+    }
+
+    if (!Number.isFinite(minMinutes) || !Number.isFinite(maxMinutes)) {
+      return {
+        startMinutes: WEEK_DEFAULT_START_MINUTES,
+        endMinutes: WEEK_DEFAULT_END_MINUTES,
+      };
+    }
+
+    const startWithPadding = minMinutes - WEEK_EVENT_PADDING_MINUTES;
+    const endWithPadding = maxMinutes + WEEK_EVENT_PADDING_MINUTES;
+    let startMinutes = Math.max(
+      0,
+      Math.floor(startWithPadding / 60) * 60
+    );
+    let endMinutes = Math.min(
+      WEEK_TOTAL_MINUTES,
+      Math.ceil(endWithPadding / 60) * 60
+    );
+
+    startMinutes = Math.min(startMinutes, WEEK_DEFAULT_START_MINUTES);
+    endMinutes = Math.max(endMinutes, WEEK_DEFAULT_END_MINUTES);
+
+    const span = endMinutes - startMinutes;
+    if (span < WEEK_MIN_VISIBLE_SPAN_MINUTES) {
+      const deficit = WEEK_MIN_VISIBLE_SPAN_MINUTES - span;
+      const up = Math.min(
+        WEEK_TOTAL_MINUTES - endMinutes,
+        Math.ceil(deficit / 2 / 60) * 60
+      );
+      const down = Math.min(startMinutes, Math.floor((deficit - up) / 60) * 60);
+      endMinutes += up;
+      startMinutes -= down;
+      if (endMinutes - startMinutes < WEEK_MIN_VISIBLE_SPAN_MINUTES) {
+        endMinutes = Math.min(
+          WEEK_TOTAL_MINUTES,
+          startMinutes + WEEK_MIN_VISIBLE_SPAN_MINUTES
+        );
+      }
+    }
+
+    return { startMinutes, endMinutes };
+  }, [weekSegments]);
+
+  const weekBodyHeightPx = useMemo(
+    () =>
+      ((weekVisibleRange.endMinutes - weekVisibleRange.startMinutes) / 60) *
+      WEEK_PX_PER_HOUR,
+    [weekVisibleRange.endMinutes, weekVisibleRange.startMinutes]
+  );
+
+  const weekMinuteScale = useMemo(
+    () => weekBodyHeightPx / (weekVisibleRange.endMinutes - weekVisibleRange.startMinutes),
+    [weekBodyHeightPx, weekVisibleRange.endMinutes, weekVisibleRange.startMinutes]
+  );
+
+  const weekVisibleHours = useMemo(() => {
+    const startHour = Math.floor(weekVisibleRange.startMinutes / 60);
+    const endHour = Math.ceil(weekVisibleRange.endMinutes / 60);
+    const count = Math.max(1, endHour - startHour);
+    return Array.from({ length: count }, (_, i) => startHour + i);
+  }, [weekVisibleRange.endMinutes, weekVisibleRange.startMinutes]);
+
   const weekNowLine = useMemo(() => {
     void nowTick;
     const now = DateTime.now().setZone(viewTz);
@@ -365,9 +436,15 @@ export function CommunityCalendar({
     const weekStartKey = weekMonday.toISODate() ?? "";
     if (todayKey < weekStartKey || todayKey > weekEndKey) return null;
     const mins = minutesInDay(now);
-    const top = (mins / WEEK_TOTAL_MINUTES) * (24 * WEEK_PX_PER_HOUR);
+    if (
+      mins < weekVisibleRange.startMinutes ||
+      mins > weekVisibleRange.endMinutes
+    ) {
+      return null;
+    }
+    const top = (mins - weekVisibleRange.startMinutes) * weekMinuteScale;
     return { top };
-  }, [viewTz, weekMonday, nowTick]);
+  }, [viewTz, weekMonday, nowTick, weekVisibleRange.endMinutes, weekVisibleRange.startMinutes, weekMinuteScale]);
 
   const byDayKey = useMemo(() => {
     const m = new Map<string, typeof occurrencesInMonth>();
@@ -809,7 +886,7 @@ export function CommunityCalendar({
                       aria-label={weekGridAriaLabel}
                     >
                       <div className="relative z-10 border-r border-slate-200 bg-white">
-                        {Array.from({ length: 24 }, (_, hour) => (
+                        {weekVisibleHours.map((hour) => (
                           <div
                             key={hour}
                             className="relative border-b border-slate-100"
@@ -849,7 +926,9 @@ export function CommunityCalendar({
                               {weekSegmentsByDay[col].map((seg) => {
                                 const ev = seg.occurrence;
                                 const top =
-                                  minutesInDay(seg.start) * weekMinuteScale;
+                                  (minutesInDay(seg.start) -
+                                    weekVisibleRange.startMinutes) *
+                                  weekMinuteScale;
                                 const durMin = seg.end
                                   .diff(seg.start)
                                   .as("minutes");
@@ -989,7 +1068,7 @@ export function CommunityCalendar({
                         onClick={() => setSelectedOccurrence(ev)}
                         className="flex w-full gap-4 pr-8 text-left"
                       >
-                      <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-44">
+                      <div className="relative h-24 w-48 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-56">
                         {ev.cover_image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
