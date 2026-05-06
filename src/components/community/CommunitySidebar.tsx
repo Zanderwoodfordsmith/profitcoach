@@ -67,7 +67,7 @@ export function CommunitySidebar({
     counts,
   } = useCommunityMemberDirectory();
 
-  const recentTen = useMemo(() => {
+  const recentTwelve = useMemo(() => {
     const presenceRows = Object.entries(lastSeenByUserId).map(
       ([user_id, last_seen_at]) => ({ user_id, last_seen_at })
     );
@@ -76,7 +76,7 @@ export function CommunitySidebar({
         new Date(b.last_seen_at).getTime() -
         new Date(a.last_seen_at).getTime()
     );
-    const slice = sortedPresence.slice(0, 10);
+    const slice = sortedPresence.slice(0, 12);
     const byId = new Map(roster.map((m) => [m.id, m]));
     const out: typeof roster = [];
     for (const row of slice) {
@@ -160,14 +160,14 @@ export function CommunitySidebar({
                 Presence will show here after the latest database migration is
                 applied.
               </p>
-            ) : recentTen.length === 0 ? (
+            ) : recentTwelve.length === 0 ? (
               <p className="text-xs text-slate-500">
                 No recent activity yet. Open the community on other devices to
                 see avatars here.
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {recentTen.map((m) => {
+                {recentTwelve.map((m) => {
                   const online = isCommunityOnline(
                     lastSeenByUserId[m.id],
                     clock

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Pin } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, Pin, Vote } from "lucide-react";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import { MentionBody } from "@/components/community/MentionBody";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
@@ -22,7 +22,6 @@ type Props = {
   /** Max comment `created_at` the user has seen in the thread (local). */
   commentsSeenWatermarkIso: string | null;
   onOpen: () => void;
-  onPostsChanged: () => void | Promise<void>;
 };
 
 export function PostCard({
@@ -31,12 +30,13 @@ export function PostCard({
   feedCardHasBeenRead,
   commentsSeenWatermarkIso,
   onOpen,
-  onPostsChanged,
 }: Props) {
   const authorName = post.author
     ? displayNameFromProfile(post.author)
     : "Unknown";
   const [likeBusy, setLikeBusy] = useState(false);
+  const [optimisticLikedByMe, setOptimisticLikedByMe] = useState(post.liked_by_me);
+  const [optimisticLikeCount, setOptimisticLikeCount] = useState(post.like_count);
 
   const commentActivity = useMemo(() => {
     const lastIso = post.last_comment_at;
@@ -53,18 +53,43 @@ export function PostCard({
     return { variant: "last" as const, label: `Last comment ${ago}` };
   }, [post.last_comment_at, commentsSeenWatermarkIso]);
 
+  const previewBody = useMemo(
+    () => post.body.replace(/\s+/g, " ").trim(),
+    [post.body]
+  );
+
+  useEffect(() => {
+    setOptimisticLikedByMe(post.liked_by_me);
+    setOptimisticLikeCount(post.like_count);
+  }, [post.id, post.liked_by_me, post.like_count]);
+
   const handleToggleLike = async () => {
     if (likeBusy) return;
+    const nextLiked = !optimisticLikedByMe;
+    const nextCount = Math.max(
+      0,
+      optimisticLikeCount + (optimisticLikedByMe ? -1 : 1)
+    );
+    setOptimisticLikedByMe(nextLiked);
+    setOptimisticLikeCount(nextCount);
     setLikeBusy(true);
     try {
-      await toggleCommunityPostLike(post.id, post.liked_by_me);
-      await onPostsChanged();
+      await toggleCommunityPostLike(post.id, optimisticLikedByMe);
+    } catch {
+      setOptimisticLikedByMe(optimisticLikedByMe);
+      setOptimisticLikeCount(optimisticLikeCount);
     } finally {
       setLikeBusy(false);
     }
   };
 
   const pinnedChromeClass = post.is_pinned ? "border-sky-200" : "";
+  const isScheduledForFuture = useMemo(() => {
+    if (!post.published_at) return false;
+    const at = new Date(post.published_at).getTime();
+    if (Number.isNaN(at)) return false;
+    return at > Date.now();
+  }, [post.published_at]);
 
   return (
     <article
@@ -95,12 +120,26 @@ export function PostCard({
             <span className="text-base font-semibold leading-tight text-slate-900">
               {authorName}
             </span>
-            {post.is_pinned ? (
-              <span className="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
-                <Pin className="h-3.5 w-3.5 fill-sky-500 text-sky-500" strokeWidth={1.75} />
-                Pinned
-              </span>
-            ) : null}
+            <span className="ml-auto inline-flex items-center gap-2">
+              {isScheduledForFuture ? (
+                <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
+                  <CalendarClock
+                    className="h-3.5 w-3.5 fill-amber-400 text-amber-500"
+                    strokeWidth={1.75}
+                  />
+                  Scheduled
+                </span>
+              ) : null}
+              {post.is_pinned ? (
+                <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
+                  <Pin
+                    className="h-3.5 w-3.5 fill-sky-500 text-sky-500"
+                    strokeWidth={1.75}
+                  />
+                  Pinned
+                </span>
+              ) : null}
+            </span>
           </div>
           <p className="mt-0.5 text-xs leading-snug">
             <span className="text-slate-500">
@@ -114,20 +153,34 @@ export function PostCard({
                 </span>
               </>
             ) : null}
+            {post.poll ? (
+              <>
+                <span className="mx-0.5 select-none text-slate-400">·</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  <Vote className="h-3 w-3" strokeWidth={2} />
+                  Poll
+                </span>
+                <span className="ml-1 text-[11px] font-medium text-slate-500">
+                  {post.poll_vote_count}{" "}
+                  {post.poll_vote_count === 1 ? "member has" : "members have"} voted
+                </span>
+              </>
+            ) : null}
           </p>
         </div>
       </div>
 
       <div className="mt-3 flex w-full min-w-0 gap-3">
-        <div className="min-w-0 flex-1">
-          <h2 className="line-clamp-2 py-1.5 text-xl font-semibold leading-snug tracking-tight text-slate-900">
+        <div className={`min-w-0 flex-1 ${post.media[0] ? "pr-2" : ""}`}>
+          <h2 className="line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900">
             {post.title}
           </h2>
-          <div className="mt-1.5 line-clamp-2 text-base leading-relaxed text-slate-600">
-            {post.body.trim() ? (
+          <div className="mt-0.5 line-clamp-2 text-base leading-relaxed text-slate-600">
+            {previewBody ? (
               <MentionBody
-                body={post.body}
+                body={previewBody}
                 nameById={feedMentionNameById}
+                className="whitespace-normal"
                 stripPreviewMarkdown
               />
             ) : (
@@ -136,10 +189,10 @@ export function PostCard({
           </div>
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>
             <PostEngagementBar
-              likeCount={post.like_count}
+              likeCount={optimisticLikeCount}
               commentCount={post.comment_count}
               commentPreviewAuthors={post.comment_preview_authors}
-              likedByMe={post.liked_by_me}
+              likedByMe={optimisticLikedByMe}
               disabled={likeBusy}
               commentRecencyLabel={commentActivity?.label ?? null}
               commentRecencyVariant={commentActivity?.variant ?? null}
@@ -164,6 +217,8 @@ export function PostCard({
                 src={post.media[0].url}
                 alt=""
                 referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
                 className="h-[92px] w-[92px] object-cover"
               />
             )}

@@ -191,6 +191,7 @@ export function DashboardTopActions({
             title,
             body,
             created_at,
+            published_at,
             author_id,
             category:community_categories!category_id ( slug ),
             author:profiles!author_id ( id, role, full_name, first_name, last_name, avatar_url )
@@ -198,7 +199,8 @@ export function DashboardTopActions({
         )
         .eq("category.slug", "announcements")
         .neq("author_id", uid)
-        .order("created_at", { ascending: false })
+        .lte("published_at", new Date().toISOString())
+        .order("published_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
 
       const [repliesRes, announcementsRes] = await Promise.all([
@@ -278,6 +280,7 @@ export function DashboardTopActions({
           title: string;
           body: string;
           created_at: string;
+          published_at?: string | null;
           author: AuthorRow | AuthorRow[] | null;
           category: { slug: string } | { slug: string }[] | null;
         }>;
@@ -294,7 +297,7 @@ export function DashboardTopActions({
           next.push({
             id: `announcement:${row.id}`,
             type: "announcements",
-            created_at: row.created_at,
+            created_at: row.published_at ?? row.created_at,
             actor_name: actor,
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} posted an announcement`,

@@ -85,6 +85,8 @@ type BossWheelProps = {
   colorScheme?: "default" | "alt";
   /** "areas" = 10 segments, "pillars" = 4 segments, "levels" = 5 segments with diagram colors */
   viewMode?: "areas" | "pillars" | "levels";
+  /** When false, hides the pillar/area legend column (e.g. marketing hero). Default true. */
+  showLegend?: boolean;
 };
 
 export function BossWheel({
@@ -94,6 +96,7 @@ export function BossWheel({
   "aria-label": ariaLabel,
   colorScheme = "default",
   viewMode = "areas",
+  showLegend = true,
 }: BossWheelProps) {
   const colors = colorScheme === "alt" ? WHEEL_COLORS_ALT : WHEEL_COLORS;
   const isPillarView = viewMode === "pillars";
@@ -335,6 +338,7 @@ export function BossWheel({
         })}
       </svg>
       </div>
+      {showLegend ? (
       <div className="flex flex-col gap-4 shrink-0 order-3 text-sm pb-2">
         {isLevelView ? (
           LEVEL_NAMES.map((name, i) => {
@@ -395,6 +399,7 @@ export function BossWheel({
           ))
         )}
       </div>
+      ) : null}
     </div>
   );
 }

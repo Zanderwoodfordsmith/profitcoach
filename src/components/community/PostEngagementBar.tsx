@@ -48,12 +48,12 @@ export function PostEngagementBar({
                 ? "border-sky-300 bg-sky-50 text-sky-800"
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             } disabled:opacity-50`
-          : "inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-50"
+          : "inline-flex items-center gap-1.5 text-[15px] text-slate-500 hover:text-slate-700 disabled:opacity-50"
       }
       aria-pressed={likedByMe}
     >
       <ThumbsUp
-        className={`h-4 w-4 shrink-0 ${likedByMe ? "fill-sky-700 text-sky-700" : ""}`}
+        className={`shrink-0 ${detail ? "h-4 w-4" : "h-[18px] w-[18px]"} ${likedByMe ? "fill-sky-700 text-sky-700" : ""}`}
         strokeWidth={detail ? 2 : 1.75}
       />
       {detail ? <span>Like</span> : null}
@@ -72,13 +72,18 @@ export function PostEngagementBar({
       className={
         detail
           ? "inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-          : "inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 disabled:opacity-50"
+          : "inline-flex items-center gap-1.5 text-[15px] text-slate-500 hover:text-slate-700 disabled:opacity-50"
       }
     >
-      <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={detail ? 2 : 1.75} />
+      <MessageCircle
+        className={`shrink-0 ${detail ? "h-4 w-4" : "h-[18px] w-[18px]"} ${
+          commentCount > 0 ? "fill-sky-700 text-sky-700" : ""
+        }`}
+        strokeWidth={detail ? 2 : 1.75}
+      />
       <span>
         <span className="tabular-nums">{commentCount}</span>
-        {commentCount === 1 ? " comment" : " comments"}
+        {detail ? (commentCount === 1 ? " comment" : " comments") : null}
       </span>
     </button>
   );

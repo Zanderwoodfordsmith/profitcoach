@@ -168,6 +168,12 @@ export default function AdminClientsPage() {
     router.push("/client");
   }
 
+  /** Client dashboard: InsightDashboard (progress rows + insight panel) and link through to AI coach. */
+  function handleViewReport(client: ClientRow) {
+    setImpersonatingContactId(client.id);
+    router.push("/client/dashboard");
+  }
+
   const groupedClients = useMemo(() => {
     const byCoach = new Map<string | null, ClientRow[]>();
     for (const c of clients) {
@@ -372,13 +378,22 @@ export default function AdminClientsPage() {
                             {c.last_score != null ? `${c.last_score} / 100` : "—"}
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <button
-                              type="button"
-                              onClick={() => handleViewAsClient(c.id)}
-                              className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-800 hover:bg-sky-200"
-                            >
-                              View as client
-                            </button>
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleViewReport(c)}
+                                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50"
+                              >
+                                Report
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleViewAsClient(c.id)}
+                                className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-800 hover:bg-sky-200"
+                              >
+                                View as client
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

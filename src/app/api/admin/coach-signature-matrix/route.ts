@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { normalizeScores } from "@/lib/signatureModelV2";
+import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdmin } from "@/lib/requireAdmin";
 
@@ -8,6 +9,9 @@ type CoachRow = {
   slug: string;
   full_name: string | null;
   coach_business_name: string | null;
+  joined_at: string | null;
+  current_monthly_income: number | null;
+  ideal_monthly_income: number | null;
 };
 
 export async function GET(request: Request) {
@@ -20,7 +24,9 @@ export async function GET(request: Request) {
   try {
     const { data: coachesData, error: coachesError } = await supabaseAdmin
       .from("coaches")
-      .select("id, slug, profiles!inner(full_name, coach_business_name)")
+      .select(
+        "id, slug, profiles!inner(full_name, coach_business_name, created_at, disco_community_joined_on, coaching_income_reported_2024, ladder_goal_level)"
+      )
       .order("slug", { ascending: true });
 
     if (coachesError) {
@@ -36,6 +42,25 @@ export async function GET(request: Request) {
         slug: row.slug as string,
         full_name: row.profiles?.full_name ?? null,
         coach_business_name: row.profiles?.coach_business_name ?? null,
+        joined_at:
+          (row.profiles?.disco_community_joined_on as string | null) ??
+          (row.profiles?.created_at as string | null) ??
+          null,
+        current_monthly_income: (() => {
+          const raw = row.profiles?.coaching_income_reported_2024;
+          if (typeof raw !== "string") return null;
+          const parsed = raw
+            .trim()
+            .replace(/,/g, "")
+            .match(/-?\d+(?:\.\d+)?/);
+          if (!parsed) return null;
+          const numeric = Number(parsed[0]);
+          return Number.isFinite(numeric) ? numeric : null;
+        })(),
+        ideal_monthly_income:
+          typeof row.profiles?.ladder_goal_level === "string"
+            ? defaultMonthlyIncomeForLevelId(row.profiles.ladder_goal_level)
+            : null,
       })) ?? [];
 
     if (coaches.length === 0) {

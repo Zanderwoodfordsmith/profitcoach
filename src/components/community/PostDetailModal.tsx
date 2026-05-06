@@ -146,7 +146,7 @@ function PostDetailOverflowMenu({
   menuRef,
   menuOpen,
   setMenuOpen,
-  isAuthor,
+  canManagePost,
   deleteBusy,
   favouriteBusy,
   pinBusy,
@@ -165,7 +165,7 @@ function PostDetailOverflowMenu({
   menuRef: RefObject<HTMLDivElement | null>;
   menuOpen: boolean;
   setMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isAuthor: boolean;
+  canManagePost: boolean;
   deleteBusy: boolean;
   favouriteBusy: boolean;
   pinBusy: boolean;
@@ -198,7 +198,7 @@ function PostDetailOverflowMenu({
           role="menu"
           className="absolute right-0 z-30 mt-1 min-w-[13.5rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
         >
-          {isAuthor ? (
+          {canManagePost ? (
             <>
               <button
                 type="button"
@@ -584,6 +584,7 @@ export function PostDetailModal({
         Boolean(coachPersona && post.author.id === coachPersona))
   );
   const isEditorAdmin = editorRole === "admin";
+  const canManagePost = isAuthor || isEditorAdmin;
   const canPin = isEditorAdmin;
   const announcementsCategory = useMemo(
     () => categories.find((c) => c.slug === "announcements") ?? null,
@@ -1260,7 +1261,7 @@ export function PostDetailModal({
                 menuRef={menuRef}
                 menuOpen={menuOpen}
                 setMenuOpen={setMenuOpen}
-                isAuthor={isAuthor}
+                canManagePost={canManagePost}
                 deleteBusy={deleteBusy}
                 favouriteBusy={favouriteBusy}
                 pinBusy={pinBusy}
@@ -1323,7 +1324,7 @@ export function PostDetailModal({
                     menuRef={menuRef}
                     menuOpen={menuOpen}
                     setMenuOpen={setMenuOpen}
-                    isAuthor={isAuthor}
+                    canManagePost={canManagePost}
                     deleteBusy={deleteBusy}
                     favouriteBusy={favouriteBusy}
                     pinBusy={pinBusy}
@@ -1623,9 +1624,7 @@ export function PostDetailModal({
           >
             {commentsLoading ? (
               <p className="mt-1 text-sm text-slate-500">Loading comments…</p>
-            ) : topLevel.length === 0 ? (
-              <p className="mt-1 text-sm text-slate-500">No comments yet.</p>
-            ) : (
+            ) : topLevel.length > 0 ? (
               <ul className="mt-2 space-y-5">
                 {topLevel.map((c) => {
                   const ca = c.author
@@ -1759,17 +1758,6 @@ export function PostDetailModal({
                             />
                           )}
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <button
-                              type="button"
-                              className="text-[13px] font-medium text-sky-700 hover:underline"
-                              onClick={() =>
-                                setReplyOpenFor((x) =>
-                                  x === c.id ? null : c.id
-                                )
-                              }
-                            >
-                              Reply
-                            </button>
                             <CommentLikeButton
                               likeCount={c.like_count}
                               likedByMe={c.liked_by_me}
@@ -1781,6 +1769,17 @@ export function PostDetailModal({
                                 )
                               }
                             />
+                            <button
+                              type="button"
+                              className="text-[13px] font-medium text-sky-700 hover:underline"
+                              onClick={() =>
+                                setReplyOpenFor((x) =>
+                                  x === c.id ? null : c.id
+                                )
+                              }
+                            >
+                              Reply
+                            </button>
                           </div>
 
                           {replyOpenFor === c.id ? (
@@ -2002,7 +2001,7 @@ export function PostDetailModal({
                   );
                 })}
               </ul>
-            )}
+            ) : null}
 
             <div className="mt-4 border-t border-slate-100 pt-3">
               <div className="flex items-start gap-3">

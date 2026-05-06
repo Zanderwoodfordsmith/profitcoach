@@ -188,11 +188,12 @@ export async function GET(request: Request) {
           to_level,
           kind,
           created_at,
-          profiles (
+          profiles!inner (
             full_name,
             first_name,
             last_name,
-            avatar_url
+            avatar_url,
+            role
           )
         `
         )
@@ -202,6 +203,7 @@ export async function GET(request: Request) {
       if (kindFilter) {
         q = q.eq("kind", kindFilter);
       }
+      q = q.eq("profiles.role", "coach");
 
       const evRes = await q;
 
@@ -229,12 +231,14 @@ export async function GET(request: Request) {
                 first_name?: string | null;
                 last_name?: string | null;
                 avatar_url?: string | null;
+                role?: string | null;
               }
             | Array<{
                 full_name?: string | null;
                 first_name?: string | null;
                 last_name?: string | null;
                 avatar_url?: string | null;
+                role?: string | null;
               }>
             | null;
           const nested = Array.isArray(rawProf) ? rawProf[0] : rawProf;
@@ -249,6 +253,7 @@ export async function GET(request: Request) {
             first_name: nested?.first_name ?? null,
             last_name: nested?.last_name ?? null,
             avatar_url: nested?.avatar_url ?? null,
+            role: nested?.role ?? null,
           };
         });
       }

@@ -100,7 +100,7 @@ export function LadderLevelUpsCard() {
     }
 
     const res = await fetch(
-      "/api/coach/ladder?eventsLimit=5&eventsOffset=0&kind=level_up",
+      "/api/coach/ladder?eventsLimit=25&eventsOffset=0&kind=level_up",
       { headers }
     );
     if (!res.ok) {
@@ -137,9 +137,8 @@ export function LadderLevelUpsCard() {
       }
       out.push(ev);
     }
-    return collapseConsecutiveEvents(out);
+    return collapseConsecutiveEvents(out).slice(0, 5);
   })();
-  const showEarlyPlaceholder = visibleEvents.length <= 3;
 
   return (
     <div className="mt-4 rounded-xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm">
@@ -204,12 +203,6 @@ export function LadderLevelUpsCard() {
               );
             })}
           </ul>
-          {showEarlyPlaceholder ? (
-            <p className="mt-3 text-xs leading-relaxed text-slate-500">
-              More coach results will appear here as members continue tracking
-              progress in the Profit Coach Ladder.
-            </p>
-          ) : null}
         </>
       )}
 

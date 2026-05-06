@@ -68,15 +68,7 @@ export default function ContactDetailPage({
         return;
       }
 
-      const effectiveCoachId =
-        profile.role === "admin" && impersonatingCoachId
-          ? impersonatingCoachId
-          : user.id;
-
-      if (profile.role === "admin" && !impersonatingCoachId) {
-        router.replace("/admin");
-        return;
-      }
+      const isAdmin = profile.role === "admin";
 
       const { data: contactRow, error: contactError } =
         await supabaseClient
@@ -93,7 +85,12 @@ export default function ContactDetailPage({
         return;
       }
 
-      if (contactRow.coach_id !== effectiveCoachId) {
+      const accessDenied = !isAdmin
+        ? contactRow.coach_id !== user.id
+        : Boolean(impersonatingCoachId) &&
+          contactRow.coach_id !== impersonatingCoachId;
+
+      if (accessDenied) {
         setError("You do not have access to this contact.");
         setLoading(false);
         return;

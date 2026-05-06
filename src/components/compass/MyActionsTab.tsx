@@ -57,6 +57,7 @@ export function MyActionsTab() {
   const [items, setItems] = useState<ActionLine[]>([]);
   const [ready, setReady] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [nextAction, setNextAction] = useState("");
 
   useEffect(() => {
     try {
@@ -183,6 +184,15 @@ export function MyActionsTab() {
     });
   };
 
+  const addNextAction = () => {
+    const text = nextAction.trim();
+    if (!text) return;
+    const line = createLine(text, 0);
+    setItems((prev) => [...prev, line]);
+    setNextAction("");
+    setFocusId(line.id);
+  };
+
   return (
     <div className="mx-auto w-full max-w-3xl pb-8 pr-4">
       <div>
@@ -274,6 +284,33 @@ export function MyActionsTab() {
                 </div>
               </li>
             ))}
+            <li className="mt-2 border-t border-slate-100 pt-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_110px_150px_24px] items-center gap-2 rounded-lg px-2 py-1.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-dashed border-slate-300 text-xs text-slate-400"
+                    aria-hidden
+                  >
+                    +
+                  </span>
+                  <input
+                    value={nextAction}
+                    onChange={(e) => setNextAction(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addNextAction();
+                      }
+                    }}
+                    placeholder="Add next action..."
+                    className="min-w-0 flex-1 bg-transparent py-1 text-base text-slate-800 outline-none placeholder:text-slate-400"
+                  />
+                </div>
+                <span className="px-1 py-1 text-sm text-slate-300">Set time</span>
+                <span className="px-1 py-1 text-sm text-slate-300">Set date</span>
+                <span />
+              </div>
+            </li>
           </ul>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-6 text-center text-sm text-slate-500">

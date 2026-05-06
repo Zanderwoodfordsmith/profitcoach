@@ -278,6 +278,7 @@ export type CommunityLadderEventDTO = {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  role?: string | null;
 };
 
 /** Shape returned by GET /api/coach/ladder for each achievement row */
