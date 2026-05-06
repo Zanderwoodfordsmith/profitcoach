@@ -3,7 +3,7 @@
 import { use, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { QUESTIONS_BY_PAGE } from "@/lib/assessmentQuestions";
+import { QUESTIONS_BY_LEVEL } from "@/lib/assessmentQuestions";
 
 type AnswersMap = Record<string, 0 | 1 | 2>;
 
@@ -34,8 +34,9 @@ export default function AssessmentPage({
   const [loadingCoach, setLoadingCoach] = useState(true);
 
   const [step, setStep] = useState<"intro" | "assessment">("intro");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentLevel, setCurrentLevel] = useState(1);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questionPhase, setQuestionPhase] = useState<"idle" | "exiting" | "entering">("idle");
   const [answers, setAnswers] = useState<AnswersMap>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -198,29 +199,70 @@ export default function AssessmentPage({
     }
   }, [landingVariant]);
 
-  const pageQuestions = useMemo(
-    () => QUESTIONS_BY_PAGE[currentPage] ?? [],
-    [currentPage]
+  const levelQuestions = useMemo(
+    () => QUESTIONS_BY_LEVEL[currentLevel] ?? [],
+    [currentLevel]
   );
 
   const clampedQuestionIndex = useMemo(() => {
-    const len = pageQuestions.length;
+    const len = levelQuestions.length;
     if (len === 0) return 0;
     return Math.min(currentQuestionIndex, len - 1);
-  }, [currentQuestionIndex, pageQuestions.length]);
+  }, [currentQuestionIndex, levelQuestions.length]);
 
   const currentQuestion = useMemo(
-    () => pageQuestions[clampedQuestionIndex] ?? null,
-    [pageQuestions, clampedQuestionIndex]
+    () => levelQuestions[clampedQuestionIndex] ?? null,
+    [levelQuestions, clampedQuestionIndex]
   );
 
-  const pageMeta = useMemo(() => {
-    const list = QUESTIONS_BY_PAGE[currentPage];
-    if (!list || !list.length) return { area: "", pillar: "" };
-    return { area: list[0].area, pillar: list[0].pillar };
-  }, [currentPage]);
+  const isFirstQuestion = currentLevel === 1 && clampedQuestionIndex === 0;
+  const TOTAL_LEVELS = 5;
+  const LEVEL_NAMES = [
+    "Overwhelm",
+    "Overworked",
+    "Organised",
+    "Overseer",
+    "Owner",
+  ] as const;
+  const LEVEL_COLORS = [
+    { bg: "#ef4444", border: "#dc2626" },
+    { bg: "#f97316", border: "#ea580c" },
+    { bg: "#facc15", border: "#eab308" },
+    { bg: "#22c55e", border: "#16a34a" },
+    { bg: "#3b82f6", border: "#2563eb" },
+  ] as const;
+  const CHEVRON_CLIP =
+    "polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%, 18px 50%)";
+  function levelCompletionCount(level: number): number {
+    const qs = QUESTIONS_BY_LEVEL[level] ?? [];
+    return qs.reduce((sum, q) => sum + (answers[q.ref] != null ? 1 : 0), 0);
+  }
 
-  const isFirstQuestion = currentPage === 1 && clampedQuestionIndex === 0;
+  function moveToNextQuestion(newAnswers: AnswersMap) {
+    const isLastQuestion =
+      currentLevel === TOTAL_LEVELS &&
+      clampedQuestionIndex === levelQuestions.length - 1;
+    if (isLastQuestion) {
+      void handleSubmitAssessment(newAnswers);
+      return;
+    }
+
+    setQuestionPhase("exiting");
+    window.setTimeout(() => {
+      if (clampedQuestionIndex < levelQuestions.length - 1) {
+        setCurrentQuestionIndex((i) => i + 1);
+      } else {
+        setCurrentLevel((l) => l + 1);
+        setCurrentQuestionIndex(0);
+      }
+      setQuestionPhase("entering");
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          setQuestionPhase("idle");
+        });
+      });
+    }, 180);
+  }
 
   async function handleSubmitAssessment(overrideAnswers?: AnswersMap) {
     const answersToSubmit = overrideAnswers ?? answers;
@@ -326,13 +368,13 @@ export default function AssessmentPage({
                 How it works
               </h2>
               <ul className="mt-2 space-y-1 text-sm text-slate-700">
-                <li>10 pages, 5 questions each.</li>
-                <li>Tap Red, Amber, or Green for each one.</li>
+                <li>5 levels, 10 questions each.</li>
+                <li>Tap No, Partially, or Yes for each one.</li>
                 <li>
-                  Some won&apos;t apply yet — that&apos;s completely
+                  Some won&apos;t apply yet, that&apos;s completely
                   normal, just tap Red.
                 </li>
-                <li>No right or wrong answers — be honest.</li>
+                <li>No right or wrong answers, be honest.</li>
               </ul>
               <p className="mt-3 text-xs text-slate-500">
                 Invited by{" "}
@@ -444,51 +486,158 @@ export default function AssessmentPage({
 
   // Assessment step
   return (
-    <div className="min-h-screen bg-slate-100 px-6 py-12 md:px-12 md:py-16 text-slate-900 flex justify-center items-start">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 flex-1">
-        <header className="space-y-3 border-b border-slate-200 pb-5">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-base md:text-lg font-semibold uppercase tracking-[0.2em] text-sky-700">
-              The Profit System
-            </p>
-            {(coachName || coachBusiness) && (
-              <p className="text-sm md:text-base text-slate-600">
-                For{" "}
-                <span className="font-medium text-sky-700">
-                  {coachName}
-                </span>
-                {coachBusiness ? ` @ ${coachBusiness}` : null}
-              </p>
-            )}
-          </div>
+    <div
+      className="min-h-screen px-6 py-12 md:px-12 md:py-16 text-slate-900 flex justify-center items-start"
+      style={{
+        background: [
+          "radial-gradient(1000px 520px at 8% 0%, rgba(14,165,233,0.14), transparent 60%)",
+          "radial-gradient(900px 460px at 90% 10%, rgba(59,130,246,0.12), transparent 58%)",
+          "linear-gradient(180deg, #f8fbff 0%, #eef5ff 45%, #e8f1ff 100%)",
+        ].join(", "),
+      }}
+    >
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 flex-1 overflow-visible">
+        <header className="space-y-3 overflow-visible border-b border-slate-200 pb-5">
           <div>
-            <p className="text-sm md:text-base font-normal text-slate-600">
-              {pageMeta.area}
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              Assessment Journey
             </p>
-            <p className="text-xl md:text-2xl font-bold text-slate-900">{pageMeta.pillar}</p>
+            <h1 className="mt-1 text-3xl font-semibold text-slate-900 md:text-4xl">
+              Business Operating System Score
+            </h1>
+          </div>
+          {(coachName || coachBusiness) && (
+            <p className="text-sm text-slate-600">
+              For <span className="font-medium text-slate-800">{coachName ?? "Coach"}</span>
+              {coachBusiness ? ` @ ${coachBusiness}` : null}
+            </p>
+          )}
+          <div className="mt-8 w-full overflow-x-visible overflow-y-visible pt-1">
+            <div className="relative z-0 flex w-full min-w-0 flex-nowrap items-stretch gap-0 overflow-visible">
+            {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map((level) => {
+              const answered = levelCompletionCount(level);
+              const totalForLevel = QUESTIONS_BY_LEVEL[level]?.length ?? 0;
+              const isComplete = totalForLevel > 0 && answered === totalForLevel;
+              const isActive = level === currentLevel;
+              const color = LEVEL_COLORS[level - 1];
+              const progressPct =
+                totalForLevel > 0
+                  ? Math.min(100, (answered / totalForLevel) * 100)
+                  : 0;
+              const visuallyMuted = !isActive && !isComplete;
+              const ariaLabel = [
+                `Level ${level}, ${LEVEL_NAMES[level - 1]}`,
+                isComplete
+                  ? "completed"
+                  : `${answered} of ${totalForLevel} questions answered`,
+                isActive ? "current step" : "",
+              ]
+                .filter(Boolean)
+                .join(". ");
+              return (
+                <button
+                  key={level}
+                  type="button"
+                  aria-current={isActive ? "step" : undefined}
+                  aria-label={ariaLabel}
+                  onClick={() => {
+                    setCurrentLevel(level);
+                    setCurrentQuestionIndex(0);
+                  }}
+                  className={`relative min-w-0 flex-1 -mr-3.5 px-3 py-3 text-sm font-semibold text-white transition hover:brightness-105 last:mr-0 self-stretch ${
+                    isActive ? "z-20" : "z-0"
+                  }`}
+                  style={{
+                    backgroundColor: color.bg,
+                    border: `2px solid ${
+                      isActive ? "rgba(255,255,255,0.95)" : color.border
+                    }`,
+                    clipPath: CHEVRON_CLIP,
+                    opacity: visuallyMuted ? 0.5 : 1,
+                  }}
+                >
+                  <span className="relative z-[1] block text-[0.62rem] uppercase tracking-[0.14em] leading-none opacity-90">
+                    Level {level}
+                  </span>
+                  <span className="relative z-[1] mt-1 block text-base font-bold leading-none">
+                    {LEVEL_NAMES[level - 1]}
+                  </span>
+                  {isComplete ? (
+                    <span className="relative z-[1] mt-1 inline-flex items-center gap-1.5 text-[0.68rem] font-bold leading-none opacity-100">
+                      <span
+                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] leading-none text-white shadow-sm"
+                        aria-hidden
+                      >
+                        ✓
+                      </span>
+                      Complete
+                    </span>
+                  ) : (
+                    <span className="relative z-[1] mt-1 block text-[0.68rem] leading-none opacity-90">
+                      {answered}/{totalForLevel}
+                    </span>
+                  )}
+                  <div
+                    className="pointer-events-none absolute bottom-0 left-0 z-[1] h-[4px] transition-[width] duration-300"
+                    style={{
+                      width: `${progressPct}%`,
+                      backgroundColor: color.border,
+                      opacity: progressPct > 0 ? 0.92 : 0,
+                    }}
+                    aria-hidden
+                  />
+                </button>
+              );
+            })}
+            </div>
           </div>
           <div className="flex flex-col gap-2 pt-1">
-            <span className="text-sm md:text-base text-slate-600 font-medium">
-              Page {currentPage} of 10
-              {pageQuestions.length > 0 && (
-                <> · Question {clampedQuestionIndex + 1} of {pageQuestions.length}</>
-              )}
-            </span>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-              <div
-                className="h-full rounded-full bg-sky-500 transition-[width]"
-                style={{ width: `${(currentPage / 10) * 100}%` }}
-              />
+            <div className="grid w-full grid-cols-10 gap-2">
+              {levelQuestions.map((q, idx) => {
+                const answered = answers[q.ref] != null;
+                const isCurrent = idx === clampedQuestionIndex;
+                return (
+                  <span
+                    key={q.ref}
+                    className={`inline-flex h-7 w-full items-center justify-center rounded-full border text-xs font-semibold transition ${
+                      answered
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : isCurrent
+                        ? "border-slate-400 bg-slate-300 text-slate-700"
+                        : "border-slate-300 bg-slate-100 text-slate-400"
+                    }`}
+                    aria-label={
+                      answered
+                        ? `Question ${idx + 1} answered`
+                        : `Question ${idx + 1} not answered`
+                    }
+                  >
+                    {answered ? "✓" : idx + 1}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </header>
 
-        <main className="flex flex-col gap-6 pt-12 pb-8 flex-1 flex items-start w-full">
+        <main className="flex flex-col gap-6 pt-6 pb-8 flex-1 flex items-start w-full">
           {currentQuestion ? (
             <>
-              <p className="text-2xl md:text-4xl font-normal text-slate-800 leading-snug w-full text-left px-4 md:px-8">
-                {currentQuestion.question}
-              </p>
+              <div className="w-full px-4 md:px-8">
+                <div
+                  className={`flex min-h-[11rem] items-center justify-center transition-all duration-200 ${
+                    questionPhase === "exiting"
+                      ? "-translate-y-3 opacity-0"
+                      : questionPhase === "entering"
+                      ? "translate-y-2 opacity-0"
+                      : "translate-y-0 opacity-100"
+                  }`}
+                >
+                  <p className="text-left text-2xl font-normal leading-snug text-slate-800 md:text-4xl">
+                    {currentQuestion.question}
+                  </p>
+                </div>
+              </div>
               <div className="flex flex-wrap justify-start gap-4 px-4 md:px-8">
                 {[0, 1, 2].map((value) => {
                   const label =
@@ -507,31 +656,20 @@ export default function AssessmentPage({
                       : selected
                       ? "border-emerald-400 bg-emerald-100 text-emerald-800"
                       : "border-emerald-300 text-emerald-700 hover:bg-emerald-50";
-                  const isLastQuestion =
-                    currentPage === 10 && clampedQuestionIndex === pageQuestions.length - 1;
                   return (
                     <button
                       key={value}
                       type="button"
                       className={`rounded-xl border-2 px-6 py-4 text-lg font-semibold transition whitespace-nowrap min-w-[7rem] ${colorClasses}`}
                       aria-label={`${label}. ${value === 0 ? "Not in place" : value === 1 ? "Partially in place" : "Fully in place"}.`}
-                      disabled={submitting && isLastQuestion}
+                      disabled={submitting || questionPhase !== "idle"}
                       onClick={() => {
                         const newAnswers = {
                           ...answers,
                           [currentQuestion.ref]: value as 0 | 1 | 2,
                         };
                         setAnswers(newAnswers);
-                        if (isLastQuestion) {
-                          void handleSubmitAssessment(newAnswers);
-                          return;
-                        }
-                        if (clampedQuestionIndex < pageQuestions.length - 1) {
-                          setCurrentQuestionIndex((i) => i + 1);
-                        } else {
-                          setCurrentPage((p) => p + 1);
-                          setCurrentQuestionIndex(0);
-                        }
+                        moveToNextQuestion(newAnswers);
                       }}
                     >
                       {label}
@@ -558,8 +696,9 @@ export default function AssessmentPage({
                     if (clampedQuestionIndex > 0) {
                       setCurrentQuestionIndex((i) => i - 1);
                     } else {
-                      setCurrentPage((p) => p - 1);
-                      setCurrentQuestionIndex(4);
+                      setCurrentLevel((l) => l - 1);
+                      const prevLevelQuestions = QUESTIONS_BY_LEVEL[currentLevel - 1] ?? [];
+                      setCurrentQuestionIndex(Math.max(0, prevLevelQuestions.length - 1));
                     }
                   }}
                 >

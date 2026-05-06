@@ -286,7 +286,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
 
   return (
     <div className="min-h-screen bg-[#fafafa] text-slate-900">
-      {/* Header — Profit Coach logo, smaller, at ~90% page width */}
+      {/* Header, Profit Coach logo, smaller, at ~90% page width */}
       <header className="sticky top-0 z-10 bg-white">
         <div className="flex h-16 w-full max-w-[90%] mx-auto items-center justify-end pr-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -301,7 +301,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
       </header>
 
       <main>
-        {/* Hero — one column, centred */}
+        {/* Hero, one column, centred */}
         <section className="bg-white px-4 pt-0 pb-8 sm:pb-12 lg:pb-16">
           <div className="mx-auto w-full max-w-6xl flex flex-col items-center text-center">
             <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl leading-[1.2] max-w-[75%]">
@@ -316,7 +316,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/boss-grid-placeholder.png"
-                alt="BOSS grid — 5 owner levels, 10 business areas"
+                alt="BOSS grid, 5 owner levels, 10 business areas"
                 className="w-full rounded-2xl border border-slate-200 shadow-xl object-contain bg-slate-50/50"
               />
             </div>
@@ -458,7 +458,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
                 </p>
                 {!loadingCoach && (coach?.full_name || coach?.coach_business_name || coachSlug.toUpperCase() === "BCA") && (
                   <p className="pt-4 text-base text-slate-500 border-t border-slate-200">
-                    Your results can be shared with your coach{coach?.full_name || coach?.coach_business_name ? ` — ${coach.full_name ?? coach.coach_business_name}` : ""}.
+                    Your results can be shared with your coach{coach?.full_name || coach?.coach_business_name ? `, ${coach.full_name ?? coach.coach_business_name}` : ""}.
                   </p>
                 )}
               </div>
@@ -466,14 +466,14 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
           </div>
         </section>
 
-        {/* Section 2 — This is for you if… (dark blue) */}
+        {/* Section 2, This is for you if… (dark blue) */}
         <section className="bg-[#0c5290] py-20 px-4" style={{ backgroundColor: "#0c5290" }}>
           <div className="mx-auto max-w-3xl">
             <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
               This is for you if…
             </h2>
             <p className="mt-6 text-lg text-sky-100 leading-relaxed">
-              You&apos;re an established business owner or director running an SME — somewhere between £1M and £20M — and you recognise yourself in at least one of these:
+              You&apos;re an established business owner or director running an SME, somewhere between £1M and £20M, and you recognise yourself in at least one of these:
             </p>
             <ul className="mt-8 space-y-5 text-base text-sky-100 sm:text-lg">
               <li className="flex gap-3">
@@ -482,7 +482,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">Feast or famine is your normal.</strong> Some months are great. Others, you&apos;re raiding savings — because there&apos;s no predictable pipeline, no real KPIs, and no system behind the revenue.</span>
+                <span><strong className="text-white">Feast or famine is your normal.</strong> Some months are great. Others, you&apos;re raiding savings, because there&apos;s no predictable pipeline, no real KPIs, and no system behind the revenue.</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
@@ -490,7 +490,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">You know the business &quot;works&quot; — but only because you&apos;re holding it together.</strong> Profit, order, and control don&apos;t match the effort and risk you carry.</span>
+                <span><strong className="text-white">You know the business &quot;works&quot;, but only because you&apos;re holding it together.</strong> Profit, order, and control don&apos;t match the effort and risk you carry.</span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
@@ -498,7 +498,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               </li>
             </ul>
             <p className="mt-10 text-xl font-medium text-white">
-              If that sounds familiar, the BOSS Scorecard shows you exactly what&apos;s going on under the hood — and what to fix first.
+              If that sounds familiar, the BOSS Scorecard shows you exactly what&apos;s going on under the hood, and what to fix first.
             </p>
             <button
               type="button"
@@ -510,27 +510,27 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
           </div>
         </section>
 
-        {/* Section 3 — How it works */}
+        {/* Section 3, How it works */}
         <section className="border-t border-slate-200 bg-white py-20 px-4">
           <div className="mx-auto max-w-3xl">
             <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
               How it works
             </h2>
             <p className="mt-6 text-lg text-slate-600 sm:text-xl">
-              Answer 50 quick red / amber / green questions — no prep, no calculators, no essays.
+              Answer 50 quick red / amber / green questions, no prep, no calculators, no essays.
             </p>
             <div className="mt-8 space-y-6 text-slate-600 leading-relaxed">
               <p>
-                This scorecard has been built on the Profit System — a structured framework that maps your entire business across 5 Levels of owner growth and 10 areas of business health.
+                This scorecard has been built on the Profit System, a structured framework that maps your entire business across 5 Levels of owner growth and 10 areas of business health.
               </p>
               <p>
-                You&apos;ll answer 50 simple questions: &quot;Is this in place in my business right now?&quot; — and mark each one red (not in place), amber (partially), or green (fully in place).
+                You&apos;ll answer 50 simple questions: &quot;Is this in place in my business right now?&quot;, and mark each one red (not in place), amber (partially), or green (fully in place).
               </p>
               <p>
                 Behind the scenes, each answer is weighted by level and area. Foundations hit harder than nice-to-haves. Profit, cash, and owner performance are treated as survival, not luxury.
               </p>
               <p>
-                Once you&apos;re done, you get your results instantly — no waiting, no sales call required.
+                Once you&apos;re done, you get your results instantly, no waiting, no sales call required.
               </p>
             </div>
             <button
@@ -543,14 +543,14 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
           </div>
         </section>
 
-        {/* Section 4 — BOSS grid (image placeholder) */}
+        {/* Section 4, BOSS grid (image placeholder) */}
         <section className="border-t border-slate-200 bg-[#0c5290] py-20 px-4" style={{ backgroundColor: "#0c5290" }}>
           <div className="mx-auto max-w-4xl">
             <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-center">
               See your whole operating system on one page
             </h2>
             <p className="mt-4 text-center text-lg text-sky-100 sm:text-xl max-w-2xl mx-auto">
-              Your full BOSS Map — 5 levels, 10 areas, 50 playbooks — colour-coded so you see exactly where you&apos;re strong and where you&apos;re exposed.
+              Your full BOSS Map, 5 levels, 10 areas, 50 playbooks, colour-coded so you see exactly where you&apos;re strong and where you&apos;re exposed.
             </p>
             <div className="mt-12 flex justify-center">
               <div className="rounded-2xl border-2 border-dashed border-sky-400/50 bg-sky-950/30 px-12 py-16 text-center min-w-[280px]">
@@ -570,35 +570,35 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
           </div>
         </section>
 
-        {/* Section 5 — What you get (with BOSS Wheel) */}
+        {/* Section 5, What you get (with BOSS Wheel) */}
         <section className="border-t border-slate-200 bg-white py-20 px-4">
           <div className="mx-auto max-w-5xl">
             <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
               What you&apos;ll see instantly
             </h2>
             <p className="mt-6 text-lg text-slate-600 sm:text-xl">
-              Your personal BOSS Report — no waiting, no sales call, no obligation.
+              Your personal BOSS Report, no waiting, no sales call, no obligation.
             </p>
             <div className="mt-12 flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-16">
               <BossWheel size={300} />
               <ul className="mt-10 space-y-6 text-base text-slate-700 sm:text-lg flex-1">
               <li>
-                <strong className="text-slate-900">Your BOSS Score out of 100</strong> — One number that tells you how strong your business operating system really is. Weighted by level — foundations count more than optimisations.
+                <strong className="text-slate-900">Your BOSS Score out of 100</strong>, One number that tells you how strong your business operating system really is. Weighted by level, foundations count more than optimisations.
               </li>
               <li>
-                <strong className="text-slate-900">Your Stage</strong> — Know exactly where you are: Overwhelm → Overworked → Organised → Overseer → Owner.
+                <strong className="text-slate-900">Your Stage</strong>, Know exactly where you are: Overwhelm → Overworked → Organised → Overseer → Owner.
               </li>
               <li>
-                <strong className="text-slate-900">Your BOSS Wheel</strong> — A visual map across all 10 areas so you can see the shape of your business at a glance.
+                <strong className="text-slate-900">Your BOSS Wheel</strong>, A visual map across all 10 areas so you can see the shape of your business at a glance.
               </li>
               <li>
-                <strong className="text-slate-900">Your full colour-coded grid</strong> — All 50 playbooks mapped in red, amber, and green across 5 levels and 10 areas.
+                <strong className="text-slate-900">Your full colour-coded grid</strong>, All 50 playbooks mapped in red, amber, and green across 5 levels and 10 areas.
               </li>
               <li>
-                <strong className="text-slate-900">Your score breakdown</strong> — How many areas are fully in place, partially in place, or not in place.
+                <strong className="text-slate-900">Your score breakdown</strong>, How many areas are fully in place, partially in place, or not in place.
               </li>
               <li>
-                <strong className="text-slate-900">Your top 3 priorities for the next 90 days</strong> — The 3 highest-leverage changes most likely to increase profit, reduce chaos, and strengthen your foundations.
+                <strong className="text-slate-900">Your top 3 priorities for the next 90 days</strong>, The 3 highest-leverage changes most likely to increase profit, reduce chaos, and strengthen your foundations.
               </li>
             </ul>
             </div>
@@ -612,14 +612,14 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
           </div>
         </section>
 
-        {/* Section 6 — Not a fluffy quiz */}
+        {/* Section 6, Not a fluffy quiz */}
         <section className="border-t border-slate-200 bg-slate-50 py-20 px-4">
           <div className="mx-auto max-w-3xl">
             <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
               This is not a fluffy &quot;business quiz&quot;
             </h2>
             <p className="mt-6 text-slate-600 leading-relaxed">
-              Most scorecards are glorified personality tests. The BOSS Scorecard is a Business Operating System X-ray — built for real-world SMEs doing £1M–£20M.
+              Most scorecards are glorified personality tests. The BOSS Scorecard is a Business Operating System X-ray, built for real-world SMEs doing £1M–£20M.
             </p>
             <p className="mt-4 text-slate-600 leading-relaxed">
               It exists to answer three questions:
@@ -630,12 +630,12 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               <li>What should I fix first?</li>
             </ol>
             <p className="mt-6 text-slate-600 leading-relaxed">
-              No theory. No generic advice. Just a clear, visual diagnosis of your specific situation — so you can stop fixing what&apos;s loud and start fixing what actually matters.
+              No theory. No generic advice. Just a clear, visual diagnosis of your specific situation, so you can stop fixing what&apos;s loud and start fixing what actually matters.
             </p>
           </div>
         </section>
 
-        {/* Section 7 — What happens after */}
+        {/* Section 7, What happens after */}
         <section className="border-t border-slate-200 bg-white py-20 px-4">
           <div className="mx-auto max-w-3xl">
             <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
@@ -645,7 +645,7 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               Your report is yours to keep. You can review it, share it with your team, and start working on your top priorities immediately.
             </p>
             <p className="mt-4 text-slate-600 leading-relaxed">
-              If you&apos;d like a second pair of eyes, you can optionally book a free BOSS Review — a focused session where a Profit Coach walks through your results, unpacks the priorities, and helps you turn them into a 90-day action plan.
+              If you&apos;d like a second pair of eyes, you can optionally book a free BOSS Review, a focused session where a Profit Coach walks through your results, unpacks the priorities, and helps you turn them into a 90-day action plan.
             </p>
             <p className="mt-4 text-slate-600 leading-relaxed">
               No pressure. No pitch. Just clarity on what to do next.
@@ -653,14 +653,14 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
           </div>
         </section>
 
-        {/* Section 8 — Final CTA */}
+        {/* Section 8, Final CTA */}
         <section className="border-t border-slate-200 bg-[#0c5290] py-20 px-4" style={{ backgroundColor: "#0c5290" }}>
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
               See the whole operating system. Then decide what to fix first.
             </h2>
             <p className="mt-6 text-lg text-sky-100 sm:text-xl">
-              50 focused questions. Under 10 minutes. Instant results — your BOSS Score, your Stage, your visual map, and your top 3 priorities.
+              50 focused questions. Under 10 minutes. Instant results, your BOSS Score, your Stage, your visual map, and your top 3 priorities.
             </p>
             <button
               type="button"
@@ -670,9 +670,9 @@ function LandingVariantLegacy(props: LandingVariantLegacyProps) {
               Get my Profit Plan →
             </button>
             <ul className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-sky-100">
-              <li>Free — no cost, no card</li>
-              <li>Instant — results on screen immediately</li>
-              <li>Private — your answers are confidential</li>
+              <li>Free, no cost, no card</li>
+              <li>Instant, results on screen immediately</li>
+              <li>Private, your answers are confidential</li>
               <li>No sales call required</li>
             </ul>
           </div>
@@ -807,13 +807,13 @@ function LandingVariantA(props: LandingVariantLegacyProps) {
                 step="01."
                 imageSrc="/landing/v2/how-1.png"
                 title="Answer a few questions about how your business runs"
-                description="Quick red / amber / green questions across the operating system — no prep, no essays."
+                description="Quick red / amber / green questions across the operating system, no prep, no essays."
               />
               <HowRow
                 step="02."
                 imageSrc="/landing/v2/how-2.png"
                 title="Get your BOSS score out of 100"
-                description="A weighted score that highlights foundations first — so you see the real constraint."
+                description="A weighted score that highlights foundations first, so you see the real constraint."
               />
               <HowRow
                 step="03."
@@ -836,7 +836,7 @@ function LandingVariantA(props: LandingVariantLegacyProps) {
                 Ready to build a rewarding business?
               </h2>
               <p className="mt-4 text-lg leading-relaxed text-white/80">
-                Take the free BOSS Scorecard and get instant insight into what’s holding you back — and what to do next.
+                Take the free BOSS Scorecard and get instant insight into what’s holding you back, and what to do next.
               </p>
               <div className="mt-8 flex justify-center">
                 <button
@@ -1074,7 +1074,7 @@ function LandingOptInForm(
                   id="landingA-phone-country"
                   value={phoneCountryCode}
                   onChange={(e) => setPhoneCountryCode(e.target.value)}
-                  className={`${inputClass} w-36 shrink-0`}
+                  className={`${inputClass} !w-28 shrink-0`}
                   aria-label="Country code"
                 >
                   {COUNTRY_CODES.map((c) => (
@@ -1089,7 +1089,7 @@ function LandingOptInForm(
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className={inputClass}
+                  className={`${inputClass} min-w-0 flex-1`}
                   placeholder="e.g. 7123 456789"
                 />
               </div>
@@ -1114,7 +1114,7 @@ function LandingOptInForm(
           {!loadingCoach && (coach?.full_name || coach?.coach_business_name || coachSlug.toUpperCase() === "BCA") && (
             <p className={`pt-4 text-sm border-t ${isDark ? "border-white/10 text-white/60" : "border-slate-200 text-slate-500"}`}>
               Your results can be shared with your coach
-              {coach?.full_name || coach?.coach_business_name ? ` — ${coach.full_name ?? coach.coach_business_name}` : ""}.
+              {coach?.full_name || coach?.coach_business_name ? `, ${coach.full_name ?? coach.coach_business_name}` : ""}.
             </p>
           )}
         </div>

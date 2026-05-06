@@ -20,6 +20,39 @@ const linkItems = [
   { href: "/preview/thank-you", label: "Thank you (Completed)" },
 ];
 
+const bossProgrammeLinks = [
+  {
+    href: "/landing/a?coach=BCA",
+    label: "Landing page",
+    hint: "Public opt-in page (variant A).",
+  },
+  {
+    href: "/assessment/BCA",
+    label: "Assessment",
+    hint: "Question flow prospects complete after landing.",
+  },
+  {
+    href: "/preview/report",
+    label: "AI report preview",
+    hint: "Progress bars + AI insight dashboard with seeded demo data.",
+  },
+  {
+    href: "/preview/report-design-system",
+    label: "BOSS report (design system)",
+    hint: "New layout: brand canvas, glass hero, pillars/levels/areas, charts.",
+  },
+  {
+    href: "/assessment/BCA/thank-you?preview=1",
+    label: "Results page (thank-you)",
+    hint: "Simpler post-assessment results experience.",
+  },
+  {
+    href: "/admin/prospects",
+    label: "Internal prospect dashboard",
+    hint: "Open prospects, then select a prospect record.",
+  },
+] as const;
+
 const ACCOUNT_TAB_IDS = [
   "profile",
   "account",
@@ -169,35 +202,30 @@ function AdminAccountPageContent() {
           </div>
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <h2 className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Landing pages
+              Boss Programme flow
             </h2>
             <ul className="divide-y divide-slate-100">
-              <li>
-                <Link
-                  href="/landing/a?coach=BCA"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm text-slate-900 hover:bg-slate-50"
-                >
-                  <span className="font-medium">Landing – Variant A (control)</span>
-                  <span className="truncate text-xs text-slate-500">
-                    {origin ? `${origin}/landing/a?coach=BCA` : "/landing/a?coach=BCA"}
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/landing/b?coach=BCA"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm text-slate-900 hover:bg-slate-50"
-                >
-                  <span className="font-medium">Landing – Variant B (variation)</span>
-                  <span className="truncate text-xs text-slate-500">
-                    {origin ? `${origin}/landing/b?coach=BCA` : "/landing/b?coach=BCA"}
-                  </span>
-                </Link>
-              </li>
+              {bossProgrammeLinks.map((item) => {
+                const fullUrl = origin ? `${origin}${item.href}` : item.href;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex flex-col gap-0.5 px-4 py-3 text-sm text-slate-900 hover:bg-slate-50"
+                    >
+                      <span className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{item.label}</span>
+                        <span className="truncate text-xs text-slate-500">
+                          {fullUrl}
+                        </span>
+                      </span>
+                      <span className="text-xs text-slate-500">{item.hint}</span>
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">

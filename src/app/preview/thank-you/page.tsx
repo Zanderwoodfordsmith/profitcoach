@@ -32,7 +32,7 @@ export default function ThankYouPreviewPage() {
     <div className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto max-w-5xl space-y-6">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-          Preview — This is what prospects see after completing the assessment
+          Preview: this is what prospects see after completing the assessment
         </p>
 
         <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -61,7 +61,7 @@ export default function ThankYouPreviewPage() {
             </p>
             <p className="mt-4 max-w-xl text-sm text-slate-600">
               Thank you for completing your Business Operating System Score. Your
-              BOSS grid has been updated — you can now see exactly where to focus
+              BOSS grid has been updated, you can now see exactly where to focus
               next.
             </p>
             <div className="mt-6 w-full max-w-md text-left">

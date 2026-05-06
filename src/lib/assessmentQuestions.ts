@@ -16,7 +16,7 @@ export type AssessmentQuestion = {
 };
 
 export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
-  // Page 1: Owner Performance (+) — Foundation
+  // Page 1: Owner Performance (+), Foundation
   {
     ref: "1.0",
     level: 1,
@@ -45,7 +45,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 2,
     question:
-      "Do you have clear boundaries around your working hours, energy, and recovery — and do you protect them?",
+      "Do you have clear boundaries around your working hours, energy, and recovery, and do you protect them?",
     scoringGuide: {
       red: "I work all hours and I'm burning out",
       amber: "I've tried but I regularly break my own rules",
@@ -80,7 +80,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 4,
     question:
-      "Are you actively developing your leadership skills — communication, decision-making, and emotional intelligence?",
+      "Are you actively developing your leadership skills, communication, decision-making, and emotional intelligence?",
     scoringGuide: {
       red: "I haven't focused on this",
       amber: "I'm aware of my gaps but not actively developing",
@@ -106,7 +106,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I choose my involvement and my life is designed around what I want",
     },
   },
-  // Page 2: Aligned Vision (A) — Clarify Vision
+  // Page 2: Aligned Vision (A), Clarify Vision
   {
     ref: "1.1",
     level: 1,
@@ -117,7 +117,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 1,
     question:
-      "Do you know exactly what you need from your business — financially and personally — and why you're doing this?",
+      "Do you know exactly what you need from your business, financially and personally, and why you're doing this?",
     scoringGuide: {
       red: "I've never clearly defined this",
       amber:
@@ -193,7 +193,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 5,
     question:
-      "Does your company have a clear mission — a purpose beyond profit — that would outlast you as the founder?",
+      "Does your company have a clear mission, a purpose beyond profit, that would outlast you as the founder?",
     scoringGuide: {
       red: "The business is just about making money",
       amber:
@@ -202,7 +202,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "We have a clear mission that the team and customers connect with",
     },
   },
-  // Page 3: Defined Strategy (D) — Clarify Vision
+  // Page 3: Defined Strategy (D), Clarify Vision
   {
     ref: "1.2",
     level: 1,
@@ -232,7 +232,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 2,
     question:
-      "Do you understand how money flows through your business — your revenue streams, pricing model, and how you make profit?",
+      "Do you understand how money flows through your business, your revenue streams, pricing model, and how you make profit?",
     scoringGuide: {
       red: "I've never mapped this out",
       amber:
@@ -251,7 +251,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 3,
     question:
-      "Are you clearly positioned against your competitors — do customers know why they should choose you?",
+      "Are you clearly positioned against your competitors, do customers know why they should choose you?",
     scoringGuide: {
       red: "I look like everyone else in my market",
       amber:
@@ -270,7 +270,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 4,
     question:
-      "Do you have a deliberate growth strategy — you know where to grow next and where NOT to invest?",
+      "Do you have a deliberate growth strategy, you know where to grow next and where NOT to invest?",
     scoringGuide: {
       red: "I chase opportunities as they come",
       amber: "I have ideas about growth but no structured plan",
@@ -288,7 +288,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 5,
     question:
-      "Do you have a plan for your eventual exit — whether that's selling, succession, or another path?",
+      "Do you have a plan for your eventual exit, whether that's selling, succession, or another path?",
     scoringGuide: {
       red: "I've never thought about it",
       amber:
@@ -297,7 +297,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I know my exit path, I'm building towards it, and I know what drives my valuation",
     },
   },
-  // Page 4: Disciplined Planning (D) — Clarify Vision
+  // Page 4: Disciplined Planning (D), Clarify Vision
   {
     ref: "1.3",
     level: 1,
@@ -308,7 +308,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 1,
     question:
-      "Do you consistently finish what you start — do you have a system to prioritise, plan your week, and get things done?",
+      "Do you consistently finish what you start, do you have a system to prioritise, plan your week, and get things done?",
     scoringGuide: {
       red: "I start lots of things and finish few",
       amber: "I plan sometimes but execution is inconsistent",
@@ -326,7 +326,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 2,
     question:
-      "Have you mapped out how your business actually works — the key processes from lead to delivery to cash?",
+      "Have you mapped out how your business actually works, the key processes from lead to delivery to cash?",
     scoringGuide: {
       red: "It's all in my head",
       amber:
@@ -345,7 +345,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 3,
     question:
-      "Do you plan in structured time horizons — annual goals, quarterly plans, and 90-day sprints with clear projects?",
+      "Do you plan in structured time horizons, annual goals, quarterly plans, and 90-day sprints with clear projects?",
     scoringGuide: {
       red: "I don't plan beyond the next few weeks",
       amber:
@@ -364,7 +364,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 4,
     question:
-      "Do you have a regular meeting rhythm — weekly huddles, monthly reviews, and quarterly planning sessions — with clear agendas?",
+      "Do you have a regular meeting rhythm, weekly huddles, monthly reviews, and quarterly planning sessions, with clear agendas?",
     scoringGuide: {
       red: "Meetings are ad hoc or non-existent",
       amber:
@@ -392,7 +392,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I have key people, governance structures, and the business can run independently",
     },
   },
-  // Page 5: Profit & Cash Flow (P) — Control Velocity
+  // Page 5: Profit & Cash Flow (P), Control Velocity
   {
     ref: "1.4",
     level: 1,
@@ -440,7 +440,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 3,
     question:
-      "Are your prices set deliberately for profit — do you know your margins on every product/service and are they healthy?",
+      "Are your prices set deliberately for profit, do you know your margins on every product/service and are they healthy?",
     scoringGuide: {
       red: "I guessed my prices or just matched competitors",
       amber:
@@ -459,7 +459,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 4,
     question:
-      "Do you deliberately allocate your profit into buckets — owner pay, tax, profit reserve, and reinvestment?",
+      "Do you deliberately allocate your profit into buckets, owner pay, tax, profit reserve, and reinvestment?",
     scoringGuide: {
       red: 'Whatever\'s left at the end is "profit"',
       amber:
@@ -478,7 +478,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 5,
     question:
-      "Are you building personal wealth beyond the business — optimising tax, investing, and creating financial independence?",
+      "Are you building personal wealth beyond the business, optimising tax, investing, and creating financial independence?",
     scoringGuide: {
       red: "All my wealth is tied up in the business",
       amber:
@@ -487,7 +487,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I have a wealth strategy, my tax is optimised, and I'm building assets outside the business",
     },
   },
-  // Page 6: Revenue & Marketing (R) — Control Velocity
+  // Page 6: Revenue & Marketing (R), Control Velocity
   {
     ref: "1.5",
     level: 1,
@@ -498,7 +498,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 1,
     question:
-      "Have you clearly defined your ideal customer — who they are, what they need, and what problem you solve for them?",
+      "Have you clearly defined your ideal customer, who they are, what they need, and what problem you solve for them?",
     scoringGuide: {
       red: "I'll work with anyone who'll pay",
       amber:
@@ -536,7 +536,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 3,
     question:
-      "Do you have systems to warm up leads who aren't ready to buy yet — email sequences, follow-ups, content?",
+      "Do you have systems to warm up leads who aren't ready to buy yet, email sequences, follow-ups, content?",
     scoringGuide: {
       red: "If they don't buy straight away, I lose them",
       amber:
@@ -555,7 +555,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 4,
     question:
-      "Do you have a structured sales process that converts leads into customers — and does it work without you personally?",
+      "Do you have a structured sales process that converts leads into customers, and does it work without you personally?",
     scoringGuide: {
       red: "Sales is ad hoc and depends entirely on me",
       amber:
@@ -574,7 +574,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 5,
     question:
-      "Is your business becoming the recognised go-to brand in your market — where customers come to you?",
+      "Is your business becoming the recognised go-to brand in your market, where customers come to you?",
     scoringGuide: {
       red: "Nobody knows who we are",
       amber:
@@ -583,7 +583,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "We're known as the go-to in our space, customers seek us out, and our brand is a real asset",
     },
   },
-  // Page 7: Operations & Delivery (O) — Control Velocity
+  // Page 7: Operations & Delivery (O), Control Velocity
   {
     ref: "1.6",
     level: 1,
@@ -613,7 +613,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 2,
     question:
-      "Have you deliberately designed the customer experience — every touchpoint from first contact to completion?",
+      "Have you deliberately designed the customer experience, every touchpoint from first contact to completion?",
     scoringGuide: {
       red: "I've never thought about it as a designed experience",
       amber:
@@ -650,7 +650,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 4,
     question:
-      "Do you actively work to grow what each customer is worth — through upsells, cross-sells, and increased frequency?",
+      "Do you actively work to grow what each customer is worth, through upsells, cross-sells, and increased frequency?",
     scoringGuide: {
       red: "I focus on getting new customers, not growing existing ones",
       amber:
@@ -669,7 +669,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 5,
     question:
-      "Do you have a structured approach to evolving what you offer — new products, services, or innovations?",
+      "Do you have a structured approach to evolving what you offer, new products, services, or innovations?",
     scoringGuide: {
       red: "We've been selling the same thing for years with no evolution",
       amber:
@@ -678,7 +678,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I have a structured R&D process and a roadmap for product/service evolution",
     },
   },
-  // Page 8: Financials & Metrics (F) — Create Value
+  // Page 8: Financials & Metrics (F), Create Value
   {
     ref: "1.7",
     level: 1,
@@ -689,7 +689,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 1,
     question:
-      "Do you understand your basic financial statements — can you read a P&L and know what the numbers mean?",
+      "Do you understand your basic financial statements, can you read a P&L and know what the numbers mean?",
     scoringGuide: {
       red: "I leave all finance to my accountant and don't really understand it",
       amber:
@@ -727,7 +727,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 3,
     question:
-      "Do you track the right key performance indicators — and do you review them regularly to make decisions?",
+      "Do you track the right key performance indicators, and do you review them regularly to make decisions?",
     scoringGuide: {
       red: "I don't know what to measure or I don't measure anything",
       amber:
@@ -774,7 +774,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I know my valuation, I understand the drivers, and I'm deliberately increasing them",
     },
   },
-  // Page 9: Infrastructure & Systems (I) — Create Value
+  // Page 9: Infrastructure & Systems (I), Create Value
   {
     ref: "1.8",
     level: 1,
@@ -785,7 +785,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 1,
     question:
-      "Have you identified and listed all the key processes in your business — do you know what needs to happen and in what order?",
+      "Have you identified and listed all the key processes in your business, do you know what needs to happen and in what order?",
     scoringGuide: {
       red: "It's all in people's heads",
       amber:
@@ -823,7 +823,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 3,
     question:
-      "Do you have proper connected systems across your business — marketing, sales, delivery, and finance all joined up?",
+      "Do you have proper connected systems across your business, marketing, sales, delivery, and finance all joined up?",
     scoringGuide: {
       red: "Everything is disconnected or manual",
       amber:
@@ -842,7 +842,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 4,
     question:
-      "Do you have a management system for running your people — with clear expectations, accountability, cadence, and recognition?",
+      "Do you have a management system for running your people, with clear expectations, accountability, cadence, and recognition?",
     scoringGuide: {
       red: "I manage people ad hoc with no structure",
       amber:
@@ -861,7 +861,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 5,
     question:
-      "Do you have a continuous improvement process — regularly reviewing and refining your systems to make them better?",
+      "Do you have a continuous improvement process, regularly reviewing and refining your systems to make them better?",
     scoringGuide: {
       red: "Once something is built, I rarely revisit it",
       amber:
@@ -870,7 +870,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
         "I have a structured approach to continuous improvement with feedback loops",
     },
   },
-  // Page 10: Team & Leadership (T) — Create Value
+  // Page 10: Team & Leadership (T), Create Value
   {
     ref: "1.9",
     level: 1,
@@ -919,7 +919,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 3,
     question:
-      "Do you have systems for getting the best out of your team — training, accountability, feedback, and performance reviews?",
+      "Do you have systems for getting the best out of your team, training, accountability, feedback, and performance reviews?",
     scoringGuide: {
       red: "I don't have formal performance management",
       amber: "I do some of this but it's inconsistent",
@@ -956,7 +956,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 5,
     question:
-      "Do you have culture built as a deliberate system — with clear values, behaviours, enforcement, and recognition?",
+      "Do you have culture built as a deliberate system, with clear values, behaviours, enforcement, and recognition?",
     scoringGuide: {
       red: "Culture is accidental, not designed",
       amber:
@@ -976,5 +976,16 @@ export const QUESTIONS_BY_PAGE: Record<number, AssessmentQuestion[]> =
 
 Object.values(QUESTIONS_BY_PAGE).forEach((list) =>
   list.sort((a, b) => a.level - b.level)
+);
+
+export const QUESTIONS_BY_LEVEL: Record<number, AssessmentQuestion[]> =
+  ASSESSMENT_QUESTIONS.reduce((acc, q) => {
+    if (!acc[q.level]) acc[q.level] = [];
+    acc[q.level].push(q);
+    return acc;
+  }, {} as Record<number, AssessmentQuestion[]>);
+
+Object.values(QUESTIONS_BY_LEVEL).forEach((list) =>
+  list.sort((a, b) => a.page - b.page)
 );
 

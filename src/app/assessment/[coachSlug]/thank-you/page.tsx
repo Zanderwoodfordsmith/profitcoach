@@ -107,7 +107,7 @@ export default function AssessmentThankYouPage() {
             </p>
             <p className="mt-4 max-w-xl text-sm text-slate-600">
               Thank you for completing your Business Operating System Score. Your
-              BOSS grid has been updated — you can now see exactly where to focus
+              BOSS grid has been updated, you can now see exactly where to focus
               next.
             </p>
             <div className="mt-6 w-full max-w-md text-left">

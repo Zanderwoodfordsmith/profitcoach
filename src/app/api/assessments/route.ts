@@ -1,4 +1,6 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
+import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -15,6 +17,86 @@ type Body = {
 };
 
 const CENTRAL_SLUG = "BCA";
+const CENTRAL_SLUG_LOWER = CENTRAL_SLUG.toLowerCase();
+
+/**
+ * Creates auth user + profile + coaches row for central marketing when no "bca" coach exists.
+ * Set AUTO_PROVISION_CENTRAL_COACH=false to require manual Admin setup instead.
+ */
+async function provisionCentralCoachIfMissing(): Promise<{ id: string } | null> {
+  if (process.env.AUTO_PROVISION_CENTRAL_COACH === "false") {
+    return null;
+  }
+
+  const { data: existing } = await supabaseAdmin
+    .from("coaches")
+    .select("id")
+    .eq("slug", CENTRAL_SLUG_LOWER)
+    .maybeSingle();
+  if (existing?.id) return { id: existing.id as string };
+
+  const email =
+    process.env.CENTRAL_COACH_SYSTEM_EMAIL?.trim() ||
+    "central-marketing-coach@profitcoach.internal";
+
+  const password = `${randomUUID()}Aa1!`;
+  const fullName = "Central (BCA)";
+  const { first_name, last_name } = splitFullName(fullName);
+
+  const {
+    data: authData,
+    error: authError,
+  } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { profit_coach_central_placeholder: true },
+  });
+
+  if (authError || !authData?.user) {
+    const { data: raced } = await supabaseAdmin
+      .from("coaches")
+      .select("id")
+      .eq("slug", CENTRAL_SLUG_LOWER)
+      .maybeSingle();
+    if (raced?.id) return { id: raced.id as string };
+    console.error("Central coach provision (auth):", authError);
+    return null;
+  }
+
+  const userId = authData.user.id;
+
+  const { error: profileError } = await supabaseAdmin.from("profiles").insert({
+    id: userId,
+    role: "coach",
+    full_name: fullName,
+    first_name,
+    last_name,
+    coach_business_name: "Profit Coach Central",
+  });
+
+  if (profileError) {
+    console.error("Central coach provision (profile):", profileError);
+    return null;
+  }
+
+  const { error: coachInsertError } = await supabaseAdmin
+    .from("coaches")
+    .insert({ id: userId, slug: CENTRAL_SLUG_LOWER });
+
+  if (coachInsertError) {
+    const { data: raced } = await supabaseAdmin
+      .from("coaches")
+      .select("id")
+      .eq("slug", CENTRAL_SLUG_LOWER)
+      .maybeSingle();
+    if (raced?.id) return { id: raced.id as string };
+    console.error("Central coach provision (coaches):", coachInsertError);
+    return null;
+  }
+
+  return { id: userId };
+}
 
 export async function POST(request: Request) {
   const body = (await request.json()) as Body;
@@ -23,7 +105,7 @@ export async function POST(request: Request) {
   const coachSlug =
     typeof body.coachSlug === "string" && body.coachSlug.trim()
       ? body.coachSlug.trim().toLowerCase()
-      : CENTRAL_SLUG.toLowerCase();
+      : CENTRAL_SLUG_LOWER;
 
   if (
     typeof body.total_score !== "number" ||
@@ -36,8 +118,8 @@ export async function POST(request: Request) {
     );
   }
 
-  // Look up coach (create a coach with slug "BCA" to receive central submissions)
-  const {
+  // Look up coach; auto-provision central "bca" when missing (see provisionCentralCoachIfMissing).
+  let {
     data: coach,
     error: coachError,
   } = await supabaseAdmin
@@ -46,12 +128,27 @@ export async function POST(request: Request) {
     .eq("slug", coachSlug)
     .maybeSingle();
 
-  if (coachError || !coach) {
+  if (coachError) {
+    console.error("assessments coach lookup:", coachError);
+    return NextResponse.json(
+      { error: "Unable to look up coach." },
+      { status: 500 }
+    );
+  }
+
+  if (!coach && coachSlug === CENTRAL_SLUG_LOWER) {
+    const provisioned = await provisionCentralCoachIfMissing();
+    if (provisioned) {
+      coach = provisioned;
+    }
+  }
+
+  if (!coach) {
     return NextResponse.json(
       {
         error:
-          coachSlug === CENTRAL_SLUG.toLowerCase()
-            ? "Central assessment is not set up. Create a coach with slug \"BCA\" in Admin to receive central marketing submissions."
+          coachSlug === CENTRAL_SLUG_LOWER
+            ? "Central assessment is not set up. Create a coach with slug \"BCA\" in Admin (or set CENTRAL_COACH_SYSTEM_EMAIL and ensure AUTO_PROVISION_CENTRAL_COACH is not false)."
             : "Coach not found for this link.",
       },
       { status: 400 }
