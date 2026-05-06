@@ -108,6 +108,7 @@ function deliveryNavItems(prefix: "/coach" | "/admin"): NavItem[] {
 
 const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
+  { href: "/admin/linkedin", label: "LinkedIn Scheduler", icon: IconSparkles },
   { href: "/admin/community/feedback", label: "Feedback inbox", icon: IconMessagesSquare },
 ];
 
