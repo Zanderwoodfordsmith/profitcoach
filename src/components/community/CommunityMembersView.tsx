@@ -21,6 +21,7 @@ import {
 } from "@/components/community/useCommunityMemberDirectory";
 import { paginationItems } from "@/lib/communityPagination";
 import { profileInitialsFromName } from "@/lib/communityProfile";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 const MEMBERS_PER_PAGE = 20;
 
@@ -158,6 +159,8 @@ export function CommunityMembersView() {
   const searchParams = useSearchParams();
   const [membersListPage, setMembersListPage] = useState(1);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
   const sortMenuRef = useRef<HTMLDivElement>(null);
   const base = pathname.startsWith("/admin")
     ? "/admin/community"
@@ -277,6 +280,7 @@ export function CommunityMembersView() {
   );
 
   const sortMenuIsNonDefault = sort !== "last" || dir !== "desc";
+  const linkedinStatus = searchParams.get("linkedin");
 
   const pillClass = (id: CommunityMembersFilter) =>
     `rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -288,9 +292,99 @@ export function CommunityMembersView() {
   const countClass = (id: CommunityMembersFilter) =>
     filter === id ? "text-sky-200" : "text-slate-500";
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user || cancelled) return;
+
+      const roleRes = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        role?: string;
+      };
+      if (!cancelled) setIsAdmin(roleBody.role === "admin");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleConnectLinkedIn() {
+    if (connectingLinkedIn) return;
+    setConnectingLinkedIn(true);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token ?? "";
+      if (!token) {
+        throw new Error("Please sign in again before connecting LinkedIn.");
+      }
+
+      const res = await fetch("/api/linkedin/connect", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !body.url) {
+        throw new Error(body.error || "Could not start LinkedIn connect.");
+      }
+      window.location.assign(body.url);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not start LinkedIn connect.";
+      window.alert(message);
+      setConnectingLinkedIn(false);
+    }
+  }
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
       <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col pt-5 lg:mx-0 lg:pt-6">
+      {isAdmin ? (
+        <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                LinkedIn publishing (admin beta)
+              </p>
+              <p className="mt-1 text-xs text-slate-600">
+                Connect your LinkedIn profile for member posting and scheduling.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleConnectLinkedIn}
+              disabled={connectingLinkedIn}
+              className="rounded-md bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {connectingLinkedIn ? "Redirecting…" : "Connect LinkedIn"}
+            </button>
+          </div>
+          {linkedinStatus ? (
+            <p
+              className={`mt-2 text-xs ${
+                linkedinStatus === "connected"
+                  ? "text-emerald-700"
+                  : "text-amber-700"
+              }`}
+            >
+              {linkedinStatus === "connected"
+                ? "LinkedIn connected successfully."
+                : `LinkedIn status: ${linkedinStatus.replaceAll("_", " ")}`}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
       {loadError ? (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {loadError}

@@ -271,6 +271,14 @@ export function CreatePostModal({
       aria-labelledby="create-post-title"
       onClick={(e) => e.stopPropagation()}
     >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:bg-slate-50 hover:text-slate-800"
+        aria-label="Close"
+      >
+        <X className="h-3 w-3" strokeWidth={2.5} />
+      </button>
       <div className="flex items-center gap-3">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -311,7 +319,8 @@ export function CreatePostModal({
           onChange={setBody}
           placeholder="Write something…"
           rows={3}
-          className="w-full resize-y border-0 border-b border-slate-200 bg-transparent px-0 pb-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
+          showFormattingToolbar
+          className="w-full resize-y border-0 bg-transparent px-0 pb-1 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
         />
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">

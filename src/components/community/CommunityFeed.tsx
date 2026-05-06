@@ -109,6 +109,7 @@ const COMMUNITY_POST_LIST_SELECT = `
         image_url,
         media,
         is_pinned,
+        published_at,
         created_at,
         category_id,
         feed_comment_count,
@@ -126,6 +127,7 @@ const COMMUNITY_POST_LIST_SELECT_LEGACY = `
         image_url,
         media,
         is_pinned,
+        published_at,
         created_at,
         category_id,
         feed_poll_vote_count,
@@ -143,6 +145,7 @@ const COMMUNITY_POST_FAVOURITE_EMBED_SELECT = `
     image_url,
     media,
     is_pinned,
+    published_at,
     created_at,
     category_id,
     feed_comment_count,
@@ -163,6 +166,7 @@ const COMMUNITY_POST_FAVOURITE_EMBED_SELECT_LEGACY = `
     image_url,
     media,
     is_pinned,
+    published_at,
     created_at,
     category_id,
     feed_poll_vote_count,
@@ -216,6 +220,7 @@ export type CommunityPostRow = {
   like_count: number;
   comment_count: number;
   liked_by_me: boolean;
+  commented_by_me: boolean;
   /** Starred by the signed-in user (auth uid). */
   favourited_by_me: boolean;
   comment_preview_authors: ProfileRow[];
@@ -230,6 +235,7 @@ type RawCommunityPostRow = Omit<
   | "like_count"
   | "comment_count"
   | "liked_by_me"
+  | "commented_by_me"
   | "favourited_by_me"
   | "comment_preview_authors"
   | "last_comment_at"
@@ -269,6 +275,7 @@ type NormalizedPostRow = Omit<
   | "like_count"
   | "comment_count"
   | "liked_by_me"
+  | "commented_by_me"
   | "favourited_by_me"
   | "comment_preview_authors"
   | "last_comment_at"
@@ -379,6 +386,7 @@ function toLightweightFeedPosts(
       like_count: pre?.likeCount ?? 0,
       comment_count: pre?.commentCount ?? 0,
       liked_by_me: false,
+      commented_by_me: false,
       favourited_by_me: Boolean(options?.favouritedByMe),
       comment_preview_authors: [],
       last_comment_at: pre?.lastCommentAt ?? null,
@@ -439,10 +447,23 @@ async function enrichNormalizedCommunityPosts(
           error: null as null,
         });
 
-  const [favRes, myLikesRes, myPollVotesRes] = await Promise.all([
+  const myCommentsPromise =
+    uid && postIds.length > 0
+      ? supabaseClient
+          .from("community_post_comments")
+          .select("post_id")
+          .eq("author_id", uid)
+          .in("post_id", postIds)
+      : Promise.resolve({
+          data: [] as { post_id: string }[] | null,
+          error: null as null,
+        });
+
+  const [favRes, myLikesRes, myPollVotesRes, myCommentsRes] = await Promise.all([
     favPromise,
     myLikesPromise,
     myPollVotesPromise,
+    myCommentsPromise,
   ]);
 
   if (favRes.error && !isUndefinedRelationError(favRes.error)) {
@@ -453,6 +474,9 @@ async function enrichNormalizedCommunityPosts(
   }
   if (myPollVotesRes.error && !isUndefinedRelationError(myPollVotesRes.error)) {
     throw myPollVotesRes.error;
+  }
+  if (myCommentsRes.error && !isUndefinedRelationError(myCommentsRes.error)) {
+    throw myCommentsRes.error;
   }
 
   const likesTableMissing = Boolean(
@@ -495,6 +519,13 @@ async function enrichNormalizedCommunityPosts(
     }[]) {
       myPollVoteByPostId.set(r.post_id, r.option_id);
     }
+  }
+
+  let myCommented = new Set<string>();
+  if (uid && !myCommentsRes.error) {
+    myCommented = new Set(
+      (myCommentsRes.data ?? []).map((r: { post_id: string }) => r.post_id)
+    );
   }
 
   let denormFastPath =
@@ -709,6 +740,7 @@ async function enrichNormalizedCommunityPosts(
       like_count,
       comment_count,
       liked_by_me: myLiked.has(row.id),
+      commented_by_me: myCommented.has(row.id),
       favourited_by_me: !favTableMissing && myFavourited.has(row.id),
       poll_voted_option_id: myPollVoteByPostId.get(row.id) ?? null,
       comment_preview_authors: buildCommentPreviewAvatars(thread),
@@ -732,6 +764,13 @@ function isCommunityPostUnreadOnFeed(
   return new Date(last).getTime() > new Date(seen).getTime();
 }
 
+function isFutureScheduledPost(post: CommunityPostRow): boolean {
+  if (!post.published_at) return false;
+  const at = new Date(post.published_at).getTime();
+  if (Number.isNaN(at)) return false;
+  return at > Date.now();
+}
+
 export function CommunityFeed() {
   const { impersonatingCoachId } = useImpersonation();
   const router = useRouter();
@@ -750,6 +789,7 @@ export function CommunityFeed() {
     "all" | "read" | "unread" | "favourites"
   >("all");
   const [readFilterMenuOpen, setReadFilterMenuOpen] = useState(false);
+  const [scheduledPostsOpen, setScheduledPostsOpen] = useState(true);
   const readFilterMenuRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -764,9 +804,11 @@ export function CommunityFeed() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [feedCountersAvailable, setFeedCountersAvailable] = useState(true);
   const [publishedAtAvailable, setPublishedAtAvailable] = useState(true);
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
   const [communityAuthUserId, setCommunityAuthUserId] = useState<
     string | null
   >(null);
+  const canPreviewScheduledPosts = viewerIsAdmin || pathname.startsWith("/admin");
   /** Bumps when the feed should reload while staying on the same page (e.g. new post). */
   const [postsRefreshNonce, setPostsRefreshNonce] = useState(0);
   /** Cancels in-flight split-page loads when filters or nonce change. */
@@ -890,17 +932,32 @@ export function CommunityFeed() {
     const id = selectedPostId;
     void (async () => {
       try {
-        const { data, error } = await supabaseClient
-          .from("community_posts")
-          .select(
-            (
-              feedCountersAvailable
-                ? COMMUNITY_POST_LIST_SELECT
-                : COMMUNITY_POST_LIST_SELECT_LEGACY
-            ).trim()
-          )
-          .eq("id", id)
-          .maybeSingle();
+        const detailQuery =
+          publishedAtAvailable && !canPreviewScheduledPosts
+            ? supabaseClient
+                .from("community_posts")
+                .select(
+                  (
+                    feedCountersAvailable
+                      ? COMMUNITY_POST_LIST_SELECT
+                      : COMMUNITY_POST_LIST_SELECT_LEGACY
+                  ).trim()
+                )
+                .eq("id", id)
+                .lte("published_at", new Date().toISOString())
+                .maybeSingle()
+            : supabaseClient
+                .from("community_posts")
+                .select(
+                  (
+                    feedCountersAvailable
+                      ? COMMUNITY_POST_LIST_SELECT
+                      : COMMUNITY_POST_LIST_SELECT_LEGACY
+                  ).trim()
+                )
+                .eq("id", id)
+                .maybeSingle();
+        const { data, error } = await detailQuery;
         if (
           error &&
           feedCountersAvailable &&
@@ -924,7 +981,7 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [selectedPostId, posts, feedCountersAvailable]);
+  }, [selectedPostId, posts, feedCountersAvailable, publishedAtAvailable, canPreviewScheduledPosts]);
 
   const loadCategories = useCallback(async () => {
     const { data, error } = await supabaseClient
@@ -985,6 +1042,9 @@ export function CommunityFeed() {
               favQ = favQ.eq("post.category_id", cat.id);
             }
           }
+          if (publishedAtAvailable && !canPreviewScheduledPosts) {
+            favQ = favQ.lte("post.published_at", new Date().toISOString());
+          }
           return favQ;
         };
 
@@ -1003,6 +1063,9 @@ export function CommunityFeed() {
             .order("created_at", { ascending: false });
           if (publishedAtAvailable) {
             q = q.order("published_at", { ascending: false });
+            if (!canPreviewScheduledPosts) {
+              q = q.lte("published_at", new Date().toISOString());
+            }
           }
           if (filterSlug !== "all") {
             const cat = categories.find((c) => c.slug === filterSlug);
@@ -1267,7 +1330,15 @@ export function CommunityFeed() {
         devPerfEnd("communityFeed:loadPosts", perfMark);
       }
     },
-    [page, filterSlug, categories, readFilter, feedCountersAvailable, publishedAtAvailable]
+    [
+      page,
+      filterSlug,
+      categories,
+      readFilter,
+      feedCountersAvailable,
+      publishedAtAvailable,
+      canPreviewScheduledPosts,
+    ]
   );
 
   useEffect(() => {
@@ -1283,6 +1354,7 @@ export function CommunityFeed() {
         if (!session?.user) {
           if (!cancelled) {
             setCommunityAuthUserId(null);
+            setViewerIsAdmin(false);
             setLoadError(
               "No active session. Open the app from a logged-in tab, or sign in again and refresh."
             );
@@ -1291,6 +1363,18 @@ export function CommunityFeed() {
         }
 
         if (!cancelled) setCommunityAuthUserId(session.user.id);
+        try {
+          const { data: me } = await supabaseClient
+            .from("profiles")
+            .select("role")
+            .eq("id", session.user.id)
+            .maybeSingle();
+          if (!cancelled) {
+            setViewerIsAdmin((me?.role as string | null) === "admin");
+          }
+        } catch {
+          if (!cancelled) setViewerIsAdmin(pathname.startsWith("/admin"));
+        }
 
         try {
           const uid =
@@ -1430,6 +1514,16 @@ export function CommunityFeed() {
     );
   }, [posts, readFilter, feedLocalSnapshot]);
 
+  const displayedScheduledPosts = useMemo(() => {
+    if (!canPreviewScheduledPosts) return [] as CommunityPostRow[];
+    return displayedPosts.filter((p) => isFutureScheduledPost(p));
+  }, [displayedPosts, canPreviewScheduledPosts]);
+
+  const displayedPublishedPosts = useMemo(() => {
+    if (!canPreviewScheduledPosts) return displayedPosts;
+    return displayedPosts.filter((p) => !isFutureScheduledPost(p));
+  }, [displayedPosts, canPreviewScheduledPosts]);
+
   useEffect(() => {
     const ids = new Set<string>();
     for (const p of posts) {
@@ -1453,7 +1547,8 @@ export function CommunityFeed() {
     readFilter !== "all" &&
     readFilter !== "favourites" &&
     posts.length > 0 &&
-    displayedPosts.length === 0;
+    displayedPublishedPosts.length === 0 &&
+    displayedScheduledPosts.length === 0;
 
   return (
     <>
@@ -1671,8 +1766,46 @@ export function CommunityFeed() {
                 </p>
               ) : (
                 <>
+                  {canPreviewScheduledPosts && displayedScheduledPosts.length > 0 ? (
+                    <section className="mb-1">
+                      <button
+                        type="button"
+                        onClick={() => setScheduledPostsOpen((v) => !v)}
+                        className="group flex w-full items-center gap-3 py-1"
+                        aria-expanded={scheduledPostsOpen}
+                      >
+                        <span className="h-px flex-1 bg-slate-200" />
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+                          Scheduled posts ({displayedScheduledPosts.length})
+                        </span>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 group-hover:text-slate-700">
+                          {scheduledPostsOpen ? "Hide" : "Show"}
+                        </span>
+                        <span className="h-px flex-1 bg-slate-200" />
+                      </button>
+                      {scheduledPostsOpen ? (
+                        <ul className="mt-2 space-y-[1.125rem]">
+                          {displayedScheduledPosts.map((post) => (
+                            <li key={post.id}>
+                              <PostCard
+                                post={post}
+                                feedMentionNameById={feedMentionNameById}
+                                feedCardHasBeenRead={Boolean(
+                                  feedLocalSnapshot.readPostIds[post.id]
+                                )}
+                                commentsSeenWatermarkIso={
+                                  feedLocalSnapshot.commentsSeenUpTo[post.id] ?? null
+                                }
+                                onOpen={() => openDetail(post.id)}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </section>
+                  ) : null}
                   <ul className="space-y-[1.125rem]">
-                    {displayedPosts.map((post) => (
+                    {displayedPublishedPosts.map((post) => (
                       <li key={post.id}>
                         <PostCard
                           post={post}
@@ -1700,11 +1833,12 @@ export function CommunityFeed() {
               !postsLoading &&
               !feedLoadingMore &&
               !loadError &&
-              posts.length < SPARSE_PAGE_POST_THRESHOLD &&
+              displayedPublishedPosts.length < SPARSE_PAGE_POST_THRESHOLD &&
               !readFilterEmptyOnPage &&
               !(readFilter === "favourites" && posts.length === 0) ? (
                 <div className="mx-auto mt-10 max-w-xl px-4 text-center">
-                  {posts.length === 0 ? (
+                  {displayedPublishedPosts.length === 0 &&
+                  displayedScheduledPosts.length === 0 ? (
                     <p className="mb-10 text-sm text-slate-500">
                       No posts yet. Start the conversation.
                     </p>

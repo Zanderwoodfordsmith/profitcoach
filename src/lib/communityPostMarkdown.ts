@@ -30,7 +30,9 @@ export function stripInlineMarkdownForCommunityPreviewFragment(s: string): strin
   x = x.replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1");
   x = x.replace(/^#{1,6}\s+/gm, "");
   x = x.replace(/\*\*([^*]+)\*\*/g, "$1");
+  x = x.replace(/\*([^*\n]+)\*/g, "$1");
   x = x.replace(/__([^_]+)__/g, "$1");
+  x = x.replace(/_([^_\n]+)_/g, "$1");
   x = x.replace(/`([^`]+)`/g, "$1");
   x = x.replace(/^(\s*)[-*+]\s+/gm, "$1");
   x = x.replace(/^(\s*)\d+\.\s+/gm, "$1");

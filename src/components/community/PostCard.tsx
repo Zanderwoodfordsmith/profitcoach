@@ -57,6 +57,7 @@ export function PostCard({
     () => post.body.replace(/\s+/g, " ").trim(),
     [post.body]
   );
+  const displayedPostedAtIso = post.published_at ?? post.created_at;
 
   useEffect(() => {
     setOptimisticLikedByMe(post.liked_by_me);
@@ -90,6 +91,17 @@ export function PostCard({
     if (Number.isNaN(at)) return false;
     return at > Date.now();
   }, [post.published_at]);
+  const scheduledLabel = useMemo(() => {
+    if (!isScheduledForFuture || !post.published_at) return null;
+    const at = new Date(post.published_at);
+    if (Number.isNaN(at.getTime())) return null;
+    return at.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }, [isScheduledForFuture, post.published_at]);
 
   return (
     <article
@@ -127,7 +139,7 @@ export function PostCard({
                     className="h-3.5 w-3.5 fill-amber-400 text-amber-500"
                     strokeWidth={1.75}
                   />
-                  Scheduled
+                  {scheduledLabel ? `Scheduled ${scheduledLabel}` : "Scheduled"}
                 </span>
               ) : null}
               {post.is_pinned ? (
@@ -143,7 +155,7 @@ export function PostCard({
           </div>
           <p className="mt-0.5 text-xs leading-snug">
             <span className="text-slate-500">
-              {formatCommunityPostTimestamp(post.created_at)}
+              {formatCommunityPostTimestamp(displayedPostedAtIso)}
             </span>
             {post.category ? (
               <>
@@ -191,6 +203,7 @@ export function PostCard({
             <PostEngagementBar
               likeCount={optimisticLikeCount}
               commentCount={post.comment_count}
+              commentedByMe={post.commented_by_me}
               commentPreviewAuthors={post.comment_preview_authors}
               likedByMe={optimisticLikedByMe}
               disabled={likeBusy}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BlogAuthorByline } from "@/components/marketing/BlogAuthorByline";
 import { ProfitCoachTopMenu } from "@/components/marketing/ProfitCoachTopMenu";
 
 export const metadata: Metadata = {
@@ -8,7 +9,11 @@ export const metadata: Metadata = {
     "A practical breakdown of the five owner levels, the Level 2 trap, and how to move to the next stage with clarity.",
 };
 
-export default function FiveLevelsBlogPostPage() {
+export default async function FiveLevelsBlogPostPage({
+  searchParams,
+}: {
+  searchParams?: { coach?: string };
+}) {
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-slate-900">
       <ProfitCoachTopMenu />
@@ -27,7 +32,7 @@ export default function FiveLevelsBlogPostPage() {
         <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-[-0.025em] md:text-6xl md:leading-[1.04]">
           The 5 Levels Of Business Owner. Most People Get Stuck At Level 2.
         </h1>
-        <p className="mt-6 text-sm text-slate-500">By The Profit Coach Team · 9 min read</p>
+        <BlogAuthorByline readMinutes={9} coachSlug={searchParams?.coach} />
 
         <div className="mt-12 space-y-8 font-sans text-[1.12rem] leading-[2rem] text-slate-800 md:text-[1.22rem] md:leading-[2.2rem]">
           <p>

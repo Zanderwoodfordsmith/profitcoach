@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BlogAuthorByline } from "@/components/marketing/BlogAuthorByline";
 import { ProfitCoachTopMenu } from "@/components/marketing/ProfitCoachTopMenu";
 
 export const metadata: Metadata = {
@@ -8,7 +9,11 @@ export const metadata: Metadata = {
     "How to identify when the owner is the bottleneck, what it costs, and a practical handover process to fix it.",
 };
 
-export default function BottleneckBlogPostPage() {
+export default async function BottleneckBlogPostPage({
+  searchParams,
+}: {
+  searchParams?: { coach?: string };
+}) {
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-slate-900">
       <ProfitCoachTopMenu />
@@ -20,7 +25,7 @@ export default function BottleneckBlogPostPage() {
         <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-[-0.025em] md:text-6xl md:leading-[1.04]">
           The Bottleneck In Your Business Has Your Name On It
         </h1>
-        <p className="mt-6 text-sm text-slate-500">By The Profit Coach Team · 9 min read</p>
+        <BlogAuthorByline readMinutes={9} coachSlug={searchParams?.coach} />
 
         <div className="mt-12 space-y-8 font-sans text-[1.12rem] leading-[2rem] text-slate-800 md:text-[1.22rem] md:leading-[2.2rem]">
           <p>Most owners think they have a team, market, or cash-flow problem.</p>

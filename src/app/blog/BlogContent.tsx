@@ -31,6 +31,51 @@ const BLOG_CATEGORIES: readonly BlogCategory[] = [
 
 const posts: readonly BlogPost[] = [
   {
+    title: "The 90-Day Plan Is The Most Underrated Tool In Business",
+    excerpt:
+      "Most owners plan too short (today) or too long (year). The quarter is where real execution lives.",
+    href: "/blog/the-90-day-plan-is-the-most-underrated-tool-in-business",
+    category: "Strategy & Planning",
+    date: "May 2026",
+    image: "/how-it-works/nine-step-roadmap.png",
+  },
+  {
+    title: "Most Business Owners Don't Have A Strategy. They Have A To-Do List.",
+    excerpt:
+      "A strategy is four clear choices. Most owners have activity without decisions.",
+    href: "/blog/most-business-owners-dont-have-a-strategy-they-have-a-to-do-list",
+    category: "Strategy & Planning",
+    date: "May 2026",
+    image: "/landing/v2/how-3.png",
+  },
+  {
+    title: "Most Owners Don't Have A Sales Problem. They Have A Follow-Up Problem.",
+    excerpt:
+      "Many lost deals are dropped deals. Follow-up cadence is often the biggest immediate revenue lever.",
+    href: "/blog/most-owners-dont-have-a-sales-problem-they-have-a-follow-up-problem",
+    category: "Revenue & Marketing",
+    date: "May 2026",
+    image: "/landing/v2/how-2.png",
+  },
+  {
+    title: "Stop Trying To Get More Customers. Start Trying To Lose Fewer.",
+    excerpt:
+      "Retention improvements can beat acquisition spend. Fix the leak before pouring harder.",
+    href: "/blog/stop-trying-to-get-more-customers-start-trying-to-lose-fewer",
+    category: "Revenue & Marketing",
+    date: "May 2026",
+    image: "/landing/v2/dashboard.png",
+  },
+  {
+    title: "You Don't Have A Team Problem. You Have A Standards Problem.",
+    excerpt:
+      "Inconsistent performance is usually a standards issue. Set the line and hold it.",
+    href: "/blog/you-dont-have-a-team-problem-you-have-a-standards-problem",
+    category: "Ops, Systems & Team",
+    date: "May 2026",
+    image: "/how-it-works/owner-pyramid.png",
+  },
+  {
     title: "Indecision Is The Most Expensive Thing In Your Business",
     excerpt:
       "The decision you keep postponing is often the most expensive line item in the company. Run a decision audit and clear one this week.",

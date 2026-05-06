@@ -23,7 +23,6 @@ export async function getPublicDirectoryCoachBySlug(
       `slug, directory_level, profiles!inner ( full_name, coach_business_name, avatar_url, bio, location, linkedin_url )`
     )
     .eq("slug", slug)
-    .eq("directory_listed", true)
     .maybeSingle();
 
   if (error) {

@@ -10,6 +10,7 @@ import { CommunityProfileHoverCard } from "@/components/community/CommunityProfi
 type Props = {
   likeCount: number;
   commentCount: number;
+  commentedByMe: boolean;
   commentPreviewAuthors: ProfileRow[];
   likedByMe: boolean;
   detail?: boolean;
@@ -24,6 +25,7 @@ type Props = {
 export function PostEngagementBar({
   likeCount,
   commentCount,
+  commentedByMe,
   commentPreviewAuthors,
   likedByMe,
   detail = false,
@@ -77,7 +79,7 @@ export function PostEngagementBar({
     >
       <MessageCircle
         className={`shrink-0 ${detail ? "h-4 w-4" : "h-[18px] w-[18px]"} ${
-          commentCount > 0 ? "fill-sky-700 text-sky-700" : ""
+          commentedByMe ? "fill-sky-700 text-sky-700" : ""
         }`}
         strokeWidth={detail ? 2 : 1.75}
       />

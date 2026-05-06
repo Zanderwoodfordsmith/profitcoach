@@ -10,6 +10,7 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   CircleDot,
   Flag,
   ImagePlus,
@@ -83,6 +84,15 @@ type CommentRow = {
   like_count: number;
   liked_by_me: boolean;
 };
+
+function toLocalDateTimeInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
 
 function CommentLikeButton({
   likeCount,
@@ -447,6 +457,8 @@ export function PostDetailModal({
   const [editTitle, setEditTitle] = useState(post.title);
   const [editBody, setEditBody] = useState(post.body);
   const [editCategoryId, setEditCategoryId] = useState(post.category_id);
+  const [editSchedulePopoverOpen, setEditSchedulePopoverOpen] = useState(false);
+  const [editScheduledAtLocal, setEditScheduledAtLocal] = useState("");
   const [saveEditBusy, setSaveEditBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [favouriteBusy, setFavouriteBusy] = useState(false);
@@ -493,6 +505,12 @@ export function PostDetailModal({
     setEditTitle(post.title);
     setEditBody(post.body);
     setEditCategoryId(post.category_id);
+    if (post.published_at && new Date(post.published_at).getTime() > Date.now()) {
+      setEditScheduledAtLocal(toLocalDateTimeInputValue(new Date(post.published_at)));
+    } else {
+      setEditScheduledAtLocal("");
+    }
+    setEditSchedulePopoverOpen(false);
     setEditing(false);
     setBodyExpanded(false);
   }, [
@@ -586,6 +604,22 @@ export function PostDetailModal({
   const isEditorAdmin = editorRole === "admin";
   const canManagePost = isAuthor || isEditorAdmin;
   const canPin = isEditorAdmin;
+  const editScheduledAtIso = useMemo(() => {
+    if (!editScheduledAtLocal) return null;
+    const dt = new Date(editScheduledAtLocal);
+    if (Number.isNaN(dt.getTime())) return null;
+    return dt.toISOString();
+  }, [editScheduledAtLocal]);
+  const editScheduleSummary = useMemo(() => {
+    if (!editScheduledAtIso) return null;
+    const dt = new Date(editScheduledAtIso);
+    return Number.isNaN(dt.getTime())
+      ? null
+      : dt.toLocaleString([], {
+          dateStyle: "medium",
+          timeStyle: "short",
+        });
+  }, [editScheduledAtIso]);
   const announcementsCategory = useMemo(
     () => categories.find((c) => c.slug === "announcements") ?? null,
     [categories]
@@ -910,6 +944,12 @@ export function PostDetailModal({
     return m;
   }, [comments]);
 
+  const commentedByMe = useMemo(() => {
+    if (post.commented_by_me) return true;
+    if (!currentAuthorId) return false;
+    return comments.some((c) => c.author_id === currentAuthorId);
+  }, [comments, currentAuthorId, post.commented_by_me]);
+
   const copyPostLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -963,6 +1003,17 @@ export function PostDetailModal({
       setActionError("Only admins can post in Announcements.");
       return;
     }
+    if (isEditorAdmin && editScheduledAtIso) {
+      const scheduleMs = new Date(editScheduledAtIso).getTime();
+      if (Number.isNaN(scheduleMs)) {
+        setActionError("Pick a valid scheduled date and time.");
+        return;
+      }
+      if (scheduleMs <= Date.now()) {
+        setActionError("Scheduled time must be in the future.");
+        return;
+      }
+    }
     setActionError(null);
     setSaveEditBusy(true);
 
@@ -990,6 +1041,16 @@ export function PostDetailModal({
 
     const mediaPayload = finalMedia.length > 0 ? finalMedia : null;
     const image_url = firstCommunityPostImageUrl(finalMedia);
+    let nextPublishedAt: string | null = null;
+    if (isEditorAdmin) {
+      const wasFutureScheduled =
+        !!post.published_at && new Date(post.published_at).getTime() > Date.now();
+      nextPublishedAt = editScheduledAtIso
+        ? editScheduledAtIso
+        : wasFutureScheduled
+          ? new Date().toISOString()
+          : (post.published_at ?? new Date().toISOString());
+    }
 
     const { error } = await supabaseClient
       .from("community_posts")
@@ -999,6 +1060,7 @@ export function PostDetailModal({
         category_id: editCategoryId,
         image_url,
         media: mediaPayload,
+        ...(isEditorAdmin ? { published_at: nextPublishedAt } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", post.id);
@@ -1017,6 +1079,7 @@ export function PostDetailModal({
     editBody,
     editCategoryId,
     editMediaSlots,
+    editScheduledAtIso,
     editTitle,
     isEditorAdmin,
     onPostsChanged,
@@ -1351,12 +1414,12 @@ export function PostDetailModal({
           <div className="mt-3 w-full min-w-0 space-y-3">
             <div className="min-w-0">
               {editing ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <input
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2 text-[calc(1.25rem+2px)] font-semibold text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className="w-full border-0 border-b border-slate-200 bg-transparent px-0 pb-2 text-[calc(1.25rem+2px)] font-semibold text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
                     aria-label="Post title"
                   />
                   <MentionTextarea
@@ -1364,7 +1427,7 @@ export function PostDetailModal({
                     onChange={setEditBody}
                     placeholder="Body…"
                     rows={8}
-                    className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-[calc(1rem+2px)] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    className="w-full resize-y border-0 border-b border-slate-200 bg-transparent px-0 pb-3 text-[calc(1rem+2px)] text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
                   />
                   <p className="text-xs leading-snug text-slate-500">
                     Basic{" "}
@@ -1372,29 +1435,6 @@ export function PostDetailModal({
                     is supported: **bold**, *italic*, # headings, - bullets,
                     numbered lists, blockquotes, and links (https://…).
                   </p>
-                  {categories.length > 0 ? (
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-600">
-                        Category
-                      </label>
-                      <select
-                        value={editCategoryId}
-                        onChange={(e) => setEditCategoryId(e.target.value)}
-                        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-                      >
-                        {editableCategories.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      {!isEditorAdmin && announcementsCategory ? (
-                        <p className="mt-1 text-xs text-slate-500">
-                          Announcements are admin-only.
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">
                       Photos and videos (optional, up to {COMMUNITY_POST_MEDIA_MAX})
@@ -1460,7 +1500,7 @@ export function PostDetailModal({
                         <p className="text-sm text-slate-500">No attachments</p>
                       )}
                       <div className="flex flex-wrap items-center gap-2">
-                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50">
+                        <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full border border-dashed border-slate-300 bg-slate-50/80 px-3 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50">
                           <ImagePlus className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                           <span>Add files</span>
                           <input
@@ -1493,19 +1533,21 @@ export function PostDetailModal({
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={
-                        saveEditBusy ||
-                        !editTitle.trim() ||
-                        !editBody.trim()
-                      }
-                      onClick={() => void saveEdit()}
-                      className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800 disabled:opacity-50"
-                    >
-                      {saveEditBusy ? "Saving…" : "Save"}
-                    </button>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {categories.length > 0 ? (
+                        <select
+                          value={editCategoryId}
+                          onChange={(e) => setEditCategoryId(e.target.value)}
+                          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                        >
+                          {editableCategories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : null}
                     <button
                       type="button"
                       onClick={() => {
@@ -1514,11 +1556,109 @@ export function PostDetailModal({
                         setEditTitle(post.title);
                         setEditBody(post.body);
                         setEditCategoryId(post.category_id);
+                        if (
+                          post.published_at &&
+                          new Date(post.published_at).getTime() > Date.now()
+                        ) {
+                          setEditScheduledAtLocal(
+                            toLocalDateTimeInputValue(new Date(post.published_at))
+                          );
+                        } else {
+                          setEditScheduledAtLocal("");
+                        }
+                        setEditSchedulePopoverOpen(false);
                       }}
-                      className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                      className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400 transition hover:text-slate-600"
                     >
                       Cancel
                     </button>
+                      <button
+                        type="button"
+                        disabled={
+                          saveEditBusy ||
+                          !editTitle.trim() ||
+                          !editBody.trim()
+                        }
+                        onClick={() => void saveEdit()}
+                        className="rounded-lg bg-sky-700 px-5 py-2.5 text-base font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {saveEditBusy ? "Saving…" : "Save"}
+                      </button>
+                      {isEditorAdmin ? (
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditSchedulePopoverOpen((open) => !open)
+                            }
+                            className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border transition ${
+                              editScheduledAtIso
+                                ? "border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                                : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                            }`}
+                            title={
+                              editScheduledAtIso
+                                ? "Edit scheduled time"
+                                : "Schedule post"
+                            }
+                            aria-label={
+                              editScheduledAtIso
+                                ? "Edit scheduled time"
+                                : "Schedule post"
+                            }
+                          >
+                            <CalendarDays className="h-4 w-4" strokeWidth={1.9} />
+                          </button>
+                          {editSchedulePopoverOpen ? (
+                            <div className="absolute right-0 z-30 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Schedule post
+                              </p>
+                              <input
+                                type="datetime-local"
+                                value={editScheduledAtLocal}
+                                onChange={(e) =>
+                                  setEditScheduledAtLocal(e.target.value)
+                                }
+                                min={toLocalDateTimeInputValue(
+                                  new Date(Date.now() + 60_000)
+                                )}
+                                className="mt-2 w-full rounded-lg border border-slate-200 px-2.5 py-2 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                              />
+                              <div className="mt-3 flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-700"
+                                  onClick={() => {
+                                    setEditScheduledAtLocal("");
+                                    setEditSchedulePopoverOpen(false);
+                                  }}
+                                >
+                                  Clear
+                                </button>
+                                <button
+                                  type="button"
+                                  className="rounded-md bg-slate-900 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                                  onClick={() => setEditSchedulePopoverOpen(false)}
+                                >
+                                  Done
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                    {!isEditorAdmin && announcementsCategory ? (
+                      <p className="text-[11px] text-slate-500">
+                        Announcements are admin-only.
+                      </p>
+                    ) : null}
+                    {isEditorAdmin && editScheduleSummary ? (
+                      <p className="text-right text-[11px] text-sky-700">
+                        Scheduled for {editScheduleSummary}
+                      </p>
+                    ) : null}
                   </div>
                   {actionError ? (
                     <p className="whitespace-pre-wrap text-sm text-rose-600">
@@ -1598,6 +1738,7 @@ export function PostDetailModal({
                   detail
                   likeCount={post.like_count}
                   commentCount={post.comment_count}
+                  commentedByMe={commentedByMe}
                   commentPreviewAuthors={post.comment_preview_authors}
                   likedByMe={post.liked_by_me}
                   disabled={likeBusy}

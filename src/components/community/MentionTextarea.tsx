@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Bold, Heading1, Heading2, Heading3, List } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { MENTION_MARKDOWN_REGEX } from "@/lib/communityMentions";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -30,6 +31,7 @@ type Props = {
   /** Grow height with content (single-line feel when empty). */
   autoResize?: boolean;
   maxAutoHeightPx?: number;
+  showFormattingToolbar?: boolean;
 };
 
 type KnownMention = {
@@ -122,6 +124,7 @@ export function MentionTextarea({
   rows = 4,
   autoResize = false,
   maxAutoHeightPx = 280,
+  showFormattingToolbar = false,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [displayValue, setDisplayValue] = useState(() => rawToDisplayText(value));
@@ -262,23 +265,150 @@ export function MentionTextarea({
     [knownMentions, onChange]
   );
 
+  const applyWrappedSelection = useCallback(
+    (before: string, after: string) => {
+      const el = taRef.current;
+      if (!el) return;
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? start;
+      const selected = displayValue.slice(start, end);
+      const nextDisplay =
+        displayValue.slice(0, start) + before + selected + after + displayValue.slice(end);
+      setDisplayValue(nextDisplay);
+      onChange(displayToRawText(nextDisplay, knownMentions));
+      setMentionOpen(false);
+
+      requestAnimationFrame(() => {
+        el.focus();
+        if (selected.length > 0) {
+          el.setSelectionRange(start + before.length, start + before.length + selected.length);
+        } else {
+          const caret = start + before.length;
+          el.setSelectionRange(caret, caret);
+        }
+      });
+    },
+    [displayValue, knownMentions, onChange]
+  );
+
+  const applyLinePrefix = useCallback(
+    (prefix: string) => {
+      const el = taRef.current;
+      if (!el) return;
+      const start = el.selectionStart ?? 0;
+      const end = el.selectionEnd ?? start;
+      const lineStart = displayValue.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+      const lineEndIdx = displayValue.indexOf("\n", end);
+      const lineEnd = lineEndIdx === -1 ? displayValue.length : lineEndIdx;
+      const block = displayValue.slice(lineStart, lineEnd);
+      const prefixedBlock = block
+        .split("\n")
+        .map((line) => `${prefix}${line}`)
+        .join("\n");
+      const nextDisplay =
+        displayValue.slice(0, lineStart) + prefixedBlock + displayValue.slice(lineEnd);
+      setDisplayValue(nextDisplay);
+      onChange(displayToRawText(nextDisplay, knownMentions));
+      setMentionOpen(false);
+
+      requestAnimationFrame(() => {
+        const delta = prefixedBlock.length - block.length;
+        el.focus();
+        const prefixCountBeforeStart = block
+          .slice(0, Math.max(0, start - lineStart))
+          .split("\n").length;
+        const beforeStartDelta = prefix.length * prefixCountBeforeStart;
+        el.setSelectionRange(start + beforeStartDelta, end + delta);
+      });
+    },
+    [displayValue, knownMentions, onChange]
+  );
+
   const showList = mentionOpen;
 
   return (
     <div className="relative">
-      <textarea
-        ref={taRef}
-        value={displayValue}
-        onChange={onChangeInner}
-        onKeyDown={onKeyDown}
-        onClick={onSelectOrClick}
-        onSelect={onSelectOrClick}
-        onKeyUp={onSelectOrClick}
-        placeholder={placeholder}
-        disabled={disabled}
-        rows={autoResize ? 1 : rows}
-        className={`${className}${autoResize ? " resize-none overflow-hidden" : ""}`}
-      />
+      {showFormattingToolbar ? (
+        <div className="border-b border-slate-200 transition focus-within:border-sky-500">
+          <textarea
+            ref={taRef}
+            value={displayValue}
+            onChange={onChangeInner}
+            onKeyDown={onKeyDown}
+            onClick={onSelectOrClick}
+            onSelect={onSelectOrClick}
+            onKeyUp={onSelectOrClick}
+            placeholder={placeholder}
+            disabled={disabled}
+            rows={autoResize ? 1 : rows}
+            className={`${className}${autoResize ? " resize-none overflow-hidden" : ""}`}
+          />
+          <div className="mb-1.5 mt-1.5 flex flex-wrap items-center gap-1.5 px-0.5">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-50"
+              onClick={() => applyWrappedSelection("**", "**")}
+              aria-label="Bold"
+              title="Bold"
+            >
+              <Bold className="h-4.5 w-4.5" strokeWidth={2.4} />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={() => applyLinePrefix("# ")}
+              aria-label="Heading 1"
+              title="Heading 1"
+            >
+              <Heading1 className="h-4.5 w-4.5" strokeWidth={2.2} />
+              <span className="text-sm leading-none">1</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={() => applyLinePrefix("## ")}
+              aria-label="Heading 2"
+              title="Heading 2"
+            >
+              <Heading2 className="h-4 w-4" strokeWidth={2.1} />
+              <span className="text-xs leading-none">2</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={() => applyLinePrefix("### ")}
+              aria-label="Heading 3"
+              title="Heading 3"
+            >
+              <Heading3 className="h-3.5 w-3.5" strokeWidth={2.1} />
+              <span className="text-[11px] leading-none">3</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={() => applyLinePrefix("- ")}
+              aria-label="Bullet list"
+              title="Bullet list"
+            >
+              <List className="h-4 w-4" strokeWidth={2.1} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <textarea
+          ref={taRef}
+          value={displayValue}
+          onChange={onChangeInner}
+          onKeyDown={onKeyDown}
+          onClick={onSelectOrClick}
+          onSelect={onSelectOrClick}
+          onKeyUp={onSelectOrClick}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={autoResize ? 1 : rows}
+          className={`${className}${autoResize ? " resize-none overflow-hidden" : ""}`}
+        />
+      )}
       {showList ? (
         <ul
           className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
