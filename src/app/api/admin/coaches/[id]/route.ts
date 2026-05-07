@@ -43,11 +43,13 @@ async function requireAdmin(request: Request): Promise<
 }
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
+const CONFERENCE_STATUSES = new Set(["no", "maybe", "yes"]);
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 type PatchBody = {
   directory_listed?: boolean;
   directory_level?: string | null;
+  conference_status?: string | null;
   /** Convenience: admin marks the coach's current level. Upserts an achievement. */
   ladder_level?: string | null;
   ladder_goal_level?: string | null;
@@ -100,6 +102,21 @@ export async function PATCH(
     } else {
       return NextResponse.json(
         { error: "directory_level must be certified, professional, elite, or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.conference_status !== undefined) {
+    if (body.conference_status === null || body.conference_status === "") {
+      coachUpdates.conference_status = null;
+    } else if (
+      typeof body.conference_status === "string" &&
+      CONFERENCE_STATUSES.has(body.conference_status)
+    ) {
+      coachUpdates.conference_status = body.conference_status;
+    } else {
+      return NextResponse.json(
+        { error: "conference_status must be no, maybe, yes, or null." },
         { status: 400 }
       );
     }
@@ -303,10 +320,14 @@ export async function PATCH(
         const includesCrm =
           Object.prototype.hasOwnProperty.call(coachUpdates, "crm_profile_name") ||
           Object.prototype.hasOwnProperty.call(coachUpdates, "crm_location_id");
+        const includesConferenceStatus =
+          Object.prototype.hasOwnProperty.call(coachUpdates, "conference_status");
         return NextResponse.json(
           {
             error: includesCrm
               ? "CRM columns are missing. Deploy the latest database migration."
+              : includesConferenceStatus
+                ? "Conference status column is missing. Deploy the latest database migration."
               : includesWebhook
                 ? "Lead webhook column is missing. Deploy the latest database migration."
                 : "Directory columns are missing. Deploy the latest database migration.",
@@ -315,8 +336,14 @@ export async function PATCH(
         );
       }
       if (error?.code === "23514") {
+        const includesConferenceStatus =
+          Object.prototype.hasOwnProperty.call(coachUpdates, "conference_status");
         return NextResponse.json(
-          { error: "Lead webhook URL must be a valid http(s) URL." },
+          {
+            error: includesConferenceStatus
+              ? "Conference status must be no, maybe, yes, or null."
+              : "Lead webhook URL must be a valid http(s) URL.",
+          },
           { status: 400 }
         );
       }

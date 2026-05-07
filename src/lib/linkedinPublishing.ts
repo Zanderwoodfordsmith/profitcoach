@@ -25,8 +25,8 @@ async function fetchLinkedInWithRetry(
         ...init,
         // Undici dispatcher gives us a longer connect timeout than the default.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        dispatcher: linkedInDispatcher as any,
-      });
+        dispatcher: linkedInDispatcher,
+      } as RequestInit & { dispatcher: unknown });
     } catch (error) {
       lastError = error;
       if (attempt < retries) {

@@ -55,6 +55,7 @@ type CoachRow = {
   coach_business_name: string | null;
   directory_listed: boolean;
   directory_level: string | null;
+  conference_status: "no" | "maybe" | "yes" | null;
   /** Admin-only: outbound webhook fired with prospect contact info + score. */
   lead_webhook_url: string | null;
   /** Human-readable CRM account/profile label (e.g. AMF Consulting). */
@@ -65,6 +66,15 @@ type CoachRow = {
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
 };
+
+type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
+
+function conferenceStatusClasses(status: CoachRow["conference_status"]): string {
+  if (status === "yes") return "bg-emerald-100 text-emerald-800";
+  if (status === "maybe") return "bg-amber-100 text-amber-800";
+  if (status === "no") return "bg-rose-100 text-rose-800";
+  return "bg-slate-100 text-slate-600";
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -83,6 +93,8 @@ export default function AdminPage() {
   const [newSlug, setNewSlug] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [coachSearchTerm, setCoachSearchTerm] = useState("");
+  const [conferenceFilter, setConferenceFilter] =
+    useState<ConferenceFilter>("all");
   const [sendInvite, setSendInvite] = useState(true);
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
@@ -176,6 +188,7 @@ export default function AdminPage() {
     body: {
       directory_listed?: boolean;
       directory_level?: string | null;
+      conference_status?: "no" | "maybe" | "yes" | null;
       ladder_level?: string | null;
       ladder_goal_level?: string | null;
       ladder_goal_target_date?: string | null;
@@ -217,6 +230,9 @@ export default function AdminPage() {
                 ...(body.directory_level !== undefined
                   ? { directory_level: body.directory_level }
                   : {}),
+                ...(body.conference_status !== undefined
+                  ? { conference_status: body.conference_status }
+                  : {}),
                 ...(body.ladder_level !== undefined
                   ? { ladder_level: body.ladder_level }
                   : {}),
@@ -253,11 +269,18 @@ export default function AdminPage() {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
   const normalizedCoachSearchTerm = coachSearchTerm.trim().toLowerCase();
-  const filteredCoaches = normalizedCoachSearchTerm
-    ? coaches.filter((coach) =>
-        (coach.full_name ?? "").toLowerCase().includes(normalizedCoachSearchTerm)
-      )
-    : coaches;
+  const filteredCoaches = coaches.filter((coach) => {
+    const matchesName = normalizedCoachSearchTerm
+      ? (coach.full_name ?? "").toLowerCase().includes(normalizedCoachSearchTerm)
+      : true;
+    const matchesConference =
+      conferenceFilter === "all"
+        ? true
+        : conferenceFilter === "not_set"
+          ? coach.conference_status === null
+          : coach.conference_status === conferenceFilter;
+    return matchesName && matchesConference;
+  });
 
   async function handleCreateCoach(e: React.FormEvent) {
     e.preventDefault();
@@ -577,22 +600,48 @@ export default function AdminPage() {
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-4 py-3">
-          <label
-            htmlFor="coach-search"
-            className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
-          >
-            Search coaches
-          </label>
-          <input
-            id="coach-search"
-            type="search"
-            value={coachSearchTerm}
-            onChange={(e) => setCoachSearchTerm(e.target.value)}
-            placeholder="Search by coach name"
-            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-          />
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
+            <div>
+              <label
+                htmlFor="coach-search"
+                className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
+              >
+                Search coaches
+              </label>
+              <input
+                id="coach-search"
+                type="search"
+                value={coachSearchTerm}
+                onChange={(e) => setCoachSearchTerm(e.target.value)}
+                placeholder="Search by coach name"
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="conference-filter"
+                className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
+              >
+                Coming to conference
+              </label>
+              <select
+                id="conference-filter"
+                value={conferenceFilter}
+                onChange={(e) =>
+                  setConferenceFilter(e.target.value as ConferenceFilter)
+                }
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              >
+                <option value="all">All</option>
+                <option value="yes">Yes</option>
+                <option value="maybe">Maybe</option>
+                <option value="no">No</option>
+                <option value="not_set">Not set</option>
+              </select>
+            </div>
+          </div>
         </div>
-        <div className="max-h-[70vh] overflow-auto">
+        <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -601,6 +650,7 @@ export default function AdminPage() {
               <th className="sticky top-0 z-10 bg-slate-50 px-3 py-2">Slug</th>
               <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2 text-center">Dir.</th>
               <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Cert.</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Conf.</th>
               <th className="sticky top-0 z-10 w-24 max-w-[6.5rem] bg-slate-50 px-2 py-2">Current</th>
               <th className="sticky top-0 z-10 w-24 max-w-[6.5rem] bg-slate-50 px-2 py-2">Ideal</th>
               <th className="sticky top-0 z-10 w-28 bg-slate-50 px-2 py-2">Goal by</th>
@@ -679,6 +729,27 @@ export default function AdminPage() {
                       <option value="certified">Certified</option>
                       <option value="professional">Professional</option>
                       <option value="elite">Elite</option>
+                    </select>
+                  </td>
+                  <td className="px-2 py-2 align-middle">
+                    <select
+                      title="Conference attendance status"
+                      value={coach.conference_status ?? ""}
+                      disabled={directorySavingId === coach.id}
+                      onChange={(e) => {
+                        const v = e.target.value as "no" | "maybe" | "yes" | "";
+                        void patchCoachRow(coach.id, {
+                          conference_status: v === "" ? null : v,
+                        });
+                      }}
+                      className={`max-w-full cursor-pointer rounded px-1 py-0.5 text-xs font-medium shadow-none ring-0 hover:opacity-90 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${conferenceStatusClasses(
+                        coach.conference_status
+                      )}`}
+                    >
+                      <option value="">Not set</option>
+                      <option value="no">No</option>
+                      <option value="maybe">Maybe</option>
+                      <option value="yes">Yes</option>
                     </select>
                   </td>
                   <td className="max-w-[6.5rem] px-2 py-2 align-middle">
@@ -799,7 +870,7 @@ export default function AdminPage() {
             {loading && (
               <tr>
                 <td
-                  colSpan={13}
+                  colSpan={14}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   Loading coaches…
@@ -809,7 +880,7 @@ export default function AdminPage() {
             {!loading && !error && filteredCoaches.length === 0 ? (
               <tr>
                 <td
-                  colSpan={13}
+                  colSpan={14}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   No coaches match that name.

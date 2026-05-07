@@ -225,17 +225,7 @@ export function BlogContent() {
         ) : (
           <div className="grid gap-8 md:grid-cols-3">
             {visiblePosts.map((post, index) => {
-              const Wrapper = post.href === "#" ? "article" : Link;
-              const wrapperProps =
-                post.href === "#"
-                  ? {}
-                  : {
-                      href: post.href,
-                      className:
-                        "group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg",
-                    };
-
-              if (Wrapper === "article") {
+              if (post.href === "#") {
                 return (
                   <article
                     key={post.title}
@@ -269,7 +259,11 @@ export function BlogContent() {
               }
 
               return (
-                <Link key={post.title} {...wrapperProps}>
+                <Link
+                  key={post.title}
+                  href={post.href}
+                  className="group block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                >
                   <div className="relative h-56 w-full overflow-hidden">
                     <Image
                       src={post.image}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type Props = {
@@ -15,7 +15,15 @@ type CoachAuthor = {
   avatar_url: string | null;
 };
 
-export function BlogAuthorByline({ readMinutes, coachSlug }: Props) {
+function DefaultByline({ readMinutes }: { readMinutes: number }) {
+  return (
+    <p className="mt-6 text-base text-slate-500">
+      By The Profit Coach Team · {readMinutes} min read
+    </p>
+  );
+}
+
+function BlogAuthorBylineInner({ readMinutes, coachSlug }: Props) {
   const searchParams = useSearchParams();
   const coachSlugFromUrl = searchParams.get("coach")?.trim() ?? "";
   const effectiveSlug = useMemo(
@@ -49,11 +57,7 @@ export function BlogAuthorByline({ readMinutes, coachSlug }: Props) {
   }, [effectiveSlug]);
 
   if (!coach) {
-    return (
-      <p className="mt-6 text-base text-slate-500">
-        By The Profit Coach Team · {readMinutes} min read
-      </p>
-    );
+    return <DefaultByline readMinutes={readMinutes} />;
   }
 
   const displayName =
@@ -81,5 +85,13 @@ export function BlogAuthorByline({ readMinutes, coachSlug }: Props) {
         By {displayName} · {readMinutes} min read
       </span>
     </div>
+  );
+}
+
+export function BlogAuthorByline(props: Props) {
+  return (
+    <Suspense fallback={<DefaultByline readMinutes={props.readMinutes} />}>
+      <BlogAuthorBylineInner {...props} />
+    </Suspense>
   );
 }
