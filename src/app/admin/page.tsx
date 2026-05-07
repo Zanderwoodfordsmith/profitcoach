@@ -82,6 +82,7 @@ export default function AdminPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [coachSearchTerm, setCoachSearchTerm] = useState("");
   const [sendInvite, setSendInvite] = useState(true);
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
@@ -251,6 +252,12 @@ export default function AdminPage() {
 
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
+  const normalizedCoachSearchTerm = coachSearchTerm.trim().toLowerCase();
+  const filteredCoaches = normalizedCoachSearchTerm
+    ? coaches.filter((coach) =>
+        (coach.full_name ?? "").toLowerCase().includes(normalizedCoachSearchTerm)
+      )
+    : coaches;
 
   async function handleCreateCoach(e: React.FormEvent) {
     e.preventDefault();
@@ -568,27 +575,44 @@ export default function AdminPage() {
         </section>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-4 py-3">
+          <label
+            htmlFor="coach-search"
+            className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
+          >
+            Search coaches
+          </label>
+          <input
+            id="coach-search"
+            type="search"
+            value={coachSearchTerm}
+            onChange={(e) => setCoachSearchTerm(e.target.value)}
+            placeholder="Search by coach name"
+            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+          />
+        </div>
+        <div className="max-h-[70vh] overflow-auto">
         <table className="min-w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+          <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
-              <th className="w-14 px-2 py-2 text-center" aria-label="Avatar" />
-              <th className="px-4 py-2">Coach</th>
-              <th className="px-3 py-2">Slug</th>
-              <th className="px-2 py-2 text-center">Dir.</th>
-              <th className="px-2 py-2">Cert.</th>
-              <th className="w-24 max-w-[6.5rem] px-2 py-2">Current</th>
-              <th className="w-24 max-w-[6.5rem] px-2 py-2">Ideal</th>
-              <th className="w-28 px-2 py-2">Goal by</th>
-              <th className="px-2 py-2">CRM</th>
-              <th className="px-2 py-2">Lead webhook</th>
-              <th className="w-10 px-1 py-2 text-center" aria-label="Landing" />
-              <th className="px-2 py-2 text-center">View as</th>
-              <th className="px-2 py-2 text-center">Delete</th>
+              <th className="sticky top-0 z-10 w-14 bg-slate-50 px-2 py-2 text-center" aria-label="Avatar" />
+              <th className="sticky top-0 z-10 bg-slate-50 px-4 py-2">Coach</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-3 py-2">Slug</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2 text-center">Dir.</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Cert.</th>
+              <th className="sticky top-0 z-10 w-24 max-w-[6.5rem] bg-slate-50 px-2 py-2">Current</th>
+              <th className="sticky top-0 z-10 w-24 max-w-[6.5rem] bg-slate-50 px-2 py-2">Ideal</th>
+              <th className="sticky top-0 z-10 w-28 bg-slate-50 px-2 py-2">Goal by</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">CRM</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Lead webhook</th>
+              <th className="sticky top-0 z-10 w-10 bg-slate-50 px-1 py-2 text-center" aria-label="Landing" />
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2 text-center">View as</th>
+              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2 text-center">Delete</th>
             </tr>
           </thead>
           <tbody>
-            {coaches.map((coach) => {
+            {filteredCoaches.map((coach) => {
               const link = origin
                 ? `${origin}/landing/a?coach=${encodeURIComponent(coach.slug)}`
                 : `/landing/a?coach=${encodeURIComponent(coach.slug)}`;
@@ -782,9 +806,20 @@ export default function AdminPage() {
                 </td>
               </tr>
             )}
+            {!loading && !error && filteredCoaches.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={13}
+                  className="px-4 py-3 text-sm text-slate-600"
+                >
+                  No coaches match that name.
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>
+      </section>
 
       {webhookEditCoachId && (
         <div
