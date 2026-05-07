@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { UsageTracker } from "@/components/analytics/UsageTracker";
 
 function IconChart({ className }: { className?: string }) {
   return (
@@ -195,6 +196,7 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
+      <UsageTracker />
       {hasBanner && (
         <div
           className="fixed left-0 right-0 top-0 z-20 flex items-center justify-between gap-4 border-b border-amber-200 bg-amber-100 px-4 py-2 text-sm text-amber-900"

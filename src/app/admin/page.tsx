@@ -65,15 +65,31 @@ type CoachRow = {
   ladder_level: string | null;
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
+  last_login_at: string | null;
 };
 
 type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
+type CrmNameFilter = "all" | "has_name" | "no_name";
+type LastLoginFilter = "all" | "has_login" | "never" | "last_30_days" | "over_90_days";
+type LastLoginSort = "recent_first" | "oldest_first" | "never_first";
 
 function conferenceStatusClasses(status: CoachRow["conference_status"]): string {
   if (status === "yes") return "bg-emerald-100 text-emerald-800";
   if (status === "maybe") return "bg-amber-100 text-amber-800";
   if (status === "no") return "bg-rose-100 text-rose-800";
   return "bg-slate-100 text-slate-600";
+}
+
+function formatLastLoginDisplay(iso: string): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return iso;
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(t);
 }
 
 export default function AdminPage() {
@@ -95,6 +111,11 @@ export default function AdminPage() {
   const [coachSearchTerm, setCoachSearchTerm] = useState("");
   const [conferenceFilter, setConferenceFilter] =
     useState<ConferenceFilter>("all");
+  const [crmNameFilter, setCrmNameFilter] = useState<CrmNameFilter>("all");
+  const [lastLoginFilter, setLastLoginFilter] =
+    useState<LastLoginFilter>("all");
+  const [lastLoginSort, setLastLoginSort] =
+    useState<LastLoginSort>("recent_first");
   const [sendInvite, setSendInvite] = useState(true);
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
@@ -269,18 +290,60 @@ export default function AdminPage() {
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
   const normalizedCoachSearchTerm = coachSearchTerm.trim().toLowerCase();
-  const filteredCoaches = coaches.filter((coach) => {
-    const matchesName = normalizedCoachSearchTerm
-      ? (coach.full_name ?? "").toLowerCase().includes(normalizedCoachSearchTerm)
-      : true;
-    const matchesConference =
-      conferenceFilter === "all"
-        ? true
-        : conferenceFilter === "not_set"
-          ? coach.conference_status === null
-          : coach.conference_status === conferenceFilter;
-    return matchesName && matchesConference;
-  });
+  const now = Date.now();
+  const thirtyDaysAgoMs = now - 30 * 24 * 60 * 60 * 1000;
+  const ninetyDaysAgoMs = now - 90 * 24 * 60 * 60 * 1000;
+  const filteredCoaches = coaches
+    .filter((coach) => {
+      const matchesName = normalizedCoachSearchTerm
+        ? (coach.full_name ?? "")
+            .toLowerCase()
+            .includes(normalizedCoachSearchTerm)
+        : true;
+      const matchesConference =
+        conferenceFilter === "all"
+          ? true
+          : conferenceFilter === "not_set"
+            ? coach.conference_status === null
+            : coach.conference_status === conferenceFilter;
+      const hasCrmName = !!coach.crm_profile_name?.trim();
+      const matchesCrmName =
+        crmNameFilter === "all"
+          ? true
+          : crmNameFilter === "has_name"
+            ? hasCrmName
+            : !hasCrmName;
+      const lastLoginMs = coach.last_login_at
+        ? Date.parse(coach.last_login_at)
+        : Number.NaN;
+      const hasValidLastLogin = !Number.isNaN(lastLoginMs);
+      const matchesLastLogin =
+        lastLoginFilter === "all"
+          ? true
+          : lastLoginFilter === "has_login"
+            ? hasValidLastLogin
+            : lastLoginFilter === "never"
+              ? !hasValidLastLogin
+              : lastLoginFilter === "last_30_days"
+                ? hasValidLastLogin && lastLoginMs >= thirtyDaysAgoMs
+                : hasValidLastLogin && lastLoginMs <= ninetyDaysAgoMs;
+      return matchesName && matchesConference && matchesCrmName && matchesLastLogin;
+    })
+    .sort((a, b) => {
+      const aMs = a.last_login_at ? Date.parse(a.last_login_at) : Number.NaN;
+      const bMs = b.last_login_at ? Date.parse(b.last_login_at) : Number.NaN;
+      const aHas = !Number.isNaN(aMs);
+      const bHas = !Number.isNaN(bMs);
+      if (lastLoginSort === "never_first") {
+        if (aHas !== bHas) return aHas ? 1 : -1;
+        if (!aHas && !bHas) return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+      } else {
+        if (aHas !== bHas) return aHas ? -1 : 1;
+      }
+      if (!aHas && !bHas) return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+      if (lastLoginSort === "oldest_first") return aMs - bMs;
+      return bMs - aMs;
+    });
 
   async function handleCreateCoach(e: React.FormEvent) {
     e.preventDefault();
@@ -600,7 +663,7 @@ export default function AdminPage() {
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-4 py-3">
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_14rem]">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_12rem_12rem_12rem_12rem]">
             <div>
               <label
                 htmlFor="coach-search"
@@ -639,6 +702,66 @@ export default function AdminPage() {
                 <option value="not_set">Not set</option>
               </select>
             </div>
+            <div>
+              <label
+                htmlFor="last-login-filter"
+                className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
+              >
+                Last login filter
+              </label>
+              <select
+                id="last-login-filter"
+                value={lastLoginFilter}
+                onChange={(e) =>
+                  setLastLoginFilter(e.target.value as LastLoginFilter)
+                }
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              >
+                <option value="all">All</option>
+                <option value="has_login">Has login</option>
+                <option value="never">Never logged in</option>
+                <option value="last_30_days">Last 30 days</option>
+                <option value="over_90_days">90+ days ago</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="crm-name-filter"
+                className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
+              >
+                CRM name
+              </label>
+              <select
+                id="crm-name-filter"
+                value={crmNameFilter}
+                onChange={(e) => setCrmNameFilter(e.target.value as CrmNameFilter)}
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              >
+                <option value="all">All</option>
+                <option value="has_name">Has CRM name</option>
+                <option value="no_name">No CRM name</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="last-login-sort"
+                className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500"
+              >
+                Last login sort
+              </label>
+              <select
+                id="last-login-sort"
+                value={lastLoginSort}
+                onChange={(e) =>
+                  setLastLoginSort(e.target.value as LastLoginSort)
+                }
+                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              >
+                <option value="recent_first">Most recent first</option>
+                <option value="oldest_first">Oldest first</option>
+                <option value="never_first">Never logged in first</option>
+              </select>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -654,6 +777,7 @@ export default function AdminPage() {
               <th className="sticky top-0 z-10 w-24 max-w-[6.5rem] bg-slate-50 px-2 py-2">Current</th>
               <th className="sticky top-0 z-10 w-24 max-w-[6.5rem] bg-slate-50 px-2 py-2">Ideal</th>
               <th className="sticky top-0 z-10 w-28 bg-slate-50 px-2 py-2">Goal by</th>
+              <th className="sticky top-0 z-10 w-36 bg-slate-50 px-2 py-2">Last login</th>
               <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">CRM</th>
               <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Lead webhook</th>
               <th className="sticky top-0 z-10 w-10 bg-slate-50 px-1 py-2 text-center" aria-label="Landing" />
@@ -765,6 +889,13 @@ export default function AdminPage() {
                       <span className="text-slate-400">Not set</span>
                     )}
                   </td>
+                  <td className="px-2 py-2 align-middle text-xs text-slate-700">
+                    {coach.last_login_at ? (
+                      formatLastLoginDisplay(coach.last_login_at)
+                    ) : (
+                      <span className="text-slate-400">Never</span>
+                    )}
+                  </td>
                   <td className="max-w-[16rem] px-2 py-2 align-middle">
                     <button
                       type="button"
@@ -870,7 +1001,7 @@ export default function AdminPage() {
             {loading && (
               <tr>
                 <td
-                  colSpan={14}
+                  colSpan={15}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   Loading coaches…
@@ -880,7 +1011,7 @@ export default function AdminPage() {
             {!loading && !error && filteredCoaches.length === 0 ? (
               <tr>
                 <td
-                  colSpan={14}
+                  colSpan={15}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   No coaches match that name.

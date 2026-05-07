@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
@@ -113,6 +114,7 @@ export default function CoachLayout({
 
   return (
     <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
+      <UsageTracker />
       <div className="fixed right-3 top-3 z-[100] flex max-w-[calc(100vw-17rem)] flex-col items-end gap-2 sm:right-5">
         <DashboardTopActions
           variant="coach"

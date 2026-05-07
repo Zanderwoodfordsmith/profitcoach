@@ -171,6 +171,8 @@ export function expandCommunityCalendar(
           display_timezone: row.display_timezone,
           location_kind: row.location_kind,
           location_url: row.location_url,
+          recording_link_url: row.recording_link_url,
+          recording_video_url: row.recording_video_url,
         });
       }
       continue;
@@ -191,6 +193,8 @@ export function expandCommunityCalendar(
         display_timezone: row.display_timezone,
         location_kind: row.location_kind,
         location_url: row.location_url,
+        recording_link_url: row.recording_link_url,
+        recording_video_url: row.recording_video_url,
       });
     }
   }

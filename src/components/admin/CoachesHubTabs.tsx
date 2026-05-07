@@ -14,6 +14,9 @@ export function CoachesHubTabs() {
   const onRevenue =
     pathname === "/admin/client-success/revenue" ||
     Boolean(pathname?.startsWith("/admin/client-success/revenue/"));
+  const onUsage =
+    pathname === "/admin/client-success/usage" ||
+    Boolean(pathname?.startsWith("/admin/client-success/usage/"));
 
   return (
     <PageHeaderUnderlineTabs
@@ -29,13 +32,19 @@ export function CoachesHubTabs() {
           kind: "link",
           href: "/admin/client-success",
           label: "Client success",
-          active: onClientSuccess && !onRevenue,
+          active: onClientSuccess && !onRevenue && !onUsage,
         },
         {
           kind: "link",
           href: "/admin/client-success/revenue",
           label: "Revenue",
           active: onRevenue,
+        },
+        {
+          kind: "link",
+          href: "/admin/client-success/usage",
+          label: "Usage",
+          active: onUsage,
         },
       ]}
     />

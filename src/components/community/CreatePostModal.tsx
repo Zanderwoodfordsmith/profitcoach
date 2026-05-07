@@ -53,7 +53,7 @@ export function CreatePostModal({
   const { impersonatingCoachId } = useImpersonation();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [categoryId, setCategoryId] = useState("");
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
@@ -77,8 +77,8 @@ export function CreatePostModal({
   );
 
   useEffect(() => {
-    if (!selectableCategories.some((c) => c.id === categoryId)) {
-      setCategoryId(selectableCategories[0]?.id ?? "");
+    if (categoryId && !selectableCategories.some((c) => c.id === categoryId)) {
+      setCategoryId("");
     }
   }, [categoryId, selectableCategories]);
 
@@ -145,8 +145,7 @@ export function CreatePostModal({
     };
   }, []);
 
-  const canSubmit =
-    title.trim().length > 0 && body.trim().length > 0 && categoryId && !saving;
+  const canSubmit = title.trim().length > 0 && body.trim().length > 0 && !saving;
 
   const scheduledAtIso = useMemo(() => {
     if (!scheduledAtLocal) return null;
@@ -168,6 +167,10 @@ export function CreatePostModal({
 
   const submit = useCallback(async () => {
     if (!canSubmit) return;
+    if (!categoryId) {
+      setError("Please choose a category before posting.");
+      return;
+    }
     if (announcementsCategory && categoryId === announcementsCategory.id && !isAuthorAdmin) {
       setError("Only admins can post in Announcements.");
       return;
@@ -368,9 +371,13 @@ export function CreatePostModal({
               <div className="flex items-center gap-2">
                 <select
                   value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
+                  onChange={(e) => {
+                    setCategoryId(e.target.value);
+                    if (error) setError(null);
+                  }}
                   className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
                 >
+                  <option value="">Select category</option>
                   {selectableCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.label}

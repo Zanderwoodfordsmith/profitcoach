@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 
@@ -32,6 +33,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-slate-100 pl-64 text-slate-900">
+      <UsageTracker />
       <DashboardSidebar
         variant="admin"
       />

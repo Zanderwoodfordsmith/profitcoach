@@ -855,7 +855,7 @@ export function CommunityFeed() {
       const { data, error } = await supabaseClient
         .from("community_calendar_events")
         .select(
-          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, is_recurring, recurrence, created_at, updated_at"
+          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, created_at, updated_at"
         )
         .order("starts_at", { ascending: true });
       if (cancelled || error) return;

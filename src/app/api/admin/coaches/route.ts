@@ -141,6 +141,22 @@ export async function GET(request: Request) {
 
     const rows: CoachQueryRow[] = res.data ?? [];
     const ids = rows.map((r) => r.id as string);
+    const idSet = new Set(ids);
+    const lastLoginByUserId = new Map<string, string | null>();
+
+    if (ids.length > 0) {
+      const authUsersRes = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+      if (!authUsersRes.error) {
+        for (const user of authUsersRes.data.users ?? []) {
+          if (idSet.has(user.id)) {
+            lastLoginByUserId.set(user.id, user.last_sign_in_at ?? null);
+          }
+        }
+      }
+    }
 
     // Pull achievements in one query and group by user.
     const achievementsByUser = new Map<string, Array<{ level_id: string }>>();
@@ -201,6 +217,7 @@ export async function GET(request: Request) {
         ladder_goal_target_date: goalDateMissing
           ? null
           : (prof?.ladder_goal_target_date as string | null) ?? null,
+        last_login_at: lastLoginByUserId.get(id) ?? null,
       };
     });
 

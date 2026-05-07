@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 import { uploadCommunityPostImage } from "@/lib/communityPostImage";
+import { uploadCommunityPostMediaFile } from "@/lib/communityPostMedia";
 import {
   communityAccessHint,
   supabaseErrorMessage,
@@ -95,6 +96,11 @@ export function AddCommunityEventModal({
   const [locationUrl, setLocationUrl] = useState("");
   const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [recordingLinkUrl, setRecordingLinkUrl] = useState("");
+  const [existingRecordingVideoUrl, setExistingRecordingVideoUrl] = useState<
+    string | null
+  >(null);
+  const [recordingVideoFile, setRecordingVideoFile] = useState<File | null>(null);
   const [recurring, setRecurring] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState(1);
   const [repeatUnit, setRepeatUnit] = useState<"week" | "month">("week");
@@ -111,6 +117,11 @@ export function AddCommunityEventModal({
   const [endAfterCount, setEndAfterCount] = useState(10);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canEditRecordings = useMemo(() => {
+    if (!initialEvent) return false;
+    const endUtc = DateTime.fromISO(initialEvent.ends_at, { zone: "utc" });
+    return endUtc.isValid && endUtc < DateTime.now().toUTC();
+  }, [initialEvent]);
 
   const coverPreview = useMemo(
     () => (coverFile ? URL.createObjectURL(coverFile) : null),
@@ -127,6 +138,9 @@ export function AddCommunityEventModal({
     setTimezone(initialEvent.display_timezone || defaultCommunityCalendarTimezone());
     setLocationKind(initialEvent.location_kind ?? "link");
     setLocationUrl(initialEvent.location_url ?? "");
+    setRecordingLinkUrl(initialEvent.recording_link_url ?? "");
+    setExistingRecordingVideoUrl(initialEvent.recording_video_url ?? null);
+    setRecordingVideoFile(null);
     setExistingCoverUrl(initialEvent.cover_image_url ?? null);
     setCoverFile(null);
     setRecurring(Boolean(initialEvent.is_recurring));
@@ -199,6 +213,10 @@ export function AddCommunityEventModal({
       const u = locationUrl.trim();
       if (!u.startsWith("http://") && !u.startsWith("https://")) return false;
     }
+    if (canEditRecordings && recordingLinkUrl.trim()) {
+      const u = recordingLinkUrl.trim();
+      if (!u.startsWith("http://") && !u.startsWith("https://")) return false;
+    }
     if (recurring) {
       if (repeatUnit === "week" && repeatWeekdays.length === 0) return false;
     }
@@ -210,6 +228,8 @@ export function AddCommunityEventModal({
     saving,
     locationKind,
     locationUrl,
+    canEditRecordings,
+    recordingLinkUrl,
     recurring,
     repeatUnit,
     repeatWeekdays.length,
@@ -241,6 +261,24 @@ export function AddCommunityEventModal({
         return;
       }
       coverUrl = up.image_url;
+    }
+    let recordingVideoUrl: string | null = existingRecordingVideoUrl;
+    if (canEditRecordings && recordingVideoFile) {
+      const up = await uploadCommunityPostMediaFile(
+        recordingVideoFile,
+        session.access_token
+      );
+      if ("error" in up) {
+        setError(up.error);
+        setSaving(false);
+        return;
+      }
+      if (up.media.kind !== "video") {
+        setError("Recording upload must be a video file.");
+        setSaving(false);
+        return;
+      }
+      recordingVideoUrl = up.media.url;
     }
 
     const [hh, mm] = timeStr.split(":").map((x) => Number(x));
@@ -288,6 +326,11 @@ export function AddCommunityEventModal({
       display_timezone: timezone,
       location_kind: locationKind,
       location_url: locationKind === "link" ? locationUrl.trim() : null,
+      recording_link_url:
+        canEditRecordings && recordingLinkUrl.trim()
+          ? recordingLinkUrl.trim()
+          : null,
+      recording_video_url: canEditRecordings ? recordingVideoUrl : null,
       is_recurring: Boolean(recurring && rec),
       recurrence: recurring && rec ? rec : null,
     };
@@ -320,9 +363,13 @@ export function AddCommunityEventModal({
     description,
     durationMin,
     existingCoverUrl,
+    existingRecordingVideoUrl,
     initialEvent,
     locationKind,
     locationUrl,
+    canEditRecordings,
+    recordingLinkUrl,
+    recordingVideoFile,
     recurrencePayload,
     recurring,
     timeStr,
@@ -654,6 +701,61 @@ export function AddCommunityEventModal({
               {description.length} / {DESCRIPTION_MAX}
             </p>
           </div>
+
+          {isEdit ? (
+            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Recording
+              </p>
+              {canEditRecordings ? (
+                <>
+                  <input
+                    type="url"
+                    value={recordingLinkUrl}
+                    onChange={(e) => setRecordingLinkUrl(e.target.value)}
+                    placeholder="Recording link (Zoom, Loom, YouTube...)"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  />
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-white p-3">
+                    <label className="block cursor-pointer text-sm font-medium text-sky-700 hover:text-sky-800">
+                      Upload recording video
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        className="sr-only"
+                        onChange={(e) => {
+                          setRecordingVideoFile(e.target.files?.[0] ?? null);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    <p className="mt-1 text-xs text-slate-500">
+                      MP4, WebM, or MOV up to 50MB.
+                    </p>
+                    {recordingVideoFile ? (
+                      <p className="mt-2 text-xs text-slate-700">
+                        New file: {recordingVideoFile.name}
+                      </p>
+                    ) : null}
+                    {existingRecordingVideoUrl ? (
+                      <a
+                        href={existingRecordingVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-xs text-sky-700 hover:underline"
+                      >
+                        View current uploaded recording
+                      </a>
+                    ) : null}
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-slate-600">
+                  You can add a recording once this event has ended.
+                </p>
+              )}
+            </div>
+          ) : null}
 
           <div>
             <p className="mb-1 text-xs font-medium text-slate-600">

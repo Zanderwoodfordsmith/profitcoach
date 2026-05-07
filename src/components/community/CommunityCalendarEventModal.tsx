@@ -6,6 +6,7 @@ import {
   Ellipsis,
   Link as LinkIcon,
   MapPin,
+  Video,
   Pencil,
   Trash2,
   X,
@@ -188,6 +189,39 @@ export function CommunityCalendarEventModal({
                     </p>
                   );
                 })}
+            </div>
+          ) : null}
+          {occurrence.recording_link_url || occurrence.recording_video_url ? (
+            <div className="space-y-2 border-t border-slate-100 pt-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Recording
+              </p>
+              {occurrence.recording_link_url ? (
+                <p className="flex items-start gap-2 text-sm">
+                  <LinkIcon className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                  <a
+                    href={occurrence.recording_link_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-sky-700 hover:underline"
+                  >
+                    Open recording link
+                  </a>
+                </p>
+              ) : null}
+              {occurrence.recording_video_url ? (
+                <p className="flex items-start gap-2 text-sm">
+                  <Video className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+                  <a
+                    href={occurrence.recording_video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-sky-700 hover:underline"
+                  >
+                    Watch uploaded recording
+                  </a>
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

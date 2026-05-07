@@ -17,6 +17,7 @@ import {
   Pencil,
   MapPin,
   Link as LinkIcon,
+  Video,
   Trash2,
 } from "lucide-react";
 import { DateTime } from "luxon";
@@ -205,7 +206,9 @@ export function CommunityCalendar({
   onAddModalOpenChange,
   canAddEvent = false,
 }: Props) {
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "list" | "recordings">(
+    "calendar"
+  );
   const [calendarLayout, setCalendarLayout] = useState<CalendarLayout>("week");
   const [viewTz, setViewTz] = useState(defaultCommunityCalendarTimezone);
   const [focusDate, setFocusDate] = useState(() => {
@@ -264,7 +267,7 @@ export function CommunityCalendar({
       const { data, error } = await supabaseClient
         .from("community_calendar_events")
         .select(
-          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, is_recurring, recurrence, created_at, updated_at"
+          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, created_at, updated_at"
         )
         .order("starts_at", { ascending: true });
       if (error) throw error;
@@ -468,6 +471,22 @@ export function CommunityCalendar({
     const end = now.plus({ days: 120 });
     return expandCommunityCalendar(rows, now, end);
   }, [rows, viewTz]);
+  const recordingsRows = useMemo(() => {
+    const now = DateTime.now().toUTC();
+    return rows
+      .filter((row) => {
+        const endedAt = DateTime.fromISO(row.ends_at, { zone: "utc" });
+        const hasRecording =
+          Boolean(row.recording_link_url?.trim()) ||
+          Boolean(row.recording_video_url?.trim());
+        return endedAt.isValid && endedAt <= now && hasRecording;
+      })
+      .sort(
+        (a, b) =>
+          DateTime.fromISO(b.ends_at, { zone: "utc" }).toMillis() -
+          DateTime.fromISO(a.ends_at, { zone: "utc" }).toMillis()
+      );
+  }, [rows]);
 
   const listTotalPages = Math.max(
     1,
@@ -501,7 +520,10 @@ export function CommunityCalendar({
     setListPage(1);
   };
 
-  const monthTitle = focusDate.setZone(viewTz).toFormat("MMMM yyyy");
+  const monthTitle =
+    viewMode === "recordings"
+      ? "Recordings"
+      : focusDate.setZone(viewTz).toFormat("MMMM yyyy");
 
   const tzOffsetLabel = useMemo(() => {
     const ref = weekMonday.setZone(viewTz);
@@ -601,6 +623,7 @@ export function CommunityCalendar({
                   type="button"
                   aria-label={`Previous ${periodNavLabel}`}
                   onClick={goPrevPeriod}
+                  disabled={viewMode === "recordings"}
                   className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -612,6 +635,7 @@ export function CommunityCalendar({
                   type="button"
                   aria-label={`Next ${periodNavLabel}`}
                   onClick={goNextPeriod}
+                  disabled={viewMode === "recordings"}
                   className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
                 >
                   <ChevronRight className="h-5 w-5" />
@@ -619,7 +643,7 @@ export function CommunityCalendar({
               </div>
               <div
                 ref={tzPickerRef}
-                className="relative mt-1 flex justify-center px-2"
+                className={`relative mt-1 flex justify-center px-2 ${viewMode === "recordings" ? "invisible" : ""}`}
               >
                 <button
                   type="button"
@@ -730,6 +754,23 @@ export function CommunityCalendar({
                   }`}
                 >
                   <ListChecks className="h-5 w-5" strokeWidth={1.75} />
+                </button>
+                <span
+                  className="w-px shrink-0 self-stretch bg-slate-300"
+                  aria-hidden
+                />
+                <button
+                  type="button"
+                  aria-label="Recordings view"
+                  aria-pressed={viewMode === "recordings"}
+                  onClick={() => setViewMode("recordings")}
+                  className={`flex items-center justify-center px-3 transition ${
+                    viewMode === "recordings"
+                      ? "bg-sky-100 text-slate-900"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <Video className="h-5 w-5" strokeWidth={1.75} />
                 </button>
               </div>
               {canAddEvent ? (
@@ -994,7 +1035,7 @@ export function CommunityCalendar({
                 </div>
               </div>
             )
-          ) : (
+          ) : viewMode === "list" ? (
             <div className="mt-6 space-y-3">
               {listOccurrences.length === 0 ? (
                 <p className="text-center text-sm text-slate-500">
@@ -1155,6 +1196,57 @@ export function CommunityCalendar({
                   </p>
                 </nav>
               ) : null}
+            </div>
+          ) : (
+            <div className="mt-6 space-y-3">
+              {recordingsRows.length === 0 ? (
+                <p className="text-center text-sm text-slate-500">
+                  No recordings yet.
+                </p>
+              ) : (
+                recordingsRows.map((ev) => {
+                  const start = DateTime.fromISO(ev.starts_at, { zone: "utc" });
+                  const end = DateTime.fromISO(ev.ends_at, { zone: "utc" });
+                  const label = formatRangeLabel(start, end, viewTz);
+                  return (
+                    <article
+                      key={ev.id}
+                      className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm text-slate-600">{label}</p>
+                          <h3 className="mt-1 text-lg font-bold text-slate-900">
+                            {ev.title}
+                          </h3>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                          {ev.recording_link_url ? (
+                            <a
+                              href={ev.recording_link_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              Open link
+                            </a>
+                          ) : null}
+                          {ev.recording_video_url ? (
+                            <a
+                              href={ev.recording_video_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700"
+                            >
+                              Watch video
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </div>
           )}
         </div>

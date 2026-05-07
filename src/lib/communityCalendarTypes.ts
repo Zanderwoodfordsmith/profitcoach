@@ -28,6 +28,8 @@ export type CommunityCalendarEventRow = {
   display_timezone: string;
   location_kind: CommunityCalendarLocationKind;
   location_url: string | null;
+  recording_link_url: string | null;
+  recording_video_url: string | null;
   is_recurring: boolean;
   recurrence: RecurrencePayload | null;
   created_at: string;
@@ -44,4 +46,6 @@ export type CommunityCalendarOccurrence = {
   display_timezone: string;
   location_kind: CommunityCalendarLocationKind;
   location_url: string | null;
+  recording_link_url: string | null;
+  recording_video_url: string | null;
 };
