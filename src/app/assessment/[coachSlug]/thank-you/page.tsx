@@ -8,12 +8,14 @@ import {
   BossDoughnut,
   FocusAreas,
 } from "@/components/BossCharts";
+import { CalendarEmbed } from "@/components/CalendarEmbed";
 import {
   getTotalScore,
   computeAreaScores,
   buildFakeScores,
   type AnswersMap,
 } from "@/lib/bossScores";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
 
@@ -28,6 +30,7 @@ export default function AssessmentThankYouPage() {
   const [wheelViewMode] = useWheelViewMode();
   const [answers, setAnswers] = useState<AnswersMap | null>(null);
   const [totalScore, setTotalScore] = useState<number | null>(null);
+  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -67,6 +70,34 @@ export default function AssessmentThankYouPage() {
       setTotalScore(getTotalScore(fake));
     }
   }, [mounted, searchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCalendarEmbed() {
+      const slug = coachSlug?.trim();
+      if (!slug) {
+        setCalendarEmbedCode(null);
+        return;
+      }
+      const { data, error } = await supabaseClient
+        .from("coaches")
+        .select("calendar_embed_code")
+        .eq("slug", slug)
+        .maybeSingle();
+      if (cancelled || error) return;
+      setCalendarEmbedCode(
+        (
+          data as { calendar_embed_code?: string | null } | null
+        )?.calendar_embed_code ?? null
+      );
+    }
+
+    void loadCalendarEmbed();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachSlug]);
 
   if (!mounted || answers === null || totalScore === null) {
     return (
@@ -145,6 +176,20 @@ export default function AssessmentThankYouPage() {
             playbookLinkBase="/playbooks"
           />
         </section>
+
+        {calendarEmbedCode ? (
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Book your strategy call
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Pick a time to review your BOSS score and next steps.
+            </p>
+            <div className="mt-4">
+              <CalendarEmbed embedCode={calendarEmbedCode} />
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );

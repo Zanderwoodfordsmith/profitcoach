@@ -10,6 +10,8 @@ import { ExternalLink } from "lucide-react";
 
 import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
 
+const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
+
 function ladderLevelShortName(id: string | null | undefined): string | null {
   if (!id?.trim()) return null;
   return LADDER_LEVELS.find((l) => l.id === id)?.name ?? id;
@@ -53,6 +55,12 @@ type CoachRow = {
   coach_business_name: string | null;
   directory_listed: boolean;
   directory_level: string | null;
+  /** Admin-only: outbound webhook fired with prospect contact info + score. */
+  lead_webhook_url: string | null;
+  /** Human-readable CRM account/profile label (e.g. AMF Consulting). */
+  crm_profile_name: string | null;
+  /** CRM location id appended to Pro Coach Platform location URL. */
+  crm_location_id: string | null;
   ladder_level: string | null;
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
@@ -79,6 +87,14 @@ export default function AdminPage() {
     null
   );
   const [deletingCoachId, setDeletingCoachId] = useState<string | null>(null);
+  const [webhookEditCoachId, setWebhookEditCoachId] = useState<string | null>(
+    null
+  );
+  const [crmProfileNameValue, setCrmProfileNameValue] = useState("");
+  const [crmLocationIdValue, setCrmLocationIdValue] = useState("");
+  const [webhookEditValue, setWebhookEditValue] = useState("");
+  const [webhookEditError, setWebhookEditError] = useState<string | null>(null);
+  const [webhookEditSaving, setWebhookEditSaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,12 +178,17 @@ export default function AdminPage() {
       ladder_level?: string | null;
       ladder_goal_level?: string | null;
       ladder_goal_target_date?: string | null;
+      lead_webhook_url?: string | null;
+      crm_profile_name?: string | null;
+      crm_location_id?: string | null;
     }
-  ) {
+  ): Promise<{ ok: true } | { ok: false; error: string }> {
     const {
       data: { session },
     } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return;
+    if (!session?.access_token) {
+      return { ok: false, error: "Not signed in." };
+    }
     setDirectorySavingId(coachId);
     try {
       const res = await fetch(`/api/admin/coaches/${coachId}`, {
@@ -204,13 +225,25 @@ export default function AdminPage() {
                 ...(body.ladder_goal_target_date !== undefined
                   ? { ladder_goal_target_date: body.ladder_goal_target_date }
                   : {}),
+                ...(body.lead_webhook_url !== undefined
+                  ? { lead_webhook_url: body.lead_webhook_url }
+                  : {}),
+                ...(body.crm_profile_name !== undefined
+                  ? { crm_profile_name: body.crm_profile_name }
+                  : {}),
+                ...(body.crm_location_id !== undefined
+                  ? { crm_location_id: body.crm_location_id }
+                  : {}),
               }
             : c
         )
       );
+      return { ok: true };
     } catch (e) {
       console.error(e);
-      setError((e as Error)?.message ?? "Could not update coach.");
+      const msg = (e as Error)?.message ?? "Could not update coach.";
+      setError(msg);
+      return { ok: false, error: msg };
     } finally {
       setDirectorySavingId(null);
     }
@@ -547,6 +580,8 @@ export default function AdminPage() {
               <th className="w-24 max-w-[6.5rem] px-2 py-2">Current</th>
               <th className="w-24 max-w-[6.5rem] px-2 py-2">Ideal</th>
               <th className="w-28 px-2 py-2">Goal by</th>
+              <th className="px-2 py-2">CRM</th>
+              <th className="px-2 py-2">Lead webhook</th>
               <th className="w-10 px-1 py-2 text-center" aria-label="Landing" />
               <th className="px-2 py-2 text-center">View as</th>
               <th className="px-2 py-2 text-center">Delete</th>
@@ -557,6 +592,11 @@ export default function AdminPage() {
               const link = origin
                 ? `${origin}/landing/a?coach=${encodeURIComponent(coach.slug)}`
                 : `/landing/a?coach=${encodeURIComponent(coach.slug)}`;
+              const crmLink = coach.crm_location_id?.trim()
+                ? `${CRM_LOCATION_BASE_URL}/${encodeURIComponent(
+                    coach.crm_location_id
+                  )}`
+                : null;
               return (
                 <tr
                   key={coach.id}
@@ -630,6 +670,71 @@ export default function AdminPage() {
                       <span className="text-slate-400">Not set</span>
                     )}
                   </td>
+                  <td className="max-w-[16rem] px-2 py-2 align-middle">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWebhookEditCoachId(coach.id);
+                        setCrmProfileNameValue(coach.crm_profile_name ?? "");
+                        setCrmLocationIdValue(coach.crm_location_id ?? "");
+                        setWebhookEditValue(coach.lead_webhook_url ?? "");
+                        setWebhookEditError(null);
+                      }}
+                      className="block w-full rounded px-1 py-0.5 text-left hover:bg-slate-100"
+                      title="Edit CRM details"
+                    >
+                      {coach.crm_profile_name?.trim() ? (
+                        <span className="block truncate text-xs font-medium text-slate-700">
+                          {coach.crm_profile_name}
+                        </span>
+                      ) : (
+                        <span className="block text-xs text-slate-400">
+                          Not set
+                        </span>
+                      )}
+                      <span className="mt-0.5 block text-[11px] text-slate-500">
+                        {coach.crm_location_id?.trim() || "No location ID"}
+                      </span>
+                    </button>
+                    {crmLink ? (
+                      <a
+                        href={crmLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate px-1 text-[11px] text-sky-700 hover:underline"
+                        title={crmLink}
+                      >
+                        <span className="truncate">Open CRM</span>
+                        <ExternalLink className="h-3 w-3 shrink-0" aria-hidden />
+                      </a>
+                    ) : null}
+                  </td>
+                  <td className="max-w-[14rem] px-2 py-2 align-middle">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWebhookEditCoachId(coach.id);
+                        setCrmProfileNameValue(coach.crm_profile_name ?? "");
+                        setCrmLocationIdValue(coach.crm_location_id ?? "");
+                        setWebhookEditValue(coach.lead_webhook_url ?? "");
+                        setWebhookEditError(null);
+                      }}
+                      className="block w-full max-w-[14rem] truncate rounded px-1 py-0.5 text-left text-xs underline-offset-2 hover:bg-slate-100 hover:underline"
+                      title={
+                        coach.lead_webhook_url
+                          ? `Edit lead webhook (${coach.lead_webhook_url})`
+                          : "Set lead webhook URL"
+                      }
+                    >
+                      {coach.lead_webhook_url ? (
+                        <span className="text-slate-700">
+                          {coach.lead_webhook_url}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Not set</span>
+                      )}
+                    </button>
+                  </td>
                   <td className="px-1 py-2 text-center align-middle">
                     <a
                       href={link}
@@ -670,7 +775,7 @@ export default function AdminPage() {
             {loading && (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={13}
                   className="px-4 py-3 text-sm text-slate-600"
                 >
                   Loading coaches…
@@ -680,6 +785,136 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+
+      {webhookEditCoachId && (
+        <div
+          role="dialog"
+          aria-modal
+          aria-label="Edit CRM and lead webhook"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !webhookEditSaving) {
+              setWebhookEditCoachId(null);
+            }
+          }}
+        >
+          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
+            <h2 className="text-base font-semibold text-slate-900">
+              CRM + lead webhook
+            </h2>
+            <p className="mt-1 text-xs text-slate-600">
+              Admin only. The coach does not see this field. Profit Coach POSTs
+              prospect contact info here as soon as we have an email, and again
+              with the BOSS score when the assessment finishes.
+            </p>
+            <label
+              htmlFor="crm-profile-name"
+              className="mt-4 block text-xs font-medium text-slate-700"
+            >
+              CRM profile name
+            </label>
+            <input
+              id="crm-profile-name"
+              type="text"
+              value={crmProfileNameValue}
+              onChange={(e) => setCrmProfileNameValue(e.target.value)}
+              placeholder="AMF Consulting"
+              disabled={webhookEditSaving}
+              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+            />
+            <label
+              htmlFor="crm-location-id"
+              className="mt-3 block text-xs font-medium text-slate-700"
+            >
+              CRM location ID
+            </label>
+            <input
+              id="crm-location-id"
+              type="text"
+              value={crmLocationIdValue}
+              onChange={(e) => setCrmLocationIdValue(e.target.value)}
+              placeholder="BsRxKtV0lVHcvvZ6qHtu"
+              disabled={webhookEditSaving}
+              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+            />
+            <p className="mt-2 text-[0.7rem] text-slate-500">
+              Coach CRM link is built as{" "}
+              <code>{CRM_LOCATION_BASE_URL}/&lt;location-id&gt;</code>.
+            </p>
+            <label
+              htmlFor="lead-webhook-url"
+              className="mt-4 block text-xs font-medium text-slate-700"
+            >
+              Lead webhook URL
+            </label>
+            <input
+              id="lead-webhook-url"
+              type="url"
+              autoFocus
+              value={webhookEditValue}
+              onChange={(e) => setWebhookEditValue(e.target.value)}
+              placeholder="https://hooks.example.com/coach-leads"
+              disabled={webhookEditSaving}
+              className="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:opacity-60"
+            />
+            <p className="mt-2 text-[0.7rem] text-slate-500">
+              Leave blank to disable. Must start with <code>http://</code> or{" "}
+              <code>https://</code>.
+            </p>
+            {webhookEditError ? (
+              <p className="mt-2 text-xs text-rose-600" role="alert">
+                {webhookEditError}
+              </p>
+            ) : null}
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!webhookEditSaving) setWebhookEditCoachId(null);
+                }}
+                disabled={webhookEditSaving}
+                className="rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!webhookEditCoachId) return;
+                  const trimmed = webhookEditValue.trim();
+                  if (trimmed && !/^https?:\/\//i.test(trimmed)) {
+                    setWebhookEditError(
+                      "URL must start with http:// or https://."
+                    );
+                    return;
+                  }
+                  setWebhookEditError(null);
+                  setWebhookEditSaving(true);
+                  const trimmedProfileName = crmProfileNameValue.trim();
+                  const trimmedLocationId = crmLocationIdValue.trim();
+                  const result = await patchCoachRow(webhookEditCoachId, {
+                    crm_profile_name:
+                      trimmedProfileName === "" ? null : trimmedProfileName,
+                    crm_location_id:
+                      trimmedLocationId === "" ? null : trimmedLocationId,
+                    lead_webhook_url: trimmed === "" ? null : trimmed,
+                  });
+                  setWebhookEditSaving(false);
+                  if (result.ok) {
+                    setWebhookEditCoachId(null);
+                  } else {
+                    setWebhookEditError(result.error);
+                  }
+                }}
+                disabled={webhookEditSaving}
+                className="inline-flex items-center rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-60"
+              >
+                {webhookEditSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

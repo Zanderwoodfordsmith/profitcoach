@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
+import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
   const coachId = coach.id as string;
 
   const fullName = body.contact?.full_name?.trim() || "Unknown";
-  const email = body.contact?.email?.trim() || null;
+  const email = body.contact?.email?.trim().toLowerCase() || null;
   const businessName = body.contact?.business_name?.trim() || null;
   const phone = body.contact?.phone?.trim() || null;
 
@@ -178,6 +179,8 @@ export async function POST(request: Request) {
 
     if (!contactLookupError && existing) {
       contactId = existing.id as string;
+    } else if (contactLookupError) {
+      console.error("assessments contact lookup:", contactLookupError);
     }
   }
 
@@ -196,6 +199,7 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !inserted) {
+      console.error("assessments contact insert:", insertError);
       return NextResponse.json(
         { error: "Failed to create contact" },
         { status: 500 }
@@ -244,6 +248,29 @@ export async function POST(request: Request) {
         assessment_id: assessment.id,
       });
     }
+  }
+
+  const webhookUrl = await getCoachLeadWebhookUrl(coachId);
+  if (webhookUrl) {
+    const { first_name, last_name } = splitFullName(fullName);
+    void fireLeadWebhook(webhookUrl, {
+      event: "assessment_completed",
+      coach_slug: coachSlug,
+      coach_id: coachId,
+      contact: {
+        contact_id: contactId,
+        full_name: fullName === "Unknown" ? null : fullName,
+        first_name,
+        last_name,
+        email,
+        phone,
+        business_name: businessName,
+      },
+      total_score: body.total_score,
+      assessment_id: assessment.id as string,
+      source: "prospect_link",
+      fired_at: new Date().toISOString(),
+    });
   }
 
   return NextResponse.json(

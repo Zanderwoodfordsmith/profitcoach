@@ -52,6 +52,15 @@ type PatchBody = {
   ladder_level?: string | null;
   ladder_goal_level?: string | null;
   ladder_goal_target_date?: string | null;
+  /**
+   * Admin-only outbound URL fired when a prospect captures contact info or
+   * completes the assessment. Hidden from coaches by design.
+   */
+  lead_webhook_url?: string | null;
+  /** Label of the CRM account/profile, shown in admin coaches table. */
+  crm_profile_name?: string | null;
+  /** CRM location id appended to Pro Coach Platform location URL. */
+  crm_location_id?: string | null;
 };
 
 export async function PATCH(
@@ -91,6 +100,49 @@ export async function PATCH(
     } else {
       return NextResponse.json(
         { error: "directory_level must be certified, professional, elite, or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.lead_webhook_url !== undefined) {
+    if (body.lead_webhook_url === null || body.lead_webhook_url === "") {
+      coachUpdates.lead_webhook_url = null;
+    } else if (typeof body.lead_webhook_url === "string") {
+      const trimmed = body.lead_webhook_url.trim();
+      if (!/^https?:\/\//i.test(trimmed)) {
+        return NextResponse.json(
+          { error: "Lead webhook URL must start with http:// or https://." },
+          { status: 400 }
+        );
+      }
+      coachUpdates.lead_webhook_url = trimmed;
+    } else {
+      return NextResponse.json(
+        { error: "lead_webhook_url must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.crm_profile_name !== undefined) {
+    if (body.crm_profile_name === null || body.crm_profile_name === "") {
+      coachUpdates.crm_profile_name = null;
+    } else if (typeof body.crm_profile_name === "string") {
+      coachUpdates.crm_profile_name = body.crm_profile_name.trim();
+    } else {
+      return NextResponse.json(
+        { error: "crm_profile_name must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.crm_location_id !== undefined) {
+    if (body.crm_location_id === null || body.crm_location_id === "") {
+      coachUpdates.crm_location_id = null;
+    } else if (typeof body.crm_location_id === "string") {
+      coachUpdates.crm_location_id = body.crm_location_id.trim();
+    } else {
+      return NextResponse.json(
+        { error: "crm_location_id must be a string or null." },
         { status: 400 }
       );
     }
@@ -246,12 +298,26 @@ export async function PATCH(
         .eq("id", coachId);
 
       if (error?.code === "42703") {
+        const includesWebhook =
+          Object.prototype.hasOwnProperty.call(coachUpdates, "lead_webhook_url");
+        const includesCrm =
+          Object.prototype.hasOwnProperty.call(coachUpdates, "crm_profile_name") ||
+          Object.prototype.hasOwnProperty.call(coachUpdates, "crm_location_id");
         return NextResponse.json(
           {
-            error:
-              "Directory columns are missing. Deploy the latest database migration.",
+            error: includesCrm
+              ? "CRM columns are missing. Deploy the latest database migration."
+              : includesWebhook
+                ? "Lead webhook column is missing. Deploy the latest database migration."
+                : "Directory columns are missing. Deploy the latest database migration.",
           },
           { status: 500 }
+        );
+      }
+      if (error?.code === "23514") {
+        return NextResponse.json(
+          { error: "Lead webhook URL must be a valid http(s) URL." },
+          { status: 400 }
         );
       }
       if (error) {

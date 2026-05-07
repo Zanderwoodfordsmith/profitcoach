@@ -100,11 +100,33 @@ export async function GET(request: Request) {
       );
     }
 
-    const { data: coachRow, error: coachErr } = await supabaseAdmin
+    let coachRowResult = await supabaseAdmin
       .from("coaches")
-      .select("slug, directory_listed, directory_level")
+      .select(
+        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code"
+      )
       .eq("id", coachId)
       .maybeSingle();
+    let webhookColumnMissing = false;
+    let calendarEmbedColumnMissing = false;
+    if (coachRowResult.error?.code === "42703") {
+      coachRowResult = await supabaseAdmin
+        .from("coaches")
+        .select("slug, directory_listed, directory_level, lead_webhook_url")
+        .eq("id", coachId)
+        .maybeSingle();
+      webhookColumnMissing = true;
+    }
+    if (coachRowResult.error?.code === "42703") {
+      coachRowResult = await supabaseAdmin
+        .from("coaches")
+        .select("slug, directory_listed, directory_level")
+        .eq("id", coachId)
+        .maybeSingle();
+      webhookColumnMissing = true;
+      calendarEmbedColumnMissing = true;
+    }
+    const { data: coachRow, error: coachErr } = coachRowResult;
 
     if (coachErr?.code === "42703") {
       const { data: fallbackCoach } = await supabaseAdmin
@@ -146,6 +168,8 @@ export async function GET(request: Request) {
         coach_slug: slug,
         directory_listed: false,
         directory_level: null,
+        lead_webhook_url: null,
+        calendar_embed_code: null,
         account_email,
       });
     }
@@ -190,6 +214,14 @@ export async function GET(request: Request) {
       coach_slug: slug,
       directory_listed: coachRow?.directory_listed ?? false,
       directory_level: coachRow?.directory_level ?? null,
+      lead_webhook_url: webhookColumnMissing
+        ? null
+        : (coachRow as { lead_webhook_url?: string | null } | null)
+            ?.lead_webhook_url ?? null,
+      calendar_embed_code: calendarEmbedColumnMissing
+        ? null
+        : (coachRow as { calendar_embed_code?: string | null } | null)
+            ?.calendar_embed_code ?? null,
       account_email,
     });
   } catch {
@@ -220,6 +252,14 @@ type PatchBody = {
   /** Coach may toggle directory visibility; level is admin-only. */
   directory_listed?: boolean;
   directory_level?: unknown;
+  /**
+   * Outbound webhook fired with prospect contact info + BOSS score. Admins
+   * can also edit this via /api/admin/coaches/[id]; both paths feed the same
+   * coaches.lead_webhook_url column.
+   */
+  lead_webhook_url?: string | null;
+  /** Booking calendar embed HTML shown on post-assessment report page. */
+  calendar_embed_code?: string | null;
 };
 
 export async function PATCH(request: Request) {
@@ -335,6 +375,50 @@ export async function PATCH(request: Request) {
   if (body.directory_listed !== undefined) {
     coachUpdates.directory_listed = !!body.directory_listed;
   }
+  if (body.lead_webhook_url !== undefined) {
+    if (body.lead_webhook_url === null) {
+      coachUpdates.lead_webhook_url = null;
+    } else if (typeof body.lead_webhook_url === "string") {
+      const trimmed = body.lead_webhook_url.trim();
+      if (trimmed === "") {
+        coachUpdates.lead_webhook_url = null;
+      } else if (!/^https?:\/\//i.test(trimmed)) {
+        return NextResponse.json(
+          { error: "Lead webhook URL must start with http:// or https://." },
+          { status: 400 }
+        );
+      } else {
+        coachUpdates.lead_webhook_url = trimmed;
+      }
+    } else {
+      return NextResponse.json(
+        { error: "lead_webhook_url must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.calendar_embed_code !== undefined) {
+    if (body.calendar_embed_code === null) {
+      coachUpdates.calendar_embed_code = null;
+    } else if (typeof body.calendar_embed_code === "string") {
+      const trimmed = body.calendar_embed_code.trim();
+      if (trimmed === "") {
+        coachUpdates.calendar_embed_code = null;
+      } else if (trimmed.length > 20000) {
+        return NextResponse.json(
+          { error: "Calendar embed code is too long." },
+          { status: 400 }
+        );
+      } else {
+        coachUpdates.calendar_embed_code = trimmed;
+      }
+    } else {
+      return NextResponse.json(
+        { error: "calendar_embed_code must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
 
   if (body.first_name !== undefined || body.last_name !== undefined) {
     const first = (body.first_name ?? "").trim();
@@ -356,12 +440,25 @@ export async function PATCH(request: Request) {
       .update(coachUpdates)
       .eq("id", coachId);
     if (coachRes.error) {
-      const msg =
-        coachRes.error.code === "42703"
-          ? "Directory settings require a database migration. Ask your team to deploy latest migrations."
-          : (coachRes.error as { message?: string }).message ??
-            "Could not update directory settings";
-      return NextResponse.json({ error: msg }, { status: 500 });
+      const includesWebhook = Object.prototype.hasOwnProperty.call(
+        coachUpdates,
+        "lead_webhook_url"
+      );
+      let msg: string;
+      let status = 500;
+      if (coachRes.error.code === "42703") {
+        msg = includesWebhook
+          ? "Lead webhook column is missing. Deploy the latest database migration."
+          : "Coach settings require a database migration. Ask your team to deploy latest migrations.";
+      } else if (coachRes.error.code === "23514" && includesWebhook) {
+        msg = "Lead webhook URL must be a valid http(s) URL.";
+        status = 400;
+      } else {
+        msg =
+          (coachRes.error as { message?: string }).message ??
+          "Could not update directory settings";
+      }
+      return NextResponse.json({ error: msg }, { status });
     }
   }
 

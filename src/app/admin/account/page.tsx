@@ -57,11 +57,34 @@ const ACCOUNT_TAB_IDS = [
   "profile",
   "account",
   "workspace",
+  "admins",
   "links",
   "site",
 ] as const;
 
 type AccountTabId = (typeof ACCOUNT_TAB_IDS)[number];
+
+type AdminUserRow = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  last_sign_in_at: string | null;
+  created_at: string | null;
+};
+
+function formatAdminDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  const now = new Date();
+  const includeYear = date.getFullYear() !== now.getFullYear();
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "short",
+    ...(includeYear ? { year: "numeric" } : {}),
+  }).format(date);
+}
 
 function parseAccountTab(raw: string | null): AccountTabId {
   if (raw && (ACCOUNT_TAB_IDS as readonly string[]).includes(raw)) {
@@ -77,6 +100,9 @@ function AdminAccountPageContent() {
 
   const [checkingRole, setCheckingRole] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adminUsers, setAdminUsers] = useState<AdminUserRow[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminUsersError, setAdminUsersError] = useState<string | null>(null);
 
   const setTab = useCallback(
     (next: AccountTabId) => {
@@ -124,6 +150,53 @@ function AdminAccountPageContent() {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (activeTab !== "admins") return;
+    let cancelled = false;
+
+    async function loadAdminUsers() {
+      setAdminUsersLoading(true);
+      setAdminUsersError(null);
+
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        if (!cancelled) {
+          setAdminUsersError("You must be signed in.");
+          setAdminUsersLoading(false);
+        }
+        return;
+      }
+
+      const res = await fetch("/api/admin/users", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        adminUsers?: AdminUserRow[];
+        error?: string;
+      };
+
+      if (cancelled) return;
+
+      if (!res.ok) {
+        setAdminUsersError(body.error ?? "Unable to load admin users.");
+        setAdminUsersLoading(false);
+        return;
+      }
+
+      setAdminUsers(body.adminUsers ?? []);
+      setAdminUsersLoading(false);
+    }
+
+    void loadAdminUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+
   const origin =
     typeof window !== "undefined" ? window.location.origin : "";
 
@@ -131,6 +204,7 @@ function AdminAccountPageContent() {
     { id: "profile", label: "Profile" },
     { id: "account", label: "Account" },
     { id: "workspace", label: "Workspace" },
+    { id: "admins", label: "Admin users" },
     { id: "links", label: "Links" },
     { id: "site", label: "Site tools" },
   ];
@@ -174,6 +248,94 @@ function AdminAccountPageContent() {
           variant="admin"
           embed={{ activeTab: settingsEmbedTab }}
         />
+      ) : null}
+
+      {!checkingRole && !error && activeTab === "admins" ? (
+        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-4 py-3">
+            <h2 className="text-sm font-semibold text-slate-900">Admin users</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Accounts with admin access to Profit Coach.
+            </p>
+          </div>
+
+          {adminUsersError ? (
+            <p className="px-4 py-3 text-sm text-rose-600">{adminUsersError}</p>
+          ) : null}
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="w-14 px-2 py-2 text-center" aria-label="Avatar" />
+                  <th className="px-4 py-2">Name</th>
+                  <th className="px-4 py-2">Email</th>
+                  <th className="px-4 py-2">Role</th>
+                  <th className="px-4 py-2">Last sign-in</th>
+                  <th className="px-4 py-2">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminUsers.map((adminUser) => (
+                  <tr
+                    key={adminUser.id}
+                    className="border-t border-slate-100 hover:bg-slate-50"
+                  >
+                    <td className="px-2 py-2 align-middle">
+                      {adminUser.avatar_url ? (
+                        <img
+                          src={adminUser.avatar_url}
+                          alt={adminUser.full_name ? `${adminUser.full_name} avatar` : ""}
+                          className="mx-auto h-9 w-9 rounded-full object-cover ring-1 ring-slate-200"
+                        />
+                      ) : (
+                        <div
+                          className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-400 ring-1 ring-slate-200"
+                          aria-hidden
+                        >
+                          —
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 font-medium text-slate-900">
+                      {adminUser.full_name || "—"}
+                    </td>
+                    <td className="px-4 py-2 text-slate-700">
+                      {adminUser.email || "—"}
+                    </td>
+                    <td className="px-4 py-2 text-slate-700">
+                      {adminUser.role || "—"}
+                    </td>
+                    <td className="px-4 py-2 text-slate-700">
+                      {adminUser.last_sign_in_at
+                        ? formatAdminDate(adminUser.last_sign_in_at)
+                        : "Never"}
+                    </td>
+                    <td className="px-4 py-2 text-slate-700">
+                      {adminUser.created_at
+                        ? formatAdminDate(adminUser.created_at)
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+                {adminUsersLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-3 text-sm text-slate-600">
+                      Loading admin users…
+                    </td>
+                  </tr>
+                ) : null}
+                {!adminUsersLoading && !adminUsersError && adminUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-3 text-sm text-slate-600">
+                      No admin users found.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </section>
       ) : null}
 
       {!checkingRole && !error && activeTab === "links" ? (

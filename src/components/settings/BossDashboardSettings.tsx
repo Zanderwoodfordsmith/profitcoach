@@ -37,6 +37,10 @@ type ProfileData = {
   coach_slug: string | null;
   directory_listed: boolean;
   directory_level: string | null;
+  /** Outbound URL fired with prospect contact info + BOSS score. */
+  lead_webhook_url?: string | null;
+  /** HTML snippet used to render a booking calendar on assessment results. */
+  calendar_embed_code?: string | null;
 };
 
 export type BossDashboardSettingsTabId = "profile" | "account" | "workspace";
@@ -63,6 +67,8 @@ export function BossDashboardSettings({
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
+  const [leadWebhookUrl, setLeadWebhookUrl] = useState("");
+  const [calendarEmbedCode, setCalendarEmbedCode] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -150,6 +156,8 @@ export function BossDashboardSettings({
     setLinkedinUrl(data.linkedin_url ?? "");
     setBio(data.bio ?? "");
     setLocation(data.location ?? "");
+    setLeadWebhookUrl(data.lead_webhook_url ?? "");
+    setCalendarEmbedCode(data.calendar_embed_code ?? "");
     const ctx = data.ai_context ?? {};
     setBrainSuperpowers(ctx.superpowers ?? "");
     setBrainHobbies(ctx.hobbies_and_recent ?? "");
@@ -195,6 +203,8 @@ export function BossDashboardSettings({
         linkedin_url: linkedinUrl.trim() || null,
         bio: bio.trim() || null,
         location: location.trim() || null,
+        lead_webhook_url: leadWebhookUrl.trim() || null,
+        calendar_embed_code: calendarEmbedCode.trim() || null,
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -598,6 +608,65 @@ export function BossDashboardSettings({
               </p>
             ) : null}
           </div>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">
+            Assessment booking calendar
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Optional. Paste your calendar embed HTML. This renders on the
+            post-assessment results page so prospects can book immediately.
+          </p>
+          <div className="mt-4 max-w-3xl">
+            <OutlinedTextArea
+              id="calendar_embed_code"
+              label="Embed code"
+              rows={8}
+              value={calendarEmbedCode}
+              onChange={(e) => setCalendarEmbedCode(e.target.value)}
+              placeholder={'<iframe src="https://..." ...></iframe><script src="https://..."></script>'}
+              wrapperClassName="w-full max-w-3xl"
+            />
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+              Leave blank to hide the calendar. Use your provider&apos;s full
+              embed snippet (iframe + external script if required).
+            </p>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">
+            Lead webhook
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Optional. Profit Coach will POST prospect contact details to this
+            URL the moment we have an email, and again with the BOSS score
+            when the assessment finishes. Use the same URL across both events
+            and dedupe in your tool by <code>contact_id</code>.
+          </p>
+          <div className="mt-4 max-w-lg">
+            <OutlinedTextField
+              id="lead_webhook_url"
+              label="Webhook URL"
+              type="url"
+              value={leadWebhookUrl}
+              onChange={(e) => setLeadWebhookUrl(e.target.value)}
+              placeholder="https://hooks.example.com/your-webhook"
+              wrapperClassName="w-full max-w-lg"
+            />
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
+              Leave blank to disable. Must start with{" "}
+              <span className="font-mono text-[11px] text-slate-700">
+                http://
+              </span>{" "}
+              or{" "}
+              <span className="font-mono text-[11px] text-slate-700">
+                https://
+              </span>
+              .
+            </p>
           </div>
         </section>
 

@@ -400,6 +400,25 @@ export default function AssessmentPage({
                     }),
                   }).catch(() => {});
                 }
+                // Capture lead as soon as we have an email, regardless of
+                // whether they finish the assessment. The lead-capture API is
+                // idempotent per (coach, email) so re-firing is safe.
+                const emailVal = email.trim();
+                if (emailVal) {
+                  fetch("/api/leads/capture", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      coachSlug: coachSlug?.trim() || null,
+                      contact: {
+                        full_name: fullName.trim() || undefined,
+                        email: emailVal,
+                        phone: phone.trim() || undefined,
+                        business_name: businessName.trim() || undefined,
+                      },
+                    }),
+                  }).catch(() => {});
+                }
                 setStep("assessment");
               }}
             >

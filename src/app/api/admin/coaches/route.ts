@@ -85,8 +85,18 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
+      "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
     );
+
+    let webhookMissing = false;
+    let crmMissing = false;
+    if (res.error?.code === "42703") {
+      res = await runSelect(
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
+      );
+      webhookMissing = true;
+      crmMissing = true;
+    }
 
     let goalDateMissing = false;
     if (res.error?.code === "42703") {
@@ -94,6 +104,7 @@ export async function GET(request: Request) {
         "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level)"
       );
       goalDateMissing = true;
+      webhookMissing = true;
     }
 
     let directoryMissing = false;
@@ -163,6 +174,15 @@ export async function GET(request: Request) {
         directory_level: directoryMissing
           ? null
           : (row.directory_level as string | null) ?? null,
+        lead_webhook_url: webhookMissing
+          ? null
+          : (row.lead_webhook_url as string | null) ?? null,
+        crm_profile_name: crmMissing
+          ? null
+          : (row.crm_profile_name as string | null) ?? null,
+        crm_location_id: crmMissing
+          ? null
+          : (row.crm_location_id as string | null) ?? null,
         ladder_level: currentLevel,
         ladder_goal_level: goalLevelMissing
           ? null

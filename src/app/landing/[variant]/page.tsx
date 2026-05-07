@@ -172,6 +172,24 @@ export default function LandingVariantPage() {
       setFormError("Please enter your email.");
       return;
     }
+    // Fire the partial-lead capture as soon as we have an email — even if the
+    // prospect bails before phone/assessment. Fire-and-forget; never block
+    // the funnel on this.
+    const first = firstName.trim();
+    const last = lastName.trim();
+    fetch("/api/leads/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coachSlug: coachSlug || null,
+        contact: {
+          first_name: first || undefined,
+          last_name: last || undefined,
+          full_name: [first, last].filter(Boolean).join(" ") || undefined,
+          email: emailVal,
+        },
+      }),
+    }).catch(() => {});
     setFormStep(3);
   }
 
@@ -196,6 +214,22 @@ export default function LandingVariantPage() {
         variant: trackVariant,
         coach_slug: coachSlug || null,
         event_type: "opt_in",
+      }),
+    }).catch(() => {});
+    // Re-fire lead capture now that we also have phone — same contact_id
+    // gets returned, so downstream webhook consumers can dedupe.
+    fetch("/api/leads/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coachSlug: coachSlug || null,
+        contact: {
+          first_name: first || undefined,
+          last_name: last || undefined,
+          full_name: fullName || undefined,
+          email: emailVal,
+          phone: fullPhone || undefined,
+        },
       }),
     }).catch(() => {});
     try {
