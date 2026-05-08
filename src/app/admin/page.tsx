@@ -791,12 +791,12 @@ export default function AdminPage() {
                 ? `${origin}/landing/a?coach=${encodeURIComponent(coach.slug)}`
                 : `/landing/a?coach=${encodeURIComponent(coach.slug)}`;
               const reportPreviewLink = origin
-                ? `${origin}/assessment/${encodeURIComponent(
+                ? `${origin}/preview/report-design-system?preview=1&score=74&coach=${encodeURIComponent(
                     coach.slug
-                  )}/thank-you?preview=1&score=74&name=Alex%20Prospect&email=alex.prospect%40example.com&business=North%20Star%20Electrical`
-                : `/assessment/${encodeURIComponent(
+                  )}&name=Alex%20Prospect&email=alex.prospect%40example.com&business=North%20Star%20Electrical`
+                : `/preview/report-design-system?preview=1&score=74&coach=${encodeURIComponent(
                     coach.slug
-                  )}/thank-you?preview=1&score=74&name=Alex%20Prospect&email=alex.prospect%40example.com&business=North%20Star%20Electrical`;
+                  )}&name=Alex%20Prospect&email=alex.prospect%40example.com&business=North%20Star%20Electrical`;
               const crmLink = coach.crm_location_id?.trim()
                 ? `${CRM_LOCATION_BASE_URL}/${encodeURIComponent(
                     coach.crm_location_id
@@ -985,7 +985,7 @@ export default function AdminPage() {
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-sky-700"
-                        title="Open report preview with mock prospect data"
+                        title="Open design-system report preview with mock prospect data"
                         aria-label={`Report preview for ${coach.slug}`}
                       >
                         <ExternalLink className="h-4 w-4" aria-hidden />

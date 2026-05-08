@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { CalendarEmbed } from "@/components/CalendarEmbed";
 import {
   BossWheel,
   BossDoughnut,
@@ -129,6 +130,7 @@ function ReportDesignSystemContent() {
   const searchParams = useSearchParams();
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
+  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<ViewTab>("pillars");
   const [selectedPillar, setSelectedPillar] = useState<number | null>(null);
@@ -174,6 +176,37 @@ function ReportDesignSystemContent() {
   });
 
   const areaScores = useMemo(() => computeAreaScores(answers), [answers]);
+  const coachSlugParam = searchParams?.get("coach")?.trim() ?? "";
+
+  // Load coach-specific calendar embed when coach slug is provided in query.
+  // Example: /preview/report-design-system?coach=bca
+  // This keeps the design preview tied to the selected coach's booking widget.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCalendarEmbed() {
+      if (!coachSlugParam) {
+        setCalendarEmbedCode(null);
+        return;
+      }
+      const res = await fetch(
+        `/api/public/coaches/${encodeURIComponent(coachSlugParam)}/calendar`
+      );
+      if (cancelled || !res.ok) {
+        setCalendarEmbedCode(null);
+        return;
+      }
+      const data = (await res.json().catch(() => ({}))) as {
+        calendar_embed_code?: string | null;
+      };
+      setCalendarEmbedCode(data?.calendar_embed_code ?? null);
+    }
+
+    void loadCalendarEmbed();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachSlugParam]);
 
   const resetDetailSelection = () => {
     setSelectedPillar(null);
@@ -625,6 +658,19 @@ function ReportDesignSystemContent() {
             ))}
           </div>
         </section>
+        {calendarEmbedCode ? (
+          <section className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.08)] md:p-8">
+            <h2 className="text-2xl font-light tracking-tight text-slate-900">
+              Book your strategy call
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Coach calendar loaded from the selected coach profile.
+            </p>
+            <div className="mt-6">
+              <CalendarEmbed embedCode={calendarEmbedCode} />
+            </div>
+          </section>
+        ) : null}
       </main>
     </div>
   );
