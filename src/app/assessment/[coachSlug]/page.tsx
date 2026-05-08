@@ -14,6 +14,17 @@ function computeTotalScore(answers: AnswersMap): number {
   );
 }
 
+function buildUniformAnswers(value: 0 | 1 | 2): AnswersMap {
+  const next: AnswersMap = {};
+  for (const level of Object.keys(QUESTIONS_BY_LEVEL)) {
+    const questions = QUESTIONS_BY_LEVEL[Number(level)] ?? [];
+    for (const question of questions) {
+      next[question.ref] = value;
+    }
+  }
+  return next;
+}
+
 export default function AssessmentPage({
   params,
 }: {
@@ -732,6 +743,19 @@ export default function AssessmentPage({
           <p className="mt-1 text-xs text-rose-600">{submitError}</p>
         )}
       </div>
+      <button
+        type="button"
+        disabled={submitting}
+        onClick={() => {
+          const acceleratedAnswers = buildUniformAnswers(1);
+          setAnswers(acceleratedAnswers);
+          void handleSubmitAssessment(acceleratedAnswers);
+        }}
+        className="fixed bottom-4 right-4 z-50 rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label="Auto-complete all assessment answers with the same value and continue to report"
+      >
+        Accelerate: auto-complete all
+      </button>
     </div>
   );
 }

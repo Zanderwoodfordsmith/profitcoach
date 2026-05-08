@@ -115,7 +115,7 @@ export async function GET(request: Request) {
         .select("slug, directory_listed, directory_level, lead_webhook_url")
         .eq("id", coachId)
         .maybeSingle();
-      webhookColumnMissing = true;
+      calendarEmbedColumnMissing = true;
     }
     if (coachRowResult.error?.code === "42703") {
       coachRowResult = await supabaseAdmin
@@ -444,12 +444,26 @@ export async function PATCH(request: Request) {
         coachUpdates,
         "lead_webhook_url"
       );
+      const includesCalendarEmbed = Object.prototype.hasOwnProperty.call(
+        coachUpdates,
+        "calendar_embed_code"
+      );
       let msg: string;
       let status = 500;
       if (coachRes.error.code === "42703") {
-        msg = includesWebhook
-          ? "Lead webhook column is missing. Deploy the latest database migration."
-          : "Coach settings require a database migration. Ask your team to deploy latest migrations.";
+        if (includesWebhook && includesCalendarEmbed) {
+          msg =
+            "Coach settings columns are missing. Deploy the latest database migrations.";
+        } else if (includesWebhook) {
+          msg =
+            "Lead webhook column is missing. Deploy the latest database migration.";
+        } else if (includesCalendarEmbed) {
+          msg =
+            "Calendar embed column is missing. Deploy the latest database migration.";
+        } else {
+          msg =
+            "Coach settings require a database migration. Ask your team to deploy latest migrations.";
+        }
       } else if (coachRes.error.code === "23514" && includesWebhook) {
         msg = "Lead webhook URL must be a valid http(s) URL.";
         status = 400;

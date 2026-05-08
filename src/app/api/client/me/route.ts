@@ -103,13 +103,17 @@ export async function GET(request: Request) {
   }
 
   let coachSlug: string | null = null;
+  let calendarEmbedCode: string | null = null;
   if (resolvedContact.coach_id) {
     const { data: coachRow } = await supabaseAdmin
       .from("coaches")
-      .select("slug")
+      .select("slug, calendar_embed_code")
       .eq("id", resolvedContact.coach_id)
       .maybeSingle();
     coachSlug = coachRow?.slug ?? null;
+    calendarEmbedCode =
+      (coachRow as { calendar_embed_code?: string | null } | null)
+        ?.calendar_embed_code ?? null;
   }
   if (!coachSlug) {
     coachSlug = "BCA";
@@ -138,6 +142,7 @@ export async function GET(request: Request) {
       business_name: resolvedContact.business_name,
     },
     coach_slug: coachSlug,
+    coach_calendar_embed_code: calendarEmbedCode,
     assessment: latest
       ? {
           id: latest.id,

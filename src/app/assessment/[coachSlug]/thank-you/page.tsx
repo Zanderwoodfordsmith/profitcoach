@@ -15,7 +15,6 @@ import {
   buildFakeScores,
   type AnswersMap,
 } from "@/lib/bossScores";
-import { supabaseClient } from "@/lib/supabaseClient";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
 
@@ -80,16 +79,15 @@ export default function AssessmentThankYouPage() {
         setCalendarEmbedCode(null);
         return;
       }
-      const { data, error } = await supabaseClient
-        .from("coaches")
-        .select("calendar_embed_code")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (cancelled || error) return;
+      const res = await fetch(
+        `/api/public/coaches/${encodeURIComponent(slug)}/calendar`
+      );
+      if (cancelled || !res.ok) return;
+      const data = (await res.json().catch(() => ({}))) as {
+        calendar_embed_code?: string | null;
+      };
       setCalendarEmbedCode(
-        (
-          data as { calendar_embed_code?: string | null } | null
-        )?.calendar_embed_code ?? null
+        data?.calendar_embed_code ?? null
       );
     }
 

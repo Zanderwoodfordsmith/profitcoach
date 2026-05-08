@@ -8,6 +8,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { BossGridTransposed } from "@/components/BossGrid";
 import { BossWheel, BossDoughnut, FocusAreas } from "@/components/BossCharts";
+import { CalendarEmbed } from "@/components/CalendarEmbed";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
 import { InsightDashboard, type CoachingSectionContext } from "@/components/InsightDashboard";
@@ -47,6 +48,7 @@ export default function ClientDashboardPage() {
   const [contact, setContact] = useState<Contact | null>(null);
   const [coachSlug, setCoachSlug] = useState<string>("BCA");
   const [assessment, setAssessment] = useState<Assessment | null>(null);
+  const [coachCalendarEmbedCode, setCoachCalendarEmbedCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingScores, setEditingScores] = useState(false);
@@ -108,11 +110,13 @@ export default function ClientDashboardPage() {
       const body = (await res.json()) as {
         contact?: Contact;
         coach_slug?: string;
+        coach_calendar_embed_code?: string | null;
         assessment?: Assessment | null;
       };
 
       setContact(body.contact ?? null);
       setCoachSlug(body.coach_slug ?? "BCA");
+      setCoachCalendarEmbedCode(body.coach_calendar_embed_code ?? null);
       const loadedAssessment = body.assessment ?? null;
       setAssessment(loadedAssessment);
 
@@ -510,6 +514,21 @@ export default function ClientDashboardPage() {
               <FocusAreas scores={answers} variant="full" />
             </section>
           </div>
+
+          {hasAssessment && coachCalendarEmbedCode ? (
+            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Book your strategy call
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Pick a time with your coach to review this report and your next
+                steps.
+              </p>
+              <div className="mt-4">
+                <CalendarEmbed embedCode={coachCalendarEmbedCode} />
+              </div>
+            </section>
+          ) : null}
         </>
       )}
     </div>

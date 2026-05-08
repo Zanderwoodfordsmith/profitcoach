@@ -9,6 +9,12 @@ type Body = {
 };
 
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+type ActiveSession = {
+  id: string;
+  last_activity_at: string;
+  page_views: number;
+  heartbeat_count: number;
+};
 
 function cleanPath(path: string | null | undefined): string {
   const raw = (path ?? "").trim();
@@ -50,14 +56,7 @@ export async function POST(request: Request) {
       .maybeSingle();
     role = (profile?.role as string | null) ?? null;
 
-    let activeSession:
-      | {
-          id: string;
-          last_activity_at: string;
-          page_views: number;
-          heartbeat_count: number;
-        }
-      | null = null;
+    let activeSession: ActiveSession | null = null;
 
     const incomingSessionId = body.sessionId?.trim();
     if (incomingSessionId) {
@@ -68,7 +67,7 @@ export async function POST(request: Request) {
         .eq("user_id", user.id)
         .is("ended_at", null)
         .maybeSingle();
-      activeSession = (existing as typeof activeSession) ?? null;
+      activeSession = (existing as ActiveSession | null) ?? null;
     }
 
     if (activeSession) {
