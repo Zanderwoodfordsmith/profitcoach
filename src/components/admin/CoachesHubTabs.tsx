@@ -17,6 +17,9 @@ export function CoachesHubTabs() {
   const onUsage =
     pathname === "/admin/client-success/usage" ||
     Boolean(pathname?.startsWith("/admin/client-success/usage/"));
+  const onPayments =
+    pathname === "/admin/payments" ||
+    Boolean(pathname?.startsWith("/admin/payments/"));
 
   return (
     <PageHeaderUnderlineTabs
@@ -45,6 +48,12 @@ export function CoachesHubTabs() {
           href: "/admin/client-success/usage",
           label: "Usage",
           active: onUsage,
+        },
+        {
+          kind: "link",
+          href: "/admin/payments",
+          label: "Payments",
+          active: onPayments,
         },
       ]}
     />
