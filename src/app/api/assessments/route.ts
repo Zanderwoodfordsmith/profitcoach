@@ -199,13 +199,35 @@ export async function POST(request: Request) {
       .single();
 
     if (insertError || !inserted) {
-      console.error("assessments contact insert:", insertError);
-      return NextResponse.json(
-        { error: "Failed to create contact" },
-        { status: 500 }
-      );
+      // A lead-capture request may race this endpoint and insert the same
+      // (coach_id, email) contact first. Recover by reloading that row.
+      if (insertError?.code === "23505" && email) {
+        const { data: raced, error: racedLookupError } = await supabaseAdmin
+          .from("contacts")
+          .select("id")
+          .eq("coach_id", coachId)
+          .eq("email", email)
+          .maybeSingle();
+        if (!racedLookupError && raced?.id) {
+          contactId = raced.id as string;
+        } else {
+          console.error("assessments contact insert race lookup:", racedLookupError);
+          return NextResponse.json(
+            { error: "Failed to create contact" },
+            { status: 500 }
+          );
+        }
+      } else {
+        console.error("assessments contact insert:", insertError);
+        return NextResponse.json(
+          { error: "Failed to create contact" },
+          { status: 500 }
+        );
+      }
     }
-    contactId = inserted.id as string;
+    if (!contactId && inserted?.id) {
+      contactId = inserted.id as string;
+    }
   }
 
   const {
