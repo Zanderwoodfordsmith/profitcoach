@@ -790,6 +790,13 @@ export default function AdminPage() {
               const link = origin
                 ? `${origin}/landing/a?coach=${encodeURIComponent(coach.slug)}`
                 : `/landing/a?coach=${encodeURIComponent(coach.slug)}`;
+              const reportPreviewLink = origin
+                ? `${origin}/assessment/${encodeURIComponent(
+                    coach.slug
+                  )}/thank-you?preview=1&score=74&name=Alex%20Prospect&email=alex.prospect%40example.com&business=North%20Star%20Electrical`
+                : `/assessment/${encodeURIComponent(
+                    coach.slug
+                  )}/thank-you?preview=1&score=74&name=Alex%20Prospect&email=alex.prospect%40example.com&business=North%20Star%20Electrical`;
               const crmLink = coach.crm_location_id?.trim()
                 ? `${CRM_LOCATION_BASE_URL}/${encodeURIComponent(
                     coach.crm_location_id
@@ -962,16 +969,28 @@ export default function AdminPage() {
                     </button>
                   </td>
                   <td className="px-1 py-2 text-center align-middle">
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-sky-700"
-                      title="Open landing page"
-                      aria-label={`Landing page for ${coach.slug}`}
-                    >
-                      <ExternalLink className="h-4 w-4" aria-hidden />
-                    </a>
+                    <div className="inline-flex items-center gap-1">
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-sky-700"
+                        title="Open landing page"
+                        aria-label={`Landing page for ${coach.slug}`}
+                      >
+                        <ExternalLink className="h-4 w-4" aria-hidden />
+                      </a>
+                      <a
+                        href={reportPreviewLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-sky-700"
+                        title="Open report preview with mock prospect data"
+                        aria-label={`Report preview for ${coach.slug}`}
+                      >
+                        <ExternalLink className="h-4 w-4" aria-hidden />
+                      </a>
+                    </div>
                   </td>
                   <td className="px-2 py-2 text-center align-middle">
                     <button

@@ -217,6 +217,36 @@ export async function POST(request: Request) {
             { status: 500 }
           );
         }
+      } else if (insertError?.code === "23502" && !email) {
+        // Some deployments may still enforce NOT NULL on contacts.email.
+        // Keep the assessment flow non-blocking by inserting with a safe
+        // placeholder address.
+        const placeholderEmail = `unknown+${randomUUID()}@noemail.local`;
+        const { data: insertedWithPlaceholder, error: placeholderError } =
+          await supabaseAdmin
+            .from("contacts")
+            .insert({
+              coach_id: coachId,
+              type: "prospect",
+              full_name: fullName,
+              email: placeholderEmail,
+              business_name: businessName,
+              phone,
+            })
+            .select("id")
+            .single();
+        if (!placeholderError && insertedWithPlaceholder?.id) {
+          contactId = insertedWithPlaceholder.id as string;
+        } else {
+          console.error(
+            "assessments contact insert placeholder retry:",
+            placeholderError
+          );
+          return NextResponse.json(
+            { error: "Failed to create contact" },
+            { status: 500 }
+          );
+        }
       } else {
         console.error("assessments contact insert:", insertError);
         return NextResponse.json(
