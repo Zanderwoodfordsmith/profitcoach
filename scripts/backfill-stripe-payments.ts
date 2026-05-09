@@ -34,7 +34,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 });
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2025-03-31.basil",
+  apiVersion: "2026-04-22.dahlia",
 });
 
 function coalesceEmail(...values: Array<string | null | undefined>): string | null {
@@ -55,29 +55,28 @@ async function main() {
   let skipped = 0;
   let failed = 0;
 
-  for await (const paymentIntent of stripe.paymentIntents.list({
+  await stripe.paymentIntents.list({
     limit: 100,
-    expand: ["data.latest_charge", "data.charges.data"],
-  }).autoPagingIterator()) {
+    expand: ["data.latest_charge"],
+  }).autoPagingEach(async (paymentIntent) => {
     processed += 1;
 
     if (paymentIntent.status !== "succeeded") {
       skipped += 1;
-      continue;
+      return;
     }
 
     const customerEmail = coalesceEmail(
       paymentIntent.receipt_email,
       paymentIntent.latest_charge && typeof paymentIntent.latest_charge !== "string"
         ? paymentIntent.latest_charge.billing_details?.email
-        : null,
-      paymentIntent.charges.data[0]?.billing_details?.email
+        : null
     );
 
     const amountCents = paymentIntent.amount_received || paymentIntent.amount;
     if (!customerEmail || !amountCents || amountCents <= 0) {
       skipped += 1;
-      continue;
+      return;
     }
 
     try {
@@ -109,7 +108,7 @@ async function main() {
         `[stripe backfill] processed=${processed} synced=${synced} skipped=${skipped} failed=${failed}`
       );
     }
-  }
+  });
 
   console.log(
     `[stripe backfill] done. processed=${processed} synced=${synced} skipped=${skipped} failed=${failed}`

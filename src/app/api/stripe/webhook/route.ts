@@ -78,8 +78,7 @@ export async function POST(request: Request) {
           intent.receipt_email,
           intent.latest_charge && typeof intent.latest_charge !== "string"
             ? intent.latest_charge.billing_details?.email
-            : null,
-          intent.charges.data[0]?.billing_details?.email
+            : null
         );
         if (!customerEmail) break;
         const amountCents =
