@@ -63,6 +63,10 @@ type PatchBody = {
   crm_profile_name?: string | null;
   /** CRM location id appended to Pro Coach Platform location URL. */
   crm_location_id?: string | null;
+  /** Coach profile fields editable by admin. */
+  full_name?: string | null;
+  coach_business_name?: string | null;
+  linkedin_url?: string | null;
 };
 
 export async function PATCH(
@@ -166,6 +170,49 @@ export async function PATCH(
   }
 
   const profileUpdates: Record<string, unknown> = {};
+  if (body.full_name !== undefined) {
+    if (body.full_name === null || body.full_name === "") {
+      profileUpdates.full_name = null;
+    } else if (typeof body.full_name === "string") {
+      profileUpdates.full_name = body.full_name.trim();
+    } else {
+      return NextResponse.json(
+        { error: "full_name must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.coach_business_name !== undefined) {
+    if (body.coach_business_name === null || body.coach_business_name === "") {
+      profileUpdates.coach_business_name = null;
+    } else if (typeof body.coach_business_name === "string") {
+      profileUpdates.coach_business_name = body.coach_business_name.trim();
+    } else {
+      return NextResponse.json(
+        { error: "coach_business_name must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.linkedin_url !== undefined) {
+    if (body.linkedin_url === null || body.linkedin_url === "") {
+      profileUpdates.linkedin_url = null;
+    } else if (typeof body.linkedin_url === "string") {
+      const trimmed = body.linkedin_url.trim();
+      if (!/^https?:\/\//i.test(trimmed)) {
+        return NextResponse.json(
+          { error: "LinkedIn URL must start with http:// or https://." },
+          { status: 400 }
+        );
+      }
+      profileUpdates.linkedin_url = trimmed;
+    } else {
+      return NextResponse.json(
+        { error: "linkedin_url must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
   if (body.ladder_goal_level !== undefined) {
     if (body.ladder_goal_level === null || body.ladder_goal_level === "") {
       profileUpdates.ladder_goal_level = null;

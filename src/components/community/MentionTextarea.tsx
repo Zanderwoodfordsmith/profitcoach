@@ -31,6 +31,7 @@ type Props = {
   /** Grow height with content (single-line feel when empty). */
   autoResize?: boolean;
   maxAutoHeightPx?: number;
+  minAutoHeightPx?: number;
   showFormattingToolbar?: boolean;
 };
 
@@ -45,6 +46,148 @@ function normalizeMentionLabel(label: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Invisible wrappers around link labels in the editor (zero-width non-joiner). */
+const LINK_ZWNJ = "\u200c";
+
+type LinkPair = { label: string; url: string };
+
+const NON_MENTION_LINK_MD_RE = /\[([^\]]+)\]\((?!mention:)([^)]+)\)/gi;
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function extractLinkPairsInOrder(raw: string): LinkPair[] {
+  const out: LinkPair[] = [];
+  const re = new RegExp(NON_MENTION_LINK_MD_RE.source, "gi");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) {
+    out.push({ label: m[1] ?? "", url: m[2] ?? "" });
+  }
+  return out;
+}
+
+function rawToDisplayFromRaw(raw: string): string {
+  let s = raw.replace(new RegExp(MENTION_MARKDOWN_REGEX.source, "gi"), (_m, label) => {
+    const clean = normalizeMentionLabel(String(label ?? ""));
+    return clean ? `@${clean}` : "@member";
+  });
+  s = s.replace(new RegExp(NON_MENTION_LINK_MD_RE.source, "gi"), (_full, label: string) => {
+    return `${LINK_ZWNJ}${label}${LINK_ZWNJ}`;
+  });
+  return s;
+}
+
+function extractZwnjLinkLabelsInOrder(display: string): string[] {
+  const labels: string[] = [];
+  let i = 0;
+  while (i < display.length) {
+    if (display.startsWith(LINK_ZWNJ, i)) {
+      const close = display.indexOf(LINK_ZWNJ, i + LINK_ZWNJ.length);
+      if (close === -1) break;
+      labels.push(display.slice(i + LINK_ZWNJ.length, close));
+      i = close + LINK_ZWNJ.length;
+    } else {
+      const nextZ = display.indexOf(LINK_ZWNJ, i);
+      if (nextZ === -1) break;
+      i = nextZ;
+    }
+  }
+  return labels;
+}
+
+function countCompleteZwnjLinksBefore(display: string, pos: number): number {
+  let count = 0;
+  let i = 0;
+  while (i < display.length && i < pos) {
+    if (display.startsWith(LINK_ZWNJ, i)) {
+      const close = display.indexOf(LINK_ZWNJ, i + LINK_ZWNJ.length);
+      if (close === -1) break;
+      const end = close + LINK_ZWNJ.length;
+      if (end <= pos) count++;
+      i = end;
+    } else {
+      const nextZ = display.indexOf(LINK_ZWNJ, i);
+      if (nextZ === -1 || nextZ >= pos) break;
+      i = nextZ;
+    }
+  }
+  return count;
+}
+
+function resolveUrlsForLabels(labels: string[], pool: LinkPair[]): string[] {
+  const q = [...pool];
+  return labels.map((lab) => {
+    const idx = q.findIndex((p) => p.label === lab);
+    if (idx === -1) return "";
+    const [{ url }] = q.splice(idx, 1);
+    return url;
+  });
+}
+
+function assembleRawFromDisplay(
+  display: string,
+  mentions: KnownMention[],
+  urlsInOrder: string[]
+): string {
+  const parts: string[] = [];
+  let i = 0;
+  let u = 0;
+  while (i < display.length) {
+    if (display.startsWith(LINK_ZWNJ, i)) {
+      const close = display.indexOf(LINK_ZWNJ, i + LINK_ZWNJ.length);
+      if (close === -1) {
+        parts.push(display.slice(i));
+        break;
+      }
+      const label = display.slice(i + LINK_ZWNJ.length, close);
+      const url = urlsInOrder[u++] ?? "";
+      if (url) {
+        parts.push(`[${escapeMarkdownLinkLabel(label)}](${url})`);
+      } else {
+        parts.push(label);
+      }
+      i = close + LINK_ZWNJ.length;
+    } else {
+      const nextZ = display.indexOf(LINK_ZWNJ, i);
+      const end = nextZ === -1 ? display.length : nextZ;
+      parts.push(display.slice(i, end));
+      i = end;
+    }
+  }
+  return displayToRawText(parts.join(""), mentions);
+}
+
+function displayToMirrorHtml(display: string, ph?: string): string {
+  if (!display && ph) {
+    return `<span class="text-slate-400">${escapeHtml(ph)}</span>`;
+  }
+  let out = "";
+  let idx = 0;
+  while (idx < display.length) {
+    if (display.startsWith(LINK_ZWNJ, idx)) {
+      const close = display.indexOf(LINK_ZWNJ, idx + LINK_ZWNJ.length);
+      if (close === -1) {
+        out += escapeHtml(display.slice(idx));
+        break;
+      }
+      const label = display.slice(idx + LINK_ZWNJ.length, close);
+      out += `<span class="font-medium !text-blue-600 underline underline-offset-2 decoration-blue-600/40">${escapeHtml(label)}</span>`;
+      idx = close + LINK_ZWNJ.length;
+    } else {
+      const nextZ = display.indexOf(LINK_ZWNJ, idx);
+      const end = nextZ === -1 ? display.length : nextZ;
+      out += escapeHtml(display.slice(idx, end));
+      idx = end;
+    }
+  }
+  return out;
 }
 
 function normalizeCommunityPostLinkUrl(input: string): string {
@@ -87,13 +230,6 @@ function extractKnownMentionsFromRaw(raw: string): KnownMention[] {
     out.push({ id, label });
   }
   return out;
-}
-
-function rawToDisplayText(raw: string): string {
-  return raw.replace(new RegExp(MENTION_MARKDOWN_REGEX.source, "gi"), (_m, label) => {
-    const clean = normalizeMentionLabel(String(label ?? ""));
-    return clean ? `@${clean}` : "@member";
-  });
 }
 
 function displayToRawText(display: string, knownMentions: KnownMention[]): string {
@@ -149,10 +285,13 @@ export function MentionTextarea({
   rows = 4,
   autoResize = false,
   maxAutoHeightPx = 280,
+  minAutoHeightPx = 0,
   showFormattingToolbar = false,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
-  const [displayValue, setDisplayValue] = useState(() => rawToDisplayText(value));
+  const mirrorInnerRef = useRef<HTMLDivElement>(null);
+  const lastRawRef = useRef(value);
+  const [displayValue, setDisplayValue] = useState(() => rawToDisplayFromRaw(value));
   const [knownMentions, setKnownMentions] = useState<KnownMention[]>(() =>
     extractKnownMentionsFromRaw(value)
   );
@@ -163,9 +302,35 @@ export function MentionTextarea({
   const fetchSeq = useRef(0);
 
   useEffect(() => {
-    setDisplayValue(rawToDisplayText(value));
+    // Ignore parent echoes of our own onChange while typing; rehydrating here
+    // can reset caret/selection and feel like "cursor jumping".
+    if (value === lastRawRef.current) return;
+    setDisplayValue(rawToDisplayFromRaw(value));
     setKnownMentions(extractKnownMentionsFromRaw(value));
+    lastRawRef.current = value;
   }, [value]);
+
+  const commitFromDisplay = useCallback(
+    (nextDisplay: string, nextMentions = knownMentions) => {
+      const labels = extractZwnjLinkLabelsInOrder(nextDisplay);
+      const pool = extractLinkPairsInOrder(lastRawRef.current);
+      const urls = resolveUrlsForLabels(labels, pool);
+      const nextRaw = assembleRawFromDisplay(nextDisplay, nextMentions, urls);
+      lastRawRef.current = nextRaw;
+      setKnownMentions(extractKnownMentionsFromRaw(nextRaw));
+      setDisplayValue(nextDisplay);
+      onChange(nextRaw);
+    },
+    [knownMentions, onChange]
+  );
+
+  const syncMirrorScroll = useCallback(() => {
+    const ta = taRef.current;
+    const inner = mirrorInnerRef.current;
+    if (!ta || !inner) return;
+    inner.style.minHeight = `${ta.scrollHeight}px`;
+    inner.style.transform = `translateY(-${ta.scrollTop}px)`;
+  }, []);
 
   const safeHighlightIdx = useMemo(
     () =>
@@ -212,9 +377,7 @@ export function MentionTextarea({
       const nextDisplay =
         displayValue.slice(0, ctx.start) + mentionText + " " + displayValue.slice(sel);
       const nextKnown = [...knownMentions, { id: user.id, label: safeName || "member" }];
-      setKnownMentions(nextKnown);
-      setDisplayValue(nextDisplay);
-      onChange(displayToRawText(nextDisplay, nextKnown));
+      commitFromDisplay(nextDisplay, nextKnown);
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
@@ -223,7 +386,7 @@ export function MentionTextarea({
         el.setSelectionRange(pos, pos);
       });
     },
-    [displayValue, knownMentions, onChange]
+    [commitFromDisplay, displayValue, knownMentions]
   );
 
   const onKeyDown = useCallback(
@@ -260,15 +423,21 @@ export function MentionTextarea({
     const el = taRef.current;
     if (!el) return;
     el.style.height = "0px";
-    const next = Math.min(el.scrollHeight, maxAutoHeightPx);
+    const clampedHeight =
+      maxAutoHeightPx > 0 ? Math.min(el.scrollHeight, maxAutoHeightPx) : el.scrollHeight;
+    const next = Math.max(minAutoHeightPx, clampedHeight);
     el.style.height = `${next}px`;
-  }, [autoResize, maxAutoHeightPx, value]);
+  }, [autoResize, maxAutoHeightPx, minAutoHeightPx, displayValue]);
+
+  useLayoutEffect(() => {
+    if (!showFormattingToolbar) return;
+    syncMirrorScroll();
+  }, [displayValue, showFormattingToolbar, syncMirrorScroll]);
 
   const onChangeInner = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const nextDisplay = e.target.value;
-      setDisplayValue(nextDisplay);
-      onChange(displayToRawText(nextDisplay, knownMentions));
+      commitFromDisplay(nextDisplay);
       const ctx = getActiveMentionQuery(
         nextDisplay,
         e.target.selectionStart ?? 0
@@ -287,7 +456,7 @@ export function MentionTextarea({
         setMentionLoading(false);
       });
     },
-    [knownMentions, onChange]
+    [commitFromDisplay]
   );
 
   const applyWrappedSelection = useCallback(
@@ -299,8 +468,7 @@ export function MentionTextarea({
       const selected = displayValue.slice(start, end);
       const nextDisplay =
         displayValue.slice(0, start) + before + selected + after + displayValue.slice(end);
-      setDisplayValue(nextDisplay);
-      onChange(displayToRawText(nextDisplay, knownMentions));
+      commitFromDisplay(nextDisplay);
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
@@ -313,7 +481,7 @@ export function MentionTextarea({
         }
       });
     },
-    [displayValue, knownMentions, onChange]
+    [commitFromDisplay, displayValue]
   );
 
   const insertMarkdownLink = useCallback(() => {
@@ -326,42 +494,46 @@ export function MentionTextarea({
     if (hadSelection) {
       selected = selected.replace(/\r\n/g, "\n").replace(/\n+/g, " ").trim();
     }
+    const pairIdx = countCompleteZwnjLinksBefore(displayValue, start);
+    const pool = extractLinkPairsInOrder(lastRawRef.current);
+
+    let label: string;
+    let normalized: string;
     if (!hadSelection) {
       const urlRaw = window.prompt("Link URL:", "https://");
       if (urlRaw === null) return;
-      const normalized = normalizeCommunityPostLinkUrl(urlRaw);
+      normalized = normalizeCommunityPostLinkUrl(urlRaw);
       if (!normalized) return;
       const defaultLabel = linkLabelFromUrl(normalized);
       const labelRaw = window.prompt("Text to show for this link:", defaultLabel);
       if (labelRaw === null) return;
-      const label =
-        labelRaw.trim().length > 0 ? labelRaw.trim() : defaultLabel;
-      const md = `[${escapeMarkdownLinkLabel(label)}](${normalized})`;
-      const nextDisplay =
-        displayValue.slice(0, start) + md + displayValue.slice(end);
-      setDisplayValue(nextDisplay);
-      onChange(displayToRawText(nextDisplay, knownMentions));
-      setMentionOpen(false);
-      requestAnimationFrame(() => {
-        el.focus();
-        const caret = start + md.length;
-        el.setSelectionRange(caret, caret);
-      });
-      return;
+      label = labelRaw.trim().length > 0 ? labelRaw.trim() : defaultLabel;
+    } else {
+      const urlRaw = window.prompt("Link URL:", "https://");
+      if (urlRaw === null) return;
+      normalized = normalizeCommunityPostLinkUrl(urlRaw);
+      if (!normalized) return;
+      label = selected;
     }
-    const urlRaw = window.prompt("Link URL:", "https://");
-    if (urlRaw === null) return;
-    const normalized = normalizeCommunityPostLinkUrl(urlRaw);
-    if (!normalized) return;
-    const md = `[${escapeMarkdownLinkLabel(selected)}](${normalized})`;
+
+    pool.splice(pairIdx, 0, { label, url: normalized });
     const nextDisplay =
-      displayValue.slice(0, start) + md + displayValue.slice(end);
+      displayValue.slice(0, start) +
+      LINK_ZWNJ +
+      label +
+      LINK_ZWNJ +
+      displayValue.slice(end);
+    const labels = extractZwnjLinkLabelsInOrder(nextDisplay);
+    const urls = resolveUrlsForLabels(labels, pool);
+    const nextRaw = assembleRawFromDisplay(nextDisplay, knownMentions, urls);
+    lastRawRef.current = nextRaw;
+    setKnownMentions(extractKnownMentionsFromRaw(nextRaw));
     setDisplayValue(nextDisplay);
-    onChange(displayToRawText(nextDisplay, knownMentions));
+    onChange(nextRaw);
     setMentionOpen(false);
     requestAnimationFrame(() => {
       el.focus();
-      const caret = start + md.length;
+      const caret = start + LINK_ZWNJ.length + label.length + LINK_ZWNJ.length;
       el.setSelectionRange(caret, caret);
     });
   }, [displayValue, knownMentions, onChange]);
@@ -382,8 +554,7 @@ export function MentionTextarea({
         .join("\n");
       const nextDisplay =
         displayValue.slice(0, lineStart) + prefixedBlock + displayValue.slice(lineEnd);
-      setDisplayValue(nextDisplay);
-      onChange(displayToRawText(nextDisplay, knownMentions));
+      commitFromDisplay(nextDisplay);
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
@@ -396,8 +567,12 @@ export function MentionTextarea({
         el.setSelectionRange(start + beforeStartDelta, end + delta);
       });
     },
-    [displayValue, knownMentions, onChange]
+    [commitFromDisplay, displayValue]
   );
+
+  const onScrollMirror = useCallback(() => {
+    syncMirrorScroll();
+  }, [syncMirrorScroll]);
 
   const showList = mentionOpen;
 
@@ -405,19 +580,34 @@ export function MentionTextarea({
     <div className="relative">
       {showFormattingToolbar ? (
         <div className="border-b border-slate-200 transition focus-within:border-sky-500">
-          <textarea
-            ref={taRef}
-            value={displayValue}
-            onChange={onChangeInner}
-            onKeyDown={onKeyDown}
-            onClick={onSelectOrClick}
-            onSelect={onSelectOrClick}
-            onKeyUp={onSelectOrClick}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={autoResize ? 1 : rows}
-            className={`${className}${autoResize ? " resize-none overflow-hidden" : ""}`}
-          />
+          <div className="relative">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+            >
+              <div
+                ref={mirrorInnerRef}
+                className={`${className}${autoResize ? " resize-none overflow-hidden" : ""} whitespace-pre-wrap break-words text-slate-900`}
+                dangerouslySetInnerHTML={{
+                  __html: displayToMirrorHtml(displayValue, placeholder),
+                }}
+              />
+            </div>
+            <textarea
+              ref={taRef}
+              value={displayValue}
+              onChange={onChangeInner}
+              onKeyDown={onKeyDown}
+              onClick={onSelectOrClick}
+              onSelect={onSelectOrClick}
+              onKeyUp={onSelectOrClick}
+              onScroll={onScrollMirror}
+              placeholder={undefined}
+              disabled={disabled}
+              rows={autoResize ? 1 : rows}
+              className={`${className}${autoResize ? " resize-none overflow-hidden" : ""} relative z-[1] text-transparent caret-slate-900`}
+            />
+          </div>
           <div className="mb-1.5 mt-1.5 flex flex-wrap items-center gap-1.5 px-0.5">
             <button
               type="button"

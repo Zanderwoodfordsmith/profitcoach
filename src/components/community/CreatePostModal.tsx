@@ -6,7 +6,6 @@ import { CalendarDays, ImagePlus, Video, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
-import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
 import {
   COMMUNITY_POST_MEDIA_MAX,
   firstCommunityPostImageUrl,
@@ -316,28 +315,18 @@ export function CreatePostModal({
           placeholder="Title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full border-0 border-b border-slate-200 bg-transparent px-0 pb-2 text-base font-semibold text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
+          className="mt-1 w-full border-0 border-b border-slate-200 bg-transparent px-0 pb-2 text-lg font-semibold text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
         />
         <MentionTextarea
           value={body}
           onChange={setBody}
           placeholder="Write something…"
-          rows={3}
+          autoResize
+          maxAutoHeightPx={0}
+          minAutoHeightPx={140}
           showFormattingToolbar
-          className="w-full resize-y border-0 bg-transparent px-0 pb-1 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
+          className="w-full border-0 bg-transparent px-0 pb-1 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
         />
-        {body.trim().length > 0 ? (
-          <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2">
-            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Preview
-            </p>
-            <CommunityPostMarkdownBody
-              body={body}
-              nameById={{}}
-              className="text-[15px] text-slate-800"
-            />
-          </div>
-        ) : null}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">

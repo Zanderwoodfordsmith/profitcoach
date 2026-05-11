@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deriveCurrentLevelId } from "@/lib/ladder";
+import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -85,7 +86,7 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
+      "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
     );
 
     let webhookMissing = false;
@@ -93,13 +94,13 @@ export async function GET(request: Request) {
     let conferenceStatusMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
+        "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       conferenceStatusMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level, ladder_goal_target_date)"
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       webhookMissing = true;
       crmMissing = true;
@@ -109,7 +110,7 @@ export async function GET(request: Request) {
     let goalDateMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level)"
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       goalDateMissing = true;
       webhookMissing = true;
@@ -118,7 +119,7 @@ export async function GET(request: Request) {
     let directoryMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, ladder_goal_level)"
+        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       directoryMissing = true;
     }
@@ -126,7 +127,7 @@ export async function GET(request: Request) {
     let goalLevelMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url)"
+        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       goalLevelMissing = true;
       directoryMissing = true;
@@ -176,6 +177,24 @@ export async function GET(request: Request) {
       }
     }
 
+    const clientCountByCoachId = new Map<string, number>();
+    if (ids.length > 0) {
+      const contactsRes = await supabaseAdmin
+        .from("contacts")
+        .select("coach_id")
+        .in("coach_id", ids);
+      if (contactsRes.error?.code !== "42P01" && !contactsRes.error) {
+        for (const row of contactsRes.data ?? []) {
+          const coachId = row.coach_id as string | null;
+          if (!coachId) continue;
+          clientCountByCoachId.set(
+            coachId,
+            (clientCountByCoachId.get(coachId) ?? 0) + 1
+          );
+        }
+      }
+    }
+
     const coaches = rows.map((row) => {
       const profRaw = row.profiles as
         | Record<string, unknown>
@@ -194,6 +213,27 @@ export async function GET(request: Request) {
         avatar_url: (prof?.avatar_url as string | null) ?? null,
         coach_business_name:
           (prof?.coach_business_name as string | null) ?? null,
+        linkedin_url: (prof?.linkedin_url as string | null) ?? null,
+        current_monthly_income: (() => {
+          const raw = prof?.coaching_income_reported_2024;
+          if (typeof raw !== "string") return null;
+          const parsed = raw
+            .trim()
+            .replace(/,/g, "")
+            .match(/-?\d+(?:\.\d+)?/);
+          if (!parsed) return null;
+          const numeric = Number(parsed[0]);
+          return Number.isFinite(numeric) ? numeric : null;
+        })(),
+        goal_monthly_income:
+          typeof prof?.ladder_goal_level === "string"
+            ? defaultMonthlyIncomeForLevelId(prof.ladder_goal_level)
+            : null,
+        joined_at:
+          (prof?.disco_community_joined_on as string | null) ??
+          (prof?.created_at as string | null) ??
+          null,
+        client_count: clientCountByCoachId.get(id) ?? 0,
         directory_listed: directoryMissing ? false : !!row.directory_listed,
         directory_level: directoryMissing
           ? null

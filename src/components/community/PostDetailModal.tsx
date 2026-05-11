@@ -1686,7 +1686,7 @@ export function PostDetailModal({
                         {needsBodyTruncation ? (
                           <button
                             type="button"
-                            className="mt-1 inline bg-transparent p-0 font-medium leading-relaxed text-sky-500 hover:text-sky-400 hover:underline"
+                            className="mt-2 inline rounded-md bg-sky-50 px-2 py-1 font-medium leading-relaxed text-sky-600 hover:bg-sky-100 hover:text-sky-500"
                             onClick={() => setBodyExpanded(false)}
                           >
                             See less
@@ -1695,26 +1695,26 @@ export function PostDetailModal({
                       </>
                     ) : (
                       <div className="text-[calc(1rem+2px)] leading-relaxed">
-                        <div className="line-clamp-9 overflow-hidden break-words">
+                        <div className="relative">
+                          <div className="line-clamp-9 overflow-hidden break-words pr-24">
                           <CommunityPostMarkdownBody
                             body={post.body}
                             nameById={nameById}
                             profileHrefByUserId={mentionProfileHrefByUserId}
                             className="block text-inherit"
                           />
-                        </div>
-                        <span className="mt-0.5 inline-flex flex-wrap items-baseline gap-1.5">
-                          <span className="text-slate-400" aria-hidden>
-                            …
-                          </span>
                           <button
                             type="button"
-                            className="bg-transparent p-0 font-medium leading-relaxed text-sky-500 hover:text-sky-400 hover:underline"
+                            className="absolute bottom-0 right-0 inline-flex items-center rounded-md bg-white/95 px-2 py-1 font-medium leading-relaxed text-sky-600 shadow-[0_0_0_4px_rgba(255,255,255,0.9)] hover:bg-sky-50 hover:text-sky-500"
                             onClick={() => setBodyExpanded(true)}
                           >
+                            <span className="mr-1 text-slate-400" aria-hidden>
+                              …
+                            </span>
                             See more
                           </button>
-                        </span>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
