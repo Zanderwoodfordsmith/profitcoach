@@ -1,0 +1,313 @@
+/* ============================================================
+   PROFIT COACH — Colors & Typography
+   The credentialled, modern, utilitarian operating-system brand.
+   Source of truth: globals.css from profitcoach repo + brand brief.
+   ============================================================ */
+
+/* ---------- Webfonts (Plus Jakarta Sans, primary) ---------- */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+:root {
+  /* ----------------------------------------------------------
+     COLOR — primary: Chathams Blue
+     The credibility anchor. Used for headers, certification
+     marks, and authority moments.
+     ---------------------------------------------------------- */
+  --pc-chathams-50:  #eaf2fb;
+  --pc-chathams-100: #cfdef3;
+  --pc-chathams-200: #9fbde7;
+  --pc-chathams-300: #6f9cd9;
+  --pc-chathams-400: #3f7bca;
+  --pc-chathams-500: #1664b6;          /* lighter mid */
+  --pc-chathams-600: #0c5290;          /* CORE — Chathams Blue */
+  --pc-chathams-700: #094274;
+  --pc-chathams-800: #073157;
+  --pc-chathams-900: #061a2e;          /* deep navy used in v2 hero */
+
+  /* Brand sub-blues (from BOSS framework + repo) */
+  --pc-vision:    #0c5290;             /* same as Chathams 600 */
+  --pc-velocity:  #42a1ee;             /* sky/light blue — energetic */
+  --pc-value:     #1ca0c2;             /* teal-cyan */
+  --pc-teal:      #0d9488;             /* secondary accent */
+
+  /* ----------------------------------------------------------
+     ACCENT — single high-contrast "go" signal
+     Reserved for CTAs in lead-gen flows, score-up states,
+     progress moments. Treated as scarce.
+     ---------------------------------------------------------- */
+  --pc-go-500:    #10b981;             /* emerald — the "go" */
+  --pc-go-600:    #059669;
+  --pc-go-700:    #047857;
+
+  /* ----------------------------------------------------------
+     NEUTRALS — Slate family
+     Body copy, secondary surfaces, operator UI
+     ---------------------------------------------------------- */
+  --pc-slate-25:  #fafbfc;
+  --pc-slate-50:  #f5f8fc;             /* marketing background */
+  --pc-slate-100: #f1f5f9;             /* app background */
+  --pc-slate-200: #e2e8f0;
+  --pc-slate-300: #cbd5e1;
+  --pc-slate-400: #94a3b8;
+  --pc-slate-500: #64748b;
+  --pc-slate-600: #475569;
+  --pc-slate-700: #334155;
+  --pc-slate-800: #1e293b;
+  --pc-slate-900: #0f172a;
+
+  /* ----------------------------------------------------------
+     SEMANTIC STATUS — RAG (red/amber/green) for scoring
+     Used in the BOSS grid, score reveals, diagnostics
+     ---------------------------------------------------------- */
+  --pc-rag-red:    #e11d48;            /* "not in place" */
+  --pc-rag-red-soft:   #fee2e2;
+  --pc-rag-amber:  #f59e0b;            /* "partially" */
+  --pc-rag-amber-soft: #fef3c7;
+  --pc-rag-green:  #10b981;            /* "fully in place" */
+  --pc-rag-green-soft: #d1fae5;
+
+  /* Pastel grid backgrounds (BOSS card fills) */
+  --pc-pastel-red:   #f4c7c3;
+  --pc-pastel-amber: #fce8b2;
+  --pc-pastel-green: #b7e1cd;
+
+  /* BOSS level tints (light → dark progression) */
+  --pc-level-1: #b5d0ed;               /* lightest */
+  --pc-level-2: #badfae;
+  --pc-level-3: #f7e5b5;
+  --pc-level-4: #f2d2b8;
+  --pc-level-5: #edb4ba;
+
+  /* ----------------------------------------------------------
+     SEMANTIC TOKENS — what to actually use in product
+     ---------------------------------------------------------- */
+  --bg-canvas:        var(--pc-slate-50);     /* marketing */
+  --bg-canvas-app:    var(--pc-slate-100);    /* product */
+  --bg-surface:       #ffffff;
+  --bg-surface-2:     var(--pc-slate-50);
+  --bg-inverse:       var(--pc-chathams-900);
+  --bg-inverse-deep:  #061018;
+
+  --fg-primary:       var(--pc-slate-900);
+  --fg-secondary:     var(--pc-slate-600);
+  --fg-tertiary:      var(--pc-slate-500);
+  --fg-muted:         var(--pc-slate-400);
+  --fg-on-inverse:    rgba(255,255,255,0.95);
+  --fg-on-inverse-2:  rgba(255,255,255,0.70);
+  --fg-on-inverse-3:  rgba(255,255,255,0.45);
+
+  --fg-brand:         var(--pc-chathams-600);
+  --fg-brand-hover:   var(--pc-chathams-700);
+  --fg-link:          var(--pc-chathams-600);
+
+  --border-subtle:    var(--pc-slate-200);
+  --border-default:   var(--pc-slate-300);
+  --border-strong:    var(--pc-slate-400);
+  --border-brand:     var(--pc-chathams-600);
+  --border-glass:     rgba(255,255,255,0.50);
+
+  /* Glassmorphic stack — reserved for product surfaces */
+  --glass-bg:         rgba(255,255,255,0.55);
+  --glass-bg-strong:  rgba(255,255,255,0.70);
+  --glass-bg-dark:    rgba(255,255,255,0.05);
+  --glass-border:     rgba(255,255,255,0.50);
+  --glass-border-dark:rgba(255,255,255,0.10);
+  --glass-blur:       blur(20px);
+
+  /* Signature gradients */
+  --gradient-brand:    linear-gradient(135deg, #0c5290 0%, #063056 100%);
+  --gradient-velocity: linear-gradient(145deg, #42a1ee 0%, #0c5290 100%);
+  --gradient-hero:     radial-gradient(ellipse 80% 60% at 50% -20%, rgba(12,82,144,0.35), transparent 60%),
+                       linear-gradient(180deg, #061018 0%, #071525 100%);
+  --gradient-ambient:  radial-gradient(circle at 20% 30%, rgba(66,161,238,0.14), transparent 55%),
+                       radial-gradient(circle at 80% 60%, rgba(13,148,136,0.11), transparent 55%);
+
+  /* ----------------------------------------------------------
+     TYPOGRAPHY — Plus Jakarta Sans
+     Weight contrast does the work. No serifs in headlines.
+     ---------------------------------------------------------- */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Type scale — reads premium without feeling decorative */
+  --fs-display-xl: clamp(3rem, 5.2vw, 4.5rem);     /*  48 → 72 */
+  --fs-display:    clamp(2.5rem, 4.2vw, 3.75rem);  /*  40 → 60 */
+  --fs-h1:         clamp(2rem, 3.4vw, 3rem);       /*  32 → 48 */
+  --fs-h2:         clamp(1.625rem, 2.6vw, 2.25rem);/*  26 → 36 */
+  --fs-h3:         1.5rem;                          /*  24 */
+  --fs-h4:         1.25rem;                         /*  20 */
+  --fs-lead:       calc(1.1875rem + 4px);            /*  19 + 4px */
+  --fs-body:       calc(1rem + 4px);                /*  16 + 4px */
+  --fs-sm:         0.875rem;                        /*  14 */
+  --fs-xs:         0.75rem;                         /*  12 */
+  --fs-eyebrow:    calc(0.75rem + 2px);             /*  12 + 2px */
+
+  /* Line heights */
+  --lh-tight:  1.05;
+  --lh-snug:   1.2;
+  --lh-normal: 1.5;
+  --lh-loose:  1.7;
+
+  /* Tracking */
+  --tracking-tight:   -0.035em;
+  --tracking-snug:    -0.02em;
+  --tracking-normal:  0;
+  --tracking-eyebrow: 0.28em;
+
+  /* Weights — declarative vs operational vs body */
+  --fw-thin:     200;
+  --fw-light:    300;
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+  --fw-black:    800;
+
+  /* ---------- Spacing (4px base) ---------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* ---------- Radii ---------- */
+  --r-sm:  0.5rem;     /*  8  inputs, tight chips */
+  --r-md:  0.75rem;    /* 12  buttons */
+  --r-lg:  1rem;       /* 16  inputs (large), small cards */
+  --r-xl:  1.5rem;     /* 24  cards */
+  --r-2xl: 2rem;       /* 32  glass panels */
+  --r-3xl: 2.5rem;     /* 40  hero panels */
+  --r-pill: 9999px;    /*     pills, avatar, CTA buttons */
+
+  /* ---------- Shadow / Elevation ---------- */
+  --shadow-xs:    0 1px 2px rgba(15,23,42,0.04);
+  --shadow-sm:    0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  --shadow-md:    0 4px 12px -2px rgba(15,23,42,0.08), 0 2px 4px -1px rgba(15,23,42,0.04);
+  --shadow-lg:    0 12px 32px -8px rgba(15,23,42,0.10), 0 4px 12px -4px rgba(15,23,42,0.05);
+  --shadow-xl:    0 20px 48px -12px rgba(15,23,42,0.14);
+  --shadow-glass: 0 20px 60px -24px rgba(12,82,144,0.35);
+  --shadow-brand: 0 12px 40px -12px rgba(12,82,144,0.55);
+  --shadow-go:    0 12px 32px -10px rgba(16,185,129,0.45);
+
+  /* Inner shadow used on inset score cards */
+  --shadow-inset-soft: inset 0 1px 0 rgba(255,255,255,0.6),
+                       inset 0 -1px 0 rgba(15,23,42,0.04);
+
+  /* ---------- Motion ---------- */
+  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+}
+
+/* ============================================================
+   SEMANTIC ELEMENT STYLES
+   These map raw tokens onto how copy should look in product.
+   Used by *.html previews, slides, UI kits.
+   ============================================================ */
+
+html {
+  font-family: var(--font-sans);
+  color: var(--fg-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  background: var(--bg-canvas);
+}
+
+h1, .h1 {
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-light);          /* light + tight = premium */
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-snug);
+  color: var(--fg-primary);
+}
+
+h2, .h2 {
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--tracking-snug);
+  line-height: 1.15;
+  color: var(--fg-primary);
+}
+
+h3, .h3 {
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-semibold);
+  line-height: 1.3;
+  color: var(--fg-primary);
+}
+
+h4, .h4 {
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-semibold);
+  line-height: 1.35;
+  color: var(--fg-primary);
+}
+
+.display-xl {
+  font-size: var(--fs-display-xl);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.02;
+}
+
+.display {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-light);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.06;
+}
+
+.lead {
+  font-size: var(--fs-lead);
+  line-height: var(--lh-loose);
+  color: var(--fg-secondary);
+  font-weight: var(--fw-regular);
+}
+
+p {
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg-secondary);
+  text-wrap: pretty;
+}
+
+.eyebrow {
+  font-size: var(--fs-eyebrow);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--fg-brand);
+}
+
+.ui-label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0;
+  color: var(--fg-secondary);
+}
+
+.metric {
+  font-size: var(--fs-display);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-tight);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+code, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}

@@ -94,7 +94,7 @@ export async function GET(request: Request) {
 
   try {
     const profileSelect =
-      "ladder_goal_level, ladder_goal_target_date, full_name, first_name, last_name, avatar_url";
+      "ladder_goal_level, ladder_goal_target_date, show_ladder_level_on_profile, full_name, first_name, last_name, avatar_url";
 
     let profileRes = await supabaseAdmin
       .from("profiles")
@@ -119,6 +119,7 @@ export async function GET(request: Request) {
         achievements: [] as LadderAchievementDTO[],
         ladder_goal_level: null,
         ladder_goal_target_date: null,
+        show_ladder_level_on_profile: false,
         full_name: (p.full_name as string | null) ?? null,
         first_name: (p.first_name as string | null) ?? null,
         last_name: (p.last_name as string | null) ?? null,
@@ -139,6 +140,7 @@ export async function GET(request: Request) {
     const prof = profileRes.data as {
       ladder_goal_level: string | null;
       ladder_goal_target_date: string | null;
+      show_ladder_level_on_profile: boolean | null;
       full_name: string | null;
       first_name: string | null;
       last_name: string | null;
@@ -263,6 +265,7 @@ export async function GET(request: Request) {
       achievements,
       ladder_goal_level: prof.ladder_goal_level ?? null,
       ladder_goal_target_date: prof.ladder_goal_target_date ?? null,
+      show_ladder_level_on_profile: !!prof.show_ladder_level_on_profile,
       full_name: prof.full_name ?? null,
       first_name: prof.first_name ?? null,
       last_name: prof.last_name ?? null,
@@ -282,6 +285,7 @@ type PatchBody = {
   unmark_achieved?: { level_id?: unknown };
   ladder_goal_level?: unknown;
   ladder_goal_target_date?: unknown;
+  show_ladder_level_on_profile?: unknown;
 };
 
 export async function PATCH(request: Request) {
@@ -397,6 +401,16 @@ export async function PATCH(request: Request) {
     if (parsed.value !== undefined) {
       profileUpdates.ladder_goal_target_date = parsed.value;
     }
+  }
+  if ("show_ladder_level_on_profile" in body) {
+    if (typeof body.show_ladder_level_on_profile !== "boolean") {
+      return NextResponse.json(
+        { error: "show_ladder_level_on_profile must be a boolean." },
+        { status: 400 }
+      );
+    }
+    profileUpdates.show_ladder_level_on_profile =
+      body.show_ladder_level_on_profile;
   }
 
   if (Object.keys(profileUpdates).length === 0) {

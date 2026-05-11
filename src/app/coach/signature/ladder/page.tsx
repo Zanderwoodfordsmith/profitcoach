@@ -169,6 +169,8 @@ export default function CoachCommunityLadderPage() {
   const [firstName, setFirstName] = useState<string | null>(null);
   const [lastName, setLastName] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [showLadderLevelOnProfile, setShowLadderLevelOnProfile] =
+    useState(false);
 
   const [savingLevelId, setSavingLevelId] = useState<string | null>(null);
   const [savingGoalDate, setSavingGoalDate] = useState(false);
@@ -271,6 +273,7 @@ export default function CoachCommunityLadderPage() {
       achievements: LadderAchievementDTO[];
       ladder_goal_level: string | null;
       ladder_goal_target_date: string | null;
+      show_ladder_level_on_profile?: boolean;
       full_name: string | null;
       first_name: string | null;
       last_name: string | null;
@@ -283,6 +286,7 @@ export default function CoachCommunityLadderPage() {
     setAchievements(body.achievements ?? []);
     setLadderGoalLevel(body.ladder_goal_level);
     setLadderGoalTargetDate(body.ladder_goal_target_date);
+    setShowLadderLevelOnProfile(!!body.show_ladder_level_on_profile);
     setFullName(body.full_name);
     setFirstName(body.first_name);
     setLastName(body.last_name);
@@ -559,6 +563,18 @@ export default function CoachCommunityLadderPage() {
       if (ok) setLadderGoalTargetDate(iso);
     } finally {
       setSavingGoalDate(false);
+    }
+  }
+
+  async function setProfileLevelVisibility(nextValue: boolean) {
+    setError(null);
+    const prev = showLadderLevelOnProfile;
+    setShowLadderLevelOnProfile(nextValue);
+    const ok = await patchAPI({
+      show_ladder_level_on_profile: nextValue,
+    });
+    if (!ok) {
+      setShowLadderLevelOnProfile(prev);
     }
   }
 
@@ -1047,7 +1063,7 @@ export default function CoachCommunityLadderPage() {
                     <User className="h-9 w-9" />
                   </div>
                 )}
-                {currentMeta ? (
+                {showLadderLevelOnProfile && currentMeta ? (
                   <span
                     className={`absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md ring-2 ring-white ${currentMeta.chipClassName}`}
                   >
@@ -1072,6 +1088,18 @@ export default function CoachCommunityLadderPage() {
             </div>
 
             <div className="mt-5 border-t border-slate-100 pt-5 text-left">
+              <label className="mb-4 flex cursor-pointer items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={showLadderLevelOnProfile}
+                  onChange={(e) =>
+                    void setProfileLevelVisibility(e.target.checked)
+                  }
+                  disabled={migrationNeeded}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 disabled:opacity-45"
+                />
+                <span>Show my ladder number on my profile</span>
+              </label>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Monthly income
               </p>

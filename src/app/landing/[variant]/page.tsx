@@ -2,9 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { BossWheel } from "@/components/landing/BossWheel";
 
 const LANDING_CONTACT_KEY = "boss_landing_contact";
 const SESSION_COOKIE = "landing_session_id";
@@ -294,609 +292,196 @@ export default function LandingVariantPage() {
 }
 
 function LandingVariantLegacy(props: LandingVariantLegacyProps) {
-  const {
-    coachSlug,
-    coach,
-    loadingCoach,
-    formStep,
-    firstName,
-    lastName,
-    email,
-    phoneCountryCode,
-    phone,
-    formError,
-    submitting,
-    setFirstName,
-    setLastName,
-    setEmail,
-    setPhoneCountryCode,
-    setPhone,
-    handleStep1,
-    handleStep2,
-    handleStep3Submit,
-    goBack,
-    scrollToForm,
-  } = props;
+  return <BossInspiredLanding {...props} kind="legacy" />;
+}
 
+function LandingVariantA(props: LandingVariantLegacyProps) {
+  return <BossInspiredLanding {...props} kind="newCopy" />;
+}
+
+type LandingKind = "legacy" | "newCopy";
+type FeatureItem = { title: string; text: string };
+type LandingContent = {
+  eyebrow: string;
+  heading: string;
+  subheading: string;
+  cta: string;
+  heroStats: Array<{ k: string; v: string }>;
+  painHeading: string;
+  painIntro: string;
+  painBullets: string[];
+  painCloser: string;
+  valueHeading: string;
+  values: FeatureItem[];
+  closeHeading: string;
+  closeSubheading: string;
+};
+
+function BossInspiredLanding(props: LandingVariantLegacyProps & { kind: LandingKind }) {
+  const { scrollToForm } = props;
+  const content = getLandingContent(props.kind);
   return (
-    <div className="min-h-screen bg-[#fafafa] text-slate-900">
-      {/* Header, Profit Coach logo, smaller, at ~90% page width */}
-      <header className="sticky top-0 z-10 bg-white">
-        <div className="flex h-16 w-full max-w-[90%] mx-auto items-center justify-end pr-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/profit-coach-logo.svg"
-            alt="Profit Coach"
-            width={140}
-            height={40}
-            className="h-8 w-auto object-contain object-right"
-          />
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-[#f5f8fc] text-slate-900">
       <main>
-        {/* Hero, one column, centred */}
-        <section className="bg-white px-4 pt-0 pb-8 sm:pb-12 lg:pb-16">
-          <div className="mx-auto w-full max-w-6xl flex flex-col items-center text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl xl:text-6xl leading-[1.2] max-w-[75%]">
-              Get Your <span className="text-[#0c5290] underline decoration-2 underline-offset-4">Personalized Profit Plan</span> in Under 15 Minutes
-            </h1>
-            <p className="mt-4 text-xl text-slate-700 sm:text-2xl max-w-4xl leading-snug">
-              Score your business across 10 critical areas, see which of the 5 owner levels you&apos;re really at, and <strong className="font-bold text-slate-900">get the 3 fixes that will grow profit and cut your hours next.</strong>
-            </p>
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#0c5290_0%,#073157_55%,#061a2e_100%)] px-4 py-24 text-white sm:py-28">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_88%_18%,rgba(66,161,238,0.55),transparent_55%),radial-gradient(ellipse_50%_50%_at_8%_80%,rgba(28,160,194,0.40),transparent_55%),radial-gradient(ellipse_30%_40%_at_50%_100%,rgba(16,185,129,0.18),transparent_60%)] opacity-55" />
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.7)_1px,transparent_1px)] bg-[size:60px_60px] opacity-10" />
+          </div>
 
-            {/* BOSS grid image */}
-            <div className="mt-8 w-full max-w-[45rem]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/boss-grid-placeholder.png"
-                alt="BOSS grid, 5 owner levels, 10 business areas"
-                className="w-full rounded-2xl border border-slate-200 shadow-xl object-contain bg-slate-50/50"
-              />
-            </div>
-
-            {/* Form */}
-            <div id="landing-form" className="scroll-mt-24 mt-10 w-full max-w-xl">
-              <div className="space-y-6">
-                {formStep === 1 && (
-                  <form onSubmit={handleStep1} className="space-y-6">
-                    <p className="text-2xl sm:text-3xl text-slate-900">
-                      What&apos;s your <strong className="font-bold">name?</strong>
-                    </p>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="landing-firstName" className="sr-only">First name</label>
-                        <input
-                          id="landing-firstName"
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-4 text-lg text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20"
-                          placeholder="First name"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="landing-lastName" className="sr-only">Last name</label>
-                        <input
-                          id="landing-lastName"
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-4 text-lg text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20"
-                          placeholder="Last name"
-                        />
-                      </div>
-                    </div>
-                    {formError && (
-                      <p className="text-base text-rose-600" role="alert">{formError}</p>
-                    )}
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95"
-                    >
-                      Get my Profit Plan
-                    </button>
-                  </form>
-                )}
-                {formStep === 2 && (
-                  <form onSubmit={handleStep2} className="space-y-6">
-                    <p className="text-2xl sm:text-3xl text-slate-900">
-                      Where should I <strong className="font-bold">email</strong> it to?
-                    </p>
-                    <div>
-                      <label htmlFor="landing-email" className="sr-only">Email</label>
-                      <input
-                        id="landing-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-4 text-lg text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20"
-                        placeholder="e.g. you@company.com"
-                      />
-                    </div>
-                    {formError && (
-                      <p className="text-base text-rose-600" role="alert">{formError}</p>
-                    )}
-                    <button
-                      type="submit"
-                      className="w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95"
-                    >
-                      Continue
-                    </button>
-                    <div className="flex justify-center pt-1">
-                      <button
-                        type="button"
-                        onClick={goBack}
-                        className="inline-flex items-center gap-1.5 text-base text-slate-500 hover:text-slate-700"
-                      >
-                        <span aria-hidden>←</span>
-                        Previous
-                      </button>
-                    </div>
-                  </form>
-                )}
-                {formStep === 3 && (
-                  <form onSubmit={handleStep3Submit} className="space-y-6">
-                    <p className="text-2xl sm:text-3xl text-slate-900">
-                      What is your <strong className="font-bold">phone number?</strong>
-                    </p>
-                    <div className="flex gap-2">
-                      <label htmlFor="landing-phone-country" className="sr-only">Country code</label>
-                      <select
-                        id="landing-phone-country"
-                        value={phoneCountryCode}
-                        onChange={(e) => setPhoneCountryCode(e.target.value)}
-                        className="w-32 shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-4 text-lg text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20"
-                        aria-label="Country code"
-                      >
-                        {COUNTRY_CODES.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      <label htmlFor="landing-phone" className="sr-only">Phone number</label>
-                      <input
-                        id="landing-phone"
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-4 text-lg text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20"
-                        placeholder="e.g. 7123 456789"
-                      />
-                    </div>
-                    {formError && (
-                      <p className="text-base text-rose-600" role="alert">{formError}</p>
-                    )}
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95 disabled:opacity-70 disabled:cursor-wait"
-                    >
-                      {submitting ? "Starting…" : "Get my Profit Plan"}
-                    </button>
-                    <div className="flex justify-center pt-1">
-                      <button
-                        type="button"
-                        onClick={goBack}
-                        className="inline-flex items-center gap-1.5 text-base text-slate-500 hover:text-slate-700"
-                      >
-                        <span aria-hidden>←</span>
-                        Previous
-                      </button>
-                    </div>
-                  </form>
-                )}
-                <p className="text-center text-base text-slate-500">
-                  Free · Under 15 min · No sales call
-                </p>
-                {!loadingCoach && (coach?.full_name || coach?.coach_business_name || coachSlug.toUpperCase() === "BCA") && (
-                  <p className="pt-4 text-base text-slate-500 border-t border-slate-200">
-                    Your results can be shared with your coach{coach?.full_name || coach?.coach_business_name ? `, ${coach.full_name ?? coach.coach_business_name}` : ""}.
-                  </p>
-                )}
+          <div className="relative mx-auto grid max-w-6xl gap-14 lg:grid-cols-[1.05fr_1fr] lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1">
+                <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold tracking-[0.2em] text-white">FREE 12 MIN</span>
+                <span className="text-xs font-semibold tracking-[0.04em] text-sky-100">{content.eyebrow}</span>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 2, This is for you if… (dark blue) */}
-        <section className="bg-[#0c5290] py-20 px-4" style={{ backgroundColor: "#0c5290" }}>
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-              This is for you if…
-            </h2>
-            <p className="mt-6 text-lg text-sky-100 leading-relaxed">
-              You&apos;re an established business owner or director running an SME, somewhere between £1M and £20M, and you recognise yourself in at least one of these:
-            </p>
-            <ul className="mt-8 space-y-5 text-base text-sky-100 sm:text-lg">
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">You&apos;re still the chief firefighter.</strong> Every decision, every problem, every important sale still flows through you. You work 50–60+ hours a week and the business can&apos;t run a fortnight without you.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">Feast or famine is your normal.</strong> Some months are great. Others, you&apos;re raiding savings, because there&apos;s no predictable pipeline, no real KPIs, and no system behind the revenue.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">Your management team are good doers but weak leaders.</strong> You&apos;ve lost strong performers. You&apos;re stuck with people who can&apos;t run things.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">You know the business &quot;works&quot;, but only because you&apos;re holding it together.</strong> Profit, order, and control don&apos;t match the effort and risk you carry.</span>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-sky-400" />
-                <span><strong className="text-white">You don&apos;t have a clear plan.</strong> No 3-year vision, no exit timeline, no way to tell what&apos;s urgent versus what actually matters.</span>
-              </li>
-            </ul>
-            <p className="mt-10 text-xl font-medium text-white">
-              If that sounds familiar, the BOSS Scorecard shows you exactly what&apos;s going on under the hood, and what to fix first.
-            </p>
-            <button
-              type="button"
-              onClick={scrollToForm}
-              className="mt-10 rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-[#0c5290] shadow-lg hover:bg-slate-100"
-            >
-              Get my Profit Plan →
-            </button>
-          </div>
-        </section>
-
-        {/* Section 3, How it works */}
-        <section className="border-t border-slate-200 bg-white py-20 px-4">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
-              How it works
-            </h2>
-            <p className="mt-6 text-lg text-slate-600 sm:text-xl">
-              Answer 50 quick red / amber / green questions, no prep, no calculators, no essays.
-            </p>
-            <div className="mt-8 space-y-6 text-slate-600 leading-relaxed">
-              <p>
-                This scorecard has been built on the Profit System, a structured framework that maps your entire business across 5 Levels of owner growth and 10 areas of business health.
-              </p>
-              <p>
-                You&apos;ll answer 50 simple questions: &quot;Is this in place in my business right now?&quot;, and mark each one red (not in place), amber (partially), or green (fully in place).
-              </p>
-              <p>
-                Behind the scenes, each answer is weighted by level and area. Foundations hit harder than nice-to-haves. Profit, cash, and owner performance are treated as survival, not luxury.
-              </p>
-              <p>
-                Once you&apos;re done, you get your results instantly, no waiting, no sales call required.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={scrollToForm}
-              className="mt-10 rounded-xl bg-[#0c5290] px-6 py-3.5 text-base font-semibold text-white shadow-lg hover:opacity-95"
-            >
-              Get my Profit Plan →
-            </button>
-          </div>
-        </section>
-
-        {/* Section 4, BOSS grid (image placeholder) */}
-        <section className="border-t border-slate-200 bg-[#0c5290] py-20 px-4" style={{ backgroundColor: "#0c5290" }}>
-          <div className="mx-auto max-w-4xl">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl text-center">
-              See your whole operating system on one page
-            </h2>
-            <p className="mt-4 text-center text-lg text-sky-100 sm:text-xl max-w-2xl mx-auto">
-              Your full BOSS Map, 5 levels, 10 areas, 50 playbooks, colour-coded so you see exactly where you&apos;re strong and where you&apos;re exposed.
-            </p>
-            <div className="mt-12 flex justify-center">
-              <div className="rounded-2xl border-2 border-dashed border-sky-400/50 bg-sky-950/30 px-12 py-16 text-center min-w-[280px]">
-                <p className="text-sky-200 font-medium">Your BOSS grid</p>
-                <p className="mt-1 text-sm text-sky-300/80">Visual result from your scorecard</p>
-              </div>
-            </div>
-            <div className="mt-10 text-center">
+              <h1 className="mt-6 text-balance text-[clamp(40px,5.6vw,80px)] font-light leading-[1.0] tracking-[-0.04em]">{content.heading}</h1>
+              <p className="mt-5 max-w-2xl text-[19px] leading-relaxed text-sky-100">{content.subheading}</p>
               <button
                 type="button"
                 onClick={scrollToForm}
-                className="rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-[#0c5290] shadow-lg hover:bg-slate-100"
+                className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 px-8 py-4 text-base font-bold text-white shadow-[0_20px_44px_-14px_rgba(16,185,129,0.55)] transition hover:brightness-110"
               >
-                Get my Profit Plan →
+                {content.cta}
               </button>
+              <div className="mt-8 flex flex-wrap gap-7 border-t border-white/20 pt-6">
+                {content.heroStats.map((stat) => (
+                  <div key={stat.k} className="flex flex-col">
+                    <span className="font-mono text-lg font-bold text-white">{stat.k}</span>
+                    <span className="text-xs text-sky-200">{stat.v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <LandingOptInForm {...props} variant="dark" cta={content.cta} />
+          </div>
+        </section>
+
+        <section className="px-4 py-16 sm:py-20">
+          <div className="mx-auto max-w-5xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm sm:p-12">
+            <h2 className="text-balance text-[clamp(32px,4.4vw,52px)] font-light leading-[1.06] tracking-[-0.035em] text-[#0f172a]">{content.painHeading}</h2>
+            <p className="mt-5 text-lg leading-relaxed text-slate-600">{content.painIntro}</p>
+            <ul className="mt-8 space-y-4 text-base leading-relaxed text-slate-700 sm:text-lg">
+              {content.painBullets.map((bullet) => (
+                <li key={bullet} className="flex gap-3">
+                  <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[#0c5290]" />
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 text-lg font-medium text-slate-900">{content.painCloser}</p>
+          </div>
+        </section>
+
+        <section className="bg-[#eaf2fb] px-4 py-16 sm:py-20">
+          <div className="mx-auto max-w-6xl">
+            <h2 className="text-center text-[clamp(32px,4vw,48px)] font-light tracking-[-0.035em] text-[#0f172a]">{content.valueHeading}</h2>
+            <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {content.values.map((item) => (
+                <div key={item.title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                  <p className="text-lg font-semibold text-[#0c5290]">{item.title}</p>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">{item.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Section 5, What you get (with BOSS Wheel) */}
-        <section className="border-t border-slate-200 bg-white py-20 px-4">
-          <div className="mx-auto max-w-5xl">
-            <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
-              What you&apos;ll see instantly
-            </h2>
-            <p className="mt-6 text-lg text-slate-600 sm:text-xl">
-              Your personal BOSS Report, no waiting, no sales call, no obligation.
-            </p>
-            <div className="mt-12 flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-16">
-              <BossWheel size={300} />
-              <ul className="mt-10 space-y-6 text-base text-slate-700 sm:text-lg flex-1">
-              <li>
-                <strong className="text-slate-900">Your BOSS Score out of 100</strong>, One number that tells you how strong your business operating system really is. Weighted by level, foundations count more than optimisations.
-              </li>
-              <li>
-                <strong className="text-slate-900">Your Stage</strong>, Know exactly where you are: Overwhelm → Overworked → Organised → Overseer → Owner.
-              </li>
-              <li>
-                <strong className="text-slate-900">Your BOSS Wheel</strong>, A visual map across all 10 areas so you can see the shape of your business at a glance.
-              </li>
-              <li>
-                <strong className="text-slate-900">Your full colour-coded grid</strong>, All 50 playbooks mapped in red, amber, and green across 5 levels and 10 areas.
-              </li>
-              <li>
-                <strong className="text-slate-900">Your score breakdown</strong>, How many areas are fully in place, partially in place, or not in place.
-              </li>
-              <li>
-                <strong className="text-slate-900">Your top 3 priorities for the next 90 days</strong>, The 3 highest-leverage changes most likely to increase profit, reduce chaos, and strengthen your foundations.
-              </li>
-            </ul>
-            </div>
+        <section className="relative overflow-hidden bg-[linear-gradient(135deg,#0c5290_0%,#073157_55%,#061a2e_100%)] px-4 py-16 text-white sm:py-20">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,161,238,0.28),transparent_60%)]" />
+          <div className="relative mx-auto max-w-4xl text-center">
+            <h2 className="text-balance text-[clamp(36px,5vw,64px)] font-light tracking-[-0.04em] sm:text-5xl">{content.closeHeading}</h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-sky-100 sm:text-xl">{content.closeSubheading}</p>
             <button
               type="button"
               onClick={scrollToForm}
-              className="mt-10 rounded-xl bg-[#0c5290] px-6 py-3.5 text-base font-semibold text-white shadow-lg hover:opacity-95"
+              className="mt-8 rounded-full bg-white px-8 py-4 text-base font-semibold text-[#052747] shadow-xl shadow-black/20 transition hover:opacity-95"
             >
-              Get my Profit Plan →
+              {content.cta}
             </button>
           </div>
         </section>
-
-        {/* Section 6, Not a fluffy quiz */}
-        <section className="border-t border-slate-200 bg-slate-50 py-20 px-4">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
-              This is not a fluffy &quot;business quiz&quot;
-            </h2>
-            <p className="mt-6 text-slate-600 leading-relaxed">
-              Most scorecards are glorified personality tests. The BOSS Scorecard is a Business Operating System X-ray, built for real-world SMEs doing £1M–£20M.
-            </p>
-            <p className="mt-4 text-slate-600 leading-relaxed">
-              It exists to answer three questions:
-            </p>
-            <ol className="mt-4 list-decimal list-inside space-y-2 text-slate-700 font-medium">
-              <li>Where is my business leaking profit?</li>
-              <li>Where am I overworking or dangerously exposed?</li>
-              <li>What should I fix first?</li>
-            </ol>
-            <p className="mt-6 text-slate-600 leading-relaxed">
-              No theory. No generic advice. Just a clear, visual diagnosis of your specific situation, so you can stop fixing what&apos;s loud and start fixing what actually matters.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 7, What happens after */}
-        <section className="border-t border-slate-200 bg-white py-20 px-4">
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-3xl font-bold text-[#0c5290] sm:text-4xl lg:text-5xl">
-              What happens after you get your score?
-            </h2>
-            <p className="mt-6 text-slate-600 leading-relaxed">
-              Your report is yours to keep. You can review it, share it with your team, and start working on your top priorities immediately.
-            </p>
-            <p className="mt-4 text-slate-600 leading-relaxed">
-              If you&apos;d like a second pair of eyes, you can optionally book a free BOSS Review, a focused session where a Profit Coach walks through your results, unpacks the priorities, and helps you turn them into a 90-day action plan.
-            </p>
-            <p className="mt-4 text-slate-600 leading-relaxed">
-              No pressure. No pitch. Just clarity on what to do next.
-            </p>
-          </div>
-        </section>
-
-        {/* Section 8, Final CTA */}
-        <section className="border-t border-slate-200 bg-[#0c5290] py-20 px-4" style={{ backgroundColor: "#0c5290" }}>
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-              See the whole operating system. Then decide what to fix first.
-            </h2>
-            <p className="mt-6 text-lg text-sky-100 sm:text-xl">
-              50 focused questions. Under 10 minutes. Instant results, your BOSS Score, your Stage, your visual map, and your top 3 priorities.
-            </p>
-            <button
-              type="button"
-              onClick={scrollToForm}
-              className="mt-8 inline-flex rounded-xl bg-white px-8 py-4 text-base font-semibold text-[#0c5290] shadow-lg hover:bg-slate-100"
-            >
-              Get my Profit Plan →
-            </button>
-            <ul className="mt-8 flex flex-wrap justify-center gap-6 text-sm text-sky-100">
-              <li>Free, no cost, no card</li>
-              <li>Instant, results on screen immediately</li>
-              <li>Private, your answers are confidential</li>
-              <li>No sales call required</li>
-            </ul>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="border-t border-slate-200 bg-white py-6 px-4">
-          <div className="mx-auto flex max-w-6xl items-center justify-between">
-            <span className="text-sm text-slate-500">
-              BOSS Scorecard · The Profit System
-            </span>
-            <Link href="/login" className="text-sm font-medium text-[#0c5290] hover:underline">
-              Log in
-            </Link>
-          </div>
-        </footer>
       </main>
     </div>
   );
 }
 
-function LandingVariantA(props: LandingVariantLegacyProps) {
-  const { scrollToForm } = props;
+function getLandingContent(kind: LandingKind): LandingContent {
+  if (kind === "newCopy") {
+    return {
+      eyebrow: "For [Industry] Owners Doing £500K-£5M",
+      heading:
+        "Know Exactly What to Fix First in Your £500K-£5M Business in 12 Minutes",
+      subheading:
+        "The BOSS Dashboard scores your business across 5 levels and 10 areas using 50 red, yellow, green questions to give you one score out of 100, one focus area, and one clear next move.",
+      cta: "Get My Free BOSS Score (12 Minutes, No Call Required)",
+      heroStats: [
+        { k: "12 mins", v: "to complete" },
+        { k: "50 Qs", v: "across 10 areas" },
+        { k: "£0", v: "no credit card" },
+        { k: "1 score", v: "actionable focus" },
+      ],
+      painHeading: "If your business feels stuck, it's not effort, it's clarity.",
+      painIntro:
+        "You can see twenty things wrong with your business, but you cannot see which one will move the needle first.",
+      painBullets: [
+        "Do you feel like you're firefighting every day with no strategic progress?",
+        "Are you working harder than ever while your revenue stays flat?",
+        "Have you tried books, consultants, and courses but still do not know what to fix first?",
+        "Do twenty visible issues in your business still stay trapped in your head with no order and no plan?",
+      ],
+      painCloser:
+        "The BOSS Dashboard pulls that picture out of your head and shows you exactly what to fix first, no call, no pitch, no commitment.",
+      valueHeading: "Why The BOSS Dashboard Is Different",
+      values: [
+        { title: "Score Out of 100", text: "Get one clear number so you know exactly where you stand." },
+        { title: "5 Levels of Business", text: "See all five levels on one grid so you fix the right level first." },
+        { title: "50 Red, Yellow, Green Questions", text: "Spot what is bleeding, what works, and what is nearly there." },
+        { title: "Built on 25+ Business Thinkers", text: "Use one mapped diagnostic instead of disconnected frameworks." },
+        { title: "Owner Performance First", text: "Fix root causes in the owner layer before treating symptoms." },
+        { title: "Free and No Call Required", text: "Take the full diagnostic in 12 minutes and get your score immediately." },
+      ],
+      closeHeading: "Are You The BOSS Of Your Business, Or Is It The BOSS Of You?",
+      closeSubheading:
+        "Find out in 12 minutes. 50 questions. 10 areas. 5 levels. One score out of 100. One clear focus area.",
+    };
+  }
 
-  return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <main>
-        {/* Hero (match comp: centered stack) */}
-        <section className="relative overflow-hidden bg-[#061a2e] text-white">
-          <div className="pointer-events-none absolute inset-0 opacity-55">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,161,238,0.35),transparent_62%),radial-gradient(circle_at_bottom,rgba(13,148,136,0.22),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:72px_72px]" />
-          </div>
-
-          <div className="mx-auto max-w-6xl px-4 pt-14 pb-10 sm:pt-18">
-            <div className="mx-auto max-w-4xl text-center">
-              <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-                Are You Running Your Business{" "}
-                <span className="text-[#42a1ee]">Or Is It Running You?</span>
-              </h1>
-              <p className="mt-5 text-pretty text-lg leading-relaxed text-white/80 sm:text-xl">
-                Successful business owners master all 5 “Owner Levels” across profit, systems, team, and strategy.
-                How many have you nailed? Take the free BOSS Scorecard and find out where you really stand.
-              </p>
-            </div>
-
-            <div className="mx-auto mt-10 max-w-5xl">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-3 shadow-2xl shadow-black/35">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/landing/v2/hero.png"
-                  alt="BOSS Scorecard preview"
-                  className="w-full rounded-2xl object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="mx-auto mt-10 max-w-2xl text-center">
-              <button
-                type="button"
-                onClick={scrollToForm}
-                className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
-              >
-                Take the Free BOSS Scorecard
-              </button>
-              <p className="mt-3 text-sm text-white/70">Free · Under 10 min · Instant results</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Form block (white, centered) */}
-        <section className="bg-white py-14">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mx-auto max-w-xl">
-              <LandingOptInForm {...props} variant="light" />
-            </div>
-          </div>
-        </section>
-
-        {/* Levels holding you back (match comp: centered header + 2 cards) */}
-        <section className="bg-white py-14">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mx-auto max-w-3xl text-center">
-              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                Know exactly which levels are holding your business back
-              </h2>
-              <p className="mt-4 text-lg leading-relaxed text-slate-600">
-                Your BOSS report shows your score, your level, and what to fix first.
-              </p>
-            </div>
-
-            <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <LevelsList />
-              </div>
-              <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/landing/v2/dashboard.png"
-                  alt="Example Profit Coach workspace"
-                  className="w-full rounded-2xl object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="mt-10 flex justify-center">
-              <button
-                type="button"
-                onClick={scrollToForm}
-                className="inline-flex items-center justify-center rounded-full bg-[#0c5290] px-8 py-4 text-base font-semibold text-white shadow-lg hover:opacity-95"
-              >
-                Take the Free BOSS Scorecard →
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* How it works (match comp: 3 stacked rows) */}
-        <section className="bg-white py-14">
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                How It Works
-              </h2>
-              <p className="mt-4 text-lg leading-relaxed text-slate-600">
-                Answer a few questions, get your score, and see what to fix first.
-              </p>
-            </div>
-
-            <div className="mt-10 space-y-6">
-              <HowRow
-                step="01."
-                imageSrc="/landing/v2/how-1.png"
-                title="Answer a few questions about how your business runs"
-                description="Quick red / amber / green questions across the operating system, no prep, no essays."
-              />
-              <HowRow
-                step="02."
-                imageSrc="/landing/v2/how-2.png"
-                title="Get your BOSS score out of 100"
-                description="A weighted score that highlights foundations first, so you see the real constraint."
-              />
-              <HowRow
-                step="03."
-                imageSrc="/landing/v2/how-3.png"
-                title="See what to fix first"
-                description="Instant clarity on the highest-leverage priorities for profit, control, and time back."
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Final CTA (match comp: blue band) */}
-        <section className="relative overflow-hidden bg-[#061a2e] py-16 text-white">
-          <div className="pointer-events-none absolute inset-0 opacity-50">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,161,238,0.30),transparent_60%),radial-gradient(circle_at_bottom,rgba(13,148,136,0.20),transparent_55%)]" />
-          </div>
-          <div className="mx-auto max-w-6xl px-4">
-            <div className="mx-auto max-w-3xl text-center">
-              <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-                Ready to build a rewarding business?
-              </h2>
-              <p className="mt-4 text-lg leading-relaxed text-white/80">
-                Take the free BOSS Scorecard and get instant insight into what’s holding you back, and what to do next.
-              </p>
-              <div className="mt-8 flex justify-center">
-                <button
-                  type="button"
-                  onClick={scrollToForm}
-                  className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
-                >
-                  Get started →
-                </button>
-              </div>
-              <p className="mt-5 text-sm text-white/60">Free · Private · Instant</p>
-            </div>
-          </div>
-        </section>
-
-        <footer className="border-t border-slate-200 bg-white py-8">
-          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row">
-            <span className="text-sm text-slate-500">BOSS Scorecard · The Profit System</span>
-            <Link href="/login" className="text-sm font-medium text-[#0c5290] hover:underline">
-              Log in
-            </Link>
-          </div>
-        </footer>
-      </main>
-    </div>
-  );
+  return {
+    eyebrow: "Business Operating System Diagnostic",
+    heading: "Are You The BOSS, Or Is Your Business The BOSS Of You?",
+    subheading:
+      "Take a fast strategic assessment inspired by the BOSS design and get a clear score, a clear priority, and a clear next step in under 12 minutes.",
+    cta: "Take The Free BOSS Assessment",
+    heroStats: [
+      { k: "12 mins", v: "to complete" },
+      { k: "50 Qs", v: "across 10 areas" },
+      { k: "£0", v: "no credit card" },
+      { k: "1 page", v: "action plan" },
+    ],
+    painHeading: "Most owners are not missing effort, they are missing order.",
+    painIntro:
+      "When everything feels urgent, you patch symptoms, stay overworked, and never fix the core bottleneck.",
+    painBullets: [
+      "You are carrying too many roles and still not seeing strategic progress.",
+      "You know there are leaks in sales, team, and delivery but no ranked order for what to fix.",
+      "Your weeks are full, but the needle does not move enough.",
+      "You need one clear view of your whole operating system, not more random advice.",
+    ],
+    painCloser: "This diagnostic gives you a practical map so you can stop guessing and start fixing the right thing first.",
+    valueHeading: "What You Get From This Assessment",
+    values: [
+      { title: "A Single Score", text: "See where your operating system sits right now." },
+      { title: "A Priority Area", text: "Know which area has the highest leverage." },
+      { title: "A 5-Level View", text: "Understand your maturity level as an owner." },
+      { title: "A 10-Area Breakdown", text: "Get clarity across the full business." },
+      { title: "Action Focus", text: "Turn insight into an immediate next move." },
+      { title: "Instant Result", text: "No waiting and no call required." },
+    ],
+    closeHeading: "Get The Clarity To Grow Profit And Buy Back Time",
+    closeSubheading: "One diagnostic. One score. One focus. One next move.",
+  };
 }
 
 function LevelsList() {
@@ -907,7 +492,6 @@ function LevelsList() {
     { label: "Overseer", pct: 32, color: "#f97316" },
     { label: "Owner", pct: 12, color: "#ef4444" },
   ];
-
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -986,7 +570,7 @@ function HowCard(props: { imageSrc: string; eyebrow: string; title: string; desc
 }
 
 function LandingOptInForm(
-  props: LandingVariantLegacyProps & { variant: "dark" | "light" }
+  props: LandingVariantLegacyProps & { variant: "dark" | "light"; cta?: string }
 ) {
   const {
     coachSlug,
@@ -1013,7 +597,7 @@ function LandingOptInForm(
 
   const isDark = props.variant === "dark";
   const cardClass = isDark
-    ? "rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/25"
+    ? "rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)] backdrop-blur-xl"
     : "rounded-3xl border border-slate-200 bg-white p-6 shadow-lg";
   const inputClass = isDark
     ? "block w-full rounded-xl border border-white/15 bg-white/10 px-4 py-4 text-base text-white placeholder-white/50 outline-none focus:border-[#42a1ee] focus:ring-2 focus:ring-[#42a1ee]/20"
@@ -1024,6 +608,32 @@ function LandingOptInForm(
   const primaryBtn = isDark
     ? "w-full rounded-full bg-white px-6 py-3.5 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
     : "w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95";
+  const ctaLabel = props.cta ?? "Get my results";
+
+  // Defer real inputs until after mount so password-manager extensions (e.g. LastPass)
+  // cannot inject nodes into the SSR tree and break hydration.
+  const [formMounted, setFormMounted] = useState(false);
+  useEffect(() => {
+    setFormMounted(true);
+  }, []);
+
+  if (!formMounted) {
+    const skeletonBar = isDark ? "bg-white/10" : "bg-slate-100";
+    return (
+      <div id="landing-form" className="scroll-mt-24">
+        <div className={cardClass}>
+          <div className="space-y-5" aria-busy="true" aria-label="Loading form">
+            <div className={`h-8 w-3/4 max-w-xs rounded-lg ${skeletonBar} animate-pulse`} />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className={`h-14 rounded-xl ${skeletonBar} animate-pulse`} />
+              <div className={`h-14 rounded-xl ${skeletonBar} animate-pulse`} />
+            </div>
+            <div className={`h-12 w-full rounded-full ${isDark ? "bg-white/15" : "bg-slate-200"} animate-pulse`} />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="landing-form" className="scroll-mt-24">
@@ -1040,6 +650,10 @@ function LandingOptInForm(
                   <input
                     id="landingA-firstName"
                     type="text"
+                    name="given-name"
+                    autoComplete="given-name"
+                    data-lpignore="true"
+                    data-1p-ignore
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className={inputClass}
@@ -1051,6 +665,10 @@ function LandingOptInForm(
                   <input
                     id="landingA-lastName"
                     type="text"
+                    name="family-name"
+                    autoComplete="family-name"
+                    data-lpignore="true"
+                    data-1p-ignore
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className={inputClass}
@@ -1060,7 +678,7 @@ function LandingOptInForm(
               </div>
               {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
               <button type="submit" className={primaryBtn}>
-                Get my results
+                {ctaLabel}
               </button>
             </form>
           )}
@@ -1075,6 +693,10 @@ function LandingOptInForm(
                 <input
                   id="landingA-email"
                   type="email"
+                  name="email"
+                  autoComplete="email"
+                  data-lpignore="true"
+                  data-1p-ignore
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={inputClass}
@@ -1083,7 +705,7 @@ function LandingOptInForm(
               </div>
               {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
               <button type="submit" className={primaryBtn}>
-                Continue
+                {ctaLabel}
               </button>
               <div className="flex justify-center">
                 <button
@@ -1121,6 +743,10 @@ function LandingOptInForm(
                 <input
                   id="landingA-phone"
                   type="tel"
+                  name="tel"
+                  autoComplete="tel"
+                  data-lpignore="true"
+                  data-1p-ignore
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className={`${inputClass} min-w-0 flex-1`}
@@ -1129,7 +755,7 @@ function LandingOptInForm(
               </div>
               {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
               <button type="submit" disabled={submitting} className={`${primaryBtn} disabled:opacity-70 disabled:cursor-wait`}>
-                {submitting ? "Starting…" : "Get my results"}
+                {submitting ? "Starting…" : ctaLabel}
               </button>
               <div className="flex justify-center">
                 <button

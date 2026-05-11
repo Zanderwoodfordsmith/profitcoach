@@ -33,5 +33,33 @@ export async function fetchHighestAchievedLevelByUserIds(
   for (const id of unique) {
     map.set(id, deriveCurrentLevelId(byUser.get(id) ?? []));
   }
+
+  const { data: visibilityRows, error: visibilityError } = await supabaseClient
+    .from("profiles")
+    .select("id, show_ladder_level_on_profile")
+    .in("id", unique);
+
+  if (visibilityError) {
+    // Backward compatible while the migration is rolling out.
+    if (visibilityError.code === "42703") return map;
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[Community] ladder visibility:", visibilityError.message);
+    }
+    return map;
+  }
+
+  const visibleByUser = new Map<string, boolean>();
+  for (const row of visibilityRows ?? []) {
+    visibleByUser.set(
+      row.id as string,
+      Boolean((row as { show_ladder_level_on_profile?: boolean | null }).show_ladder_level_on_profile)
+    );
+  }
+
+  for (const id of unique) {
+    if (!visibleByUser.get(id)) {
+      map.set(id, null);
+    }
+  }
   return map;
 }
