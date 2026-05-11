@@ -88,7 +88,7 @@ function buildComponents(
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-sky-700 underline-offset-2 hover:underline"
+            className="font-medium !text-blue-600 underline underline-offset-2 decoration-blue-600/40 hover:!text-blue-500 hover:decoration-blue-500"
             onClick={(e) => e.stopPropagation()}
           >
             {children}

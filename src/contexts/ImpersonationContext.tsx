@@ -4,7 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useState,
 } from "react";
 
@@ -78,7 +78,10 @@ export function ImpersonationProvider({
   const [impersonatingCoachId, setCoachState] = useState<string | null>(null);
   const [impersonatingContactId, setContactState] = useState<string | null>(null);
 
-  useEffect(() => {
+  // useLayoutEffect so `/coach/*` routes see the real impersonation id before paint.
+  // A late useEffect caused Community feed read-state to key off the signed-in user
+  // for one frame while sessionStorage still held a coach id (or the reverse).
+  useLayoutEffect(() => {
     setCoachState(getStoredCoachId());
     setContactState(getStoredContactId());
   }, []);

@@ -30,7 +30,10 @@ import {
   fetchStaffAvatarMap,
   mergeAuthorAvatar,
 } from "@/lib/communityStaffAvatars";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import {
+  getValidSupabaseAccessToken,
+  resolveSupabaseBrowserSession,
+} from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
 import {
@@ -1348,9 +1351,7 @@ export function CommunityFeed() {
     setFeedBootstrapOk(false);
     void (async () => {
       try {
-        const {
-          data: { session },
-        } = await supabaseClient.auth.getSession();
+        const session = await resolveSupabaseBrowserSession();
         if (!session?.user) {
           if (!cancelled) {
             setCommunityAuthUserId(null);
@@ -1566,9 +1567,19 @@ export function CommunityFeed() {
                     {loadError}
                   </pre>
                   <p className="mt-2 text-xs text-rose-700/90">
-                    An empty feed does not produce this screen—the Supabase request returned an error.
-                    Use the message above (often “relation does not exist” = run the migration, or RLS =
-                    check profiles.role is coach or admin).
+                    {loadError.includes("No active session") ? (
+                      <>
+                        This is an auth/session issue, not an empty feed. Sign in from this browser tab,
+                        or open Community from the same origin you used to log in (not a stale bookmark
+                        or preview URL).
+                      </>
+                    ) : (
+                      <>
+                        An empty feed does not produce this screen—the Supabase request returned an error.
+                        Use the message above (often “relation does not exist” = run the migration, or RLS =
+                        check profiles.role is coach or admin).
+                      </>
+                    )}
                   </p>
                 </div>
               ) : null}

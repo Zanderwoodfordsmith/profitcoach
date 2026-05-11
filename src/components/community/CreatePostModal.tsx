@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ImagePlus, Link2, Video, X } from "lucide-react";
+import { CalendarDays, ImagePlus, Video, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
+import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
 import {
   COMMUNITY_POST_MEDIA_MAX,
   firstCommunityPostImageUrl,
@@ -325,6 +326,18 @@ export function CreatePostModal({
           showFormattingToolbar
           className="w-full resize-y border-0 bg-transparent px-0 pb-1 text-base text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
         />
+        {body.trim().length > 0 ? (
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 px-3 py-2">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              Preview
+            </p>
+            <CommunityPostMarkdownBody
+              body={body}
+              nameById={{}}
+              className="text-[15px] text-slate-800"
+            />
+          </div>
+        ) : null}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -354,17 +367,6 @@ export function CreatePostModal({
                 onClick={() => setVideoDialogOpen(true)}
               >
                 <Video className="h-4 w-4" strokeWidth={1.75} />
-              </button>
-              <button
-                type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:bg-slate-50"
-                title="Add a link"
-                onClick={() => {
-                  const next = body.trim().length === 0 ? "https://" : `${body}\nhttps://`;
-                  setBody(next);
-                }}
-              >
-                <Link2 className="h-4 w-4" strokeWidth={1.75} />
               </button>
             </div>
             <div className="flex flex-col items-end gap-1.5">

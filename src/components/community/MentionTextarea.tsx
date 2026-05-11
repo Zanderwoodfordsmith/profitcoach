@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { Bold, Heading1, Heading2, Heading3, List } from "lucide-react";
+import { Bold, Heading1, Heading2, Heading3, Link2, List } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { MENTION_MARKDOWN_REGEX } from "@/lib/communityMentions";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -45,6 +45,31 @@ function normalizeMentionLabel(label: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function normalizeCommunityPostLinkUrl(input: string): string {
+  const t = input.trim();
+  if (!t) return "";
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^(mailto|tel):/i.test(t)) return t;
+  return `https://${t}`;
+}
+
+/** Minimal escaping so `[label](url)` survives CommonMark parsing. */
+function escapeMarkdownLinkLabel(label: string): string {
+  return label
+    .replace(/\\/g, "\\\\")
+    .replace(/\[/g, "\\[")
+    .replace(/\]/g, "\\]");
+}
+
+function linkLabelFromUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.host.replace(/^www\./, "") || "Link";
+  } catch {
+    return "Link";
+  }
 }
 
 function extractKnownMentionsFromRaw(raw: string): KnownMention[] {
@@ -291,6 +316,56 @@ export function MentionTextarea({
     [displayValue, knownMentions, onChange]
   );
 
+  const insertMarkdownLink = useCallback(() => {
+    const el = taRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    let selected = displayValue.slice(start, end);
+    const hadSelection = selected.trim().length > 0;
+    if (hadSelection) {
+      selected = selected.replace(/\r\n/g, "\n").replace(/\n+/g, " ").trim();
+    }
+    if (!hadSelection) {
+      const urlRaw = window.prompt("Link URL:", "https://");
+      if (urlRaw === null) return;
+      const normalized = normalizeCommunityPostLinkUrl(urlRaw);
+      if (!normalized) return;
+      const defaultLabel = linkLabelFromUrl(normalized);
+      const labelRaw = window.prompt("Text to show for this link:", defaultLabel);
+      if (labelRaw === null) return;
+      const label =
+        labelRaw.trim().length > 0 ? labelRaw.trim() : defaultLabel;
+      const md = `[${escapeMarkdownLinkLabel(label)}](${normalized})`;
+      const nextDisplay =
+        displayValue.slice(0, start) + md + displayValue.slice(end);
+      setDisplayValue(nextDisplay);
+      onChange(displayToRawText(nextDisplay, knownMentions));
+      setMentionOpen(false);
+      requestAnimationFrame(() => {
+        el.focus();
+        const caret = start + md.length;
+        el.setSelectionRange(caret, caret);
+      });
+      return;
+    }
+    const urlRaw = window.prompt("Link URL:", "https://");
+    if (urlRaw === null) return;
+    const normalized = normalizeCommunityPostLinkUrl(urlRaw);
+    if (!normalized) return;
+    const md = `[${escapeMarkdownLinkLabel(selected)}](${normalized})`;
+    const nextDisplay =
+      displayValue.slice(0, start) + md + displayValue.slice(end);
+    setDisplayValue(nextDisplay);
+    onChange(displayToRawText(nextDisplay, knownMentions));
+    setMentionOpen(false);
+    requestAnimationFrame(() => {
+      el.focus();
+      const caret = start + md.length;
+      el.setSelectionRange(caret, caret);
+    });
+  }, [displayValue, knownMentions, onChange]);
+
   const applyLinePrefix = useCallback(
     (prefix: string) => {
       const el = taRef.current;
@@ -391,6 +466,15 @@ export function MentionTextarea({
               title="Bullet list"
             >
               <List className="h-4 w-4" strokeWidth={2.1} />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-50"
+              onClick={() => insertMarkdownLink()}
+              aria-label="Link"
+              title="Link — select text, then add URL"
+            >
+              <Link2 className="h-4 w-4" strokeWidth={2.1} />
             </button>
           </div>
         </div>

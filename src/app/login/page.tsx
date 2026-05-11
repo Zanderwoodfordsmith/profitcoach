@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
   AuthSplitShell,
@@ -13,6 +14,7 @@ import {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { clearImpersonation, clearContactImpersonation } = useImpersonation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +37,11 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+
+    // Stale sessionStorage impersonation (e.g. another tab or old admin session)
+    // would make Community scope the wrong user id and “lose” read/dimmed state.
+    clearImpersonation();
+    clearContactImpersonation();
 
     let role = "coach";
     try {
