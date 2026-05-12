@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
   coachSlug?: string;
-  from_landing?: "a" | "b";
+  from_landing?: "a" | "b" | "c" | "d";
   contact: {
     full_name?: string;
     email?: string;
@@ -282,7 +282,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const fromLanding = body.from_landing === "a" || body.from_landing === "b" ? body.from_landing : null;
+  const fromLanding =
+    body.from_landing === "a" ||
+    body.from_landing === "b" ||
+    body.from_landing === "c" ||
+    body.from_landing === "d"
+      ? body.from_landing
+      : null;
   if (fromLanding) {
     const { data: runningTest } = await supabaseAdmin
       .from("landing_tests")

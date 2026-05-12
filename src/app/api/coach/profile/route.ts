@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
+import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
 
@@ -66,7 +67,7 @@ export async function GET(request: Request) {
     const profileResult = await supabaseAdmin
       .from("profiles")
       .select(
-        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location, ai_context, timezone, latitude, longitude, location_geocoded_source"
+        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location, ai_context, timezone, latitude, longitude, location_geocoded_source, landing_copy_overrides, landing_variant_preference"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -76,9 +77,18 @@ export async function GET(request: Request) {
     if (profileResult.error?.code === "42703") {
       let fallback = await supabaseAdmin
         .from("profiles")
-        .select("full_name, coach_business_name, avatar_url, linkedin_url")
+        .select(
+          "full_name, coach_business_name, avatar_url, linkedin_url, landing_copy_overrides, landing_variant_preference"
+        )
         .eq("id", coachId)
         .maybeSingle();
+      if (fallback.error?.code === "42703") {
+        fallback = await supabaseAdmin
+          .from("profiles")
+          .select("full_name, coach_business_name, avatar_url, linkedin_url")
+          .eq("id", coachId)
+          .maybeSingle();
+      }
       if (fallback.error?.code === "42703") {
         fallback = await supabaseAdmin
           .from("profiles")
@@ -149,6 +159,8 @@ export async function GET(request: Request) {
         latitude?: number | null;
         longitude?: number | null;
         location_geocoded_source?: string | null;
+        landing_copy_overrides?: unknown;
+        landing_variant_preference?: string | null;
       } | null;
 
       return NextResponse.json({
@@ -170,6 +182,16 @@ export async function GET(request: Request) {
         directory_level: null,
         lead_webhook_url: null,
         calendar_embed_code: null,
+        landing_copy_overrides: sanitizeLandingCopyOverrides(
+          prof?.landing_copy_overrides
+        ),
+        landing_variant_preference:
+          prof?.landing_variant_preference === "a" ||
+          prof?.landing_variant_preference === "b" ||
+          prof?.landing_variant_preference === "c" ||
+          prof?.landing_variant_preference === "d"
+            ? prof.landing_variant_preference
+            : null,
         account_email,
       });
     }
@@ -195,6 +217,8 @@ export async function GET(request: Request) {
       latitude?: number | null;
       longitude?: number | null;
       location_geocoded_source?: string | null;
+      landing_copy_overrides?: unknown;
+      landing_variant_preference?: string | null;
     } | null;
 
     return NextResponse.json({
@@ -222,6 +246,16 @@ export async function GET(request: Request) {
         ? null
         : (coachRow as { calendar_embed_code?: string | null } | null)
             ?.calendar_embed_code ?? null,
+      landing_copy_overrides: sanitizeLandingCopyOverrides(
+        prof?.landing_copy_overrides
+      ),
+      landing_variant_preference:
+        prof?.landing_variant_preference === "a" ||
+        prof?.landing_variant_preference === "b" ||
+        prof?.landing_variant_preference === "c" ||
+        prof?.landing_variant_preference === "d"
+          ? prof.landing_variant_preference
+          : null,
       account_email,
     });
   } catch {
@@ -260,6 +294,10 @@ type PatchBody = {
   lead_webhook_url?: string | null;
   /** Booking calendar embed HTML shown on post-assessment report page. */
   calendar_embed_code?: string | null;
+  /** Allowlisted keys only; sanitized server-side (see landingCopy.ts). */
+  landing_copy_overrides?: Record<string, unknown> | null;
+  /** When set, /score entry uses this variant if URL and cookie do not override. */
+  landing_variant_preference?: "a" | "b" | "c" | "d" | null;
 };
 
 export async function PATCH(request: Request) {
@@ -420,6 +458,38 @@ export async function PATCH(request: Request) {
     }
   }
 
+  if (body.landing_copy_overrides !== undefined) {
+    if (body.landing_copy_overrides === null) {
+      updates.landing_copy_overrides = {};
+    } else if (
+      typeof body.landing_copy_overrides === "object" &&
+      !Array.isArray(body.landing_copy_overrides)
+    ) {
+      updates.landing_copy_overrides = sanitizeLandingCopyOverrides(
+        body.landing_copy_overrides
+      );
+    } else {
+      return NextResponse.json(
+        { error: "landing_copy_overrides must be an object or null." },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (body.landing_variant_preference !== undefined) {
+    const v = body.landing_variant_preference;
+    if (v === null) {
+      updates.landing_variant_preference = null;
+    } else if (v === "a" || v === "b" || v === "c" || v === "d") {
+      updates.landing_variant_preference = v;
+    } else {
+      return NextResponse.json(
+        { error: "landing_variant_preference must be a, b, c, d, or null." },
+        { status: 400 }
+      );
+    }
+  }
+
   if (body.first_name !== undefined || body.last_name !== undefined) {
     const first = (body.first_name ?? "").trim();
     const last = (body.last_name ?? "").trim();
@@ -507,6 +577,10 @@ export async function PATCH(request: Request) {
     if (updates.coach_business_name !== undefined)
       minimalUpdates.coach_business_name = updates.coach_business_name;
     if (updates.avatar_url !== undefined) minimalUpdates.avatar_url = updates.avatar_url;
+    if (updates.landing_copy_overrides !== undefined)
+      minimalUpdates.landing_copy_overrides = updates.landing_copy_overrides;
+    if (updates.landing_variant_preference !== undefined)
+      minimalUpdates.landing_variant_preference = updates.landing_variant_preference;
     if (Object.keys(minimalUpdates).length > 0) {
       result = await supabaseAdmin
         .from("profiles")

@@ -34,7 +34,13 @@ export default function AssessmentPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const fromLanding = searchParams.get("from_landing");
-  const landingVariant = fromLanding === "a" || fromLanding === "b" ? fromLanding : null;
+  const landingVariant =
+    fromLanding === "a" ||
+    fromLanding === "b" ||
+    fromLanding === "c" ||
+    fromLanding === "d"
+      ? fromLanding
+      : null;
   const fromDashboard = searchParams.get("from") === "dashboard";
   const startTracked = useRef(false);
 

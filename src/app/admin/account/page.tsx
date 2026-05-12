@@ -56,6 +56,7 @@ const bossProgrammeLinks = [
 const ACCOUNT_TAB_IDS = [
   "profile",
   "account",
+  "funnel",
   "workspace",
   "admins",
   "links",
@@ -203,6 +204,7 @@ function AdminAccountPageContent() {
   const tabDefs: { id: AccountTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
     { id: "account", label: "Account" },
+    { id: "funnel", label: "Funnel" },
     { id: "workspace", label: "Workspace" },
     { id: "admins", label: "Admin users" },
     { id: "links", label: "Links" },
@@ -210,7 +212,10 @@ function AdminAccountPageContent() {
   ];
 
   const settingsEmbedTab: BossDashboardSettingsTabId | null =
-    activeTab === "profile" || activeTab === "account" || activeTab === "workspace"
+    activeTab === "profile" ||
+    activeTab === "account" ||
+    activeTab === "funnel" ||
+    activeTab === "workspace"
       ? activeTab
       : null;
 

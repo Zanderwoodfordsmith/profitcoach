@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { supabaseClient } from "@/lib/supabaseClient";
+import type { LandingContent, LandingCopyOverrides } from "@/lib/landingCopy";
+import {
+  getDefaultLandingContent,
+  mergeLandingContent,
+  LANDING_TO_ASSESSMENT_PARAMS,
+  sanitizeProspectUrlParam,
+} from "@/lib/landingCopy";
+import { LandingVariantC } from "@/components/landing/LandingVariantC";
+import { LandingVariantD } from "@/components/landing/LandingVariantD";
 
 const LANDING_CONTACT_KEY = "boss_landing_contact";
 const SESSION_COOKIE = "landing_session_id";
@@ -58,6 +67,9 @@ type LandingVariantLegacyProps = {
   coachSlug: string;
   coach: CoachInfo | null;
   loadingCoach: boolean;
+  landingContent: LandingContent;
+  prospectCompany: string | null;
+  prospectName: string | null;
   formStep: 1 | 2 | 3;
   firstName: string;
   lastName: string;
@@ -86,6 +98,7 @@ export default function LandingVariantPage() {
 
   const router = useRouter();
   const [coach, setCoach] = useState<CoachInfo | null>(null);
+  const [landingOverrides, setLandingOverrides] = useState<LandingCopyOverrides>({});
   const [loadingCoach, setLoadingCoach] = useState(true);
   const viewTracked = useRef(false);
   const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
@@ -99,8 +112,10 @@ export default function LandingVariantPage() {
 
   const isVariantA = variant === "a";
   const isVariantB = variant === "b";
-  const validVariant = isVariantA || isVariantB;
-  const trackVariant = isVariantA ? "a" : "b";
+  const isVariantC = variant === "c";
+  const isVariantD = variant === "d";
+  const validVariant = isVariantA || isVariantB || isVariantC || isVariantD;
+  const trackVariant = isVariantA ? "a" : isVariantB ? "b" : isVariantC ? "c" : "d";
 
   useEffect(() => {
     if (!validVariant) return;
@@ -126,24 +141,42 @@ export default function LandingVariantPage() {
       return;
     }
     async function load() {
-      const { data, error } = await supabaseClient
-        .from("coaches")
-        .select("slug, profiles(full_name, coach_business_name, avatar_url, linkedin_url)")
-        .eq("slug", coachSlug)
-        .maybeSingle();
-      if (cancelled) return;
-      if (!error && data) {
-        const row = data as unknown as {
-          slug: string;
-          profiles?: CoachInfo | CoachInfo[] | null;
-        };
-        const prof = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-        if (prof) setCoach(prof);
+      try {
+        const res = await fetch(
+          `/api/coach-by-slug?slug=${encodeURIComponent(coachSlug)}`
+        );
+        if (cancelled) return;
+        if (!res.ok) {
+          setCoach(null);
+          setLandingOverrides({});
+        } else {
+          const data = (await res.json()) as {
+            full_name?: string | null;
+            coach_business_name?: string | null;
+            avatar_url?: string | null;
+            linkedin_url?: string | null;
+            landing_copy_overrides?: LandingCopyOverrides;
+          };
+          setCoach({
+            full_name: data.full_name ?? null,
+            coach_business_name: data.coach_business_name ?? null,
+            avatar_url: data.avatar_url ?? null,
+            linkedin_url: data.linkedin_url ?? null,
+          });
+          setLandingOverrides(data.landing_copy_overrides ?? {});
+        }
+      } catch {
+        if (!cancelled) {
+          setCoach(null);
+          setLandingOverrides({});
+        }
       }
-      setLoadingCoach(false);
+      if (!cancelled) setLoadingCoach(false);
     }
-    load();
-    return () => { cancelled = true; };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, [coachSlug]);
 
   function handleStep1(e: React.FormEvent) {
@@ -244,7 +277,15 @@ export default function LandingVariantPage() {
     } catch {
       // ignore
     }
-    router.push(`/assessment/${encodeURIComponent(coachSlug)}?from_landing=${trackVariant}`);
+    const assessmentQ = new URLSearchParams();
+    assessmentQ.set("from_landing", trackVariant);
+    for (const key of LANDING_TO_ASSESSMENT_PARAMS) {
+      const v = sanitizeProspectUrlParam(searchParams.get(key));
+      if (v) assessmentQ.set(key, v);
+    }
+    router.push(
+      `/assessment/${encodeURIComponent(coachSlug)}?${assessmentQ.toString()}`
+    );
   }
 
   function goBack() {
@@ -259,15 +300,26 @@ export default function LandingVariantPage() {
   if (!validVariant) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#fafafa] px-4">
-        <p className="text-slate-600">Invalid variant. Use /landing/a or /landing/b.</p>
+        <p className="text-slate-600">Invalid variant. Use /landing/a, /landing/b, /landing/c, or /landing/d.</p>
       </div>
     );
   }
+
+  const landingKind = isVariantA || isVariantC || isVariantD ? "newCopy" : "legacy";
+  const landingContent = mergeLandingContent(
+    getDefaultLandingContent(landingKind),
+    landingOverrides
+  );
+  const prospectCompany = sanitizeProspectUrlParam(searchParams.get("company"));
+  const prospectName = sanitizeProspectUrlParam(searchParams.get("prospect"));
 
   const legacyProps: LandingVariantLegacyProps = {
     coachSlug,
     coach,
     loadingCoach,
+    landingContent,
+    prospectCompany,
+    prospectName,
     formStep,
     firstName,
     lastName,
@@ -288,38 +340,59 @@ export default function LandingVariantPage() {
     scrollToForm,
   };
 
+  if (isVariantC) {
+    return (
+      <LandingVariantC
+        landingContent={landingContent}
+        prospectCompany={prospectCompany}
+        prospectName={prospectName}
+        scrollToForm={scrollToForm}
+        form={
+          <LandingOptInForm
+            {...legacyProps}
+            variant="light"
+            cta={landingContent.cta}
+            embedded
+            figmaLandingC
+          />
+        }
+      />
+    );
+  }
+
+  if (isVariantD) {
+    return (
+      <LandingVariantD
+        landingContent={landingContent}
+        prospectCompany={prospectCompany}
+        prospectName={prospectName}
+        scrollToForm={scrollToForm}
+        form={
+          <LandingOptInForm
+            {...legacyProps}
+            variant="light"
+            cta={landingContent.cta}
+            embedded
+            figmaLandingC
+          />
+        }
+      />
+    );
+  }
+
   return isVariantA ? <LandingVariantA {...legacyProps} /> : <LandingVariantLegacy {...legacyProps} />;
 }
 
 function LandingVariantLegacy(props: LandingVariantLegacyProps) {
-  return <BossInspiredLanding {...props} kind="legacy" />;
+  return <BossInspiredLanding {...props} />;
 }
 
 function LandingVariantA(props: LandingVariantLegacyProps) {
-  return <BossInspiredLanding {...props} kind="newCopy" />;
+  return <BossInspiredLanding {...props} />;
 }
 
-type LandingKind = "legacy" | "newCopy";
-type FeatureItem = { title: string; text: string };
-type LandingContent = {
-  eyebrow: string;
-  heading: string;
-  subheading: string;
-  cta: string;
-  heroStats: Array<{ k: string; v: string }>;
-  painHeading: string;
-  painIntro: string;
-  painBullets: string[];
-  painCloser: string;
-  valueHeading: string;
-  values: FeatureItem[];
-  closeHeading: string;
-  closeSubheading: string;
-};
-
-function BossInspiredLanding(props: LandingVariantLegacyProps & { kind: LandingKind }) {
-  const { scrollToForm } = props;
-  const content = getLandingContent(props.kind);
+function BossInspiredLanding(props: LandingVariantLegacyProps) {
+  const { scrollToForm, landingContent: content, prospectCompany, prospectName } = props;
   return (
     <div className="min-h-screen bg-[#f5f8fc] text-slate-900">
       <main>
@@ -336,6 +409,27 @@ function BossInspiredLanding(props: LandingVariantLegacyProps & { kind: LandingK
                 <span className="text-xs font-semibold tracking-[0.04em] text-sky-100">{content.eyebrow}</span>
               </div>
               <h1 className="mt-6 text-balance text-[clamp(40px,5.6vw,80px)] font-light leading-[1.0] tracking-[-0.04em]">{content.heading}</h1>
+              {prospectCompany || prospectName ? (
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-sky-100/95">
+                  {prospectCompany ? (
+                    <>
+                      Tailored for{" "}
+                      <span className="font-semibold text-white">{prospectCompany}</span>
+                      {prospectName ? (
+                        <>
+                          {" "}
+                          · <span className="font-semibold text-white">{prospectName}</span>
+                        </>
+                      ) : null}
+                    </>
+                  ) : prospectName ? (
+                    <>
+                      Prepared for{" "}
+                      <span className="font-semibold text-white">{prospectName}</span>
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
               <p className="mt-5 max-w-2xl text-[19px] leading-relaxed text-sky-100">{content.subheading}</p>
               <button
                 type="button"
@@ -405,83 +499,6 @@ function BossInspiredLanding(props: LandingVariantLegacyProps & { kind: LandingK
       </main>
     </div>
   );
-}
-
-function getLandingContent(kind: LandingKind): LandingContent {
-  if (kind === "newCopy") {
-    return {
-      eyebrow: "For [Industry] Owners Doing £500K-£5M",
-      heading:
-        "Know Exactly What to Fix First in Your £500K-£5M Business in 12 Minutes",
-      subheading:
-        "The BOSS Dashboard scores your business across 5 levels and 10 areas using 50 red, yellow, green questions to give you one score out of 100, one focus area, and one clear next move.",
-      cta: "Get My Free BOSS Score (12 Minutes, No Call Required)",
-      heroStats: [
-        { k: "12 mins", v: "to complete" },
-        { k: "50 Qs", v: "across 10 areas" },
-        { k: "£0", v: "no credit card" },
-        { k: "1 score", v: "actionable focus" },
-      ],
-      painHeading: "If your business feels stuck, it's not effort, it's clarity.",
-      painIntro:
-        "You can see twenty things wrong with your business, but you cannot see which one will move the needle first.",
-      painBullets: [
-        "Do you feel like you're firefighting every day with no strategic progress?",
-        "Are you working harder than ever while your revenue stays flat?",
-        "Have you tried books, consultants, and courses but still do not know what to fix first?",
-        "Do twenty visible issues in your business still stay trapped in your head with no order and no plan?",
-      ],
-      painCloser:
-        "The BOSS Dashboard pulls that picture out of your head and shows you exactly what to fix first, no call, no pitch, no commitment.",
-      valueHeading: "Why The BOSS Dashboard Is Different",
-      values: [
-        { title: "Score Out of 100", text: "Get one clear number so you know exactly where you stand." },
-        { title: "5 Levels of Business", text: "See all five levels on one grid so you fix the right level first." },
-        { title: "50 Red, Yellow, Green Questions", text: "Spot what is bleeding, what works, and what is nearly there." },
-        { title: "Built on 25+ Business Thinkers", text: "Use one mapped diagnostic instead of disconnected frameworks." },
-        { title: "Owner Performance First", text: "Fix root causes in the owner layer before treating symptoms." },
-        { title: "Free and No Call Required", text: "Take the full diagnostic in 12 minutes and get your score immediately." },
-      ],
-      closeHeading: "Are You The BOSS Of Your Business, Or Is It The BOSS Of You?",
-      closeSubheading:
-        "Find out in 12 minutes. 50 questions. 10 areas. 5 levels. One score out of 100. One clear focus area.",
-    };
-  }
-
-  return {
-    eyebrow: "Business Operating System Diagnostic",
-    heading: "Are You The BOSS, Or Is Your Business The BOSS Of You?",
-    subheading:
-      "Take a fast strategic assessment inspired by the BOSS design and get a clear score, a clear priority, and a clear next step in under 12 minutes.",
-    cta: "Take The Free BOSS Assessment",
-    heroStats: [
-      { k: "12 mins", v: "to complete" },
-      { k: "50 Qs", v: "across 10 areas" },
-      { k: "£0", v: "no credit card" },
-      { k: "1 page", v: "action plan" },
-    ],
-    painHeading: "Most owners are not missing effort, they are missing order.",
-    painIntro:
-      "When everything feels urgent, you patch symptoms, stay overworked, and never fix the core bottleneck.",
-    painBullets: [
-      "You are carrying too many roles and still not seeing strategic progress.",
-      "You know there are leaks in sales, team, and delivery but no ranked order for what to fix.",
-      "Your weeks are full, but the needle does not move enough.",
-      "You need one clear view of your whole operating system, not more random advice.",
-    ],
-    painCloser: "This diagnostic gives you a practical map so you can stop guessing and start fixing the right thing first.",
-    valueHeading: "What You Get From This Assessment",
-    values: [
-      { title: "A Single Score", text: "See where your operating system sits right now." },
-      { title: "A Priority Area", text: "Know which area has the highest leverage." },
-      { title: "A 5-Level View", text: "Understand your maturity level as an owner." },
-      { title: "A 10-Area Breakdown", text: "Get clarity across the full business." },
-      { title: "Action Focus", text: "Turn insight into an immediate next move." },
-      { title: "Instant Result", text: "No waiting and no call required." },
-    ],
-    closeHeading: "Get The Clarity To Grow Profit And Buy Back Time",
-    closeSubheading: "One diagnostic. One score. One focus. One next move.",
-  };
 }
 
 function LevelsList() {
@@ -570,7 +587,16 @@ function HowCard(props: { imageSrc: string; eyebrow: string; title: string; desc
 }
 
 function LandingOptInForm(
-  props: LandingVariantLegacyProps & { variant: "dark" | "light"; cta?: string }
+  props: LandingVariantLegacyProps & {
+    variant: "dark" | "light";
+    cta?: string;
+    /** Omit outer card chrome when nested inside another panel (e.g. landing variant C). */
+    embedded?: boolean;
+    /** When false, submit buttons use short labels (Continue / Get started) instead of the marketing CTA. */
+    marketingCtaOnButtons?: boolean;
+    /** Match Figma “Desktop - 2” Future Section: pill inputs, #3283d9 CTA bar, disclaimer copy. */
+    figmaLandingC?: boolean;
+  }
 ) {
   const {
     coachSlug,
@@ -596,19 +622,70 @@ function LandingOptInForm(
   } = props;
 
   const isDark = props.variant === "dark";
-  const cardClass = isDark
-    ? "rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)] backdrop-blur-xl"
-    : "rounded-3xl border border-slate-200 bg-white p-6 shadow-lg";
+  const embedded = !!props.embedded;
+  const figmaC = !!props.figmaLandingC;
+  const cardClass = embedded
+    ? "border-0 bg-transparent p-0 shadow-none"
+    : isDark
+      ? "rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      : "rounded-3xl border border-slate-200 bg-white p-6 shadow-lg";
   const inputClass = isDark
     ? "block w-full rounded-xl border border-white/15 bg-white/10 px-4 py-4 text-base text-white placeholder-white/50 outline-none focus:border-[#42a1ee] focus:ring-2 focus:ring-[#42a1ee]/20"
-    : "block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20";
+    : figmaC && embedded
+      ? "block w-full rounded-[35px] border-0 bg-white px-[26px] py-3 text-base tracking-[-0.02em] text-[#17181a] placeholder:text-[#17181a]/40 shadow-sm outline-none ring-1 ring-black/[0.06] focus:ring-2 focus:ring-[#3283d9]/40"
+      : "block w-full rounded-xl border border-slate-300 bg-white px-4 py-4 text-base text-slate-900 outline-none focus:border-[#0c5290] focus:ring-2 focus:ring-[#0c5290]/20";
   const labelClass = isDark ? "text-white/85" : "text-slate-900";
   const subtleText = isDark ? "text-white/60" : "text-slate-500";
   const errorText = isDark ? "text-rose-200" : "text-rose-600";
   const primaryBtn = isDark
     ? "w-full rounded-full bg-white px-6 py-3.5 text-base font-semibold text-[#061a2e] shadow-lg shadow-black/20 hover:opacity-95"
-    : "w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95";
+    : figmaC && embedded
+      ? "flex w-full items-center justify-center gap-5 bg-transparent px-2 py-1 text-[18px] font-medium text-white outline-none transition hover:opacity-95 disabled:cursor-wait disabled:opacity-70"
+      : embedded
+        ? "w-full rounded-full bg-[#238BF7] px-6 py-3.5 text-base font-bold text-white shadow-md transition hover:brightness-110"
+        : "w-full rounded-xl bg-[#0c5290] px-6 py-4 text-xl font-semibold text-white shadow-lg hover:opacity-95";
   const ctaLabel = props.cta ?? "Get my results";
+  /** Figma “Desktop - 2” primary CTA label (fixed casing). */
+  const figmaPrimaryCta = "Get My BOSS Score";
+  const marketingCtaOnButtons = props.marketingCtaOnButtons !== false;
+  const stepSubmitLabel =
+    submitting && formStep === 3
+      ? "Starting…"
+      : figmaC
+        ? formStep === 1
+          ? figmaPrimaryCta
+          : formStep === 3
+            ? "Get started"
+            : "Continue"
+        : marketingCtaOnButtons
+          ? ctaLabel
+          : formStep === 3
+            ? "Get started"
+            : "Continue";
+
+  function FigmaSubmitShell({
+    children,
+    disabled,
+  }: {
+    children: React.ReactNode;
+    disabled?: boolean;
+  }) {
+    return (
+      <div
+        className={`mx-auto flex h-[63px] w-full max-w-[334px] items-center justify-center gap-5 rounded-[24px] bg-[#3283d9] px-4 backdrop-blur-[30px] shadow-[0_4px_4px_rgba(0,0,0,0.25)] ${disabled ? "opacity-70" : ""}`}
+      >
+        {children}
+      </div>
+    );
+  }
+
+  function FigmaCtaSubline() {
+    return (
+      <p className="text-center text-[13px] font-normal leading-snug tracking-normal text-[#17181a]/50">
+        It only takes 10 minutes
+      </p>
+    );
+  }
 
   // Defer real inputs until after mount so password-manager extensions (e.g. LastPass)
   // cannot inject nodes into the SSR tree and break hydration.
@@ -640,11 +717,18 @@ function LandingOptInForm(
       <div className={cardClass}>
         <div className="space-y-5">
           {formStep === 1 && (
-            <form onSubmit={handleStep1} className="space-y-5">
-              <p className={`text-xl font-semibold sm:text-2xl ${labelClass}`}>
-                Start with your <span className="font-bold">name</span>
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <form onSubmit={handleStep1} className={figmaC ? "space-y-4" : "space-y-5"}>
+              {figmaC && embedded ? (
+                <p className="text-center text-[clamp(22px,3.2vw,30px)] font-normal leading-tight tracking-[-0.03em] text-[#17181a]">
+                  What&apos;s your{" "}
+                  <span className="text-[clamp(32px,4.8vw,44px)] font-bold tracking-[-0.04em]">name</span>
+                </p>
+              ) : (
+                <p className={`text-xl font-semibold sm:text-2xl ${labelClass}`}>
+                  Start with your <span className="font-bold">name</span>
+                </p>
+              )}
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${figmaC ? "gap-2.5" : "gap-3"}`}>
                 <div>
                   <label htmlFor="landingA-firstName" className="sr-only">First name</label>
                   <input
@@ -677,9 +761,21 @@ function LandingOptInForm(
                 </div>
               </div>
               {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
-              <button type="submit" className={primaryBtn}>
-                {ctaLabel}
-              </button>
+              {figmaC && embedded ? (
+                <>
+                  <FigmaSubmitShell>
+                    <button type="submit" className={primaryBtn}>
+                      {stepSubmitLabel}
+                      <ArrowUpRight className="size-3 shrink-0 opacity-95" strokeWidth={2.5} aria-hidden />
+                    </button>
+                  </FigmaSubmitShell>
+                  <FigmaCtaSubline />
+                </>
+              ) : (
+                <button type="submit" className={primaryBtn}>
+                  {stepSubmitLabel}
+                </button>
+              )}
             </form>
           )}
 
@@ -704,9 +800,21 @@ function LandingOptInForm(
                 />
               </div>
               {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
-              <button type="submit" className={primaryBtn}>
-                {ctaLabel}
-              </button>
+              {figmaC && embedded ? (
+                <>
+                  <FigmaSubmitShell>
+                    <button type="submit" className={primaryBtn}>
+                      {stepSubmitLabel}
+                      <ArrowUpRight className="size-3 shrink-0 opacity-95" strokeWidth={2.5} aria-hidden />
+                    </button>
+                  </FigmaSubmitShell>
+                  <FigmaCtaSubline />
+                </>
+              ) : (
+                <button type="submit" className={primaryBtn}>
+                  {stepSubmitLabel}
+                </button>
+              )}
               <div className="flex justify-center">
                 <button
                   type="button"
@@ -754,9 +862,21 @@ function LandingOptInForm(
                 />
               </div>
               {formError && <p className={`text-sm ${errorText}`} role="alert">{formError}</p>}
-              <button type="submit" disabled={submitting} className={`${primaryBtn} disabled:opacity-70 disabled:cursor-wait`}>
-                {submitting ? "Starting…" : ctaLabel}
-              </button>
+              {figmaC && embedded ? (
+                <>
+                  <FigmaSubmitShell disabled={submitting}>
+                    <button type="submit" disabled={submitting} className={primaryBtn}>
+                      {stepSubmitLabel}
+                      <ArrowUpRight className="size-3 shrink-0 opacity-95" strokeWidth={2.5} aria-hidden />
+                    </button>
+                  </FigmaSubmitShell>
+                  <FigmaCtaSubline />
+                </>
+              ) : (
+                <button type="submit" disabled={submitting} className={`${primaryBtn} disabled:opacity-70 disabled:cursor-wait`}>
+                  {stepSubmitLabel}
+                </button>
+              )}
               <div className="flex justify-center">
                 <button
                   type="button"
@@ -769,14 +889,18 @@ function LandingOptInForm(
             </form>
           )}
 
-          <p className={`text-center text-sm ${subtleText}`}>Free · No sales call · Instant results</p>
-
-          {!loadingCoach && (coach?.full_name || coach?.coach_business_name || coachSlug.toUpperCase() === "BCA") && (
-            <p className={`pt-4 text-sm border-t ${isDark ? "border-white/10 text-white/60" : "border-slate-200 text-slate-500"}`}>
-              Your results can be shared with your coach
-              {coach?.full_name || coach?.coach_business_name ? `, ${coach.full_name ?? coach.coach_business_name}` : ""}.
-            </p>
+          {figmaC && embedded ? null : (
+            <p className={`text-center text-sm ${subtleText}`}>Free · No sales call · Instant results</p>
           )}
+
+          {!(figmaC && embedded) &&
+            !loadingCoach &&
+            (coach?.full_name || coach?.coach_business_name || coachSlug.toUpperCase() === "BCA") && (
+              <p className={`pt-4 text-sm border-t ${isDark ? "border-white/10 text-white/60" : "border-slate-200 text-slate-500"}`}>
+                Your results can be shared with your coach
+                {coach?.full_name || coach?.coach_business_name ? `, ${coach.full_name ?? coach.coach_business_name}` : ""}.
+              </p>
+            )}
         </div>
       </div>
     </div>

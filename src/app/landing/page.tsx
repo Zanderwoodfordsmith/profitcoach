@@ -3,30 +3,14 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-const LANDING_VARIANT_COOKIE = "landing_variant";
-
-function getVariantCookie(): "a" | "b" | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp(`(?:^| )${LANDING_VARIANT_COOKIE}=([ab])`));
-  return match ? (match[1] as "a" | "b") : null;
-}
-
-function setVariantCookie(variant: "a" | "b") {
-  if (typeof document === "undefined") return;
-  document.cookie = `${LANDING_VARIANT_COOKIE}=${variant};path=/;max-age=2592000`;
-}
-
+/** `/landing` forwards to `/score` so marketing has one canonical funnel entry. */
 function LandingRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const coach = searchParams.get("coach")?.trim() || "";
-    const query = coach ? `?coach=${encodeURIComponent(coach)}` : "";
-    const existing = getVariantCookie();
-    const variant = existing ?? (Math.random() < 0.5 ? "a" : "b");
-    if (!existing) setVariantCookie(variant);
-    router.replace(`/landing/${variant}${query}`);
+    const q = searchParams.toString();
+    router.replace(q ? `/score?${q}` : "/score");
   }, [router, searchParams]);
 
   return (

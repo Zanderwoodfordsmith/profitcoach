@@ -1,29 +1,36 @@
 "use client";
 
 import { Suspense, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   resolveScoreEntryRoute,
   searchParamsWithoutVariant,
 } from "@/lib/funnelVariant";
 
-/** Share links: `/score?coach=slug` or cleaner `/score/slug` (slug = coaches.slug, not display name). */
-
-function ScoreRedirect() {
+/**
+ * /score/demo → same split as /score?coach=demo, but with a cleaner share URL.
+ * The path segment is the coach slug (database `coaches.slug`), not display name.
+ */
+function ScoreCoachRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const route = await resolveScoreEntryRoute(searchParams);
-      const suffix = searchParamsWithoutVariant(searchParams);
+      const raw = params.coachSlug;
+      const coachSlug = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
+      const sp = new URLSearchParams(searchParams.toString());
+      if (coachSlug) sp.set("coach", coachSlug);
+      const route = await resolveScoreEntryRoute(sp);
+      const suffix = searchParamsWithoutVariant(sp);
       if (!cancelled) router.replace(`/${route}${suffix}`);
     })();
     return () => {
       cancelled = true;
     };
-  }, [router, searchParams]);
+  }, [router, searchParams, params]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
@@ -32,7 +39,7 @@ function ScoreRedirect() {
   );
 }
 
-export default function ScoreRootPage() {
+export default function ScoreCoachSlugPage() {
   return (
     <Suspense
       fallback={
@@ -41,7 +48,7 @@ export default function ScoreRootPage() {
         </div>
       }
     >
-      <ScoreRedirect />
+      <ScoreCoachRedirect />
     </Suspense>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { COMMUNITY_EXTERNAL_LINK_CLASS, splitTextWithHttpUrls } from "@/lib/communityAutolink";
 import {
   COMMUNITY_MENTION_LINK_CLASS,
   splitMentionSegments,
@@ -35,7 +36,27 @@ export function MentionBody({
           const text = stripPreviewMarkdown
             ? stripInlineMarkdownForCommunityPreviewFragment(seg.text)
             : seg.text;
-          return <span key={i}>{text}</span>;
+          const urlParts = splitTextWithHttpUrls(text);
+          return (
+            <span key={i}>
+              {urlParts.map((part, j) =>
+                part.type === "text" ? (
+                  <span key={j}>{part.text}</span>
+                ) : (
+                  <a
+                    key={j}
+                    href={part.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={COMMUNITY_EXTERNAL_LINK_CLASS}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {part.label}
+                  </a>
+                )
+              )}
+            </span>
+          );
         }
         const label =
           nameById[seg.userId] ?? seg.labelFromToken ?? "member";

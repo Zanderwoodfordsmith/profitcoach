@@ -14,42 +14,77 @@ function getOrSetSessionId(): string {
   return id;
 }
 
+const VA_COACH_LABEL_MAX = 80;
+const VA_COACH_STORAGE_KEY = "pc_boss_va_coach";
+
+async function coachLabelForBadge(slug: string): Promise<string> {
+  const fallback = slug.trim() || "BCA";
+  try {
+    const res = await fetch(`/api/coach-by-slug?slug=${encodeURIComponent(slug)}`);
+    if (!res.ok) return fallback;
+    const j = (await res.json()) as {
+      full_name?: string | null;
+      coach_business_name?: string | null;
+    };
+    const raw =
+      (j.full_name && String(j.full_name).trim()) ||
+      (j.coach_business_name && String(j.coach_business_name).trim()) ||
+      fallback;
+    if (raw.length <= VA_COACH_LABEL_MAX) return raw;
+    return `${raw.slice(0, VA_COACH_LABEL_MAX - 1)}…`;
+  } catch {
+    return fallback;
+  }
+}
+
 function ScoreAContent() {
   const searchParams = useSearchParams();
   const viewTracked = useRef(false);
-  const query = searchParams.toString();
-  const iframeSrc = `/boss-exact/BOSS%20Assessment.html${query ? `?${query}` : ""}`;
 
   useEffect(() => {
     if (viewTracked.current) return;
     viewTracked.current = true;
+    let cancelled = false;
     const coachSlug = searchParams.get("coach")?.trim() || "BCA";
     const sessionId = getOrSetSessionId();
-    fetch("/api/landing/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        variant: "a",
-        coach_slug: coachSlug || null,
-        event_type: "view",
-        session_id: sessionId,
-      }),
-    }).catch(() => {});
+
+    async function go() {
+      const [coachLabel] = await Promise.all([
+        coachLabelForBadge(coachSlug),
+        fetch("/api/landing/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            variant: "a",
+            coach_slug: coachSlug || null,
+            event_type: "view",
+            session_id: sessionId,
+          }),
+        }).catch(() => {}),
+      ]);
+
+      const sp = new URLSearchParams(searchParams.toString());
+      sp.set("va", "1");
+      if (coachLabel) sp.set("va_coach", coachLabel);
+
+      if (!cancelled && typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(VA_COACH_STORAGE_KEY, coachLabel);
+        } catch {
+          /* private mode / quota */
+        }
+        window.location.replace(`/boss-exact/boss-assessment.html?${sp.toString()}`);
+      }
+    }
+    void go();
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   return (
-    <div className="relative min-h-screen bg-[#f5f8fc]">
-      <iframe
-        title="BOSS Assessment"
-        src={iframeSrc}
-        className="absolute inset-0 h-full w-full border-0"
-      />
-      <div
-        className="pointer-events-none fixed bottom-2 right-2 z-[9999] select-none font-mono text-[9px] font-medium tracking-wide text-slate-500/70"
-        aria-hidden
-      >
-        vA
-      </div>
+    <div className="flex min-h-screen items-center justify-center bg-[#f5f8fc] px-4">
+      <p className="text-sm text-slate-600">Loading assessment…</p>
     </div>
   );
 }

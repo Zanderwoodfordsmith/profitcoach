@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /** Public API: get coach (and profile) by slug for playbook attribution. Uses admin client so RLS is not a barrier. */
@@ -32,22 +33,38 @@ export async function GET(request: Request) {
 
     const { data: profileWithLinkedIn, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("full_name, coach_business_name, avatar_url, linkedin_url")
+      .select(
+        "full_name, coach_business_name, avatar_url, linkedin_url, landing_copy_overrides, landing_variant_preference"
+      )
       .eq("id", coachId)
       .maybeSingle();
 
     if (profileError?.code === "42703") {
-      const { data: profileFallback, error: fallbackError } = await supabaseAdmin
+      const { data: profileMid, error: midError } = await supabaseAdmin
         .from("profiles")
-        .select("full_name, coach_business_name, avatar_url")
+        .select("full_name, coach_business_name, avatar_url, linkedin_url")
         .eq("id", coachId)
         .maybeSingle();
-      if (fallbackError) {
-        console.error("coach-by-slug profileError (fallback):", fallbackError);
+      if (midError?.code === "42703") {
+        const { data: profileFallback, error: fallbackError } = await supabaseAdmin
+          .from("profiles")
+          .select("full_name, coach_business_name, avatar_url")
+          .eq("id", coachId)
+          .maybeSingle();
+        if (fallbackError) {
+          console.error("coach-by-slug profileError (fallback):", fallbackError);
+          return NextResponse.json({ error: "Could not load profile" }, { status: 500 });
+        }
+        profileRow = profileFallback;
+        linkedinUrl = null;
+      } else if (midError) {
+        console.error("coach-by-slug profileError:", midError);
         return NextResponse.json({ error: "Could not load profile" }, { status: 500 });
+      } else {
+        profileRow = profileMid;
+        linkedinUrl =
+          (profileMid as { linkedin_url?: string | null } | null)?.linkedin_url ?? null;
       }
-      profileRow = profileFallback;
-      linkedinUrl = null;
     } else if (profileError) {
       console.error("coach-by-slug profileError:", profileError);
       return NextResponse.json({ error: "Could not load profile" }, { status: 500 });
@@ -56,8 +73,23 @@ export async function GET(request: Request) {
       linkedinUrl = (profileWithLinkedIn as { linkedin_url?: string | null } | null)?.linkedin_url ?? null;
     }
 
-    const prof = profileRow as { full_name?: string | null; coach_business_name?: string | null; avatar_url?: string | null } | null;
+    const prof = profileRow as {
+      full_name?: string | null;
+      coach_business_name?: string | null;
+      avatar_url?: string | null;
+      landing_copy_overrides?: unknown;
+      landing_variant_preference?: string | null;
+    } | null;
     const businessName = prof?.coach_business_name ?? (coachSlug?.toUpperCase() === "BCA" ? "Central (BCA)" : null);
+
+    const landingPref = prof?.landing_variant_preference;
+    const landing_variant_preference =
+      landingPref === "a" ||
+      landingPref === "b" ||
+      landingPref === "c" ||
+      landingPref === "d"
+        ? landingPref
+        : null;
 
     return NextResponse.json({
       slug: coachSlug,
@@ -65,6 +97,10 @@ export async function GET(request: Request) {
       coach_business_name: businessName,
       avatar_url: prof?.avatar_url ?? null,
       linkedin_url: linkedinUrl,
+      landing_copy_overrides: sanitizeLandingCopyOverrides(
+        prof?.landing_copy_overrides
+      ),
+      landing_variant_preference,
     });
   } catch (err) {
     console.error("coach-by-slug catch:", err);

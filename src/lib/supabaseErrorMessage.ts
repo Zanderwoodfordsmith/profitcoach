@@ -54,7 +54,16 @@ export function communityAccessHint(errorMessage: string): string | null {
     if (m.includes("community_posts.media")) {
       return "Add the community post media column: run supabase/migrations/20260607120000_community_posts_media.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
     }
-    return "Run the community migration on your Supabase project (SQL file: supabase/migrations/20260502120000_community_feed.sql, or supabase db push).";
+    if (
+      m.includes("community_calendar_events") &&
+      (m.includes("recording_link_url") || m.includes("recording_video_url"))
+    ) {
+      return "Add calendar recording columns: run supabase/migrations/20260613120000_community_calendar_recordings.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
+    if (m.includes("community_calendar_events") && m.includes("relation")) {
+      return "Create the community calendar table: run supabase/migrations/20260604120000_community_calendar_events.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
+    return "A database migration may be missing. From the repo root run `supabase db push`, or in Supabase Dashboard → SQL Editor run the migration file that matches the missing object in the error above. For the original community tables, see supabase/migrations/20260502120000_community_feed.sql.";
   }
   if (
     m.includes("row-level security") ||

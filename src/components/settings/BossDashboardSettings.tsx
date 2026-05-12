@@ -41,9 +41,17 @@ type ProfileData = {
   lead_webhook_url?: string | null;
   /** HTML snippet used to render a booking calendar on assessment results. */
   calendar_embed_code?: string | null;
+  /** Allowlisted keys; eyebrow overrides BOSS landing hero line. */
+  landing_copy_overrides?: Record<string, string> | null;
+  /** Default funnel variant when share link has no ?variant= or cookie. */
+  landing_variant_preference?: "a" | "b" | "c" | "d" | null;
 };
 
-export type BossDashboardSettingsTabId = "profile" | "account" | "workspace";
+export type BossDashboardSettingsTabId =
+  | "profile"
+  | "account"
+  | "funnel"
+  | "workspace";
 
 export type BossDashboardSettingsProps = {
   variant: "coach" | "admin";
@@ -79,6 +87,9 @@ export function BossDashboardSettings({
   const [directoryToggleBusy, setDirectoryToggleBusy] = useState(false);
   const [directoryError, setDirectoryError] = useState<string | null>(null);
 
+  const [landingEyebrow, setLandingEyebrow] = useState("");
+  const [landingVariantPref, setLandingVariantPref] = useState<"" | "a" | "b" | "c" | "d">("");
+
   const [brainSuperpowers, setBrainSuperpowers] = useState("");
   const [brainHobbies, setBrainHobbies] = useState("");
   const [brainClientResults, setBrainClientResults] = useState<
@@ -96,6 +107,12 @@ export function BossDashboardSettings({
   const [workspaceSaveError, setWorkspaceSaveError] = useState<string | null>(
     null
   );
+
+  const [funnelSaving, setFunnelSaving] = useState(false);
+  const [funnelSaveMessage, setFunnelSaveMessage] = useState<
+    "success" | "error" | null
+  >(null);
+  const [funnelSaveError, setFunnelSaveError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async () => {
     const {
@@ -158,6 +175,11 @@ export function BossDashboardSettings({
     setLocation(data.location ?? "");
     setLeadWebhookUrl(data.lead_webhook_url ?? "");
     setCalendarEmbedCode(data.calendar_embed_code ?? "");
+    setLandingEyebrow(data.landing_copy_overrides?.eyebrow ?? "");
+    const pref = data.landing_variant_preference;
+    setLandingVariantPref(
+      pref === "a" || pref === "b" || pref === "c" || pref === "d" ? pref : ""
+    );
     const ctx = data.ai_context ?? {};
     setBrainSuperpowers(ctx.superpowers ?? "");
     setBrainHobbies(ctx.hobbies_and_recent ?? "");
@@ -203,8 +225,6 @@ export function BossDashboardSettings({
         linkedin_url: linkedinUrl.trim() || null,
         bio: bio.trim() || null,
         location: location.trim() || null,
-        lead_webhook_url: leadWebhookUrl.trim() || null,
-        calendar_embed_code: calendarEmbedCode.trim() || null,
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -257,6 +277,48 @@ export function BossDashboardSettings({
     } else {
       setWorkspaceSaveMessage("error");
       setWorkspaceSaveError(body.error ?? "Save failed.");
+    }
+  }
+
+  async function handleFunnelSave(e: React.FormEvent) {
+    e.preventDefault();
+    setFunnelSaveMessage(null);
+    setFunnelSaveError(null);
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) return;
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    };
+    if (impersonatingCoachId) {
+      headers["x-impersonate-coach-id"] = impersonatingCoachId;
+    }
+
+    setFunnelSaving(true);
+    const res = await fetch("/api/coach/profile", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({
+        lead_webhook_url: leadWebhookUrl.trim() || null,
+        calendar_embed_code: calendarEmbedCode.trim() || null,
+        landing_copy_overrides: landingEyebrow.trim()
+          ? { eyebrow: landingEyebrow.trim() }
+          : {},
+        landing_variant_preference:
+          landingVariantPref === "" ? null : landingVariantPref,
+      }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    setFunnelSaving(false);
+    if (res.ok) {
+      setFunnelSaveMessage("success");
+      void loadProfile();
+    } else {
+      setFunnelSaveMessage("error");
+      setFunnelSaveError(body.error ?? "Save failed.");
     }
   }
 
@@ -436,13 +498,14 @@ export function BossDashboardSettings({
   const tabDefs: { id: BossDashboardSettingsTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
     { id: "account", label: "Account" },
+    { id: "funnel", label: "Funnel" },
     { id: "workspace", label: "Workspace" },
   ];
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, account security, and coaching tools."
+      description="Profile, account, funnel links, and workspace."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -611,65 +674,6 @@ export function BossDashboardSettings({
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">
-            Assessment booking calendar
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Optional. Paste your calendar embed HTML. This renders on the
-            post-assessment results page so prospects can book immediately.
-          </p>
-          <div className="mt-4 max-w-3xl">
-            <OutlinedTextArea
-              id="calendar_embed_code"
-              label="Embed code"
-              rows={8}
-              value={calendarEmbedCode}
-              onChange={(e) => setCalendarEmbedCode(e.target.value)}
-              placeholder={'<iframe src="https://..." ...></iframe><script src="https://..."></script>'}
-              wrapperClassName="w-full max-w-3xl"
-            />
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-              Leave blank to hide the calendar. Use your provider&apos;s full
-              embed snippet (iframe + external script if required).
-            </p>
-          </div>
-        </section>
-
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">
-            Lead webhook
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Optional. Profit Coach will POST prospect contact details to this
-            URL the moment we have an email, and again with the BOSS score
-            when the assessment finishes. Use the same URL across both events
-            and dedupe in your tool by <code>contact_id</code>.
-          </p>
-          <div className="mt-4 max-w-lg">
-            <OutlinedTextField
-              id="lead_webhook_url"
-              label="Webhook URL"
-              type="url"
-              value={leadWebhookUrl}
-              onChange={(e) => setLeadWebhookUrl(e.target.value)}
-              placeholder="https://hooks.example.com/your-webhook"
-              wrapperClassName="w-full max-w-lg"
-            />
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-              Leave blank to disable. Must start with{" "}
-              <span className="font-mono text-[11px] text-slate-700">
-                http://
-              </span>{" "}
-              or{" "}
-              <span className="font-mono text-[11px] text-slate-700">
-                https://
-              </span>
-              .
-            </p>
-          </div>
-        </section>
-
         <div className="flex items-center gap-4">
           <button
             type="submit"
@@ -686,6 +690,161 @@ export function BossDashboardSettings({
           ) : null}
         </div>
       </form>
+      ) : null}
+
+      {activeTab === "funnel" ? (
+        <form
+          onSubmit={handleFunnelSave}
+          className="flex w-full flex-col gap-8"
+        >
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">Score link</h2>
+            {profile.coach_slug ? (
+              <>
+                <p className="mt-2 text-sm text-slate-600">
+                  Prospects open{" "}
+                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
+                    /score/{profile.coach_slug}
+                  </code>{" "}
+                  (your coach slug in the URL path).
+                </p>
+                <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                  <a
+                    className="font-medium text-sky-700 underline hover:text-sky-900"
+                    href={`/score/${encodeURIComponent(profile.coach_slug)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open
+                  </a>
+                  <span className="text-slate-300">·</span>
+                  <a
+                    className="text-sky-700 underline hover:text-sky-900"
+                    href={`/score/${encodeURIComponent(profile.coach_slug)}?variant=a`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    A
+                  </a>
+                  <a
+                    className="text-sky-700 underline hover:text-sky-900"
+                    href={`/score/${encodeURIComponent(profile.coach_slug)}?variant=b`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    B
+                  </a>
+                </p>
+                <p className="mt-2 text-xs text-slate-500">
+                  Add{" "}
+                  <code className="rounded bg-slate-50 px-1">?company=</code> or{" "}
+                  <code className="rounded bg-slate-50 px-1">?prospect=</code> for
+                  one-off links. Force layout with{" "}
+                  <code className="rounded bg-slate-50 px-1">?variant=a</code> or{" "}
+                  <code className="rounded bg-slate-50 px-1">b</code>.
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-amber-800">
+                You need a coach slug before you can share a score link.
+              </p>
+            )}
+            <div className="mt-6 max-w-lg space-y-4">
+              <OutlinedTextField
+                id="landing_eyebrow"
+                label="Hero eyebrow (version B only)"
+                value={landingEyebrow}
+                onChange={(e) => setLandingEyebrow(e.target.value)}
+                placeholder="e.g. For engineering founders, £500K–£5M"
+                wrapperClassName="w-full max-w-lg"
+              />
+              <div>
+                <label
+                  htmlFor="landing_variant_pref"
+                  className="block text-sm font-medium text-slate-700"
+                >
+                  Default version when they open your link
+                </label>
+                <select
+                  id="landing_variant_pref"
+                  className="mt-1.5 block w-full max-w-md rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  value={landingVariantPref}
+                  onChange={(e) =>
+                    setLandingVariantPref(
+                      e.target.value === "a" ||
+                        e.target.value === "b" ||
+                        e.target.value === "c" ||
+                        e.target.value === "d"
+                        ? e.target.value
+                        : ""
+                    )
+                  }
+                >
+                  <option value="">Let the product decide (A/B)</option>
+                  <option value="a">Always A</option>
+                  <option value="b">Always B</option>
+                  <option value="c">Always C</option>
+                  <option value="d">Always D (same as C, split hero)</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">
+              Booking on results page
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Optional embed after the assessment. Leave blank to hide.
+            </p>
+            <div className="mt-4 max-w-3xl">
+              <OutlinedTextArea
+                id="calendar_embed_code"
+                label="Embed HTML"
+                rows={8}
+                value={calendarEmbedCode}
+                onChange={(e) => setCalendarEmbedCode(e.target.value)}
+                placeholder='<iframe src="https://..." …></iframe>'
+                wrapperClassName="w-full max-w-3xl"
+              />
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-base font-semibold text-slate-900">Lead webhook</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Optional. We POST when we get an email and again with the score — same
+              URL; dedupe on <code className="text-xs">contact_id</code>.
+            </p>
+            <div className="mt-4 max-w-lg">
+              <OutlinedTextField
+                id="lead_webhook_url"
+                label="HTTPS URL"
+                type="url"
+                value={leadWebhookUrl}
+                onChange={(e) => setLeadWebhookUrl(e.target.value)}
+                placeholder="https://example.com/webhook"
+                wrapperClassName="w-full max-w-lg"
+              />
+            </div>
+          </section>
+
+          <div className="flex items-center gap-4">
+            <button
+              type="submit"
+              disabled={funnelSaving}
+              className="rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            >
+              {funnelSaving ? "Saving…" : "Save funnel"}
+            </button>
+            {funnelSaveMessage === "success" ? (
+              <span className="text-sm text-green-700">Saved.</span>
+            ) : null}
+            {funnelSaveMessage === "error" && funnelSaveError ? (
+              <span className="text-sm text-rose-600">{funnelSaveError}</span>
+            ) : null}
+          </div>
+        </form>
       ) : null}
 
       {activeTab === "workspace" ? (

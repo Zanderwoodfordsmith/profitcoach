@@ -1667,7 +1667,7 @@ export function PostDetailModal({
                   ) : null}
                 </div>
               ) : (
-                <>
+                <div className="pb-3">
                   <h2
                     ref={postTitleRef}
                     id="post-detail-title"
@@ -1675,50 +1675,42 @@ export function PostDetailModal({
                   >
                     {post.title}
                   </h2>
-                  <div className="mt-3 text-[calc(1rem+2px)] leading-relaxed text-slate-800">
+                  <div className="mt-2.5 text-[calc(1rem+2px)] leading-normal text-slate-800">
                     {bodyExpanded || !needsBodyTruncation ? (
-                      <>
-                        <CommunityPostMarkdownBody
-                          body={post.body}
-                          nameById={nameById}
-                          profileHrefByUserId={mentionProfileHrefByUserId}
-                        />
-                        {needsBodyTruncation ? (
-                          <button
-                            type="button"
-                            className="mt-2 inline rounded-md bg-sky-50 px-2 py-1 font-medium leading-relaxed text-sky-600 hover:bg-sky-100 hover:text-sky-500"
-                            onClick={() => setBodyExpanded(false)}
-                          >
-                            See less
-                          </button>
-                        ) : null}
-                      </>
+                      <CommunityPostMarkdownBody
+                        body={post.body}
+                        nameById={nameById}
+                        profileHrefByUserId={mentionProfileHrefByUserId}
+                      />
                     ) : (
-                      <div className="text-[calc(1rem+2px)] leading-relaxed">
-                        <div className="relative">
-                          <div className="line-clamp-9 overflow-hidden break-words pr-24">
+                      <div className="relative">
+                        <div className="line-clamp-9 overflow-hidden break-words">
                           <CommunityPostMarkdownBody
                             body={post.body}
                             nameById={nameById}
                             profileHrefByUserId={mentionProfileHrefByUserId}
                             className="block text-inherit"
                           />
-                          <button
-                            type="button"
-                            className="absolute bottom-0 right-0 inline-flex items-center rounded-md bg-white/95 px-2 py-1 font-medium leading-relaxed text-sky-600 shadow-[0_0_0_4px_rgba(255,255,255,0.9)] hover:bg-sky-50 hover:text-sky-500"
-                            onClick={() => setBodyExpanded(true)}
-                          >
-                            <span className="mr-1 text-slate-400" aria-hidden>
+                        </div>
+                        {/* Fade + control sit on the last line only — avoids pr-* on the clamp box (which indents every line). */}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] flex justify-end bg-gradient-to-l from-white from-10% via-white to-transparent py-0.5 pl-16 sm:pl-20">
+                          <div className="pointer-events-auto inline-flex items-baseline gap-0.5">
+                            <span className="text-slate-400" aria-hidden>
                               …
                             </span>
-                            See more
-                          </button>
+                            <button
+                              type="button"
+                              className="font-medium text-sky-600 hover:text-sky-500 hover:underline"
+                              onClick={() => setBodyExpanded(true)}
+                            >
+                              See more
+                            </button>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
-                </>
+                </div>
               )}
             </div>
             {!editing && post.media.length > 0 ? (
@@ -1895,7 +1887,7 @@ export function PostDetailModal({
                               body={c.body}
                               nameById={nameById}
                               profileHrefByUserId={mentionProfileHrefByUserId}
-                              className="mt-1 text-[15px] text-slate-800"
+                              className="mt-1 text-[17px] text-slate-800"
                             />
                           )}
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -2111,7 +2103,7 @@ export function PostDetailModal({
                                             profileHrefByUserId={
                                               mentionProfileHrefByUserId
                                             }
-                                            className="mt-0.5 text-[15px] text-slate-800"
+                                            className="mt-0.5 text-[17px] text-slate-800"
                                           />
                                         )}
                                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">

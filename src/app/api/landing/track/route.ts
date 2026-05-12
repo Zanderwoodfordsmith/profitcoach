@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
-  variant: "a" | "b";
+  variant: "a" | "b" | "c" | "d";
   coach_slug?: string | null;
   event_type: "view" | "start" | "opt_in" | "finish";
   session_id?: string | null;
@@ -13,7 +13,13 @@ type Body = {
 export async function POST(request: Request) {
   const body = (await request.json()) as Body;
 
-  const variant = body.variant === "a" || body.variant === "b" ? body.variant : null;
+  const variant =
+    body.variant === "a" ||
+    body.variant === "b" ||
+    body.variant === "c" ||
+    body.variant === "d"
+      ? body.variant
+      : null;
   const event_type = ["view", "start", "opt_in", "finish"].includes(body.event_type)
     ? body.event_type
     : null;
