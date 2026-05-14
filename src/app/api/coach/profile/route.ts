@@ -296,7 +296,7 @@ type PatchBody = {
   calendar_embed_code?: string | null;
   /** Allowlisted keys only; sanitized server-side (see landingCopy.ts). */
   landing_copy_overrides?: Record<string, unknown> | null;
-  /** When set, /score entry uses this variant if URL and cookie do not override. */
+  /** Reserved for future funnel routing; /score currently always opens landing D. */
   landing_variant_preference?: "a" | "b" | "c" | "d" | null;
 };
 

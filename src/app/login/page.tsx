@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -12,6 +12,9 @@ import {
   authPrimaryButtonClassName,
 } from "@/components/auth/AuthSplitShell";
 
+const PROSPECT_PORTAL_MESSAGE =
+  "This account is linked as a prospect only. The client dashboard is for invited clients. Use your coach’s assessment link to submit or update your BOSS score; your coach will give you portal access when you become a client.";
+
 export default function LoginPage() {
   const router = useRouter();
   const { clearImpersonation, clearContactImpersonation } = useImpersonation();
@@ -20,10 +23,25 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "prospect_portal") {
+      setError(PROSPECT_PORTAL_MESSAGE);
+      setSuccessMessage(null);
+    } else if (params.get("reset") === "success") {
+      setError(null);
+      setSuccessMessage(
+        "Your password was updated. Sign in with your new password."
+      );
+    }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
 
     const { data, error: signInError } =
@@ -53,9 +71,21 @@ export default function LoginPage() {
       if (!res.ok) {
         throw new Error("Request failed");
       }
-      const json = (await res.json()) as { role?: string };
+      const json = (await res.json()) as {
+        role?: string;
+        linked_contact_type?: string | null;
+      };
       if (json.role === "admin" || json.role === "coach" || json.role === "client") {
         role = json.role;
+      }
+      if (
+        role === "client" &&
+        json.linked_contact_type === "prospect"
+      ) {
+        await supabaseClient.auth.signOut();
+        setError(PROSPECT_PORTAL_MESSAGE);
+        setLoading(false);
+        return;
       }
     } catch {
       role = "coach";
@@ -132,7 +162,20 @@ export default function LoginPage() {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
+          <div className="flex justify-end pt-0.5">
+            <Link
+              href="/login/forgot-password"
+              className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
         </div>
+        {successMessage ? (
+          <p className="text-sm text-emerald-700" role="status">
+            {successMessage}
+          </p>
+        ) : null}
         {error ? (
           <p className="text-sm text-rose-600" role="alert">
             {error}

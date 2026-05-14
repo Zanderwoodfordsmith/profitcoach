@@ -229,7 +229,7 @@ export function BossGridBordered({
                   <div className="flex w-full items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <div style={{ width: 3, height: 18, borderRadius: 2, background: pillar.main }} />
-                      <span style={{ fontSize: 13.5, fontWeight: 660, color: pillar.main, letterSpacing: -0.2 }}>
+                      <span style={{ fontSize: 19.5, fontWeight: 660, color: pillar.main, letterSpacing: -0.2 }}>
                         {pillar.name}
                       </span>
                     </div>
@@ -257,7 +257,7 @@ export function BossGridBordered({
               <span style={{ fontSize: 18, fontWeight: 750, color: "#E2E8F0", letterSpacing: -0.5, lineHeight: 1 }}>
                 {level.id}
               </span>
-              <span style={{ fontSize: 10.5, fontWeight: 420, color: "#94A3B8", lineHeight: 1 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 420, color: "#94A3B8", lineHeight: 1 }}>
                 {level.name}
               </span>
             </div>

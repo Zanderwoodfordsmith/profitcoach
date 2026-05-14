@@ -7,10 +7,10 @@ export default function CoachContactsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/coach/prospects");
+    router.replace("/coach/clients");
   }, [router]);
 
   return (
-    <p className="text-sm text-slate-600">Redirecting to prospects…</p>
+    <p className="text-sm text-slate-600">Redirecting to clients…</p>
   );
 }

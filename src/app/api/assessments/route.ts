@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
+import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
 import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -185,18 +186,20 @@ export async function POST(request: Request) {
   }
 
   if (!contactId) {
-    const { data: inserted, error: insertError } = await supabaseAdmin
-      .from("contacts")
-      .insert({
-        coach_id: coachId,
-        type: "prospect",
-        full_name: fullName,
-        email,
-        business_name: businessName,
-        phone,
-      })
-      .select("id")
-      .single();
+    const baseInsert: Record<string, unknown> = {
+      coach_id: coachId,
+      type: "prospect",
+      full_name: fullName,
+      email,
+      business_name: businessName,
+      phone,
+    };
+    const { first_name, last_name } = splitFullName(fullName);
+    if (first_name) baseInsert.first_name = first_name;
+    if (last_name) baseInsert.last_name = last_name;
+
+    let { data: inserted, error: insertError } =
+      await tryInsertContactStripping(baseInsert);
 
     if (insertError || !inserted) {
       // A lead-capture request may race this endpoint and insert the same
@@ -213,44 +216,57 @@ export async function POST(request: Request) {
         } else {
           console.error("assessments contact insert race lookup:", racedLookupError);
           return NextResponse.json(
-            { error: "Failed to create contact" },
+            {
+              error: "Failed to create contact",
+              detail: racedLookupError?.message ?? null,
+              code: racedLookupError?.code ?? null,
+            },
             { status: 500 }
           );
         }
-      } else if (insertError?.code === "23502" && !email) {
-        // Some deployments may still enforce NOT NULL on contacts.email.
-        // Keep the assessment flow non-blocking by inserting with a safe
-        // placeholder address.
-        const placeholderEmail = `unknown+${randomUUID()}@noemail.local`;
+      } else if (insertError?.code === "23502") {
+        // NOT NULL violation. Try with a placeholder email; if that still
+        // fails, surface the actual column name so we can fix it.
+        const placeholderEmail = email
+          ? email
+          : `unknown+${randomUUID()}@noemail.local`;
         const { data: insertedWithPlaceholder, error: placeholderError } =
-          await supabaseAdmin
-            .from("contacts")
-            .insert({
-              coach_id: coachId,
-              type: "prospect",
-              full_name: fullName,
-              email: placeholderEmail,
-              business_name: businessName,
-              phone,
-            })
-            .select("id")
-            .single();
+          await tryInsertContactStripping({
+            ...baseInsert,
+            email: placeholderEmail,
+          });
         if (!placeholderError && insertedWithPlaceholder?.id) {
           contactId = insertedWithPlaceholder.id as string;
         } else {
           console.error(
             "assessments contact insert placeholder retry:",
-            placeholderError
+            placeholderError,
+            "payload:",
+            { ...baseInsert, email: placeholderEmail }
           );
           return NextResponse.json(
-            { error: "Failed to create contact" },
+            {
+              error: "Failed to create contact",
+              detail: placeholderError?.message ?? insertError?.message ?? null,
+              code: placeholderError?.code ?? insertError?.code ?? null,
+            },
             { status: 500 }
           );
         }
       } else {
-        console.error("assessments contact insert:", insertError);
+        console.error(
+          "assessments contact insert:",
+          insertError,
+          "payload:",
+          baseInsert
+        );
         return NextResponse.json(
-          { error: "Failed to create contact" },
+          {
+            error: "Failed to create contact",
+            detail: insertError?.message ?? null,
+            code: insertError?.code ?? null,
+            hint: insertError?.hint ?? null,
+          },
           { status: 500 }
         );
       }

@@ -15,7 +15,8 @@
     "backfill-stripe-payments": "npx tsx scripts/backfill-stripe-payments.ts",
     "import-disco-members": "npx tsx scripts/import-disco-members-from-csv.ts",
     "import-member-avatars": "npx tsx scripts/import-member-avatars-from-folder.ts",
-    "import-community-posts": "npx tsx scripts/import-community-posts-from-csv.ts"
+    "import-community-posts": "npx tsx scripts/import-community-posts-from-csv.ts",
+    "export-boss-questions-csv": "npx tsx scripts/export-boss-methodology-questions-csv.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

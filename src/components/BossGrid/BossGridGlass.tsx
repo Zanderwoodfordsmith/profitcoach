@@ -139,22 +139,22 @@ export function BossGridGlass({
         {showHeaders && (
           <>
             <div className="flex flex-col justify-center items-center p-2 min-w-0 bg-transparent" />
-            <div className="flex flex-col justify-center items-center p-3 font-medium leading-tight text-white bg-[#a21caf] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-center p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#a21caf] rounded-t-lg shadow-sm">
               Foundation
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 font-medium leading-tight text-white bg-[#0c5290] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#0c5290] rounded-t-lg shadow-sm">
               <div className="flex w-full items-center justify-between gap-2">
                 <span>Clarify Vision</span>
                 <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.vision / 30) * 100)}%</span>
               </div>
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 font-medium leading-tight text-white bg-[#42a1ee] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#42a1ee] rounded-t-lg shadow-sm">
               <div className="flex w-full items-center justify-between gap-2">
                 <span>Control Velocity</span>
                 <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.velocity / 30) * 100)}%</span>
               </div>
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 font-medium leading-tight text-white bg-[#1ca0c2] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#1ca0c2] rounded-t-lg shadow-sm">
               <div className="flex w-full items-center justify-between gap-2">
                 <span>Create Value</span>
                 <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.value / 30) * 100)}%</span>
@@ -171,7 +171,7 @@ export function BossGridGlass({
             aria-label={`Level ${level.id}, ${level.name}`}
           >
             <span className="text-[0.65rem] font-medium text-slate-400 tracking-wide">L{level.id}</span>
-            <span className="text-sm font-medium text-slate-500 leading-tight">{level.name}</span>
+            <span className="text-[18px] font-medium text-slate-500 leading-tight">{level.name}</span>
           </div>
         ))}
         {PILLAR_AREA_INDICES.map((areaIndices, pillarIdx) => (

@@ -87,6 +87,11 @@ type BossWheelProps = {
   viewMode?: "areas" | "pillars" | "levels";
   /** When false, hides the pillar/area legend column (e.g. marketing hero). Default true. */
   showLegend?: boolean;
+  /**
+   * Where to show total BOSS score when `totalScore` is set.
+   * `aside` = column left of wheel (default). `wheel-lower-left` = card inside the SVG, lower-left.
+   */
+  scorePlacement?: "aside" | "wheel-lower-left";
 };
 
 export function BossWheel({
@@ -97,6 +102,7 @@ export function BossWheel({
   colorScheme = "default",
   viewMode = "areas",
   showLegend = true,
+  scorePlacement = "aside",
 }: BossWheelProps) {
   const colors = colorScheme === "alt" ? WHEEL_COLORS_ALT : WHEEL_COLORS;
   const isPillarView = viewMode === "pillars";
@@ -119,17 +125,23 @@ export function BossWheel({
   const startAngle = -Math.PI / 2;
   const step = (2 * Math.PI) / segmentCount;
 
+  const showScoreAside = totalScore != null && scorePlacement === "aside";
+
   return (
     <div className="flex flex-wrap items-end justify-center gap-8 md:gap-12">
-      {totalScore != null && (
+      {showScoreAside ? (
         <div className="flex flex-col items-center shrink-0 order-2 md:order-1 pb-2">
           <span className="block text-4xl font-bold text-slate-500">{totalScore}</span>
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             BOSS SCORE
           </span>
         </div>
-      )}
-      <div className="shrink-0 order-1 md:order-2 w-[320px] sm:w-[400px] md:w-[520px] lg:w-[600px]">
+      ) : null}
+      <div
+        className={`shrink-0 w-[320px] sm:w-[400px] md:w-[520px] lg:w-[600px] ${
+          showScoreAside ? "order-1 md:order-2" : "order-1"
+        }`}
+      >
       <svg
         viewBox="0 0 965 965"
         className="w-full h-auto"
@@ -336,6 +348,33 @@ export function BossWheel({
             </text>
           );
         })}
+        {totalScore != null && scorePlacement === "wheel-lower-left" ? (
+          <g>
+            <text
+              x="18"
+              y="910"
+              fill="#0f172a"
+              fontSize="72"
+              fontWeight="700"
+              style={{
+                fontFamily:
+                  "var(--font-pc-ds-mono), ui-monospace, SFMono-Regular, Menlo, monospace",
+              }}
+            >
+              {totalScore}
+            </text>
+            <text
+              x="22"
+              y="952"
+              fill="#64748b"
+              fontSize="15"
+              fontWeight="600"
+              letterSpacing="0.22em"
+            >
+              BOSS SCORE
+            </text>
+          </g>
+        ) : null}
       </svg>
       </div>
       {showLegend ? (

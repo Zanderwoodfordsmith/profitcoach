@@ -391,7 +391,7 @@ export default function ClientDashboardPage() {
                     }}
                     className="h-3.5 w-3.5 rounded border-slate-500 bg-slate-800 text-red-400 focus:ring-red-500"
                   />
-                  <span className="text-red-400">Red</span>
+                  <span className="text-red-400">Needs attention</span>
                 </label>
                 <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-300">
                   <input
@@ -406,7 +406,7 @@ export default function ClientDashboardPage() {
                     }}
                     className="h-3.5 w-3.5 rounded border-slate-500 bg-slate-800 text-amber-400 focus:ring-amber-500"
                   />
-                  <span className="text-amber-400">Amber</span>
+                  <span className="text-amber-400">Building</span>
                 </label>
                 <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-300">
                   <input
@@ -421,7 +421,7 @@ export default function ClientDashboardPage() {
                     }}
                     className="h-3.5 w-3.5 rounded border-slate-500 bg-slate-800 text-emerald-400 focus:ring-emerald-500"
                   />
-                  <span className="text-emerald-400">Green</span>
+                  <span className="text-emerald-400">On track</span>
                 </label>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-4" role="group" aria-label="Section and table colors">

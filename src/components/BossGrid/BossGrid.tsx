@@ -1,18 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
 import { LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import {
   computePillarScores,
   type AnswersMap,
-  type PillarScores,
 } from "@/lib/bossScores";
+import { BossQuestionTooltipPortal, useBossQuestionTooltip } from "./bossQuestionTooltip";
 import { SpeedDials } from "./SpeedDials";
-
-const TOOLTIP_DELAY_MS = 800;
 
 export type BossGridProps = {
   answers: AnswersMap;
@@ -87,41 +82,10 @@ export function BossGrid({
 }: BossGridProps) {
   const router = useRouter();
   const pillarScores = computePillarScores(answers);
-  const [tooltip, setTooltip] = useState<{ ref: string; rect: { left: number; top: number; bottom: number } } | null>(null);
-  const [tooltipVisible, setTooltipVisible] = useState(false);
-  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
-    };
-  }, []);
-
-  const handleCellHover = useCallback((ref: string | null, element: HTMLElement | null) => {
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-    if (!ref || !element) {
-      setTooltip(null);
-      setTooltipVisible(false);
-      return;
-    }
-    const rect = element.getBoundingClientRect();
-    setTooltip({ ref, rect: { left: rect.left, top: rect.top, bottom: rect.bottom } });
-    setTooltipVisible(false);
-    tooltipTimeoutRef.current = setTimeout(() => {
-      tooltipTimeoutRef.current = null;
-      setTooltipVisible(true);
-    }, TOOLTIP_DELAY_MS);
-  }, []);
+  const { tooltip, tooltipVisible, handleCellHover, dismissTooltip } = useBossQuestionTooltip();
 
   const LEVEL_COL_WIDTH = 92;
   const gridCols = `${LEVEL_COL_WIDTH}px 1fr 3fr 3fr 3fr`;
-
-  const question = tooltip && tooltipVisible
-    ? ASSESSMENT_QUESTIONS.find((q) => q.ref === tooltip.ref)
-    : null;
 
   return (
     <div className="flex flex-col w-full min-w-[1100px]">
@@ -139,22 +103,22 @@ export function BossGrid({
           <>
             {/* Row 1: corner, pillar headers */}
             <div className="flex flex-col justify-center items-center p-2 min-w-0 bg-transparent" />
-            <div className="flex flex-col justify-center items-center p-3 font-medium leading-tight text-white bg-[#a21caf] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-center p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#a21caf] rounded-t-lg shadow-sm">
               Foundation
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 font-medium leading-tight text-white bg-[#0c5290] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#0c5290] rounded-t-lg shadow-sm">
               <div className="flex w-full items-center justify-between gap-2">
                 <span>Clarify Vision</span>
                 <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.vision / 30) * 100)}%</span>
               </div>
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 font-medium leading-tight text-white bg-[#42a1ee] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#42a1ee] rounded-t-lg shadow-sm">
               <div className="flex w-full items-center justify-between gap-2">
                 <span>Control Velocity</span>
                 <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.velocity / 30) * 100)}%</span>
               </div>
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 font-medium leading-tight text-white bg-[#1ca0c2] rounded-t-lg shadow-sm">
+            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#1ca0c2] rounded-t-lg shadow-sm">
               <div className="flex w-full items-center justify-between gap-2">
                 <span>Create Value</span>
                 <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.value / 30) * 100)}%</span>
@@ -172,7 +136,7 @@ export function BossGrid({
             aria-label={`Level ${level.id}, ${level.name}`}
           >
             <span className="text-[0.65rem] font-medium text-slate-400 tracking-wide">L{level.id}</span>
-            <span className="text-sm font-medium text-slate-500 leading-tight">{level.name}</span>
+            <span className="text-[18px] font-medium text-slate-500 leading-tight">{level.name}</span>
           </div>
         ))}
         {/* Four pillar cards: each spans rows 2-8, white bg */}
@@ -203,37 +167,14 @@ export function BossGrid({
           </div>
         ))}
       </div>
-      {typeof document !== "undefined" &&
-        question &&
-        tooltip &&
-        tooltipVisible &&
-        createPortal(
-          <div
-            className="fixed z-50 max-w-sm rounded-lg border border-slate-200 bg-white p-3 shadow-lg"
-            style={{
-              left: Math.min(tooltip.rect.left, typeof window !== "undefined" ? window.innerWidth - 336 : tooltip.rect.left),
-              top: tooltip.rect.bottom + 6,
-            }}
-            role="tooltip"
-          >
-            <p className="mb-2 text-sm font-medium text-slate-900">{question.question}</p>
-            <ul className="space-y-1 text-xs text-slate-600">
-              <li>
-                <span className="font-semibold text-red-600">Not in place:</span>{" "}
-                {question.scoringGuide.red}
-              </li>
-              <li>
-                <span className="font-semibold text-amber-600">Partially:</span>{" "}
-                {question.scoringGuide.amber}
-              </li>
-              <li>
-                <span className="font-semibold text-emerald-600">Fully in place:</span>{" "}
-                {question.scoringGuide.green}
-              </li>
-            </ul>
-          </div>,
-          document.body
-        )}
+      <BossQuestionTooltipPortal
+        tooltip={tooltip}
+        tooltipVisible={tooltipVisible}
+        getPlaybookUrl={
+          playbookLinkBase ? (ref: string) => `${playbookLinkBase}/${ref}` : undefined
+        }
+        onDismiss={playbookLinkBase ? dismissTooltip : undefined}
+      />
     </div>
   );
 }

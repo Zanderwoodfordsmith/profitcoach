@@ -1,71 +1,56 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 
+import { LEVELS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
 
 export type { PlaybookSummary };
 
-const DESCRIPTION_PLACEHOLDER = "Content coming soon.";
+const DESCRIPTION_PLACEHOLDER = "What this playbook covers and why it matters—a concise overview so you know before you dive in.";
 
 type ScoreVariant = 0 | 1 | 2 | undefined;
 type StatusVariant = "locked" | "in_progress" | "implemented";
 
-const CARD_COLORS = {
-  red: "#FFD7D8",
-  yellow: "#FCF3DC",
-  green: "#E8F4E8",
-} as const;
+/** Soft hero bands per BOSS area — same palette language as the blog index hero. */
+const AREA_HERO_GRADIENTS: readonly string[] = [
+  "linear-gradient(145deg, rgb(252 231 243) 0%, rgb(233 213 255) 42%, rgb(224 242 254) 100%)",
+  "linear-gradient(145deg, rgb(219 234 254) 0%, rgb(207 250 254) 48%, rgb(254 249 195) 100%)",
+  "linear-gradient(145deg, rgb(254 215 170) 0%, rgb(253 230 224) 45%, rgb(224 242 254) 100%)",
+  "linear-gradient(145deg, rgb(204 251 241) 0%, rgb(221 214 254) 50%, rgb(254 202 202) 100%)",
+  "linear-gradient(145deg, rgb(207 250 254) 0%, rgb(224 231 255) 48%, rgb(243 232 255) 100%)",
+  "linear-gradient(145deg, rgb(186 230 253) 0%, rgb(221 214 254) 45%, rgb(254 240 240) 100%)",
+  "linear-gradient(145deg, rgb(165 243 252) 0%, rgb(191 219 254) 48%, rgb(251 207 232) 100%)",
+  "linear-gradient(145deg, rgb(199 210 254) 0%, rgb(207 250 254) 42%, rgb(233 213 255) 100%)",
+  "linear-gradient(145deg, rgb(153 246 228) 0%, rgb(224 231 255) 48%, rgb(254 202 202) 100%)",
+  "linear-gradient(145deg, rgb(228 230 255) 0%, rgb(254 215 170) 46%, rgb(224 242 254) 100%)",
+];
 
-const SCORE_STYLES: Record<NonNullable<ScoreVariant>, { bg: string; icon: string; border: string }> = {
-  0: { bg: CARD_COLORS.red, icon: "text-red-800", border: "border-red-200" },
-  1: { bg: CARD_COLORS.yellow, icon: "text-amber-800", border: "border-amber-200" },
-  2: { bg: CARD_COLORS.green, icon: "text-emerald-800", border: "border-emerald-200" },
+const SCORE_BAR: Record<NonNullable<ScoreVariant>, string> = {
+  0: "bg-rose-400/90",
+  1: "bg-amber-400/90",
+  2: "bg-emerald-400/90",
 };
 
-const STATUS_STYLES: Record<StatusVariant, { bg: string; icon: string; border: string }> = {
-  locked: { bg: "#f8fafc", icon: "text-slate-600", border: "border-slate-200" },
-  in_progress: { bg: CARD_COLORS.yellow, icon: "text-amber-800", border: "border-amber-200" },
-  implemented: { bg: CARD_COLORS.green, icon: "text-emerald-800", border: "border-emerald-200" },
+const STATUS_LABEL: Record<StatusVariant, string> = {
+  locked: "Locked",
+  in_progress: "In progress",
+  implemented: "Implemented",
 };
-
-const DEFAULT_STYLE = {
-  bg: "#f8fafc",
-  icon: "text-slate-700",
-  border: "border-slate-200",
-};
-
-function PlaybookIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 48 48"
-      fill="currentColor"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      {/* Geometric floral motif - overlapping petal shapes in a circle */}
-      <circle cx="24" cy="24" r="6" opacity="0.4" />
-      <ellipse cx="36" cy="24" rx="6" ry="10" opacity="0.9" />
-      <ellipse cx="30" cy="14" rx="6" ry="10" transform="rotate(-60 30 14)" opacity="0.9" />
-      <ellipse cx="18" cy="14" rx="6" ry="10" transform="rotate(60 18 14)" opacity="0.9" />
-      <ellipse cx="12" cy="24" rx="6" ry="10" opacity="0.9" />
-      <ellipse cx="18" cy="34" rx="6" ry="10" transform="rotate(-60 18 34)" opacity="0.9" />
-      <ellipse cx="30" cy="34" rx="6" ry="10" transform="rotate(60 30 34)" opacity="0.9" />
-    </svg>
-  );
-}
 
 type PlaybookCardProps = {
   summary: PlaybookSummary;
   href: string;
-  /** Score 0=red, 1=amber, 2=green. Used for client view with assessment. */
   score?: ScoreVariant;
-  /** Status for coach view. Overrides score if both provided. */
   status?: StatusVariant;
-  /** If true, card appears muted (e.g. locked playbook) */
   locked?: boolean;
 };
+
+export function areaHeroGradient(areaId: number): string {
+  const safe = Math.max(0, Math.min(AREA_HERO_GRADIENTS.length - 1, areaId));
+  return AREA_HERO_GRADIENTS[safe] ?? AREA_HERO_GRADIENTS[0]!;
+}
 
 export function PlaybookCard({
   summary,
@@ -75,59 +60,121 @@ export function PlaybookCard({
   locked = false,
 }: PlaybookCardProps) {
   const useStatus = status !== undefined;
-  const style = useStatus
-    ? STATUS_STYLES[status]
-    : score !== undefined
-      ? SCORE_STYLES[score]
-      : DEFAULT_STYLE;
-
-  const iconClass = locked ? "text-slate-400" : style.icon;
+  const heroGradient = areaHeroGradient(summary.area);
   const hasDescription = Boolean(summary.description?.trim());
   const displayDescription = hasDescription ? summary.description : DESCRIPTION_PLACEHOLDER;
+
+  const levelName = LEVELS.find((l) => l.id === summary.level)?.name ?? `Level ${summary.level}`;
+  const metaLine = `Level ${summary.level} · ${levelName}`;
+
+  const cover = summary.coverImageUrl?.trim();
 
   return (
     <Link
       href={href}
-      className={`group flex min-w-0 flex-col rounded-2xl border p-5 pt-8 transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 ${
-        style.border
-      } ${locked ? "opacity-80" : ""}`}
-      style={{
-        background: style.bg,
-        aspectRatio: "160/244",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.06), 0 4px 24px rgba(0,0,0,0.04)",
-      }}
+      className={`group flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[1.25rem] border border-slate-200/90 bg-white text-left shadow-[0_2px_14px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1 hover:border-slate-300/90 hover:shadow-[0_18px_44px_-16px_rgba(12,82,144,0.38)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290] focus-visible:ring-offset-2 ${
+        locked ? "opacity-[0.92]" : ""
+      }`}
     >
-      <div className="relative flex shrink-0 justify-center">
-        <div className="relative flex h-28 w-28 items-center justify-center">
-          <div
-            className="absolute inset-0 rounded-full blur-2xl"
-            style={{
-              background: "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 60%)",
-            }}
-          />
-          <div className="relative z-10">
-            <PlaybookIcon className={`h-14 w-14 shrink-0 ${iconClass}`} />
+      <div className="relative">
+        {cover ? (
+          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+            {cover.startsWith("http://") || cover.startsWith("https://") ? (
+              // Covers may come from external CDNs not configured in next.config images.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cover}
+                alt={summary.name}
+                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+              />
+            ) : (
+              <Image
+                src={cover}
+                alt={summary.name}
+                fill
+                className="object-cover transition duration-500 group-hover:scale-[1.03]"
+                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 33vw, 18vw"
+              />
+            )}
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-900/35 via-transparent to-transparent"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-transparent"
+              aria-hidden
+            />
           </div>
-        </div>
+        ) : (
+          <div
+            className="relative aspect-[16/10] w-full overflow-hidden"
+            style={{
+              background: heroGradient,
+            }}
+          >
+            <div
+              className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/45 via-transparent to-transparent"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/25 blur-2xl"
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute -bottom-10 left-1/4 h-28 w-52 rounded-full bg-[#0c5290]/10 blur-3xl"
+              aria-hidden
+            />
+          </div>
+        )}
+
+        {(locked || useStatus) && (
+          <div className="absolute right-3 top-3 flex flex-wrap items-center justify-end gap-1.5">
+            {locked ? (
+              <span className="rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
+                Locked
+              </span>
+            ) : null}
+            {useStatus ? (
+              <span className="rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700 shadow-sm ring-1 ring-black/5 backdrop-blur-sm">
+                {STATUS_LABEL[status]}
+              </span>
+            ) : null}
+          </div>
+        )}
+
+        {score !== undefined && !useStatus ? (
+          <div className={`h-1 w-full ${SCORE_BAR[score]}`} aria-hidden />
+        ) : (
+          <div className="h-1 w-full bg-gradient-to-r from-transparent via-slate-200/80 to-transparent" aria-hidden />
+        )}
       </div>
-      <div className="mt-auto flex flex-1 flex-col justify-end pb-1 pt-6">
-        <h3
-          className="text-left text-base font-semibold leading-tight group-hover:text-sky-700"
-          style={{ color: "rgba(0,0,0,0.8)" }}
-        >
+
+      <div className="flex flex-1 flex-col px-5 pb-5 pt-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#0c5290] sm:text-[11px]">
+          {metaLine}
+        </p>
+        <h3 className="mt-2.5 font-semibold leading-snug tracking-[-0.02em] text-slate-900 transition-colors group-hover:text-[#0c5290] sm:text-[1.125rem]">
           {summary.name}
         </h3>
         <p
-          className={`mt-2 line-clamp-2 min-h-[2.5rem] text-left text-sm leading-relaxed ${
-            hasDescription ? "" : "italic"
+          className={`mt-3 line-clamp-3 text-sm leading-relaxed text-slate-600 ${
+            hasDescription ? "" : "italic text-slate-500"
           }`}
-          style={{ color: hasDescription ? "rgba(0,0,0,0.6)" : "rgba(0,0,0,0.5)" }}
         >
           {displayDescription}
         </p>
-        <div className="mt-3 text-left text-xs" style={{ color: "rgba(0,0,0,0.5)" }}>
-          {summary.playCount} {summary.playCount === 1 ? "action" : "actions"}
-        </div>
+        <p className="mt-auto pt-5 text-sm font-semibold text-slate-900">
+          Open playbook{" "}
+          <span
+            className="inline-block transition-transform duration-300 group-hover:translate-x-1"
+            aria-hidden
+          >
+            →
+          </span>
+        </p>
+        <p className="mt-2 text-xs text-slate-400">
+          {summary.playCount} {summary.playCount === 1 ? "action" : "actions"} inside
+        </p>
       </div>
     </Link>
   );

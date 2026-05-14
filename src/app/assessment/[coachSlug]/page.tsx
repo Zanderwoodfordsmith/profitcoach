@@ -306,7 +306,11 @@ export default function AssessmentPage({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? "Failed to save assessment");
+        const base = body?.error ?? "Failed to save assessment";
+        const detail = body?.detail
+          ? ` — ${body.detail}${body?.code ? ` (${body.code})` : ""}`
+          : "";
+        throw new Error(`${base}${detail}`);
       }
       try {
         sessionStorage.setItem(

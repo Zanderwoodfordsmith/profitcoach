@@ -2,13 +2,10 @@
 
 import { Suspense, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import {
-  resolveScoreEntryRoute,
-  searchParamsWithoutVariant,
-} from "@/lib/funnelVariant";
+import { searchParamsWithoutVariant } from "@/lib/funnelVariant";
 
 /**
- * /score/demo → same split as /score?coach=demo, but with a cleaner share URL.
+ * /score/demo → same destination as /score?coach=demo, with a cleaner share URL.
  * The path segment is the coach slug (database `coaches.slug`), not display name.
  */
 function ScoreCoachRedirect() {
@@ -17,19 +14,12 @@ function ScoreCoachRedirect() {
   const params = useParams();
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const raw = params.coachSlug;
-      const coachSlug = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
-      const sp = new URLSearchParams(searchParams.toString());
-      if (coachSlug) sp.set("coach", coachSlug);
-      const route = await resolveScoreEntryRoute(sp);
-      const suffix = searchParamsWithoutVariant(sp);
-      if (!cancelled) router.replace(`/${route}${suffix}`);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const raw = params.coachSlug;
+    const coachSlug = (Array.isArray(raw) ? raw[0] : raw)?.trim() ?? "";
+    const sp = new URLSearchParams(searchParams.toString());
+    if (coachSlug) sp.set("coach", coachSlug);
+    const suffix = searchParamsWithoutVariant(sp);
+    router.replace(`/landing/d${suffix}`);
   }, [router, searchParams, params]);
 
   return (

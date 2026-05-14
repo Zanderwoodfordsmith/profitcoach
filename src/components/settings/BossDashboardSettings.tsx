@@ -717,31 +717,16 @@ export function BossDashboardSettings({
                   >
                     Open
                   </a>
-                  <span className="text-slate-300">·</span>
-                  <a
-                    className="text-sky-700 underline hover:text-sky-900"
-                    href={`/score/${encodeURIComponent(profile.coach_slug)}?variant=a`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    A
-                  </a>
-                  <a
-                    className="text-sky-700 underline hover:text-sky-900"
-                    href={`/score/${encodeURIComponent(profile.coach_slug)}?variant=b`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    B
-                  </a>
                 </p>
                 <p className="mt-2 text-xs text-slate-500">
                   Add{" "}
                   <code className="rounded bg-slate-50 px-1">?company=</code> or{" "}
                   <code className="rounded bg-slate-50 px-1">?prospect=</code> for
-                  one-off links. Force layout with{" "}
-                  <code className="rounded bg-slate-50 px-1">?variant=a</code> or{" "}
-                  <code className="rounded bg-slate-50 px-1">b</code>.
+                  one-off links. Preview other layouts from{" "}
+                  <code className="rounded bg-slate-50 px-1">/landing/a</code>
+                  {" "}through{" "}
+                  <code className="rounded bg-slate-50 px-1">/landing/d</code> with{" "}
+                  <code className="rounded bg-slate-50 px-1">?coach=</code>.
                 </p>
               </>
             ) : (
@@ -763,7 +748,7 @@ export function BossDashboardSettings({
                   htmlFor="landing_variant_pref"
                   className="block text-sm font-medium text-slate-700"
                 >
-                  Default version when they open your link
+                  Default version (not applied to /score while it opens D only)
                 </label>
                 <select
                   id="landing_variant_pref"
@@ -780,7 +765,7 @@ export function BossDashboardSettings({
                     )
                   }
                 >
-                  <option value="">Let the product decide (A/B)</option>
+                  <option value="">No preference</option>
                   <option value="a">Always A</option>
                   <option value="b">Always B</option>
                   <option value="c">Always C</option>

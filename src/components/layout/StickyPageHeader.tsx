@@ -6,7 +6,8 @@ import { PageHeaderDescriptionInfo } from "./PageHeaderDescriptionInfo";
 export type PageHeaderDescriptionPlacement = "info" | "below";
 
 export type StickyPageHeaderProps = {
-  title: ReactNode;
+  /** Omit when the page body supplies the main title (e.g. article hero). */
+  title?: ReactNode;
   /**
    * Inline after the title (same row, left-aligned tab group with a gap from
    * the title). Prefer `PageHeaderUnderlineTabs` for underline tabs.
@@ -29,7 +30,7 @@ export type StickyPageHeaderProps = {
   className?: string;
   /**
    * Negative horizontal margin + padding so the bar spans the main column.
-   * Set `false` to disable (e.g. nested layouts). Default matches `main` px-6.
+   * Set `false` to disable (e.g. nested layouts). Default matches coach/admin `main` horizontal padding.
    */
   bleedInset?: string | false;
 };
@@ -44,7 +45,7 @@ export function StickyPageHeader({
   below,
   actions,
   className,
-  bleedInset = "-mx-6 px-6",
+  bleedInset = "-mx-[60px] px-[60px]",
 }: StickyPageHeaderProps) {
   const shell = [
     "sticky top-0 z-10 border-b border-slate-200/90 bg-white pb-1 pt-4 shadow-sm",
@@ -74,9 +75,11 @@ export function StickyPageHeader({
             }
           >
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                {title}
-              </h1>
+              {title != null && title !== "" ? (
+                <h1 className="py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                  {title}
+                </h1>
+              ) : null}
               {description && descriptionPlacement === "info" ? (
                 <PageHeaderDescriptionInfo>
                   {description}

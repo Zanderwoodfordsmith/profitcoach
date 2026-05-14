@@ -1,9 +1,9 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { StickyPageHeader } from "@/components/layout";
+
+import { PlaybookBlogShell } from "@/components/playbooks/PlaybookBlogShell";
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { PlaybookContent as PlaybookContentType } from "@/lib/playbookContentTypes";
@@ -14,7 +14,6 @@ export default function CoachContactPlaybookDetailPage({
   params: Promise<{ id: string; ref: string }>;
 }) {
   const { id: contactId, ref } = use(params);
-  const router = useRouter();
   const [content, setContent] = useState<PlaybookContentType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +21,11 @@ export default function CoachContactPlaybookDetailPage({
   const meta = getPlaybookMeta(ref);
   if (!meta) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-rose-600">Playbook not found.</p>
         <Link
           href={`/coach/contacts/${contactId}/playbooks`}
-          className="text-sm text-sky-700 underline"
+          className="text-sm text-[#0c5290] underline"
         >
           Back to Playbooks
         </Link>
@@ -53,7 +52,7 @@ export default function CoachContactPlaybookDetailPage({
 
   if (loading || !content) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -61,11 +60,11 @@ export default function CoachContactPlaybookDetailPage({
 
   if (error) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-rose-600">{error}</p>
         <Link
           href={`/coach/contacts/${contactId}/playbooks`}
-          className="text-sm text-sky-700 underline"
+          className="text-sm text-[#0c5290] underline"
         >
           Back to Playbooks
         </Link>
@@ -74,31 +73,20 @@ export default function CoachContactPlaybookDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <StickyPageHeader
-        leading={
-          <Link
-            href={`/coach/contacts/${contactId}/playbooks`}
-            className="text-xs text-slate-500 hover:text-slate-700"
-          >
-            ← Back to Playbooks
-          </Link>
-        }
-        title={`${content.ref} ${content.name} Playbook`}
-        descriptionPlacement="below"
-        description={
-          <span className="text-slate-500">{content.subtitle}</span>
-        }
+    <PlaybookBlogShell
+      backHref={`/coach/contacts/${contactId}/playbooks`}
+      backLabel="Contact playbooks"
+      secondaryNav={{
+        href: `/coach/contacts/${contactId}`,
+        label: "Contact",
+      }}
+    >
+      <PlaybookTabs
+        content={content}
+        showClientTab={true}
+        showCoachesTab={true}
+        basePath={`/coach/contacts/${contactId}/playbooks`}
       />
-
-      <div className="w-full">
-        <PlaybookTabs
-          content={content}
-          showClientTab={true}
-          showCoachesTab={true}
-          basePath={`/coach/contacts/${contactId}/playbooks`}
-        />
-      </div>
-    </div>
+    </PlaybookBlogShell>
   );
 }

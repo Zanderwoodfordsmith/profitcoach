@@ -40,6 +40,20 @@ export async function POST(request: Request) {
       coach_slug = coachRow?.slug ?? null;
     }
 
+    /** Contacts linked to this auth user (client portal). Prospects must not use the client app. */
+    let linked_contact_type: string | null = null;
+    const { data: contactRows } = await supabaseAdmin
+      .from("contacts")
+      .select("type")
+      .eq("user_id", body.userId)
+      .limit(20);
+    if (contactRows && contactRows.length > 0) {
+      const types = (contactRows as { type: string }[]).map((r) => r.type);
+      if (types.includes("prospect")) linked_contact_type = "prospect";
+      else if (types.includes("client")) linked_contact_type = "client";
+      else linked_contact_type = types[0] ?? null;
+    }
+
     return NextResponse.json(
       {
         role,
@@ -47,6 +61,7 @@ export async function POST(request: Request) {
         coach_business_name: profile?.coach_business_name ?? null,
         avatar_url: profile?.avatar_url ?? null,
         coach_slug,
+        linked_contact_type,
       },
       { status: 200 }
     );

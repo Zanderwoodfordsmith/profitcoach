@@ -2,10 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  resolveScoreEntryRoute,
-  searchParamsWithoutVariant,
-} from "@/lib/funnelVariant";
+import { searchParamsWithoutVariant } from "@/lib/funnelVariant";
 
 /** Share links: `/score?coach=slug` or cleaner `/score/slug` (slug = coaches.slug, not display name). */
 
@@ -14,15 +11,8 @@ function ScoreRedirect() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const route = await resolveScoreEntryRoute(searchParams);
-      const suffix = searchParamsWithoutVariant(searchParams);
-      if (!cancelled) router.replace(`/${route}${suffix}`);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const suffix = searchParamsWithoutVariant(searchParams);
+    router.replace(`/landing/d${suffix}`);
   }, [router, searchParams]);
 
   return (

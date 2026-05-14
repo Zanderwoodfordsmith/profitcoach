@@ -187,7 +187,7 @@ export type LandingVariantCProps = {
 };
 
 export function LandingVariantC({
-  landingContent: _landingContent,
+  landingContent,
   prospectCompany,
   prospectName,
   scrollToForm,
@@ -232,7 +232,8 @@ export function LandingVariantC({
             {splitHero ? (
               <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center lg:gap-12 xl:gap-16">
                 <div className="flex min-w-0 flex-col items-start text-left">
-                  <h1 className="text-balance text-[clamp(36px,5vw,56px)] font-light leading-[1.1] tracking-[-0.08em] text-white [text-shadow:0_2px_28px_rgba(0,0,0,0.35)] xl:text-[clamp(36px,4vw,64px)]">
+                  <EyebrowDark>{landingContent.eyebrow}</EyebrowDark>
+                  <h1 className="mt-5 text-balance text-[clamp(40px,6.2vw,62px)] font-light leading-[1.08] tracking-[-0.08em] text-white [text-shadow:0_2px_28px_rgba(0,0,0,0.35)] lg:text-[clamp(42px,5.4vw,68px)] xl:text-[clamp(44px,4.8vw,76px)]">
                     Are You Running Your Business{" "}
                     <span
                       className="bg-clip-text font-semibold text-transparent"

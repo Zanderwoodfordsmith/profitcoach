@@ -46,7 +46,7 @@ export function PageHeaderDescriptionInfo({
         <div
           id={panelId}
           role="tooltip"
-          className="absolute left-1/2 top-full z-30 mt-2 w-[min(calc(100vw-2rem),24rem)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm leading-snug text-slate-700 shadow-lg"
+          className="absolute left-1/2 top-full z-30 mt-2 w-[min(calc(100vw-2rem),26rem)] -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-base leading-relaxed text-slate-700 shadow-lg"
         >
           {children}
         </div>

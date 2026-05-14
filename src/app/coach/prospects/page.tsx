@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -57,6 +58,11 @@ export default function CoachProspectsPage() {
       if (!roleRes.ok || !roleBody.role) {
         setError("Unable to load your profile.");
         setLoading(false);
+        return;
+      }
+      /** Prospects CRM is admin-only for now; coaches use Clients. */
+      if (roleBody.role === "coach") {
+        router.replace("/coach/clients");
         return;
       }
       const effectiveId =
@@ -283,6 +289,14 @@ export default function CoachProspectsPage() {
         showCoachColumn={false}
         showTypeColumn={true}
         onRowClick={(id) => router.push(`/coach/contacts/${id}`)}
+        renderRowActions={(row) => (
+          <Link
+            href={`/coach/contacts/${row.id}`}
+            className="font-medium text-sky-700 hover:text-sky-900"
+          >
+            View prospect
+          </Link>
+        )}
         emptyMessage="No prospects yet. Add one below or share your assessment link."
       />
       </div>

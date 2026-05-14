@@ -20,6 +20,24 @@ const linkItems = [
   { href: "/preview/thank-you", label: "Thank you (Completed)" },
 ];
 
+const reportPreviewLinks = [
+  {
+    href: "/preview/report",
+    label: "AI report preview",
+    hint: "Progress bars + AI insight dashboard with seeded demo data.",
+  },
+  {
+    href: "/preview/report-design-system",
+    label: "BOSS report (design system)",
+    hint: "Brand canvas, glass hero, pillars / levels / areas, charts.",
+  },
+  {
+    href: "/preview/report-v3?preview=1&score=47&coach=BCA",
+    label: "BOSS report v3 (Figma)",
+    hint: "Hero dial, level cards, pillar dials, opportunity gap, wheel, calendar embed.",
+  },
+] as const;
+
 const bossProgrammeLinks = [
   {
     href: "/landing/a?coach=BCA",
@@ -30,16 +48,6 @@ const bossProgrammeLinks = [
     href: "/assessment/BCA",
     label: "Assessment",
     hint: "Question flow prospects complete after landing.",
-  },
-  {
-    href: "/preview/report",
-    label: "AI report preview",
-    hint: "Progress bars + AI insight dashboard with seeded demo data.",
-  },
-  {
-    href: "/preview/report-design-system",
-    label: "BOSS report (design system)",
-    hint: "New layout: brand canvas, glass hero, pillars/levels/areas, charts.",
   },
   {
     href: "/assessment/BCA/thank-you?preview=1",
@@ -346,6 +354,9 @@ function AdminAccountPageContent() {
       {!checkingRole && !error && activeTab === "links" ? (
         <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <h2 className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Quick links
+            </h2>
             <ul className="divide-y divide-slate-100">
               {linkItems.map((item) => {
                 const fullUrl = origin ? `${origin}${item.href}` : item.href;
@@ -361,6 +372,34 @@ function AdminAccountPageContent() {
                       <span className="truncate text-xs text-slate-500">
                         {fullUrl}
                       </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            <h2 className="border-b border-slate-100 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Report previews
+            </h2>
+            <ul className="divide-y divide-slate-100">
+              {reportPreviewLinks.map((item) => {
+                const fullUrl = origin ? `${origin}${item.href}` : item.href;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex flex-col gap-0.5 px-4 py-3 text-sm text-slate-900 hover:bg-slate-50"
+                    >
+                      <span className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-medium">{item.label}</span>
+                        <span className="truncate text-xs text-slate-500">
+                          {fullUrl}
+                        </span>
+                      </span>
+                      <span className="text-xs text-slate-500">{item.hint}</span>
                     </Link>
                   </li>
                 );

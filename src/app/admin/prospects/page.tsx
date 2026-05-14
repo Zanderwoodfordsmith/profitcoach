@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import {
   ProspectsTable,
@@ -12,6 +14,7 @@ import { AddProspectForm } from "@/components/prospects/AddProspectForm";
 
 export default function AdminProspectsPage() {
   const router = useRouter();
+  const { setImpersonatingCoachId } = useImpersonation();
   const [prospects, setProspects] = useState<ProspectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +144,16 @@ export default function AdminProspectsPage() {
     selectedCoachId === "all"
       ? prospects
       : prospects.filter((p) => p.coach_id === selectedCoachId);
+
+  const navigateToProspect = useCallback(
+    (row: ProspectRow) => {
+      flushSync(() => {
+        if (row.coach_id) setImpersonatingCoachId(row.coach_id);
+      });
+      router.push(`/coach/contacts/${row.id}`);
+    },
+    [router, setImpersonatingCoachId]
+  );
 
   async function handleCreateProspect(e: React.FormEvent) {
     e.preventDefault();
@@ -302,6 +315,19 @@ export default function AdminProspectsPage() {
         error={error}
         showCoachColumn={true}
         showTypeColumn={false}
+        onRowClick={(id) => {
+          const row = visibleProspects.find((p) => p.id === id);
+          if (row) navigateToProspect(row);
+        }}
+        renderRowActions={(row) => (
+          <button
+            type="button"
+            className="font-medium text-sky-700 hover:text-sky-900"
+            onClick={() => navigateToProspect(row)}
+          >
+            View prospect
+          </button>
+        )}
         emptyMessage="No prospects found for this selection."
       />
     </div>

@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 
 function IconChart({ className }: { className?: string }) {
   return (
@@ -93,6 +94,7 @@ export default function ClientLayout({
       const roleBody = (await roleRes.json().catch(() => ({}))) as {
         role?: string;
         error?: string;
+        linked_contact_type?: string | null;
       };
 
       if (cancelled) return;
@@ -144,6 +146,20 @@ export default function ClientLayout({
 
       if (cancelled) return;
 
+      if (
+        roleBody.role === "client" &&
+        roleBody.linked_contact_type === "prospect" &&
+        !impersonatingContactId
+      ) {
+        clearImpersonation();
+        clearContactImpersonation();
+        await supabaseClient.auth.signOut();
+        if (!cancelled) {
+          router.replace("/login?reason=prospect_portal");
+        }
+        return;
+      }
+
       if (roleBody.role !== "client") {
         setError("You do not have access to the client portal.");
       }
@@ -155,7 +171,7 @@ export default function ClientLayout({
     return () => {
       cancelled = true;
     };
-  }, [router, impersonatingContactId]);
+  }, [router, impersonatingContactId, clearImpersonation, clearContactImpersonation]);
 
   if (checking) {
     return (
@@ -193,9 +209,12 @@ export default function ClientLayout({
 
   const hasBanner = Boolean(impersonatingContactId);
   const sidebarTop = hasBanner ? "top-12" : "top-0";
+  const playbooksReader = isPlaybooksReaderPath(pathname);
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div
+      className={`min-h-screen text-slate-900 ${playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"}`}
+    >
       <UsageTracker />
       {hasBanner && (
         <div
@@ -215,6 +234,7 @@ export default function ClientLayout({
           </button>
         </div>
       )}
+      {!playbooksReader ? (
       <aside
         className={`fixed left-0 bottom-0 z-10 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white ${sidebarTop}`}
         style={{ height: hasBanner ? "calc(100vh - 3rem)" : "100vh" }}
@@ -272,14 +292,17 @@ export default function ClientLayout({
           </button>
         </div>
       </aside>
+      ) : null}
       <main
         className={
           pathname === "/client/ai-coach"
             ? "min-h-screen"
-            : "min-h-screen px-6 pb-6"
+            : playbooksReader
+              ? "min-h-screen pb-10"
+              : "min-h-screen px-[60px] pb-6"
         }
         style={{
-          marginLeft: "16rem",
+          marginLeft: playbooksReader ? 0 : "16rem",
           // Only offset when the impersonation banner is fixed at the top; no extra gap otherwise.
           paddingTop: hasBanner ? "3rem" : 0,
         }}
@@ -288,7 +311,9 @@ export default function ClientLayout({
           className={
             pathname === "/client/ai-coach"
               ? "flex min-h-[calc(100vh-6rem)] flex-col"
-              : "flex w-full flex-col gap-4"
+              : playbooksReader
+                ? "flex w-full flex-col"
+                : "flex w-full flex-col gap-4"
           }
         >
           {children}

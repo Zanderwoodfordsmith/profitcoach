@@ -29,47 +29,28 @@ export function PlaybookTabs({
     if (!controlledTab) setInternalTab(t);
   };
 
+  const tabBtn = (id: TabId, label: string) => (
+    <button
+      key={id}
+      type="button"
+      onClick={() => setTab(id)}
+      className={`border-b-2 px-0 py-3 text-sm font-semibold tracking-tight transition ${
+        activeTab === id
+          ? "border-[#0c5290] text-[#0c5290]"
+          : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="border-b border-slate-200">
-        <nav className="-mb-px flex gap-6" aria-label="Playbook tabs">
-          <button
-            type="button"
-            onClick={() => setTab("overview")}
-            className={`border-b-2 px-1 py-3 text-sm font-medium ${
-              activeTab === "overview"
-                ? "border-sky-600 text-sky-700"
-                : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
-            }`}
-          >
-            Overview
-          </button>
-          {showClientTab && (
-            <button
-              type="button"
-              onClick={() => setTab("client")}
-              className={`border-b-2 px-1 py-3 text-sm font-medium ${
-                activeTab === "client"
-                  ? "border-sky-600 text-sky-700"
-                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
-              }`}
-            >
-              Client
-            </button>
-          )}
-          {showCoachesTab && (
-            <button
-              type="button"
-              onClick={() => setTab("coaches")}
-              className={`border-b-2 px-1 py-3 text-sm font-medium ${
-                activeTab === "coaches"
-                  ? "border-sky-600 text-sky-700"
-                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
-              }`}
-            >
-              Coaches
-            </button>
-          )}
+    <div className="space-y-10">
+      <div className="border-b border-slate-200/80">
+        <nav className="-mb-px flex flex-wrap gap-x-8 gap-y-1" aria-label="Playbook sections">
+          {tabBtn("overview", "Overview")}
+          {showClientTab ? tabBtn("client", "Client") : null}
+          {showCoachesTab ? tabBtn("coaches", "Coaches") : null}
         </nav>
       </div>
 
@@ -77,15 +58,15 @@ export function PlaybookTabs({
         <PlaybookOverviewContent content={content} basePath={basePath} />
       )}
       {activeTab === "client" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm text-slate-500">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-sm">
+          <p className="text-sm leading-relaxed text-slate-600">
             Checklists and actions for this playbook — coming soon.
           </p>
         </div>
       )}
       {activeTab === "coaches" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <p className="text-sm text-slate-500">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-sm">
+          <p className="text-sm leading-relaxed text-slate-600">
             Coach-facing notes and scripts for this playbook — coming soon.
           </p>
         </div>

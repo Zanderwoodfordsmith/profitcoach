@@ -5,7 +5,16 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Compass, Filter, MessagesSquare, Sparkles, X } from "lucide-react";
+import {
+  CalendarDays,
+  Compass,
+  Filter,
+  LayoutGrid,
+  Menu,
+  MessagesSquare,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 
 export type DashboardSidebarVariant = "coach" | "admin";
@@ -82,13 +91,25 @@ function IconUsers({ className }: { className?: string }) {
   );
 }
 
+function IconWorkshop({ className }: { className?: string }) {
+  return <LayoutGrid className={className} />;
+}
+
 function mainNavItems(prefix: "/coach" | "/admin"): NavItem[] {
-  return [
+  const base: NavItem[] = [
     { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
+    {
+      href: `${prefix}/workshop`,
+      label: "BOSS score",
+      icon: IconWorkshop,
+    },
+  ];
+  base.push(
     { href: `${prefix}/signature`, label: "Compass", icon: IconCompass },
     { href: `${prefix}/community/calendar`, label: "Calendar", icon: IconCalendar },
-    { href: `${prefix}/academy`, label: "Classroom", icon: IconAcademy },
-  ];
+    { href: `${prefix}/academy`, label: "Classroom", icon: IconAcademy }
+  );
+  return base;
 }
 
 function marketingNavItems(prefix: "/coach" | "/admin"): NavItem[] {
@@ -129,6 +150,12 @@ function navLinkActive(pathname: string | null, href: string, coachesHub?: boole
   );
 }
 
+/** Shorter labels so five–six tabs fit narrow phones */
+function mobileNavShortLabel(label: string): string {
+  if (label === "BOSS score") return "BOSS";
+  return label;
+}
+
 type DashboardSidebarProps = {
   variant: DashboardSidebarVariant;
 };
@@ -139,8 +166,13 @@ export function DashboardSidebar({
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+
+  const mainItems = mainNavItems(prefix);
+
   return (
-    <aside className="fixed bottom-0 left-0 top-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white">
+    <>
+    <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white md:flex md:flex-col">
       <div className="shrink-0 px-4 py-4">
         <Link
           href={prefix}
@@ -158,7 +190,7 @@ export function DashboardSidebar({
       </div>
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
         <ul className="space-y-1">
-          {mainNavItems(prefix).map((item) => {
+          {mainItems.map((item) => {
             let active = navLinkActive(pathname, item.href);
             if (
               item.href === `${prefix}/community` &&
@@ -283,6 +315,187 @@ export function DashboardSidebar({
           Feedback
         </button>
       </div>
+    </aside>
+
+      {/* Mobile: primary nav fixed to bottom (icon above label) */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/15 bg-gradient-to-b from-[#0c5290] to-[#0a4274] pb-[env(safe-area-inset-bottom)] text-white md:hidden"
+        aria-label="Main navigation"
+      >
+        <div className="flex min-h-[3.5rem] items-stretch">
+          {mainItems.map((item) => {
+            let active = navLinkActive(pathname, item.href);
+            if (
+              item.href === `${prefix}/community` &&
+              Boolean(pathname?.startsWith(`${prefix}/community/calendar`))
+            ) {
+              active = false;
+            }
+            const Icon = item.icon;
+            const short = mobileNavShortLabel(item.label);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-center ${
+                  active ? "bg-sky-500/80 text-white" : "text-slate-100/90 active:bg-white/10"
+                }`}
+              >
+                <Icon className="h-5 w-5 shrink-0" aria-hidden />
+                <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-tight">
+                  {short}
+                </span>
+              </Link>
+            );
+          })}
+          {variant === "coach" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setFeedbackOpen(true);
+                setMobileMoreOpen(false);
+              }}
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-center ${
+                feedbackOpen ? "bg-sky-500/80 text-white" : "text-slate-100/90 active:bg-white/10"
+              }`}
+            >
+              <IconMessagesSquare className="h-5 w-5 shrink-0" aria-hidden />
+              <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-tight">
+                Feedback
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMobileMoreOpen(true)}
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-center ${
+                mobileMoreOpen ? "bg-sky-500/80 text-white" : "text-slate-100/90 active:bg-white/10"
+              }`}
+              aria-expanded={mobileMoreOpen}
+              aria-label="More navigation"
+            >
+              <Menu className="h-5 w-5 shrink-0" aria-hidden />
+              <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-tight">
+                More
+              </span>
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {mobileMoreOpen && variant === "admin" ? (
+        <div
+          className="fixed inset-0 z-[110] md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="More navigation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close menu"
+            onClick={() => setMobileMoreOpen(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[min(85vh,32rem)] overflow-y-auto rounded-t-2xl border border-white/15 bg-gradient-to-b from-[#0c5290] to-[#0a4274] pb-[env(safe-area-inset-bottom)] pt-2 text-white shadow-xl">
+            <div className="mx-auto mb-2 h-1 w-10 shrink-0 rounded-full bg-white/25" />
+            <div className="px-4 pb-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                Marketing
+              </p>
+              <ul className="space-y-0.5">
+                {marketingNavItems(prefix).map((item) => {
+                  const active = navLinkActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setMobileMoreOpen(false)}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                          active
+                            ? "bg-sky-500/80 text-white"
+                            : "text-slate-100/90 hover:bg-white/10"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="px-4 pb-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                Delivery
+              </p>
+              <ul className="space-y-0.5">
+                {deliveryNavItems(prefix).map((item) => {
+                  const active = navLinkActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setMobileMoreOpen(false)}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                          active
+                            ? "bg-sky-500/80 text-white"
+                            : "text-slate-100/90 hover:bg-white/10"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="px-4 pb-3">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                Admin
+              </p>
+              <ul className="space-y-0.5">
+                {adminSectionNavItems.map((item) => {
+                  const active = navLinkActive(pathname, item.href, item.coachesHub);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={() => setMobileMoreOpen(false)}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                          active
+                            ? "bg-sky-500/80 text-white"
+                            : "text-slate-100/90 hover:bg-white/10"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <div className="border-t border-white/15 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMoreOpen(false);
+                  setFeedbackOpen(true);
+                }}
+                className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] text-slate-100/90 hover:bg-white/10"
+              >
+                <IconMessagesSquare className="h-5 w-5 shrink-0 opacity-95" />
+                Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {feedbackOpen ? (
         <div
           className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4"
@@ -307,6 +520,6 @@ export function DashboardSidebar({
           </div>
         </div>
       ) : null}
-    </aside>
+    </>
   );
 }

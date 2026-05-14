@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LayoutGrid, Layers } from "lucide-react";
 import { Outfit } from "next/font/google";
 import { AREAS, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
+import { BossQuestionTooltipPortal, useBossQuestionTooltip, BOSS_QUESTION_TOOLTIP_DELAY_MS } from "./bossQuestionTooltip";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 
@@ -23,6 +25,14 @@ export type BossGridTransposedProps = {
   chromeColor?: string;
   /** When set (and glass), renders a header row with this title (large, left) and score bar (right); table is centered below */
   title?: string;
+  /** When "neutral", score bar shows short labels next to maturity counts (no "red/green" wording) */
+  scoreBarLabels?: "none" | "neutral";
+  /** Glass: show full playbook name in every cell (wrapped) instead of dot + flip card */
+  glassAlwaysShowPlaybookNames?: boolean;
+  /** Glass: optional — scroll/focus pillar notes when user clicks "Add notes" in the question panel */
+  onTooltipAddNotes?: (playbookRef: string) => void;
+  /** Glass: hide built-in score bar (counts + /100) — use an external summary row instead */
+  hideGlassScoreBar?: boolean;
 };
 
 // Match Profit System Glass pillar colors
@@ -136,9 +146,9 @@ function luminance(hex: string): number {
 
 // Levels in order: L1 Overwhelm, L2 Overworked, L3 Organised, L4 Overseer, L5 Owner
 const LEVEL_COLUMNS = [...LEVELS].reverse();
-const COL_WIDTH = 120;
-const CATEGORIES_COL_WIDTH = 160; // First column: pillar/area names on one line
-const COL_WIDTH_COLLAPSED = 40; // Collapsed level column: fit +/- and "L1"–"L5"
+const COL_WIDTH = 152;
+const CATEGORIES_COL_WIDTH = 212; // First column: pillar / area labels
+const COL_WIDTH_COLLAPSED = 44; // Collapsed level column
 
 export function BossGridTransposed({
   answers,
@@ -150,8 +160,24 @@ export function BossGridTransposed({
   showNamesForScores = [],
   chromeColor,
   title,
+  scoreBarLabels = "none",
+  glassAlwaysShowPlaybookNames = false,
+  onTooltipAddNotes,
+  hideGlassScoreBar = false,
 }: BossGridTransposedProps) {
   const router = useRouter();
+  const tooltipDelay =
+    glass && interactive ? 320 : BOSS_QUESTION_TOOLTIP_DELAY_MS;
+  const {
+    tooltip,
+    tooltipVisible,
+    handleCellHover,
+    openTooltipPinned,
+    dismissTooltip,
+    cancelHide,
+    scheduleHide,
+    tooltipAnchorRef,
+  } = useBossQuestionTooltip(tooltipDelay);
   const [collapsedLevels, setCollapsedLevels] = useState<Set<number>>(new Set());
   const isLightGlass = glass && glassTheme === "light";
   const useChromeColor = Boolean(glass && !isLightGlass && chromeColor);
@@ -171,6 +197,52 @@ export function BossGridTransposed({
     });
   };
 
+  const handleTooltipPickScore = useCallback(
+    (ref: string, score: 0 | 1 | 2) => {
+      onScoreChange?.(ref, score);
+      dismissTooltip();
+    },
+    [dismissTooltip, onScoreChange]
+  );
+
+  const tooltipPortalProps = {
+    onPickScore: glass && onScoreChange ? handleTooltipPickScore : undefined,
+    onPortalMouseEnter: glass ? cancelHide : undefined,
+    onPortalMouseLeave: glass ? scheduleHide : undefined,
+    answerScores: glass ? answers : undefined,
+    getPlaybookUrl:
+      glass && playbookLinkBase
+        ? (ref: string) => `${playbookLinkBase}/${ref}`
+        : undefined,
+    onTooltipAddNotes: glass ? onTooltipAddNotes : undefined,
+    onDismiss: glass ? dismissTooltip : undefined,
+    anchorRef: glass ? tooltipAnchorRef : undefined,
+  };
+
+  const glassQuestionHoverProps = useCallback(
+    (playbookRef: string) =>
+      glass
+        ? {
+            onMouseEnter: (e: React.MouseEvent<HTMLElement>) =>
+              handleCellHover(playbookRef, e.currentTarget),
+            onMouseLeave: () => handleCellHover(null, null),
+            onFocus: (e: React.FocusEvent<HTMLElement>) =>
+              handleCellHover(playbookRef, e.currentTarget),
+            onBlur: () => handleCellHover(null, null),
+          }
+        : {},
+    [glass, handleCellHover]
+  );
+
+  const tryOpenBossScorePanel = useCallback(
+    (ref: string, el: HTMLElement | null) => {
+      if (!glass || !onScoreChange || !el) return false;
+      openTooltipPinned(ref, el);
+      return true;
+    },
+    [glass, onScoreChange, openTooltipPinned]
+  );
+
   const totalScore = glass ? getTotalScore(answers) : 0;
   const scoreCounts = glass
     ? {
@@ -185,14 +257,14 @@ export function BossGridTransposed({
       role="grid"
       aria-label={glass ? "BOSS playbook grid (transposed, glass)" : "BOSS playbook grid (transposed)"}
       className="w-full min-w-[600px] border-collapse"
-      style={{ fontSize: glass ? 14 : 16, tableLayout: "fixed" }}
+      style={{ fontSize: glass ? 15 : 16, tableLayout: "fixed" }}
     >
       <thead>
         <tr>
           <th
             className="text-left font-semibold"
             style={{
-              padding: glass ? "14px 16px" : "10px 12px",
+              padding: glass ? "18px 20px" : "10px 12px",
               width: CATEGORIES_COL_WIDTH,
               minWidth: CATEGORIES_COL_WIDTH,
               borderBottom: glass
@@ -208,7 +280,16 @@ export function BossGridTransposed({
                   : undefined,
             }}
           >
-            {glass ? " " : " "}
+            {glass ? (
+              <div className="flex items-center justify-center" aria-hidden>
+                <LayoutGrid
+                  className={`h-5 w-5 ${isLightGlass ? "text-slate-400/25" : "text-white/20"}`}
+                  strokeWidth={1.25}
+                />
+              </div>
+            ) : (
+              " "
+            )}
           </th>
           {LEVEL_COLUMNS.map((level, levelIdx) => {
             const isCollapsed = glass && collapsedLevels.has(level.id);
@@ -231,7 +312,7 @@ export function BossGridTransposed({
                 }
                 className={isCollapsed ? "text-center font-semibold" : "text-left font-semibold"}
                 style={{
-                  padding: isCollapsed ? "14px 8px" : "14px 12px",
+                  padding: isCollapsed ? "18px 10px" : "18px 14px",
                   width: w,
                   minWidth: w,
                   borderBottom: glass
@@ -244,7 +325,7 @@ export function BossGridTransposed({
                     glass
                       ? (chromeTextColor ?? (isLightGlass ? "#334155" : "rgba(255,255,255,0.85)"))
                       : undefined,
-                  fontSize: glass ? 12 : undefined,
+                  fontSize: glass ? 14 : undefined,
                   cursor: glass ? "pointer" : undefined,
                 }}
                 aria-label={glass ? (isCollapsed ? `Expand level ${level.id} (${level.name})` : `Collapse level ${level.id}`) : undefined}
@@ -253,12 +334,19 @@ export function BossGridTransposed({
                   <div
                     className={`flex w-full flex-col items-center gap-1 ${isCollapsed ? "justify-center" : ""}`}
                   >
+                    <Layers
+                      className={`shrink-0 ${isCollapsed ? "h-3 w-3" : "h-3.5 w-3.5"} ${
+                        isLightGlass ? "text-slate-400/30" : "text-white/25"
+                      }`}
+                      strokeWidth={1.25}
+                      aria-hidden
+                    />
                     <span
-                      className={isCollapsed ? "text-[11px]" : "min-w-0 truncate text-center"}
+                      className={isCollapsed ? "text-xs" : "min-w-0 truncate text-center"}
                       style={{
-                        fontSize: 9,
-                        fontWeight: 600,
-                        letterSpacing: 2,
+                        fontSize: 17,
+                        fontWeight: 700,
+                        letterSpacing: 1.5,
                         color: isLightGlass ? "rgba(15,23,42,0.5)" : "rgba(255,255,255,0.22)",
                       }}
                     >
@@ -267,10 +355,11 @@ export function BossGridTransposed({
                     {!isCollapsed && (
                       <span
                         style={{
-                          fontSize: 13,
-                          fontWeight: 600,
-                          color: isLightGlass ? "rgba(15,23,42,0.75)" : "rgba(255,255,255,0.55)",
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: isLightGlass ? "rgba(15,23,42,0.88)" : "rgba(255,255,255,0.72)",
                           letterSpacing: -0.2,
+                          lineHeight: 1.2,
                         }}
                       >
                         {level.name}
@@ -304,32 +393,33 @@ export function BossGridTransposed({
                     }}
                   >
                     <div
-                      className="flex items-center gap-2.5 py-2 pl-3"
+                      className="flex w-full min-w-0 items-center gap-3 rounded-lg py-3.5 pl-3 pr-4 text-left"
                       style={{
-                        marginTop: isFirstPillar ? 0 : 14,
+                        marginTop: isFirstPillar ? 0 : 18,
                         borderTop: isFirstPillar
                           ? "none"
                           : isLightGlass
                             ? "1px solid rgba(0,0,0,0.06)"
                             : "1px solid rgba(255, 255, 255, 0.12)",
-                        minHeight: 28,
+                        minHeight: 36,
                         background: "transparent",
                       }}
                     >
                       <div
                         style={{
-                          width: 20,
-                          height: 2,
-                          borderRadius: 1,
+                          width: 22,
+                          height: 3,
+                          borderRadius: 2,
                           background: pillar.color,
-                          boxShadow: `0 0 10px ${pillar.color}50`,
+                          boxShadow: `0 0 12px ${pillar.color}55`,
+                          flexShrink: 0,
                         }}
                       />
                       <span
-                        className="text-[10px] font-semibold uppercase tracking-wider"
+                        className="text-xs font-bold uppercase tracking-[0.14em] sm:text-sm"
                         style={{
                           color: pillar.color,
-                          opacity: 0.9,
+                          opacity: 0.95,
                         }}
                       >
                         {pillar.name.toUpperCase()}
@@ -373,28 +463,28 @@ export function BossGridTransposed({
                       glass ? (isLightGlass ? "text-slate-700" : "text-slate-200") : "text-slate-600"
                     }
                     style={{
-                      padding: glass ? "10px 16px" : "8px 12px",
+                      padding: glass ? "14px 18px" : "8px 12px",
                       borderBottom: glass ? "none" : "1px solid #F1F5F9",
                       borderLeft: "none",
                       borderRight: glass ? "none" : undefined,
                       borderTop: "none",
                       verticalAlign: "middle",
                       background: glass ? "transparent" : undefined,
-                      fontSize: glass ? 12 : undefined,
+                      fontSize: glass ? 16.5 : undefined,
                     }}
                   >
                     {glass ? (
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-3">
                         <div
                           style={{
-                            width: 2,
-                            height: 22,
-                            borderRadius: 1,
-                            background: hexToRgba(pillar.color, 0.7),
+                            width: 3,
+                            height: 26,
+                            borderRadius: 2,
+                            background: hexToRgba(pillar.color, 0.75),
                             flexShrink: 0,
                           }}
                         />
-                        <span>{area.name}</span>
+                        <span className="leading-snug">{area.name}</span>
                       </div>
                     ) : (
                       area.name
@@ -427,7 +517,9 @@ export function BossGridTransposed({
                         router.push(`${playbookLinkBase}/${playbook.ref}`);
                       }
                     };
-                    const isClickable = (interactive && onScoreChange) || !!playbookLinkBase;
+                    const isClickable = glass
+                      ? Boolean(onScoreChange || playbookLinkBase)
+                      : Boolean((interactive && onScoreChange) || playbookLinkBase);
                     const glassConfig = score === 0 ? GLASS_CELL.red : score === 1 ? GLASS_CELL.amber : score === 2 ? GLASS_CELL.green : GLASS_CELL.unscored;
 
                     if (glass) {
@@ -448,12 +540,20 @@ export function BossGridTransposed({
                             <div
                               role={isClickable ? "button" : "gridcell"}
                               tabIndex={isClickable ? 0 : undefined}
-                              onClick={isClickable ? handleClick : undefined}
+                              onClick={
+                                isClickable
+                                  ? (e: React.MouseEvent<HTMLElement>) => {
+                                      if (tryOpenBossScorePanel(playbook.ref, e.currentTarget)) return;
+                                      handleClick();
+                                    }
+                                  : undefined
+                              }
                               onKeyDown={
                                 isClickable
                                   ? (e) => {
                                       if (e.key === "Enter" || e.key === " ") {
                                         e.preventDefault();
+                                        if (tryOpenBossScorePanel(playbook.ref, e.currentTarget as HTMLElement)) return;
                                         if (interactive && onScoreChange) {
                                           const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                           onScoreChange(playbook.ref, next);
@@ -462,6 +562,7 @@ export function BossGridTransposed({
                                     }
                                   : undefined
                               }
+                              {...glassQuestionHoverProps(playbook.ref)}
                               className={`${isClickable ? "cursor-pointer " : ""}flex items-center justify-center rounded-md ${outfit.variable}`}
                               style={{
                                 fontFamily: "var(--font-outfit), sans-serif",
@@ -477,6 +578,66 @@ export function BossGridTransposed({
                                   boxShadow: glassConfig.glow,
                                 }}
                               />
+                            </div>
+                          </td>
+                        );
+                      }
+                      if (glassAlwaysShowPlaybookNames && !isCollapsed) {
+                        return (
+                          <td
+                            key={playbook.ref}
+                            style={{
+                              padding: 10,
+                              borderBottom: isLightGlass
+                                ? "1px solid rgba(0,0,0,0.06)"
+                                : "1px solid rgba(255,255,255,0.08)",
+                              verticalAlign: "middle",
+                            }}
+                          >
+                            <div
+                              role={isClickable ? "button" : "gridcell"}
+                              tabIndex={isClickable ? 0 : undefined}
+                              onClick={
+                                isClickable
+                                  ? (e: React.MouseEvent<HTMLElement>) => {
+                                      if (tryOpenBossScorePanel(playbook.ref, e.currentTarget)) return;
+                                      handleClick();
+                                    }
+                                  : undefined
+                              }
+                              onKeyDown={
+                                isClickable
+                                  ? (e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        if (tryOpenBossScorePanel(playbook.ref, e.currentTarget as HTMLElement)) return;
+                                        if (interactive && onScoreChange) {
+                                          const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
+                                          onScoreChange(playbook.ref, next);
+                                        } else if (playbookLinkBase) {
+                                          router.push(`${playbookLinkBase}/${playbook.ref}`);
+                                        }
+                                      }
+                                    }
+                                  : undefined
+                              }
+                              {...glassQuestionHoverProps(playbook.ref)}
+                              className={`${isClickable ? "cursor-pointer " : ""}flex min-h-[60px] items-center justify-center rounded-lg ${outfit.variable}`}
+                              style={{
+                                fontFamily: "var(--font-outfit), sans-serif",
+                                ...getGlassCellStyle(score),
+                                padding: "14px 12px",
+                              }}
+                              aria-label={playbook.name}
+                            >
+                              <span
+                                className="block w-full break-words text-center text-[15px] font-semibold leading-snug"
+                                style={{
+                                  color: isLightGlass ? "#0f172a" : "#e2e8f0",
+                                }}
+                              >
+                                {playbook.name}
+                              </span>
                             </div>
                           </td>
                         );
@@ -497,12 +658,20 @@ export function BossGridTransposed({
                             <div
                               role={isClickable ? "button" : "gridcell"}
                               tabIndex={isClickable ? 0 : undefined}
-                              onClick={isClickable ? handleClick : undefined}
+                              onClick={
+                                isClickable
+                                  ? (e: React.MouseEvent<HTMLElement>) => {
+                                      if (tryOpenBossScorePanel(playbook.ref, e.currentTarget)) return;
+                                      handleClick();
+                                    }
+                                  : undefined
+                              }
                               onKeyDown={
                                 isClickable
                                   ? (e) => {
                                       if (e.key === "Enter" || e.key === " ") {
                                         e.preventDefault();
+                                        if (tryOpenBossScorePanel(playbook.ref, e.currentTarget as HTMLElement)) return;
                                         if (interactive && onScoreChange) {
                                           const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                           onScoreChange(playbook.ref, next);
@@ -511,6 +680,7 @@ export function BossGridTransposed({
                                     }
                                   : undefined
                               }
+                              {...glassQuestionHoverProps(playbook.ref)}
                               className={`${isClickable ? "cursor-pointer " : ""}flex items-center justify-center px-2 rounded-md text-center ${outfit.variable}`}
                               style={{
                                 fontFamily: "var(--font-outfit), sans-serif",
@@ -542,12 +712,20 @@ export function BossGridTransposed({
                           <div
                             role={isClickable ? "button" : "gridcell"}
                             tabIndex={isClickable ? 0 : undefined}
-                            onClick={isClickable ? handleClick : undefined}
+                            onClick={
+                              isClickable
+                                ? (e: React.MouseEvent<HTMLElement>) => {
+                                    if (tryOpenBossScorePanel(playbook.ref, e.currentTarget)) return;
+                                    handleClick();
+                                  }
+                                : undefined
+                            }
                             onKeyDown={
                               isClickable
                                 ? (e) => {
                                     if (e.key === "Enter" || e.key === " ") {
                                       e.preventDefault();
+                                      if (tryOpenBossScorePanel(playbook.ref, e.currentTarget as HTMLElement)) return;
                                       if (interactive && onScoreChange) {
                                         const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                         onScoreChange(playbook.ref, next);
@@ -556,6 +734,7 @@ export function BossGridTransposed({
                                   }
                                 : undefined
                             }
+                            {...glassQuestionHoverProps(playbook.ref)}
                             className={`${isClickable ? "cursor-pointer " : ""}group/cell ${outfit.variable}`}
                             style={{
                               fontFamily: "var(--font-outfit), sans-serif",
@@ -661,32 +840,39 @@ export function BossGridTransposed({
   );
 
   if (glass) {
+    const labelMuted = isLightGlass ? "rgba(15,23,42,0.55)" : "rgba(255,255,255,0.75)";
+    const countColor = isLightGlass ? "#0f172a" : "rgba(255,255,255,0.9)";
+    const scoreBarSegments = [
+      { count: scoreCounts.green, dot: "#4ADE80", label: "On track" },
+      { count: scoreCounts.amber, dot: "#E5C84A", label: "Building" },
+      { count: scoreCounts.red, dot: "#C73E54", label: "Needs attention" },
+    ] as const;
+
     const scoreBar = (
       <div className="flex flex-wrap items-center justify-end gap-3" style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
         <div
-          className="flex items-center gap-2"
+          className="flex flex-wrap items-center gap-2"
           style={{
             background: isLightGlass ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.25)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             border: `1px solid ${isLightGlass ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.10)"}`,
-            borderRadius: 10,
-            padding: "8px 14px",
+            borderRadius: 12,
+            padding: "12px 20px",
             boxShadow: isLightGlass ? "0 2px 8px rgba(0,0,0,0.08)" : "0 4px 12px rgba(0,0,0,0.2)",
           }}
         >
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80" }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: isLightGlass ? "#0f172a" : "rgba(255,255,255,0.9)" }}>
-            {scoreCounts.green}
-          </span>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#E5C84A" }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: isLightGlass ? "#0f172a" : "rgba(255,255,255,0.9)" }}>
-            {scoreCounts.amber}
-          </span>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#C73E54" }} />
-          <span style={{ fontSize: 12, fontWeight: 600, color: isLightGlass ? "#0f172a" : "rgba(255,255,255,0.9)" }}>
-            {scoreCounts.red}
-          </span>
+          {scoreBarSegments.map((seg) => (
+            <span key={seg.label} className="inline-flex items-center gap-1.5">
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: seg.dot }} />
+              {scoreBarLabels === "neutral" ? (
+                <span style={{ fontSize: 11, fontWeight: 600, color: labelMuted, maxWidth: 100 }} className="leading-tight">
+                  {seg.label}
+                </span>
+              ) : null}
+              <span style={{ fontSize: 12, fontWeight: 600, color: countColor }}>{seg.count}</span>
+            </span>
+          ))}
         </div>
         <div
           style={{
@@ -714,7 +900,7 @@ export function BossGridTransposed({
 
     const tableWrapper = (
       <div
-        className="overflow-x-auto rounded-xl"
+        className="overflow-x-auto rounded-xl p-4 sm:p-5"
         style={
           isLightGlass
             ? {
@@ -739,38 +925,52 @@ export function BossGridTransposed({
 
     if (title) {
       return (
-        <div className={`flex w-full flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
-          <div
-            className="flex w-full flex-wrap items-center justify-between gap-4"
-            style={{ padding: "0 0 16px", minHeight: 48 }}
-          >
-            <h2
-              className="text-left font-extrabold leading-tight"
-              style={{
-                fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
-                color: "#fff",
-                letterSpacing: -0.5,
-                margin: 0,
-              }}
+        <>
+          <div className={`flex w-full flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
+            <div
+              className="flex w-full flex-wrap items-center justify-between gap-4"
+              style={{ padding: "0 0 22px", minHeight: 52 }}
             >
-              {title}
-            </h2>
-            {scoreBar}
+              <h2
+                className="text-left font-extrabold leading-tight"
+                style={{
+                  fontSize: "clamp(1.75rem, 4vw, 2.25rem)",
+                  color: isLightGlass ? "#0f172a" : "#fff",
+                  letterSpacing: -0.5,
+                  margin: 0,
+                }}
+              >
+                {title}
+              </h2>
+              {!hideGlassScoreBar ? scoreBar : null}
+            </div>
+            <div className="mx-auto w-full max-w-full overflow-x-auto" style={{ display: "flex", justifyContent: "center" }}>
+              {tableWrapper}
+            </div>
           </div>
-          <div className="mx-auto w-full max-w-full overflow-x-auto" style={{ display: "flex", justifyContent: "center" }}>
-            {tableWrapper}
-          </div>
-        </div>
+          <BossQuestionTooltipPortal
+            tooltip={tooltip}
+            tooltipVisible={tooltipVisible}
+            {...tooltipPortalProps}
+          />
+        </>
       );
     }
 
     return (
-      <div className={`flex flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
-        <div style={{ padding: "12px 16px 16px" }}>{scoreBar}</div>
-        <div className="mx-auto w-full max-w-full overflow-x-auto" style={{ display: "flex", justifyContent: "center" }}>
-          {tableWrapper}
+      <>
+        <div className={`flex flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
+          {!hideGlassScoreBar ? <div style={{ padding: "16px 20px 22px" }}>{scoreBar}</div> : null}
+          <div className="mx-auto w-full max-w-full overflow-x-auto" style={{ display: "flex", justifyContent: "center" }}>
+            {tableWrapper}
+          </div>
         </div>
-      </div>
+        <BossQuestionTooltipPortal
+          tooltip={tooltip}
+          tooltipVisible={tooltipVisible}
+          {...tooltipPortalProps}
+        />
+      </>
     );
   }
 

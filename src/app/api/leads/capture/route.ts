@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  tryInsertContactStripping,
+  tryUpdateContactStripping,
+} from "@/lib/contactSchemaSafeInsert";
 import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -87,9 +91,10 @@ export async function POST(request: Request) {
 
   // Upsert by (coach_id, email). Older contact rows stay the source of truth
   // when an assessment eventually fires — same row gets updated.
+  // Select only columns we know exist on every deployment; phone is optional.
   const { data: existing } = await supabaseAdmin
     .from("contacts")
-    .select("id, full_name, phone, business_name")
+    .select("id, full_name, business_name")
     .eq("coach_id", coachId)
     .eq("email", email)
     .maybeSingle();
@@ -104,25 +109,24 @@ export async function POST(request: Request) {
     if (fullName && (existing.full_name == null || existing.full_name === "Unknown")) {
       patch.full_name = fullName;
     }
-    if (phone && !existing.phone) patch.phone = phone;
+    if (phone) patch.phone = phone;
     if (businessName && !existing.business_name) patch.business_name = businessName;
     if (Object.keys(patch).length > 0) {
-      await supabaseAdmin.from("contacts").update(patch).eq("id", contactId);
+      await tryUpdateContactStripping(contactId, patch);
     }
   } else {
-    const { data: inserted, error: insertError } = await supabaseAdmin
-      .from("contacts")
-      .insert({
-        coach_id: coachId,
-        type: "prospect",
-        full_name: fullName ?? "Unknown",
-        email,
-        business_name: businessName,
-        phone,
-      })
-      .select("id")
-      .single();
-    if (!insertError && inserted) {
+    const insertPayload: Record<string, unknown> = {
+      coach_id: coachId,
+      type: "prospect",
+      full_name: fullName ?? "Unknown",
+      email,
+      business_name: businessName,
+      phone,
+    };
+    if (firstName) insertPayload.first_name = firstName;
+    if (lastName) insertPayload.last_name = lastName;
+    const { data: inserted } = await tryInsertContactStripping(insertPayload);
+    if (inserted?.id) {
       contactId = inserted.id as string;
     }
   }

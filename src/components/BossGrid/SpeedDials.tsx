@@ -30,21 +30,21 @@ export function SpeedDials({ pillarScores, gridCols, "aria-label": ariaLabel }: 
     >
       <div />
       <div />
-      <div className="flex justify-center items-center rounded-t-lg shadow-sm border-2 border-[#6d737a] border-b-0 py-5 px-2 bg-transparent">
+      <div className="flex justify-center items-center rounded-t-lg border-2 border-b-0 border-[#6d737a] bg-transparent px-2 py-6 shadow-sm">
         <SingleDial
           score={pillarScores.vision}
           label={dials[0].label}
           strokeClass={dials[0].strokeClass}
         />
       </div>
-      <div className="flex justify-center items-center rounded-t-lg shadow-sm border-2 border-[#6d737a] border-b-0 py-5 px-2 bg-transparent">
+      <div className="flex justify-center items-center rounded-t-lg border-2 border-b-0 border-[#6d737a] bg-transparent px-2 py-6 shadow-sm">
         <SingleDial
           score={pillarScores.velocity}
           label={dials[1].label}
           strokeClass={dials[1].strokeClass}
         />
       </div>
-      <div className="flex justify-center items-center rounded-t-lg shadow-sm border-2 border-[#6d737a] border-b-0 py-5 px-2 bg-transparent">
+      <div className="flex justify-center items-center rounded-t-lg border-2 border-b-0 border-[#6d737a] bg-transparent px-2 py-6 shadow-sm">
         <SingleDial
           score={pillarScores.value}
           label={dials[2].label}
@@ -70,7 +70,7 @@ function SingleDial({
   return (
     <div className="flex flex-col items-center flex-shrink-0" role="img" aria-label={`${label}: ${pct}%`}>
       <svg
-        className="w-[150px] h-[150px]"
+        className="h-[173px] w-[173px]"
         viewBox="0 0 100 100"
         aria-hidden
       >
@@ -80,7 +80,7 @@ function SingleDial({
           r={DIAL_R}
           fill="none"
           stroke="#e2e8f0"
-          strokeWidth={14}
+          strokeWidth={16}
         />
         <circle
           cx="50"
@@ -88,17 +88,17 @@ function SingleDial({
           r={DIAL_R}
           fill="none"
           className={strokeClass}
-          strokeWidth={14}
+          strokeWidth={16}
           strokeLinecap="butt"
           strokeDasharray={`${dash} ${DIAL_CIRCUMFERENCE}`}
           transform="rotate(-90 50 50)"
         />
-        <text x="50" y="55" textAnchor="middle" fill="#334155" fontSize="1.1rem" fontWeight="700">
+        <text x="50" y="55" textAnchor="middle" fill="#334155" fontSize="1.27rem" fontWeight="700">
           <tspan>{pct}</tspan>
           <tspan fill="rgba(51,65,85,0.55)" fontSize="0.65em">%</tspan>
         </text>
       </svg>
-      <span className="text-[0.8rem] text-slate-500 mt-1">{label}</span>
+      <span className="mt-1.5 text-[1.3rem] leading-tight text-slate-500">{label}</span>
     </div>
   );
 }

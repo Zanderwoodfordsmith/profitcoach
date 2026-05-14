@@ -4,8 +4,8 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { PlaybookBlogShell } from "@/components/playbooks/PlaybookBlogShell";
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
-import { StickyPageHeader } from "@/components/layout";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { getPlaybookMeta } from "@/lib/bossData";
@@ -99,9 +99,9 @@ export default function ClientPlaybookDetailPage({
 
   if (!meta) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-rose-600">Playbook not found.</p>
-        <Link href="/client/playbooks" className="text-sm text-sky-700 underline">
+        <Link href="/client/playbooks" className="text-sm text-[#0c5290] underline">
           Back to Playbooks
         </Link>
       </div>
@@ -110,7 +110,7 @@ export default function ClientPlaybookDetailPage({
 
   if (loading || !content) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -118,9 +118,9 @@ export default function ClientPlaybookDetailPage({
 
   if (error) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-rose-600">{error}</p>
-        <Link href="/client/playbooks" className="text-sm text-sky-700 underline">
+        <Link href="/client/playbooks" className="text-sm text-[#0c5290] underline">
           Back to Playbooks
         </Link>
       </div>
@@ -128,30 +128,17 @@ export default function ClientPlaybookDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <StickyPageHeader
-        leading={
-          <Link
-            href="/client/playbooks"
-            className="text-xs text-slate-500 hover:text-slate-700"
-          >
-            ← Back to Playbooks
-          </Link>
-        }
-        eyebrow="Profit System"
-        title={`${content.ref} ${content.name} Playbook`}
-        descriptionPlacement="below"
-        description={
-          <span className="text-slate-500">{content.subtitle}</span>
-        }
-      />
-
+    <PlaybookBlogShell
+      backHref="/client/playbooks"
+      backLabel="Playbooks library"
+      secondaryNav={{ href: "/client/dashboard", label: "Dashboard" }}
+    >
       <PlaybookTabs
         content={content}
         showClientTab={unlocked}
         showCoachesTab={false}
         basePath="/client/playbooks"
       />
-    </div>
+    </PlaybookBlogShell>
   );
 }

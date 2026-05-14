@@ -36,7 +36,7 @@ export const LANDING_TO_ASSESSMENT_PARAMS = ["company", "prospect"] as const;
 export function getDefaultLandingContent(kind: LandingKind): LandingContent {
   if (kind === "newCopy") {
     return {
-      eyebrow: "For [Industry] Owners Doing £500K-£5M",
+      eyebrow: "For Business Owners £500K to £5M",
       heading:
         "Know Exactly What to Fix First in Your £500K-£5M Business in 12 Minutes",
       subheading:

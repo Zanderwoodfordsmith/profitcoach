@@ -3,7 +3,7 @@
  * Ported from BOSS Dashboard thank-you.js.
  */
 
-import { PLAYBOOKS, PLAYBOOK_COUNT } from "./bossData";
+import { PLAYBOOKS, PLAYBOOK_COUNT, AREAS } from "./bossData";
 
 export type AnswersMap = Record<string, 0 | 1 | 2>;
 
@@ -115,6 +115,55 @@ export function computePillarScoresWithFoundation(
     }
   }
   return { foundation, ...pillars };
+}
+
+/** One row of BOSS pillar dials (Foundation + 3 growth pillars). */
+export const BOSS_PILLAR_DIAL_ORDER = [
+  { key: "foundation" as const, label: "Foundation", color: "#A855F7" },
+  { key: "vision" as const, label: "Clarify Vision", color: "#3B82F6" },
+  { key: "velocity" as const, label: "Control Velocity", color: "#0EA5E9" },
+  { key: "value" as const, label: "Create Value", color: "#14B8A6" },
+];
+
+export type BossPillarDialStat = {
+  pillarKey: (typeof BOSS_PILLAR_DIAL_ORDER)[number]["key"];
+  label: string;
+  color: string;
+  total: number;
+  answered: number;
+  unanswered: number;
+  sum: number;
+  maxScore: number;
+};
+
+/** Per-pillar playbook counts, answered counts, and score sums for dial UI. */
+export function computeBossPillarDialStats(
+  scores: AnswersMap | null | undefined
+): BossPillarDialStat[] {
+  return BOSS_PILLAR_DIAL_ORDER.map(({ key, label, color }) => {
+    const areaIds = new Set(AREAS.filter((a) => a.pillar === key).map((a) => a.id));
+    const books = PLAYBOOKS.filter((p) => areaIds.has(p.area));
+    const total = books.length;
+    let answered = 0;
+    let sum = 0;
+    for (const pb of books) {
+      const v = scores?.[pb.ref];
+      if (v === 0 || v === 1 || v === 2) {
+        answered += 1;
+        sum += v;
+      }
+    }
+    return {
+      pillarKey: key,
+      label,
+      color,
+      total,
+      answered,
+      unanswered: total - answered,
+      sum,
+      maxScore: total * 2,
+    };
+  });
 }
 
 export function computeScoreBreakdown(

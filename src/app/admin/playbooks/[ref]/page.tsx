@@ -201,6 +201,7 @@ export default function AdminPlaybookDetailPage({
         description={
           <span className="text-slate-500">{content.subtitle}</span>
         }
+        bleedInset={false}
         actions={
           !editing ? (
             <button
