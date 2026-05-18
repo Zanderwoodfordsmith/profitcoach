@@ -159,34 +159,34 @@ export function DashboardSidebar({
               );
             })}
           </ul>
+          <div className="mt-5 px-1">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+              Marketing
+            </p>
+            <ul className="space-y-0.5">
+              {marketingNavItems(prefix, { includeBossScore: true }).map((item) => {
+                const active = navLinkActive(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                        active
+                          ? "bg-sky-500/80 text-white"
+                          : "text-slate-100/90 hover:bg-white/10"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
           {variant === "admin" ? (
             <>
-              <div className="mt-5 px-1">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                  Marketing
-                </p>
-                <ul className="space-y-0.5">
-                  {marketingNavItems(prefix).map((item) => {
-                    const active = navLinkActive(pathname, item.href);
-                    const Icon = item.icon;
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-                            active
-                              ? "bg-sky-500/80 text-white"
-                              : "text-slate-100/90 hover:bg-white/10"
-                          }`}
-                        >
-                          <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                          {item.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
               <div className="mt-5 px-1">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                   Delivery

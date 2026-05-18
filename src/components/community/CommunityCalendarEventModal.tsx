@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   Ellipsis,
@@ -13,6 +13,11 @@ import {
 } from "lucide-react";
 import { DateTime } from "luxon";
 
+import { supabaseClient } from "@/lib/supabaseClient";
+import {
+  communityAccessHint,
+  supabaseErrorMessage,
+} from "@/lib/supabaseErrorMessage";
 import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
 
 type Props = {
@@ -21,6 +26,7 @@ type Props = {
   canManage?: boolean;
   onEdit?: () => void;
   onDelete?: () => void | Promise<void>;
+  onRecordingSaved?: () => void;
 };
 
 function formatEventRange(occurrence: CommunityCalendarOccurrence): string {
@@ -49,15 +55,73 @@ function maybeUrl(value: string): string | null {
   }
 }
 
+function recordingWatchUrl(occurrence: CommunityCalendarOccurrence): string | null {
+  const video = occurrence.recording_video_url?.trim();
+  if (video && /^https?:\/\//i.test(video)) return video;
+  const link = occurrence.recording_link_url?.trim();
+  if (link && /^https?:\/\//i.test(link)) return link;
+  return null;
+}
+
 export function CommunityCalendarEventModal({
   occurrence,
   onClose,
   canManage = false,
   onEdit,
   onDelete,
+  onRecordingSaved,
 }: Props) {
   const whenLabel = useMemo(() => formatEventRange(occurrence), [occurrence]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [recordingLinkDraft, setRecordingLinkDraft] = useState(
+    occurrence.recording_link_url ?? ""
+  );
+  const [recordingSaving, setRecordingSaving] = useState(false);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRecordingLinkDraft(occurrence.recording_link_url ?? "");
+    setRecordingError(null);
+  }, [occurrence]);
+
+  const isPast = useMemo(() => {
+    const endUtc = DateTime.fromISO(occurrence.endsAtIso, { zone: "utc" });
+    return endUtc.isValid && endUtc <= DateTime.now().toUTC();
+  }, [occurrence.endsAtIso]);
+
+  const watchUrl = useMemo(() => recordingWatchUrl(occurrence), [occurrence]);
+
+  const saveRecordingLink = useCallback(async () => {
+    const trimmed = recordingLinkDraft.trim();
+    if (trimmed) {
+      const u = maybeUrl(trimmed);
+      if (!u) {
+        setRecordingError("Enter a valid http:// or https:// URL.");
+        return;
+      }
+    }
+    setRecordingSaving(true);
+    setRecordingError(null);
+    try {
+      const { error } = await supabaseClient
+        .from("community_calendar_events")
+        .update({
+          recording_link_url: trimmed || null,
+        })
+        .eq("id", occurrence.eventId);
+      if (error) throw error;
+      onRecordingSaved?.();
+    } catch (e) {
+      const msg = supabaseErrorMessage(e);
+      const hint = communityAccessHint(msg);
+      setRecordingError(
+        [msg, hint ?? ""].filter(Boolean).join("\n\n") ||
+          "Could not save recording link."
+      );
+    } finally {
+      setRecordingSaving(false);
+    }
+  }, [recordingLinkDraft, occurrence.eventId, onRecordingSaved]);
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/55 px-4 py-6">
@@ -191,37 +255,46 @@ export function CommunityCalendarEventModal({
                 })}
             </div>
           ) : null}
-          {occurrence.recording_link_url || occurrence.recording_video_url ? (
-            <div className="space-y-2 border-t border-slate-100 pt-2">
+          {isPast && watchUrl ? (
+            <div className="border-t border-slate-100 pt-3">
+              <a
+                href={watchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+              >
+                <Video className="h-4 w-4" />
+                Watch recording
+              </a>
+            </div>
+          ) : null}
+          {isPast && canManage ? (
+            <div className="space-y-2 border-t border-slate-100 pt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Recording
+                Recording link
               </p>
-              {occurrence.recording_link_url ? (
-                <p className="flex items-start gap-2 text-sm">
-                  <LinkIcon className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                  <a
-                    href={occurrence.recording_link_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="break-all text-sky-700 hover:underline"
-                  >
-                    Open recording link
-                  </a>
-                </p>
+              <input
+                type="url"
+                value={recordingLinkDraft}
+                onChange={(e) => setRecordingLinkDraft(e.target.value)}
+                placeholder="https://zoom.us/rec/..."
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              />
+              {recordingError ? (
+                <p className="text-xs text-rose-700">{recordingError}</p>
               ) : null}
-              {occurrence.recording_video_url ? (
-                <p className="flex items-start gap-2 text-sm">
-                  <Video className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
-                  <a
-                    href={occurrence.recording_video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="break-all text-sky-700 hover:underline"
-                  >
-                    Watch uploaded recording
-                  </a>
-                </p>
-              ) : null}
+              <button
+                type="button"
+                disabled={recordingSaving}
+                onClick={() => void saveRecordingLink()}
+                className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+              >
+                {recordingSaving ? "Saving…" : "Save recording link"}
+              </button>
+              <p className="text-xs text-slate-500">
+                Applies to this event (including all dates in a recurring series).
+                Upload a video file via Edit if needed.
+              </p>
             </div>
           ) : null}
         </div>

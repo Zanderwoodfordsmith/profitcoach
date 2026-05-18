@@ -73,6 +73,10 @@ export default function AdminPaymentsPage() {
   const [creatingPayment, setCreatingPayment] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  const [importingStripe, setImportingStripe] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
   const [assignmentDrafts, setAssignmentDrafts] = useState<Record<string, string>>({});
 
   const coachOptions = useMemo(
@@ -199,6 +203,48 @@ export default function AdminPaymentsPage() {
     }
   }
 
+  async function handleImportFromStripe() {
+    setImportError(null);
+    setImportResult(null);
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setImportError("You must be signed in.");
+      return;
+    }
+
+    setImportingStripe(true);
+    try {
+      const res = await fetch("/api/admin/payments/backfill", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        processed?: number;
+        synced?: number;
+        skipped?: number;
+        failed?: number;
+      };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Stripe import failed.");
+      }
+
+      setImportResult(
+        `Imported ${body.synced ?? 0} payment(s) from Stripe (${body.processed ?? 0} processed, ${body.skipped ?? 0} skipped, ${body.failed ?? 0} failed).`
+      );
+      await loadPayments();
+    } catch (e) {
+      setImportError((e as Error).message);
+    } finally {
+      setImportingStripe(false);
+    }
+  }
+
   async function handleCreatePayment(e: React.FormEvent) {
     e.preventDefault();
     setCreateError(null);
@@ -263,6 +309,28 @@ export default function AdminPaymentsPage() {
 
       {checkingRole ? <p className="text-sm text-slate-600">Checking access…</p> : null}
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">Import from Stripe</h2>
+            <p className="mt-1 text-xs text-slate-600">
+              Pull all historical succeeded payment intents from your live Stripe account into this
+              list. New payments sync automatically once the Stripe webhook is configured.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleImportFromStripe()}
+            disabled={importingStripe || checkingRole}
+            className="inline-flex shrink-0 items-center justify-center rounded-full border border-sky-600 bg-white px-4 py-2 text-sm font-semibold text-sky-700 shadow-sm hover:bg-sky-50 disabled:cursor-wait disabled:opacity-70"
+          >
+            {importingStripe ? "Importing…" : "Import from Stripe"}
+          </button>
+        </div>
+        {importError ? <p className="mt-2 text-xs text-rose-600">{importError}</p> : null}
+        {importResult ? <p className="mt-2 text-xs text-emerald-700">{importResult}</p> : null}
+      </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Add payment</h2>
@@ -440,7 +508,7 @@ export default function AdminPaymentsPage() {
             {!loading && !error && payments.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-3 py-4 text-slate-600">
-                  No payments yet. Add one above to get started.
+                  No payments yet. Use Import from Stripe above, or add one manually.
                 </td>
               </tr>
             ) : null}

@@ -86,11 +86,6 @@ function IconWorkshop({ className }: { className?: string }) {
 export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   const base: DashboardNavItem[] = [
     { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
-    {
-      href: `${prefix}/workshop`,
-      label: "BOSS score",
-      icon: IconWorkshop,
-    },
   ];
   base.push(
     { href: `${prefix}/signature`, label: "Compass", icon: IconCompass },
@@ -111,21 +106,23 @@ export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNav
 }
 
 export function mobileMoreNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  return [
-    {
-      href: `${prefix}/workshop`,
-      label: "BOSS score",
-      icon: IconWorkshop,
-    },
-  ];
+  return [bossScoreNavItem(prefix)];
 }
 
-export function marketingNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  return [
+function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
+  return { href: `${prefix}/workshop`, label: "BOSS score", icon: IconWorkshop };
+}
+
+export function marketingNavItems(
+  prefix: "/coach" | "/admin",
+  options?: { includeBossScore?: boolean }
+): DashboardNavItem[] {
+  const items: DashboardNavItem[] = [
     { href: `${prefix}/prospects`, label: "Prospects", icon: IconUserPlus },
     { href: `${prefix}/funnel-analyzer`, label: "Funnel Analyzer", icon: IconFilter },
     { href: `${prefix}/message-generator`, label: "AI", icon: IconSparkles },
   ];
+  return options?.includeBossScore ? [bossScoreNavItem(prefix), ...items] : items;
 }
 
 export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {

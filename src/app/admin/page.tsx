@@ -89,6 +89,8 @@ type CoachRow = {
   /** CRM location id appended to Pro Coach Platform location URL. */
   crm_location_id: string | null;
   has_sales_robot_account: boolean;
+  sales_robot_active_campaigns: number | null;
+  sales_robot_paying_accounts: number | null;
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   ladder_level: string | null;
@@ -117,6 +119,8 @@ type CoachTableColumnVisibility = {
   lastLogin: boolean;
   crm: boolean;
   salesRobot: boolean;
+  activeCampaigns: boolean;
+  payingAccounts: boolean;
   profitCoachEmail: boolean;
   recurringPayment: boolean;
   leadWebhook: boolean;
@@ -148,6 +152,8 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   lastLogin: true,
   crm: true,
   salesRobot: true,
+  activeCampaigns: true,
+  payingAccounts: true,
   profitCoachEmail: true,
   recurringPayment: true,
   leadWebhook: true,
@@ -173,6 +179,8 @@ const COACH_TABLE_COLUMN_OPTIONS: Array<{
   { key: "lastLogin", label: "Last login" },
   { key: "crm", label: "CRM" },
   { key: "salesRobot", label: "Sales Robot" },
+  { key: "activeCampaigns", label: "Active campaigns" },
+  { key: "payingAccounts", label: "Paying accounts" },
   { key: "profitCoachEmail", label: "PC email" },
   { key: "recurringPayment", label: "Billing" },
   { key: "leadWebhook", label: "Lead webhook" },
@@ -961,6 +969,26 @@ export default function AdminPage() {
         </th>
       );
     }
+    if (key === "activeCampaigns") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2 text-center"
+          title="Active Sales Robot campaigns"
+        >
+          Campaigns
+        </th>
+      );
+    }
+    if (key === "payingAccounts") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2 text-center"
+          title="Paying Sales Robot accounts"
+        >
+          Paying
+        </th>
+      );
+    }
     if (key === "profitCoachEmail") {
       return (
         <th
@@ -1239,6 +1267,28 @@ export default function AdminPage() {
             }
             className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
           />
+        </td>
+      );
+    }
+    if (key === "activeCampaigns") {
+      return (
+        <td className="px-2 py-2 text-center align-middle text-xs text-slate-700">
+          {coach.sales_robot_active_campaigns == null ? (
+            <span className="text-slate-400">—</span>
+          ) : (
+            coach.sales_robot_active_campaigns
+          )}
+        </td>
+      );
+    }
+    if (key === "payingAccounts") {
+      return (
+        <td className="px-2 py-2 text-center align-middle text-xs text-slate-700">
+          {coach.sales_robot_paying_accounts == null ? (
+            <span className="text-slate-400">—</span>
+          ) : (
+            coach.sales_robot_paying_accounts
+          )}
         </td>
       );
     }
