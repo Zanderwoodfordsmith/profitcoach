@@ -86,17 +86,25 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, has_profit_coach_email_account, recurring_payment_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
     );
 
     let webhookMissing = false;
     let crmMissing = false;
     let conferenceStatusMissing = false;
+    let accountBillingMissing = false;
+    if (res.error?.code === "42703") {
+      res = await runSelect(
+        "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+      );
+      accountBillingMissing = true;
+    }
     if (res.error?.code === "42703") {
       res = await runSelect(
         "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       conferenceStatusMissing = true;
+      accountBillingMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
@@ -105,6 +113,7 @@ export async function GET(request: Request) {
       webhookMissing = true;
       crmMissing = true;
       conferenceStatusMissing = true;
+      accountBillingMissing = true;
     }
 
     let goalDateMissing = false;
@@ -250,6 +259,15 @@ export async function GET(request: Request) {
         crm_location_id: crmMissing
           ? null
           : (row.crm_location_id as string | null) ?? null,
+        has_sales_robot_account: accountBillingMissing
+          ? false
+          : !!row.has_sales_robot_account,
+        has_profit_coach_email_account: accountBillingMissing
+          ? false
+          : !!row.has_profit_coach_email_account,
+        recurring_payment_status: accountBillingMissing
+          ? null
+          : (row.recurring_payment_status as string | null) ?? null,
         ladder_level: currentLevel,
         ladder_goal_level: goalLevelMissing
           ? null

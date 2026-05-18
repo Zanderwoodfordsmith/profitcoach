@@ -18,6 +18,11 @@ import {
   Trash2,
 } from "lucide-react";
 
+import {
+  COACH_RECURRING_PAYMENT_LABELS,
+  COACH_RECURRING_PAYMENT_STATUSES,
+  type CoachRecurringPaymentStatus,
+} from "@/lib/coachBilling";
 import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -83,6 +88,9 @@ type CoachRow = {
   crm_profile_name: string | null;
   /** CRM location id appended to Pro Coach Platform location URL. */
   crm_location_id: string | null;
+  has_sales_robot_account: boolean;
+  has_profit_coach_email_account: boolean;
+  recurring_payment_status: CoachRecurringPaymentStatus | null;
   ladder_level: string | null;
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
@@ -108,6 +116,9 @@ type CoachTableColumnVisibility = {
   goalBy: boolean;
   lastLogin: boolean;
   crm: boolean;
+  salesRobot: boolean;
+  profitCoachEmail: boolean;
+  recurringPayment: boolean;
   leadWebhook: boolean;
   landing: boolean;
   viewAs: boolean;
@@ -136,6 +147,9 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   goalBy: true,
   lastLogin: true,
   crm: true,
+  salesRobot: true,
+  profitCoachEmail: true,
+  recurringPayment: true,
   leadWebhook: true,
   landing: true,
   viewAs: true,
@@ -158,6 +172,9 @@ const COACH_TABLE_COLUMN_OPTIONS: Array<{
   { key: "goalBy", label: "Goal by" },
   { key: "lastLogin", label: "Last login" },
   { key: "crm", label: "CRM" },
+  { key: "salesRobot", label: "Sales Robot" },
+  { key: "profitCoachEmail", label: "PC email" },
+  { key: "recurringPayment", label: "Billing" },
   { key: "leadWebhook", label: "Lead webhook" },
   { key: "landing", label: "Landing / preview" },
   { key: "viewAs", label: "View as coach" },
@@ -257,6 +274,17 @@ function conferenceStatusClasses(status: CoachRow["conference_status"]): string 
   if (status === "yes") return "bg-emerald-100 text-emerald-800";
   if (status === "maybe") return "bg-amber-100 text-amber-800";
   if (status === "no") return "bg-rose-100 text-rose-800";
+  return "bg-slate-100 text-slate-600";
+}
+
+function recurringPaymentStatusClasses(
+  status: CoachRow["recurring_payment_status"]
+): string {
+  if (status === "overdue") return "bg-rose-100 text-rose-800";
+  if (status === "complimentary") return "bg-slate-100 text-slate-700";
+  if (status === "annual_prepaid") return "bg-sky-100 text-sky-800";
+  if (status === "first_6_months") return "bg-violet-100 text-violet-800";
+  if (status === "monthly") return "bg-emerald-100 text-emerald-800";
   return "bg-slate-100 text-slate-600";
 }
 
@@ -547,6 +575,9 @@ export default function AdminPage() {
       lead_webhook_url?: string | null;
       crm_profile_name?: string | null;
       crm_location_id?: string | null;
+      has_sales_robot_account?: boolean;
+      has_profit_coach_email_account?: boolean;
+      recurring_payment_status?: CoachRecurringPaymentStatus | null;
       full_name?: string | null;
       coach_business_name?: string | null;
       linkedin_url?: string | null;
@@ -605,6 +636,18 @@ export default function AdminPage() {
                   : {}),
                 ...(body.crm_location_id !== undefined
                   ? { crm_location_id: body.crm_location_id }
+                  : {}),
+                ...(body.has_sales_robot_account !== undefined
+                  ? { has_sales_robot_account: body.has_sales_robot_account }
+                  : {}),
+                ...(body.has_profit_coach_email_account !== undefined
+                  ? {
+                      has_profit_coach_email_account:
+                        body.has_profit_coach_email_account,
+                    }
+                  : {}),
+                ...(body.recurring_payment_status !== undefined
+                  ? { recurring_payment_status: body.recurring_payment_status }
                   : {}),
                 ...(body.full_name !== undefined
                   ? { full_name: body.full_name }
@@ -908,6 +951,33 @@ export default function AdminPage() {
     if (key === "crm") {
       return <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">CRM</th>;
     }
+    if (key === "salesRobot") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-24 bg-slate-50 px-2 py-2 text-center"
+          title="Sales Robot account"
+        >
+          Sales Robot
+        </th>
+      );
+    }
+    if (key === "profitCoachEmail") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-24 bg-slate-50 px-2 py-2 text-center"
+          title="Profit Coach email account"
+        >
+          PC email
+        </th>
+      );
+    }
+    if (key === "recurringPayment") {
+      return (
+        <th className="sticky top-0 z-10 min-w-[9rem] bg-slate-50 px-2 py-2">
+          Billing
+        </th>
+      );
+    }
     if (key === "leadWebhook") {
       return (
         <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Lead webhook</th>
@@ -1151,6 +1221,70 @@ export default function AdminPage() {
               </a>
             ) : null}
           </div>
+        </td>
+      );
+    }
+    if (key === "salesRobot") {
+      return (
+        <td className="px-2 py-2 text-center">
+          <input
+            type="checkbox"
+            title="Has Sales Robot account"
+            checked={coach.has_sales_robot_account}
+            disabled={directorySavingId === coach.id}
+            onChange={(e) =>
+              void patchCoachRow(coach.id, {
+                has_sales_robot_account: e.target.checked,
+              })
+            }
+            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          />
+        </td>
+      );
+    }
+    if (key === "profitCoachEmail") {
+      return (
+        <td className="px-2 py-2 text-center">
+          <input
+            type="checkbox"
+            title="Has Profit Coach email account"
+            checked={coach.has_profit_coach_email_account}
+            disabled={directorySavingId === coach.id}
+            onChange={(e) =>
+              void patchCoachRow(coach.id, {
+                has_profit_coach_email_account: e.target.checked,
+              })
+            }
+            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+          />
+        </td>
+      );
+    }
+    if (key === "recurringPayment") {
+      return (
+        <td className="px-2 py-2 align-middle">
+          <select
+            title="Recurring payment status"
+            value={coach.recurring_payment_status ?? ""}
+            disabled={directorySavingId === coach.id}
+            onChange={(e) => {
+              const v = e.target.value;
+              void patchCoachRow(coach.id, {
+                recurring_payment_status:
+                  v === "" ? null : (v as CoachRecurringPaymentStatus),
+              });
+            }}
+            className={`max-w-full cursor-pointer rounded px-1 py-0.5 text-xs font-medium shadow-none ring-0 hover:opacity-90 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${recurringPaymentStatusClasses(
+              coach.recurring_payment_status
+            )}`}
+          >
+            <option value="">Not set</option>
+            {COACH_RECURRING_PAYMENT_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {COACH_RECURRING_PAYMENT_LABELS[status]}
+              </option>
+            ))}
+          </select>
         </td>
       );
     }

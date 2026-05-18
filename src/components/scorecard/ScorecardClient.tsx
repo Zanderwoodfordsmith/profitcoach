@@ -333,6 +333,7 @@ export function ScorecardClient() {
   const hydratedSavedAnchor = useRef(false);
   const [leftMetric, setLeftMetric] = useState<ScorecardRowId>("newClientsWon");
   const [rightMetric, setRightMetric] = useState<ScorecardRowId>("cashIn");
+  const [mobileWeekIndex, setMobileWeekIndex] = useState(0);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scorecardScrollRef = useRef<HTMLDivElement | null>(null);
@@ -443,6 +444,13 @@ export function ScorecardClient() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (weekStarts.length === 0) return;
+    const thisM = thisMondayIsoFromDate();
+    const idx = weekStarts.indexOf(thisM);
+    setMobileWeekIndex(idx >= 0 ? idx : Math.max(0, weekStarts.length - 1));
+  }, [weekStarts]);
 
   /** Scroll so “today” is in view when possible; historical-only windows start at left. */
   useLayoutEffect(() => {
@@ -585,9 +593,125 @@ export function ScorecardClient() {
         </p>
       ) : null}
 
+      <div className="mb-6 space-y-4 lg:hidden">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Week
+            </span>
+            <select
+              className="rounded-md border border-slate-200 px-3 py-2 text-sm"
+              value={mobileWeekIndex}
+              onChange={(e) => setMobileWeekIndex(Number(e.target.value))}
+            >
+              {weekStarts.map((iso, wi) => (
+                <option key={iso} value={wi}>
+                  {shortWeekLabel(iso)}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {SCORECARD_SECTIONS.map((section) => (
+          <section
+            key={section.title}
+            className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+          >
+            <h3 className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-800">
+              {section.title}
+            </h3>
+            <ul className="divide-y divide-slate-100">
+              {section.rows.map((row, ri) => {
+                if (row.kind === "section") {
+                  return (
+                    <li
+                      key={`${section.title}-sub-${ri}`}
+                      className="bg-slate-50/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600"
+                    >
+                      {row.label}
+                    </li>
+                  );
+                }
+                const wi = mobileWeekIndex;
+                const iso = weekStarts[wi];
+                const w = weeks[wi];
+                const tid = row.id;
+                const trow = targets[tid];
+                const display = rowWeeklyValue(tid, w?.manual_values ?? {});
+                const avg = averageWeeklyActual(tid, manualWeeks);
+                const light = scorecardTrafficLight({
+                  actualAvg: avg,
+                  weeklyTarget:
+                    monthlyIncomeGoal !== null ? trow.weekly : null,
+                  direction: SCORECARD_ROW_DIRECTION[tid],
+                });
+
+                return (
+                  <li
+                    key={`${section.title}-${tid}`}
+                    className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900">{row.label}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Target / wk:{" "}
+                        {monthlyIncomeGoal === null
+                          ? "—"
+                          : formatCell(tid, trow.weekly)}
+                      </p>
+                    </div>
+                    {row.kind === "input" && row.manualKey ? (
+                      <input
+                        className="w-full max-w-[8rem] rounded-md border border-slate-200 px-2 py-1.5 text-center text-sm tabular-nums sm:w-28"
+                        inputMode="decimal"
+                        value={
+                          typeof w?.manual_values?.[row.manualKey] === "number"
+                            ? String(w.manual_values[row.manualKey])
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const t = e.target.value;
+                          setWeeks((prev) => {
+                            const next = [...prev];
+                            const roww = { ...next[wi] };
+                            let num = 0;
+                            if (t.trim() !== "") {
+                              const n0 = Number(t);
+                              if (!Number.isFinite(n0) || n0 < 0) return prev;
+                              num = n0;
+                            }
+                            roww.manual_values = {
+                              ...roww.manual_values,
+                              [row.manualKey!]: num,
+                            };
+                            next[wi] = roww;
+                            queueSave(roww.week_start_date, roww.manual_values);
+                            return next;
+                          });
+                        }}
+                        aria-label={`${row.label} ${iso}`}
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold tabular-nums text-slate-800">
+                        {formatCell(tid, display)}
+                      </span>
+                    )}
+                    <span
+                      className={`h-3.5 w-3.5 shrink-0 rounded-full ${LIGHT_CLASS[light]}`}
+                      title={light}
+                      aria-label={`Status: ${light}`}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
+
       <div
         ref={scorecardScrollRef}
-        className="max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm"
+        className="hidden max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm lg:block"
         style={{
           maxWidth: `min(100%, ${220 + SCORECARD_VIEWPORT_WEEKS * 64 + 5 * 64}px)`,
         }}

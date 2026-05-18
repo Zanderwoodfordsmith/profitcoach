@@ -85,6 +85,24 @@ type CommentRow = {
   liked_by_me: boolean;
 };
 
+/** Stored mention token for composers: [@Name](mention:uuid) */
+function mentionTokenForAuthor(authorId: string, displayName: string): string {
+  const name = displayName.replace(/[[\]]/g, "").trim() || "member";
+  return `[@${name}](mention:${authorId}) `;
+}
+
+/** Top-level comment id for a reply (never nests deeper than one reply level). */
+function threadRootCommentId(
+  comment: CommentRow,
+  commentById: Map<string, CommentRow>
+): string {
+  const parentId = comment.parent_comment_id;
+  if (!parentId) return comment.id;
+  const parent = commentById.get(parentId);
+  if (!parent || parent.parent_comment_id === null) return parentId;
+  return parent.parent_comment_id;
+}
+
 function toLocalDateTimeInputValue(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -113,7 +131,7 @@ function CommentLikeButton({
         e.stopPropagation();
         onToggle();
       }}
-      className={`inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-xs tabular-nums transition hover:bg-slate-200/70 disabled:opacity-50 ${
+      className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm tabular-nums transition hover:bg-slate-200/70 disabled:opacity-50 ${
         likedByMe
           ? "font-medium text-sky-700"
           : "text-slate-500 hover:text-slate-800"
@@ -122,7 +140,7 @@ function CommentLikeButton({
       aria-label={likedByMe ? "Unlike comment" : "Like comment"}
     >
       <ThumbsUp
-        className={`h-3.5 w-3.5 shrink-0 ${likedByMe ? "fill-sky-600 text-sky-600" : ""}`}
+        className={`h-4 w-4 shrink-0 ${likedByMe ? "fill-sky-600 text-sky-600" : ""}`}
         strokeWidth={2}
       />
       <span>{likeCount}</span>
@@ -932,17 +950,29 @@ export function PostDetailModal({
     [comments]
   );
 
+  const commentById = useMemo(() => {
+    const m = new Map<string, CommentRow>();
+    for (const c of comments) m.set(c.id, c);
+    return m;
+  }, [comments]);
+
   const repliesByParent = useMemo(() => {
     const m = new Map<string, CommentRow[]>();
     for (const c of comments) {
-      if (c.parent_comment_id) {
-        const arr = m.get(c.parent_comment_id) ?? [];
-        arr.push(c);
-        m.set(c.parent_comment_id, arr);
-      }
+      if (!c.parent_comment_id) continue;
+      const rootId = threadRootCommentId(c, commentById);
+      const arr = m.get(rootId) ?? [];
+      arr.push(c);
+      m.set(rootId, arr);
+    }
+    for (const arr of m.values()) {
+      arr.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
     }
     return m;
-  }, [comments]);
+  }, [comments, commentById]);
 
   const commentedByMe = useMemo(() => {
     if (post.commented_by_me) return true;
@@ -1166,9 +1196,27 @@ export function PostDetailModal({
     });
   }, []);
 
+  const openReplyComposer = useCallback((target: CommentRow) => {
+    setReplyOpenFor((current) => {
+      const opening = current !== target.id;
+      if (opening && target.parent_comment_id) {
+        const authorName = target.author
+          ? displayNameFromProfile(target.author)
+          : "member";
+        setReplyDrafts((d) => ({
+          ...d,
+          [target.id]:
+            (d[target.id] ?? "").trim() ||
+            mentionTokenForAuthor(target.author_id, authorName),
+        }));
+      }
+      return opening ? target.id : null;
+    });
+  }, []);
+
   const submitReply = useCallback(
-    async (parentId: string) => {
-      const text = (replyDrafts[parentId] ?? "").trim();
+    async (draftKey: string, threadParentId: string) => {
+      const text = (replyDrafts[draftKey] ?? "").trim();
       if (!text || submitting) return;
       setSubmitting(true);
       const authorId = await getCommunityAuthorId(coachPersona);
@@ -1182,11 +1230,11 @@ export function PostDetailModal({
           post_id: post.id,
           author_id: authorId,
           body: text,
-          parent_comment_id: parentId,
+          parent_comment_id: threadParentId,
         });
       setSubmitting(false);
       if (!error) {
-        setReplyDrafts((d) => ({ ...d, [parentId]: "" }));
+        setReplyDrafts((d) => ({ ...d, [draftKey]: "" }));
         setReplyOpenFor(null);
         await loadComments();
         await onPostsChanged();
@@ -1296,16 +1344,16 @@ export function PostDetailModal({
       aria-labelledby="post-detail-title"
     >
       <div
-        className="relative flex max-h-[90vh] min-h-0 w-full max-w-[calc(42rem*1.15)] flex-col overflow-visible rounded-2xl border border-slate-200 bg-white shadow-xl"
+        className="relative flex max-h-[90dvh] min-h-0 w-full max-w-[calc(42rem*1.15)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:bg-slate-50 hover:text-slate-800"
+          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800"
           aria-label="Close"
         >
-          <X className="h-3 w-3" strokeWidth={2.5} />
+          <X className="h-4 w-4" strokeWidth={2.5} />
         </button>
         <div
           className={`shrink-0 overflow-hidden border-slate-200 bg-white/95 backdrop-blur transition-[max-height,opacity] duration-200 ease-out ${
@@ -1314,7 +1362,7 @@ export function PostDetailModal({
               : "pointer-events-none max-h-0 border-b-0 opacity-0"
           }`}
         >
-          <div className="flex items-center gap-2.5 py-2.5 pl-[2.1875rem] pr-[4.375rem]">
+          <div className="flex items-center gap-2.5 py-2.5 pl-4 pr-14 sm:pl-8 sm:pr-16">
             <CommunityAuthorAvatar profile={headerAuthor} size="sm" />
             <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-slate-900">
               {post.title}
@@ -1348,7 +1396,7 @@ export function PostDetailModal({
         </div>
         <div
           ref={scrollContainerRef}
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden py-5 px-[2.1875rem]"
+          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-8"
         >
           <div className="flex items-start gap-3">
             <CommunityAuthorAvatar profile={headerAuthor} size="md" />
@@ -1904,12 +1952,8 @@ export function PostDetailModal({
                             />
                             <button
                               type="button"
-                              className="text-[13px] font-medium text-sky-700 hover:underline"
-                              onClick={() =>
-                                setReplyOpenFor((x) =>
-                                  x === c.id ? null : c.id
-                                )
-                              }
+                              className="rounded-md px-2 py-1 text-sm font-medium text-sky-700 transition hover:bg-slate-200/70 hover:underline"
+                              onClick={() => openReplyComposer(c)}
                             >
                               Reply
                             </button>
@@ -1932,7 +1976,7 @@ export function PostDetailModal({
                               <div className="flex gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => void submitReply(c.id)}
+                                  onClick={() => void submitReply(c.id, c.id)}
                                   disabled={
                                     submitting ||
                                     !(replyDrafts[c.id] ?? "").trim()
@@ -2120,7 +2164,57 @@ export function PostDetailModal({
                                               )
                                             }
                                           />
+                                          <button
+                                            type="button"
+                                            className="rounded-md px-2 py-1 text-sm font-medium text-sky-700 transition hover:bg-slate-200/70 hover:underline"
+                                            onClick={() => openReplyComposer(r)}
+                                          >
+                                            Reply
+                                          </button>
                                         </div>
+
+                                        {replyOpenFor === r.id ? (
+                                          <div className="mt-2 space-y-2">
+                                            <MentionTextarea
+                                              value={replyDrafts[r.id] ?? ""}
+                                              onChange={(v) =>
+                                                setReplyDrafts((d) => ({
+                                                  ...d,
+                                                  [r.id]: v,
+                                                }))
+                                              }
+                                              placeholder="Write a reply…"
+                                              rows={3}
+                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                            />
+                                            <div className="flex gap-2">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  void submitReply(r.id, c.id)
+                                                }
+                                                disabled={
+                                                  submitting ||
+                                                  !(
+                                                    replyDrafts[r.id] ?? ""
+                                                  ).trim()
+                                                }
+                                                className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
+                                              >
+                                                Reply
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setReplyOpenFor(null)
+                                                }
+                                                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
+                                              >
+                                                Cancel
+                                              </button>
+                                            </div>
+                                          </div>
+                                        ) : null}
                                       </div>
                                     </div>
                                   </li>

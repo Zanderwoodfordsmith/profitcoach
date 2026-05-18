@@ -6,6 +6,7 @@ import { LayoutGrid, Layers } from "lucide-react";
 import { Outfit } from "next/font/google";
 import { AREAS, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
+import { BossGridMobileStacked } from "./BossGridMobileStacked";
 import { BossQuestionTooltipPortal, useBossQuestionTooltip, BOSS_QUESTION_TOOLTIP_DELAY_MS } from "./bossQuestionTooltip";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -241,6 +242,15 @@ export function BossGridTransposed({
       return true;
     },
     [glass, onScoreChange, openTooltipPinned]
+  );
+
+  const mobileStackedView = (
+    <BossGridMobileStacked
+      answers={answers}
+      interactive={interactive}
+      onScoreChange={onScoreChange}
+      playbookLinkBase={playbookLinkBase}
+    />
   );
 
   const totalScore = glass ? getTotalScore(answers) : 0;
@@ -900,7 +910,7 @@ export function BossGridTransposed({
 
     const tableWrapper = (
       <div
-        className="overflow-x-auto rounded-xl p-4 sm:p-5"
+        className="hidden overflow-x-auto rounded-xl p-4 sm:p-5 lg:block"
         style={
           isLightGlass
             ? {
@@ -926,7 +936,8 @@ export function BossGridTransposed({
     if (title) {
       return (
         <>
-          <div className={`flex w-full flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
+          {mobileStackedView}
+          <div className={`hidden w-full flex-col lg:flex ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
             <div
               className="flex w-full flex-wrap items-center justify-between gap-4"
               style={{ padding: "0 0 22px", minHeight: 52 }}
@@ -959,7 +970,8 @@ export function BossGridTransposed({
 
     return (
       <>
-        <div className={`flex flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
+        {mobileStackedView}
+        <div className={`hidden flex-col lg:flex ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif" }}>
           {!hideGlassScoreBar ? <div style={{ padding: "16px 20px 22px" }}>{scoreBar}</div> : null}
           <div className="mx-auto w-full max-w-full overflow-x-auto" style={{ display: "flex", justifyContent: "center" }}>
             {tableWrapper}
@@ -975,11 +987,14 @@ export function BossGridTransposed({
   }
 
   return (
-    <div
-      className={`overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm ${outfit.variable}`}
-      style={{ fontFamily: "var(--font-outfit), sans-serif", boxShadow: "0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.015)" }}
-    >
-      {tableContent}
-    </div>
+    <>
+      {mobileStackedView}
+      <div
+        className={`hidden overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm lg:block ${outfit.variable}`}
+        style={{ fontFamily: "var(--font-outfit), sans-serif", boxShadow: "0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.015)" }}
+      >
+        {tableContent}
+      </div>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
+import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
@@ -150,7 +151,7 @@ export default function CoachLayout({
 
   return (
     <div
-      className={`min-h-screen ${shellPadClass} text-slate-900 ${
+      className={`min-h-screen overflow-x-hidden ${shellPadClass} text-slate-900 ${
         playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"
       }`}
     >
@@ -202,10 +203,8 @@ export default function CoachLayout({
             ) : null}
           </div>
         ) : (
-          <div
-            className={`fixed right-3 top-3 z-[100] flex flex-col items-end gap-2 sm:right-5 ${topClusterMaxW}`}
-          >
-            <DashboardTopActions
+          <>
+            <MobileDashboardTopBar
               variant="coach"
               signingOut={signingOut}
               onSignOut={handleSignOut}
@@ -217,8 +216,24 @@ export default function CoachLayout({
                     }
                   : null
               }
-              className="!static !right-auto !top-auto z-0"
             />
+            <div
+              className={`fixed right-3 top-3 z-[100] hidden flex-col items-end gap-2 sm:right-5 md:flex ${topClusterMaxW}`}
+            >
+              <DashboardTopActions
+                variant="coach"
+                signingOut={signingOut}
+                onSignOut={handleSignOut}
+                avatarOverride={
+                  isImpersonatingCoach
+                    ? {
+                        name: coachName ?? "Coach",
+                        avatarUrl: coachAvatarUrl,
+                      }
+                    : null
+                }
+                className="!static !right-auto !top-auto z-0"
+              />
             {isImpersonatingCoach ? (
               <div
                 className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
@@ -238,7 +253,8 @@ export default function CoachLayout({
                 </button>
               </div>
             ) : null}
-          </div>
+            </div>
+          </>
         )}
       {bossWorkshopPage ? (
         <button
@@ -257,15 +273,31 @@ export default function CoachLayout({
           )}
         </button>
       ) : null}
-      {sidebarVisible ? <DashboardSidebar variant="coach" /> : null}
+      {sidebarVisible ? (
+        <DashboardSidebar
+          variant="coach"
+          signingOut={signingOut}
+          onSignOut={handleSignOut}
+          avatarOverride={
+            isImpersonatingCoach
+              ? {
+                  name: coachName ?? "Coach",
+                  avatarUrl: coachAvatarUrl,
+                }
+              : null
+          }
+        />
+      ) : null}
         <main
           className={`min-h-screen min-w-0 w-full pt-0 ${
             playbooksReader
               ? "px-0 pb-10"
-              : `px-[60px] ${
+              : `px-4 md:px-[60px] ${
                   sidebarVisible
-                    ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "pb-6"
+                    ? "max-md:pt-14 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                    : isMinimalWorkshopChrome
+                      ? "max-md:pt-14 pb-6"
+                      : "pb-6"
                 }`
           }`}
         >

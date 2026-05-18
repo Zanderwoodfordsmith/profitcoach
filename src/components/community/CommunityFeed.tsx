@@ -57,7 +57,7 @@ import { profileInitialsFromName } from "@/lib/communityProfile";
 import { expandCommunityCalendar } from "@/lib/communityCalendarExpand";
 import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
-import { formatCommunityRelativeFutureLong } from "@/lib/communityRelativeTime";
+import { formatCommunityEventHappeningWhen } from "@/lib/communityRelativeTime";
 
 const POSTS_PER_PAGE = 20;
 /**
@@ -1660,9 +1660,10 @@ export function CommunityFeed() {
                     >
                       {calendarNextOccurrence.title}
                     </button>{" "}
-                    is happening in{" "}
-                    {formatCommunityRelativeFutureLong(
-                      calendarNextOccurrence.startsAtIso
+                    is happening{" "}
+                    {formatCommunityEventHappeningWhen(
+                      calendarNextOccurrence.startsAtIso,
+                      calendarNextOccurrence.display_timezone
                     )}
                   </span>
                 </div>

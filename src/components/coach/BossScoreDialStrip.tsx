@@ -32,7 +32,7 @@ function RingDial({
   const sweepDeg = (Math.min(100, Math.max(0, pctFill)) / 100) * 360;
 
   return (
-    <div className="flex min-w-0 flex-col items-center gap-3 border-slate-200/80 py-1 text-center sm:border-r sm:border-slate-200/80 sm:px-2 sm:last:border-r-0 md:px-3">
+    <div className="flex min-w-0 flex-col items-center gap-3 border-slate-200/80 py-1 text-center md:border-r md:border-slate-200/80 md:px-3 md:last:border-r-0">
       <div
         className="relative h-[7.25rem] w-[7.25rem] shrink-0 sm:h-[8.25rem] sm:w-[8.25rem] md:h-[8.75rem] md:w-[8.75rem]"
         role="img"
@@ -149,7 +149,37 @@ export function BossScoreDialStrip({ totalScore, pillarStats, className = "" }: 
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="grid w-full grid-cols-5 gap-0 sm:gap-0">
+      <div className="-mx-1 flex gap-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch] snap-x snap-mandatory md:hidden">
+        <div className="w-[min(42vw,11rem)] shrink-0 snap-center sm:w-[min(38vw,12rem)]">
+          <RingDial
+            pctFill={overallPct}
+            color={OVERALL_COLOR}
+            centerPrimary={`${cappedTotal}`}
+            centerSecondary="/ 100"
+            label="BOSS score"
+            ariaLabel={`BOSS score ${cappedTotal} out of 100`}
+          />
+        </div>
+        {pillarStats.map((stat) => {
+          const pctFill =
+            stat.maxScore > 0 ? Math.min(100, Math.round((stat.sum / stat.maxScore) * 100)) : 0;
+          return (
+            <div
+              key={stat.pillarKey}
+              className="w-[min(42vw,11rem)] shrink-0 snap-center sm:w-[min(38vw,12rem)]"
+            >
+              <RingDial
+                pctFill={pctFill}
+                color={stat.color}
+                centerPrimary={`${pctFill}%`}
+                label={stat.label}
+                ariaLabel={`${stat.label}: ${pctFill}% of pillar maximum, ${stat.sum} of ${stat.maxScore} points`}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="hidden w-full grid-cols-5 gap-0 md:grid">
         <RingDial
           pctFill={overallPct}
           color={OVERALL_COLOR}
@@ -159,7 +189,8 @@ export function BossScoreDialStrip({ totalScore, pillarStats, className = "" }: 
           ariaLabel={`BOSS score ${cappedTotal} out of 100`}
         />
         {pillarStats.map((stat) => {
-          const pctFill = stat.maxScore > 0 ? Math.min(100, Math.round((stat.sum / stat.maxScore) * 100)) : 0;
+          const pctFill =
+            stat.maxScore > 0 ? Math.min(100, Math.round((stat.sum / stat.maxScore) * 100)) : 0;
           return (
             <RingDial
               key={stat.pillarKey}

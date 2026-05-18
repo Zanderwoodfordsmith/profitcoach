@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, Check, ChevronDown, LogOut } from "lucide-react";
-import { supabaseClient } from "@/lib/supabaseClient";
 import {
   displayNameFromProfile,
   profileInitialsFromName,
 } from "@/lib/communityProfile";
+import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { extractMentionUserIds } from "@/lib/communityMentions";
+import { communityPostCardPreview } from "@/lib/communityPostMarkdown";
 
 type DashboardTopActionsProps = {
   variant: "coach" | "admin";
@@ -20,15 +22,8 @@ type DashboardTopActionsProps = {
     avatarUrl: string | null;
   } | null;
   className?: string;
-};
-
-type TopProfile = {
-  id: string;
-  role: string | null;
-  full_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  avatar_url: string | null;
+  /** Mobile top bar: bell only (account is in bottom nav). */
+  notificationsOnly?: boolean;
 };
 
 type NotificationFilter = "all" | "replies" | "announcements";
@@ -101,26 +96,16 @@ function relativeAgo(iso: string): string {
   return `${days}d`;
 }
 
-function replaceMentionIdsWithNames(
-  text: string,
-  mentionNameById: Record<string, string>
-): string {
-  if (!text) return text;
-  return text.replace(/@([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})/gi, (_full, id: string) => {
-    const name = mentionNameById[id];
-    return name ? `@${name}` : `@${id}`;
-  });
-}
-
 export function DashboardTopActions({
   variant,
   signingOut,
   onSignOut,
   avatarOverride,
   className,
+  notificationsOnly = false,
 }: DashboardTopActionsProps) {
-  const [profile, setProfile] = useState<TopProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { profile, profileLoading, avatarLabel, avatarImageUrl } =
+    useDashboardProfile(avatarOverride);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [filter, setFilter] = useState<NotificationFilter>("all");
@@ -136,25 +121,10 @@ export function DashboardTopActions({
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const communityHref = variant === "coach" ? "/coach/community" : "/admin/community";
 
-  const loadProfile = useCallback(async () => {
-    setProfileLoading(true);
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-    if (!user) {
-      setProfile(null);
-      setProfileLoading(false);
-      return;
-    }
-    const { data } = await supabaseClient
-      .from("profiles")
-      .select("id, role, full_name, first_name, last_name, avatar_url")
-      .eq("id", user.id)
-      .maybeSingle();
-    setProfile((data as TopProfile | null) ?? null);
-    setReadState(loadReadState(user.id));
-    setProfileLoading(false);
-  }, []);
+  useEffect(() => {
+    if (!profile?.id) return;
+    setReadState(loadReadState(profile.id));
+  }, [profile?.id]);
 
   const loadNotifications = useCallback(async () => {
     const uid = profile?.id;
@@ -271,7 +241,7 @@ export function DashboardTopActions({
           : {};
       for (const item of next) {
         if (item.type !== "replies") continue;
-        item.body = replaceMentionIdsWithNames(item.body, mentionNameById);
+        item.body = communityPostCardPreview(item.body, mentionNameById);
       }
 
       if (!announcementsRes.error) {
@@ -318,10 +288,6 @@ export function DashboardTopActions({
   }, [communityHref, profile?.id]);
 
   useEffect(() => {
-    void loadProfile();
-  }, [loadProfile]);
-
-  useEffect(() => {
     if (!profile?.id) return;
     void loadNotifications();
     const handle = window.setInterval(() => {
@@ -359,14 +325,6 @@ export function DashboardTopActions({
     }
     return count;
   }, [notifications, readState]);
-
-  const avatarLabel = useMemo(() => {
-    if (avatarOverride?.name) return avatarOverride.name;
-    if (!profile) return "Account";
-    return displayNameFromProfile(profile);
-  }, [avatarOverride?.name, profile]);
-
-  const avatarImageUrl = avatarOverride?.avatarUrl ?? profile?.avatar_url ?? null;
 
   const markAllAsRead = useCallback(() => {
     if (!profile?.id) return;
@@ -533,6 +491,7 @@ export function DashboardTopActions({
         ) : null}
       </div>
 
+      {!notificationsOnly ? (
       <div className="relative" ref={avatarMenuRef}>
         <button
           type="button"
@@ -585,6 +544,7 @@ export function DashboardTopActions({
           </div>
         ) : null}
       </div>
+      ) : null}
     </div>
   );
 }

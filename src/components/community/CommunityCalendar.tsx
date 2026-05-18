@@ -41,6 +41,7 @@ import {
 } from "@/lib/supabaseErrorMessage";
 import { AddCommunityEventModal } from "@/components/community/AddCommunityEventModal";
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
+import { useBelowBreakpoint } from "@/hooks/useBreakpoint";
 
 const LIST_PAGE_SIZE = 6;
 
@@ -206,9 +207,16 @@ export function CommunityCalendar({
   onAddModalOpenChange,
   canAddEvent = false,
 }: Props) {
+  const isBelowMd = useBelowBreakpoint("md");
   const [viewMode, setViewMode] = useState<"calendar" | "list" | "recordings">(
     "calendar"
   );
+
+  useEffect(() => {
+    if (isBelowMd) {
+      setViewMode((mode) => (mode === "calendar" ? "list" : mode));
+    }
+  }, [isBelowMd]);
   const [calendarLayout, setCalendarLayout] = useState<CalendarLayout>("week");
   const [viewTz, setViewTz] = useState(defaultCommunityCalendarTimezone);
   const [focusDate, setFocusDate] = useState(() => {
@@ -555,8 +563,11 @@ export function CommunityCalendar({
     });
   };
 
+  const effectiveViewMode =
+    isBelowMd && viewMode === "calendar" ? "list" : viewMode;
+
   const periodNavLabel =
-    viewMode === "list" || calendarLayout === "month" ? "month" : "week";
+    effectiveViewMode === "list" || calendarLayout === "month" ? "month" : "week";
 
   const deleteEvent = useCallback(
     async (eventId: string) => {
@@ -727,7 +738,7 @@ export function CommunityCalendar({
                   aria-label="Calendar view"
                   aria-pressed={viewMode === "calendar"}
                   onClick={() => setViewMode("calendar")}
-                  className={`flex items-center justify-center px-3 transition ${
+                  className={`hidden items-center justify-center px-3 transition md:flex ${
                     viewMode === "calendar"
                       ? "bg-sky-100 text-slate-900"
                       : "bg-white text-slate-600 hover:bg-slate-50"
@@ -736,7 +747,7 @@ export function CommunityCalendar({
                   <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
                 </button>
                 <span
-                  className="w-px shrink-0 self-stretch bg-slate-300"
+                  className="hidden w-px shrink-0 self-stretch bg-slate-300 md:block"
                   aria-hidden
                 />
                 <button
@@ -787,10 +798,10 @@ export function CommunityCalendar({
 
           {loading ? (
             <p className="mt-8 text-center text-sm text-slate-500">Loading…</p>
-          ) : viewMode === "calendar" ? (
+          ) : effectiveViewMode === "calendar" ? (
             calendarLayout === "month" ? (
-              <div className="mt-6 overflow-x-auto">
-                <div className="grid min-w-[640px] grid-cols-7 border border-slate-200">
+              <div className="mt-6 max-md:hidden overflow-x-auto lg:overflow-visible">
+                <div className="grid min-w-[640px] grid-cols-7 border border-slate-200 lg:min-w-0 lg:w-full">
                   {WEEK_HEADERS.map((h) => (
                     <div
                       key={h}
@@ -861,8 +872,8 @@ export function CommunityCalendar({
                 </div>
               </div>
             ) : (
-              <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                <div className="min-w-[44rem]">
+              <div className="mt-6 max-lg:overflow-x-auto rounded-xl border border-slate-200 bg-white max-md:hidden">
+                <div className="min-w-[44rem] lg:min-w-0">
                   <div
                     className={`${WEEK_GRID_CLASS} items-end border-b border-slate-200 bg-white`}
                     style={{ minHeight: WEEK_HEADER_ROW_PX }}
@@ -1035,7 +1046,7 @@ export function CommunityCalendar({
                 </div>
               </div>
             )
-          ) : viewMode === "list" ? (
+          ) : effectiveViewMode === "list" ? (
             <div className="mt-6 space-y-3">
               {listOccurrences.length === 0 ? (
                 <p className="text-center text-sm text-slate-500">

@@ -11,6 +11,7 @@ import {
   type AnswersMap,
   type PillarScores,
 } from "@/lib/bossScores";
+import { BossGridMobileStacked } from "./BossGridMobileStacked";
 import { SpeedDials } from "./SpeedDials";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -200,7 +201,14 @@ export function BossGridBordered({
     : null;
 
   return (
-    <div className={`flex flex-col w-full min-w-[1100px] ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif", background: "#FAFBFC" }}>
+    <div className={`flex w-full flex-col ${outfit.variable}`} style={{ fontFamily: "var(--font-outfit), sans-serif", background: "#FAFBFC" }}>
+      <BossGridMobileStacked
+        answers={answers}
+        interactive={interactive}
+        onScoreChange={onScoreChange}
+        playbookLinkBase={playbookLinkBase}
+      />
+      <div className="hidden min-w-0 flex-col lg:flex lg:min-w-[1100px]">
       {showDials && <SpeedDials pillarScores={pillarScores} gridCols={gridCols} />}
       <div
         className="grid w-full min-w-[1100px] gap-x-3 gap-y-0"
@@ -323,6 +331,7 @@ export function BossGridBordered({
           </div>,
           document.body
         )}
+      </div>
     </div>
   );
 }

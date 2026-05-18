@@ -10,6 +10,7 @@ import {
   type AnswersMap,
   type PillarScores,
 } from "@/lib/bossScores";
+import { BossGridMobileStacked } from "./BossGridMobileStacked";
 import { SpeedDials } from "./SpeedDials";
 
 const TOOLTIP_DELAY_MS = 800;
@@ -125,10 +126,17 @@ export function BossGridGlass({
     : null;
 
   return (
-    <div className="flex flex-col w-full min-w-[1100px]">
+    <div className="flex w-full flex-col">
+      <BossGridMobileStacked
+        answers={answers}
+        interactive={interactive}
+        onScoreChange={onScoreChange}
+        playbookLinkBase={playbookLinkBase}
+      />
+      <div className="hidden min-w-0 flex-col lg:flex lg:min-w-[1100px]">
       {showDials && <SpeedDials pillarScores={pillarScores} gridCols={gridCols} />}
       <div
-        className="grid w-full text-[0.8rem] min-w-[1100px] gap-x-3 gap-y-0"
+        className="grid w-full min-w-[1100px] gap-x-3 gap-y-0 text-[0.8rem]"
         style={{
           gridTemplateColumns: gridCols,
           gridTemplateRows: "auto repeat(6, auto)",
@@ -235,6 +243,7 @@ export function BossGridGlass({
           </div>,
           document.body
         )}
+      </div>
     </div>
   );
 }

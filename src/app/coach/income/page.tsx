@@ -593,7 +593,55 @@ export default function CoachIncomePage() {
       ) : null}
 
       {tab === "matrix" && matrix ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <>
+        <div className="space-y-3 lg:hidden">
+          {matrix.rows.map((row) => (
+            <article
+              key={row.contactId ?? row.label}
+              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <h3 className="font-semibold text-slate-900">{row.label}</h3>
+              <dl className="mt-3 space-y-2">
+                {matrix.months.map((mk) => (
+                  <div key={mk} className="flex justify-between gap-2 text-sm">
+                    <dt className="text-slate-500">{formatMonthLabel(mk)}</dt>
+                    <dd className="font-medium tabular-nums text-slate-900">
+                      {row.cells[mk]
+                        ? formatMoney(row.cells[mk], defaultCurrency)
+                        : "—"}
+                    </dd>
+                  </div>
+                ))}
+                <div className="flex justify-between gap-2 border-t border-slate-100 pt-2 text-sm font-semibold">
+                  <dt className="text-slate-700">Total</dt>
+                  <dd className="tabular-nums text-slate-900">
+                    {row.rowTotal
+                      ? formatMoney(row.rowTotal, defaultCurrency)
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+          ))}
+          {matrix.unallocated ? (
+            <article className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 shadow-sm">
+              <h3 className="font-semibold text-amber-950">{matrix.unallocated.label}</h3>
+              <dl className="mt-3 space-y-2">
+                {matrix.months.map((mk) => (
+                  <div key={mk} className="flex justify-between gap-2 text-sm">
+                    <dt className="text-amber-900/80">{formatMonthLabel(mk)}</dt>
+                    <dd className="font-medium tabular-nums text-amber-950">
+                      {matrix.unallocated!.cells[mk]
+                        ? formatMoney(matrix.unallocated!.cells[mk], defaultCurrency)
+                        : "—"}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </article>
+          ) : null}
+        </div>
+        <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm lg:block">
           <table className="w-full min-w-[36rem] border-separate border-spacing-0 text-left text-sm">
             <thead>
               <tr className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
@@ -660,6 +708,7 @@ export default function CoachIncomePage() {
             </tbody>
           </table>
         </div>
+        </>
       ) : null}
 
       {tab === "matrix" && loading ? (

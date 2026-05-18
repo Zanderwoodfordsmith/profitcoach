@@ -10,6 +10,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
+import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 
@@ -78,11 +79,21 @@ export default function AdminLayout({
             <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
           </div>
         ) : (
-          <DashboardTopActions
-            variant="admin"
-            signingOut={signingOut}
-            onSignOut={handleSignOut}
-          />
+          <>
+            <MobileDashboardTopBar
+              variant="admin"
+              signingOut={signingOut}
+              onSignOut={handleSignOut}
+            />
+            <div className="fixed right-5 top-3 z-[90] hidden md:block">
+              <DashboardTopActions
+                variant="admin"
+                signingOut={signingOut}
+                onSignOut={handleSignOut}
+                className="!static !right-auto !top-auto"
+              />
+            </div>
+          </>
         )}
         {bossWorkshopPage ? (
           <button
@@ -101,14 +112,20 @@ export default function AdminLayout({
             )}
           </button>
         ) : null}
-        {sidebarVisible ? <DashboardSidebar variant="admin" /> : null}
+        {sidebarVisible ? (
+          <DashboardSidebar
+            variant="admin"
+            signingOut={signingOut}
+            onSignOut={handleSignOut}
+          />
+        ) : null}
         <main
           className={`min-h-screen min-w-0 w-full pt-0 ${
             playbooksReader
               ? "px-0 pb-10"
-              : `px-[60px] ${
+              : `px-4 md:px-[60px] ${
                   sidebarVisible
-                    ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                    ? "max-md:pt-14 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
                     : "pb-6"
                 }`
           }`}

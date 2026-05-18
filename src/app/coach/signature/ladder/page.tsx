@@ -1394,7 +1394,34 @@ export default function CoachCommunityLadderPage() {
                   <p className="text-xs font-semibold text-slate-900">
                     Lead volume required
                   </p>
-                  <div className="mt-2 overflow-x-auto">
+                  <div className="mt-2 space-y-3 lg:hidden">
+                    {[5, 10, 15].map((ratio) => (
+                      <div
+                        key={`lead-ratio-card-${ratio}`}
+                        className="rounded-lg border border-slate-200 bg-slate-50/80 p-3"
+                      >
+                        <p className="text-xs font-semibold text-slate-700">
+                          {ratio} → 1 call
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {closeRateCallScenarios.map((row) => (
+                            <li
+                              key={`lead-card-${ratio}-${row.label}`}
+                              className="flex justify-between gap-2 text-sm"
+                            >
+                              <span className="text-slate-600">
+                                {row.calls === null ? "—" : row.calls} calls
+                              </span>
+                              <span className="font-semibold tabular-nums text-slate-900">
+                                {row.calls === null ? "—" : row.calls * ratio}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 hidden overflow-x-auto lg:block">
                     <table className="min-w-full border-collapse text-sm">
                       <thead>
                         <tr className="border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wide text-slate-500">

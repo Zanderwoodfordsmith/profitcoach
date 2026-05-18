@@ -430,7 +430,7 @@ export function ContactBossWorkshopBody({
       {!loading && !error && noAssessmentBanner}
 
       {showCharts && (
-        <section className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
           <div className="grid gap-8 md:grid-cols-3">
             <div className="flex justify-center">
@@ -459,7 +459,7 @@ export function ContactBossWorkshopBody({
       )}
 
       {!loading && !error && (
-        <section className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/80 p-5 shadow-sm sm:p-6">
+        <section className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm sm:p-6">
           <BossScoreDialStrip totalScore={liveTotal} pillarStats={pillarDialStats} className="mb-6" />
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
             <div className="min-w-0 flex-1">

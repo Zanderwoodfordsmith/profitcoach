@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCoachRecurringPaymentStatus } from "@/lib/coachBilling";
 import { isValidLadderLevelId } from "@/lib/ladder";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -63,6 +64,9 @@ type PatchBody = {
   crm_profile_name?: string | null;
   /** CRM location id appended to Pro Coach Platform location URL. */
   crm_location_id?: string | null;
+  has_sales_robot_account?: boolean;
+  has_profit_coach_email_account?: boolean;
+  recurring_payment_status?: string | null;
   /** Coach profile fields editable by admin. */
   full_name?: string | null;
   coach_business_name?: string | null;
@@ -164,6 +168,34 @@ export async function PATCH(
     } else {
       return NextResponse.json(
         { error: "crm_location_id must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.has_sales_robot_account !== undefined) {
+    coachUpdates.has_sales_robot_account = !!body.has_sales_robot_account;
+  }
+  if (body.has_profit_coach_email_account !== undefined) {
+    coachUpdates.has_profit_coach_email_account =
+      !!body.has_profit_coach_email_account;
+  }
+  if (body.recurring_payment_status !== undefined) {
+    if (
+      body.recurring_payment_status === null ||
+      body.recurring_payment_status === ""
+    ) {
+      coachUpdates.recurring_payment_status = null;
+    } else if (
+      typeof body.recurring_payment_status === "string" &&
+      isCoachRecurringPaymentStatus(body.recurring_payment_status)
+    ) {
+      coachUpdates.recurring_payment_status = body.recurring_payment_status;
+    } else {
+      return NextResponse.json(
+        {
+          error:
+            "recurring_payment_status must be monthly, annual_prepaid, first_6_months, complimentary, overdue, or null.",
+        },
         { status: 400 }
       );
     }
@@ -369,15 +401,30 @@ export async function PATCH(
           Object.prototype.hasOwnProperty.call(coachUpdates, "crm_location_id");
         const includesConferenceStatus =
           Object.prototype.hasOwnProperty.call(coachUpdates, "conference_status");
+        const includesAccountBilling =
+          Object.prototype.hasOwnProperty.call(
+            coachUpdates,
+            "has_sales_robot_account"
+          ) ||
+          Object.prototype.hasOwnProperty.call(
+            coachUpdates,
+            "has_profit_coach_email_account"
+          ) ||
+          Object.prototype.hasOwnProperty.call(
+            coachUpdates,
+            "recurring_payment_status"
+          );
         return NextResponse.json(
           {
-            error: includesCrm
-              ? "CRM columns are missing. Deploy the latest database migration."
-              : includesConferenceStatus
-                ? "Conference status column is missing. Deploy the latest database migration."
-              : includesWebhook
-                ? "Lead webhook column is missing. Deploy the latest database migration."
-                : "Directory columns are missing. Deploy the latest database migration.",
+            error: includesAccountBilling
+              ? "Account and billing columns are missing. Deploy the latest database migration."
+              : includesCrm
+                ? "CRM columns are missing. Deploy the latest database migration."
+                : includesConferenceStatus
+                  ? "Conference status column is missing. Deploy the latest database migration."
+                  : includesWebhook
+                    ? "Lead webhook column is missing. Deploy the latest database migration."
+                    : "Directory columns are missing. Deploy the latest database migration.",
           },
           { status: 500 }
         );
@@ -385,11 +432,18 @@ export async function PATCH(
       if (error?.code === "23514") {
         const includesConferenceStatus =
           Object.prototype.hasOwnProperty.call(coachUpdates, "conference_status");
+        const includesRecurringPayment =
+          Object.prototype.hasOwnProperty.call(
+            coachUpdates,
+            "recurring_payment_status"
+          );
         return NextResponse.json(
           {
-            error: includesConferenceStatus
-              ? "Conference status must be no, maybe, yes, or null."
-              : "Lead webhook URL must be a valid http(s) URL.",
+            error: includesRecurringPayment
+              ? "recurring_payment_status must be monthly, annual_prepaid, first_6_months, complimentary, overdue, or null."
+              : includesConferenceStatus
+                ? "Conference status must be no, maybe, yes, or null."
+                : "Lead webhook URL must be a valid http(s) URL.",
           },
           { status: 400 }
         );

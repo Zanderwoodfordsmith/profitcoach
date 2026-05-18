@@ -3,6 +3,7 @@ export { BossGridBordered } from "./BossGridBordered";
 export { BossGridGlass } from "./BossGridGlass";
 export { BossGridProfitSystemGlass } from "./BossGridProfitSystemGlass";
 export { BossGridTransposed } from "./BossGridTransposed";
+export { BossGridMobileStacked } from "./BossGridMobileStacked";
 export { SpeedDials } from "./SpeedDials";
 export type { BossGridProps } from "./BossGrid";
 export type { BossGridBorderedProps } from "./BossGridBordered";

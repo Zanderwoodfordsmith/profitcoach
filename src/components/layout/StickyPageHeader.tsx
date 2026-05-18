@@ -45,7 +45,7 @@ export function StickyPageHeader({
   below,
   actions,
   className,
-  bleedInset = "-mx-[60px] px-[60px]",
+  bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px]",
 }: StickyPageHeaderProps) {
   const shell = [
     "sticky top-0 z-10 border-b border-slate-200/90 bg-white pb-1 pt-4 shadow-sm",
