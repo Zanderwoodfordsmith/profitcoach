@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
+import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
 
-export default function AssessmentRootPage() {
-  redirect("/assessment/BCA");
+export default async function AssessmentRootPage() {
+  const slug = await resolvePrimaryCoachSlug();
+  redirect(`/assessment/${encodeURIComponent(slug)}`);
 }

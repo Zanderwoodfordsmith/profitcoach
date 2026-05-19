@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -699,6 +700,7 @@ export default function AdminPage() {
     (conferenceFilter !== "all" ? 1 : 0) +
     (lastLoginFilter !== "all" ? 1 : 0) +
     (crmNameFilter !== "all" ? 1 : 0);
+  const hasActiveSort = lastLoginSort !== "recent_first";
   const visibleColumnCount =
     3 +
     COACH_TABLE_COLUMN_OPTIONS.reduce(
@@ -1440,6 +1442,11 @@ export default function AdminPage() {
         </p>
       ) : null}
 
+      <CoachesMonthlyBarChart
+        coaches={coaches}
+        loading={loading || checkingRole}
+      />
+
       {showAddCoach && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
@@ -1723,10 +1730,15 @@ export default function AdminPage() {
                   setFiltersMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
-                title="Sort"
-                className={`inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${sortMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
+                title={hasActiveSort ? "Sort (active)" : "Sort"}
+                className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${sortMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
               >
                 <ArrowUpDown className="h-4 w-4 text-slate-500" aria-hidden />
+                {hasActiveSort ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
+                    1
+                  </span>
+                ) : null}
               </button>
               {sortMenuOpen ? (
                 <div
@@ -1869,6 +1881,17 @@ export default function AdminPage() {
                 </div>
               ) : null}
             </div>
+
+            <p
+              className="text-xs text-slate-500 tabular-nums"
+              aria-live="polite"
+            >
+              {loading
+                ? "…"
+                : filteredCoaches.length === coaches.length
+                  ? `${coaches.length} ${coaches.length === 1 ? "coach" : "coaches"}`
+                  : `${filteredCoaches.length} of ${coaches.length}`}
+            </p>
           </div>
         </div>
         <div className="overflow-x-auto">

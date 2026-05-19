@@ -5,9 +5,8 @@ import {
 } from "@/lib/contactSchemaSafeInsert";
 import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
+import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-const CENTRAL_SLUG_LOWER = "bca";
 
 type Body = {
   coachSlug?: string | null;
@@ -50,7 +49,7 @@ export async function POST(request: Request) {
   const coachSlug =
     typeof body.coachSlug === "string" && body.coachSlug.trim()
       ? body.coachSlug.trim().toLowerCase()
-      : CENTRAL_SLUG_LOWER;
+      : await resolvePrimaryCoachSlug();
 
   const { data: coach } = await supabaseAdmin
     .from("coaches")

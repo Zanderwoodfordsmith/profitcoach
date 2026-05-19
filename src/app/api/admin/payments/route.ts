@@ -1,13 +1,33 @@
 import { NextResponse } from "next/server";
 
+import { paymentImportSkipReason } from "@/lib/paymentImportFilters";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { loadCoachDirectory } from "@/lib/stripePaymentsSync";
+import {
+  loadCoachDirectory,
+  suggestCoachForPayment,
+} from "@/lib/stripePaymentsSync";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function normalizeEmail(value: string | null | undefined): string | null {
   if (!value) return null;
   const normalized = value.trim().toLowerCase();
   return normalized.length > 0 ? normalized : null;
+}
+
+function coachOptionFromInfo(coach: {
+  id: string;
+  slug: string;
+  full_name: string | null;
+  coach_business_name: string | null;
+  email: string | null;
+}) {
+  return {
+    id: coach.id,
+    slug: coach.slug,
+    full_name: coach.full_name,
+    coach_business_name: coach.coach_business_name,
+    email: coach.email,
+  };
 }
 
 export async function GET(request: Request) {
@@ -18,69 +38,59 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { coaches, uniqueCoachByEmail } = await loadCoachDirectory(supabaseAdmin);
-    const coachById = new Map(coaches.map((coach) => [coach.id, coach]));
+    const directory = await loadCoachDirectory(supabaseAdmin);
+    const coachById = new Map(directory.coaches.map((coach) => [coach.id, coach]));
 
     const { data: payments, error: paymentsError } = await supabaseAdmin
       .from("coach_payments")
       .select(
-        "id, stripe_payment_intent_id, stripe_checkout_session_id, customer_email, amount_cents, currency, status, paid_at, coach_id, assignment_method, notes, created_at"
+        "id, stripe_payment_intent_id, stripe_checkout_session_id, stripe_charge_id, customer_email, customer_company_name, amount_cents, currency, status, paid_at, coach_id, assignment_method, decline_reason, description, notes, payment_source, billing_kind_override, created_at"
       )
       .order("paid_at", { ascending: false })
-      .limit(500);
+      .limit(2000);
 
     if (paymentsError) {
       return NextResponse.json({ error: "Unable to load payments." }, { status: 500 });
     }
 
-    const rows = (payments ?? []).map((row: any) => {
-      const normalizedEmail = normalizeEmail(row.customer_email);
-      const assignedCoach = row.coach_id ? coachById.get(row.coach_id as string) ?? null : null;
+    const rows = (payments ?? []).map((row: Record<string, unknown>) => {
+      const customerEmail = row.customer_email as string;
+      const customerCompanyName = (row.customer_company_name as string | null) ?? null;
+      const assignedCoach = row.coach_id
+        ? coachById.get(row.coach_id as string) ?? null
+        : null;
       const suggestedCoach =
-        !assignedCoach && normalizedEmail
-          ? uniqueCoachByEmail.get(normalizedEmail) ?? null
+        !assignedCoach
+          ? suggestCoachForPayment(directory, customerEmail, customerCompanyName)
           : null;
+
       return {
         id: row.id as string,
         stripe_payment_intent_id: (row.stripe_payment_intent_id as string | null) ?? null,
         stripe_checkout_session_id: (row.stripe_checkout_session_id as string | null) ?? null,
-        customer_email: row.customer_email as string,
+        stripe_charge_id: (row.stripe_charge_id as string | null) ?? null,
+        customer_email: customerEmail,
+        customer_company_name: customerCompanyName,
         amount_cents: row.amount_cents as number,
         currency: row.currency as string,
         status: row.status as string,
         paid_at: row.paid_at as string,
         assignment_method: row.assignment_method as string,
+        decline_reason: (row.decline_reason as string | null) ?? null,
+        description: (row.description as string | null) ?? null,
         notes: (row.notes as string | null) ?? null,
-        assigned_coach: assignedCoach
-          ? {
-              id: assignedCoach.id,
-              slug: assignedCoach.slug,
-              full_name: assignedCoach.full_name,
-              coach_business_name: assignedCoach.coach_business_name,
-              email: assignedCoach.email,
-            }
-          : null,
-        suggested_coach: suggestedCoach
-          ? {
-              id: suggestedCoach.id,
-              slug: suggestedCoach.slug,
-              full_name: suggestedCoach.full_name,
-              coach_business_name: suggestedCoach.coach_business_name,
-              email: suggestedCoach.email,
-            }
-          : null,
+        payment_source: (row.payment_source as string) ?? "stripe",
+        billing_kind_override:
+          (row.billing_kind_override as string | null) ?? null,
+        matched: Boolean(row.coach_id),
+        assigned_coach: assignedCoach ? coachOptionFromInfo(assignedCoach) : null,
+        suggested_coach: suggestedCoach ? coachOptionFromInfo(suggestedCoach) : null,
       };
     });
 
     return NextResponse.json({
       payments: rows,
-      coaches: coaches.map((coach) => ({
-        id: coach.id,
-        slug: coach.slug,
-        full_name: coach.full_name,
-        coach_business_name: coach.coach_business_name,
-        email: coach.email,
-      })),
+      coaches: directory.coaches.map(coachOptionFromInfo),
     });
   } catch (error) {
     console.error("admin/payments GET:", error);
@@ -128,16 +138,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Paid date is invalid." }, { status: 400 });
     }
 
-    const { uniqueCoachByEmail } = await loadCoachDirectory(supabaseAdmin);
+    const skipReason = paymentImportSkipReason(customerEmail, amountCents, currency);
+    if (skipReason) {
+      return NextResponse.json(
+        { error: "This payment is excluded from imports (internal email or below minimum amount)." },
+        { status: 400 }
+      );
+    }
+
+    const directory = await loadCoachDirectory(supabaseAdmin);
 
     let coachId: string | null = body.coachId ?? null;
     let assignmentMethod: "manual" | "email_auto" | "unassigned" = "unassigned";
     if (coachId) {
       assignmentMethod = "manual";
     } else {
-      const matched = uniqueCoachByEmail.get(customerEmail);
-      if (matched) {
-        coachId = matched.id;
+      const suggested = suggestCoachForPayment(directory, customerEmail, null);
+      if (suggested) {
+        coachId = suggested.id;
         assignmentMethod = "email_auto";
       }
     }

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 
 const SESSION_COOKIE = "landing_session_id";
 
@@ -18,7 +19,7 @@ const VA_COACH_LABEL_MAX = 80;
 const VA_COACH_STORAGE_KEY = "pc_boss_va_coach";
 
 async function coachLabelForBadge(slug: string): Promise<string> {
-  const fallback = slug.trim() || "BCA";
+  const fallback = slug.trim() || getPrimaryCoachSlug();
   try {
     const res = await fetch(`/api/coach-by-slug?slug=${encodeURIComponent(slug)}`);
     if (!res.ok) return fallback;
@@ -45,7 +46,7 @@ function ScoreAContent() {
     if (viewTracked.current) return;
     viewTracked.current = true;
     let cancelled = false;
-    const coachSlug = searchParams.get("coach")?.trim() || "BCA";
+    const coachSlug = searchParams.get("coach")?.trim() || getPrimaryCoachSlug();
     const sessionId = getOrSetSessionId();
 
     async function go() {

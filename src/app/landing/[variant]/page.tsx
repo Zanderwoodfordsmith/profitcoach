@@ -12,6 +12,7 @@ import {
 } from "@/lib/landingCopy";
 import { LandingVariantC } from "@/components/landing/LandingVariantC";
 import { LandingVariantD } from "@/components/landing/LandingVariantD";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 
 const LANDING_CONTACT_KEY = "boss_landing_contact";
 const SESSION_COOKIE = "landing_session_id";
@@ -94,7 +95,7 @@ export default function LandingVariantPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const variant = (params.variant as string)?.toLowerCase();
-  const coachSlug = searchParams.get("coach")?.trim() || "BCA";
+  const coachSlug = searchParams.get("coach")?.trim() || getPrimaryCoachSlug();
 
   const router = useRouter();
   const [coach, setCoach] = useState<CoachInfo | null>(null);

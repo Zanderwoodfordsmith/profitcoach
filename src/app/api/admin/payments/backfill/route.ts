@@ -22,7 +22,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await backfillStripePayments(supabaseAdmin, stripeServer);
+    const result = await backfillStripePayments(supabaseAdmin, stripeServer, {
+      stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+    });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error("admin/payments/backfill POST:", error);

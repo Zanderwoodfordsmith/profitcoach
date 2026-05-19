@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
 import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
+import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -103,11 +104,11 @@ async function provisionCentralCoachIfMissing(): Promise<{ id: string } | null> 
 export async function POST(request: Request) {
   const body = (await request.json()) as Body;
 
-  // Central marketing: missing or empty slug defaults to BCA
+  // General marketing funnel: missing or empty slug defaults to primary coach (Pam).
   const coachSlug =
     typeof body.coachSlug === "string" && body.coachSlug.trim()
       ? body.coachSlug.trim().toLowerCase()
-      : CENTRAL_SLUG_LOWER;
+      : await resolvePrimaryCoachSlug();
 
   if (
     typeof body.total_score !== "number" ||
