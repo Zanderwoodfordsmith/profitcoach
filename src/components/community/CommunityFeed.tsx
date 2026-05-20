@@ -231,7 +231,7 @@ export type CommunityPostRow = {
   last_comment_at: string | null;
 };
 
-type RawCommunityPostRow = Omit<
+export type RawCommunityPostRow = Omit<
   CommunityPostRow,
   | "category"
   | "author"
@@ -750,6 +750,43 @@ async function enrichNormalizedCommunityPosts(
       last_comment_at,
     };
   });
+}
+
+/** Normalize + enrich post rows already loaded from Supabase (admin wins queue). */
+export async function enrichRawCommunityPostRows(
+  rawRows: RawCommunityPostRow[],
+  options?: EnrichCommunityPostsOptions
+): Promise<CommunityPostRow[]> {
+  if (rawRows.length === 0) return [];
+  const normalized = normalizeRawPostRows(rawRows);
+  return enrichNormalizedCommunityPosts(normalized, options);
+}
+
+/** Fetch and enrich posts by id (detail modal, admin wins queue). */
+export async function fetchEnrichedCommunityPostsByIds(
+  ids: string[],
+  options?: EnrichCommunityPostsOptions
+): Promise<CommunityPostRow[]> {
+  if (ids.length === 0) return [];
+
+  const nowIso = new Date().toISOString();
+
+  const runQuery = (select: string) =>
+    supabaseClient
+      .from("community_posts")
+      .select(select.trim())
+      .in("id", ids)
+      .lte("published_at", nowIso);
+
+  let res = await runQuery(COMMUNITY_POST_LIST_SELECT);
+  if (res.error && isMissingFeedCounterColumnError(res.error)) {
+    res = await runQuery(COMMUNITY_POST_LIST_SELECT_LEGACY);
+  }
+  if (res.error) throw res.error;
+
+  const rows = (res.data ?? []) as unknown as RawCommunityPostRow[];
+  const normalized = normalizeRawPostRows(rows);
+  return enrichNormalizedCommunityPosts(normalized, options);
 }
 
 function isCommunityPostUnreadOnFeed(
@@ -1353,13 +1390,7 @@ export function CommunityFeed() {
       try {
         const session = await resolveSupabaseBrowserSession();
         if (!session?.user) {
-          if (!cancelled) {
-            setCommunityAuthUserId(null);
-            setViewerIsAdmin(false);
-            setLoadError(
-              "No active session. Open the app from a logged-in tab, or sign in again and refresh."
-            );
-          }
+          if (!cancelled) router.replace("/login");
           return;
         }
 
@@ -1424,7 +1455,7 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId, loadCategories, pathname]);
+  }, [impersonatingCoachId, loadCategories, pathname, router]);
 
   useEffect(() => {
     if (!feedBootstrapOk) return;

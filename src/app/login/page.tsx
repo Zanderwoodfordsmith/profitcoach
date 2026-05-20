@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { clearWinsQueueSessionDismiss } from "@/lib/adminWinsReplyQueueSession";
 import {
   AuthSplitShell,
   authInputClassName,
@@ -60,6 +61,7 @@ export default function LoginPage() {
     // would make Community scope the wrong user id and “lose” read/dimmed state.
     clearImpersonation();
     clearContactImpersonation();
+    clearWinsQueueSessionDismiss();
 
     let role = "coach";
     try {
@@ -91,7 +93,7 @@ export default function LoginPage() {
       role = "coach";
     }
     if (role === "admin") {
-      router.push("/admin");
+      router.push("/admin/community");
     } else if (role === "client") {
       router.push("/client");
     } else {

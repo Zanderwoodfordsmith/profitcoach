@@ -12,6 +12,19 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { extractMentionUserIds } from "@/lib/communityMentions";
 import { communityPostCardPreview } from "@/lib/communityPostMarkdown";
+import {
+  fetchUserCommentedPostIds,
+  isWinNotificationEligible,
+  isWinPostVisibleNow,
+  loadPermanentlySkippedWinPostIds,
+} from "@/lib/adminWinsReplyQueue";
+import {
+  loadNotificationReadState,
+  markCommunityNotificationRead,
+  persistNotificationReadState,
+  winNotificationIdForPost,
+  type NotificationReadState,
+} from "@/lib/communityNotificationReadState";
 
 type DashboardTopActionsProps = {
   variant: "coach" | "admin";
@@ -26,11 +39,11 @@ type DashboardTopActionsProps = {
   notificationsOnly?: boolean;
 };
 
-type NotificationFilter = "all" | "replies" | "announcements";
+type NotificationFilter = "all" | "replies" | "announcements" | "wins";
 
 type NotificationItem = {
   id: string;
-  type: NotificationFilter;
+  type: Exclude<NotificationFilter, "all">;
   created_at: string;
   actor_name: string;
   actor_avatar_url: string | null;
@@ -39,41 +52,12 @@ type NotificationItem = {
   href: string;
 };
 
-type NotificationReadState = {
-  readIds: Record<string, true>;
-  readAllBefore: string | null;
-};
-
-const NOTIFICATION_READ_KEY_PREFIX = "community:notifications";
 const NOTIFICATION_ITEMS_MAX = 40;
 
 const EMPTY_READ_STATE: NotificationReadState = {
   readIds: {},
   readAllBefore: null,
 };
-
-function loadReadState(uid: string): NotificationReadState {
-  if (typeof window === "undefined") return EMPTY_READ_STATE;
-  const raw = window.localStorage.getItem(`${NOTIFICATION_READ_KEY_PREFIX}:${uid}`);
-  if (!raw) return EMPTY_READ_STATE;
-  try {
-    const parsed = JSON.parse(raw) as Partial<NotificationReadState>;
-    return {
-      readIds: parsed.readIds ?? {},
-      readAllBefore: parsed.readAllBefore ?? null,
-    };
-  } catch {
-    return EMPTY_READ_STATE;
-  }
-}
-
-function persistReadState(uid: string, next: NotificationReadState) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    `${NOTIFICATION_READ_KEY_PREFIX}:${uid}`,
-    JSON.stringify(next)
-  );
-}
 
 function isUnread(item: NotificationItem, state: NotificationReadState): boolean {
   if (state.readIds[item.id]) return false;
@@ -123,7 +107,7 @@ export function DashboardTopActions({
 
   useEffect(() => {
     if (!profile?.id) return;
-    setReadState(loadReadState(profile.id));
+    setReadState(loadNotificationReadState(profile.id));
   }, [profile?.id]);
 
   const loadNotifications = useCallback(async () => {
@@ -173,9 +157,32 @@ export function DashboardTopActions({
         .order("published_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
 
-      const [repliesRes, announcementsRes] = await Promise.all([
+      const winsPromise =
+        variant === "admin"
+          ? supabaseClient
+              .from("community_posts")
+              .select(
+                `
+            id,
+            title,
+            body,
+            created_at,
+            published_at,
+            author_id,
+            category:community_categories!category_id ( slug ),
+            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+          `
+              )
+              .eq("category.slug", "wins")
+              .neq("author_id", uid)
+              .order("created_at", { ascending: false })
+              .limit(NOTIFICATION_ITEMS_MAX)
+          : Promise.resolve({ data: [], error: null });
+
+      const [repliesRes, announcementsRes, winsRes] = await Promise.all([
         repliesPromise,
         announcementsPromise,
+        winsPromise,
       ]);
 
       type AuthorRow = {
@@ -277,6 +284,61 @@ export function DashboardTopActions({
         }
       }
 
+      if (variant === "admin" && !winsRes.error) {
+        const rows = (winsRes.data ?? []) as Array<{
+          id: string;
+          title: string;
+          body: string;
+          created_at: string;
+          published_at?: string | null;
+          author: AuthorRow | AuthorRow[] | null;
+          category: { slug: string } | { slug: string }[] | null;
+        }>;
+        const eligibleWinRows = rows.filter((row) => {
+          const category = Array.isArray(row.category)
+            ? (row.category[0] ?? null)
+            : (row.category ?? null);
+          if (!category || category.slug !== "wins") return false;
+          if (
+            !isWinPostVisibleNow(row.published_at ?? null, row.created_at)
+          ) {
+            return false;
+          }
+          return isWinNotificationEligible(
+            row.published_at ?? null,
+            row.created_at,
+            uid
+          );
+        });
+        const eligibleWinIds = eligibleWinRows.map((row) => row.id);
+        const commentedWinIds = await fetchUserCommentedPostIds(uid, eligibleWinIds);
+        const permanentlySkippedWinIds = loadPermanentlySkippedWinPostIds(uid);
+        for (const row of eligibleWinRows) {
+          if (
+            commentedWinIds.has(row.id) ||
+            permanentlySkippedWinIds.has(row.id)
+          ) {
+            markCommunityNotificationRead(uid, winNotificationIdForPost(row.id));
+            continue;
+          }
+          const author = Array.isArray(row.author)
+            ? (row.author[0] ?? null)
+            : (row.author ?? null);
+          if (!author) continue;
+          const actor = displayNameFromProfile(author);
+          next.push({
+            id: winNotificationIdForPost(row.id),
+            type: "wins",
+            created_at: row.published_at ?? row.created_at,
+            actor_name: actor,
+            actor_avatar_url: author.avatar_url ?? null,
+            title: `${actor} shared a win`,
+            body: row.title?.trim() || row.body?.trim() || "New win",
+            href: `${communityHref}?post=${row.id}`,
+          });
+        }
+      }
+
       next.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -285,7 +347,7 @@ export function DashboardTopActions({
     } finally {
       setLoadingNotifications(false);
     }
-  }, [communityHref, profile?.id]);
+  }, [communityHref, profile?.id, variant]);
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -333,7 +395,7 @@ export function DashboardTopActions({
       readAllBefore: new Date().toISOString(),
     };
     setReadState(next);
-    persistReadState(profile.id, next);
+    persistNotificationReadState(profile.id, next);
   }, [profile?.id]);
 
   const markOneAsRead = useCallback(
@@ -345,7 +407,7 @@ export function DashboardTopActions({
           ...prev,
           readIds: { ...prev.readIds, [id]: true },
         };
-        persistReadState(profile.id, next);
+        persistNotificationReadState(profile.id, next);
         return next;
       });
     },
@@ -395,7 +457,9 @@ export function DashboardTopActions({
                       ? "All"
                       : filter === "replies"
                         ? "Replies"
-                        : "Announcements"}
+                        : filter === "announcements"
+                          ? "Announcements"
+                          : "Wins"}
                     <ChevronDown className="h-4 w-4" />
                   </button>
                   {filterMenuOpen ? (
@@ -405,6 +469,9 @@ export function DashboardTopActions({
                           ["all", "All"],
                           ["replies", "Replies"],
                           ["announcements", "Announcements"],
+                          ...(variant === "admin"
+                            ? ([["wins", "Wins"]] as const)
+                            : []),
                         ] as const
                       ).map(([value, label]) => (
                         <button

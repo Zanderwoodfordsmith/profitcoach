@@ -53,7 +53,7 @@ export default function CoachDashboardPage() {
           ? impersonatingCoachId
           : user.id;
       if (roleBody.role === "admin" && !impersonatingCoachId) {
-        router.replace("/admin");
+        router.replace("/admin/community");
         return;
       }
 

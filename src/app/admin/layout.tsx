@@ -13,6 +13,7 @@ import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
+import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
 
 export default function AdminLayout({
   children,
@@ -21,6 +22,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const authReady = useRequireSupabaseSession();
   const { clearImpersonation, clearContactImpersonation } = useImpersonation();
   const [signingOut, setSigningOut] = useState(false);
   const bossWorkshopPage = isBossWorkshopPath(pathname);
@@ -52,6 +54,14 @@ export default function AdminLayout({
     }),
     [isMinimalWorkshopChrome]
   );
+
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+        <p className="text-sm text-slate-600">Loading…</p>
+      </div>
+    );
+  }
 
   async function handleSignOut() {
     if (signingOut) return;

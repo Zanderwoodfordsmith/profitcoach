@@ -31,6 +31,27 @@ function restoreMarkdownFragments(text: string, saved: string[]): string {
   );
 }
 
+/**
+ * Collapse extra whitespace after list markers so indented code blocks are not
+ * created inside list items (react-markdown strips `<pre>`, leaving empty bullets).
+ */
+function normalizeCommunityPostMarkdownListMarkers(source: string): string {
+  const saved: string[] = [];
+  const protect = (re: RegExp) => {
+    source = source.replace(re, (match) => {
+      saved.push(match);
+      return `${MD_FRAGMENT_PLACEHOLDER}${saved.length - 1}${MD_FRAGMENT_END}`;
+    });
+  };
+  protect(/```[\s\S]*?```/g);
+  protect(/`[^`\n]+`/g);
+
+  source = source.replace(/^(\s*[-*+])\s+/gm, "$1 ");
+  source = source.replace(/^(\s*\d+\.)\s+/gm, "$1 ");
+
+  return restoreMarkdownFragments(source, saved);
+}
+
 /** Wrap bare http(s) URLs as markdown links (matches feed/comment autolink behaviour). */
 export function autolinkBareHttpUrlsForMarkdown(body: string): string {
   const { text, saved } = protectMarkdownFragments(body);
@@ -53,7 +74,8 @@ export function prepareCommunityPostMarkdownSource(
     const name = raw.replace(/[[\]]/g, "");
     return `[@${name}](mention:${uuid})`;
   });
-  return autolinkBareHttpUrlsForMarkdown(withMentions);
+  const normalized = normalizeCommunityPostMarkdownListMarkers(withMentions);
+  return autolinkBareHttpUrlsForMarkdown(normalized);
 }
 
 /** Keeps `mention:` links intact; otherwise delegates to react-markdown defaults. */

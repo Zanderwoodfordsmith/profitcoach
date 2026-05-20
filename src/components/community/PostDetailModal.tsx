@@ -71,6 +71,7 @@ import {
   getCommunityAuthorId,
 } from "@/lib/communityEffectiveAuthorId";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
+import { markCommunityWinPostHandled } from "@/lib/communityNotificationReadState";
 import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
 
 type CommentRow = {
@@ -158,6 +159,8 @@ type Props = {
   onMarkPostRead: (postId: string) => void;
   onMarkPostUnread: (postId: string) => void;
   onMarkCommentsSeenUpTo: (postId: string, latestCommentIso: string) => void;
+  /** Embedded inside a parent shell (e.g. admin wins queue) — no full-screen backdrop. */
+  presentation?: "overlay" | "embedded";
 };
 
 async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
@@ -422,6 +425,7 @@ export function PostDetailModal({
   onMarkPostRead,
   onMarkPostUnread,
   onMarkCommentsSeenUpTo,
+  presentation = "overlay",
 }: Props) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
@@ -980,6 +984,13 @@ export function PostDetailModal({
     return comments.some((c) => c.author_id === currentAuthorId);
   }, [comments, currentAuthorId, post.commented_by_me]);
 
+  const markWinCelebratedIfAdmin = useCallback(() => {
+    if (post.category?.slug !== "wins" || editorRole !== "admin" || !currentUserId) {
+      return;
+    }
+    markCommunityWinPostHandled(currentUserId, post.id);
+  }, [currentUserId, editorRole, post.category?.slug, post.id]);
+
   const copyPostLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -1137,11 +1148,13 @@ export function PostDetailModal({
     setSubmitting(false);
     if (!error) {
       setNewComment("");
+      markWinCelebratedIfAdmin();
       await loadComments();
       await onPostsChanged();
     }
   }, [
     coachPersona,
+    markWinCelebratedIfAdmin,
     newComment,
     onPostsChanged,
     post.id,
@@ -1236,11 +1249,20 @@ export function PostDetailModal({
       if (!error) {
         setReplyDrafts((d) => ({ ...d, [draftKey]: "" }));
         setReplyOpenFor(null);
+        markWinCelebratedIfAdmin();
         await loadComments();
         await onPostsChanged();
       }
     },
-    [coachPersona, replyDrafts, submitting, post.id, loadComments, onPostsChanged]
+    [
+      coachPersona,
+      markWinCelebratedIfAdmin,
+      replyDrafts,
+      submitting,
+      post.id,
+      loadComments,
+      onPostsChanged,
+    ]
   );
 
   const canManageComment = useCallback(
@@ -1335,18 +1357,16 @@ export function PostDetailModal({
     ]
   );
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="post-detail-title"
-    >
+  const card = (
       <div
-        className="relative flex max-h-[90dvh] min-h-0 w-full max-w-[calc(42rem*1.15)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
-        onClick={(e) => e.stopPropagation()}
+        className={`relative flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ${
+          presentation === "embedded"
+            ? "h-full max-h-none"
+            : "max-h-[90dvh] max-w-[calc(42rem*1.15)]"
+        }`}
+        onClick={presentation === "overlay" ? (e) => e.stopPropagation() : undefined}
       >
+        {presentation === "overlay" ? (
         <button
           type="button"
           onClick={onClose}
@@ -1355,6 +1375,7 @@ export function PostDetailModal({
         >
           <X className="h-4 w-4" strokeWidth={2.5} />
         </button>
+        ) : null}
         <div
           className={`shrink-0 overflow-hidden border-slate-200 bg-white/95 backdrop-blur transition-[max-height,opacity] duration-200 ease-out ${
             showCompactPostHeader && !editing
@@ -2286,6 +2307,21 @@ export function PostDetailModal({
           </div>
         </div>
       </div>
+  );
+
+  if (presentation === "embedded") {
+    return card;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-detail-title"
+    >
+      {card}
     </div>
   );
 }

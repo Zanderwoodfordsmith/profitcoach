@@ -14,6 +14,7 @@ import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
+import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
 
 export default function CoachLayout({
   children,
@@ -22,6 +23,7 @@ export default function CoachLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const authReady = useRequireSupabaseSession();
   const {
     impersonatingCoachId,
     clearImpersonation,
@@ -148,6 +150,14 @@ export default function CoachLayout({
     }),
     [isMinimalWorkshopChrome]
   );
+
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+        <p className="text-sm text-slate-600">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div
