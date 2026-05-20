@@ -6,7 +6,9 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import {
   dismissWinsQueueForSession,
   fetchPendingAdminWinsQueue,
+  isWinsQueueCheckedThisSession,
   isWinsQueueDismissedThisSession,
+  markWinsQueueCheckedThisSession,
   permanentlySkipWinPost,
   persistLastSessionEndedAt,
 } from "@/lib/adminWinsReplyQueue";
@@ -27,7 +29,9 @@ export function AdminWinsReplyQueue() {
   const [posts, setPosts] = useState<CommunityPostRow[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [open, setOpen] = useState(false);
-  const [phase, setPhase] = useState<"checking" | "ready">("checking");
+  const [phase, setPhase] = useState<"checking" | "ready">(() =>
+    isWinsQueueCheckedThisSession() ? "ready" : "checking"
+  );
 
   const loadQueue = useCallback(async (uid: string) => {
     const pending = await fetchPendingAdminWinsQueue(uid);
@@ -44,7 +48,13 @@ export function AdminWinsReplyQueue() {
   }, []);
 
   useEffect(() => {
+    if (isWinsQueueCheckedThisSession()) {
+      setPhase("ready");
+      return;
+    }
+
     let cancelled = false;
+    markWinsQueueCheckedThisSession();
 
     void (async () => {
       setPhase("checking");

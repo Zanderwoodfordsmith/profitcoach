@@ -8,13 +8,20 @@ import {
 } from "@/components/community/CommunityFeed";
 import {
   dismissWinsQueueForSession,
+  isWinsQueueCheckedThisSession,
   isWinsQueueDismissedThisSession,
+  markWinsQueueCheckedThisSession,
 } from "@/lib/adminWinsReplyQueueSession";
 
 const LAST_SESSION_KEY_PREFIX = "community:admin:lastSessionEndedAt";
 const PERMANENTLY_SKIPPED_KEY_PREFIX = "community:admin:winsQueue:permanentlySkipped";
 
-export { dismissWinsQueueForSession, isWinsQueueDismissedThisSession };
+export {
+  dismissWinsQueueForSession,
+  isWinsQueueCheckedThisSession,
+  isWinsQueueDismissedThisSession,
+  markWinsQueueCheckedThisSession,
+};
 
 const WINS_ROLLING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
