@@ -104,9 +104,14 @@ export function getPlaybookMeta(ref: string): BossPlaybook | null {
   return PLAYBOOKS.find((p) => p.ref === ref) ?? null;
 }
 
+/** Foundation / Owner Performance — slate blue-grey across BOSS UI. */
+export const BOSS_FOUNDATION_COLOR = "#4C667A";
+export const BOSS_FOUNDATION_SOFT = "#EEF2F6";
+export const BOSS_FOUNDATION_GRADIENT = `linear-gradient(90deg, ${BOSS_FOUNDATION_COLOR}, #64748b)`;
+
 /** Wheel chart colors for each area (index 0-9) */
 export const WHEEL_COLORS = [
-  "#4C667A",
+  BOSS_FOUNDATION_COLOR,
   "#093a6d",
   "#0c5290",
   "#3d7ab8",

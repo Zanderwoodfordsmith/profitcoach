@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Outfit } from "next/font/google";
-import { AREAS, LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { AREAS, BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
 
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
@@ -11,7 +11,7 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 const DISPLAY_LEVELS = [...LEVELS].sort((a, b) => a.id - b.id);
 
 const PILLAR_CONFIG = [
-  { name: "Foundation", color: "#A855F7", pillar: "foundation" as const },
+  { name: "Foundation", color: BOSS_FOUNDATION_COLOR, pillar: "foundation" as const },
   { name: "Clarify Vision", color: "#3B82F6", pillar: "vision" as const },
   { name: "Control Velocity", color: "#0EA5E9", pillar: "velocity" as const },
   { name: "Create Value", color: "#14B8A6", pillar: "value" as const },

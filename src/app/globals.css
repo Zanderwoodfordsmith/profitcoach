@@ -5,18 +5,18 @@
   --foreground: #0f172a;
 
   /* Profit Coach app colors */
-  --boss-foundation: #a21caf;
+  --boss-foundation: #4c667a;
   --boss-vision: #0c5290;
   --boss-velocity: #42a1ee;
   --boss-value: #1ca0c2;
   --boss-pastel-red: #f4c7c3;
   --boss-pastel-amber: #fce8b2;
   --boss-pastel-green: #b7e1cd;
-  --boss-level-1: #edb4ba;
-  --boss-level-2: #f2d2b8;
-  --boss-level-3: #f7e5b5;
-  --boss-level-4: #badfae;
-  --boss-level-5: #b5d0ed;
+  --boss-level-1: #f0a8ae;
+  --boss-level-2: #fac896;
+  --boss-level-3: #f5e08a;
+  --boss-level-4: #a8dfbc;
+  --boss-level-5: #a8c8f2;
   --boss-grid-border: #6d737a;
 
   /* Landing page — navy & teal, light theme */
@@ -106,5 +106,73 @@ body {
 
 .leaflet-popup.pc-map-popup .leaflet-popup-tip {
   box-shadow: 0 4px 8px -2px rgba(15, 23, 42, 0.18);
+}
+
+@keyframes scorecard-confetti-up {
+  0% {
+    transform: translate(0, 16px) rotate(0deg) scale(0.45);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(calc(var(--drift, 0px) * 0.5), -52vh) rotate(200deg)
+      scale(1.08);
+  }
+  100% {
+    transform: translate(var(--drift, 0px), -118vh) rotate(440deg) scale(0.85);
+    opacity: 0;
+  }
+}
+
+@keyframes scorecard-confetti-side {
+  0% {
+    transform: translate(var(--wobble, 0px), 0) rotate(0deg) scale(0.5);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  55% {
+    transform: translate(calc(var(--drift, 0px) * 0.65), var(--wobble, 0px))
+      rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: translate(var(--drift, 0px), calc(var(--wobble, 0px) * -2))
+      rotate(320deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes scorecard-confetti-down {
+  0% {
+    transform: translate(var(--wobble, 0px), -8vh) rotate(-20deg) scale(0.55);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.95;
+  }
+  60% {
+    transform: translate(calc(var(--drift, 0px) * 0.4), 45vh) rotate(120deg)
+      scale(1.05);
+  }
+  100% {
+    transform: translate(var(--drift, 0px), 105vh) rotate(260deg) scale(0.75);
+    opacity: 0;
+  }
+}
+
+.scorecard-confetti-up {
+  animation: scorecard-confetti-up cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.scorecard-confetti-side {
+  animation: scorecard-confetti-side cubic-bezier(0.25, 0.75, 0.4, 1)
+    forwards;
+}
+
+.scorecard-confetti-down {
+  animation: scorecard-confetti-down cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
 }
 

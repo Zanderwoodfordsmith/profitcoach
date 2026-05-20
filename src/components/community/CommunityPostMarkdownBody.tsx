@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { COMMUNITY_EXTERNAL_LINK_CLASS } from "@/lib/communityAutolink";
 import {
   communityPostMarkdownUrlTransform,
@@ -104,7 +105,7 @@ function buildComponents(
 const baseMarkdownClass =
   "min-w-0 whitespace-pre-wrap break-words text-inherit leading-normal " +
   "[&_p]:my-0 [&_p]:whitespace-normal [&_p]:leading-relaxed [&_p:not(:last-child)]:mb-0 [&_p:empty]:hidden " +
-  "[&_strong]:font-semibold [&_em]:italic " +
+  "[&_strong]:font-bold [&_em]:italic " +
   "[&_ul]:my-0.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 " +
   "[&_li]:my-0 [&_li]:leading-relaxed " +
   "[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:leading-snug " +
@@ -134,6 +135,7 @@ export function CommunityPostMarkdownBody({
   return (
     <div className={`${baseMarkdownClass} ${className}`}>
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         allowedElements={[...ALLOWED_ELEMENTS]}
         skipHtml
         urlTransform={communityPostMarkdownUrlTransform}

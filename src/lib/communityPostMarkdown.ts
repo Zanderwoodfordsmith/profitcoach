@@ -52,6 +52,24 @@ function normalizeCommunityPostMarkdownListMarkers(source: string): string {
   return restoreMarkdownFragments(source, saved);
 }
 
+/**
+ * CommonMark will not parse `** spaced **` as bold. Normalise emphasis delimiters
+ * (also fixes fullwidth asterisks and escaped `\*\*` from imports).
+ */
+export function normalizeMarkdownEmphasisDelimiters(source: string): string {
+  let s = source.replace(/\uFF0A/g, "*");
+  s = s.replace(/\\\*\*/g, "**");
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, (_, inner: string) => {
+    const trimmed = inner.trim();
+    return trimmed ? `**${trimmed}**` : `**${inner}**`;
+  });
+  s = s.replace(/__([^_\n]+?)__/g, (_, inner: string) => {
+    const trimmed = inner.trim();
+    return trimmed ? `__${trimmed}__` : `__${inner}__`;
+  });
+  return s;
+}
+
 /** Wrap bare http(s) URLs as markdown links (matches feed/comment autolink behaviour). */
 export function autolinkBareHttpUrlsForMarkdown(body: string): string {
   const { text, saved } = protectMarkdownFragments(body);
@@ -74,7 +92,8 @@ export function prepareCommunityPostMarkdownSource(
     const name = raw.replace(/[[\]]/g, "");
     return `[@${name}](mention:${uuid})`;
   });
-  const normalized = normalizeCommunityPostMarkdownListMarkers(withMentions);
+  const emphasis = normalizeMarkdownEmphasisDelimiters(withMentions);
+  const normalized = normalizeCommunityPostMarkdownListMarkers(emphasis);
   return autolinkBareHttpUrlsForMarkdown(normalized);
 }
 

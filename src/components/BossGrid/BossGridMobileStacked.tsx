@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-import { AREAS, LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { AREAS, BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
 
 const PILLARS: {
@@ -12,7 +12,7 @@ const PILLARS: {
   name: string;
   color: string;
 }[] = [
-  { key: "foundation", name: "Foundation", color: "#A855F7" },
+  { key: "foundation", name: "Foundation", color: BOSS_FOUNDATION_COLOR },
   { key: "vision", name: "Clarify Vision", color: "#3B82F6" },
   { key: "velocity", name: "Control Velocity", color: "#0EA5E9" },
   { key: "value", name: "Create Value", color: "#14B8A6" },

@@ -466,17 +466,30 @@ export function MentionTextarea({
       const start = el.selectionStart ?? 0;
       const end = el.selectionEnd ?? start;
       const selected = displayValue.slice(start, end);
+      const isEmphasisWrap = before === "**" && after === "**";
+      const inner = isEmphasisWrap ? selected.trim() : selected;
+      const leadPad = isEmphasisWrap ? selected.length - selected.trimStart().length : 0;
+      const trailPad = isEmphasisWrap ? selected.length - selected.trimEnd().length : 0;
+      const wrapStart = start + leadPad;
+      const wrapEnd = end - trailPad;
       const nextDisplay =
-        displayValue.slice(0, start) + before + selected + after + displayValue.slice(end);
+        displayValue.slice(0, wrapStart) +
+        before +
+        inner +
+        after +
+        displayValue.slice(wrapEnd);
       commitFromDisplay(nextDisplay);
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
         el.focus();
-        if (selected.length > 0) {
-          el.setSelectionRange(start + before.length, start + before.length + selected.length);
+        if (inner.length > 0) {
+          el.setSelectionRange(
+            wrapStart + before.length,
+            wrapStart + before.length + inner.length
+          );
         } else {
-          const caret = start + before.length;
+          const caret = wrapStart + before.length;
           el.setSelectionRange(caret, caret);
         }
       });

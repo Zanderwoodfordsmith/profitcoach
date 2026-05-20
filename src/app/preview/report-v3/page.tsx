@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { CalendarEmbed } from "@/components/CalendarEmbed";
 import { areaHeroGradient } from "@/components/playbooks/PlaybookCard";
 import { BossWheel } from "@/components/BossCharts";
-import { AREAS, PLAYBOOKS } from "@/lib/bossData";
+import { AREAS, BOSS_FOUNDATION_COLOR, PLAYBOOKS } from "@/lib/bossData";
 import {
   getOverallLevel,
   LEVEL_NAMES,
@@ -25,6 +25,10 @@ import {
 } from "@/lib/bossScores";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
+import {
+  getPrimaryCoachSlug,
+  PRIMARY_COACH_CALENDAR_EMBED_CODE,
+} from "@/lib/primaryCoach";
 
 /* ------------------------------------------------------------------ */
 /* Tokens                                                              */
@@ -39,7 +43,7 @@ const LEVEL_COLORS: { key: string; solid: string; soft: string; gradient: string
 ];
 
 const PILLAR_COLORS: Record<(typeof PILLAR_KEYS)[number], string> = {
-  foundation: "#A855F7",
+  foundation: BOSS_FOUNDATION_COLOR,
   vision: "#0c5290",
   velocity: "#42a1ee",
   value: "#1ca0c2",
@@ -476,7 +480,9 @@ export function ReportV3({
 }) {
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
-  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(null);
+  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(
+    variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
+  );
   const [activePillar, setActivePillar] = useState<PillarTabKey>("foundation");
 
   const overall = getOverallLevel(totalScore);
@@ -496,34 +502,37 @@ export function ReportV3({
 
   const areaScores = useMemo(() => computeAreaScores(answers), [answers]);
 
-  const coachSlugParam = coachSlug.trim();
+  const coachSlugParam = coachSlug.trim() || getPrimaryCoachSlug();
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      if (!coachSlugParam) {
-        setCalendarEmbedCode(null);
-        return;
-      }
       const res = await fetch(
         `/api/public/coaches/${encodeURIComponent(coachSlugParam)}/calendar`
       );
-      if (cancelled || !res.ok) {
-        setCalendarEmbedCode(null);
+      if (cancelled) return;
+
+      if (!res.ok) {
+        setCalendarEmbedCode(
+          variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
+        );
         return;
       }
       const data = (await res.json().catch(() => ({}))) as {
         calendar_embed_code?: string | null;
       };
-      setCalendarEmbedCode(data?.calendar_embed_code ?? null);
+      setCalendarEmbedCode(
+        data?.calendar_embed_code ??
+          (variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null)
+      );
     }
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, [coachSlugParam]);
+  }, [coachSlugParam, variant]);
 
   /* Stats */
   const criticalCount = breakdown.red;
@@ -862,7 +871,7 @@ export function ReportV3({
                 what to fix, in what order, and how.
               </p>
 
-              {coachSlugParam && calendarEmbedCode ? (
+              {calendarEmbedCode ? (
                 <div className="relative mt-6 rounded-2xl bg-white p-3 shadow-inner">
                   <CalendarEmbed embedCode={calendarEmbedCode} />
                 </div>
@@ -972,7 +981,7 @@ function ReportV3PreviewWrapper() {
     };
   }, [searchParams]);
 
-  const coachSlug = searchParams?.get("coach")?.trim() ?? "";
+  const coachSlug = searchParams?.get("coach")?.trim() || getPrimaryCoachSlug();
 
   return (
     <ReportV3

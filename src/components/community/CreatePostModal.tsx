@@ -188,58 +188,61 @@ export function CreatePostModal({
     }
     setSaving(true);
     setError(null);
-    const authorId = await getCommunityAuthorId(
-      coachPersonaForCommunity(pathname, impersonatingCoachId)
-    );
-    if (!authorId) {
-      setError("Not signed in.");
-      setSaving(false);
-      return;
-    }
-
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-
-    const uploaded: { url: string; kind: "image" | "video" }[] = [];
-    for (const p of pendingMedia) {
-      const up = await uploadCommunityPostMediaFile(p.file, session?.access_token);
-      if ("error" in up) {
-        setError(up.error);
-        setSaving(false);
+    try {
+      const authorId = await getCommunityAuthorId(
+        coachPersonaForCommunity(pathname, impersonatingCoachId)
+      );
+      if (!authorId) {
+        setError("Not signed in.");
         return;
       }
-      uploaded.push(up.media);
-    }
 
-    const trimmedTitle = title.trim();
-    const trimmedBody = body.trim();
-    const mediaPayload = uploaded.length > 0 ? uploaded : null;
-    const imageUrl = uploaded.length > 0 ? firstCommunityPostImageUrl(uploaded) : null;
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
 
-    const { error: insErr } = await supabaseClient.from("community_posts").insert({
-      author_id: authorId,
-      category_id: categoryId,
-      title: capitalizeFirstUnicodeLetter(trimmedTitle),
-      body: capitalizeFirstUnicodeLetter(trimmedBody),
-      image_url: imageUrl,
-      media: mediaPayload,
-      published_at:
-        isAuthorAdmin && scheduledAtIso ? scheduledAtIso : new Date().toISOString(),
-    });
+      const uploaded: { url: string; kind: "image" | "video" }[] = [];
+      for (const p of pendingMedia) {
+        const up = await uploadCommunityPostMediaFile(p.file, session?.access_token);
+        if ("error" in up) {
+          setError(up.error);
+          return;
+        }
+        uploaded.push(up.media);
+      }
 
-    if (insErr) {
-      const msg = supabaseErrorMessage(insErr);
-      const hint = communityAccessHint(msg);
-      setError(hint ? `${msg}\n\n${hint}` : msg);
+      const trimmedTitle = title.trim();
+      const trimmedBody = body.trim();
+      const mediaPayload = uploaded.length > 0 ? uploaded : null;
+      const imageUrl = uploaded.length > 0 ? firstCommunityPostImageUrl(uploaded) : null;
+
+      const { error: insErr } = await supabaseClient.from("community_posts").insert({
+        author_id: authorId,
+        category_id: categoryId,
+        title: capitalizeFirstUnicodeLetter(trimmedTitle),
+        body: capitalizeFirstUnicodeLetter(trimmedBody),
+        image_url: imageUrl,
+        media: mediaPayload,
+        published_at:
+          isAuthorAdmin && scheduledAtIso ? scheduledAtIso : new Date().toISOString(),
+      });
+
+      if (insErr) {
+        const msg = supabaseErrorMessage(insErr);
+        const hint = communityAccessHint(msg);
+        setError(hint ? `${msg}\n\n${hint}` : msg);
+        return;
+      }
+
+      revokeAllPending(pendingMedia);
+      setPendingMedia([]);
+      await onCreated();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong while posting.";
+      setError(msg);
+    } finally {
       setSaving(false);
-      return;
     }
-
-    revokeAllPending(pendingMedia);
-    setPendingMedia([]);
-    await onCreated();
-    setSaving(false);
   }, [
     body,
     canSubmit,
@@ -297,7 +300,9 @@ export function CreatePostModal({
           </span>
         )}
         <p id="create-post-title" className="text-[15px] text-slate-600">
-          <span className="font-semibold text-slate-900">{authorLabel}</span>{" "}
+          <span className="font-semibold text-slate-900">
+            {authorLabel === "You" ? "Your" : `${authorLabel}'s`}
+          </span>{" "}
           <span className="text-slate-500">new post</span>
         </p>
       </div>

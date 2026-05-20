@@ -30,6 +30,10 @@ import {
 } from "@/lib/bossScores";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
+import {
+  getPrimaryCoachSlug,
+  PRIMARY_COACH_CALENDAR_EMBED_CODE,
+} from "@/lib/primaryCoach";
 
 const LEVEL_ICONS = [
   "/levels/overwhelm.png",
@@ -130,7 +134,9 @@ function ReportDesignSystemContent() {
   const searchParams = useSearchParams();
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
-  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(null);
+  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(
+    PRIMARY_COACH_CALENDAR_EMBED_CODE
+  );
 
   const [activeTab, setActiveTab] = useState<ViewTab>("pillars");
   const [selectedPillar, setSelectedPillar] = useState<number | null>(null);
@@ -176,7 +182,7 @@ function ReportDesignSystemContent() {
   });
 
   const areaScores = useMemo(() => computeAreaScores(answers), [answers]);
-  const coachSlugParam = searchParams?.get("coach")?.trim() ?? "";
+  const coachSlugParam = searchParams?.get("coach")?.trim() || getPrimaryCoachSlug();
 
   // Load coach-specific calendar embed when coach slug is provided in query.
   // Example: /preview/report-design-system?coach=bca
@@ -185,21 +191,21 @@ function ReportDesignSystemContent() {
     let cancelled = false;
 
     async function loadCalendarEmbed() {
-      if (!coachSlugParam) {
-        setCalendarEmbedCode(null);
-        return;
-      }
       const res = await fetch(
         `/api/public/coaches/${encodeURIComponent(coachSlugParam)}/calendar`
       );
-      if (cancelled || !res.ok) {
-        setCalendarEmbedCode(null);
+      if (cancelled) return;
+
+      if (!res.ok) {
+        setCalendarEmbedCode(PRIMARY_COACH_CALENDAR_EMBED_CODE);
         return;
       }
       const data = (await res.json().catch(() => ({}))) as {
         calendar_embed_code?: string | null;
       };
-      setCalendarEmbedCode(data?.calendar_embed_code ?? null);
+      setCalendarEmbedCode(
+        data?.calendar_embed_code ?? PRIMARY_COACH_CALENDAR_EMBED_CODE
+      );
     }
 
     void loadCalendarEmbed();
@@ -597,7 +603,7 @@ function ReportDesignSystemContent() {
               </p>
             </div>
             <Link
-              href="/assessment/BCA"
+              href="/diagnostic/BCA"
               className="inline-flex w-fit items-center justify-center rounded-full bg-[#10b981] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_-10px_rgba(16,185,129,0.45)] transition hover:brightness-110 active:scale-[0.98]"
             >
               Retake diagnostic →

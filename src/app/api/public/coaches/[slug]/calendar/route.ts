@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  PRIMARY_COACH_CALENDAR_EMBED_CODE,
+  PRIMARY_COACH_SLUG_FALLBACK,
+} from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(
@@ -25,9 +29,16 @@ export async function GET(
     );
   }
 
+  const storedEmbed =
+    (data as { calendar_embed_code?: string | null } | null)
+      ?.calendar_embed_code ?? null;
+
+  const isPrimaryCoach =
+    cleanSlug.toLowerCase() === PRIMARY_COACH_SLUG_FALLBACK.toLowerCase();
+
   return NextResponse.json({
     calendar_embed_code:
-      (data as { calendar_embed_code?: string | null } | null)
-        ?.calendar_embed_code ?? null,
+      storedEmbed ??
+      (isPrimaryCoach ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null),
   });
 }

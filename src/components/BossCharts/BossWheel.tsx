@@ -1,6 +1,11 @@
 "use client";
 
-import { WHEEL_COLORS, WHEEL_COLORS_ALT, LEVEL_COLORS_DIAGRAM } from "@/lib/bossData";
+import {
+  BOSS_FOUNDATION_COLOR,
+  WHEEL_COLORS,
+  WHEEL_COLORS_ALT,
+  LEVEL_COLORS_DIAGRAM,
+} from "@/lib/bossData";
 import { LEVELS } from "@/lib/bossData";
 import { computeLevelScores } from "@/lib/bossScores";
 import type { AnswersMap } from "@/lib/bossScores";
@@ -27,7 +32,7 @@ const AREA_NAMES = [
 ];
 
 const PILLAR_GROUPS = [
-  { name: "Foundation", indices: [0], color: "#c026d3" },
+  { name: "Foundation", indices: [0], color: BOSS_FOUNDATION_COLOR },
   { name: "Vision", indices: [1, 2, 3], color: "#0c5290" },
   { name: "Velocity", indices: [4, 5, 6], color: "#42a1ee" },
   { name: "Value", indices: [7, 8, 9], color: "#1ca0c2" },

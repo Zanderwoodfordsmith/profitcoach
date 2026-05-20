@@ -1,7 +1,12 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
+import { qualifyingToWebhookFields } from "@/lib/bossScorecardScores";
 import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
-import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
+import {
+  fireLeadWebhook,
+  getCoachLeadWebhookUrl,
+  type AssessmentType,
+} from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -9,23 +14,24 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 type Body = {
   coachSlug?: string;
   from_landing?: "a" | "b" | "c" | "d";
+  assessment_type?: AssessmentType;
   contact: {
     full_name?: string;
     email?: string;
     business_name?: string;
     phone?: string;
   };
-  answers: Record<string, 0 | 1 | 2>;
+  answers: Record<string, number>;
   total_score: number;
+  boss_level?: string;
+  qualifying_data?: Record<string, unknown>;
+  open_text?: string | null;
+  last_screen_reached?: number;
 };
 
 const CENTRAL_SLUG = "BCA";
 const CENTRAL_SLUG_LOWER = CENTRAL_SLUG.toLowerCase();
 
-/**
- * Creates auth user + profile + coaches row for central marketing when no "bca" coach exists.
- * Set AUTO_PROVISION_CENTRAL_COACH=false to require manual Admin setup instead.
- */
 async function provisionCentralCoachIfMissing(): Promise<{ id: string } | null> {
   if (process.env.AUTO_PROVISION_CENTRAL_COACH === "false") {
     return null;
@@ -101,38 +107,44 @@ async function provisionCentralCoachIfMissing(): Promise<{ id: string } | null> 
   return { id: userId };
 }
 
-export async function POST(request: Request) {
-  const body = (await request.json()) as Body;
+const GENERAL_SCORE_SLUGS = new Set([CENTRAL_SLUG_LOWER, "bca"]);
 
-  // General marketing funnel: missing or empty slug defaults to primary coach (Pam).
-  const coachSlug =
-    typeof body.coachSlug === "string" && body.coachSlug.trim()
-      ? body.coachSlug.trim().toLowerCase()
-      : await resolvePrimaryCoachSlug();
-
-  if (
-    typeof body.total_score !== "number" ||
-    body.total_score < 0 ||
-    body.total_score > 100
-  ) {
-    return NextResponse.json(
-      { error: "Invalid total_score" },
-      { status: 400 }
-    );
-  }
-
-  // Look up coach; auto-provision central "bca" when missing (see provisionCentralCoachIfMissing).
-  let {
-    data: coach,
-    error: coachError,
-  } = await supabaseAdmin
+async function lookupCoachBySlug(
+  slug: string
+): Promise<{ id: string } | null> {
+  const { data: coach, error } = await supabaseAdmin
     .from("coaches")
     .select("id")
-    .eq("slug", coachSlug)
+    .eq("slug", slug)
     .maybeSingle();
 
-  if (coachError) {
-    console.error("assessments coach lookup:", coachError);
+  if (error) {
+    console.error("assessments coach lookup:", error);
+    throw error;
+  }
+
+  return coach?.id ? { id: coach.id as string } : null;
+}
+
+/** Resolves coach for scorecard: Pam for general/BCA/missing/invalid slugs. */
+async function resolveCoachForAssessment(
+  coachSlugInput?: string
+): Promise<{ coachId: string; coachSlug: string } | NextResponse> {
+  const primarySlug = await resolvePrimaryCoachSlug();
+  let coachSlug =
+    typeof coachSlugInput === "string" && coachSlugInput.trim()
+      ? coachSlugInput.trim().toLowerCase()
+      : primarySlug;
+
+  if (GENERAL_SCORE_SLUGS.has(coachSlug)) {
+    coachSlug = primarySlug;
+  }
+
+  let coach: { id: string } | null = null;
+
+  try {
+    coach = await lookupCoachBySlug(coachSlug);
+  } catch {
     return NextResponse.json(
       { error: "Unable to look up coach." },
       { status: 500 }
@@ -140,9 +152,18 @@ export async function POST(request: Request) {
   }
 
   if (!coach && coachSlug === CENTRAL_SLUG_LOWER) {
-    const provisioned = await provisionCentralCoachIfMissing();
-    if (provisioned) {
-      coach = provisioned;
+    coach = await provisionCentralCoachIfMissing();
+  }
+
+  if (!coach && coachSlug !== primarySlug) {
+    try {
+      coach = await lookupCoachBySlug(primarySlug);
+      if (coach) coachSlug = primarySlug;
+    } catch {
+      return NextResponse.json(
+        { error: "Unable to look up coach." },
+        { status: 500 }
+      );
     }
   }
 
@@ -150,29 +171,28 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          coachSlug === CENTRAL_SLUG_LOWER
-            ? "Central assessment is not set up. Create a coach with slug \"BCA\" in Admin (or set CENTRAL_COACH_SYSTEM_EMAIL and ensure AUTO_PROVISION_CENTRAL_COACH is not false)."
+          coachSlug === CENTRAL_SLUG_LOWER || coachSlug === primarySlug
+            ? "Primary coach is not set up. Ensure Pam has a coach profile (coaches row) in Admin."
             : "Coach not found for this link.",
       },
       { status: 400 }
     );
   }
 
-  const coachId = coach.id as string;
+  return { coachId: coach.id, coachSlug };
+}
 
-  const fullName = body.contact?.full_name?.trim() || "Unknown";
-  const email = body.contact?.email?.trim().toLowerCase() || null;
-  const businessName = body.contact?.business_name?.trim() || null;
-  const phone = body.contact?.phone?.trim() || null;
-
-  // Upsert contact for this coach by email (if provided), otherwise always create
+async function resolveOrCreateContact(
+  coachId: string,
+  fullName: string,
+  email: string | null,
+  businessName: string | null,
+  phone: string | null
+): Promise<{ contactId: string | null; error?: NextResponse }> {
   let contactId: string | null = null;
 
   if (email) {
-    const {
-      data: existing,
-      error: contactLookupError,
-    } = await supabaseAdmin
+    const { data: existing, error: contactLookupError } = await supabaseAdmin
       .from("contacts")
       .select("id")
       .eq("coach_id", coachId)
@@ -186,113 +206,129 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!contactId) {
-    const baseInsert: Record<string, unknown> = {
-      coach_id: coachId,
-      type: "prospect",
-      full_name: fullName,
-      email,
-      business_name: businessName,
-      phone,
-    };
-    const { first_name, last_name } = splitFullName(fullName);
-    if (first_name) baseInsert.first_name = first_name;
-    if (last_name) baseInsert.last_name = last_name;
+  if (contactId) return { contactId };
 
-    let { data: inserted, error: insertError } =
-      await tryInsertContactStripping(baseInsert);
+  const baseInsert: Record<string, unknown> = {
+    coach_id: coachId,
+    type: "prospect",
+    full_name: fullName,
+    email,
+    business_name: businessName,
+    phone,
+  };
+  const { first_name, last_name } = splitFullName(fullName);
+  if (first_name) baseInsert.first_name = first_name;
+  if (last_name) baseInsert.last_name = last_name;
 
-    if (insertError || !inserted) {
-      // A lead-capture request may race this endpoint and insert the same
-      // (coach_id, email) contact first. Recover by reloading that row.
-      if (insertError?.code === "23505" && email) {
-        const { data: raced, error: racedLookupError } = await supabaseAdmin
-          .from("contacts")
-          .select("id")
-          .eq("coach_id", coachId)
-          .eq("email", email)
-          .maybeSingle();
-        if (!racedLookupError && raced?.id) {
-          contactId = raced.id as string;
-        } else {
-          console.error("assessments contact insert race lookup:", racedLookupError);
-          return NextResponse.json(
-            {
-              error: "Failed to create contact",
-              detail: racedLookupError?.message ?? null,
-              code: racedLookupError?.code ?? null,
-            },
-            { status: 500 }
-          );
-        }
-      } else if (insertError?.code === "23502") {
-        // NOT NULL violation. Try with a placeholder email; if that still
-        // fails, surface the actual column name so we can fix it.
-        const placeholderEmail = email
-          ? email
-          : `unknown+${randomUUID()}@noemail.local`;
-        const { data: insertedWithPlaceholder, error: placeholderError } =
-          await tryInsertContactStripping({
-            ...baseInsert,
-            email: placeholderEmail,
-          });
-        if (!placeholderError && insertedWithPlaceholder?.id) {
-          contactId = insertedWithPlaceholder.id as string;
-        } else {
-          console.error(
-            "assessments contact insert placeholder retry:",
-            placeholderError,
-            "payload:",
-            { ...baseInsert, email: placeholderEmail }
-          );
-          return NextResponse.json(
-            {
-              error: "Failed to create contact",
-              detail: placeholderError?.message ?? insertError?.message ?? null,
-              code: placeholderError?.code ?? insertError?.code ?? null,
-            },
-            { status: 500 }
-          );
-        }
-      } else {
-        console.error(
-          "assessments contact insert:",
-          insertError,
-          "payload:",
-          baseInsert
-        );
-        return NextResponse.json(
-          {
-            error: "Failed to create contact",
-            detail: insertError?.message ?? null,
-            code: insertError?.code ?? null,
-            hint: insertError?.hint ?? null,
-          },
+  let { data: inserted, error: insertError } =
+    await tryInsertContactStripping(baseInsert);
+
+  if (insertError || !inserted) {
+    if (insertError?.code === "23505" && email) {
+      const { data: raced, error: racedLookupError } = await supabaseAdmin
+        .from("contacts")
+        .select("id")
+        .eq("coach_id", coachId)
+        .eq("email", email)
+        .maybeSingle();
+      if (!racedLookupError && raced?.id) {
+        return { contactId: raced.id as string };
+      }
+      return {
+        contactId: null,
+        error: NextResponse.json(
+          { error: "Failed to create contact" },
           { status: 500 }
-        );
+        ),
+      };
+    }
+    if (insertError?.code === "23502") {
+      const placeholderEmail = email
+        ? email
+        : `unknown+${randomUUID()}@noemail.local`;
+      const { data: insertedWithPlaceholder, error: placeholderError } =
+        await tryInsertContactStripping({
+          ...baseInsert,
+          email: placeholderEmail,
+        });
+      if (!placeholderError && insertedWithPlaceholder?.id) {
+        return { contactId: insertedWithPlaceholder.id as string };
       }
     }
-    if (!contactId && inserted?.id) {
-      contactId = inserted.id as string;
-    }
+    return {
+      contactId: null,
+      error: NextResponse.json(
+        { error: "Failed to create contact", detail: insertError?.message },
+        { status: 500 }
+      ),
+    };
   }
 
-  const {
-    data: assessment,
-    error: assessmentError,
-  } = await supabaseAdmin
+  return { contactId: inserted.id as string };
+}
+
+export async function POST(request: Request) {
+  const body = (await request.json()) as Body;
+
+  const coachResolved = await resolveCoachForAssessment(body.coachSlug);
+  if (coachResolved instanceof NextResponse) return coachResolved;
+  const { coachId, coachSlug } = coachResolved;
+
+  const assessmentType: AssessmentType =
+    body.assessment_type === "boss_scorecard"
+      ? "boss_scorecard"
+      : "diagnostic_50";
+
+  if (
+    typeof body.total_score !== "number" ||
+    body.total_score < 0 ||
+    body.total_score > 100
+  ) {
+    return NextResponse.json(
+      { error: "Invalid total_score" },
+      { status: 400 }
+    );
+  }
+
+  const fullName = body.contact?.full_name?.trim() || "Unknown";
+  const email = body.contact?.email?.trim().toLowerCase() || null;
+  const businessName = body.contact?.business_name?.trim() || null;
+  const phone = body.contact?.phone?.trim() || null;
+
+  const contactResult = await resolveOrCreateContact(
+    coachId,
+    fullName,
+    email,
+    businessName,
+    phone
+  );
+  if (contactResult.error) return contactResult.error;
+  const contactId = contactResult.contactId;
+
+  const assessmentInsert: Record<string, unknown> = {
+    coach_id: coachId,
+    contact_id: contactId,
+    source: "prospect_link",
+    total_score: body.total_score,
+    answers: body.answers,
+    assessment_type: assessmentType,
+  };
+
+  if (assessmentType === "boss_scorecard") {
+    assessmentInsert.qualifying_data = body.qualifying_data ?? null;
+    assessmentInsert.open_text = body.open_text ?? null;
+    assessmentInsert.boss_level = body.boss_level ?? null;
+    assessmentInsert.last_screen_reached = body.last_screen_reached ?? 16;
+  }
+
+  const { data: assessment, error: assessmentError } = await supabaseAdmin
     .from("assessments")
-    .insert({
-      coach_id: coachId,
-      contact_id: contactId,
-      source: "prospect_link",
-      total_score: body.total_score,
-      answers: body.answers,
-    })
+    .insert(assessmentInsert)
     .select("id, completed_at")
     .single();
 
   if (assessmentError || !assessment) {
+    console.error("assessments insert:", assessmentError);
     return NextResponse.json(
       { error: "Failed to save assessment" },
       { status: 500 }
@@ -306,6 +342,7 @@ export async function POST(request: Request) {
     body.from_landing === "d"
       ? body.from_landing
       : null;
+
   if (fromLanding) {
     const { data: runningTest } = await supabaseAdmin
       .from("landing_tests")
@@ -328,8 +365,12 @@ export async function POST(request: Request) {
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
   if (webhookUrl) {
     const { first_name, last_name } = splitFullName(fullName);
-    void fireLeadWebhook(webhookUrl, {
-      event: "assessment_completed",
+    const completedAt =
+      (assessment as { completed_at?: string }).completed_at ??
+      new Date().toISOString();
+
+    const basePayload = {
+      event: "assessment_completed" as const,
       coach_slug: coachSlug,
       coach_id: coachId,
       contact: {
@@ -345,7 +386,28 @@ export async function POST(request: Request) {
       assessment_id: assessment.id as string,
       source: "prospect_link",
       fired_at: new Date().toISOString(),
-    });
+      assessment_type: assessmentType,
+    };
+
+    if (assessmentType === "boss_scorecard") {
+      const qualifying = qualifyingToWebhookFields(
+        (body.qualifying_data ?? {}) as Parameters<
+          typeof qualifyingToWebhookFields
+        >[0]
+      );
+      void fireLeadWebhook(webhookUrl, {
+        ...basePayload,
+        boss_score: body.total_score,
+        boss_level: body.boss_level ?? null,
+        answers: body.answers,
+        qualifying,
+        open_text: body.open_text ?? null,
+        completed_at: completedAt,
+        last_screen_reached: body.last_screen_reached ?? 16,
+      });
+    } else {
+      void fireLeadWebhook(webhookUrl, basePayload);
+    }
   }
 
   return NextResponse.json(
@@ -356,4 +418,3 @@ export async function POST(request: Request) {
     { status: 201 }
   );
 }
-

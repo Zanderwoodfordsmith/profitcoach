@@ -471,8 +471,6 @@ export function PostDetailModal({
   /** After "Mark as unread", skip auto read until switching posts (mark unread bumps parent state). */
   const skipAutoMarkPostReadRef = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const postTitleRef = useRef<HTMLHeadingElement>(null);
-  const [showCompactPostHeader, setShowCompactPostHeader] = useState(false);
 
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -585,25 +583,6 @@ export function PostDetailModal({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [menuOpen]);
 
-  useEffect(() => {
-    if (editing) {
-      setShowCompactPostHeader(false);
-      return;
-    }
-    const root = scrollContainerRef.current;
-    const titleEl = postTitleRef.current;
-    if (!root || !titleEl) return;
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        setShowCompactPostHeader(!entry.isIntersecting);
-      },
-      { root, threshold: 0 }
-    );
-    io.observe(titleEl);
-    return () => io.disconnect();
-  }, [editing, post.id, post.title]);
-
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
     return `${window.location.origin}${pathname}?post=${post.id}`;
@@ -646,19 +625,27 @@ export function PostDetailModal({
     () => categories.find((c) => c.slug === "announcements") ?? null,
     [categories]
   );
-  const editableCategories = useMemo(
-    () =>
-      isEditorAdmin
-        ? categories
-        : categories.filter((c) => c.slug !== "announcements"),
-    [categories, isEditorAdmin]
-  );
+  const editableCategories = useMemo(() => {
+    const base = isEditorAdmin
+      ? categories
+      : categories.filter((c) => c.slug !== "announcements");
+    if (post.category_id && !base.some((c) => c.id === post.category_id)) {
+      return categories.filter(
+        (c) => base.some((b) => b.id === c.id) || c.id === post.category_id
+      );
+    }
+    return base;
+  }, [categories, isEditorAdmin, post.category_id]);
 
   useEffect(() => {
-    if (!editableCategories.some((c) => c.id === editCategoryId)) {
-      setEditCategoryId(editableCategories[0]?.id ?? "");
-    }
-  }, [editCategoryId, editableCategories]);
+    if (editorRole === null) return;
+    if (!editCategoryId) return;
+    if (editableCategories.some((c) => c.id === editCategoryId)) return;
+    const fallback = editableCategories.some((c) => c.id === post.category_id)
+      ? post.category_id
+      : "";
+    setEditCategoryId(fallback);
+  }, [editCategoryId, editableCategories, editorRole, post.category_id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1057,64 +1044,69 @@ export function PostDetailModal({
     }
     setActionError(null);
     setSaveEditBusy(true);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
 
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-
-    const finalMedia: CommunityPostMediaItem[] = [];
-    for (const slot of editMediaSlots) {
-      if (slot.type === "remote") {
-        finalMedia.push(slot.item);
-        continue;
+      const finalMedia: CommunityPostMediaItem[] = [];
+      for (const slot of editMediaSlots) {
+        if (slot.type === "remote") {
+          finalMedia.push(slot.item);
+          continue;
+        }
+        const up = await uploadCommunityPostMediaFile(
+          slot.file,
+          session?.access_token
+        );
+        if ("error" in up) {
+          setActionError(up.error);
+          return;
+        }
+        finalMedia.push(up.media);
       }
-      const up = await uploadCommunityPostMediaFile(
-        slot.file,
-        session?.access_token
-      );
-      if ("error" in up) {
-        setActionError(up.error);
-        setSaveEditBusy(false);
+
+      const mediaPayload = finalMedia.length > 0 ? finalMedia : null;
+      const image_url = firstCommunityPostImageUrl(finalMedia);
+      let nextPublishedAt: string | null = null;
+      if (isEditorAdmin) {
+        const wasFutureScheduled =
+          !!post.published_at && new Date(post.published_at).getTime() > Date.now();
+        nextPublishedAt = editScheduledAtIso
+          ? editScheduledAtIso
+          : wasFutureScheduled
+            ? new Date().toISOString()
+            : (post.published_at ?? new Date().toISOString());
+      }
+
+      const { error } = await supabaseClient
+        .from("community_posts")
+        .update({
+          title,
+          body,
+          category_id: editCategoryId,
+          image_url,
+          media: mediaPayload,
+          ...(isEditorAdmin ? { published_at: nextPublishedAt } : {}),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", post.id);
+      if (error) {
+        const msg = supabaseErrorMessage(error);
+        const hint = communityAccessHint(msg);
+        setActionError(hint ? `${msg}\n\n${hint}` : msg);
         return;
       }
-      finalMedia.push(up.media);
+      setEditing(false);
+      setMenuOpen(false);
+      await onPostsChanged();
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Something went wrong while saving.";
+      setActionError(msg);
+    } finally {
+      setSaveEditBusy(false);
     }
-
-    const mediaPayload = finalMedia.length > 0 ? finalMedia : null;
-    const image_url = firstCommunityPostImageUrl(finalMedia);
-    let nextPublishedAt: string | null = null;
-    if (isEditorAdmin) {
-      const wasFutureScheduled =
-        !!post.published_at && new Date(post.published_at).getTime() > Date.now();
-      nextPublishedAt = editScheduledAtIso
-        ? editScheduledAtIso
-        : wasFutureScheduled
-          ? new Date().toISOString()
-          : (post.published_at ?? new Date().toISOString());
-    }
-
-    const { error } = await supabaseClient
-      .from("community_posts")
-      .update({
-        title,
-        body,
-        category_id: editCategoryId,
-        image_url,
-        media: mediaPayload,
-        ...(isEditorAdmin ? { published_at: nextPublishedAt } : {}),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", post.id);
-    setSaveEditBusy(false);
-    if (error) {
-      const msg = supabaseErrorMessage(error);
-      const hint = communityAccessHint(msg);
-      setActionError(hint ? `${msg}\n\n${hint}` : msg);
-      return;
-    }
-    setEditing(false);
-    setMenuOpen(false);
-    await onPostsChanged();
   }, [
     announcementsCategory,
     editBody,
@@ -1359,62 +1351,28 @@ export function PostDetailModal({
 
   const card = (
       <div
-        className={`relative flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ${
-          presentation === "embedded"
-            ? "h-full max-h-none"
-            : "max-h-[90dvh] max-w-[calc(42rem*1.15)]"
+        className={`relative w-full ${
+          presentation === "embedded" ? "h-full" : "max-w-[calc(42rem*1.15)]"
         }`}
         onClick={presentation === "overlay" ? (e) => e.stopPropagation() : undefined}
       >
         {presentation === "overlay" ? (
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" strokeWidth={2.5} />
-        </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute -right-1.5 -top-1.5 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:bg-slate-50 hover:text-slate-800"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" strokeWidth={2.5} />
+          </button>
         ) : null}
         <div
-          className={`shrink-0 overflow-hidden border-slate-200 bg-white/95 backdrop-blur transition-[max-height,opacity] duration-200 ease-out ${
-            showCompactPostHeader && !editing
-              ? "max-h-24 border-b opacity-100"
-              : "pointer-events-none max-h-0 border-b-0 opacity-0"
+          className={`relative flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ${
+            presentation === "embedded"
+              ? "h-full max-h-none"
+              : "max-h-[90dvh]"
           }`}
         >
-          <div className="flex items-center gap-2.5 py-2.5 pl-4 pr-14 sm:pl-8 sm:pr-16">
-            <CommunityAuthorAvatar profile={headerAuthor} size="sm" />
-            <p className="min-w-0 flex-1 truncate text-sm font-semibold leading-snug text-slate-900">
-              {post.title}
-            </p>
-            {showCompactPostHeader && !editing ? (
-              <PostDetailOverflowMenu
-                menuRef={menuRef}
-                menuOpen={menuOpen}
-                setMenuOpen={setMenuOpen}
-                canManagePost={canManagePost}
-                deleteBusy={deleteBusy}
-                favouriteBusy={favouriteBusy}
-                pinBusy={pinBusy}
-                favouritedByMe={post.favourited_by_me}
-                isPinned={post.is_pinned}
-                canPin={canPin}
-                canMarkUnread={Boolean(feedStorageScopeId)}
-                onEdit={() => {
-                  setActionError(null);
-                  setEditing(true);
-                }}
-                onCopyLink={copyPostLink}
-                onToggleFavourite={handleToggleFavourite}
-                onTogglePin={handleTogglePin}
-                onMarkUnread={handleMarkPostUnread}
-                onReport={reportPost}
-                onDelete={handleDeletePost}
-              />
-            ) : null}
-          </div>
-        </div>
         <div
           ref={scrollContainerRef}
           className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-8"
@@ -1451,7 +1409,7 @@ export function PostDetailModal({
                     ) : null}
                   </p>
                 </div>
-                {(!showCompactPostHeader || editing) ? (
+                {!editing ? (
                   <PostDetailOverflowMenu
                     menuRef={menuRef}
                     menuOpen={menuOpen}
@@ -1466,6 +1424,9 @@ export function PostDetailModal({
                     canMarkUnread={Boolean(feedStorageScopeId)}
                     onEdit={() => {
                       setActionError(null);
+                      setEditTitle(post.title);
+                      setEditBody(post.body);
+                      setEditCategoryId(post.category_id);
                       setEditing(true);
                     }}
                     onCopyLink={copyPostLink}
@@ -1494,16 +1455,13 @@ export function PostDetailModal({
                   <MentionTextarea
                     value={editBody}
                     onChange={setEditBody}
-                    placeholder="Body…"
-                    rows={8}
-                    className="w-full resize-y border-0 border-b border-slate-200 bg-transparent px-0 pb-3 text-[calc(1rem+2px)] text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-0"
+                    placeholder="Write something…"
+                    autoResize
+                    maxAutoHeightPx={0}
+                    minAutoHeightPx={140}
+                    showFormattingToolbar
+                    className="w-full border-0 bg-transparent px-0 pb-1 text-[calc(1rem+2px)] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0"
                   />
-                  <p className="text-xs leading-snug text-slate-500">
-                    Basic{" "}
-                    <span className="font-medium text-slate-600">Markdown</span>{" "}
-                    is supported: **bold**, *italic*, # headings, - bullets,
-                    numbered lists, blockquotes, and links (https://…).
-                  </p>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-600">
                       Photos and videos (optional, up to {COMMUNITY_POST_MEDIA_MAX})
@@ -1738,7 +1696,6 @@ export function PostDetailModal({
               ) : (
                 <div className="pb-3">
                   <h2
-                    ref={postTitleRef}
                     id="post-detail-title"
                     className="mt-2.5 text-[calc(1.5rem+2px)] font-semibold leading-snug tracking-tight text-slate-900"
                   >
@@ -2305,6 +2262,7 @@ export function PostDetailModal({
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
   );

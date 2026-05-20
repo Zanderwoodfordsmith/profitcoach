@@ -3,7 +3,12 @@
  * Ported from BOSS Dashboard thank-you.js.
  */
 
-import { PLAYBOOKS, PLAYBOOK_COUNT, AREAS } from "./bossData";
+import {
+  BOSS_FOUNDATION_COLOR,
+  PLAYBOOKS,
+  PLAYBOOK_COUNT,
+  AREAS,
+} from "./bossData";
 
 export type AnswersMap = Record<string, 0 | 1 | 2>;
 
@@ -119,7 +124,7 @@ export function computePillarScoresWithFoundation(
 
 /** One row of BOSS pillar dials (Foundation + 3 growth pillars). */
 export const BOSS_PILLAR_DIAL_ORDER = [
-  { key: "foundation" as const, label: "Foundation", color: "#A855F7" },
+  { key: "foundation" as const, label: "Foundation", color: BOSS_FOUNDATION_COLOR },
   { key: "vision" as const, label: "Clarify Vision", color: "#3B82F6" },
   { key: "velocity" as const, label: "Control Velocity", color: "#0EA5E9" },
   { key: "value" as const, label: "Create Value", color: "#14B8A6" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import {
   computePillarScores,
   type AnswersMap,
@@ -34,7 +34,7 @@ const AREA_NAMES = [
 ];
 
 const PILLAR_AREA_INDICES = [[0], [1, 2, 3], [4, 5, 6], [7, 8, 9]] as const;
-const PILLAR_AREA_COLORS = ["text-[#c026d3]", "text-[#0c5290]", "text-[#42a1ee]", "text-[#1ca0c2]"] as const;
+const PILLAR_AREA_COLORS = ["text-[#4C667A]", "text-[#0c5290]", "text-[#42a1ee]", "text-[#1ca0c2]"] as const;
 
 // Diamond/plateau bevel: sharp edges, light from top-left, facets from each corner inwards
 const KEY_BEVEL_CLASS =
@@ -111,7 +111,10 @@ export function BossGrid({
           <>
             {/* Row 1: corner, pillar headers */}
             <div className="flex flex-col justify-center items-center p-2 min-w-0 bg-transparent" />
-            <div className="flex flex-col justify-center items-center p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#a21caf] rounded-t-lg shadow-sm">
+            <div
+              className="flex flex-col justify-center items-center p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white rounded-t-lg shadow-sm"
+              style={{ backgroundColor: BOSS_FOUNDATION_COLOR }}
+            >
               Foundation
             </div>
             <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#0c5290] rounded-t-lg shadow-sm">

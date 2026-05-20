@@ -33,8 +33,18 @@ const reportPreviewLinks = [
   },
   {
     href: "/preview/report-v3?preview=1&score=47&coach=BCA",
-    label: "BOSS report v3 (Figma)",
-    hint: "Hero dial, level cards, pillar dials, opportunity gap, wheel, calendar embed.",
+    label: "BOSS report v3 (legacy diagnostic)",
+    hint: "Hero dial, level cards, pillar dials for 50-q diagnostic.",
+  },
+  {
+    href: "/preview/scorecard-results?preview=1&coach=pam",
+    label: "BOSS Scorecard results",
+    hint: "New 13-question scorecard results page.",
+  },
+  {
+    href: "/preview/scorecard",
+    label: "BOSS Scorecard UI",
+    hint: "Smiley scale and progress bar preview.",
   },
 ] as const;
 
@@ -46,13 +56,23 @@ const bossProgrammeLinks = [
   },
   {
     href: "/assessment/BCA",
-    label: "Assessment",
-    hint: "Question flow prospects complete after landing.",
+    label: "BOSS Scorecard",
+    hint: "13-question scorecard flow after landing opt-in.",
   },
   {
-    href: "/assessment/BCA/thank-you?preview=1",
-    label: "Results page (thank-you)",
-    hint: "Simpler post-assessment results experience.",
+    href: "/assessment/pam/thank-you?preview=1&coach=pam",
+    label: "Scorecard results",
+    hint: "Post-scorecard results experience.",
+  },
+  {
+    href: "/diagnostic/BCA",
+    label: "Legacy 50-q diagnostic",
+    hint: "Full diagnostic preserved for client retakes.",
+  },
+  {
+    href: "/diagnostic/BCA/thank-you?preview=1",
+    label: "Legacy diagnostic results",
+    hint: "ReportV3 results for 50-q diagnostic.",
   },
   {
     href: "/admin/prospects",

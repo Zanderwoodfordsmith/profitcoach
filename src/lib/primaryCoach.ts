@@ -10,6 +10,10 @@ export const PRIMARY_COACH_SLUG_FALLBACK =
   process.env.PRIMARY_COACH_SLUG?.trim().toLowerCase() ||
   "pam";
 
+/** Pam's default booking calendar embed (ProCoach Platform). */
+export const PRIMARY_COACH_CALENDAR_EMBED_CODE =
+  '<iframe src="https://link.procoachplatform.com/widget/booking/YBxvoiQH6HcHjHYrOWkU" style="width: 100%;border:none;overflow: hidden;" scrolling="no" id="8gGuCLQODMv5nY2iZQB9_1779293123369"></iframe><br><script src="https://link.procoachplatform.com/js/form_embed.js" type="text/javascript"></script>';
+
 let cachedPrimaryCoachSlug: string | null = null;
 
 export function getPrimaryCoachSlug(): string {

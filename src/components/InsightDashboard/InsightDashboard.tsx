@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AREAS } from "@/lib/bossData";
-import { WHEEL_COLORS } from "@/lib/bossData";
+import { AREAS, BOSS_FOUNDATION_COLOR, BOSS_FOUNDATION_GRADIENT, WHEEL_COLORS } from "@/lib/bossData";
 import {
   getOverallLevel,
   LEVEL_NAMES,
@@ -54,7 +53,7 @@ const LEVEL_ICONS = [
 ];
 
 const PILLAR_META: Record<(typeof PILLAR_KEYS)[number], { accent: string; gradient: string }> = {
-  foundation: { accent: "#A855F7", gradient: "linear-gradient(90deg, #A855F7, #c084fc)" },
+  foundation: { accent: BOSS_FOUNDATION_COLOR, gradient: BOSS_FOUNDATION_GRADIENT },
   vision: { accent: "#0c5290", gradient: "linear-gradient(90deg, #093a6d, #0c5290)" },
   velocity: { accent: "#42a1ee", gradient: "linear-gradient(90deg, #3183d9, #42a1ee)" },
   value: { accent: "#5dcce3", gradient: "linear-gradient(90deg, #1ca0c2, #5dcce3)" },

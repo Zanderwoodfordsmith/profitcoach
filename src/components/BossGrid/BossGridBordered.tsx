@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Outfit } from "next/font/google";
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
-import { LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { AREAS, BOSS_FOUNDATION_COLOR, BOSS_FOUNDATION_SOFT, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import {
   computePillarScores,
   type AnswersMap,
@@ -44,14 +44,14 @@ const PILLAR_AREA_INDICES = [[0], [1, 2, 3], [4, 5, 6], [7, 8, 9]] as const;
 
 // Spec: pillar colors and header background tints
 const PILLAR_SPEC = [
-  { name: "Foundation", main: "#9333EA", bg: "#FAF5FF" },
+  { name: "Foundation", main: BOSS_FOUNDATION_COLOR, bg: BOSS_FOUNDATION_SOFT },
   { name: "Clarify Vision", main: "#2563EB", bg: "#EFF6FF" },
   { name: "Control Velocity", main: "#0284C7", bg: "#F0F9FF" },
   { name: "Create Value", main: "#0D9488", bg: "#F0FDFA" },
 ] as const;
 
 // Spec: area colors (index = area ref)
-const AREA_COLORS = ["#9333EA", "#1E3A8A", "#2563EB", "#3B82F6", "#075985", "#0284C7", "#38BDF8", "#115E59", "#0D9488", "#2DD4BF"] as const;
+const AREA_COLORS = [BOSS_FOUNDATION_COLOR, "#1E3A8A", "#2563EB", "#3B82F6", "#075985", "#0284C7", "#38BDF8", "#115E59", "#0D9488", "#2DD4BF"] as const;
 
 // Cell styles per status (with hover)
 const CELL_STYLES = {

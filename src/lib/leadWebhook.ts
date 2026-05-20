@@ -8,9 +8,15 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  *   prospect finishes the assessment (regardless of whether a partial event
  *   has already fired). The webhook is intentionally fire-and-forget on both
  *   events; downstream tools (CRMs / Zapier) should dedupe on `contact_id`.
+ * - `scorecard_abandoned` fires when a prospect leaves the BOSS Scorecard mid-flow.
  * - `total_score` is only included on completion.
  */
-export type LeadWebhookEvent = "lead_captured" | "assessment_completed";
+export type LeadWebhookEvent =
+  | "lead_captured"
+  | "assessment_completed"
+  | "scorecard_abandoned";
+
+export type AssessmentType = "diagnostic_50" | "boss_scorecard";
 
 export type LeadWebhookContactPayload = {
   contact_id: string | null;
@@ -22,6 +28,16 @@ export type LeadWebhookContactPayload = {
   business_name: string | null;
 };
 
+export type ScorecardQualifyingWebhook = {
+  annual_revenue: string | null;
+  team_size: string | null;
+  time_in_business: string | null;
+  desired_outcome: string | null;
+  desired_outcome_other: string | null;
+  obstacles: string | null;
+  preferred_solution: string | null;
+};
+
 export type LeadWebhookPayload = {
   event: LeadWebhookEvent;
   coach_slug: string | null;
@@ -31,6 +47,16 @@ export type LeadWebhookPayload = {
   assessment_id?: string;
   source?: string | null;
   fired_at: string;
+  /** BOSS Scorecard fields */
+  assessment_type?: AssessmentType;
+  boss_score?: number;
+  boss_level?: string | null;
+  answers?: Record<string, number>;
+  qualifying?: ScorecardQualifyingWebhook;
+  open_text?: string | null;
+  completed_at?: string;
+  last_screen_reached?: number;
+  abandonment_tag?: string;
 };
 
 /**

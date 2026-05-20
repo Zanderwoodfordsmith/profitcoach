@@ -1,3 +1,5 @@
+/** Legacy 50-question BOSS diagnostic — used by `/diagnostic` only. */
+
 export type AssessmentQuestion = {
   ref: string;
   level: number;

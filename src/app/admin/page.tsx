@@ -103,7 +103,8 @@ type CoachRow = {
 type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
 type CrmNameFilter = "all" | "has_name" | "no_name";
 type LastLoginFilter = "all" | "has_login" | "never" | "last_30_days" | "over_90_days";
-type LastLoginSort = "recent_first" | "oldest_first" | "never_first";
+type CoachSortField = "last_login" | "join_date";
+type CoachSortOrder = "recent_first" | "oldest_first" | "missing_first";
 
 type CoachTableColumnVisibility = {
   slug: boolean;
@@ -133,7 +134,8 @@ type PersistedCoachTableSettings = {
   conferenceFilter: ConferenceFilter;
   crmNameFilter: CrmNameFilter;
   lastLoginFilter: LastLoginFilter;
-  lastLoginSort: LastLoginSort;
+  sortField: CoachSortField;
+  sortOrder: CoachSortOrder;
   columnVisibility: CoachTableColumnVisibility;
   columnOrder: Array<keyof CoachTableColumnVisibility>;
 };
@@ -220,12 +222,38 @@ function isLastLoginFilter(value: unknown): value is LastLoginFilter {
   );
 }
 
-function isLastLoginSort(value: unknown): value is LastLoginSort {
+function isCoachSortField(value: unknown): value is CoachSortField {
+  return value === "last_login" || value === "join_date";
+}
+
+function isCoachSortOrder(value: unknown): value is CoachSortOrder {
   return (
     value === "recent_first" ||
     value === "oldest_first" ||
-    value === "never_first"
+    value === "missing_first"
   );
+}
+
+function parseCoachSortFromPersisted(
+  parsed: Partial<PersistedCoachTableSettings> & {
+    lastLoginSort?: unknown;
+  }
+): { sortField: CoachSortField; sortOrder: CoachSortOrder } | null {
+  if (isCoachSortField(parsed.sortField) && isCoachSortOrder(parsed.sortOrder)) {
+    return { sortField: parsed.sortField, sortOrder: parsed.sortOrder };
+  }
+  const legacy = parsed.lastLoginSort;
+  if (
+    legacy === "recent_first" ||
+    legacy === "oldest_first" ||
+    legacy === "never_first"
+  ) {
+    return {
+      sortField: "last_login",
+      sortOrder: legacy === "never_first" ? "missing_first" : legacy,
+    };
+  }
+  return null;
 }
 
 function parsePersistedCoachTableSettings(
@@ -233,12 +261,13 @@ function parsePersistedCoachTableSettings(
 ): PersistedCoachTableSettings | null {
   try {
     const parsed = JSON.parse(raw) as Partial<PersistedCoachTableSettings>;
+    const sort = parseCoachSortFromPersisted(parsed);
     if (
       !parsed ||
       !isConferenceFilter(parsed.conferenceFilter) ||
       !isCrmNameFilter(parsed.crmNameFilter) ||
       !isLastLoginFilter(parsed.lastLoginFilter) ||
-      !isLastLoginSort(parsed.lastLoginSort) ||
+      !sort ||
       !parsed.columnVisibility ||
       !parsed.columnOrder
     ) {
@@ -270,7 +299,8 @@ function parsePersistedCoachTableSettings(
       conferenceFilter: parsed.conferenceFilter,
       crmNameFilter: parsed.crmNameFilter,
       lastLoginFilter: parsed.lastLoginFilter,
-      lastLoginSort: parsed.lastLoginSort,
+      sortField: sort.sortField,
+      sortOrder: sort.sortOrder,
       columnVisibility: visibility,
       columnOrder: orderedKeys,
     };
@@ -390,8 +420,8 @@ export default function AdminPage() {
   const [crmNameFilter, setCrmNameFilter] = useState<CrmNameFilter>("all");
   const [lastLoginFilter, setLastLoginFilter] =
     useState<LastLoginFilter>("all");
-  const [lastLoginSort, setLastLoginSort] =
-    useState<LastLoginSort>("recent_first");
+  const [sortField, setSortField] = useState<CoachSortField>("last_login");
+  const [sortOrder, setSortOrder] = useState<CoachSortOrder>("recent_first");
   const [columnVisibility, setColumnVisibility] =
     useState<CoachTableColumnVisibility>(DEFAULT_COACH_TABLE_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<
@@ -466,7 +496,8 @@ export default function AdminPage() {
         setConferenceFilter(parsed.conferenceFilter);
         setCrmNameFilter(parsed.crmNameFilter);
         setLastLoginFilter(parsed.lastLoginFilter);
-        setLastLoginSort(parsed.lastLoginSort);
+        setSortField(parsed.sortField);
+        setSortOrder(parsed.sortOrder);
         setColumnVisibility(parsed.columnVisibility);
         setColumnOrder(parsed.columnOrder);
       }
@@ -480,7 +511,8 @@ export default function AdminPage() {
       conferenceFilter,
       crmNameFilter,
       lastLoginFilter,
-      lastLoginSort,
+      sortField,
+      sortOrder,
       columnVisibility,
       columnOrder,
     };
@@ -493,7 +525,8 @@ export default function AdminPage() {
     conferenceFilter,
     crmNameFilter,
     lastLoginFilter,
-    lastLoginSort,
+    sortField,
+    sortOrder,
     columnVisibility,
     columnOrder,
   ]);
@@ -700,7 +733,8 @@ export default function AdminPage() {
     (conferenceFilter !== "all" ? 1 : 0) +
     (lastLoginFilter !== "all" ? 1 : 0) +
     (crmNameFilter !== "all" ? 1 : 0);
-  const hasActiveSort = lastLoginSort !== "recent_first";
+  const hasActiveSort =
+    sortField !== "last_login" || sortOrder !== "recent_first";
   const visibleColumnCount =
     3 +
     COACH_TABLE_COLUMN_OPTIONS.reduce(
@@ -774,18 +808,26 @@ export default function AdminPage() {
       return matchesName && matchesConference && matchesCrmName && matchesLastLogin;
     })
     .sort((a, b) => {
-      const aMs = a.last_login_at ? Date.parse(a.last_login_at) : Number.NaN;
-      const bMs = b.last_login_at ? Date.parse(b.last_login_at) : Number.NaN;
+      const aIso =
+        sortField === "join_date" ? a.joined_at : a.last_login_at;
+      const bIso =
+        sortField === "join_date" ? b.joined_at : b.last_login_at;
+      const aMs = aIso ? Date.parse(aIso) : Number.NaN;
+      const bMs = bIso ? Date.parse(bIso) : Number.NaN;
       const aHas = !Number.isNaN(aMs);
       const bHas = !Number.isNaN(bMs);
-      if (lastLoginSort === "never_first") {
+      if (sortOrder === "missing_first") {
         if (aHas !== bHas) return aHas ? 1 : -1;
-        if (!aHas && !bHas) return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+        if (!aHas && !bHas) {
+          return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+        }
       } else {
         if (aHas !== bHas) return aHas ? -1 : 1;
       }
-      if (!aHas && !bHas) return (a.full_name ?? "").localeCompare(b.full_name ?? "");
-      if (lastLoginSort === "oldest_first") return aMs - bMs;
+      if (!aHas && !bHas) {
+        return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+      }
+      if (sortOrder === "oldest_first") return aMs - bMs;
       return bMs - aMs;
     });
 
@@ -1744,21 +1786,57 @@ export default function AdminPage() {
                 <div
                   id="coach-sort-menu"
                   role="menu"
-                  className="absolute left-0 z-[90] mt-1 w-[min(92vw,16rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                  className="absolute left-0 z-[90] mt-1 w-[min(92vw,18rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
                 >
-                  <label htmlFor="last-login-sort" className="mb-1 block text-xs font-medium text-slate-600">
-                    Last login sort
-                  </label>
-                  <select
-                    id="last-login-sort"
-                    value={lastLoginSort}
-                    onChange={(e) => setLastLoginSort(e.target.value as LastLoginSort)}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                  >
-                    <option value="recent_first">Most recent first</option>
-                    <option value="oldest_first">Oldest first</option>
-                    <option value="never_first">Never logged in first</option>
-                  </select>
+                  <div className="space-y-3">
+                    <div>
+                      <label
+                        htmlFor="coach-sort-field"
+                        className="mb-1 block text-xs font-medium text-slate-600"
+                      >
+                        Sort by
+                      </label>
+                      <select
+                        id="coach-sort-field"
+                        value={sortField}
+                        onChange={(e) =>
+                          setSortField(e.target.value as CoachSortField)
+                        }
+                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="last_login">Last login</option>
+                        <option value="join_date">Join date</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="coach-sort-order"
+                        className="mb-1 block text-xs font-medium text-slate-600"
+                      >
+                        Order
+                      </label>
+                      <select
+                        id="coach-sort-order"
+                        value={sortOrder}
+                        onChange={(e) =>
+                          setSortOrder(e.target.value as CoachSortOrder)
+                        }
+                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="recent_first">
+                          {sortField === "join_date"
+                            ? "Newest first"
+                            : "Most recent first"}
+                        </option>
+                        <option value="oldest_first">Oldest first</option>
+                        <option value="missing_first">
+                          {sortField === "join_date"
+                            ? "No join date first"
+                            : "Never logged in first"}
+                        </option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </div>

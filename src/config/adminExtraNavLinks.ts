@@ -26,8 +26,13 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
   },
   {
     href: "/assessment",
-    label: "Assessment",
-    hint: "Default route redirects to /assessment/BCA",
+    label: "BOSS Scorecard",
+    hint: "Default route redirects to /assessment/BCA (13-question funnel)",
+  },
+  {
+    href: "/diagnostic",
+    label: "Legacy 50-q diagnostic",
+    hint: "Preserved full diagnostic for client retakes",
   },
   {
     href: "/join",

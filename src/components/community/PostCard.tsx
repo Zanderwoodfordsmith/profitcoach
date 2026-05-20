@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, Pin, Vote } from "lucide-react";
+import { CalendarClock, Pin, Play, Vote } from "lucide-react";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import { MentionBody } from "@/components/community/MentionBody";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
@@ -217,13 +217,23 @@ export function PostCard({
         {post.media[0] ? (
           <div className="relative shrink-0 self-start overflow-hidden rounded-xl ring-1 ring-slate-200">
             {post.media[0].kind === "video" ? (
-              <video
-                src={post.media[0].url}
-                muted
-                playsInline
-                preload="metadata"
-                className="h-[92px] w-[92px] object-cover"
-              />
+              <>
+                <video
+                  src={post.media[0].url}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="h-[92px] w-[92px] object-cover"
+                />
+                <span
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  aria-hidden
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/50 text-white shadow-sm">
+                    <Play className="h-4 w-4 fill-white" strokeWidth={0} />
+                  </span>
+                </span>
+              </>
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img

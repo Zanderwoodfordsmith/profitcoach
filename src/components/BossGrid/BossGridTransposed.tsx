@@ -4,7 +4,7 @@ import React, { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, Layers } from "lucide-react";
 import { Outfit } from "next/font/google";
-import { AREAS, LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { AREAS, BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
 import { BossGridMobileStacked } from "./BossGridMobileStacked";
 import { BossQuestionTooltipPortal, useBossQuestionTooltip, BOSS_QUESTION_TOOLTIP_DELAY_MS } from "./bossQuestionTooltip";
@@ -38,7 +38,7 @@ export type BossGridTransposedProps = {
 
 // Match Profit System Glass pillar colors
 const PILLARS: { key: "foundation" | "vision" | "velocity" | "value"; name: string; color: string }[] = [
-  { key: "foundation", name: "Foundation", color: "#A855F7" },
+  { key: "foundation", name: "Foundation", color: BOSS_FOUNDATION_COLOR },
   { key: "vision", name: "Clarify Vision", color: "#3B82F6" },
   { key: "velocity", name: "Control Velocity", color: "#0EA5E9" },
   { key: "value", name: "Create Value", color: "#14B8A6" },

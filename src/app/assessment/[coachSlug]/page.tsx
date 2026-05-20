@@ -1,31 +1,86 @@
 "use client";
 
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { Outfit } from "next/font/google";
+import Image from "next/image";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabaseClient } from "@/lib/supabaseClient";
-import { QUESTIONS_BY_LEVEL } from "@/lib/assessmentQuestions";
+import { BossScoreWordmark } from "@/components/scorecard/BossScoreWordmark";
+import { OpenTextStep } from "@/components/scorecard/OpenTextStep";
+import { QualifyingStackForm } from "@/components/scorecard/QualifyingStackForm";
+import {
+  SCORECARD_REPORT_GENERATING_MS,
+  ScorecardReportGenerating,
+} from "@/components/scorecard/ScorecardReportGenerating";
+import { ScorecardProgressBar } from "@/components/scorecard/ScorecardProgressBar";
+import { SmileyRatingScale } from "@/components/scorecard/SmileyRatingScale";
+import {
+  BEST_PRACTICE_QUESTIONS,
+  OPEN_TEXT_HEADING,
+  OUTCOME_QUESTIONS,
+  QUALIFYING_HEADING,
+  QUALIFYING_JOURNEY_FIELDS,
+  QUALIFYING_SUPPORT_FIELDS,
+  QUALIFYING_SUPPORT_HEADING,
+  getScorecardProgress,
+  SCORECARD_PAGE_BG,
+  type QualifyingData,
+} from "@/lib/bossScorecardQuestions";
+import {
+  buildScorecardResult,
+  computeScorecardTotal,
+  getBossLevel,
+  isJourneyQualifyingComplete,
+  isQualifyingComplete,
+  isScorecardComplete,
+  isSupportQualifyingComplete,
+  type ScorecardAnswers,
+  type ScorecardScore,
+} from "@/lib/bossScorecardScores";
+import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { splitFullName } from "@/lib/splitFullName";
 
-type AnswersMap = Record<string, 0 | 1 | 2>;
+const outfit = Outfit({ subsets: ["latin"] });
 
-function computeTotalScore(answers: AnswersMap): number {
-  return Object.values(answers).reduce<number>(
-    (sum, v) => sum + (v === 0 || v === 1 || v === 2 ? v : 0),
-    0
-  );
+const LANDING_CONTACT_KEY = "boss_landing_contact";
+const RESULT_STORAGE_KEY = "boss_scorecard_result";
+
+type Screen =
+  | { kind: "question"; step: number; questionId: string }
+  | { kind: "outcome"; step: number; questionId: string }
+  | { kind: "qualifying_journey"; step: number }
+  | { kind: "qualifying_support"; step: number }
+  | { kind: "open_text"; step: number };
+
+function buildScreens(): Screen[] {
+  const screens: Screen[] = BEST_PRACTICE_QUESTIONS.map((q) => ({
+    kind: "question" as const,
+    step: q.step,
+    questionId: q.id,
+  }));
+  OUTCOME_QUESTIONS.forEach((q, index) => {
+    screens.push({
+      kind: "outcome",
+      step: 11 + index,
+      questionId: q.id,
+    });
+  });
+  screens.push({ kind: "qualifying_journey", step: 14 });
+  screens.push({ kind: "qualifying_support", step: 15 });
+  screens.push({ kind: "open_text", step: 16 });
+  return screens;
 }
 
-function buildUniformAnswers(value: 0 | 1 | 2): AnswersMap {
-  const next: AnswersMap = {};
-  for (const level of Object.keys(QUESTIONS_BY_LEVEL)) {
-    const questions = QUESTIONS_BY_LEVEL[Number(level)] ?? [];
-    for (const question of questions) {
-      next[question.ref] = value;
-    }
-  }
-  return next;
+/** General /score and BCA links assign to Pam; real coach slugs pass through. */
+function assessmentCoachSlugForApi(raw: string): string | undefined {
+  const slug = raw.trim().toLowerCase();
+  if (!slug || slug === "bca") return undefined;
+  if (slug === getPrimaryCoachSlug()) return undefined;
+  return slug;
 }
 
-export default function AssessmentPage({
+const SCREENS = buildScreens();
+
+export default function ScorecardAssessmentPage({
   params,
 }: {
   params: Promise<{ coachSlug: string }>;
@@ -33,148 +88,54 @@ export default function AssessmentPage({
   const { coachSlug } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isPreview = searchParams.get("preview") === "1";
   const fromLanding = searchParams.get("from_landing");
   const landingVariant =
-    fromLanding === "a" ||
-    fromLanding === "b" ||
-    fromLanding === "c" ||
-    fromLanding === "d"
-      ? fromLanding
-      : null;
-  const fromDashboard = searchParams.get("from") === "dashboard";
+    isPreview
+      ? "d"
+      : fromLanding === "a" ||
+          fromLanding === "b" ||
+          fromLanding === "c" ||
+          fromLanding === "d"
+        ? fromLanding
+        : null;
   const startTracked = useRef(false);
+  const progressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReportedScreen = useRef(0);
 
-  const [coachName, setCoachName] = useState<string | null>(null);
-  const [coachBusiness, setCoachBusiness] = useState<string | null>(null);
-  const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
-  const [coachLinkedinUrl, setCoachLinkedinUrl] = useState<string | null>(null);
-  const [loadingCoach, setLoadingCoach] = useState(true);
-
-  const [step, setStep] = useState<"intro" | "assessment">("intro");
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [questionPhase, setQuestionPhase] = useState<"idle" | "exiting" | "entering">("idle");
-  const [answers, setAnswers] = useState<AnswersMap>({});
+  const [screenIndex, setScreenIndex] = useState(0);
+  const [answers, setAnswers] = useState<ScorecardAnswers>({});
+  const [qualifying, setQualifying] = useState<QualifyingData>({});
+  const [openText, setOpenText] = useState("");
+  const [qualifyingError, setQualifyingError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [gateChecked, setGateChecked] = useState(false);
 
-  const [fullName, setFullName] = useState(
-    searchParams.get("name") ?? ""
-  );
+  const [fullName, setFullName] = useState(searchParams.get("name") ?? "");
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
   const [businessName, setBusinessName] = useState(
     searchParams.get("business") ?? ""
   );
 
-  const [clientDashboardChecked, setClientDashboardChecked] = useState(false);
-  const [isClientFromDashboard, setIsClientFromDashboard] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadCoach() {
-      setLoadingCoach(true);
-      const { data, error } = await supabaseClient
-        .from("coaches")
-        .select("slug, profiles(full_name, coach_business_name, avatar_url, linkedin_url)")
-        .eq("slug", coachSlug)
-        .maybeSingle();
-
-      if (cancelled) return;
-      if (!error && data) {
-        const prof = (data as { profiles?: { full_name?: string; coach_business_name?: string; avatar_url?: string; linkedin_url?: string } | null }).profiles;
-        if (prof) {
-          setCoachName(prof.full_name ?? null);
-          setCoachBusiness(prof.coach_business_name ?? null);
-          setCoachAvatarUrl(prof.avatar_url ?? null);
-          setCoachLinkedinUrl(prof.linkedin_url ?? null);
-        }
-        if (!prof?.full_name && !prof?.coach_business_name && (data as { slug?: string }).slug?.toUpperCase() === "BCA") {
-          setCoachBusiness("Central (BCA)");
-        }
-      }
-      setLoadingCoach(false);
-    }
-    loadCoach();
-    return () => {
-      cancelled = true;
-    };
-  }, [coachSlug]);
+  const currentScreen = SCREENS[screenIndex] ?? SCREENS[0];
+  const progress = getScorecardProgress(currentScreen.step);
 
   const landingUrl = useMemo(
-    () => `/landing/a?coach=${encodeURIComponent(coachSlug)}`,
+    () => `/landing/d?coach=${encodeURIComponent(coachSlug)}`,
     [coachSlug]
   );
 
   useEffect(() => {
-    if (landingVariant) return;
-    if (!fromDashboard) {
-      setClientDashboardChecked(true);
-      window.location.href = landingUrl;
+    if (landingVariant || isPreview) {
+      setGateChecked(true);
       return;
     }
-    if (clientDashboardChecked) return;
-
-    try {
-      const raw = sessionStorage.getItem("boss_client_dashboard");
-      if (raw) {
-        const data = JSON.parse(raw) as {
-          contact?: { full_name?: string | null; email?: string | null; business_name?: string | null };
-          coach_slug?: string;
-        };
-        if (data.contact) {
-          setFullName(data.contact.full_name ?? "");
-          setEmail(data.contact.email ?? "");
-          setBusinessName(data.contact.business_name ?? "");
-          setStep("assessment");
-          setIsClientFromDashboard(true);
-          setClientDashboardChecked(true);
-          return;
-        }
-      }
-    } catch {
-      // ignore invalid or missing sessionStorage
-    }
-
-    let cancelled = false;
-    async function checkClientDashboard() {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (cancelled) return;
-        if (session?.access_token) {
-          const res = await fetch("/api/client/me", {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          if (cancelled) return;
-          if (res.ok) {
-            const body = (await res.json()) as {
-              contact?: { full_name?: string | null; email?: string | null; business_name?: string | null };
-            };
-            if (body.contact) {
-              setFullName(body.contact.full_name ?? "");
-              setEmail(body.contact.email ?? "");
-              setBusinessName(body.contact.business_name ?? "");
-              setStep("assessment");
-              setIsClientFromDashboard(true);
-              setClientDashboardChecked(true);
-              return;
-            }
-          }
-          setClientDashboardChecked(true);
-          window.location.href = landingUrl;
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 400));
-      }
-      if (cancelled) return;
-      setClientDashboardChecked(true);
-      window.location.href = landingUrl;
-    }
-    checkClientDashboard();
-    return () => {
-      cancelled = true;
-    };
-  }, [landingVariant, fromDashboard, coachSlug, landingUrl, clientDashboardChecked]);
+    setGateChecked(true);
+    window.location.href = landingUrl;
+  }, [landingVariant, landingUrl, isPreview]);
 
   useEffect(() => {
     if (!landingVariant || startTracked.current) return;
@@ -193,7 +154,7 @@ export default function AssessmentPage({
   useEffect(() => {
     if (!landingVariant) return;
     try {
-      const raw = sessionStorage.getItem("boss_landing_contact");
+      const raw = sessionStorage.getItem(LANDING_CONTACT_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as {
         firstName?: string;
@@ -205,568 +166,436 @@ export default function AssessmentPage({
       };
       const first = parsed.firstName?.trim();
       const last = parsed.lastName?.trim();
-      const derivedFullName = [first, last].filter(Boolean).join(" ") || parsed.fullName;
-      if (derivedFullName != null) setFullName(derivedFullName);
-      if (parsed.email != null) setEmail(parsed.email);
-      if (parsed.phone != null) setPhone(parsed.phone);
-      if (parsed.businessName != null) setBusinessName(parsed.businessName);
-      setStep("assessment");
+      const derivedFullName =
+        [first, last].filter(Boolean).join(" ") || parsed.fullName;
+      if (derivedFullName) setFullName(derivedFullName);
+      if (parsed.email) setEmail(parsed.email);
+      if (parsed.phone) setPhone(parsed.phone);
+      if (parsed.businessName) setBusinessName(parsed.businessName);
     } catch {
-      // ignore invalid or missing sessionStorage
+      // ignore
     }
   }, [landingVariant]);
 
-  const levelQuestions = useMemo(
-    () => QUESTIONS_BY_LEVEL[currentLevel] ?? [],
-    [currentLevel]
-  );
+  const reportProgress = useCallback(
+    (screen: number, abandoned = false) => {
+      if (!email.trim() && !abandoned) return;
+      if (!abandoned && screen <= lastReportedScreen.current) return;
+      if (!abandoned) lastReportedScreen.current = screen;
 
-  const clampedQuestionIndex = useMemo(() => {
-    const len = levelQuestions.length;
-    if (len === 0) return 0;
-    return Math.min(currentQuestionIndex, len - 1);
-  }, [currentQuestionIndex, levelQuestions.length]);
-
-  const currentQuestion = useMemo(
-    () => levelQuestions[clampedQuestionIndex] ?? null,
-    [levelQuestions, clampedQuestionIndex]
-  );
-
-  const isFirstQuestion = currentLevel === 1 && clampedQuestionIndex === 0;
-  const TOTAL_LEVELS = 5;
-  const LEVEL_NAMES = [
-    "Overwhelm",
-    "Overworked",
-    "Organised",
-    "Overseer",
-    "Owner",
-  ] as const;
-  const LEVEL_COLORS = [
-    { bg: "#ef4444", border: "#dc2626" },
-    { bg: "#f97316", border: "#ea580c" },
-    { bg: "#facc15", border: "#eab308" },
-    { bg: "#22c55e", border: "#16a34a" },
-    { bg: "#3b82f6", border: "#2563eb" },
-  ] as const;
-  const CHEVRON_CLIP =
-    "polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%, 18px 50%)";
-  function levelCompletionCount(level: number): number {
-    const qs = QUESTIONS_BY_LEVEL[level] ?? [];
-    return qs.reduce((sum, q) => sum + (answers[q.ref] != null ? 1 : 0), 0);
-  }
-
-  function moveToNextQuestion(newAnswers: AnswersMap) {
-    const isLastQuestion =
-      currentLevel === TOTAL_LEVELS &&
-      clampedQuestionIndex === levelQuestions.length - 1;
-    if (isLastQuestion) {
-      void handleSubmitAssessment(newAnswers);
-      return;
-    }
-
-    setQuestionPhase("exiting");
-    window.setTimeout(() => {
-      if (clampedQuestionIndex < levelQuestions.length - 1) {
-        setCurrentQuestionIndex((i) => i + 1);
-      } else {
-        setCurrentLevel((l) => l + 1);
-        setCurrentQuestionIndex(0);
-      }
-      setQuestionPhase("entering");
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          setQuestionPhase("idle");
-        });
-      });
-    }, 180);
-  }
-
-  async function handleSubmitAssessment(overrideAnswers?: AnswersMap) {
-    const answersToSubmit = overrideAnswers ?? answers;
-    setSubmitting(true);
-    setSubmitError(null);
-    const total_score = computeTotalScore(answersToSubmit);
-
-    try {
-      const res = await fetch("/api/assessments", {
+      fetch("/api/scorecard/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          coachSlug: coachSlug?.trim() || "BCA",
+          coachSlug: assessmentCoachSlugForApi(coachSlug ?? "") ?? null,
+          contact: {
+            email: email.trim() || undefined,
+            full_name: fullName.trim() || undefined,
+            phone: phone.trim() || undefined,
+          },
+          screen,
+          abandoned,
+        }),
+      }).catch(() => {});
+    },
+    [coachSlug, email, fullName, phone]
+  );
+
+  useEffect(() => {
+    if (!gateChecked || screenIndex === 0) return;
+    if (progressTimer.current) clearTimeout(progressTimer.current);
+    progressTimer.current = setTimeout(() => {
+      reportProgress(currentScreen.step);
+    }, 400);
+    return () => {
+      if (progressTimer.current) clearTimeout(progressTimer.current);
+    };
+  }, [gateChecked, screenIndex, currentScreen.step, reportProgress]);
+
+  useEffect(() => {
+    function onBeforeUnload() {
+      reportProgress(currentScreen.step, true);
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [currentScreen.step, reportProgress]);
+
+  function advanceScreen() {
+    setScreenIndex((i) => Math.min(i + 1, SCREENS.length - 1));
+  }
+
+  function goBack() {
+    setQualifyingError(null);
+    setScreenIndex((i) => Math.max(0, i - 1));
+  }
+
+  const canGoBack = screenIndex > 0;
+
+  function handleScoreSelect(questionId: string, score: ScorecardScore) {
+    const next = { ...answers, [questionId]: score };
+    setAnswers(next);
+    window.setTimeout(() => advanceScreen(), 280);
+  }
+
+  async function handleSubmit() {
+    if (!isScorecardComplete(answers)) {
+      setSubmitError("Please complete all scored questions.");
+      return;
+    }
+    if (!isQualifyingComplete(qualifying)) {
+      setQualifyingError("Please complete all questions.");
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError(null);
+    setIsGeneratingReport(true);
+    const generatingStarted = Date.now();
+    const totalScore = computeScorecardTotal(answers);
+    const bossLevel = getBossLevel(totalScore);
+    const prospectFirstName =
+      (() => {
+        try {
+          const raw = sessionStorage.getItem(LANDING_CONTACT_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as { firstName?: string };
+            if (parsed.firstName?.trim()) return parsed.firstName.trim();
+          }
+        } catch {
+          // ignore
+        }
+        return splitFullName(fullName).first_name;
+      })();
+
+    const trimmedOpenText = openText.trim() || null;
+
+    const result = buildScorecardResult(
+      answers,
+      qualifying,
+      trimmedOpenText,
+      prospectFirstName
+    );
+
+    try {
+      const savePromise = fetch("/api/assessments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          coachSlug: assessmentCoachSlugForApi(coachSlug ?? ""),
           from_landing: landingVariant ?? undefined,
+          assessment_type: "boss_scorecard",
           contact: {
             full_name: fullName,
             email,
             phone: phone || undefined,
             business_name: businessName,
           },
-          answers: answersToSubmit,
-          total_score,
+          answers,
+          total_score: totalScore,
+          boss_level: bossLevel,
+          qualifying_data: qualifying,
+          open_text: trimmedOpenText,
+          last_screen_reached: 16,
         }),
       });
+
+      const [res] = await Promise.all([
+        savePromise,
+        new Promise<void>((resolve) => {
+          const elapsed = Date.now() - generatingStarted;
+          const remaining = Math.max(0, SCORECARD_REPORT_GENERATING_MS - elapsed);
+          window.setTimeout(resolve, remaining);
+        }),
+      ]);
+
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const base = body?.error ?? "Failed to save assessment";
-        const detail = body?.detail
-          ? ` — ${body.detail}${body?.code ? ` (${body.code})` : ""}`
-          : "";
-        throw new Error(`${base}${detail}`);
+        throw new Error(body?.error ?? "Failed to save scorecard");
       }
       try {
-        sessionStorage.setItem(
-          "boss_assessment_result",
-          JSON.stringify({ answers: answersToSubmit, total_score })
-        );
+        sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
       } catch {
-        // ignore storage errors
+        // ignore
       }
       router.push(`/assessment/${coachSlug}/thank-you`);
-    } catch (err: any) {
-      setSubmitError(err?.message ?? "Something went wrong.");
+    } catch (err: unknown) {
+      setIsGeneratingReport(false);
+      setSubmitError(
+        err instanceof Error ? err.message : "Something went wrong."
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (!landingVariant) {
-    if (!clientDashboardChecked) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-          <p className="text-sm text-slate-600">Loading…</p>
-        </div>
-      );
-    }
-    if (!isClientFromDashboard) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-          <p className="text-sm text-slate-600">Redirecting…</p>
-        </div>
-      );
-    }
-  }
-
-  if (step === "intro") {
+  if (!gateChecked || !landingVariant) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-        <div className="w-full max-w-3xl rounded-2xl bg-white p-8 text-slate-900 shadow-xl ring-1 ring-slate-200">
-          <header className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-700">
-              The Profit System
-            </p>
-            <h1 className="text-2xl font-semibold text-slate-900">
-              Business Operating System Score
-            </h1>
-            <p className="text-sm text-slate-700">
-              Score your business across 50 areas in under 5 minutes.
-              You&apos;ll get a score out of 100 and a clear picture of
-              where to focus next.
-            </p>
-            {!loadingCoach && (coachName || coachBusiness || coachSlug.toUpperCase() === "BCA") ? (
-              <div className="mt-4 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                {coachAvatarUrl ? (
-                  <img src={coachAvatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-800">
-                    {(coachName ?? coachSlug).slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-slate-900">
-                    {coachName ?? (coachSlug.toUpperCase() === "BCA" ? "Central" : coachSlug)}
-                  </p>
-                  {coachBusiness && <p className="text-xs text-slate-600">{coachBusiness}</p>}
-                  {coachLinkedinUrl && (
-                    <a href={coachLinkedinUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs text-sky-600 hover:underline">LinkedIn →</a>
-                  )}
-                </div>
-              </div>
-            ) : null}
-          </header>
-
-          <section className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                How it works
-              </h2>
-              <ul className="mt-2 space-y-1 text-sm text-slate-700">
-                <li>5 levels, 10 questions each.</li>
-                <li>Tap No, Partially, or Yes for each one.</li>
-                <li>
-                  Some won&apos;t apply yet, that&apos;s completely
-                  normal, just tap Red.
-                </li>
-                <li>No right or wrong answers, be honest.</li>
-              </ul>
-              <p className="mt-3 text-xs text-slate-500">
-                Invited by{" "}
-                <span className="font-medium text-slate-700">
-                  {coachName ?? coachBusiness ?? (coachSlug.toUpperCase() === "BCA" ? "Central (BCA)" : coachSlug)}
-                </span>
-              </p>
-            </div>
-
-            <form
-              className="space-y-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const hasContact = !!(fullName.trim() || email.trim() || businessName.trim());
-                if (landingVariant && hasContact) {
-                  fetch("/api/landing/track", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      variant: landingVariant,
-                      coach_slug: coachSlug?.trim() || null,
-                      event_type: "opt_in",
-                    }),
-                  }).catch(() => {});
-                }
-                // Capture lead as soon as we have an email, regardless of
-                // whether they finish the assessment. The lead-capture API is
-                // idempotent per (coach, email) so re-firing is safe.
-                const emailVal = email.trim();
-                if (emailVal) {
-                  fetch("/api/leads/capture", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      coachSlug: coachSlug?.trim() || null,
-                      contact: {
-                        full_name: fullName.trim() || undefined,
-                        email: emailVal,
-                        phone: phone.trim() || undefined,
-                        business_name: businessName.trim() || undefined,
-                      },
-                    }),
-                  }).catch(() => {});
-                }
-                setStep("assessment");
-              }}
-            >
-              <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Before we start (optional)
-              </h3>
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <label
-                    htmlFor="fullName"
-                    className="block text-xs font-medium text-slate-800"
-                  >
-                    Your name
-                  </label>
-                  <input
-                    id="fullName"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
-                    placeholder="e.g. Alex"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label
-                    htmlFor="email"
-                    className="block text-xs font-medium text-slate-800"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
-                    placeholder="e.g. you@company.com"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label
-                    htmlFor="businessName"
-                    className="block text-xs font-medium text-slate-800"
-                  >
-                    Business name
-                  </label>
-                  <input
-                    id="businessName"
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400"
-                    placeholder="e.g. BrightCo Marketing"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-slate-500">
-                You can skip this and fill it in later if you prefer.
-              </p>
-              <div className="flex flex-wrap items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100"
-                  onClick={() => setStep("assessment")}
-                >
-                  Skip for now
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white shadow hover:bg-sky-500"
-                >
-                  Start assessment →
-                </button>
-              </div>
-              <p className="text-[0.7rem] text-slate-500">
-                Takes about 5 minutes.
-              </p>
-            </form>
-          </section>
-        </div>
+      <div
+        className="flex min-h-screen items-center justify-center px-4"
+        style={{ background: SCORECARD_PAGE_BG }}
+      >
+        <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
   }
 
-  // Assessment step
+  const question =
+    currentScreen.kind === "question"
+      ? BEST_PRACTICE_QUESTIONS.find((q) => q.id === currentScreen.questionId)
+      : currentScreen.kind === "outcome"
+        ? OUTCOME_QUESTIONS.find((q) => q.id === currentScreen.questionId)
+        : null;
+
+  const scoredQuestionId =
+    question &&
+    (currentScreen.kind === "question" || currentScreen.kind === "outcome")
+      ? question.id
+      : null;
+  const existingScore = scoredQuestionId
+    ? answers[scoredQuestionId]
+    : undefined;
+  const canGoNext =
+    !!scoredQuestionId &&
+    existingScore != null &&
+    existingScore >= 1 &&
+    existingScore <= 5;
+
   return (
     <div
-      className="min-h-screen px-6 py-12 md:px-12 md:py-16 text-slate-900 flex justify-center items-start"
-      style={{
-        background: [
-          "radial-gradient(1000px 520px at 8% 0%, rgba(14,165,233,0.14), transparent 60%)",
-          "radial-gradient(900px 460px at 90% 10%, rgba(59,130,246,0.12), transparent 58%)",
-          "linear-gradient(180deg, #f8fbff 0%, #eef5ff 45%, #e8f1ff 100%)",
-        ].join(", "),
-      }}
+      className={`flex min-h-[100dvh] flex-col text-slate-900 ${outfit.className}`}
+      style={{ background: SCORECARD_PAGE_BG }}
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 flex-1 overflow-visible">
-        <header className="space-y-3 overflow-visible border-b border-slate-200 pb-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Assessment Journey
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold text-slate-900 md:text-4xl">
-              Business Operating System Score
-            </h1>
-          </div>
-          {(coachName || coachBusiness) && (
-            <p className="text-sm text-slate-600">
-              For <span className="font-medium text-slate-800">{coachName ?? "Coach"}</span>
-              {coachBusiness ? ` @ ${coachBusiness}` : null}
-            </p>
-          )}
-          <div className="mt-8 w-full overflow-x-visible overflow-y-visible pt-1">
-            <div className="relative z-0 flex w-full min-w-0 flex-nowrap items-stretch gap-0 overflow-visible">
-            {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map((level) => {
-              const answered = levelCompletionCount(level);
-              const totalForLevel = QUESTIONS_BY_LEVEL[level]?.length ?? 0;
-              const isComplete = totalForLevel > 0 && answered === totalForLevel;
-              const isActive = level === currentLevel;
-              const color = LEVEL_COLORS[level - 1];
-              const progressPct =
-                totalForLevel > 0
-                  ? Math.min(100, (answered / totalForLevel) * 100)
-                  : 0;
-              const visuallyMuted = !isActive && !isComplete;
-              const ariaLabel = [
-                `Level ${level}, ${LEVEL_NAMES[level - 1]}`,
-                isComplete
-                  ? "completed"
-                  : `${answered} of ${totalForLevel} questions answered`,
-                isActive ? "current step" : "",
-              ]
-                .filter(Boolean)
-                .join(". ");
-              return (
-                <button
-                  key={level}
-                  type="button"
-                  aria-current={isActive ? "step" : undefined}
-                  aria-label={ariaLabel}
-                  onClick={() => {
-                    setCurrentLevel(level);
-                    setCurrentQuestionIndex(0);
-                  }}
-                  className={`relative min-w-0 flex-1 -mr-3.5 px-3 py-3 text-sm font-semibold text-white transition hover:brightness-105 last:mr-0 self-stretch ${
-                    isActive ? "z-20" : "z-0"
-                  }`}
-                  style={{
-                    backgroundColor: color.bg,
-                    border: `2px solid ${
-                      isActive ? "rgba(255,255,255,0.95)" : color.border
-                    }`,
-                    clipPath: CHEVRON_CLIP,
-                    opacity: visuallyMuted ? 0.5 : 1,
-                  }}
-                >
-                  <span className="relative z-[1] block text-[0.62rem] uppercase tracking-[0.14em] leading-none opacity-90">
-                    Level {level}
-                  </span>
-                  <span className="relative z-[1] mt-1 block text-base font-bold leading-none">
-                    {LEVEL_NAMES[level - 1]}
-                  </span>
-                  {isComplete ? (
-                    <span className="relative z-[1] mt-1 inline-flex items-center gap-1.5 text-[0.68rem] font-bold leading-none opacity-100">
-                      <span
-                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-[10px] leading-none text-white shadow-sm"
-                        aria-hidden
-                      >
-                        ✓
-                      </span>
-                      Complete
-                    </span>
-                  ) : (
-                    <span className="relative z-[1] mt-1 block text-[0.68rem] leading-none opacity-90">
-                      {answered}/{totalForLevel}
-                    </span>
-                  )}
-                  <div
-                    className="pointer-events-none absolute bottom-0 left-0 z-[1] h-[4px] transition-[width] duration-300"
-                    style={{
-                      width: `${progressPct}%`,
-                      backgroundColor: color.border,
-                      opacity: progressPct > 0 ? 0.92 : 0,
-                    }}
-                    aria-hidden
-                  />
-                </button>
-              );
-            })}
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 pt-1">
-            <div className="grid w-full grid-cols-10 gap-2">
-              {levelQuestions.map((q, idx) => {
-                const answered = answers[q.ref] != null;
-                const isCurrent = idx === clampedQuestionIndex;
-                return (
-                  <span
-                    key={q.ref}
-                    className={`inline-flex h-7 w-full items-center justify-center rounded-full border text-xs font-semibold transition ${
-                      answered
-                        ? "border-emerald-500 bg-emerald-500 text-white"
-                        : isCurrent
-                        ? "border-slate-400 bg-slate-300 text-slate-700"
-                        : "border-slate-300 bg-slate-100 text-slate-400"
-                    }`}
-                    aria-label={
-                      answered
-                        ? `Question ${idx + 1} answered`
-                        : `Question ${idx + 1} not answered`
-                    }
-                  >
-                    {answered ? "✓" : idx + 1}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </header>
+      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-48 pt-6 md:px-10 md:pb-52 md:pt-8">
+        <div className="mb-8 flex flex-col items-center gap-2.5 text-center md:mb-10">
+          <Image
+            src="/profit-coach-logo.svg"
+            alt="Profit Coach"
+            width={240}
+            height={60}
+            className="h-10 w-auto md:h-11"
+            priority
+          />
+          <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
+            <BossScoreWordmark />
+          </h1>
+        </div>
 
-        <main className="flex flex-col gap-6 pt-6 pb-8 flex-1 flex items-start w-full">
-          {currentQuestion ? (
-            <>
-              <div className="w-full px-4 md:px-8">
-                <div
-                  className={`flex min-h-[11rem] items-center justify-center transition-all duration-200 ${
-                    questionPhase === "exiting"
-                      ? "-translate-y-3 opacity-0"
-                      : questionPhase === "entering"
-                      ? "translate-y-2 opacity-0"
-                      : "translate-y-0 opacity-100"
-                  }`}
-                >
-                  <p className="text-left text-2xl font-normal leading-snug text-slate-800 md:text-4xl">
-                    {currentQuestion.question}
-                  </p>
-                </div>
+        <main className="flex flex-1 flex-col">
+          <div className="relative pt-8">
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={submitting || isGeneratingReport || !canGoBack}
+              tabIndex={canGoBack ? 0 : -1}
+              aria-hidden={!canGoBack}
+              className={`absolute left-0 top-0 z-10 inline-flex items-center gap-1.5 text-sm font-medium transition disabled:opacity-50 ${
+                canGoBack
+                  ? "visible text-slate-500 hover:text-slate-800"
+                  : "pointer-events-none invisible"
+              }`}
+            >
+              <span aria-hidden>←</span>
+              Back
+            </button>
+
+            <button
+              type="button"
+              onClick={advanceScreen}
+              disabled={submitting || isGeneratingReport || !canGoNext}
+              tabIndex={canGoNext ? 0 : -1}
+              aria-hidden={!canGoNext}
+              className={`absolute right-0 top-0 z-10 inline-flex items-center gap-1.5 text-sm font-medium transition disabled:opacity-50 ${
+                canGoNext
+                  ? "visible text-slate-500 hover:text-slate-800"
+                  : "pointer-events-none invisible"
+              }`}
+            >
+              Next
+              <span aria-hidden>→</span>
+            </button>
+
+          {currentScreen.kind === "question" && question ? (
+            <div className="rounded-3xl bg-white p-7 shadow-xl ring-1 ring-slate-200 md:p-11 lg:p-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                {question.areaName}
+              </p>
+              <h2 className="mt-4 text-2xl font-normal leading-snug text-slate-800 md:text-[1.75rem] lg:text-[2rem]">
+                {question.question}
+              </h2>
+              <div className="mt-6 md:mt-8">
+                <SmileyRatingScale
+                  value={answers[question.id]}
+                  onSelect={(score) => handleScoreSelect(question.id, score)}
+                  disabled={submitting}
+                  layout="horizontal"
+                />
               </div>
-              <div className="flex flex-wrap justify-start gap-4 px-4 md:px-8">
-                {[0, 1, 2].map((value) => {
-                  const label =
-                    value === 0 ? "No" : value === 1 ? "Partially" : "Yes";
-                  const score = answers[currentQuestion.ref];
-                  const selected = score === value;
-                  const colorClasses =
-                    value === 0
-                      ? selected
-                        ? "border-rose-400 bg-rose-100 text-rose-800"
-                        : "border-rose-300 text-rose-600 hover:bg-rose-50"
-                      : value === 1
-                      ? selected
-                        ? "border-amber-400 bg-amber-100 text-amber-800"
-                        : "border-amber-300 text-amber-700 hover:bg-amber-50"
-                      : selected
-                      ? "border-emerald-400 bg-emerald-100 text-emerald-800"
-                      : "border-emerald-300 text-emerald-700 hover:bg-emerald-50";
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      className={`rounded-xl border-2 px-6 py-4 text-lg font-semibold transition whitespace-nowrap min-w-[7rem] ${colorClasses}`}
-                      aria-label={`${label}. ${value === 0 ? "Not in place" : value === 1 ? "Partially in place" : "Fully in place"}.`}
-                      disabled={submitting || questionPhase !== "idle"}
-                      onClick={() => {
-                        const newAnswers = {
-                          ...answers,
-                          [currentQuestion.ref]: value as 0 | 1 | 2,
-                        };
-                        setAnswers(newAnswers);
-                        moveToNextQuestion(newAnswers);
-                      }}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              <details className="flex flex-col items-start w-full px-4 md:px-8">
-                <summary className="cursor-pointer list-none text-base md:text-lg text-slate-500 hover:text-sky-600 [&::-webkit-details-marker]:hidden inline-flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full text-xs border border-slate-400" aria-hidden>ⓘ</span>
-                  Not sure? See examples
-                </summary>
-                <div className="mt-3 max-w-2xl rounded-lg border border-slate-200 bg-white p-4 text-lg text-slate-700 shadow-md space-y-3">
-                  <p><span className="mr-1">🔴</span>{currentQuestion.scoringGuide.red}</p>
-                  <p><span className="mr-1">🟡</span>{currentQuestion.scoringGuide.amber}</p>
-                  <p><span className="mr-1">🟢</span>{currentQuestion.scoringGuide.green}</p>
-                </div>
-              </details>
-              {!isFirstQuestion && (
-                <button
-                  type="button"
-                  className="text-sm md:text-base text-slate-500 hover:text-slate-700 hover:underline mt-2 inline-flex items-center gap-1.5 px-4 md:px-8"
-                  onClick={() => {
-                    if (clampedQuestionIndex > 0) {
-                      setCurrentQuestionIndex((i) => i - 1);
-                    } else {
-                      setCurrentLevel((l) => l - 1);
-                      const prevLevelQuestions = QUESTIONS_BY_LEVEL[currentLevel - 1] ?? [];
-                      setCurrentQuestionIndex(Math.max(0, prevLevelQuestions.length - 1));
-                    }
-                  }}
-                >
-                  ← Previous
-                </button>
-              )}
-            </>
+            </div>
           ) : null}
-        </main>
 
-        {submitError && (
-          <p className="mt-1 text-xs text-rose-600">{submitError}</p>
-        )}
+          {currentScreen.kind === "outcome" && question ? (
+            <div className="rounded-3xl bg-white p-7 shadow-xl ring-1 ring-slate-200 md:p-11 lg:p-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                Outcomes
+              </p>
+              <h2 className="mt-4 text-2xl font-normal leading-snug text-slate-800 md:text-[1.75rem] lg:text-[2rem]">
+                {question.question}
+              </h2>
+              <div className="mt-6 md:mt-8">
+                <SmileyRatingScale
+                  value={answers[question.id]}
+                  onSelect={(score) => {
+                    setAnswers((prev) => ({ ...prev, [question.id]: score }));
+                    window.setTimeout(() => advanceScreen(), 280);
+                  }}
+                  disabled={submitting}
+                  layout="horizontal"
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {currentScreen.kind === "qualifying_journey" ? (
+            <div className="rounded-3xl bg-white p-7 pb-8 shadow-xl ring-1 ring-slate-200 md:p-11 md:pb-12 lg:p-14 lg:pb-14">
+              <h2 className="text-2xl font-semibold leading-snug text-slate-900 md:text-3xl">
+                {QUALIFYING_HEADING}
+              </h2>
+              <div className="mt-6 md:mt-8">
+                <QualifyingStackForm
+                  fields={QUALIFYING_JOURNEY_FIELDS}
+                  data={qualifying}
+                  onChange={(data) => {
+                    setQualifying(data);
+                    setQualifyingError(null);
+                  }}
+                  error={qualifyingError}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isJourneyQualifyingComplete(qualifying)) {
+                    setQualifyingError("Please answer all questions.");
+                    return;
+                  }
+                  advanceScreen();
+                }}
+                disabled={submitting}
+                className="mt-8 w-full rounded-full bg-[#0c5290] py-4 text-sm font-bold uppercase tracking-wide text-white shadow hover:bg-[#0a4580] disabled:opacity-50"
+              >
+                Continue
+              </button>
+            </div>
+          ) : null}
+
+          {currentScreen.kind === "qualifying_support" ? (
+            <div className="rounded-3xl bg-white p-7 pb-8 shadow-xl ring-1 ring-slate-200 md:p-11 md:pb-12 lg:p-14 lg:pb-14">
+              <h2 className="text-2xl font-semibold leading-snug text-slate-900 md:text-3xl">
+                {QUALIFYING_SUPPORT_HEADING}
+              </h2>
+              <div className="mt-6 md:mt-8">
+                <QualifyingStackForm
+                  fields={QUALIFYING_SUPPORT_FIELDS}
+                  data={qualifying}
+                  onChange={(data) => {
+                    setQualifying(data);
+                    setQualifyingError(null);
+                  }}
+                  error={qualifyingError}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSupportQualifyingComplete(qualifying)) {
+                    setQualifyingError("Please answer all questions.");
+                    return;
+                  }
+                  advanceScreen();
+                }}
+                disabled={submitting}
+                className="mt-8 w-full rounded-full bg-[#0c5290] py-4 text-sm font-bold uppercase tracking-wide text-white shadow hover:bg-[#0a4580] disabled:opacity-50"
+              >
+                Continue
+              </button>
+              {qualifyingError ? (
+                <p className="mt-3 text-sm text-red-600">{qualifyingError}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {currentScreen.kind === "open_text" && isGeneratingReport ? (
+            <ScorecardReportGenerating />
+          ) : null}
+
+          {currentScreen.kind === "open_text" && !isGeneratingReport ? (
+            <div className="rounded-3xl bg-white p-7 pb-8 shadow-xl ring-1 ring-slate-200 md:p-11 md:pb-12 lg:p-14 lg:pb-14">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">
+                Optional
+              </p>
+              <h2 className="mt-4 text-2xl font-semibold leading-snug text-slate-900 md:text-3xl">
+                {OPEN_TEXT_HEADING}
+              </h2>
+              <div className="mt-6 md:mt-8">
+                <OpenTextStep
+                  value={openText}
+                  onChange={setOpenText}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={submitting}
+                className="mt-8 w-full rounded-full bg-[#0c5290] py-4 text-sm font-bold uppercase tracking-wide text-white shadow hover:bg-[#0a4580] disabled:opacity-50"
+              >
+                Show My Results
+              </button>
+              {submitError ? (
+                <p className="mt-3 text-sm text-red-600">{submitError}</p>
+              ) : null}
+            </div>
+          ) : null}
+          </div>
+        </main>
       </div>
-      <button
-        type="button"
-        disabled={submitting}
-        onClick={() => {
-          const acceleratedAnswers = buildUniformAnswers(1);
-          setAnswers(acceleratedAnswers);
-          void handleSubmitAssessment(acceleratedAnswers);
-        }}
-        className="fixed bottom-4 right-4 z-50 rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-xs font-semibold text-slate-700 shadow-lg backdrop-blur hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-        aria-label="Auto-complete all assessment answers with the same value and continue to report"
-      >
-        Accelerate: auto-complete all
-      </button>
+
+      {!isGeneratingReport ? (
+        <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 shadow-[0_-10px_40px_-16px_rgba(15,23,42,0.14)] backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+          <div className="mx-auto w-[min(100%,56rem)] px-5 py-5 md:px-10 md:py-6">
+            <ScorecardProgressBar
+              currentStep={progress.currentStep}
+              completedSteps={progress.completedSteps}
+            />
+          </div>
+        </footer>
+      ) : null}
+
+      {process.env.NODE_ENV === "development" ? (
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={() => {
+            const fake: ScorecardAnswers = {};
+            for (let i = 1; i <= 10; i++) fake[`q${i}`] = 3;
+            fake.q11a = 3;
+            fake.q11b = 3;
+            fake.q11c = 3;
+            setAnswers(fake);
+            setQualifying({
+              annual_revenue: "500k_1m",
+              team_size: "2_5",
+              time_in_business: "3_5",
+              desired_outcome: "profit_income",
+              obstacles: ["books_courses"],
+              preferred_solution: "one_on_one",
+            });
+            setOpenText("Dev preview");
+            setScreenIndex(SCREENS.length - 1);
+          }}
+          className="fixed bottom-4 right-4 z-50 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 shadow-lg"
+        >
+          Dev: jump to end
+        </button>
+      ) : null}
     </div>
   );
 }
-
