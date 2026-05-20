@@ -207,7 +207,7 @@ export async function loadCoachDirectory(
       coach
     );
 
-    const nameKey = normalizeCoachName(coach.full_name);
+    const nameKey = normalizeCoachName(coach.full_name ?? "");
     if (nameKey) {
       if (uniqueCoachByNormalizedName.has(nameKey)) {
         duplicateNames.add(nameKey);

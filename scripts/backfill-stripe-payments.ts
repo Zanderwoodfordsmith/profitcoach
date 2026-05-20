@@ -45,7 +45,7 @@ async function main() {
 
   if (result.errors.length > 0) {
     for (const item of result.errors) {
-      console.error(`[stripe backfill] failed for ${item.paymentIntentId}:`, item.message);
+      console.error(`[stripe backfill] failed for ${item.source}/${item.id}:`, item.message);
     }
   }
 

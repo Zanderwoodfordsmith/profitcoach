@@ -218,8 +218,9 @@ function parsePersistedPaymentTableSettings(
 
     const seen = new Set<keyof PaymentTableColumnVisibility>();
     const orderedKeys: Array<keyof PaymentTableColumnVisibility> = [];
-    for (const key of parsed.columnOrder) {
-      if (key === "matched") continue;
+    for (const rawKey of parsed.columnOrder as string[]) {
+      if (rawKey === "matched") continue;
+      const key = rawKey as keyof PaymentTableColumnVisibility;
       if (PAYMENT_TABLE_COLUMN_OPTION_BY_KEY.has(key) && !seen.has(key)) {
         seen.add(key);
         orderedKeys.push(key);

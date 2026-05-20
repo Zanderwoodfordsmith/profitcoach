@@ -63,7 +63,21 @@ async function main() {
     process.exit(1);
   }
 
-  const rows = (coaches ?? []) as CoachRow[];
+  const rows: CoachRow[] =
+    coaches?.map((row) => {
+      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+      return {
+        id: row.id as string,
+        slug: row.slug as string,
+        profiles: {
+          full_name: (profile?.full_name as string | null) ?? null,
+          coach_business_name: (profile?.coach_business_name as string | null) ?? null,
+          created_at: (profile?.created_at as string | null) ?? null,
+          linkedin_url: (profile?.linkedin_url as string | null) ?? null,
+          bio: (profile?.bio as string | null) ?? null,
+        },
+      };
+    }) ?? [];
   const authUsers = await supabase.auth.admin.listUsers({ perPage: 1000 });
   const lastSignIn = new Map<string, string | null>();
   const emailById = new Map<string, string | null>();

@@ -18,6 +18,12 @@ function paymentIntentIdFrom(
   return typeof value === "string" ? value : value.id ?? null;
 }
 
+function paymentIntentIdFromInvoice(invoice: Stripe.Invoice): string | null {
+  const payments = invoice.payments?.data ?? [];
+  const defaultPayment = payments.find((payment) => payment.is_default) ?? payments[0];
+  return paymentIntentIdFrom(defaultPayment?.payment?.payment_intent);
+}
+
 export function stripeKeyMode(
   key: string | undefined
 ): "live" | "test" | "unknown" | "missing" {
@@ -270,7 +276,7 @@ export async function backfillStripePayments(
     .list({
       status: "paid",
       limit: 100,
-      expand: ["data.customer"],
+      expand: ["data.customer", "data.payments.data.payment.payment_intent"],
     })
     .autoPagingEach(async (invoice) => {
       const customer =
@@ -290,7 +296,7 @@ export async function backfillStripePayments(
         invoice.status_transitions?.paid_at ?? invoice.created ?? Math.floor(Date.now() / 1000);
 
       await tryUpsert("invoices", invoice.id, {
-        stripePaymentIntentId: paymentIntentIdFrom(invoice.payment_intent),
+        stripePaymentIntentId: paymentIntentIdFromInvoice(invoice),
         stripeCheckoutSessionId: null,
         stripeChargeId: null,
         customerEmail,
