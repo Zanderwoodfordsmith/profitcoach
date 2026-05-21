@@ -27,7 +27,7 @@ export function CompassAreaLayout({
     : isScorecard
       ? "Log weekly pipeline and revenue numbers; targets follow your ladder goal."
       : isActions
-        ? "A simple place to capture actions, organize sub-actions, and tick off progress."
+        ? "Your personal actions plus any setup tasks assigned to you by the team."
       : "Tap the circle beside each line to score. The model updates as you go.";
 
   const tabs = useMemo(

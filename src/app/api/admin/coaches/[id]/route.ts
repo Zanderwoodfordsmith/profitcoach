@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isCoachRecurringPaymentStatus } from "@/lib/coachBilling";
 import { isValidLadderLevelId } from "@/lib/ladder";
 import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
+import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 async function requireAdmin(request: Request): Promise<
@@ -391,13 +392,11 @@ export async function PATCH(
         }
       }
     }
-
     if (Object.keys(coachUpdates).length > 0) {
       const { error } = await supabaseAdmin
         .from("coaches")
         .update(coachUpdates)
         .eq("id", coachId);
-
       if (error?.code === "42703") {
         const includesWebhook =
           Object.prototype.hasOwnProperty.call(coachUpdates, "lead_webhook_url");
@@ -459,6 +458,18 @@ export async function PATCH(
           { error: "Unable to update coach." },
           { status: 500 }
         );
+      }
+    }
+
+    const autoCompleteFieldsChanged =
+      body.crm_profile_name !== undefined ||
+      body.crm_location_id !== undefined ||
+      body.lead_webhook_url !== undefined;
+    if (autoCompleteFieldsChanged) {
+      try {
+        await syncCoachActionAutoComplete(coachId);
+      } catch (syncErr) {
+        console.warn("admin/coaches/[id] auto-complete sync failed:", syncErr);
       }
     }
 

@@ -1,0 +1,318 @@
+"use client";
+
+import type { CoachGroupSummary, PushMode } from "@/lib/actionPlans/types";
+import { Loader2, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+type CoachOption = {
+  id: string;
+  label: string;
+};
+
+type PushActionPlanModalProps = {
+  open: boolean;
+  templateTitle: string;
+  templateId: string;
+  accessToken: string;
+  onClose: () => void;
+  onPushed: () => void;
+};
+
+export function PushActionPlanModal({
+  open,
+  templateTitle,
+  templateId,
+  accessToken,
+  onClose,
+  onPushed,
+}: PushActionPlanModalProps) {
+  const [mode, setMode] = useState<PushMode>("all");
+  const [coaches, setCoaches] = useState<CoachOption[]>([]);
+  const [groups, setGroups] = useState<CoachGroupSummary[]>([]);
+  const [selectedCoachIds, setSelectedCoachIds] = useState<string[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [coachSearch, setCoachSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resultMessage, setResultMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setMode("all");
+    setSelectedCoachIds([]);
+    setSelectedGroupIds([]);
+    setCoachSearch("");
+    setError(null);
+    setResultMessage(null);
+
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const [coachesRes, groupsRes] = await Promise.all([
+          fetch("/api/admin/coaches", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }),
+          fetch("/api/admin/coach-groups", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }),
+        ]);
+        if (!coachesRes.ok || !groupsRes.ok) {
+          throw new Error("Failed to load coaches or groups.");
+        }
+        const coachesData = (await coachesRes.json()) as {
+          coaches?: Array<{
+            id: string;
+            full_name?: string | null;
+            coach_business_name?: string | null;
+            slug?: string;
+          }>;
+        };
+        const groupsData = (await groupsRes.json()) as { groups?: CoachGroupSummary[] };
+        if (cancelled) return;
+        setCoaches(
+          (coachesData.coaches ?? []).map((coach) => ({
+            id: coach.id,
+            label:
+              coach.coach_business_name ||
+              coach.full_name ||
+              coach.slug ||
+              coach.id,
+          })),
+        );
+        setGroups(groupsData.groups ?? []);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load data.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, accessToken]);
+
+  const filteredCoaches = useMemo(() => {
+    const q = coachSearch.trim().toLowerCase();
+    if (!q) return coaches;
+    return coaches.filter((coach) => coach.label.toLowerCase().includes(q));
+  }, [coachSearch, coaches]);
+
+  const recipientPreview = useMemo(() => {
+    if (mode === "all") return coaches.length;
+    if (mode === "coaches") return selectedCoachIds.length;
+    const groupCoachCount = groups
+      .filter((group) => selectedGroupIds.includes(group.id))
+      .reduce((sum, group) => sum + group.memberCount, 0);
+    return groupCoachCount;
+  }, [coaches.length, groups, mode, selectedCoachIds.length, selectedGroupIds]);
+
+  const toggleCoach = (coachId: string) => {
+    setSelectedCoachIds((prev) =>
+      prev.includes(coachId) ? prev.filter((id) => id !== coachId) : [...prev, coachId],
+    );
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId],
+    );
+  };
+
+  const handlePush = async () => {
+    setPushing(true);
+    setError(null);
+    setResultMessage(null);
+    try {
+      const res = await fetch(`/api/admin/action-plans/${templateId}/push`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode,
+          coachIds: mode === "coaches" ? selectedCoachIds : undefined,
+          groupIds: mode === "groups" ? selectedGroupIds : undefined,
+        }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        result?: { assigned: string[]; skipped: string[]; failed: Array<{ coachId: string }> };
+      };
+      if (!res.ok) {
+        throw new Error(data.error ?? "Push failed.");
+      }
+      const assigned = data.result?.assigned.length ?? 0;
+      const skipped = data.result?.skipped.length ?? 0;
+      const failed = data.result?.failed.length ?? 0;
+      setResultMessage(
+        `Pushed to ${assigned} coach${assigned === 1 ? "" : "es"}. Skipped ${skipped}. Failed ${failed}.`,
+      );
+      onPushed();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Push failed.");
+    } finally {
+      setPushing(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Push action plan</h2>
+            <p className="text-sm text-slate-500">{templateTitle}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4 px-5 py-4">
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading coaches and groups…
+            </div>
+          ) : null}
+
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium text-slate-800">Send to</legend>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="radio"
+                name="push-mode"
+                checked={mode === "all"}
+                onChange={() => setMode("all")}
+              />
+              All member coaches ({coaches.length})
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="radio"
+                name="push-mode"
+                checked={mode === "coaches"}
+                onChange={() => setMode("coaches")}
+              />
+              Selected coaches
+            </label>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="radio"
+                name="push-mode"
+                checked={mode === "groups"}
+                onChange={() => setMode("groups")}
+              />
+              Coach groups
+            </label>
+          </fieldset>
+
+          {mode === "coaches" ? (
+            <div className="space-y-2">
+              <input
+                value={coachSearch}
+                onChange={(e) => setCoachSearch(e.target.value)}
+                placeholder="Search coaches…"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-sky-400"
+              />
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200">
+                {filteredCoaches.map((coach) => (
+                  <label
+                    key={coach.id}
+                    className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0 hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCoachIds.includes(coach.id)}
+                      onChange={() => toggleCoach(coach.id)}
+                    />
+                    {coach.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {mode === "groups" ? (
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-slate-200">
+              {groups.length ? (
+                groups.map((group) => (
+                  <label
+                    key={group.id}
+                    className="flex cursor-pointer items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 text-sm last:border-b-0 hover:bg-slate-50"
+                  >
+                    <span className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedGroupIds.includes(group.id)}
+                        onChange={() => toggleGroup(group.id)}
+                      />
+                      {group.name}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {group.memberCount} member{group.memberCount === 1 ? "" : "s"}
+                    </span>
+                  </label>
+                ))
+              ) : (
+                <p className="px-3 py-4 text-sm text-slate-500">
+                  No groups yet. Create one under Coach groups.
+                </p>
+              )}
+            </div>
+          ) : null}
+
+          <p className="text-sm text-slate-600">
+            Recipients: <strong>{recipientPreview}</strong>
+          </p>
+
+          {error ? (
+            <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
+          ) : null}
+          {resultMessage ? (
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {resultMessage}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            disabled={
+              pushing ||
+              loading ||
+              (mode === "coaches" && !selectedCoachIds.length) ||
+              (mode === "groups" && !selectedGroupIds.length)
+            }
+            onClick={() => void handlePush()}
+            className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+          >
+            {pushing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            Push plan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

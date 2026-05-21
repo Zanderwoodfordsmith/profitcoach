@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractGhlCalendarIdFromEmbed } from "@/lib/extractGhlCalendarIdFromEmbed";
 import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
+import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
@@ -688,6 +689,16 @@ export async function PATCH(request: Request) {
         // Geocoder columns may not exist if the migration hasn't run yet — log and move on.
         console.warn("profile geocode persist failed:", err);
       }
+    }
+  }
+
+  const autoCompleteFieldsChanged =
+    body.calendar_embed_code !== undefined || body.lead_webhook_url !== undefined;
+  if (autoCompleteFieldsChanged) {
+    try {
+      await syncCoachActionAutoComplete(coachId);
+    } catch (syncErr) {
+      console.warn("coach/profile auto-complete sync failed:", syncErr);
     }
   }
 

@@ -20,6 +20,11 @@ export function CoachesHubTabs() {
   const onPayments =
     pathname === "/admin/payments" ||
     Boolean(pathname?.startsWith("/admin/payments/"));
+  const onActionPlans =
+    pathname === "/admin/action-plans" ||
+    Boolean(pathname?.startsWith("/admin/action-plans/")) ||
+    pathname === "/admin/coach-groups" ||
+    Boolean(pathname?.startsWith("/admin/coach-groups/"));
 
   return (
     <PageHeaderUnderlineTabs
@@ -54,6 +59,12 @@ export function CoachesHubTabs() {
           href: "/admin/payments",
           label: "Payments",
           active: onPayments,
+        },
+        {
+          kind: "link",
+          href: "/admin/action-plans",
+          label: "Action plans",
+          active: onActionPlans,
         },
       ]}
     />
