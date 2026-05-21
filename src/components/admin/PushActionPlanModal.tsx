@@ -2,7 +2,7 @@
 
 import type { CoachGroupSummary, PushMode } from "@/lib/actionPlans/types";
 import { Copy, Loader2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type CoachOption = {
   id: string;
@@ -38,7 +38,37 @@ export function PushActionPlanModal({
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [shareCoachUrl, setShareCoachUrl] = useState<string | null>(null);
   const [shareAdminUrl, setShareAdminUrl] = useState<string | null>(null);
+  const [shareLinkLoading, setShareLinkLoading] = useState(false);
+  const [shareLinkError, setShareLinkError] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+
+  const loadShareLink = useCallback(async () => {
+    setShareLinkLoading(true);
+    setShareLinkError(null);
+    try {
+      const shareRes = await fetch(`/api/admin/action-plans/${templateId}/share-link`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const shareData = (await shareRes.json()) as {
+        error?: string;
+        coachUrl?: string;
+        adminUrl?: string;
+      };
+      if (!shareRes.ok) {
+        throw new Error(shareData.error ?? "Could not create share link.");
+      }
+      setShareCoachUrl(shareData.coachUrl ?? null);
+      setShareAdminUrl(shareData.adminUrl ?? null);
+    } catch (err) {
+      setShareCoachUrl(null);
+      setShareAdminUrl(null);
+      setShareLinkError(
+        err instanceof Error ? err.message : "Could not create share link.",
+      );
+    } finally {
+      setShareLinkLoading(false);
+    }
+  }, [accessToken, templateId]);
 
   useEffect(() => {
     if (!open) return;
@@ -49,19 +79,20 @@ export function PushActionPlanModal({
     setError(null);
     setResultMessage(null);
     setCopied(null);
+    setShareCoachUrl(null);
+    setShareAdminUrl(null);
+    setShareLinkError(null);
 
     let cancelled = false;
     async function load() {
       setLoading(true);
+      void loadShareLink();
       try {
-        const [coachesRes, groupsRes, shareRes] = await Promise.all([
+        const [coachesRes, groupsRes] = await Promise.all([
           fetch("/api/admin/coaches", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
           fetch("/api/admin/coach-groups", {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          }),
-          fetch(`/api/admin/action-plans/${templateId}/share-link`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
         ]);
@@ -77,16 +108,6 @@ export function PushActionPlanModal({
           }>;
         };
         const groupsData = (await groupsRes.json()) as { groups?: CoachGroupSummary[] };
-        if (shareRes.ok) {
-          const shareData = (await shareRes.json()) as {
-            coachUrl?: string;
-            adminUrl?: string;
-          };
-          if (!cancelled) {
-            setShareCoachUrl(shareData.coachUrl ?? null);
-            setShareAdminUrl(shareData.adminUrl ?? null);
-          }
-        }
         if (cancelled) return;
         setCoaches(
           (coachesData.coaches ?? []).map((coach) => ({
@@ -111,7 +132,7 @@ export function PushActionPlanModal({
     return () => {
       cancelled = true;
     };
-  }, [open, accessToken, templateId]);
+  }, [loadShareLink, open, accessToken, templateId]);
 
   const filteredCoaches = useMemo(() => {
     const q = coachSearch.trim().toLowerCase();
@@ -242,8 +263,32 @@ export function PushActionPlanModal({
                   </p>
                 ) : null}
               </div>
+            ) : shareLinkLoading ? (
+              <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Loading share link…
+              </p>
+            ) : shareLinkError ? (
+              <div className="mt-3 space-y-2">
+                <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                  {shareLinkError}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void loadShareLink()}
+                  className="text-xs font-medium text-sky-700 hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
             ) : (
-              <p className="mt-2 text-xs text-slate-500">Loading share link…</p>
+              <button
+                type="button"
+                onClick={() => void loadShareLink()}
+                className="mt-2 text-xs font-medium text-sky-700 hover:underline"
+              >
+                Generate share link
+              </button>
             )}
           </section>
 

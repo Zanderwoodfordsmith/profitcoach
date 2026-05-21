@@ -28,7 +28,24 @@ export async function GET(
     });
   } catch (err) {
     console.error("admin/action-plans/[id]/share-link GET error:", err);
-    return NextResponse.json({ error: "Server error." }, { status: 500 });
+    const message =
+      err && typeof err === "object" && "message" in err
+        ? String((err as { message: unknown }).message)
+        : err instanceof Error
+          ? err.message
+          : "Server error.";
+    const missingTable =
+      message.includes("action_plan_share_links") ||
+      message.includes("coach_action_plan_invitations") ||
+      message.includes("does not exist");
+    return NextResponse.json(
+      {
+        error: missingTable
+          ? "Share links need the action plan invitations migration. Apply supabase/migrations/20260723160000_action_plan_invitations.sql in Supabase, then try again."
+          : message,
+      },
+      { status: 500 },
+    );
   }
 }
 
