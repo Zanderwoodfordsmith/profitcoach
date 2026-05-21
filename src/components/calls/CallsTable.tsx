@@ -4,51 +4,44 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   Columns3,
-  Loader2,
   Search,
   SlidersHorizontal,
-  Trash2,
 } from "lucide-react";
+import type { CallRow } from "@/lib/callRow";
 import {
-  formatProspectLastAssessed,
-  formatProspectNextCallWhen,
-  getProspectNextCallName,
-  getProspectNextCallStatusLabel,
-  type ProspectNextCall,
+  callStatusClass,
+  formatCallWhen,
+  getCallDisplayName,
+  getCallStatusLabel,
+  isUpcomingCall,
 } from "@/lib/prospectNextCall";
-import type { ProspectRow } from "@/lib/prospectRow";
 
-export type { ProspectRow };
+export type { CallRow };
 
-type AssessmentFilter = "all" | "assessed" | "not_assessed";
-type NextCallFilter = "all" | "has_call" | "no_call";
-type NextCallStatusFilter = "all" | "booked" | "confirmed" | "other";
-type ProspectSortField = "name" | "last_assessed" | "last_score" | "next_call";
-type ProspectSortOrder =
-  | "asc"
-  | "desc"
-  | "missing_first"
-  | "no_call_last";
+type TimingFilter = "all" | "upcoming" | "past";
+type StatusFilter =
+  | "all"
+  | "booked"
+  | "confirmed"
+  | "cancelled"
+  | "showed"
+  | "noshow"
+  | "other";
+type MatchFilter = "all" | "matched" | "unmatched_contact" | "unmatched_coach";
+type CallSortField = "prospect" | "start_time" | "status";
+type CallSortOrder = "asc" | "desc" | "missing_first";
 
-type ProspectColumnKey =
+type CallColumnKey =
+  | "call"
   | "business"
   | "email"
   | "phone"
-  | "type"
+  | "status"
   | "coach"
-  | "actions"
-  | "last_score"
-  | "last_assessed"
-  | "revenue"
-  | "team_size"
-  | "years_in_business"
-  | "outcome"
-  | "obstacles"
-  | "preferred_support"
-  | "boss_level"
-  | "next_call";
+  | "match"
+  | "actions";
 
-type ProspectColumnVisibility = Record<ProspectColumnKey, boolean>;
+type CallColumnVisibility = Record<CallColumnKey, boolean>;
 
 type CoachFilterOption = {
   id: string;
@@ -56,132 +49,99 @@ type CoachFilterOption = {
 };
 
 type Props = {
-  prospects: ProspectRow[];
+  calls: CallRow[];
   loading: boolean;
   error: string | null;
   showCoachColumn?: boolean;
-  showTypeColumn?: boolean;
-  onRowClick?: (id: string) => void;
+  onRowClick?: (row: CallRow) => void;
   emptyMessage?: string;
-  /** Renders actions cell per row (e.g. "View as client" button). Stops row click propagation. */
-  renderRowActions?: (row: ProspectRow) => React.ReactNode;
-  /** When set, adds coach filter to the toolbar (e.g. admin prospects). */
+  renderRowActions?: (row: CallRow) => React.ReactNode;
   coachFilterOptions?: CoachFilterOption[];
-  /** Controlled coach filter — when omitted, filter state is internal. */
   coachFilter?: string | "all";
   onCoachFilterChange?: (coachId: string | "all") => void;
-  /** When set, shows a delete button on the right of each row. */
-  onDelete?: (row: ProspectRow) => void | Promise<void>;
-  deletingId?: string | null;
 };
 
-const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
+const DEFAULT_COLUMN_VISIBILITY: CallColumnVisibility = {
+  call: true,
   business: true,
   email: true,
   phone: false,
-  type: true,
+  status: true,
   coach: true,
+  match: false,
   actions: true,
-  last_score: true,
-  last_assessed: true,
-  revenue: false,
-  team_size: false,
-  years_in_business: false,
-  outcome: false,
-  obstacles: false,
-  preferred_support: false,
-  boss_level: false,
-  next_call: true,
 };
 
-const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
+const COLUMN_OPTIONS: Array<{ key: CallColumnKey; label: string }> = [
+  { key: "call", label: "When" },
   { key: "business", label: "Business" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
-  { key: "type", label: "Type" },
+  { key: "status", label: "Status" },
   { key: "coach", label: "Coach" },
+  { key: "match", label: "Match" },
   { key: "actions", label: "Actions" },
-  { key: "last_score", label: "Last score" },
-  { key: "last_assessed", label: "Last assessed" },
-  { key: "revenue", label: "Revenue" },
-  { key: "team_size", label: "Team size" },
-  { key: "years_in_business", label: "Years in business" },
-  { key: "outcome", label: "Outcome" },
-  { key: "obstacles", label: "Obstacles" },
-  { key: "preferred_support", label: "Preferred support" },
-  { key: "boss_level", label: "BOSS level" },
-  { key: "next_call", label: "Next call" },
 ];
 
-function nextCallStatusClass(status: string | null | undefined): string {
+function matchStatusLabel(status: string): string {
   switch (status) {
-    case "confirmed":
-      return "bg-emerald-50 text-emerald-700";
-    case "booked":
-      return "bg-sky-50 text-sky-700";
+    case "matched":
+      return "Matched";
+    case "unmatched_contact":
+      return "No contact";
+    case "unmatched_coach":
+      return "No coach";
     default:
-      return "bg-slate-100 text-slate-600";
+      return status.replace(/_/g, " ");
   }
 }
 
-function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefined }) {
-  if (!next?.start_time) {
-    return <span className="text-slate-400">—</span>;
-  }
+function CallWhenCell({ row }: { row: CallRow }) {
+  const when = formatCallWhen(row.start_time);
+  const callName = getCallDisplayName(row);
 
-  const when = formatProspectNextCallWhen(next);
   if (!when) {
-    return <span className="text-slate-400">—</span>;
+    return (
+      <div className="flex min-w-[9rem] flex-col gap-0.5">
+        <span className="font-medium text-slate-800">{callName}</span>
+        <span className="text-xs text-slate-400">No time set</span>
+      </div>
+    );
   }
-
-  const callName = getProspectNextCallName(next);
-  const statusLabel = getProspectNextCallStatusLabel(next.status_normalized);
 
   return (
     <div className="flex min-w-[9rem] flex-col gap-0.5">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-medium text-slate-800" title={callName}>
-          {callName}
-        </span>
-        <span
-          className={`inline-flex shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
-        >
-          {statusLabel}
-        </span>
-      </div>
+      <span className="font-medium text-slate-800" title={callName}>
+        {callName}
+      </span>
       <span className="text-xs text-slate-500">{when}</span>
     </div>
   );
 }
 
-export function ProspectsTable({
-  prospects,
+export function CallsTable({
+  calls,
   loading,
   error,
   showCoachColumn = false,
-  showTypeColumn = true,
   onRowClick,
-  emptyMessage = "No prospects found for this selection.",
+  emptyMessage = "No calls found for this selection.",
   renderRowActions,
   coachFilterOptions,
   coachFilter: controlledCoachFilter,
   onCoachFilterChange,
-  onDelete,
-  deletingId = null,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [assessmentFilter, setAssessmentFilter] =
-    useState<AssessmentFilter>("all");
-  const [nextCallFilter, setNextCallFilter] = useState<NextCallFilter>("all");
-  const [nextCallStatusFilter, setNextCallStatusFilter] =
-    useState<NextCallStatusFilter>("all");
+  const [timingFilter, setTimingFilter] = useState<TimingFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [matchFilter, setMatchFilter] = useState<MatchFilter>("all");
   const [internalCoachFilter, setInternalCoachFilter] = useState<
     string | "all"
   >("all");
-  const [sortField, setSortField] = useState<ProspectSortField>("name");
-  const [sortOrder, setSortOrder] = useState<ProspectSortOrder>("asc");
+  const [sortField, setSortField] = useState<CallSortField>("start_time");
+  const [sortOrder, setSortOrder] = useState<CallSortOrder>("desc");
   const [columnVisibility, setColumnVisibility] =
-    useState<ProspectColumnVisibility>(DEFAULT_COLUMN_VISIBILITY);
+    useState<CallColumnVisibility>(DEFAULT_COLUMN_VISIBILITY);
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -192,7 +152,6 @@ export function ProspectsTable({
 
   const coachFilter = controlledCoachFilter ?? internalCoachFilter;
   const setCoachFilter = onCoachFilterChange ?? setInternalCoachFilter;
-
   const showCoachFilter = Boolean(
     coachFilterOptions && coachFilterOptions.length > 0
   );
@@ -214,58 +173,40 @@ export function ProspectsTable({
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (assessmentFilter !== "all") count += 1;
-    if (nextCallFilter !== "all") count += 1;
-    if (nextCallStatusFilter !== "all") count += 1;
+    if (timingFilter !== "all") count += 1;
+    if (statusFilter !== "all") count += 1;
+    if (matchFilter !== "all") count += 1;
     if (showCoachFilter && coachFilter !== "all") count += 1;
     return count;
-  }, [
-    assessmentFilter,
-    nextCallFilter,
-    nextCallStatusFilter,
-    showCoachFilter,
-    coachFilter,
-  ]);
+  }, [timingFilter, statusFilter, matchFilter, showCoachFilter, coachFilter]);
 
-  const hasActiveSort = sortField !== "name" || sortOrder !== "asc";
+  const hasActiveSort =
+    sortField !== "start_time" || sortOrder !== "desc";
 
   const visibleColumns = useMemo(() => {
-    const cols = new Set<ProspectColumnKey>(
-      COLUMN_OPTIONS.map((option) => option.key)
-    );
-    if (!showTypeColumn) cols.delete("type");
+    const cols = new Set<CallColumnKey>(COLUMN_OPTIONS.map((option) => option.key));
     if (!showCoachColumn) cols.delete("coach");
     if (!renderRowActions) cols.delete("actions");
     return COLUMN_OPTIONS.filter(
       (option) => cols.has(option.key) && columnVisibility[option.key]
     );
-  }, [
-    showTypeColumn,
-    showCoachColumn,
-    renderRowActions,
-    columnVisibility,
-  ]);
+  }, [showCoachColumn, renderRowActions, columnVisibility]);
 
-  const filteredProspects = useMemo(() => {
+  const filteredCalls = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
-    return prospects.filter((p) => {
+    return calls.filter((row) => {
       if (term) {
         const haystack = [
-          p.full_name,
-          p.business_name,
-          p.email,
-          p.phone,
-          p.coach_name,
-          p.coach_business_name,
-          p.revenue,
-          p.team_size,
-          p.years_in_business,
-          p.outcome,
-          p.obstacles,
-          p.preferred_support,
-          p.boss_level,
-          getProspectNextCallName(p.next_call),
+          row.prospect_name,
+          row.business_name,
+          row.prospect_email,
+          row.prospect_phone,
+          row.title,
+          row.calendar_name,
+          row.coach_name,
+          row.coach_business_name,
+          getCallStatusLabel(row.status_normalized),
         ]
           .filter(Boolean)
           .join(" ")
@@ -273,31 +214,32 @@ export function ProspectsTable({
         if (!haystack.includes(term)) return false;
       }
 
-      if (assessmentFilter === "assessed" && !p.last_completed_at) {
-        return false;
+      if (timingFilter === "upcoming") {
+        if (!isUpcomingCall(row.start_time, row.status_normalized)) {
+          return false;
+        }
       }
-      if (assessmentFilter === "not_assessed" && p.last_completed_at) {
-        return false;
-      }
-
-      if (nextCallFilter === "has_call" && !p.next_call?.start_time) {
-        return false;
-      }
-      if (nextCallFilter === "no_call" && p.next_call?.start_time) {
-        return false;
+      if (timingFilter === "past") {
+        if (isUpcomingCall(row.start_time, row.status_normalized)) {
+          return false;
+        }
       }
 
       if (
-        nextCallStatusFilter !== "all" &&
-        p.next_call?.status_normalized !== nextCallStatusFilter
+        statusFilter !== "all" &&
+        row.status_normalized !== statusFilter
       ) {
+        return false;
+      }
+
+      if (matchFilter !== "all" && row.match_status !== matchFilter) {
         return false;
       }
 
       if (
         showCoachFilter &&
         coachFilter !== "all" &&
-        p.coach_id !== coachFilter
+        row.coach_id !== coachFilter
       ) {
         return false;
       }
@@ -305,174 +247,113 @@ export function ProspectsTable({
       return true;
     });
   }, [
-    prospects,
+    calls,
     searchTerm,
-    assessmentFilter,
-    nextCallFilter,
-    nextCallStatusFilter,
+    timingFilter,
+    statusFilter,
+    matchFilter,
     showCoachFilter,
     coachFilter,
   ]);
 
-  const sortedProspects = useMemo(() => {
-    const rows = [...filteredProspects];
+  const sortedCalls = useMemo(() => {
+    const rows = [...filteredCalls];
 
     rows.sort((a, b) => {
-      if (sortField === "name") {
-        const cmp = a.full_name.localeCompare(b.full_name, undefined, {
+      if (sortField === "prospect") {
+        const cmp = a.prospect_name.localeCompare(b.prospect_name, undefined, {
           sensitivity: "base",
         });
-        return sortOrder === "desc" ? -cmp : cmp;
+        return sortOrder === "asc" ? cmp : -cmp;
       }
 
-      if (sortField === "last_score") {
-        const aScore = a.last_score;
-        const bScore = b.last_score;
-        if (aScore == null && bScore == null) return 0;
-        if (aScore == null) return sortOrder === "missing_first" ? -1 : 1;
-        if (bScore == null) return sortOrder === "missing_first" ? 1 : -1;
-        return sortOrder === "asc" ? aScore - bScore : bScore - aScore;
+      if (sortField === "status") {
+        const cmp = getCallStatusLabel(a.status_normalized).localeCompare(
+          getCallStatusLabel(b.status_normalized),
+          undefined,
+          { sensitivity: "base" }
+        );
+        return sortOrder === "asc" ? cmp : -cmp;
       }
 
-      if (sortField === "last_assessed") {
-        const aTime = a.last_completed_at
-          ? new Date(a.last_completed_at).getTime()
-          : null;
-        const bTime = b.last_completed_at
-          ? new Date(b.last_completed_at).getTime()
-          : null;
-        if (aTime == null && bTime == null) return 0;
-        if (aTime == null) return sortOrder === "missing_first" ? -1 : 1;
-        if (bTime == null) return sortOrder === "missing_first" ? 1 : -1;
-        return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
-      }
-
-      const aTime = a.next_call?.start_time
-        ? new Date(a.next_call.start_time).getTime()
-        : null;
-      const bTime = b.next_call?.start_time
-        ? new Date(b.next_call.start_time).getTime()
-        : null;
+      const aTime = a.start_time ? new Date(a.start_time).getTime() : null;
+      const bTime = b.start_time ? new Date(b.start_time).getTime() : null;
       if (aTime == null && bTime == null) return 0;
-      if (aTime == null) return sortOrder === "no_call_last" ? 1 : -1;
-      if (bTime == null) return sortOrder === "no_call_last" ? -1 : 1;
-      return sortOrder === "desc" ? bTime - aTime : aTime - bTime;
+      if (aTime == null) return sortOrder === "missing_first" ? -1 : 1;
+      if (bTime == null) return sortOrder === "missing_first" ? 1 : -1;
+      return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
     });
 
     return rows;
-  }, [filteredProspects, sortField, sortOrder]);
-
-  const colCount = 1 + visibleColumns.length + (onDelete ? 1 : 0);
+  }, [filteredCalls, sortField, sortOrder]);
 
   const sortOrderOptions = useMemo(() => {
-    if (sortField === "name") {
+    if (sortField === "prospect" || sortField === "status") {
       return [
         { value: "asc" as const, label: "A → Z" },
         { value: "desc" as const, label: "Z → A" },
       ];
     }
-    if (sortField === "last_score") {
-      return [
-        { value: "desc" as const, label: "Highest first" },
-        { value: "asc" as const, label: "Lowest first" },
-        { value: "missing_first" as const, label: "No score first" },
-      ];
-    }
-    if (sortField === "last_assessed") {
-      return [
-        { value: "desc" as const, label: "Most recent first" },
-        { value: "asc" as const, label: "Oldest first" },
-        { value: "missing_first" as const, label: "Not assessed first" },
-      ];
-    }
     return [
-      { value: "asc" as const, label: "Soonest first" },
       { value: "desc" as const, label: "Latest first" },
-      { value: "no_call_last" as const, label: "No call last" },
+      { value: "asc" as const, label: "Earliest first" },
+      { value: "missing_first" as const, label: "No time first" },
     ];
   }, [sortField]);
 
   useEffect(() => {
     const valid = new Set(sortOrderOptions.map((option) => option.value));
     if (!valid.has(sortOrder)) {
-      setSortOrder(sortOrderOptions[0]?.value ?? "asc");
+      setSortOrder(sortOrderOptions[0]?.value ?? "desc");
     }
   }, [sortField, sortOrder, sortOrderOptions]);
 
-  function renderOptionalText(value: string | null | undefined) {
-    return value ? (
-      <span className="text-xs text-slate-700">{value}</span>
-    ) : (
-      "—"
-    );
-  }
-
-  function renderColumnCell(key: ProspectColumnKey, p: ProspectRow) {
+  function renderColumnCell(key: CallColumnKey, row: CallRow) {
     switch (key) {
+      case "call":
+        return <CallWhenCell row={row} />;
       case "business":
-        return p.business_name ?? "—";
+        return row.business_name ?? "—";
       case "email":
         return (
-          <span className="text-xs text-slate-500">{p.email ?? "—"}</span>
+          <span className="text-xs text-slate-500">
+            {row.prospect_email ?? "—"}
+          </span>
         );
       case "phone":
         return (
-          <span className="text-xs text-slate-700">{p.phone ?? "—"}</span>
+          <span className="text-xs text-slate-700">
+            {row.prospect_phone ?? "—"}
+          </span>
         );
-      case "type":
-        return <span className="text-xs text-slate-700">{p.type}</span>;
+      case "status":
+        return (
+          <span
+            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium leading-none ${callStatusClass(row.status_normalized)}`}
+          >
+            {getCallStatusLabel(row.status_normalized)}
+          </span>
+        );
       case "coach":
         return (
           <span className="text-xs text-slate-700">
-            {p.coach_name ?? p.coach_business_name ?? "Unknown coach"}
+            {row.coach_name ?? row.coach_business_name ?? "Unknown coach"}
+          </span>
+        );
+      case "match":
+        return (
+          <span className="text-xs text-slate-600">
+            {matchStatusLabel(row.match_status)}
           </span>
         );
       case "actions":
-        return renderRowActions?.(p) ?? null;
-      case "last_score":
-        return p.last_score != null ? `${p.last_score} / 100` : "—";
-      case "last_assessed":
-        return (
-          <span className="text-xs text-slate-500">
-            {formatProspectLastAssessed(p.last_completed_at)}
-          </span>
-        );
-      case "revenue":
-        return renderOptionalText(p.revenue);
-      case "team_size":
-        return renderOptionalText(p.team_size);
-      case "years_in_business":
-        return renderOptionalText(p.years_in_business);
-      case "outcome":
-        return renderOptionalText(p.outcome);
-      case "obstacles":
-        return renderOptionalText(p.obstacles);
-      case "preferred_support":
-        return renderOptionalText(p.preferred_support);
-      case "boss_level":
-        return renderOptionalText(p.boss_level);
-      case "next_call":
-        return <ProspectNextCallCell next={p.next_call} />;
+        return renderRowActions?.(row) ?? null;
       default:
         return null;
     }
   }
 
-  function renderColumnHeader(key: ProspectColumnKey) {
-    switch (key) {
-      case "last_score":
-        return "Last score";
-      case "last_assessed":
-        return "Last assessed";
-      case "next_call":
-        return "Next call";
-      default:
-        return COLUMN_OPTIONS.find((option) => option.key === key)?.label ?? key;
-    }
-  }
-
   const columnMenuOptions = COLUMN_OPTIONS.filter((option) => {
-    if (option.key === "type" && !showTypeColumn) return false;
     if (option.key === "coach" && !showCoachColumn) return false;
     if (option.key === "actions" && !renderRowActions) return false;
     return true;
@@ -494,7 +375,7 @@ export function ProspectsTable({
               type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search prospects"
+              placeholder="Search calls"
               className="block w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
             />
           </div>
@@ -528,13 +409,13 @@ export function ProspectsTable({
                   {showCoachFilter ? (
                     <div>
                       <label
-                        htmlFor="prospect-coach-filter"
+                        htmlFor="call-coach-filter"
                         className="mb-1 block text-xs font-medium text-slate-600"
                       >
                         Coach
                       </label>
                       <select
-                        id="prospect-coach-filter"
+                        id="call-coach-filter"
                         value={coachFilter}
                         onChange={(e) =>
                           setCoachFilter(
@@ -554,65 +435,67 @@ export function ProspectsTable({
                   ) : null}
                   <div>
                     <label
-                      htmlFor="prospect-assessment-filter"
+                      htmlFor="call-timing-filter"
                       className="mb-1 block text-xs font-medium text-slate-600"
                     >
-                      Assessment
+                      Timing
                     </label>
                     <select
-                      id="prospect-assessment-filter"
-                      value={assessmentFilter}
+                      id="call-timing-filter"
+                      value={timingFilter}
                       onChange={(e) =>
-                        setAssessmentFilter(e.target.value as AssessmentFilter)
+                        setTimingFilter(e.target.value as TimingFilter)
                       }
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="all">All</option>
-                      <option value="assessed">Assessed</option>
-                      <option value="not_assessed">Not assessed</option>
+                      <option value="upcoming">Upcoming</option>
+                      <option value="past">Past</option>
                     </select>
                   </div>
                   <div>
                     <label
-                      htmlFor="prospect-next-call-filter"
+                      htmlFor="call-status-filter"
                       className="mb-1 block text-xs font-medium text-slate-600"
                     >
-                      Next call
+                      Status
                     </label>
                     <select
-                      id="prospect-next-call-filter"
-                      value={nextCallFilter}
+                      id="call-status-filter"
+                      value={statusFilter}
                       onChange={(e) =>
-                        setNextCallFilter(e.target.value as NextCallFilter)
-                      }
-                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                    >
-                      <option value="all">All</option>
-                      <option value="has_call">Has upcoming call</option>
-                      <option value="no_call">No upcoming call</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="prospect-call-status-filter"
-                      className="mb-1 block text-xs font-medium text-slate-600"
-                    >
-                      Call status
-                    </label>
-                    <select
-                      id="prospect-call-status-filter"
-                      value={nextCallStatusFilter}
-                      onChange={(e) =>
-                        setNextCallStatusFilter(
-                          e.target.value as NextCallStatusFilter
-                        )
+                        setStatusFilter(e.target.value as StatusFilter)
                       }
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="all">All</option>
                       <option value="booked">Booked</option>
                       <option value="confirmed">Confirmed</option>
-                      <option value="other">Scheduled</option>
+                      <option value="showed">Showed</option>
+                      <option value="noshow">No show</option>
+                      <option value="cancelled">Cancelled</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="call-match-filter"
+                      className="mb-1 block text-xs font-medium text-slate-600"
+                    >
+                      Match
+                    </label>
+                    <select
+                      id="call-match-filter"
+                      value={matchFilter}
+                      onChange={(e) =>
+                        setMatchFilter(e.target.value as MatchFilter)
+                      }
+                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="all">All</option>
+                      <option value="matched">Matched</option>
+                      <option value="unmatched_contact">No contact</option>
+                      <option value="unmatched_coach">No coach</option>
                     </select>
                   </div>
                 </div>
@@ -648,37 +531,36 @@ export function ProspectsTable({
                 <div className="space-y-3">
                   <div>
                     <label
-                      htmlFor="prospect-sort-field"
+                      htmlFor="call-sort-field"
                       className="mb-1 block text-xs font-medium text-slate-600"
                     >
                       Sort by
                     </label>
                     <select
-                      id="prospect-sort-field"
+                      id="call-sort-field"
                       value={sortField}
                       onChange={(e) =>
-                        setSortField(e.target.value as ProspectSortField)
+                        setSortField(e.target.value as CallSortField)
                       }
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
-                      <option value="name">Name</option>
-                      <option value="last_assessed">Last assessed</option>
-                      <option value="last_score">Last score</option>
-                      <option value="next_call">Next call</option>
+                      <option value="start_time">Call time</option>
+                      <option value="prospect">Prospect</option>
+                      <option value="status">Status</option>
                     </select>
                   </div>
                   <div>
                     <label
-                      htmlFor="prospect-sort-order"
+                      htmlFor="call-sort-order"
                       className="mb-1 block text-xs font-medium text-slate-600"
                     >
                       Order
                     </label>
                     <select
-                      id="prospect-sort-order"
+                      id="call-sort-order"
                       value={sortOrder}
                       onChange={(e) =>
-                        setSortOrder(e.target.value as ProspectSortOrder)
+                        setSortOrder(e.target.value as CallSortOrder)
                       }
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
@@ -742,18 +624,18 @@ export function ProspectsTable({
             ) : null}
           </div>
 
-          {!loading && prospects.length > 0 ? (
+          {!loading && calls.length > 0 ? (
             <span className="ml-auto text-xs text-slate-500">
-              {sortedProspects.length === prospects.length
-                ? `${prospects.length} prospect${prospects.length === 1 ? "" : "s"}`
-                : `${sortedProspects.length} of ${prospects.length}`}
+              {sortedCalls.length === calls.length
+                ? `${calls.length} call${calls.length === 1 ? "" : "s"}`
+                : `${sortedCalls.length} of ${calls.length}`}
             </span>
           ) : null}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
-        {!loading && sortedProspects.length === 0 && !error ? (
+        {!loading && sortedCalls.length === 0 && !error ? (
           <p className="px-4 py-8 text-center text-sm text-slate-500">
             {emptyMessage}
           </p>
@@ -761,24 +643,18 @@ export function ProspectsTable({
           <table className="min-w-full text-left text-sm">
             <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
               <tr>
-                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Prospect</th>
                 {visibleColumns.map((column) => (
                   <th key={column.key} className="px-4 py-3 text-left">
-                    {renderColumnHeader(column.key)}
+                    {column.label}
                   </th>
                 ))}
-                {onDelete ? (
-                  <th
-                    className="sticky right-0 z-20 bg-slate-50 px-2 py-3 text-center"
-                    aria-label="Delete"
-                  />
-                ) : null}
               </tr>
             </thead>
             <tbody>
-              {sortedProspects.map((p) => (
+              {sortedCalls.map((row) => (
                 <tr
-                  key={p.id}
+                  key={row.id}
                   className={
                     onRowClick
                       ? "group cursor-pointer border-t border-slate-100 hover:bg-slate-50"
@@ -794,72 +670,23 @@ export function ProspectsTable({
                           ) {
                             return;
                           }
-                          onRowClick(p.id);
+                          onRowClick(row);
                         }
                       : undefined
                   }
-                  role={onRowClick ? "button" : undefined}
                 >
-                  <td className="px-4 py-2 font-medium text-slate-900">
-                    {p.full_name}
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {row.prospect_name}
                   </td>
                   {visibleColumns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`px-4 py-2 text-slate-700 ${column.key === "actions" ? "" : ""}`}
-                      {...(column.key === "actions"
-                        ? {
-                            "data-row-action": true,
-                            onClick: (e: React.MouseEvent) =>
-                              e.stopPropagation(),
-                          }
-                        : {})}
-                    >
-                      {renderColumnCell(column.key, p)}
+                    <td key={column.key} className="px-4 py-3">
+                      <div data-row-action={column.key === "actions" ? "" : undefined}>
+                        {renderColumnCell(column.key, row)}
+                      </div>
                     </td>
                   ))}
-                  {onDelete ? (
-                    <td
-                      className="sticky right-0 z-10 bg-white px-2 py-2 text-center align-middle group-hover:bg-slate-50"
-                      data-row-action
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => void onDelete(p)}
-                        disabled={deletingId === p.id}
-                        title={
-                          deletingId === p.id
-                            ? "Deleting prospect…"
-                            : `Delete ${p.full_name}`
-                        }
-                        aria-label={
-                          deletingId === p.id
-                            ? "Deleting prospect"
-                            : `Delete ${p.full_name}`
-                        }
-                        className="inline-flex rounded p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {deletingId === p.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                        ) : (
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        )}
-                      </button>
-                    </td>
-                  ) : null}
                 </tr>
               ))}
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={colCount}
-                    className="px-4 py-3 text-sm text-slate-600"
-                  >
-                    Loading…
-                  </td>
-                </tr>
-              ) : null}
             </tbody>
           </table>
         )}

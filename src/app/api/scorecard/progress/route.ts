@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
+import {
+  fireLeadWebhook,
+  getCoachLeadWebhookUrl,
+  resolveLeadWebhookStatus,
+} from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -74,8 +78,10 @@ export async function POST(request: Request) {
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
   if (webhookUrl && body.abandoned) {
     const { first_name, last_name } = splitFullName(fullName ?? "");
+    const event = "scorecard_abandoned" as const;
     void fireLeadWebhook(webhookUrl, {
-      event: "scorecard_abandoned",
+      event,
+      status: resolveLeadWebhookStatus(event),
       coach_slug: coachSlug,
       coach_id: coachId,
       contact: {

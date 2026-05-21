@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -55,35 +57,38 @@ export async function GET(request: Request) {
   const typeFilter = searchParams.get("type");
 
   try {
-    let query = supabaseAdmin
-      .from("contacts")
-      .select("id, coach_id, full_name, email, business_name, type, created_at")
-      .order("created_at", { ascending: false });
+    const { data: contacts, error: contactsError } =
+      await selectContactsWithOptionalPhone<{
+        id: string;
+        coach_id: string | null;
+        full_name: string;
+        email: string | null;
+        business_name: string | null;
+        phone: string | null;
+        type: string;
+        created_at: string;
+      }>(async (columns) => {
+        let query = supabaseAdmin
+          .from("contacts")
+          .select(columns)
+          .order("created_at", { ascending: false });
 
-    if (typeFilter === "client") {
-      query = query.eq("type", "client");
-    } else if (typeFilter === "prospect") {
-      query = query.eq("type", "prospect");
-    }
+        if (typeFilter === "client") {
+          query = query.eq("type", "client");
+        } else if (typeFilter === "prospect") {
+          query = query.eq("type", "prospect");
+        }
 
-    const { data: contactsData, error: contactsError } = await query;
+        return query;
+      }, "id, coach_id, full_name, email, business_name, type, created_at");
 
     if (contactsError) {
+      console.error("admin/contacts GET contacts:", contactsError);
       return NextResponse.json(
         { error: "Unable to load contacts." },
         { status: 500 }
       );
     }
-
-    const contacts = (contactsData ?? []) as Array<{
-      id: string;
-      coach_id: string | null;
-      full_name: string;
-      email: string | null;
-      business_name: string | null;
-      type: string;
-      created_at: string;
-    }>;
 
     const coachIds = Array.from(
       new Set(contacts.map((c) => c.coach_id).filter(Boolean)) as Set<string>
@@ -105,46 +110,28 @@ export async function GET(request: Request) {
       }
     }
 
-    const contactIds = contacts.map((c) => c.id);
-    let latestByContact: Record<string, { total_score: number; completed_at: string }> = {};
 
-    if (contactIds.length > 0) {
-      const { data: assessments, error: assessmentsError } = await supabaseAdmin
-        .from("assessments")
-        .select("contact_id, total_score, completed_at")
-        .in("contact_id", contactIds)
-        .order("completed_at", { ascending: false });
-
-      if (!assessmentsError && assessments) {
-        for (const row of assessments as Array<{ contact_id: string; total_score: number; completed_at: string }>) {
-          const cid = row.contact_id;
-          if (!latestByContact[cid]) {
-            latestByContact[cid] = {
-              total_score: row.total_score,
-              completed_at: row.completed_at,
-            };
-          }
-        }
-      }
-    }
-
-    const prospects = contacts.map((c) => {
-      const coachEntry = c.coach_id ? coachById[c.coach_id] : undefined;
-      const coachMeta = coachEntry ?? { full_name: null, coach_business_name: null };
-      const latest = latestByContact[c.id];
-      return {
-        id: c.id,
-        coach_id: c.coach_id,
-        full_name: c.full_name,
-        email: c.email ?? null,
-        business_name: c.business_name ?? null,
-        type: c.type,
-        coach_name: coachMeta.full_name,
-        coach_business_name: coachMeta.coach_business_name,
-        last_score: latest?.total_score ?? null,
-        last_completed_at: latest?.completed_at ?? null,
-      };
-    });
+    const prospects = await enrichProspectRows(
+      supabaseAdmin,
+      contacts.map((c) => {
+        const coachEntry = c.coach_id ? coachById[c.coach_id] : undefined;
+        const coachMeta = coachEntry ?? {
+          full_name: null,
+          coach_business_name: null,
+        };
+        return {
+          id: c.id,
+          coach_id: c.coach_id,
+          full_name: c.full_name,
+          email: c.email ?? null,
+          business_name: c.business_name ?? null,
+          phone: c.phone ?? null,
+          type: c.type,
+          coach_name: coachMeta.full_name,
+          coach_business_name: coachMeta.coach_business_name,
+        };
+      })
+    );
 
     return NextResponse.json({ prospects });
   } catch (err) {

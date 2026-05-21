@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isCoachRecurringPaymentStatus } from "@/lib/coachBilling";
 import { isValidLadderLevelId } from "@/lib/ladder";
+import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 async function requireAdmin(request: Request): Promise<
@@ -164,7 +165,11 @@ export async function PATCH(
     if (body.crm_location_id === null || body.crm_location_id === "") {
       coachUpdates.crm_location_id = null;
     } else if (typeof body.crm_location_id === "string") {
-      coachUpdates.crm_location_id = body.crm_location_id.trim();
+      const validated = validateCrmLocationId(body.crm_location_id);
+      if (!validated.ok) {
+        return NextResponse.json({ error: validated.error }, { status: 400 });
+      }
+      coachUpdates.crm_location_id = validated.value;
     } else {
       return NextResponse.json(
         { error: "crm_location_id must be a string or null." },

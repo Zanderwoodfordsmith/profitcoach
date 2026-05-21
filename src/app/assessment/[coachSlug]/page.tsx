@@ -37,6 +37,10 @@ import {
   type ScorecardScore,
 } from "@/lib/bossScorecardScores";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import {
+  assessmentContactToSessionPayload,
+  parseAssessmentContactParams,
+} from "@/lib/assessmentContactParams";
 import { splitFullName } from "@/lib/splitFullName";
 
 const outfit = Outfit({ subsets: ["latin"] });
@@ -100,8 +104,15 @@ export default function ScorecardAssessmentPage({
         ? fromLanding
         : null;
   const startTracked = useRef(false);
+  const directLeadCaptured = useRef(false);
   const progressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReportedScreen = useRef(0);
+
+  const urlContact = useMemo(
+    () => parseAssessmentContactParams(searchParams),
+    [searchParams]
+  );
+  const isFromLandingFunnel = landingVariant != null;
 
   const [screenIndex, setScreenIndex] = useState(0);
   const [answers, setAnswers] = useState<ScorecardAnswers>({});
@@ -113,32 +124,51 @@ export default function ScorecardAssessmentPage({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [gateChecked, setGateChecked] = useState(false);
 
-  const [fullName, setFullName] = useState(searchParams.get("name") ?? "");
-  const [email, setEmail] = useState(searchParams.get("email") ?? "");
-  const [phone, setPhone] = useState(searchParams.get("phone") ?? "");
-  const [businessName, setBusinessName] = useState(
-    searchParams.get("business") ?? ""
-  );
+  const [fullName, setFullName] = useState(urlContact.fullName ?? "");
+  const [email, setEmail] = useState(urlContact.email ?? "");
+  const [phone, setPhone] = useState(urlContact.phone ?? "");
+  const [businessName, setBusinessName] = useState(urlContact.businessName ?? "");
 
   const currentScreen = SCREENS[screenIndex] ?? SCREENS[0];
   const progress = getScorecardProgress(currentScreen.step);
 
-  const landingUrl = useMemo(
-    () => `/landing/d?coach=${encodeURIComponent(coachSlug)}`,
-    [coachSlug]
-  );
-
   useEffect(() => {
-    if (landingVariant || isPreview) {
-      setGateChecked(true);
-      return;
-    }
     setGateChecked(true);
-    window.location.href = landingUrl;
-  }, [landingVariant, landingUrl, isPreview]);
+  }, []);
 
   useEffect(() => {
-    if (!landingVariant || startTracked.current) return;
+    if (isFromLandingFunnel || directLeadCaptured.current) return;
+    if (!urlContact.email) return;
+
+    directLeadCaptured.current = true;
+    try {
+      sessionStorage.setItem(
+        LANDING_CONTACT_KEY,
+        JSON.stringify(assessmentContactToSessionPayload(urlContact))
+      );
+    } catch {
+      // ignore
+    }
+
+    fetch("/api/leads/capture", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        coachSlug: coachSlug?.trim() || null,
+        contact: {
+          first_name: urlContact.firstName ?? undefined,
+          last_name: urlContact.lastName ?? undefined,
+          full_name: urlContact.fullName ?? undefined,
+          email: urlContact.email,
+          phone: urlContact.phone ?? undefined,
+          business_name: urlContact.businessName ?? undefined,
+        },
+      }),
+    }).catch(() => {});
+  }, [coachSlug, isFromLandingFunnel, urlContact]);
+
+  useEffect(() => {
+    if (!isFromLandingFunnel || startTracked.current) return;
     startTracked.current = true;
     fetch("/api/landing/track", {
       method: "POST",
@@ -149,10 +179,10 @@ export default function ScorecardAssessmentPage({
         event_type: "start",
       }),
     }).catch(() => {});
-  }, [landingVariant, coachSlug]);
+  }, [isFromLandingFunnel, landingVariant, coachSlug]);
 
   useEffect(() => {
-    if (!landingVariant) return;
+    if (!isFromLandingFunnel) return;
     try {
       const raw = sessionStorage.getItem(LANDING_CONTACT_KEY);
       if (!raw) return;
@@ -175,7 +205,7 @@ export default function ScorecardAssessmentPage({
     } catch {
       // ignore
     }
-  }, [landingVariant]);
+  }, [isFromLandingFunnel]);
 
   const reportProgress = useCallback(
     (screen: number, abandoned = false) => {
@@ -327,7 +357,7 @@ export default function ScorecardAssessmentPage({
     }
   }
 
-  if (!gateChecked || !landingVariant) {
+  if (!gateChecked) {
     return (
       <div
         className="flex min-h-screen items-center justify-center px-4"

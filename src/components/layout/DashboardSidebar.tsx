@@ -8,6 +8,7 @@ import { LogOut, MessagesSquare, X } from "lucide-react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 import {
   adminSectionNavItems,
+  coachMarketingNavItems,
   deliveryNavItems,
   mainNavItems,
   marketingNavItems,
@@ -52,6 +53,10 @@ export function DashboardSidebar({
   const mainItems = mainNavItems(prefix);
   const mobilePrimary = mobilePrimaryNavItems(prefix);
   const mobileMore = mobileMoreNavItems(prefix);
+  const sidebarMarketingItems =
+    variant === "coach"
+      ? coachMarketingNavItems(prefix)
+      : marketingNavItems(prefix, { includeBossScore: true });
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
 
   const closeMobileSheets = () => {
@@ -164,7 +169,7 @@ export function DashboardSidebar({
               Marketing
             </p>
             <ul className="space-y-0.5">
-              {marketingNavItems(prefix, { includeBossScore: true }).map((item) => {
+              {sidebarMarketingItems.map((item) => {
                 const active = navLinkActive(pathname, item.href);
                 const Icon = item.icon;
                 return (
@@ -334,41 +339,46 @@ export function DashboardSidebar({
                 </Link>
               </div>
             </div>
+            {variant === "admin" ? (
+              <div className="px-4 pb-3 pt-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                  More
+                </p>
+                <ul className="space-y-0.5">{renderMoreNavLinks(mobileMore)}</ul>
+              </div>
+            ) : null}
             <div className="px-4 pb-3 pt-3">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                More
+                Marketing
               </p>
-              <ul className="space-y-0.5">{renderMoreNavLinks(mobileMore)}</ul>
+              <ul className="space-y-0.5">
+                {(variant === "coach"
+                  ? coachMarketingNavItems(prefix)
+                  : marketingNavItems(prefix)
+                ).map((item) => {
+                  const active = navLinkActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        onClick={closeMobileSheets}
+                        className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                          active
+                            ? "bg-sky-500/80 text-white"
+                            : "text-slate-100/90 hover:bg-white/10"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {item.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
             {variant === "admin" ? (
               <>
-                <div className="px-4 pb-3">
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                    Marketing
-                  </p>
-                  <ul className="space-y-0.5">
-                    {marketingNavItems(prefix).map((item) => {
-                      const active = navLinkActive(pathname, item.href);
-                      const Icon = item.icon;
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            onClick={closeMobileSheets}
-                            className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
-                              active
-                                ? "bg-sky-500/80 text-white"
-                                : "text-slate-100/90 hover:bg-white/10"
-                            }`}
-                          >
-                            <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                            {item.label}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
                 <div className="px-4 pb-3">
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                     Delivery

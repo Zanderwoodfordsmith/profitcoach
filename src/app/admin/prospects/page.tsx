@@ -18,9 +18,6 @@ export default function AdminProspectsPage() {
   const [prospects, setProspects] = useState<ProspectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCoachId, setSelectedCoachId] = useState<string | "all">(
-    "all"
-  );
   const [showAddProspect, setShowAddProspect] = useState(false);
   const [creatingProspect, setCreatingProspect] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -31,6 +28,7 @@ export default function AdminProspectsPage() {
   const [newBusinessName, setNewBusinessName] = useState("");
   const [sendInvite, setSendInvite] = useState(false);
   const [coaches, setCoaches] = useState<Array<{ id: string; slug: string; full_name: string | null; coach_business_name: string | null }>>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,11 +138,6 @@ export default function AdminProspectsPage() {
         )
       : coachOptionsFromList;
 
-  const visibleProspects =
-    selectedCoachId === "all"
-      ? prospects
-      : prospects.filter((p) => p.coach_id === selectedCoachId);
-
   const navigateToProspect = useCallback(
     (row: ProspectRow) => {
       flushSync(() => {
@@ -154,6 +147,43 @@ export default function AdminProspectsPage() {
     },
     [router, setImpersonatingCoachId]
   );
+
+  async function handleDeleteProspect(row: ProspectRow) {
+    if (
+      !confirm(
+        `Delete prospect "${row.full_name}"? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setError("You must be signed in to delete a prospect.");
+      return;
+    }
+
+    setDeletingId(row.id);
+    try {
+      const res = await fetch(`/api/admin/contacts/${row.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Unable to delete prospect.");
+      }
+      setProspects((prev) => prev.filter((p) => p.id !== row.id));
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Unable to delete prospect."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleCreateProspect(e: React.FormEvent) {
     e.preventDefault();
@@ -287,36 +317,15 @@ export default function AdminProspectsPage() {
         />
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-xs font-medium text-slate-700">
-          Filter by coach:
-        </label>
-        <select
-          value={selectedCoachId}
-          onChange={(e) =>
-            setSelectedCoachId(
-              (e.target.value || "all") as string | "all"
-            )
-          }
-          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-        >
-          <option value="all">All coaches</option>
-          {coachOptions.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
       <ProspectsTable
-        prospects={visibleProspects}
+        prospects={prospects}
         loading={loading}
         error={error}
         showCoachColumn={true}
         showTypeColumn={false}
+        coachFilterOptions={coachOptions}
         onRowClick={(id) => {
-          const row = visibleProspects.find((p) => p.id === id);
+          const row = prospects.find((p) => p.id === id);
           if (row) navigateToProspect(row);
         }}
         renderRowActions={(row) => (
@@ -328,6 +337,8 @@ export default function AdminProspectsPage() {
             View prospect
           </button>
         )}
+        onDelete={handleDeleteProspect}
+        deletingId={deletingId}
         emptyMessage="No prospects found for this selection."
       />
     </div>

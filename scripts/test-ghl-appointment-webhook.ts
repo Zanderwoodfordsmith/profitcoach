@@ -6,6 +6,12 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { extractGhlCalendarIdFromEmbed } from "../src/lib/extractGhlCalendarIdFromEmbed";
 import {
+  getCalendarSyncStatus,
+  isCalendarSyncReady,
+  normalizeCrmLocationId,
+  validateCrmLocationId,
+} from "../src/lib/ghlCalendarSync";
+import {
   normalizeGhlAppointmentStatus,
   parseGhlAppointmentWebhookPayload,
 } from "../src/lib/ghlAppointmentWebhook";
@@ -54,6 +60,34 @@ const missing = parseGhlAppointmentWebhookPayload({ email: "a@b.com" });
 assert(
   "error" in missing && missing.error.includes("calendar"),
   "reject missing calendar"
+);
+
+assert(
+  normalizeCrmLocationId("BsRxKtV0lVHcvvZ6qHtu") === "BsRxKtV0lVHcvvZ6qHtu",
+  "normalize bare location id"
+);
+assert(
+  normalizeCrmLocationId(
+    "https://app.procoachplatform.com/v2/location/BsRxKtV0lVHcvvZ6qHtu"
+  ) === "BsRxKtV0lVHcvvZ6qHtu",
+  "normalize location url"
+);
+assert(!validateCrmLocationId("not valid id!!!").ok, "reject invalid location id");
+
+assert(
+  isCalendarSyncReady({
+    crmLocationId: "BsRxKtV0lVHcvvZ6qHtu",
+    calendarEmbedCode: embed,
+  }),
+  "calendar sync ready when both set"
+);
+assert(
+  getCalendarSyncStatus({
+    crmLocationId: "BsRxKtV0lVHcvvZ6qHtu",
+    calendarEmbedCode: embed,
+    audience: "coach",
+  }).ready,
+  "coach sync status ready"
 );
 
 console.log("\nAll GHL webhook parsing checks passed.");

@@ -1,18 +1,20 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+// TEMP: Profit Coach GHL snapshot testing — revert to Pam when done.
 /** Default account for general /score and /landing traffic with no ?coach= slug. */
 export const PRIMARY_COACH_EMAIL =
-  process.env.PRIMARY_COACH_EMAIL?.trim() || "pam@businesscoachacademy.com";
+  process.env.PRIMARY_COACH_EMAIL?.trim() ||
+  "profit-coach-snapshot@businesscoachacademy.com";
 
 /** Client-safe slug when env is set; server resolves by email when unset. */
 export const PRIMARY_COACH_SLUG_FALLBACK =
   process.env.NEXT_PUBLIC_PRIMARY_COACH_SLUG?.trim().toLowerCase() ||
   process.env.PRIMARY_COACH_SLUG?.trim().toLowerCase() ||
-  "pam";
+  "profit-coach-snapshot";
 
-/** Pam's default booking calendar embed (ProCoach Platform). */
+/** Snapshot location default booking calendar embed (ProCoach Platform). */
 export const PRIMARY_COACH_CALENDAR_EMBED_CODE =
-  '<iframe src="https://link.procoachplatform.com/widget/booking/YBxvoiQH6HcHjHYrOWkU" style="width: 100%;border:none;overflow: hidden;" scrolling="no" id="8gGuCLQODMv5nY2iZQB9_1779293123369"></iframe><br><script src="https://link.procoachplatform.com/js/form_embed.js" type="text/javascript"></script>';
+  '<iframe src="https://link.procoachplatform.com/widget/booking/8jyZoTDwjgn8kTDZlv7y" style="width: 100%;border:none;overflow: hidden;" scrolling="no" id="8jyZoTDwjgn8kTDZlv7y_1779350600944"></iframe><br><script src="https://link.procoachplatform.com/js/form_embed.js" type="text/javascript"></script>';
 
 let cachedPrimaryCoachSlug: string | null = null;
 

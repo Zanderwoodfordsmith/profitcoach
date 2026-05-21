@@ -3,7 +3,11 @@ import {
   tryInsertContactStripping,
   tryUpdateContactStripping,
 } from "@/lib/contactSchemaSafeInsert";
-import { fireLeadWebhook, getCoachLeadWebhookUrl } from "@/lib/leadWebhook";
+import {
+  fireLeadWebhook,
+  getCoachLeadWebhookUrl,
+  resolveLeadWebhookStatus,
+} from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -132,8 +136,10 @@ export async function POST(request: Request) {
 
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
   if (webhookUrl) {
+    const event = "lead_captured" as const;
     void fireLeadWebhook(webhookUrl, {
-      event: "lead_captured",
+      event,
+      status: resolveLeadWebhookStatus(event, { hasPhone: !!phone }),
       coach_slug: (coach as { slug?: string | null }).slug ?? coachSlug,
       coach_id: coachId,
       contact: {

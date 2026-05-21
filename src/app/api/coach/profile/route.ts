@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractGhlCalendarIdFromEmbed } from "@/lib/extractGhlCalendarIdFromEmbed";
+import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
@@ -114,12 +115,23 @@ export async function GET(request: Request) {
     let coachRowResult = await supabaseAdmin
       .from("coaches")
       .select(
-        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code"
+        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_location_id, ghl_calendar_id"
       )
       .eq("id", coachId)
       .maybeSingle();
     let webhookColumnMissing = false;
     let calendarEmbedColumnMissing = false;
+    let crmLocationColumnMissing = false;
+    if (coachRowResult.error?.code === "42703") {
+      coachRowResult = await supabaseAdmin
+        .from("coaches")
+        .select(
+          "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code"
+        )
+        .eq("id", coachId)
+        .maybeSingle();
+      crmLocationColumnMissing = true;
+    }
     if (coachRowResult.error?.code === "42703") {
       coachRowResult = await supabaseAdmin
         .from("coaches")
@@ -194,6 +206,7 @@ export async function GET(request: Request) {
             ? prof.landing_variant_preference
             : null,
         account_email,
+        ...buildCoachCalendarSyncFields(null),
       });
     }
     if (coachErr) {
@@ -258,6 +271,20 @@ export async function GET(request: Request) {
           ? prof.landing_variant_preference
           : null,
       account_email,
+      ...buildCoachCalendarSyncFields(
+        crmLocationColumnMissing
+          ? {
+              calendar_embed_code: calendarEmbedColumnMissing
+                ? null
+                : (coachRow as { calendar_embed_code?: string | null } | null)
+                    ?.calendar_embed_code ?? null,
+            }
+          : (coachRow as {
+              calendar_embed_code?: string | null;
+              crm_location_id?: string | null;
+              ghl_calendar_id?: string | null;
+            } | null)
+      ),
     });
   } catch {
     return NextResponse.json(

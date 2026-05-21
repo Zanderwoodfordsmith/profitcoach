@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { deriveCurrentLevelId } from "@/lib/ladder";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import { splitFullName } from "@/lib/splitFullName";
+import {
+  hasCalendarEmbed,
+  isCalendarSyncReady,
+} from "@/lib/ghlCalendarSync";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -86,8 +90,10 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
     );
+
+    let calendarEmbedMissing = false;
 
     let webhookMissing = false;
     let crmMissing = false;
@@ -95,8 +101,9 @@ export async function GET(request: Request) {
     let accountBillingMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
+      calendarEmbedMissing = true;
       accountBillingMissing = true;
     }
     if (res.error?.code === "42703") {
@@ -259,6 +266,19 @@ export async function GET(request: Request) {
         crm_location_id: crmMissing
           ? null
           : (row.crm_location_id as string | null) ?? null,
+        has_calendar_embed: calendarEmbedMissing
+          ? false
+          : hasCalendarEmbed(
+              row.calendar_embed_code as string | null,
+              row.ghl_calendar_id as string | null
+            ),
+        calendar_sync_ready: calendarEmbedMissing
+          ? false
+          : isCalendarSyncReady({
+              crmLocationId: row.crm_location_id as string | null,
+              calendarEmbedCode: row.calendar_embed_code as string | null,
+              ghlCalendarId: row.ghl_calendar_id as string | null,
+            }),
         has_sales_robot_account: accountBillingMissing
           ? false
           : !!row.has_sales_robot_account,

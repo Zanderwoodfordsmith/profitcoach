@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { enrichProspectRows } from "@/lib/loadProspectTableRows";
+import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
@@ -30,6 +32,7 @@ export default function CoachProspectsPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newBusinessName, setNewBusinessName] = useState("");
   const [sendInvite, setSendInvite] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,11 +63,6 @@ export default function CoachProspectsPage() {
         setLoading(false);
         return;
       }
-      /** Prospects CRM is admin-only for now; coaches use Clients. */
-      if (roleBody.role === "coach") {
-        router.replace("/coach/clients");
-        return;
-      }
       const effectiveId =
         roleBody.role === "admin" && impersonatingCoachId
           ? impersonatingCoachId
@@ -78,68 +76,61 @@ export default function CoachProspectsPage() {
       setEffectiveCoachId(effectiveId);
 
       const { data: contactsData, error: contactsError } =
-        await supabaseClient
-          .from("contacts")
-          .select(
-            "id, full_name, email, business_name, type, created_at"
-          )
-          .eq("coach_id", effectiveId)
-          .eq("type", "prospect")
-          .order("created_at", { ascending: false });
+        await selectContactsWithOptionalPhone<{
+          id: string;
+          full_name: string;
+          email: string | null;
+          business_name: string | null;
+          phone: string | null;
+          type: string;
+          created_at: string;
+        }>(
+          async (columns) =>
+            supabaseClient
+              .from("contacts")
+              .select(columns)
+              .eq("coach_id", effectiveId)
+              .eq("type", "prospect")
+              .order("created_at", { ascending: false }),
+          "id, full_name, email, business_name, type, created_at"
+        );
 
       if (cancelled) return;
 
       if (contactsError) {
+        console.error("coach/prospects contacts:", contactsError);
         setError("Unable to load prospects.");
         setLoading(false);
         return;
       }
 
-      const contactIds =
-        contactsData?.map((c: any) => c.id as string) ?? [];
-
-      let latestByContact: Record<
-        string,
-        { total_score: number; completed_at: string }
-      > = {};
-
-      if (contactIds.length > 0) {
-        const { data: assessments, error: assessmentsError } =
-          await supabaseClient
-            .from("assessments")
-            .select("contact_id, total_score, completed_at")
-            .in("contact_id", contactIds)
-            .order("completed_at", { ascending: false });
-
-        if (!assessmentsError && assessments) {
-          for (const row of assessments as any[]) {
-            const cid = row.contact_id as string;
-            if (!latestByContact[cid]) {
-              latestByContact[cid] = {
-                total_score: row.total_score as number,
-                completed_at: row.completed_at as string,
-              };
-            }
-          }
-        }
-      }
-
-      const mapped: ProspectRow[] =
-        contactsData?.map((c: any) => {
-          const latest = latestByContact[c.id as string];
-          return {
-            id: c.id as string,
-            full_name: c.full_name as string,
+      try {
+        const mapped = await enrichProspectRows(
+          supabaseClient,
+          contactsData.map((c) => ({
+            id: c.id,
+            full_name: c.full_name,
             email: c.email ?? null,
             business_name: c.business_name ?? null,
-            type: (c.type as string) ?? "prospect",
-            last_score: latest?.total_score ?? null,
-            last_completed_at: latest?.completed_at ?? null,
-          };
-        }) ?? [];
+            phone: c.phone ?? null,
+            type: c.type ?? "prospect",
+          }))
+        );
 
-      setProspects(mapped);
-      setLoading(false);
+        if (!cancelled) {
+          setProspects(mapped);
+        }
+      } catch (err) {
+        console.error("coach/prospects enrich:", err);
+        if (!cancelled) {
+          setError("Unable to load prospects.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+      return;
     }
 
     void init();
@@ -230,6 +221,50 @@ export default function CoachProspectsPage() {
     }
   }
 
+  async function handleDeleteProspect(row: ProspectRow) {
+    if (
+      !confirm(
+        `Delete prospect "${row.full_name}"? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setError("You must be signed in to delete a prospect.");
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.access_token}`,
+    };
+    if (impersonatingCoachId) {
+      headers["x-impersonate-coach-id"] = impersonatingCoachId;
+    }
+
+    setDeletingId(row.id);
+    try {
+      const res = await fetch(`/api/coach/contacts/${row.id}`, {
+        method: "DELETE",
+        headers,
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Unable to delete prospect.");
+      }
+      setProspects((prev) => prev.filter((p) => p.id !== row.id));
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Unable to delete prospect."
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
@@ -297,6 +332,8 @@ export default function CoachProspectsPage() {
             View prospect
           </Link>
         )}
+        onDelete={handleDeleteProspect}
+        deletingId={deletingId}
         emptyMessage="No prospects yet. Add one below or share your assessment link."
       />
       </div>

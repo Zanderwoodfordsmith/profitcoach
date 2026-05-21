@@ -1,14 +1,22 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
-import { qualifyingToWebhookFields } from "@/lib/bossScorecardScores";
+import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import {
+  qualifyingToWebhookFields,
+  type ScorecardAnswers,
+} from "@/lib/bossScorecardScores";
+import { buildBossScorecardGhlCustomFields } from "@/lib/ghlLeadWebhookCustomFields";
+import type { QualifyingData } from "@/lib/bossScorecardQuestions";
 import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
 import {
   fireLeadWebhook,
   getCoachLeadWebhookUrl,
+  resolveLeadWebhookStatus,
   type AssessmentType,
 } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
+import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -319,12 +327,13 @@ export async function POST(request: Request) {
     assessmentInsert.open_text = body.open_text ?? null;
     assessmentInsert.boss_level = body.boss_level ?? null;
     assessmentInsert.last_screen_reached = body.last_screen_reached ?? 16;
+    assessmentInsert.report_token = randomUUID();
   }
 
   const { data: assessment, error: assessmentError } = await supabaseAdmin
     .from("assessments")
     .insert(assessmentInsert)
-    .select("id, completed_at")
+    .select("id, completed_at, report_token")
     .single();
 
   if (assessmentError || !assessment) {
@@ -362,6 +371,17 @@ export async function POST(request: Request) {
     }
   }
 
+  const reportToken =
+    assessmentType === "boss_scorecard"
+      ? ((assessment as { report_token?: string | null }).report_token as
+          | string
+          | null)
+      : null;
+  const reportLink =
+    reportToken && assessmentType === "boss_scorecard"
+      ? buildScorecardReportUrl(coachSlug, reportToken, getAppBaseUrl(request))
+      : null;
+
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
   if (webhookUrl) {
     const { first_name, last_name } = splitFullName(fullName);
@@ -369,8 +389,10 @@ export async function POST(request: Request) {
       (assessment as { completed_at?: string }).completed_at ??
       new Date().toISOString();
 
+    const event = "assessment_completed" as const;
     const basePayload = {
-      event: "assessment_completed" as const,
+      event,
+      status: resolveLeadWebhookStatus(event),
       coach_slug: coachSlug,
       coach_id: coachId,
       contact: {
@@ -390,13 +412,20 @@ export async function POST(request: Request) {
     };
 
     if (assessmentType === "boss_scorecard") {
-      const qualifying = qualifyingToWebhookFields(
-        (body.qualifying_data ?? {}) as Parameters<
-          typeof qualifyingToWebhookFields
-        >[0]
-      );
+      const qualifyingData = (body.qualifying_data ?? {}) as QualifyingData;
+      const qualifying = qualifyingToWebhookFields(qualifyingData);
+      const ghlCustomFields = buildBossScorecardGhlCustomFields({
+        qualifying_data: qualifyingData,
+        answers: (body.answers ?? {}) as ScorecardAnswers,
+        boss_score: body.total_score,
+        boss_level: body.boss_level ?? null,
+        open_text: body.open_text ?? null,
+        report_link: reportLink,
+      });
       void fireLeadWebhook(webhookUrl, {
         ...basePayload,
+        ...ghlCustomFields,
+        report_link: reportLink,
         boss_score: body.total_score,
         boss_level: body.boss_level ?? null,
         answers: body.answers,
@@ -414,6 +443,8 @@ export async function POST(request: Request) {
     {
       id: assessment.id,
       completed_at: assessment.completed_at,
+      report_token: reportToken,
+      report_link: reportLink,
     },
     { status: 201 }
   );

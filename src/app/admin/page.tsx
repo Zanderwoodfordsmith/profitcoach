@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
+import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -25,6 +26,7 @@ import {
   type CoachRecurringPaymentStatus,
 } from "@/lib/coachBilling";
 import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
+import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 const COACH_TABLE_SETTINGS_STORAGE_KEY = "admin-coaches-table-settings-v1";
@@ -89,6 +91,8 @@ type CoachRow = {
   crm_profile_name: string | null;
   /** CRM location id appended to Pro Coach Platform location URL. */
   crm_location_id: string | null;
+  has_calendar_embed: boolean;
+  calendar_sync_ready: boolean;
   has_sales_robot_account: boolean;
   sales_robot_active_campaigns: number | null;
   sales_robot_paying_accounts: number | null;
@@ -454,6 +458,18 @@ export default function AdminPage() {
   const [webhookEditValue, setWebhookEditValue] = useState("");
   const [webhookEditError, setWebhookEditError] = useState<string | null>(null);
   const [webhookEditSaving, setWebhookEditSaving] = useState(false);
+  const [webhookEditHasCalendarEmbed, setWebhookEditHasCalendarEmbed] =
+    useState(false);
+
+  const webhookEditCalendarSync = useMemo(
+    () =>
+      getCalendarSyncStatus({
+        crmLocationId: crmLocationIdValue,
+        calendarEmbedConfigured: webhookEditHasCalendarEmbed,
+        audience: "admin",
+      }),
+    [crmLocationIdValue, webhookEditHasCalendarEmbed]
+  );
 
   useEffect(() => {
     if (!columnsMenuOpen && !filtersMenuOpen && !sortMenuOpen) return;
@@ -677,7 +693,12 @@ export default function AdminPage() {
                   ? { crm_profile_name: body.crm_profile_name }
                   : {}),
                 ...(body.crm_location_id !== undefined
-                  ? { crm_location_id: body.crm_location_id }
+                  ? {
+                      crm_location_id: body.crm_location_id,
+                      calendar_sync_ready:
+                        Boolean(body.crm_location_id?.trim()) &&
+                        c.has_calendar_embed,
+                    }
                   : {}),
                 ...(body.has_sales_robot_account !== undefined
                   ? { has_sales_robot_account: body.has_sales_robot_account }
@@ -765,6 +786,7 @@ export default function AdminPage() {
     setCoachLinkedinUrlValue(coach.linkedin_url ?? "");
     setCrmProfileNameValue(coach.crm_profile_name ?? "");
     setCrmLocationIdValue(coach.crm_location_id ?? "");
+    setWebhookEditHasCalendarEmbed(!!coach.has_calendar_embed);
     setWebhookEditValue(coach.lead_webhook_url ?? "");
     setWebhookEditError(null);
   }
@@ -1279,6 +1301,15 @@ export default function AdminPage() {
               ) : (
                 <span className="block text-xs text-slate-400">Not set</span>
               )}
+              {coach.calendar_sync_ready ? (
+                <span className="mt-0.5 block text-[0.65rem] font-medium text-emerald-700">
+                  ✓ Calendar linked
+                </span>
+              ) : coach.has_calendar_embed || coach.crm_location_id?.trim() ? (
+                <span className="mt-0.5 block text-[0.65rem] text-amber-700">
+                  Setup incomplete
+                </span>
+              ) : null}
             </button>
             {crmLink ? (
               <a
@@ -2190,8 +2221,13 @@ export default function AdminPage() {
             />
             <p className="mt-2 text-[0.7rem] text-slate-500">
               Coach CRM link is built as{" "}
-              <code>{CRM_LOCATION_BASE_URL}/&lt;location-id&gt;</code>.
+              <code>{CRM_LOCATION_BASE_URL}/&lt;location-id&gt;</code>. Paste
+              the ID or full location URL.
             </p>
+            <CalendarSyncStatusNote
+              status={webhookEditCalendarSync}
+              className="mt-3"
+            />
             <label
               htmlFor="lead-webhook-url"
               className="mt-4 block text-xs font-medium text-slate-700"
@@ -2248,7 +2284,13 @@ export default function AdminPage() {
                   setWebhookEditError(null);
                   setWebhookEditSaving(true);
                   const trimmedProfileName = crmProfileNameValue.trim();
-                  const trimmedLocationId = crmLocationIdValue.trim();
+                  const locationValidation = validateCrmLocationId(
+                    crmLocationIdValue
+                  );
+                  if (!locationValidation.ok) {
+                    setWebhookEditError(locationValidation.error);
+                    return;
+                  }
                   const trimmedFullName = coachFullNameValue.trim();
                   const trimmedBusinessName = coachBusinessNameValue.trim();
                   const result = await patchCoachRow(webhookEditCoachId, {
@@ -2259,8 +2301,7 @@ export default function AdminPage() {
                       trimmedLinkedinUrl === "" ? null : trimmedLinkedinUrl,
                     crm_profile_name:
                       trimmedProfileName === "" ? null : trimmedProfileName,
-                    crm_location_id:
-                      trimmedLocationId === "" ? null : trimmedLocationId,
+                    crm_location_id: locationValidation.value,
                     lead_webhook_url: trimmed === "" ? null : trimmed,
                   });
                   setWebhookEditSaving(false);

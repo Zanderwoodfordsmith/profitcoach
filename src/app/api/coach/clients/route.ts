@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 async function requireCoach(request: Request) {
@@ -48,58 +50,45 @@ export async function GET(request: Request) {
 
   const coachId = authCheck.userId;
 
-  const { data: contactsData, error: contactsError } = await supabaseAdmin
-    .from("contacts")
-    .select("id, full_name, email, business_name, type, created_at")
-    .eq("coach_id", coachId)
-    .eq("type", "client")
-    .order("created_at", { ascending: false });
+  const { data: contacts, error: contactsError } =
+    await selectContactsWithOptionalPhone<{
+      id: string;
+      full_name: string;
+      email: string | null;
+      business_name: string | null;
+      phone: string | null;
+      type: string;
+      created_at: string;
+    }>(
+      async (columns) =>
+        supabaseAdmin
+          .from("contacts")
+          .select(columns)
+          .eq("coach_id", coachId)
+          .eq("type", "client")
+          .order("created_at", { ascending: false }),
+      "id, full_name, email, business_name, type, created_at"
+    );
 
   if (contactsError) {
+    console.error("coach/clients GET contacts:", contactsError);
     return NextResponse.json(
       { error: "Could not load clients." },
       { status: 500 }
     );
   }
 
-  const contacts = contactsData ?? [];
-  const contactIds = contacts.map((c) => c.id as string);
-
-  let latestByContact: Record<
-    string,
-    { total_score: number; completed_at: string }
-  > = {};
-
-  if (contactIds.length > 0) {
-    const { data: assessments } = await supabaseAdmin
-      .from("assessments")
-      .select("contact_id, total_score, completed_at")
-      .in("contact_id", contactIds)
-      .order("completed_at", { ascending: false });
-
-    for (const row of assessments ?? []) {
-      const cid = (row as { contact_id: string }).contact_id;
-      if (!latestByContact[cid]) {
-        latestByContact[cid] = {
-          total_score: (row as { total_score: number }).total_score,
-          completed_at: (row as { completed_at: string }).completed_at,
-        };
-      }
-    }
-  }
-
-  const clients = contacts.map((c) => {
-    const latest = latestByContact[c.id as string];
-    return {
+  const clients = await enrichProspectRows(
+    supabaseAdmin,
+    contacts.map((c) => ({
       id: c.id,
       full_name: c.full_name,
       email: c.email ?? null,
       business_name: c.business_name ?? null,
-      type: (c.type as string) ?? "client",
-      last_score: latest?.total_score ?? null,
-      last_completed_at: latest?.completed_at ?? null,
-    };
-  });
+      phone: c.phone ?? null,
+      type: c.type ?? "client",
+    }))
+  );
 
   return NextResponse.json({ clients });
 }

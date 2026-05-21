@@ -5,6 +5,7 @@ import {
   Filter,
   LayoutGrid,
   MessagesSquare,
+  PhoneCall,
   Sparkles,
 } from "lucide-react";
 
@@ -113,16 +114,45 @@ function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
   return { href: `${prefix}/workshop`, label: "BOSS score", icon: IconWorkshop };
 }
 
+function callsNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
+  return { href: `${prefix}/calls`, label: "Calls", icon: IconPhoneCall };
+}
+
+function IconPhoneCall({ className }: { className?: string }) {
+  return <PhoneCall className={className} />;
+}
+
+export type MarketingNavOptions = {
+  includeBossScore?: boolean;
+  /** When false, omits the message-generator link (coach sidebar). Default true. */
+  includeAi?: boolean;
+};
+
 export function marketingNavItems(
   prefix: "/coach" | "/admin",
-  options?: { includeBossScore?: boolean }
+  options?: MarketingNavOptions
 ): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
     { href: `${prefix}/prospects`, label: "Prospects", icon: IconUserPlus },
-    { href: `${prefix}/funnel-analyzer`, label: "Funnel Analyzer", icon: IconFilter },
-    { href: `${prefix}/message-generator`, label: "AI", icon: IconSparkles },
+    callsNavItem(prefix),
   ];
-  return options?.includeBossScore ? [bossScoreNavItem(prefix), ...items] : items;
+  if (options?.includeBossScore) {
+    items.push(bossScoreNavItem(prefix));
+  }
+  items.push({
+    href: `${prefix}/funnel-analyzer`,
+    label: "Funnel Analyzer",
+    icon: IconFilter,
+  });
+  if (options?.includeAi !== false) {
+    items.push({ href: `${prefix}/message-generator`, label: "AI", icon: IconSparkles });
+  }
+  return items;
+}
+
+/** Marketing links shown to coaches (BOSS score, prospects, funnel — no AI). */
+export function coachMarketingNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
+  return marketingNavItems(prefix, { includeBossScore: true, includeAi: false });
 }
 
 export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {

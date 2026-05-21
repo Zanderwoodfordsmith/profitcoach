@@ -11,6 +11,7 @@ import {
   SCORE_PASTEL_COLORS,
   type QualifyingData,
   type QualifyingFieldDef,
+  type ScorecardPillar,
 } from "./bossScorecardQuestions";
 
 export type ScorecardScore = 1 | 2 | 3 | 4 | 5;
@@ -302,12 +303,40 @@ export type ScorecardFocusItem = {
   rag: ScoreRag;
 };
 
+/** Lower = higher priority when scores tie. Velocity > Value > Vision > Foundation. */
+const PILLAR_FOCUS_PRIORITY: Record<ScorecardPillar, number> = {
+  velocity: 0,
+  value: 1,
+  vision: 2,
+  foundation: 3,
+  outcome: 99,
+};
+
+const AREA_FOCUS_ORDER = new Map(
+  BEST_PRACTICE_QUESTIONS.map((q, index) => [q.id, index])
+);
+
+function compareScorecardFocusAreas(
+  a: AreaBreakdownItem,
+  b: AreaBreakdownItem
+): number {
+  if (a.score !== b.score) return a.score - b.score;
+  const pillarA =
+    PILLAR_FOCUS_PRIORITY[a.pillar as ScorecardPillar] ?? 99;
+  const pillarB =
+    PILLAR_FOCUS_PRIORITY[b.pillar as ScorecardPillar] ?? 99;
+  if (pillarA !== pillarB) return pillarA - pillarB;
+  return (
+    (AREA_FOCUS_ORDER.get(a.id) ?? 99) - (AREA_FOCUS_ORDER.get(b.id) ?? 99)
+  );
+}
+
 export function computeScorecardFocusAreas(
   answers: ScorecardAnswers,
   limit = 3
 ): ScorecardFocusItem[] {
   return computeAreaBreakdown(answers)
-    .sort((a, b) => a.score - b.score)
+    .sort(compareScorecardFocusAreas)
     .slice(0, limit)
     .map((item) => ({
       id: item.id,

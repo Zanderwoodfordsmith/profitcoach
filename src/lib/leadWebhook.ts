@@ -1,3 +1,4 @@
+import type { BossScorecardGhlCustomFields } from "@/lib/ghlLeadWebhookCustomFields";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
@@ -7,16 +8,37 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
  *   the assessment has not yet completed, and "assessment_completed" when the
  *   prospect finishes the assessment (regardless of whether a partial event
  *   has already fired). The webhook is intentionally fire-and-forget on both
- *   events; downstream tools (CRMs / Zapier) should dedupe on `contact_id`.
+ *   events; downstream tools (CRMs / GHL) should dedupe on `contact_id`.
+ * - `status` discriminates GHL workflows on one URL: contact_created_email,
+ *   contact_created_phone, assessment_completed, scorecard_abandoned.
  * - `scorecard_abandoned` fires when a prospect leaves the BOSS Scorecard mid-flow.
  * - `total_score` is only included on completion.
+ * - On BOSS `assessment_completed`, flat GHL custom fields (human-readable labels)
+ *   are merged at the top level — see `BossScorecardGhlCustomFields`. Not sent on
+ *   email/phone capture (prospect has not answered qualifying questions yet).
  */
 export type LeadWebhookEvent =
   | "lead_captured"
   | "assessment_completed"
   | "scorecard_abandoned";
 
+/** GHL workflow discriminator; branches on one inbound webhook URL. */
+export type LeadWebhookStatus =
+  | "contact_created_email"
+  | "contact_created_phone"
+  | "assessment_completed"
+  | "scorecard_abandoned";
+
 export type AssessmentType = "diagnostic_50" | "boss_scorecard";
+
+export function resolveLeadWebhookStatus(
+  event: LeadWebhookEvent,
+  options?: { hasPhone?: boolean }
+): LeadWebhookStatus {
+  if (event === "assessment_completed") return "assessment_completed";
+  if (event === "scorecard_abandoned") return "scorecard_abandoned";
+  return options?.hasPhone ? "contact_created_phone" : "contact_created_email";
+}
 
 export type LeadWebhookContactPayload = {
   contact_id: string | null;
@@ -40,6 +62,7 @@ export type ScorecardQualifyingWebhook = {
 
 export type LeadWebhookPayload = {
   event: LeadWebhookEvent;
+  status: LeadWebhookStatus;
   coach_slug: string | null;
   coach_id: string;
   contact: LeadWebhookContactPayload;
@@ -57,7 +80,9 @@ export type LeadWebhookPayload = {
   completed_at?: string;
   last_screen_reached?: number;
   abandonment_tag?: string;
-};
+  /** Shareable BOSS scorecard results URL (assessment_completed only). */
+  report_link?: string | null;
+} & Partial<BossScorecardGhlCustomFields>;
 
 /**
  * Loads the coach's webhook URL by id. Returns null when no URL is configured
