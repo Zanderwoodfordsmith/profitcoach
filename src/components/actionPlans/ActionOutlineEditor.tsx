@@ -17,7 +17,6 @@ import {
 } from "@/lib/actionPlans/actionOutlineUtils";
 import {
   Calendar,
-  CalendarPlus,
   Check,
   ChevronDown,
   ChevronRight,
@@ -36,6 +35,7 @@ type ActionOutlineEditorProps = {
   isRowLocked?: (index: number, item: ActionOutlineLine) => boolean;
   onToggleDone?: (index: number, item: ActionOutlineLine) => void;
   showAutoCompleteRule?: boolean;
+  fullWidth?: boolean;
   loading?: boolean;
   emptyMessage?: string;
 };
@@ -47,6 +47,7 @@ export function ActionOutlineEditor({
   isRowLocked,
   onToggleDone,
   showAutoCompleteRule = false,
+  fullWidth = false,
   loading = false,
   emptyMessage = "No actions yet. Add your first one above.",
 }: ActionOutlineEditorProps) {
@@ -56,7 +57,8 @@ export function ActionOutlineEditor({
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [projectNextActions, setProjectNextActions] = useState<Record<string, string>>({});
 
-  const showScheduleColumns = mode === "coach";
+  const showEstimateColumn = mode === "coach" || mode === "template";
+  const showDateColumns = mode === "coach";
 
   const rowLocked = (index: number) => {
     const item = items[index];
@@ -246,12 +248,16 @@ export function ActionOutlineEditor({
   };
 
   const gridCols = showAutoCompleteRule
-    ? showScheduleColumns
+    ? showDateColumns
       ? "grid-cols-[minmax(0,1fr)_110px_145px_145px_95px_160px_24px]"
-      : "grid-cols-[minmax(0,1fr)_160px_24px]"
-    : showScheduleColumns
+      : showEstimateColumn
+        ? "grid-cols-[minmax(0,1fr)_110px_160px_24px]"
+        : "grid-cols-[minmax(0,1fr)_160px_24px]"
+    : showDateColumns
       ? "grid-cols-[minmax(0,1fr)_110px_145px_145px_95px_24px]"
-      : "grid-cols-[minmax(0,1fr)_24px]";
+      : showEstimateColumn
+        ? "grid-cols-[minmax(0,1fr)_110px_24px]"
+        : "grid-cols-[minmax(0,1fr)_24px]";
 
   const renderAutoCompleteSelect = (index: number, item: ActionOutlineLine) => {
     if (!showAutoCompleteRule || item.depth === 0) {
@@ -354,21 +360,24 @@ export function ActionOutlineEditor({
             />
           )}
         </div>
-        {showScheduleColumns ? (
+        {showEstimateColumn ? (
+          <label className="relative block w-full">
+            <input
+              value={item.estimate}
+              readOnly={locked}
+              onChange={(e) => onEditEstimate(index, e.target.value)}
+              placeholder={mode === "template" ? "e.g. 30m" : undefined}
+              className="peer w-full border-0 bg-transparent px-1 py-1 text-center text-sm text-slate-600 outline-none ring-0 transition focus:text-slate-800"
+            />
+            {!item.estimate ? (
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 transition peer-focus:opacity-0">
+                <Hourglass className="h-4 w-4" />
+              </span>
+            ) : null}
+          </label>
+        ) : null}
+        {showDateColumns ? (
           <>
-            <label className="relative block w-full">
-              <input
-                value={item.estimate}
-                readOnly={locked}
-                onChange={(e) => onEditEstimate(index, e.target.value)}
-                className="peer w-full border-0 bg-transparent px-1 py-1 text-center text-sm text-slate-600 outline-none ring-0 transition focus:text-slate-800"
-              />
-              {!item.estimate ? (
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-slate-400 transition peer-focus:opacity-0">
-                  <Hourglass className="h-4 w-4" />
-                </span>
-              ) : null}
-            </label>
             <label className="relative block w-full">
               <input
                 type="datetime-local"
@@ -441,11 +450,11 @@ export function ActionOutlineEditor({
   };
 
   return (
-    <div className="mx-auto w-full max-w-5xl pb-8 pr-4">
+    <div className={`w-full pb-8 ${fullWidth ? "" : "mx-auto max-w-5xl pr-4"}`}>
       <div>
         {items.length ? (
           <ul className="space-y-2 px-2 pb-2 pt-2">
-            {showScheduleColumns ? (
+            {showDateColumns ? (
               <li className="flex items-center justify-end px-2 pb-2">
                 <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
                   Sort by
@@ -463,11 +472,13 @@ export function ActionOutlineEditor({
             ) : null}
             <li className={`${gridCols} grid items-center gap-2 px-2 pb-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500`}>
               <span>Action</span>
-              {showScheduleColumns ? (
+              {showEstimateColumn ? (
+                <span className="flex items-center justify-center">
+                  <Hourglass className="h-4 w-4" aria-label="Time estimate" />
+                </span>
+              ) : null}
+              {showDateColumns ? (
                 <>
-                  <span className="flex items-center">
-                    <CalendarPlus className="h-4 w-4" aria-label="Time estimate" />
-                  </span>
                   <span>Start</span>
                   <span>Due</span>
                   <span>Repeat</span>
@@ -591,9 +602,9 @@ export function ActionOutlineEditor({
                                       className="min-w-0 flex-1 bg-transparent py-1 text-base text-slate-800 outline-none placeholder:text-slate-400"
                                     />
                                   </div>
-                                  {showScheduleColumns ? (
+                                  {showEstimateColumn ? <span /> : null}
+                                  {showDateColumns ? (
                                     <>
-                                      <span />
                                       <span />
                                       <span />
                                       <span />
@@ -646,9 +657,9 @@ export function ActionOutlineEditor({
                     className="min-w-0 flex-1 bg-transparent py-1 text-base text-slate-800 outline-none placeholder:text-slate-400"
                   />
                 </div>
-                {showScheduleColumns ? (
+                {showEstimateColumn ? <span /> : null}
+                {showDateColumns ? (
                   <>
-                    <span />
                     <span />
                     <span />
                     <span />

@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { parseRuleFromDb } from "@/lib/actionPlans/autoCompleteRules";
-import { outlineLineToDbInsert } from "@/lib/actionPlans/mappers";
+import { outlineLineToDbInsert, isMissingEstimateColumnError } from "@/lib/actionPlans/mappers";
 import type { PushActionPlanResult } from "@/lib/actionPlans/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -51,11 +51,35 @@ export async function pushActionPlanToCoaches(input: {
   if (templateError) throw templateError;
   if (!template) throw new Error("Template not found.");
 
-  const { data: templateItems, error: itemsError } = await supabaseAdmin
+  type TemplateItemRow = {
+    id: string;
+    text: string;
+    depth: number;
+    sort_order: number;
+    estimate?: string | null;
+    auto_complete_rule: unknown;
+  };
+
+  let templateItems: TemplateItemRow[] | null = null;
+  let itemsError: { message?: string; code?: string } | null = null;
+
+  const withEstimate = await supabaseAdmin
     .from("action_plan_template_items")
-    .select("id, text, depth, sort_order, auto_complete_rule")
+    .select("id, text, depth, sort_order, estimate, auto_complete_rule")
     .eq("template_id", input.templateId)
     .order("sort_order", { ascending: true });
+  templateItems = withEstimate.data;
+  itemsError = withEstimate.error;
+
+  if (itemsError && isMissingEstimateColumnError(itemsError)) {
+    const withoutEstimate = await supabaseAdmin
+      .from("action_plan_template_items")
+      .select("id, text, depth, sort_order, auto_complete_rule")
+      .eq("template_id", input.templateId)
+      .order("sort_order", { ascending: true });
+    templateItems = withoutEstimate.data;
+    itemsError = withoutEstimate.error;
+  }
   if (itemsError) throw itemsError;
 
   const items = templateItems ?? [];
@@ -105,7 +129,7 @@ export async function pushActionPlanToCoaches(input: {
           text: item.text,
           done: false,
           depth: item.depth,
-          estimate: "",
+          estimate: item.estimate ?? "",
           startAt: "",
           dueAt: "",
           recurrence: "none" as const,

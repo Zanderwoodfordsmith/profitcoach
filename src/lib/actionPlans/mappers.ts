@@ -30,6 +30,7 @@ type DbTemplateItem = {
   text: string;
   depth: number;
   sort_order: number;
+  estimate?: string | null;
   auto_complete_rule: unknown;
 };
 
@@ -109,7 +110,7 @@ export function templateItemToOutlineLine(row: DbTemplateItem): ActionOutlineLin
     text: row.text,
     done: false,
     depth: row.depth,
-    estimate: "",
+    estimate: row.estimate ?? "",
     startAt: "",
     dueAt: "",
     recurrence: "none",
@@ -122,8 +123,9 @@ export function outlineLineToTemplateItemInsert(
   templateId: string,
   line: ActionOutlineLine,
   sortOrder: number,
+  options?: { includeEstimate?: boolean },
 ) {
-  return {
+  const row: Record<string, unknown> = {
     id: line.id,
     template_id: templateId,
     text: line.text,
@@ -131,6 +133,21 @@ export function outlineLineToTemplateItemInsert(
     sort_order: sortOrder,
     auto_complete_rule: line.autoCompleteRule ? { rule: line.autoCompleteRule } : null,
   };
+  if (options?.includeEstimate !== false) {
+    row.estimate = line.estimate ?? "";
+  }
+  return row;
+}
+
+export function isMissingEstimateColumnError(error: { message?: string; code?: string } | null) {
+  if (!error) return false;
+  const message = error.message?.toLowerCase() ?? "";
+  return (
+    error.code === "PGRST204" ||
+    error.code === "42703" ||
+    message.includes("estimate") ||
+    message.includes("schema cache")
+  );
 }
 
 export { fromDatetimeLocalValue, toDatetimeLocalValue };

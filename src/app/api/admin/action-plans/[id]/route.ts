@@ -1,4 +1,5 @@
 import {
+  isMissingEstimateColumnError,
   outlineLineToTemplateItemInsert,
   templateItemToOutlineLine,
 } from "@/lib/actionPlans/mappers";
@@ -104,9 +105,22 @@ export async function PATCH(
         const rows = items.map((item, index) =>
           outlineLineToTemplateItemInsert(id, { ...item, id: item.id || randomUUID() }, index),
         );
-        const { error: insertError } = await supabaseAdmin
+        let { error: insertError } = await supabaseAdmin
           .from("action_plan_template_items")
           .insert(rows);
+        if (insertError && isMissingEstimateColumnError(insertError)) {
+          const fallbackRows = items.map((item, index) =>
+            outlineLineToTemplateItemInsert(
+              id,
+              { ...item, id: item.id || randomUUID() },
+              index,
+              { includeEstimate: false },
+            ),
+          );
+          ({ error: insertError } = await supabaseAdmin
+            .from("action_plan_template_items")
+            .insert(fallbackRows));
+        }
         if (insertError) {
           return NextResponse.json({ error: insertError.message }, { status: 500 });
         }

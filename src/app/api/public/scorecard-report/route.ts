@@ -23,18 +23,7 @@ export async function GET(request: Request) {
   const { data: row, error } = await supabaseAdmin
     .from("assessments")
     .select(
-      `
-      id,
-      assessment_type,
-      total_score,
-      answers,
-      qualifying_data,
-      open_text,
-      boss_level,
-      report_token,
-      coaches ( slug ),
-      contacts ( full_name, first_name )
-    `
+      "id, assessment_type, total_score, answers, qualifying_data, open_text, boss_level, report_token, coach_id, contact_id"
     )
     .eq("report_token", token)
     .maybeSingle();
@@ -48,13 +37,23 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
   }
 
-  const coach = row.coaches as { slug?: string } | { slug?: string }[] | null;
-  const coachSlug = (
-    Array.isArray(coach) ? coach[0]?.slug : coach?.slug
-  )
-    ?.trim()
-    .toLowerCase();
+  const coachId = (row.coach_id as string | null)?.trim() ?? "";
+  if (!coachId) {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
 
+  const { data: coachRow, error: coachError } = await supabaseAdmin
+    .from("coaches")
+    .select("slug")
+    .eq("id", coachId)
+    .maybeSingle();
+
+  if (coachError) {
+    console.error("scorecard-report coach lookup:", coachError);
+    return NextResponse.json({ error: "Could not load report" }, { status: 500 });
+  }
+
+  const coachSlug = coachRow?.slug?.trim().toLowerCase() ?? "";
   if (!coachSlug) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
   }
@@ -63,21 +62,34 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Report not found" }, { status: 404 });
   }
 
-  const contact = row.contacts as
-    | {
-        full_name?: string | null;
-        first_name?: string | null;
+  let prospectFirstName: string | null = null;
+  const contactId = (row.contact_id as string | null)?.trim() ?? "";
+  if (contactId) {
+    const { data: contactRow, error: contactError } = await supabaseAdmin
+      .from("contacts")
+      .select("full_name, first_name")
+      .eq("id", contactId)
+      .maybeSingle();
+
+    if (contactError) {
+      if (contactError.code === "42703") {
+        const { data: fallbackContact } = await supabaseAdmin
+          .from("contacts")
+          .select("full_name")
+          .eq("id", contactId)
+          .maybeSingle();
+        prospectFirstName =
+          splitFullName(fallbackContact?.full_name ?? "").first_name || null;
+      } else {
+        console.error("scorecard-report contact lookup:", contactError);
       }
-    | {
-        full_name?: string | null;
-        first_name?: string | null;
-      }[]
-    | null;
-  const contactRow = Array.isArray(contact) ? contact[0] : contact;
-  const prospectFirstName =
-    contactRow?.first_name?.trim() ||
-    splitFullName(contactRow?.full_name ?? "").first_name ||
-    null;
+    } else {
+      prospectFirstName =
+        contactRow?.first_name?.trim() ||
+        splitFullName(contactRow?.full_name ?? "").first_name ||
+        null;
+    }
+  }
 
   const answers = (row.answers ?? {}) as ScorecardAnswers;
   const qualifying = (row.qualifying_data ?? {}) as QualifyingData;

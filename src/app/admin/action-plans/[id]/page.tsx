@@ -139,8 +139,8 @@ export default function AdminActionPlanEditorPage() {
         tabs={<CoachesHubTabs />}
       />
 
-      <div className="mx-auto max-w-5xl px-4 py-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+        <div className="mb-0 flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/admin/action-plans"
             className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"

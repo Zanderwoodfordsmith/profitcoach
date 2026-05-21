@@ -15,6 +15,7 @@ create table if not exists public.action_plan_template_items (
   text text not null default '',
   depth int not null default 0 check (depth >= 0 and depth <= 6),
   sort_order int not null default 0,
+  estimate text not null default '',
   auto_complete_rule jsonb,
   created_at timestamptz not null default now()
 );
