@@ -1,0 +1,24 @@
+{
+  "first_name": "Alex",
+  "last_name": "Prospect",
+  "full_name": "Alex Prospect",
+  "email": "alex.prospect@example.com",
+  "phone": "+441234567890",
+  "location": {
+    "id": "test-location-id",
+    "name": "Test Coach Location"
+  },
+  "calendar": {
+    "id": "YBxvoiQH6HcHjHYrOWkU",
+    "calendarName": "Strategy Call",
+    "title": "BOSS Scorecard Review",
+    "selectedTimezone": "Europe/London",
+    "appointmentId": "test-appointment-123",
+    "startTime": "2026-05-22T15:00:00",
+    "endTime": "2026-05-22T15:30:00",
+    "status": "confirmed",
+    "appoinmentStatus": "confirmed",
+    "notes": "Test webhook payload",
+    "address": ""
+  }
+}

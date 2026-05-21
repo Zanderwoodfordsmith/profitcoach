@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { extractGhlCalendarIdFromEmbed } from "@/lib/extractGhlCalendarIdFromEmbed";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
@@ -438,10 +439,12 @@ export async function PATCH(request: Request) {
   if (body.calendar_embed_code !== undefined) {
     if (body.calendar_embed_code === null) {
       coachUpdates.calendar_embed_code = null;
+      coachUpdates.ghl_calendar_id = null;
     } else if (typeof body.calendar_embed_code === "string") {
       const trimmed = body.calendar_embed_code.trim();
       if (trimmed === "") {
         coachUpdates.calendar_embed_code = null;
+        coachUpdates.ghl_calendar_id = null;
       } else if (trimmed.length > 20000) {
         return NextResponse.json(
           { error: "Calendar embed code is too long." },
@@ -449,6 +452,7 @@ export async function PATCH(request: Request) {
         );
       } else {
         coachUpdates.calendar_embed_code = trimmed;
+        coachUpdates.ghl_calendar_id = extractGhlCalendarIdFromEmbed(trimmed);
       }
     } else {
       return NextResponse.json(
@@ -509,7 +513,22 @@ export async function PATCH(request: Request) {
       .from("coaches")
       .update(coachUpdates)
       .eq("id", coachId);
-    if (coachRes.error) {
+
+    let coachUpdateError = coachRes.error;
+    if (
+      coachUpdateError?.code === "42703" &&
+      Object.prototype.hasOwnProperty.call(coachUpdates, "ghl_calendar_id")
+    ) {
+      const { ghl_calendar_id: _dropped, ...withoutGhlCalendarId } =
+        coachUpdates;
+      const retry = await supabaseAdmin
+        .from("coaches")
+        .update(withoutGhlCalendarId)
+        .eq("id", coachId);
+      coachUpdateError = retry.error;
+    }
+
+    if (coachUpdateError) {
       const includesWebhook = Object.prototype.hasOwnProperty.call(
         coachUpdates,
         "lead_webhook_url"
@@ -520,7 +539,7 @@ export async function PATCH(request: Request) {
       );
       let msg: string;
       let status = 500;
-      if (coachRes.error.code === "42703") {
+      if (coachUpdateError.code === "42703") {
         if (includesWebhook && includesCalendarEmbed) {
           msg =
             "Coach settings columns are missing. Deploy the latest database migrations.";
@@ -534,12 +553,12 @@ export async function PATCH(request: Request) {
           msg =
             "Coach settings require a database migration. Ask your team to deploy latest migrations.";
         }
-      } else if (coachRes.error.code === "23514" && includesWebhook) {
+      } else if (coachUpdateError.code === "23514" && includesWebhook) {
         msg = "Lead webhook URL must be a valid http(s) URL.";
         status = 400;
       } else {
         msg =
-          (coachRes.error as { message?: string }).message ??
+          (coachUpdateError as { message?: string }).message ??
           "Could not update directory settings";
       }
       return NextResponse.json({ error: msg }, { status });
