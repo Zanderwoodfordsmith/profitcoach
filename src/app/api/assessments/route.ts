@@ -15,7 +15,11 @@ import {
   type AssessmentType,
 } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
-import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
+import {
+  ensurePrimaryCoachRow,
+  primaryCoachSetupErrorMessage,
+  resolvePrimaryCoachSlug,
+} from "@/lib/primaryCoach";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -134,7 +138,7 @@ async function lookupCoachBySlug(
   return coach?.id ? { id: coach.id as string } : null;
 }
 
-/** Resolves coach for scorecard: Pam for general/BCA/missing/invalid slugs. */
+/** Resolves coach for scorecard: primary coach for general/BCA/missing/invalid slugs. */
 async function resolveCoachForAssessment(
   coachSlugInput?: string
 ): Promise<{ coachId: string; coachSlug: string } | NextResponse> {
@@ -175,12 +179,16 @@ async function resolveCoachForAssessment(
     }
   }
 
+  if (!coach && coachSlug === primarySlug) {
+    coach = await ensurePrimaryCoachRow();
+  }
+
   if (!coach) {
     return NextResponse.json(
       {
         error:
           coachSlug === CENTRAL_SLUG_LOWER || coachSlug === primarySlug
-            ? "Primary coach is not set up. Ensure Pam has a coach profile (coaches row) in Admin."
+            ? primaryCoachSetupErrorMessage()
             : "Coach not found for this link.",
       },
       { status: 400 }

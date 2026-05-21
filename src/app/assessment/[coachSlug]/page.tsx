@@ -74,7 +74,7 @@ function buildScreens(): Screen[] {
   return screens;
 }
 
-/** General /score and BCA links assign to Pam; real coach slugs pass through. */
+/** General /score and BCA links use the primary coach; real coach slugs pass through. */
 function assessmentCoachSlugForApi(raw: string): string | undefined {
   const slug = raw.trim().toLowerCase();
   if (!slug || slug === "bca") return undefined;

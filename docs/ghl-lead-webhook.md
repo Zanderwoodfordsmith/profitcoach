@@ -31,7 +31,9 @@ Legacy field **`event`** is still sent (`lead_captured`, `assessment_completed`,
 - Fallback: **`contact.email`** per coach.
 - Email and phone steps may fire twice for the same person; branch on `status`, do not create duplicate contacts in GHL when IDs match.
 
-## Payload shape (summary)
+## Payload shape (flat JSON for GHL)
+
+The app POSTs a **flat** JSON object (no nested `contact` wrapper). Map workflow variables from top-level keys, e.g. `{{inboundWebhookRequest.email}}`, `{{inboundWebhookRequest.status}}`, `{{inboundWebhookRequest.boss_score}}`.
 
 ```json
 {
@@ -39,15 +41,13 @@ Legacy field **`event`** is still sent (`lead_captured`, `assessment_completed`,
   "status": "contact_created_email",
   "coach_slug": "profit-coach-snapshot",
   "coach_id": "<uuid>",
-  "contact": {
-    "contact_id": "<uuid>",
-    "email": "prospect@example.com",
-    "phone": null,
-    "first_name": "Jane",
-    "last_name": "Doe",
-    "full_name": "Jane Doe",
-    "business_name": null
-  },
+  "contact_id": "<uuid>",
+  "email": "prospect@example.com",
+  "phone": null,
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "full_name": "Jane Doe",
+  "business_name": null,
   "source": "prospect_link",
   "fired_at": "2026-05-21T12:00:00.000Z"
 }
@@ -82,14 +82,23 @@ Focus areas use the same ordering as the scorecard report: lowest scores first; 
 
 Legacy nested `qualifying` (raw option codes) and `answers` (per-question scores) are still sent for debugging and older automations.
 
+## Troubleshooting empty / partial mapping
+
+If GHL only shows `first_name` and `email` (or `content-length` ~47), the workflow did **not** receive the app payload. Common causes:
+
+1. **Manual test in GHL** with a tiny sample body — use curl below with the full flat JSON.
+2. **Zapier in the middle** (`User-Agent: Zapier`) — Zapier must forward the **raw JSON body** unchanged; a Formatter step often drops fields.
+3. **Wrong variable paths** — use `{{inboundWebhookRequest.email}}`, not `contact.email` (we flatten contact fields to the root).
+4. **Trigger not re-tested** after a new field was added — send a new webhook, then refresh mapping in the workflow builder.
+
 ## Manual test
 
-GHL returns an error on GET with no body. POST JSON:
+GHL returns an error on GET with no body. POST flat JSON:
 
 ```bash
 curl -X POST 'https://services.leadconnectorhq.com/hooks/nkMdG4ieburQlR9ypQYd/webhook-trigger/UtLyJ7v3Vph4rBhSztbH' \
   -H 'Content-Type: application/json' \
-  -d '{"status":"contact_created_email","event":"lead_captured","contact":{"email":"test@example.com"}}'
+  -d '{"status":"contact_created_email","event":"lead_captured","email":"test@example.com","first_name":"Test"}'
 ```
 
 ## Revert default `/score` coach

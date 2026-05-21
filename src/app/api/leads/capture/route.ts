@@ -9,7 +9,10 @@ import {
   resolveLeadWebhookStatus,
 } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
-import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
+import {
+  ensurePrimaryCoachRow,
+  resolvePrimaryCoachSlug,
+} from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -55,15 +58,28 @@ export async function POST(request: Request) {
       ? body.coachSlug.trim().toLowerCase()
       : await resolvePrimaryCoachSlug();
 
-  const { data: coach } = await supabaseAdmin
+  let { data: coach } = await supabaseAdmin
     .from("coaches")
     .select("id, slug")
     .eq("slug", coachSlug)
     .maybeSingle();
 
   if (!coach) {
-    // Don't 4xx the public funnel — central provisioning happens on the
-    // assessment-complete path. Just skip silently here.
+    const primarySlug = await resolvePrimaryCoachSlug();
+    if (coachSlug === primarySlug) {
+      const ensured = await ensurePrimaryCoachRow();
+      if (ensured) {
+        const { data: refetched } = await supabaseAdmin
+          .from("coaches")
+          .select("id, slug")
+          .eq("id", ensured.id)
+          .maybeSingle();
+        coach = refetched;
+      }
+    }
+  }
+
+  if (!coach) {
     return NextResponse.json(
       { ok: false, skipped: "coach_not_found" },
       { status: 200 }

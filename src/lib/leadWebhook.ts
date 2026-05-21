@@ -85,6 +85,53 @@ export type LeadWebhookPayload = {
 } & Partial<BossScorecardGhlCustomFields>;
 
 /**
+ * GHL inbound webhooks map top-level keys only — nested `contact.email` does not
+ * appear in the workflow variable picker. Flatten before POSTing to lead_webhook_url.
+ */
+export function flattenLeadWebhookPayloadForGhl(
+  payload: LeadWebhookPayload
+): Record<string, string | number | null> {
+  const { contact, qualifying, answers, ...rest } = payload;
+  const flat: Record<string, string | number | null> = {};
+
+  for (const [key, value] of Object.entries(rest)) {
+    if (value === undefined) continue;
+    if (value === null) {
+      flat[key] = null;
+      continue;
+    }
+    if (typeof value === "object") continue;
+    flat[key] = value;
+  }
+
+  if (contact) {
+    flat.contact_id = contact.contact_id;
+    flat.email = contact.email;
+    flat.first_name = contact.first_name;
+    flat.last_name = contact.last_name;
+    flat.full_name = contact.full_name;
+    flat.phone = contact.phone;
+    flat.business_name = contact.business_name;
+  }
+
+  if (qualifying) {
+    flat.qualifying_annual_revenue = qualifying.annual_revenue;
+    flat.qualifying_team_size = qualifying.team_size;
+    flat.qualifying_time_in_business = qualifying.time_in_business;
+    flat.qualifying_desired_outcome = qualifying.desired_outcome;
+    flat.qualifying_desired_outcome_other = qualifying.desired_outcome_other;
+    flat.qualifying_obstacles = qualifying.obstacles;
+    flat.qualifying_preferred_solution = qualifying.preferred_solution;
+  }
+
+  if (answers && Object.keys(answers).length > 0) {
+    flat.answers_json = JSON.stringify(answers);
+  }
+
+  return flat;
+}
+
+/**
  * Loads the coach's webhook URL by id. Returns null when no URL is configured
  * or the column is missing (e.g. migration hasn't run yet).
  */
@@ -125,7 +172,7 @@ export async function fireLeadWebhook(
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(flattenLeadWebhookPayloadForGhl(payload)),
         signal: controller.signal,
         cache: "no-store",
       });

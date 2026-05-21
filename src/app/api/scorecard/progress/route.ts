@@ -5,7 +5,10 @@ import {
   resolveLeadWebhookStatus,
 } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
-import { resolvePrimaryCoachSlug } from "@/lib/primaryCoach";
+import {
+  ensurePrimaryCoachRow,
+  resolvePrimaryCoachSlug,
+} from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -53,6 +56,13 @@ export async function POST(request: Request) {
       .maybeSingle();
     coach = fallback.data;
     if (coach?.id) coachSlug = primarySlug;
+  }
+
+  if (!coach?.id && coachSlug === primarySlug) {
+    const ensured = await ensurePrimaryCoachRow();
+    if (ensured) {
+      coach = { id: ensured.id };
+    }
   }
 
   if (!coach?.id) {
