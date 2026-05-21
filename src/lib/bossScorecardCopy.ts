@@ -66,6 +66,21 @@ export const SCORE_LEGEND = [
   { score: 5 as const, label: SMILEY_LABELS[5], color: SCORE_PASTEL_COLORS[5] },
 ];
 
+/** Assessment intro screen (before question 1). */
+export const SCORECARD_INTRO = {
+  titleAssessment: "Assessment",
+  subtitle:
+    "Score how your business runs across 15 questions in under 5 minutes and get your score out of 100.",
+  instruction: "Tap the face that matches reality on each question.",
+  whatYouGetDetailsLabel: "What you'll get",
+  whatYouGetBullets: [
+    "One score out of 100 and your owner level.",
+    "Your top focus areas and what to work on first.",
+    "A clear starting point on the biggest bottlenecks in your business.",
+  ],
+  startCta: "Start assessment",
+} as const;
+
 /** BOSS Focus card styling by score (1–5): dark → light gradient per colour. */
 export const SCORE_FOCUS_STYLE: Record<
   1 | 2 | 3 | 4 | 5,

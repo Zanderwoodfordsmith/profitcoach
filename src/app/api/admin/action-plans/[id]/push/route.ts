@@ -1,4 +1,4 @@
-import { pushActionPlanToCoaches, resolvePushCoachIds } from "@/lib/actionPlans/pushActionPlan";
+import { inviteCoachesToActionPlan, resolvePushCoachIds } from "@/lib/actionPlans/invitationService";
 import type { PushMode } from "@/lib/actionPlans/types";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { NextResponse } from "next/server";
@@ -47,15 +47,16 @@ export async function POST(
       return NextResponse.json({ error: "No coaches selected." }, { status: 400 });
     }
 
-    const result = await pushActionPlanToCoaches({
+    const result = await inviteCoachesToActionPlan({
       templateId: id,
       coachIds,
-      assignedBy: authCheck.userId,
+      invitedBy: authCheck.userId,
     });
 
     return NextResponse.json({
       result,
       recipientCount: coachIds.length,
+      mode: "invite",
     });
   } catch (err) {
     console.error("admin/action-plans/[id]/push POST error:", err);

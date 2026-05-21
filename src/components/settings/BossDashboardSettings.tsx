@@ -3,22 +3,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote";
 import {
   DashboardPageSection,
   PageHeaderUnderlineTabs,
   StickyPageHeader,
 } from "@/components/layout";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
-import { AccountSettingsCard } from "@/components/settings/AccountSettingsCard";
+import { ProfileSecurityFields } from "@/components/settings/ProfileSecurityFields";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
 import {
   OutlinedTextArea,
   OutlinedTextField,
 } from "@/components/settings/OutlinedFormField";
+import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
-import { getCalendarSyncStatus } from "@/lib/ghlCalendarSync";
+import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { buildPersonalisedAssessmentLink } from "@/lib/assessmentContactParams";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -42,7 +42,8 @@ type ProfileData = {
   directory_level: string | null;
   /** Outbound URL fired with prospect contact info + BOSS score. */
   lead_webhook_url?: string | null;
-  /** HTML snippet used to render a booking calendar on assessment results. */
+  crm_profile_name?: string | null;
+  crm_location_id?: string | null;
   calendar_embed_code?: string | null;
   crm_location_configured?: boolean;
   has_calendar_embed?: boolean;
@@ -54,7 +55,6 @@ type ProfileData = {
 
 export type BossDashboardSettingsTabId =
   | "profile"
-  | "account"
   | "funnel"
   | "workspace";
 
@@ -82,6 +82,9 @@ export function BossDashboardSettings({
   const [location, setLocation] = useState("");
   const [leadWebhookUrl, setLeadWebhookUrl] = useState("");
   const [calendarEmbedCode, setCalendarEmbedCode] = useState("");
+  const [coachSlug, setCoachSlug] = useState("");
+  const [crmProfileName, setCrmProfileName] = useState("");
+  const [crmLocationId, setCrmLocationId] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -93,7 +96,6 @@ export function BossDashboardSettings({
   const [directoryError, setDirectoryError] = useState<string | null>(null);
 
   const [landingEyebrow, setLandingEyebrow] = useState("");
-  const [landingVariantPref, setLandingVariantPref] = useState<"" | "a" | "b" | "c" | "d">("");
 
   const [brainSuperpowers, setBrainSuperpowers] = useState("");
   const [brainHobbies, setBrainHobbies] = useState("");
@@ -133,11 +135,11 @@ export function BossDashboardSettings({
   const calendarSyncStatus = useMemo(
     () =>
       getCalendarSyncStatus({
-        crmLocationConfigured: profile?.crm_location_configured,
-        calendarEmbedCode: calendarEmbedCode,
+        crmLocationId,
+        calendarEmbedCode,
         audience: "coach",
       }),
-    [profile?.crm_location_configured, calendarEmbedCode]
+    [crmLocationId, calendarEmbedCode]
   );
 
   const loadProfile = useCallback(async () => {
@@ -201,11 +203,10 @@ export function BossDashboardSettings({
     setLocation(data.location ?? "");
     setLeadWebhookUrl(data.lead_webhook_url ?? "");
     setCalendarEmbedCode(data.calendar_embed_code ?? "");
+    setCoachSlug(data.coach_slug ?? "");
+    setCrmProfileName(data.crm_profile_name ?? "");
+    setCrmLocationId(data.crm_location_id ?? "");
     setLandingEyebrow(data.landing_copy_overrides?.eyebrow ?? "");
-    const pref = data.landing_variant_preference;
-    setLandingVariantPref(
-      pref === "a" || pref === "b" || pref === "c" || pref === "d" ? pref : ""
-    );
     const ctx = data.ai_context ?? {};
     setBrainSuperpowers(ctx.superpowers ?? "");
     setBrainHobbies(ctx.hobbies_and_recent ?? "");
@@ -230,15 +231,16 @@ export function BossDashboardSettings({
   }, []);
 
   const assessmentLinkExample = useMemo(() => {
-    if (!profile?.coach_slug) return null;
+    const slug = coachSlug.trim();
+    if (!slug) return null;
     return buildPersonalisedAssessmentLink({
-      coachSlug: profile.coach_slug,
+      coachSlug: slug,
       firstName: "John",
       lastName: "Jones",
       email: "john@example.com",
       origin: appOrigin,
     });
-  }, [profile?.coach_slug, appOrigin]);
+  }, [coachSlug, appOrigin]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -327,6 +329,35 @@ export function BossDashboardSettings({
     e.preventDefault();
     setFunnelSaveMessage(null);
     setFunnelSaveError(null);
+
+    const normalizedSlug = coachSlug.toLowerCase().trim();
+    if (!normalizedSlug) {
+      setFunnelSaveMessage("error");
+      setFunnelSaveError("Slug is required.");
+      return;
+    }
+    if (!/^[a-z0-9-]+$/.test(normalizedSlug)) {
+      setFunnelSaveMessage("error");
+      setFunnelSaveError(
+        "Slug can only contain lowercase letters, numbers, and hyphens."
+      );
+      return;
+    }
+
+    const locationValidation = validateCrmLocationId(crmLocationId);
+    if (!locationValidation.ok) {
+      setFunnelSaveMessage("error");
+      setFunnelSaveError(locationValidation.error);
+      return;
+    }
+
+    const trimmedWebhook = leadWebhookUrl.trim();
+    if (trimmedWebhook && !/^https?:\/\//i.test(trimmedWebhook)) {
+      setFunnelSaveMessage("error");
+      setFunnelSaveError("Lead webhook URL must start with http:// or https://.");
+      return;
+    }
+
     const {
       data: { session },
     } = await supabaseClient.auth.getSession();
@@ -345,13 +376,14 @@ export function BossDashboardSettings({
       method: "PATCH",
       headers,
       body: JSON.stringify({
-        lead_webhook_url: leadWebhookUrl.trim() || null,
+        slug: normalizedSlug,
+        crm_profile_name: crmProfileName.trim() || null,
+        crm_location_id: locationValidation.value,
+        lead_webhook_url: trimmedWebhook || null,
         calendar_embed_code: calendarEmbedCode.trim() || null,
         landing_copy_overrides: landingEyebrow.trim()
           ? { eyebrow: landingEyebrow.trim() }
           : {},
-        landing_variant_preference:
-          landingVariantPref === "" ? null : landingVariantPref,
       }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -368,7 +400,8 @@ export function BossDashboardSettings({
   function handleGenerateAssessmentLink() {
     setLinkGenerateError(null);
     setLinkCopied(false);
-    if (!profile?.coach_slug) return;
+    const slug = coachSlug.trim();
+    if (!slug) return;
 
     const email = linkEmail.trim();
     if (!email) {
@@ -380,7 +413,7 @@ export function BossDashboardSettings({
     const origin = appOrigin;
     setGeneratedAssessmentLink(
       buildPersonalisedAssessmentLink({
-        coachSlug: profile.coach_slug,
+        coachSlug: slug,
         firstName: linkFirstName,
         lastName: linkLastName,
         email,
@@ -576,7 +609,6 @@ export function BossDashboardSettings({
 
   const tabDefs: { id: BossDashboardSettingsTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
-    { id: "account", label: "Account" },
     { id: "funnel", label: "Funnel" },
     { id: "workspace", label: "Workspace" },
   ];
@@ -584,7 +616,7 @@ export function BossDashboardSettings({
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, account, funnel links, and workspace."
+      description="Profile, funnel links, and workspace."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -602,15 +634,6 @@ export function BossDashboardSettings({
 
   const settingsBody = (
     <>
-      {activeTab === "account" ? (
-        <AccountSettingsCard
-          impersonatingCoachId={impersonatingCoachId}
-          timezoneIana={profile.timezone ?? null}
-          onTimezoneSaved={() => void loadProfile()}
-          showEmailPassword={false}
-        />
-      ) : null}
-
       {activeTab === "profile" ? (
       <form
         onSubmit={handleProfileSave}
@@ -750,6 +773,11 @@ export function BossDashboardSettings({
               </p>
             ) : null}
           </div>
+          <ProfileSecurityFields
+            impersonatingCoachId={impersonatingCoachId}
+            timezoneIana={profile.timezone ?? null}
+            onTimezoneSaved={() => void loadProfile()}
+          />
           </div>
         </section>
 
@@ -772,267 +800,40 @@ export function BossDashboardSettings({
       ) : null}
 
       {activeTab === "funnel" ? (
-        <form
-          onSubmit={handleFunnelSave}
-          className="flex w-full flex-col gap-8"
-        >
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Score link</h2>
-            {profile.coach_slug ? (
-              <>
-                <p className="mt-2 text-sm text-slate-600">
-                  Public funnel (landing opt-in first):{" "}
-                  <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-800">
-                    /score/{profile.coach_slug}
-                  </code>
-                </p>
-                <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <a
-                    className="font-medium text-sky-700 underline hover:text-sky-900"
-                    href={`/score/${encodeURIComponent(profile.coach_slug)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open score link
-                  </a>
-                </p>
-                <p className="mt-4 text-sm text-slate-600">
-                  Direct assessment (skips landing — use the link builder below
-                  for personalised outreach).
-                </p>
-                <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <a
-                    className="font-medium text-sky-700 underline hover:text-sky-900"
-                    href={`/assessment/${encodeURIComponent(profile.coach_slug)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open blank assessment link
-                  </a>
-                </p>
-                <p className="mt-4 text-xs text-slate-500">
-                  On the landing funnel, add{" "}
-                  <code className="rounded bg-slate-50 px-1">?company=</code> or{" "}
-                  <code className="rounded bg-slate-50 px-1">?prospect=</code> for
-                  one-off personalisation. Preview layouts from{" "}
-                  <code className="rounded bg-slate-50 px-1">/landing/a</code>
-                  {" "}through{" "}
-                  <code className="rounded bg-slate-50 px-1">/landing/d</code> with{" "}
-                  <code className="rounded bg-slate-50 px-1">?coach=</code>.
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-amber-800">
-                You need a coach slug before you can share a score link.
-              </p>
-            )}
-            <div className="mt-6 max-w-lg space-y-4">
-              <OutlinedTextField
-                id="landing_eyebrow"
-                label="Hero eyebrow (version B only)"
-                value={landingEyebrow}
-                onChange={(e) => setLandingEyebrow(e.target.value)}
-                placeholder="e.g. For engineering founders, £500K–£5M"
-                wrapperClassName="w-full max-w-lg"
-              />
-              <div>
-                <label
-                  htmlFor="landing_variant_pref"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Default version (not applied to /score while it opens D only)
-                </label>
-                <select
-                  id="landing_variant_pref"
-                  className="mt-1.5 block w-full max-w-md rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  value={landingVariantPref}
-                  onChange={(e) =>
-                    setLandingVariantPref(
-                      e.target.value === "a" ||
-                        e.target.value === "b" ||
-                        e.target.value === "c" ||
-                        e.target.value === "d"
-                        ? e.target.value
-                        : ""
-                    )
-                  }
-                >
-                  <option value="">No preference</option>
-                  <option value="a">Always A</option>
-                  <option value="b">Always B</option>
-                  <option value="c">Always C</option>
-                  <option value="d">Always D (same as C, split hero)</option>
-                </select>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">
-              Personalised assessment link
-            </h2>
-            {profile?.coach_slug ? (
-              <>
-                <p className="mt-2 text-sm text-slate-600">
-                  Send a prospect straight into the assessment — no landing page,
-                  no phone required. If you include their email, we create the
-                  contact automatically when they open the link.
-                </p>
-                <p className="mt-3 text-xs text-slate-500">
-                  Example:{" "}
-                  <code className="rounded bg-slate-50 px-1 break-all">
-                    {assessmentLinkExample}
-                  </code>
-                </p>
-
-                <div className="mt-6 grid max-w-2xl gap-4 sm:grid-cols-2">
-                  <OutlinedTextField
-                    id="link_first_name"
-                    label="Prospect first name"
-                    value={linkFirstName}
-                    onChange={(e) => setLinkFirstName(e.target.value)}
-                    placeholder="John"
-                    wrapperClassName="w-full"
-                  />
-                  <OutlinedTextField
-                    id="link_last_name"
-                    label="Prospect last name"
-                    value={linkLastName}
-                    onChange={(e) => setLinkLastName(e.target.value)}
-                    placeholder="Jones"
-                    wrapperClassName="w-full"
-                  />
-                  <OutlinedTextField
-                    id="link_email"
-                    label="Prospect email"
-                    type="email"
-                    value={linkEmail}
-                    onChange={(e) => setLinkEmail(e.target.value)}
-                    placeholder="john@example.com"
-                    wrapperClassName="w-full sm:col-span-2"
-                  />
-                  <OutlinedTextField
-                    id="link_phone"
-                    label="Prospect phone (optional)"
-                    type="tel"
-                    value={linkPhone}
-                    onChange={(e) => setLinkPhone(e.target.value)}
-                    placeholder="+44 7700 900123"
-                    wrapperClassName="w-full sm:col-span-2"
-                  />
-                </div>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleGenerateAssessmentLink}
-                    className="rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700"
-                  >
-                    Generate link
-                  </button>
-                  {linkGenerateError ? (
-                    <span className="text-sm text-rose-600">{linkGenerateError}</span>
-                  ) : null}
-                </div>
-
-                {generatedAssessmentLink ? (
-                  <div className="mt-6 max-w-2xl space-y-3">
-                    <label
-                      htmlFor="generated_assessment_link"
-                      className="block text-sm font-medium text-slate-700"
-                    >
-                      Your link
-                    </label>
-                    <textarea
-                      id="generated_assessment_link"
-                      readOnly
-                      rows={3}
-                      value={generatedAssessmentLink}
-                      className="block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-800 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                    />
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                      <button
-                        type="button"
-                        onClick={() => void handleCopyAssessmentLink()}
-                        className="font-medium text-sky-700 underline hover:text-sky-900"
-                      >
-                        {linkCopied ? "Copied!" : "Copy link"}
-                      </button>
-                      <a
-                        className="font-medium text-sky-700 underline hover:text-sky-900"
-                        href={generatedAssessmentLink}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Preview link
-                      </a>
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-amber-800">
-                You need a coach slug before you can generate assessment links.
-              </p>
-            )}
-          </section>
-
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">
-              Booking on results page
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Optional embed after the assessment. Leave blank to hide.
-            </p>
-            <div className="mt-4 max-w-3xl">
-              <OutlinedTextArea
-                id="calendar_embed_code"
-                label="Embed HTML"
-                rows={8}
-                value={calendarEmbedCode}
-                onChange={(e) => setCalendarEmbedCode(e.target.value)}
-                placeholder='<iframe src="https://..." …></iframe>'
-                wrapperClassName="w-full max-w-3xl"
-              />
-              <CalendarSyncStatusNote status={calendarSyncStatus} className="mt-3" />
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-semibold text-slate-900">Lead webhook</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Optional. We POST when we get an email and again with the score — same
-              URL; dedupe on <code className="text-xs">contact_id</code>.
-            </p>
-            <div className="mt-4 max-w-lg">
-              <OutlinedTextField
-                id="lead_webhook_url"
-                label="HTTPS URL"
-                type="url"
-                value={leadWebhookUrl}
-                onChange={(e) => setLeadWebhookUrl(e.target.value)}
-                placeholder="https://example.com/webhook"
-                wrapperClassName="w-full max-w-lg"
-              />
-            </div>
-          </section>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="submit"
-              disabled={funnelSaving}
-              className="rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
-            >
-              {funnelSaving ? "Saving…" : "Save funnel"}
-            </button>
-            {funnelSaveMessage === "success" ? (
-              <span className="text-sm text-green-700">Saved.</span>
-            ) : null}
-            {funnelSaveMessage === "error" && funnelSaveError ? (
-              <span className="text-sm text-rose-600">{funnelSaveError}</span>
-            ) : null}
-          </div>
-        </form>
+        <FunnelSettingsTab
+          appOrigin={appOrigin}
+          coachSlug={coachSlug}
+          onCoachSlugChange={setCoachSlug}
+          landingEyebrow={landingEyebrow}
+          onLandingEyebrowChange={setLandingEyebrow}
+          crmProfileName={crmProfileName}
+          onCrmProfileNameChange={setCrmProfileName}
+          crmLocationId={crmLocationId}
+          onCrmLocationIdChange={setCrmLocationId}
+          calendarEmbedCode={calendarEmbedCode}
+          onCalendarEmbedCodeChange={setCalendarEmbedCode}
+          leadWebhookUrl={leadWebhookUrl}
+          onLeadWebhookUrlChange={setLeadWebhookUrl}
+          calendarSyncStatus={calendarSyncStatus}
+          linkFirstName={linkFirstName}
+          onLinkFirstNameChange={setLinkFirstName}
+          linkLastName={linkLastName}
+          onLinkLastNameChange={setLinkLastName}
+          linkEmail={linkEmail}
+          onLinkEmailChange={setLinkEmail}
+          linkPhone={linkPhone}
+          onLinkPhoneChange={setLinkPhone}
+          assessmentLinkExample={assessmentLinkExample}
+          generatedAssessmentLink={generatedAssessmentLink}
+          linkGenerateError={linkGenerateError}
+          linkCopied={linkCopied}
+          onGenerateAssessmentLink={handleGenerateAssessmentLink}
+          onCopyAssessmentLink={() => void handleCopyAssessmentLink()}
+          saving={funnelSaving}
+          saveMessage={funnelSaveMessage}
+          saveError={funnelSaveError}
+          onSubmit={(e) => void handleFunnelSave(e)}
+        />
       ) : null}
 
       {activeTab === "workspace" ? (

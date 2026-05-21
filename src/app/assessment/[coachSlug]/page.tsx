@@ -11,8 +11,10 @@ import {
   SCORECARD_REPORT_GENERATING_MS,
   ScorecardReportGenerating,
 } from "@/components/scorecard/ScorecardReportGenerating";
+import { ScorecardAssessmentIntro } from "@/components/scorecard/ScorecardAssessmentIntro";
 import { ScorecardProgressBar } from "@/components/scorecard/ScorecardProgressBar";
 import { SmileyRatingScale } from "@/components/scorecard/SmileyRatingScale";
+import { SCORECARD_INTRO } from "@/lib/bossScorecardCopy";
 import {
   BEST_PRACTICE_QUESTIONS,
   OPEN_TEXT_HEADING,
@@ -49,6 +51,7 @@ const LANDING_CONTACT_KEY = "boss_landing_contact";
 const RESULT_STORAGE_KEY = "boss_scorecard_result";
 
 type Screen =
+  | { kind: "intro"; step: number }
   | { kind: "question"; step: number; questionId: string }
   | { kind: "outcome"; step: number; questionId: string }
   | { kind: "qualifying_journey"; step: number }
@@ -56,11 +59,14 @@ type Screen =
   | { kind: "open_text"; step: number };
 
 function buildScreens(): Screen[] {
-  const screens: Screen[] = BEST_PRACTICE_QUESTIONS.map((q) => ({
-    kind: "question" as const,
-    step: q.step,
-    questionId: q.id,
-  }));
+  const screens: Screen[] = [{ kind: "intro", step: 0 }];
+  screens.push(
+    ...BEST_PRACTICE_QUESTIONS.map((q) => ({
+      kind: "question" as const,
+      step: q.step,
+      questionId: q.id,
+    }))
+  );
   OUTCOME_QUESTIONS.forEach((q, index) => {
     screens.push({
       kind: "outcome",
@@ -394,8 +400,18 @@ export default function ScorecardAssessmentPage({
       className={`flex min-h-[100dvh] flex-col text-slate-900 ${outfit.className}`}
       style={{ background: SCORECARD_PAGE_BG }}
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pb-48 pt-6 md:px-10 md:pb-52 md:pt-8">
-        <div className="mb-8 flex flex-col items-center gap-2.5 text-center md:mb-10">
+      <div
+        className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pt-6 md:px-10 md:pt-8 ${
+          currentScreen.kind === "intro" ? "pb-10 md:pb-12" : "pb-48 md:pb-52"
+        }`}
+      >
+        <div
+          className={`flex flex-col items-center text-center ${
+            currentScreen.kind === "intro"
+              ? "mb-8 gap-3 md:mb-10 md:gap-4"
+              : "mb-8 gap-2.5 md:mb-10"
+          }`}
+        >
           <Image
             src="/profit-coach-logo.svg"
             alt="Profit Coach"
@@ -407,10 +423,19 @@ export default function ScorecardAssessmentPage({
           <h1 className="text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
             <BossScoreWordmark />
           </h1>
+          {currentScreen.kind === "intro" ? (
+            <p className="text-base font-medium uppercase tracking-[0.22em] text-slate-500 sm:text-lg">
+              {SCORECARD_INTRO.titleAssessment}
+            </p>
+          ) : null}
         </div>
 
         <main className="flex flex-1 flex-col">
-          <div className="relative pt-8">
+          <div
+            className={
+              currentScreen.kind === "intro" ? "relative" : "relative pt-8"
+            }
+          >
             <button
               type="button"
               onClick={goBack}
@@ -442,6 +467,13 @@ export default function ScorecardAssessmentPage({
               Next
               <span aria-hidden>→</span>
             </button>
+
+          {currentScreen.kind === "intro" ? (
+            <ScorecardAssessmentIntro
+              onStart={advanceScreen}
+              disabled={submitting || isGeneratingReport}
+            />
+          ) : null}
 
           {currentScreen.kind === "question" && question ? (
             <div className="rounded-3xl bg-white p-7 shadow-xl ring-1 ring-slate-200 md:p-11 lg:p-14">
@@ -588,7 +620,7 @@ export default function ScorecardAssessmentPage({
         </main>
       </div>
 
-      {!isGeneratingReport ? (
+      {!isGeneratingReport && currentScreen.kind !== "intro" ? (
         <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 shadow-[0_-10px_40px_-16px_rgba(15,23,42,0.14)] backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
           <div className="mx-auto w-[min(100%,56rem)] px-5 py-5 md:px-10 md:py-6">
             <ScorecardProgressBar
@@ -597,34 +629,6 @@ export default function ScorecardAssessmentPage({
             />
           </div>
         </footer>
-      ) : null}
-
-      {process.env.NODE_ENV === "development" ? (
-        <button
-          type="button"
-          disabled={submitting}
-          onClick={() => {
-            const fake: ScorecardAnswers = {};
-            for (let i = 1; i <= 10; i++) fake[`q${i}`] = 3;
-            fake.q11a = 3;
-            fake.q11b = 3;
-            fake.q11c = 3;
-            setAnswers(fake);
-            setQualifying({
-              annual_revenue: "500k_1m",
-              team_size: "2_5",
-              time_in_business: "3_5",
-              desired_outcome: "profit_income",
-              obstacles: ["books_courses"],
-              preferred_solution: "one_on_one",
-            });
-            setOpenText("Dev preview");
-            setScreenIndex(SCREENS.length - 1);
-          }}
-          className="fixed bottom-4 right-4 z-50 rounded-full border border-slate-300 bg-white px-3 py-2 text-xs text-slate-700 shadow-lg"
-        >
-          Dev: jump to end
-        </button>
       ) : null}
     </div>
   );

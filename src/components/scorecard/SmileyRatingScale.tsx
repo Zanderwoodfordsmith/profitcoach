@@ -12,6 +12,8 @@ type SmileyRatingScaleProps = {
   disabled?: boolean;
   /** Horizontal row saves vertical space on long questions; vertical stacks on narrow screens. */
   layout?: "horizontal" | "vertical";
+  /** Intro legend: faces + labels only, no button borders. */
+  variant?: "default" | "legend";
 };
 
 const SCORES = [1, 2, 3, 4, 5] as const;
@@ -51,7 +53,37 @@ export function SmileyRatingScale({
   onSelect,
   disabled = false,
   layout = "horizontal",
+  variant = "default",
 }: SmileyRatingScaleProps) {
+  if (layout === "horizontal" && variant === "legend") {
+    return (
+      <div
+        className="grid w-full grid-cols-5 gap-2.5 sm:gap-3 md:gap-4"
+        aria-hidden
+      >
+        {SCORES.map((score) => {
+          const color = SMILEY_COLORS[score];
+          return (
+            <div
+              key={score}
+              className="flex flex-col items-center gap-2.5 sm:gap-3"
+            >
+              <span
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.35)] sm:h-[4.5rem] sm:w-[4.5rem] md:h-[4.75rem] md:w-[4.75rem]"
+                style={{ backgroundColor: color }}
+              >
+                <SmileyFace score={score} />
+              </span>
+              <span className="text-center text-sm font-semibold leading-snug text-slate-600 sm:text-base">
+                {SMILEY_LABELS[score]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   if (layout === "vertical") {
     return (
       <div

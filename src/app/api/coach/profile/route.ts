@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractGhlCalendarIdFromEmbed } from "@/lib/extractGhlCalendarIdFromEmbed";
+import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
@@ -116,7 +117,7 @@ export async function GET(request: Request) {
     let coachRowResult = await supabaseAdmin
       .from("coaches")
       .select(
-        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_location_id, ghl_calendar_id"
+        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -251,6 +252,14 @@ export async function GET(request: Request) {
       longitude: prof?.longitude ?? null,
       location_geocoded_source: prof?.location_geocoded_source ?? null,
       coach_slug: slug,
+      crm_profile_name: crmLocationColumnMissing
+        ? null
+        : (coachRow as { crm_profile_name?: string | null } | null)
+            ?.crm_profile_name ?? null,
+      crm_location_id: crmLocationColumnMissing
+        ? null
+        : (coachRow as { crm_location_id?: string | null } | null)
+            ?.crm_location_id ?? null,
       directory_listed: coachRow?.directory_listed ?? false,
       directory_level: coachRow?.directory_level ?? null,
       lead_webhook_url: webhookColumnMissing
@@ -327,6 +336,9 @@ type PatchBody = {
   landing_copy_overrides?: Record<string, unknown> | null;
   /** Reserved for future funnel routing; /score currently always opens landing D. */
   landing_variant_preference?: "a" | "b" | "c" | "d" | null;
+  slug?: string | null;
+  crm_profile_name?: string | null;
+  crm_location_id?: string | null;
 };
 
 export async function PATCH(request: Request) {
@@ -439,6 +451,59 @@ export async function PATCH(request: Request) {
   }
 
   const coachUpdates: Record<string, unknown> = {};
+  if (body.slug !== undefined) {
+    if (body.slug === null || body.slug === "") {
+      return NextResponse.json(
+        { error: "Slug is required." },
+        { status: 400 }
+      );
+    }
+    if (typeof body.slug !== "string") {
+      return NextResponse.json(
+        { error: "slug must be a string." },
+        { status: 400 }
+      );
+    }
+    const normalized = body.slug.toLowerCase().trim();
+    if (!/^[a-z0-9-]+$/.test(normalized)) {
+      return NextResponse.json(
+        {
+          error:
+            "Slug can only contain lowercase letters, numbers, and hyphens.",
+        },
+        { status: 400 }
+      );
+    }
+    coachUpdates.slug = normalized;
+  }
+  if (body.crm_profile_name !== undefined) {
+    if (body.crm_profile_name === null || body.crm_profile_name === "") {
+      coachUpdates.crm_profile_name = null;
+    } else if (typeof body.crm_profile_name === "string") {
+      coachUpdates.crm_profile_name = body.crm_profile_name.trim();
+    } else {
+      return NextResponse.json(
+        { error: "crm_profile_name must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.crm_location_id !== undefined) {
+    if (body.crm_location_id === null || body.crm_location_id === "") {
+      coachUpdates.crm_location_id = null;
+    } else if (typeof body.crm_location_id === "string") {
+      const validated = validateCrmLocationId(body.crm_location_id);
+      if (!validated.ok) {
+        return NextResponse.json({ error: validated.error }, { status: 400 });
+      }
+      coachUpdates.crm_location_id = validated.value;
+    } else {
+      return NextResponse.json(
+        { error: "crm_location_id must be a string or null." },
+        { status: 400 }
+      );
+    }
+  }
   if (body.directory_listed !== undefined) {
     coachUpdates.directory_listed = !!body.directory_listed;
   }
@@ -584,6 +649,9 @@ export async function PATCH(request: Request) {
       } else if (coachUpdateError.code === "23514" && includesWebhook) {
         msg = "Lead webhook URL must be a valid http(s) URL.";
         status = 400;
+      } else if (coachUpdateError.code === "23505") {
+        msg = "That slug is already in use. Please choose another.";
+        status = 400;
       } else {
         msg =
           (coachUpdateError as { message?: string }).message ??
@@ -693,7 +761,10 @@ export async function PATCH(request: Request) {
   }
 
   const autoCompleteFieldsChanged =
-    body.calendar_embed_code !== undefined || body.lead_webhook_url !== undefined;
+    body.calendar_embed_code !== undefined ||
+    body.lead_webhook_url !== undefined ||
+    body.crm_profile_name !== undefined ||
+    body.crm_location_id !== undefined;
   if (autoCompleteFieldsChanged) {
     try {
       await syncCoachActionAutoComplete(coachId);

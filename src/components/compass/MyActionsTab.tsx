@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  ActionPlanInvitationCard,
+  type ActionPlanInvitationSummary,
+} from "@/components/actionPlans/ActionPlanInvitationCard";
 import { ActionOutlineEditor } from "@/components/actionPlans/ActionOutlineEditor";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -10,10 +14,12 @@ import type { ActionOutlineLine } from "@/lib/actionPlans/types";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export function MyActionsTab() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const planToken = searchParams.get("plan");
   const { impersonatingCoachId } = useImpersonation();
   const storageKey = useMemo(
     () =>
@@ -24,11 +30,19 @@ export function MyActionsTab() {
   );
 
   const [items, setItems] = useState<ActionOutlineLine[]>([]);
+  const [invitations, setInvitations] = useState<ActionPlanInvitationSummary[]>([]);
+  const [previewByInvitationId, setPreviewByInvitationId] = useState<
+    Record<string, ActionOutlineLine[]>
+  >({});
+  const [expandedInvitationId, setExpandedInvitationId] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null);
+  const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const skipSaveRef = useRef(true);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handledPlanTokenRef = useRef<string | null>(null);
 
   const authHeaders = useCallback(async () => {
     const {
@@ -43,6 +57,34 @@ export function MyActionsTab() {
     }
     return headers;
   }, [impersonatingCoachId]);
+
+  const loadInvitations = useCallback(async (headers: Record<string, string>) => {
+    const res = await fetch("/api/coach/action-plan-invitations", { headers });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { invitations?: ActionPlanInvitationSummary[] };
+    return data.invitations ?? [];
+  }, []);
+
+  const loadPreview = useCallback(
+    async (invitationId: string, headers: Record<string, string>) => {
+      if (previewByInvitationId[invitationId]) return;
+      setPreviewLoadingId(invitationId);
+      try {
+        const res = await fetch(`/api/coach/action-plan-invitations/${invitationId}`, {
+          headers,
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { previewItems?: ActionOutlineLine[] };
+        setPreviewByInvitationId((prev) => ({
+          ...prev,
+          [invitationId]: data.previewItems ?? [],
+        }));
+      } finally {
+        setPreviewLoadingId(null);
+      }
+    },
+    [previewByInvitationId],
+  );
 
   const migrateLocalStorage = useCallback(
     async (headers: Record<string, string>) => {
@@ -88,12 +130,16 @@ export function MyActionsTab() {
         return;
       }
 
-      let res = await fetch("/api/coach/action-items", { headers });
-      if (!res.ok) {
-        const body = (await res.json()) as { error?: string };
+      const [itemsRes, pendingInvitations] = await Promise.all([
+        fetch("/api/coach/action-items", { headers }),
+        loadInvitations(headers),
+      ]);
+
+      if (!itemsRes.ok) {
+        const body = (await itemsRes.json()) as { error?: string };
         throw new Error(body.error ?? "Failed to load actions.");
       }
-      let data = (await res.json()) as { items?: ActionOutlineLine[] };
+      const data = (await itemsRes.json()) as { items?: ActionOutlineLine[] };
       let nextItems = data.items ?? [];
 
       if (!nextItems.length) {
@@ -105,6 +151,7 @@ export function MyActionsTab() {
         }
       }
 
+      setInvitations(pendingInvitations);
       skipSaveRef.current = true;
       setItems(nextItems);
     } catch (err) {
@@ -112,11 +159,63 @@ export function MyActionsTab() {
     } finally {
       setLoading(false);
     }
-  }, [authHeaders, migrateLocalStorage]);
+  }, [authHeaders, loadInvitations, migrateLocalStorage]);
 
   useEffect(() => {
     void loadItems();
   }, [loadItems]);
+
+  useEffect(() => {
+    if (!planToken || handledPlanTokenRef.current === planToken) return;
+    handledPlanTokenRef.current = planToken;
+
+    async function openFromLink() {
+      const headers = await authHeaders();
+      if (!headers) return;
+      try {
+        const res = await fetch("/api/coach/action-plan-invitations", {
+          method: "POST",
+          headers: {
+            ...headers,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token: planToken }),
+        });
+        const data = (await res.json()) as {
+          error?: string;
+          invitation?: ActionPlanInvitationSummary;
+          previewItems?: ActionOutlineLine[];
+        };
+        if (!res.ok) {
+          setError(data.error ?? "Could not open action plan link.");
+          return;
+        }
+        if (data.invitation) {
+          setInvitations((prev) => {
+            if (prev.some((row) => row.id === data.invitation!.id)) return prev;
+            return [data.invitation!, ...prev];
+          });
+          setExpandedInvitationId(data.invitation.id);
+          if (data.previewItems) {
+            setPreviewByInvitationId((prev) => ({
+              ...prev,
+              [data.invitation!.id]: data.previewItems!,
+            }));
+          }
+        }
+      } catch {
+        setError("Could not open action plan link.");
+      }
+    }
+    void openFromLink();
+  }, [authHeaders, planToken]);
+
+  useEffect(() => {
+    if (!expandedInvitationId) return;
+    void authHeaders().then((headers) => {
+      if (headers) void loadPreview(expandedInvitationId, headers);
+    });
+  }, [authHeaders, expandedInvitationId, loadPreview]);
 
   const persistItems = useCallback(
     async (nextItems: ActionOutlineLine[]) => {
@@ -207,6 +306,55 @@ export function MyActionsTab() {
     }
   };
 
+  const handleAccept = async (invitationId: string) => {
+    const headers = await authHeaders();
+    if (!headers) return;
+    setInviteBusyId(invitationId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/coach/action-plan-invitations/${invitationId}`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "accept" }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Could not accept plan.");
+      setInvitations((prev) => prev.filter((row) => row.id !== invitationId));
+      await loadItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not accept plan.");
+    } finally {
+      setInviteBusyId(null);
+    }
+  };
+
+  const handleDecline = async (invitationId: string) => {
+    const headers = await authHeaders();
+    if (!headers) return;
+    setInviteBusyId(invitationId);
+    setError(null);
+    try {
+      const res = await fetch(`/api/coach/action-plan-invitations/${invitationId}`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "decline" }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Could not decline plan.");
+      setInvitations((prev) => prev.filter((row) => row.id !== invitationId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not decline plan.");
+    } finally {
+      setInviteBusyId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[240px] items-center justify-center text-slate-500">
@@ -223,6 +371,23 @@ export function MyActionsTab() {
           {error}
         </div>
       ) : null}
+      {invitations.map((invitation) => (
+        <ActionPlanInvitationCard
+          key={invitation.id}
+          invitation={invitation}
+          previewItems={previewByInvitationId[invitation.id]}
+          previewLoading={previewLoadingId === invitation.id}
+          expanded={expandedInvitationId === invitation.id}
+          onToggleExpand={() =>
+            setExpandedInvitationId((current) =>
+              current === invitation.id ? null : invitation.id,
+            )
+          }
+          onAccept={handleAccept}
+          onDecline={handleDecline}
+          busy={inviteBusyId === invitation.id}
+        />
+      ))}
       {saving ? (
         <div className="mx-auto mb-2 max-w-5xl px-4 text-xs text-slate-500">Saving…</div>
       ) : null}

@@ -305,11 +305,14 @@ export const SCORED_SCORECARD_STEPS = 13;
 /** Progress bar steps (13 scored + 2 qualifying; open text is optional, shown as 15/15 at 100%). */
 export const TOTAL_SCORECARD_STEPS = 15;
 
-/** Maps internal screen step (1–16) to progress bar label and fill. */
+/** Maps internal screen step (0 intro, 1–16 questions) to progress bar label and fill. */
 export function getScorecardProgress(screenStep: number): {
   currentStep: number;
   completedSteps: number;
 } {
+  if (screenStep <= 0) {
+    return { currentStep: 0, completedSteps: 0 };
+  }
   if (screenStep >= 16) {
     return { currentStep: TOTAL_SCORECARD_STEPS, completedSteps: TOTAL_SCORECARD_STEPS };
   }

@@ -31,6 +31,16 @@ async function buildTemplateSummary(template: {
   const assignedCoachCount = assignments?.length ?? 0;
   let completionPercent: number | null = null;
 
+  const { data: invitations } = await supabaseAdmin
+    .from("coach_action_plan_invitations")
+    .select("status")
+    .eq("template_id", template.id);
+
+  const pendingInviteCount =
+    invitations?.filter((row) => row.status === "pending").length ?? 0;
+  const acceptedInviteCount =
+    invitations?.filter((row) => row.status === "accepted").length ?? 0;
+
   if (assignedCoachCount > 0) {
     const assignmentIds = (assignments ?? []).map((a) => a.id as string);
     const { data: items } = await supabaseAdmin
@@ -66,6 +76,8 @@ async function buildTemplateSummary(template: {
     updatedAt: template.updated_at,
     itemCount: itemCount ?? 0,
     assignedCoachCount,
+    pendingInviteCount,
+    acceptedInviteCount,
     completionPercent,
   };
 }

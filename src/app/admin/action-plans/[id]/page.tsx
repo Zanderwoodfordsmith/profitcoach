@@ -25,7 +25,35 @@ export default function AdminActionPlanEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [pushOpen, setPushOpen] = useState(false);
+  const [invitations, setInvitations] = useState<
+    Array<{
+      id: string;
+      coachId: string;
+      coachName: string | null;
+      status: string;
+      invitedAt: string;
+      respondedAt: string | null;
+    }>
+  >([]);
   const skipAutoSaveRef = useRef(true);
+
+  const loadInvitations = useCallback(async (token: string) => {
+    const res = await fetch(`/api/admin/action-plans/${templateId}/invitations`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const data = (await res.json()) as {
+      invitations?: Array<{
+        id: string;
+        coachId: string;
+        coachName: string | null;
+        status: string;
+        invitedAt: string;
+        respondedAt: string | null;
+      }>;
+    };
+    setInvitations(data.invitations ?? []);
+  }, [templateId]);
 
   const loadPlan = useCallback(
     async (token: string) => {
@@ -66,7 +94,10 @@ export default function AdminActionPlanEditorPage() {
         }
         if (cancelled) return;
         setAccessToken(session.access_token);
-        await loadPlan(session.access_token);
+        await Promise.all([
+          loadPlan(session.access_token),
+          loadInvitations(session.access_token),
+        ]);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Failed to load action plan.");
@@ -79,7 +110,7 @@ export default function AdminActionPlanEditorPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadPlan, router]);
+  }, [loadInvitations, loadPlan, router]);
 
   const savePlan = useCallback(async () => {
     if (!accessToken) return;
@@ -135,7 +166,7 @@ export default function AdminActionPlanEditorPage() {
     <>
       <StickyPageHeader
         title="Edit action plan"
-        description="Projects at top level, actions nested underneath. Optional auto-complete rules apply when pushed."
+        description="Coaches preview and accept before items appear in My Actions. Share a Zoom link or send in-app invitations."
         tabs={<CoachesHubTabs />}
       />
 
@@ -164,7 +195,7 @@ export default function AdminActionPlanEditorPage() {
               className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-2 text-sm font-medium text-white hover:bg-sky-700"
             >
               <Send className="h-4 w-4" />
-              Push
+              Share / invite
             </button>
           </div>
         </div>
@@ -199,6 +230,45 @@ export default function AdminActionPlanEditorPage() {
           </label>
         </div>
 
+        {invitations.length ? (
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-100 px-4 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">Invitation responses</h2>
+              <p className="text-xs text-slate-500">
+                Pending coaches can preview in My Actions. Accepted plans become assigned action items.
+              </p>
+            </div>
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-2">Coach</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Invited</th>
+                  <th className="px-4 py-2">Responded</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invitations.map((row) => (
+                  <tr key={row.id} className="border-t border-slate-100">
+                    <td className="px-4 py-2 text-slate-800">
+                      {row.coachName ?? row.coachId.slice(0, 8)}
+                    </td>
+                    <td className="px-4 py-2 capitalize text-slate-700">{row.status}</td>
+                    <td className="px-4 py-2 text-slate-600">
+                      {new Date(row.invitedAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-2 text-slate-600">
+                      {row.respondedAt
+                        ? new Date(row.respondedAt).toLocaleDateString()
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
         <ActionOutlineEditor
           items={items}
           onItemsChange={setItems}
@@ -215,7 +285,10 @@ export default function AdminActionPlanEditorPage() {
           templateTitle={title || "Untitled plan"}
           accessToken={accessToken}
           onClose={() => setPushOpen(false)}
-          onPushed={() => setPushOpen(false)}
+          onPushed={() => {
+            setPushOpen(false);
+            if (accessToken) void loadInvitations(accessToken);
+          }}
         />
       ) : null}
     </>

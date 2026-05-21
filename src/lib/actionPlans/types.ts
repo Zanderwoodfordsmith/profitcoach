@@ -50,6 +50,8 @@ export type ActionPlanTemplateSummary = {
   updatedAt: string;
   itemCount: number;
   assignedCoachCount: number;
+  pendingInviteCount: number;
+  acceptedInviteCount: number;
   completionPercent: number | null;
 };
 

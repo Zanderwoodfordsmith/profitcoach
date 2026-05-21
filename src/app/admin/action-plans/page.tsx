@@ -117,16 +117,23 @@ export default function AdminActionPlansPage() {
     <>
       <StickyPageHeader
         title="Action plans"
-        description="Design projects and actions, then push them to coaches."
+        description="Design projects and actions, then share with coaches to preview and accept."
         tabs={<CoachesHubTabs />}
       />
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <p className="text-sm text-slate-600">
-            Templates appear in coaches&apos; My Actions tab when pushed.
+            Coaches preview and accept before items appear in My Actions. Share a Zoom link or send
+            in-app invitations.
           </p>
           <div className="flex items-center gap-2">
+            <Link
+              href="/admin/signature/actions"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Test in My Actions
+            </Link>
             <Link
               href="/admin/coach-groups"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
@@ -164,6 +171,8 @@ export default function AdminActionPlansPage() {
                   <th className="px-4 py-3">Plan</th>
                   <th className="px-4 py-3">Items</th>
                   <th className="px-4 py-3">Assigned</th>
+                  <th className="px-4 py-3">Pending</th>
+                  <th className="px-4 py-3">Accepted</th>
                   <th className="px-4 py-3">Avg complete</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -184,6 +193,8 @@ export default function AdminActionPlansPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-700">{template.itemCount}</td>
                     <td className="px-4 py-3 text-slate-700">{template.assignedCoachCount}</td>
+                    <td className="px-4 py-3 text-slate-700">{template.pendingInviteCount}</td>
+                    <td className="px-4 py-3 text-slate-700">{template.acceptedInviteCount}</td>
                     <td className="px-4 py-3 text-slate-700">
                       {template.completionPercent == null ? "—" : `${template.completionPercent}%`}
                     </td>
@@ -195,7 +206,7 @@ export default function AdminActionPlansPage() {
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                         >
                           <Send className="h-3.5 w-3.5" />
-                          Push
+                          Share
                         </button>
                         <button
                           type="button"

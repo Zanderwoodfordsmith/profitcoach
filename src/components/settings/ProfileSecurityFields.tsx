@@ -8,7 +8,6 @@ import {
 } from "@/lib/accountProfileTimezones";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
 import { OutlinedSelect } from "@/components/settings/OutlinedFormField";
 
 function outlineButtonClass(disabled?: boolean) {
@@ -17,20 +16,17 @@ function outlineButtonClass(disabled?: boolean) {
   }`;
 }
 
-export type AccountSettingsCardProps = {
+export type ProfileSecurityFieldsProps = {
   impersonatingCoachId?: string | null;
   timezoneIana: string | null;
   onTimezoneSaved: () => void;
-  /** When false, email/password blocks are omitted (shown elsewhere, e.g. Profile tab). */
-  showEmailPassword?: boolean;
 };
 
-export function AccountSettingsCard({
+export function ProfileSecurityFields({
   impersonatingCoachId,
   timezoneIana,
   onTimezoneSaved,
-  showEmailPassword = true,
-}: AccountSettingsCardProps) {
+}: ProfileSecurityFieldsProps) {
   const router = useRouter();
   const securityDisabled = Boolean(impersonatingCoachId);
 
@@ -101,80 +97,61 @@ export function AccountSettingsCard({
     const { error } = await supabaseClient.auth.signOut({ scope: "global" });
     setLogoutBusy(false);
     if (error) {
-      // Fallback: still clear local session
       await supabaseClient.auth.signOut();
     }
     router.replace("/login");
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-900">Account</h2>
-      {!showEmailPassword && !securityDisabled ? (
-        <p className="mt-2 text-sm text-slate-600">
-          Email and password are on the{" "}
-          <span className="font-medium text-slate-800">Profile</span> tab.
-        </p>
-      ) : null}
+    <div className="space-y-8 border-t border-slate-100 pt-8">
       {securityDisabled ? (
-        <p className="mt-2 text-sm text-amber-800">
-          You are viewing another coach&apos;s workspace.{" "}
-          {showEmailPassword
-            ? "Email, password, and sign-out apply to your own login — stop impersonating to change them."
-            : "Email and password are on the Profile tab for your login; sign-out here applies to your own sessions — stop impersonating to change them."}
+        <p className="text-sm text-amber-800">
+          You are viewing another coach&apos;s workspace. Sign-out applies to
+          your own sessions — stop impersonating to change your login.
         </p>
       ) : null}
 
-      <div className="mt-6 space-y-8">
-        {showEmailPassword ? (
-          <AccountEmailPasswordFields
-            impersonatingCoachId={impersonatingCoachId}
-          />
+      <div className="max-w-md">
+        <OutlinedSelect
+          id="profile_timezone"
+          label="Timezone"
+          value={tz}
+          disabled={tzBusy}
+          onChange={(e) => void handleTimezoneChange(e)}
+          wrapperClassName="w-full max-w-md"
+        >
+          {zoneOptions.map((z) => (
+            <option key={z} value={z}>
+              {accountTimezoneOptionLabel(z)}
+            </option>
+          ))}
+        </OutlinedSelect>
+        {tzBusy ? (
+          <p className="mt-1 text-xs text-slate-500">Saving…</p>
         ) : null}
-
-        <div className="max-w-md">
-          <OutlinedSelect
-            id="account_timezone"
-            label="Timezone"
-            value={tz}
-            disabled={tzBusy}
-            onChange={(e) => void handleTimezoneChange(e)}
-            wrapperClassName="w-full max-w-md"
-          >
-            {zoneOptions.map((z) => (
-              <option key={z} value={z}>
-                {accountTimezoneOptionLabel(z)}
-              </option>
-            ))}
-          </OutlinedSelect>
-          {tzBusy ? (
-            <p className="mt-1 text-xs text-slate-500">Saving…</p>
-          ) : null}
-          {tzError ? (
-            <p className="mt-1 text-xs text-rose-600">{tzError}</p>
-          ) : null}
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">
-              Log out of all devices
-            </p>
-            <p className="mt-0.5 text-sm text-slate-600">
-              Log out of all active sessions on all devices.
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={securityDisabled || logoutBusy}
-            onClick={() => void logOutEverywhere()}
-            className={outlineButtonClass(securityDisabled || logoutBusy)}
-          >
-            {logoutBusy ? "…" : "Log out everywhere"}
-          </button>
-        </div>
+        {tzError ? (
+          <p className="mt-1 text-xs text-rose-600">{tzError}</p>
+        ) : null}
       </div>
 
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            Log out of all devices
+          </p>
+          <p className="mt-0.5 text-sm text-slate-600">
+            Log out of all active sessions on all devices.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={securityDisabled || logoutBusy}
+          onClick={() => void logOutEverywhere()}
+          className={outlineButtonClass(securityDisabled || logoutBusy)}
+        >
+          {logoutBusy ? "…" : "Log out everywhere"}
+        </button>
+      </div>
     </div>
   );
 }

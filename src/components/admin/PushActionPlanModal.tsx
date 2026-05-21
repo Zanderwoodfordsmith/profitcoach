@@ -1,7 +1,7 @@
 "use client";
 
 import type { CoachGroupSummary, PushMode } from "@/lib/actionPlans/types";
-import { Loader2, X } from "lucide-react";
+import { Copy, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type CoachOption = {
@@ -36,6 +36,9 @@ export function PushActionPlanModal({
   const [pushing, setPushing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
+  const [shareCoachUrl, setShareCoachUrl] = useState<string | null>(null);
+  const [shareAdminUrl, setShareAdminUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -45,16 +48,20 @@ export function PushActionPlanModal({
     setCoachSearch("");
     setError(null);
     setResultMessage(null);
+    setCopied(null);
 
     let cancelled = false;
     async function load() {
       setLoading(true);
       try {
-        const [coachesRes, groupsRes] = await Promise.all([
+        const [coachesRes, groupsRes, shareRes] = await Promise.all([
           fetch("/api/admin/coaches", {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
           fetch("/api/admin/coach-groups", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }),
+          fetch(`/api/admin/action-plans/${templateId}/share-link`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           }),
         ]);
@@ -70,6 +77,16 @@ export function PushActionPlanModal({
           }>;
         };
         const groupsData = (await groupsRes.json()) as { groups?: CoachGroupSummary[] };
+        if (shareRes.ok) {
+          const shareData = (await shareRes.json()) as {
+            coachUrl?: string;
+            adminUrl?: string;
+          };
+          if (!cancelled) {
+            setShareCoachUrl(shareData.coachUrl ?? null);
+            setShareAdminUrl(shareData.adminUrl ?? null);
+          }
+        }
         if (cancelled) return;
         setCoaches(
           (coachesData.coaches ?? []).map((coach) => ({
@@ -94,7 +111,7 @@ export function PushActionPlanModal({
     return () => {
       cancelled = true;
     };
-  }, [open, accessToken]);
+  }, [open, accessToken, templateId]);
 
   const filteredCoaches = useMemo(() => {
     const q = coachSearch.trim().toLowerCase();
@@ -123,6 +140,17 @@ export function PushActionPlanModal({
     );
   };
 
+  const copyText = async (label: string, value: string | null) => {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(label);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setError("Could not copy link.");
+    }
+  };
+
   const handlePush = async () => {
     setPushing(true);
     setError(null);
@@ -145,17 +173,17 @@ export function PushActionPlanModal({
         result?: { assigned: string[]; skipped: string[]; failed: Array<{ coachId: string }> };
       };
       if (!res.ok) {
-        throw new Error(data.error ?? "Push failed.");
+        throw new Error(data.error ?? "Invite failed.");
       }
-      const assigned = data.result?.assigned.length ?? 0;
+      const invited = data.result?.assigned.length ?? 0;
       const skipped = data.result?.skipped.length ?? 0;
       const failed = data.result?.failed.length ?? 0;
       setResultMessage(
-        `Pushed to ${assigned} coach${assigned === 1 ? "" : "es"}. Skipped ${skipped}. Failed ${failed}.`,
+        `Invited ${invited} coach${invited === 1 ? "" : "es"}. Skipped ${skipped}. Failed ${failed}. They can preview and accept in My Actions.`,
       );
       onPushed();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Push failed.");
+      setError(err instanceof Error ? err.message : "Invite failed.");
     } finally {
       setPushing(false);
     }
@@ -168,7 +196,7 @@ export function PushActionPlanModal({
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Push action plan</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Share action plan</h2>
             <p className="text-sm text-slate-500">{templateTitle}</p>
           </div>
           <button
@@ -181,7 +209,51 @@ export function PushActionPlanModal({
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="space-y-5 px-5 py-4">
+          <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-sm font-semibold text-slate-900">Zoom / live link</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Share this link on a call. When someone is logged in, it opens My Actions with a
+              preview they can accept or decline.
+            </p>
+            {shareCoachUrl ? (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={shareCoachUrl}
+                    className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copyText("coach", shareCoachUrl)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    {copied === "coach" ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                {shareAdminUrl ? (
+                  <p className="text-xs text-slate-500">
+                    Test as yourself:{" "}
+                    <a href={shareAdminUrl} className="font-medium text-sky-700 hover:underline">
+                      open admin My Actions preview
+                    </a>
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-xs text-slate-500">Loading share link…</p>
+            )}
+          </section>
+
+          <section>
+            <h3 className="text-sm font-semibold text-slate-900">Or invite in-app</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Sends a pending offer to their My Actions tab — nothing is added until they accept.
+            </p>
+          </section>
+
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -309,7 +381,7 @@ export function PushActionPlanModal({
             className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
           >
             {pushing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Push plan
+            Send invitations
           </button>
         </div>
       </div>

@@ -26,7 +26,7 @@ type DbCoachActionItem = {
 
 type DbTemplateItem = {
   id: string;
-  template_id: string;
+  template_id?: string;
   text: string;
   depth: number;
   sort_order: number;
