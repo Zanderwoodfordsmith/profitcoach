@@ -49,4 +49,9 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     label: "Client success matrix",
     hint: "Also under Coaches hub tabs",
   },
+  {
+    href: "/admin/cash-flow-forecast",
+    label: "13-week cash flow forecast",
+    hint: "Zander only — projected subscriptions & payment plans",
+  },
 ];

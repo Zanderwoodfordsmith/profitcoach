@@ -7,6 +7,7 @@ import {
   templateItemsToPreviewLines,
 } from "@/lib/actionPlans/invitations";
 import { resolvePushCoachIds } from "@/lib/actionPlans/pushActionPlan";
+import { supabaseErrorMessage } from "@/lib/supabaseErrorMessage";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type TemplateJoin = {
@@ -140,7 +141,7 @@ export async function acceptInvitation(input: {
       assignment_id: assignmentId,
     })
     .eq("id", input.invitationId);
-  if (updateError) throw updateError;
+  if (updateError) throw new Error(supabaseErrorMessage(updateError));
 
   return { assignmentId };
 }
@@ -168,7 +169,7 @@ export async function declineInvitation(input: {
       responded_at: new Date().toISOString(),
     })
     .eq("id", input.invitationId);
-  if (updateError) throw updateError;
+  if (updateError) throw new Error(supabaseErrorMessage(updateError));
 }
 
 export async function loadInvitationPreview(invitationId: string, coachId: string) {

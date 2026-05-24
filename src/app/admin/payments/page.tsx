@@ -5,7 +5,6 @@ import {
   ChevronDown,
   Columns3,
   GripVertical,
-  Plus,
   SlidersHorizontal,
   Loader2,
   Trash2,
@@ -18,6 +17,8 @@ import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
+import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
+import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { formatPersonName } from "@/lib/formatPersonName";
 import {
   buildPaymentBillingKindIndex,
@@ -39,6 +40,7 @@ type CoachOption = {
   full_name: string | null;
   coach_business_name: string | null;
   email: string | null;
+  joined_at: string | null;
 };
 
 type PaymentRow = {
@@ -273,6 +275,26 @@ function coachLabel(coach: CoachOption): string {
   return formatted || coach.slug;
 }
 
+function formatJoinDate(value: string | null): string | null {
+  if (!value) return null;
+  const date = value.includes("T")
+    ? new Date(value)
+    : new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  const currentYear = new Date().getFullYear();
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(date.getFullYear() === currentYear ? {} : { year: "numeric" }),
+  }).format(date);
+}
+
+function coachOptionLabel(coach: CoachOption): string {
+  const name = coachLabel(coach);
+  const joinDate = formatJoinDate(coach.joined_at);
+  return joinDate ? `${name} (${joinDate})` : name;
+}
+
 function statusLabel(status: string): string {
   switch (status) {
     case "succeeded":
@@ -371,7 +393,7 @@ export default function AdminPaymentsPage() {
         )
         .map((coach) => ({
           value: coach.id,
-          label: coachLabel(coach),
+          label: coachOptionLabel(coach),
         })),
     [coaches]
   );
@@ -1277,40 +1299,33 @@ export default function AdminPaymentsPage() {
               </span>
             </button>
 
-            <button
-              type="button"
+            <TableToolbarAddButton
               onClick={() => {
                 setShowAddPayment(true);
                 setCreateError(null);
               }}
-              title="Add payment"
-              className="inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500"
-            >
-              <Plus className="h-4 w-4 text-slate-500" aria-hidden />
-              <span className="sr-only">Add payment</span>
-            </button>
+            />
 
             <div ref={filtersMenuRef} className="relative">
-              <button
-                type="button"
+              <TableToolbarButton
+                label="Filters"
                 aria-haspopup="true"
                 aria-expanded={filtersMenuOpen}
                 aria-controls="payments-filters-menu"
+                active={filtersMenuOpen}
+                badge={activeFilterCount > 0 ? activeFilterCount : null}
                 onClick={() => {
                   setFiltersMenuOpen((open) => !open);
                   setSortMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
-                title="Filters"
-                className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${filtersMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-              >
-                <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden />
-                {activeFilterCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                    {activeFilterCount}
-                  </span>
-                ) : null}
-              </button>
+                icon={
+                  <SlidersHorizontal
+                    className="h-5 w-5 text-slate-500"
+                    aria-hidden
+                  />
+                }
+              />
               {filtersMenuOpen ? (
                 <div
                   id="payments-filters-menu"
@@ -1399,21 +1414,21 @@ export default function AdminPaymentsPage() {
             </div>
 
             <div ref={sortMenuRef} className="relative">
-              <button
-                type="button"
+              <TableToolbarButton
+                label="Sort"
                 aria-haspopup="true"
                 aria-expanded={sortMenuOpen}
                 aria-controls="payments-sort-menu"
+                active={sortMenuOpen}
                 onClick={() => {
                   setSortMenuOpen((open) => !open);
                   setFiltersMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
-                title="Sort"
-                className={`inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${sortMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-              >
-                <ArrowUpDown className="h-4 w-4 text-slate-500" aria-hidden />
-              </button>
+                icon={
+                  <ArrowUpDown className="h-5 w-5 text-slate-500" aria-hidden />
+                }
+              />
               {sortMenuOpen ? (
                 <div
                   id="payments-sort-menu"
@@ -1443,22 +1458,22 @@ export default function AdminPaymentsPage() {
             </div>
 
             <div ref={columnsMenuRef} className="relative">
-              <button
-                type="button"
+              <TableToolbarButton
+                label="Columns"
                 id="payments-columns-trigger"
                 aria-haspopup="true"
                 aria-expanded={columnsMenuOpen}
                 aria-controls="payments-columns-menu"
+                active={columnsMenuOpen}
                 onClick={() => {
                   setColumnsMenuOpen((open) => !open);
                   setFiltersMenuOpen(false);
                   setSortMenuOpen(false);
                 }}
-                title="Columns"
-                className={`inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${columnsMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-              >
-                <Columns3 className="h-4 w-4 text-slate-500" aria-hidden />
-              </button>
+                icon={
+                  <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
+                }
+              />
               {columnsMenuOpen ? (
                 <div
                   id="payments-columns-menu"

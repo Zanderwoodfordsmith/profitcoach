@@ -149,15 +149,6 @@ export default function CoachClientsPage() {
       <StickyPageHeader
         title="Clients"
         description="View your clients. Add clients or move prospects to clients when they convert."
-        actions={
-          <button
-            type="button"
-            onClick={() => setShowAddClient(!showAddClient)}
-            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-          >
-            {showAddClient ? "Cancel" : "Add client"}
-          </button>
-        }
       />
 
       <div className="flex w-full flex-col gap-4">
@@ -247,6 +238,9 @@ export default function CoachClientsPage() {
         error={error}
         showCoachColumn={false}
         showTypeColumn={true}
+        onAddClick={() => setShowAddClient((open) => !open)}
+        addActive={showAddClient}
+        addLabel={showAddClient ? "Cancel" : "Add"}
         onRowClick={(id) => router.push(`/coach/contacts/${id}`)}
         emptyMessage="No clients yet."
         renderRowActions={(row) => (

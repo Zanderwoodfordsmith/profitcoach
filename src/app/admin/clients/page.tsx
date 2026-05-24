@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
+import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -217,15 +218,6 @@ export default function AdminClientsPage() {
         eyebrow="Profit Coach"
         title="Clients"
         description="Create and manage clients, grouped by coach. View as client to see their portal."
-        actions={
-          <button
-            type="button"
-            onClick={() => setShowAddClient(!showAddClient)}
-            className="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-          >
-            {showAddClient ? "Cancel" : "Add client"}
-          </button>
-        }
       />
 
       {showAddClient && (
@@ -334,10 +326,24 @@ export default function AdminClientsPage() {
           className="flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm min-h-0"
           style={{ maxHeight: "calc(100vh - 14rem)" }}
         >
+          <div className="shrink-0 border-b border-slate-100 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <TableToolbarAddButton
+                onClick={() => setShowAddClient((open) => !open)}
+                active={showAddClient}
+                label={showAddClient ? "Cancel" : "Add"}
+              />
+              {!loading && clients.length > 0 ? (
+                <span className="ml-auto text-xs text-slate-500">
+                  {clients.length} client{clients.length === 1 ? "" : "s"}
+                </span>
+              ) : null}
+            </div>
+          </div>
           <div className="overflow-y-auto overflow-x-auto flex-1">
             {clients.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-slate-500">
-                No clients yet. Add a client above.
+                No clients yet. Use the Add button to create one.
               </p>
             ) : (
               <table className="min-w-full text-sm">

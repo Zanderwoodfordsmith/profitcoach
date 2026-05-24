@@ -4,11 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   Columns3,
+  GripVertical,
   Loader2,
   Search,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
+import { TableCsvExportButton } from "@/components/table/TableCsvExportButton";
+import { exportProspectsToCsv } from "@/lib/exportProspectsCsv";
 import {
   formatProspectLastAssessed,
   formatProspectNextCallWhen,
@@ -17,12 +22,20 @@ import {
   type ProspectNextCall,
 } from "@/lib/prospectNextCall";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
+import { ProspectContactEditModal } from "@/components/prospects/ProspectContactEditModal";
+import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
+import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
+import { formatProspectLabel, formatProspectPersonName } from "@/lib/prospectDisplayFormat";
+import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
+import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 
 export type { ProspectRow };
 
 type AssessmentFilter = "all" | "assessed" | "not_assessed";
 type NextCallFilter = "all" | "has_call" | "no_call";
 type NextCallStatusFilter = "all" | "booked" | "confirmed" | "other";
+type ProspectStatusFilter = "all" | import("@/lib/prospectStatus").ProspectStatusValue;
 type ProspectSortField = "name" | "last_assessed" | "last_score" | "next_call";
 type ProspectSortOrder =
   | "asc"
@@ -46,7 +59,9 @@ type ProspectColumnKey =
   | "obstacles"
   | "preferred_support"
   | "boss_level"
-  | "next_call";
+  | "next_call"
+  | "next_action"
+  | "status";
 
 type ProspectColumnVisibility = Record<ProspectColumnKey, boolean>;
 
@@ -73,26 +88,21 @@ type Props = {
   /** When set, shows a delete button on the right of each row. */
   onDelete?: (row: ProspectRow) => void | Promise<void>;
   deletingId?: string | null;
+  /** Persists column visibility and order to localStorage. */
+  settingsStorageKey?: string;
+  /** Enables inline editing for title, business, and next action. */
+  editable?: boolean;
+  onUpdateProspect?: (
+    row: ProspectRow,
+    patch: ProspectFieldPatch
+  ) => Promise<void>;
+  /** When set, shows an Add button in the table toolbar (after search, before Filters). */
+  onAddClick?: () => void;
+  addActive?: boolean;
+  addLabel?: string;
 };
 
-const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
-  business: true,
-  email: true,
-  phone: false,
-  type: true,
-  coach: true,
-  actions: true,
-  last_score: true,
-  last_assessed: true,
-  revenue: false,
-  team_size: false,
-  years_in_business: false,
-  outcome: false,
-  obstacles: false,
-  preferred_support: false,
-  boss_level: false,
-  next_call: true,
-};
+const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v4";
 
 const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "business", label: "Business" },
@@ -101,6 +111,7 @@ const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "type", label: "Type" },
   { key: "coach", label: "Coach" },
   { key: "actions", label: "Actions" },
+  { key: "status", label: "Status" },
   { key: "last_score", label: "Last score" },
   { key: "last_assessed", label: "Last assessed" },
   { key: "revenue", label: "Revenue" },
@@ -111,7 +122,70 @@ const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "preferred_support", label: "Preferred support" },
   { key: "boss_level", label: "BOSS level" },
   { key: "next_call", label: "Next call" },
+  { key: "next_action", label: "Next action" },
 ];
+
+const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
+  business: false,
+  email: true,
+  phone: true,
+  type: true,
+  coach: true,
+  actions: false,
+  status: true,
+  last_score: true,
+  last_assessed: true,
+  revenue: false,
+  team_size: false,
+  years_in_business: false,
+  outcome: false,
+  obstacles: false,
+  preferred_support: false,
+  boss_level: false,
+  next_call: true,
+  next_action: true,
+};
+
+const DEFAULT_COLUMN_ORDER: ProspectColumnKey[] = COLUMN_OPTIONS.map(
+  (option) => option.key
+);
+
+type PersistedProspectTableSettings = {
+  columnVisibility: ProspectColumnVisibility;
+  columnOrder: ProspectColumnKey[];
+};
+
+function parsePersistedProspectTableSettings(
+  raw: string
+): PersistedProspectTableSettings | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<PersistedProspectTableSettings>;
+    if (!parsed.columnVisibility || !parsed.columnOrder) return null;
+    const validKeys = new Set<ProspectColumnKey>(
+      COLUMN_OPTIONS.map((option) => option.key)
+    );
+    const columnVisibility = { ...DEFAULT_COLUMN_VISIBILITY };
+    for (const key of validKeys) {
+      if (typeof parsed.columnVisibility[key] === "boolean") {
+        columnVisibility[key] = parsed.columnVisibility[key] as boolean;
+      }
+    }
+    const seen = new Set<ProspectColumnKey>();
+    const columnOrder: ProspectColumnKey[] = [];
+    for (const key of parsed.columnOrder) {
+      if (validKeys.has(key) && !seen.has(key)) {
+        columnOrder.push(key);
+        seen.add(key);
+      }
+    }
+    for (const key of DEFAULT_COLUMN_ORDER) {
+      if (!seen.has(key)) columnOrder.push(key);
+    }
+    return { columnVisibility, columnOrder };
+  } catch {
+    return null;
+  }
+}
 
 function nextCallStatusClass(status: string | null | undefined): string {
   switch (status) {
@@ -144,12 +218,12 @@ function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefi
           {callName}
         </span>
         <span
-          className={`inline-flex shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
+          className={`inline-flex shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
         >
           {statusLabel}
         </span>
       </div>
-      <span className="text-xs text-slate-500">{when}</span>
+      <span className="text-sm text-slate-500">{when}</span>
     </div>
   );
 }
@@ -168,6 +242,12 @@ export function ProspectsTable({
   onCoachFilterChange,
   onDelete,
   deletingId = null,
+  settingsStorageKey = PROSPECTS_TABLE_SETTINGS_STORAGE_KEY,
+  editable = false,
+  onUpdateProspect,
+  onAddClick,
+  addActive = false,
+  addLabel,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const [assessmentFilter, setAssessmentFilter] =
@@ -175,6 +255,7 @@ export function ProspectsTable({
   const [nextCallFilter, setNextCallFilter] = useState<NextCallFilter>("all");
   const [nextCallStatusFilter, setNextCallStatusFilter] =
     useState<NextCallStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<ProspectStatusFilter>("all");
   const [internalCoachFilter, setInternalCoachFilter] = useState<
     string | "all"
   >("all");
@@ -182,9 +263,21 @@ export function ProspectsTable({
   const [sortOrder, setSortOrder] = useState<ProspectSortOrder>("asc");
   const [columnVisibility, setColumnVisibility] =
     useState<ProspectColumnVisibility>(DEFAULT_COLUMN_VISIBILITY);
+  const [columnOrder, setColumnOrder] =
+    useState<ProspectColumnKey[]>(DEFAULT_COLUMN_ORDER);
+  const [draggingColumnKey, setDraggingColumnKey] =
+    useState<ProspectColumnKey | null>(null);
+  const [hasLoadedPersistedSettings, setHasLoadedPersistedSettings] =
+    useState(false);
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  const [savingFieldById, setSavingFieldById] = useState<
+    Record<string, "next_action" | "status" | "contact" | null>
+  >({});
+  const [editModalProspect, setEditModalProspect] = useState<ProspectRow | null>(
+    null
+  );
 
   const filtersMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
@@ -212,39 +305,112 @@ export function ProspectsTable({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(settingsStorageKey);
+    if (raw) {
+      const parsed = parsePersistedProspectTableSettings(raw);
+      if (parsed) {
+        setColumnVisibility(parsed.columnVisibility);
+        setColumnOrder(parsed.columnOrder);
+      }
+    }
+    setHasLoadedPersistedSettings(true);
+  }, [settingsStorageKey]);
+
+  useEffect(() => {
+    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
+    const payload: PersistedProspectTableSettings = {
+      columnVisibility,
+      columnOrder,
+    };
+    window.localStorage.setItem(settingsStorageKey, JSON.stringify(payload));
+  }, [
+    hasLoadedPersistedSettings,
+    settingsStorageKey,
+    columnVisibility,
+    columnOrder,
+  ]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (assessmentFilter !== "all") count += 1;
     if (nextCallFilter !== "all") count += 1;
     if (nextCallStatusFilter !== "all") count += 1;
+    if (statusFilter !== "all") count += 1;
     if (showCoachFilter && coachFilter !== "all") count += 1;
     return count;
   }, [
     assessmentFilter,
     nextCallFilter,
     nextCallStatusFilter,
+    statusFilter,
     showCoachFilter,
     coachFilter,
   ]);
 
   const hasActiveSort = sortField !== "name" || sortOrder !== "asc";
 
-  const visibleColumns = useMemo(() => {
-    const cols = new Set<ProspectColumnKey>(
-      COLUMN_OPTIONS.map((option) => option.key)
-    );
-    if (!showTypeColumn) cols.delete("type");
-    if (!showCoachColumn) cols.delete("coach");
-    if (!renderRowActions) cols.delete("actions");
-    return COLUMN_OPTIONS.filter(
-      (option) => cols.has(option.key) && columnVisibility[option.key]
-    );
-  }, [
-    showTypeColumn,
-    showCoachColumn,
-    renderRowActions,
-    columnVisibility,
-  ]);
+  const columnMenuOptions = useMemo(
+    () =>
+      COLUMN_OPTIONS.filter((option) => {
+        if (option.key === "type" && !showTypeColumn) return false;
+        if (option.key === "coach" && !showCoachColumn) return false;
+        if (option.key === "actions" && !renderRowActions) return false;
+        return true;
+      }),
+    [showTypeColumn, showCoachColumn, renderRowActions]
+  );
+
+  const applicableColumnKeys = useMemo(
+    () => new Set(columnMenuOptions.map((option) => option.key)),
+    [columnMenuOptions]
+  );
+
+  const shownColumnOptions = useMemo(
+    () =>
+      columnOrder
+        .filter(
+          (key) => applicableColumnKeys.has(key) && columnVisibility[key]
+        )
+        .map(
+          (key) => columnMenuOptions.find((option) => option.key === key)!
+        ),
+    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
+  );
+
+  const hiddenColumnOptions = useMemo(
+    () =>
+      columnOrder
+        .filter(
+          (key) => applicableColumnKeys.has(key) && !columnVisibility[key]
+        )
+        .map(
+          (key) => columnMenuOptions.find((option) => option.key === key)!
+        ),
+    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
+  );
+
+  const visibleColumns = useMemo(
+    () => shownColumnOptions,
+    [shownColumnOptions]
+  );
+
+  function moveColumnInOrder(
+    draggedKey: ProspectColumnKey,
+    targetKey: ProspectColumnKey
+  ) {
+    if (draggedKey === targetKey) return;
+    setColumnOrder((prev) => {
+      const from = prev.indexOf(draggedKey);
+      const to = prev.indexOf(targetKey);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
 
   const filteredProspects = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -253,9 +419,12 @@ export function ProspectsTable({
       if (term) {
         const haystack = [
           p.full_name,
+          p.job_title,
           p.business_name,
           p.email,
           p.phone,
+          p.next_action?.text,
+          p.status.label,
           p.coach_name,
           p.coach_business_name,
           p.revenue,
@@ -294,6 +463,10 @@ export function ProspectsTable({
         return false;
       }
 
+      if (statusFilter !== "all" && p.status.value !== statusFilter) {
+        return false;
+      }
+
       if (
         showCoachFilter &&
         coachFilter !== "all" &&
@@ -310,6 +483,7 @@ export function ProspectsTable({
     assessmentFilter,
     nextCallFilter,
     nextCallStatusFilter,
+    statusFilter,
     showCoachFilter,
     coachFilter,
   ]);
@@ -399,9 +573,41 @@ export function ProspectsTable({
     }
   }, [sortField, sortOrder, sortOrderOptions]);
 
+  function openContactEdit(prospect: ProspectRow) {
+    if (!editable || !onUpdateProspect) return;
+    setEditModalProspect(prospect);
+  }
+
+  function renderEditableContactValue(
+    prospect: ProspectRow,
+    value: string | null | undefined,
+    emptyLabel = "—"
+  ) {
+    const display = value?.trim() || emptyLabel;
+    if (!editable || !onUpdateProspect) {
+      return (
+        <span className="text-sm text-slate-700">{display}</span>
+      );
+    }
+    return (
+      <button
+        type="button"
+        data-row-action
+        onClick={(e) => {
+          e.stopPropagation();
+          openContactEdit(prospect);
+        }}
+        className="text-left text-sm text-slate-700 hover:text-sky-700"
+        title="Edit contact details"
+      >
+        {display}
+      </button>
+    );
+  }
+
   function renderOptionalText(value: string | null | undefined) {
     return value ? (
-      <span className="text-xs text-slate-700">{value}</span>
+      <span className="text-sm text-slate-700">{value}</span>
     ) : (
       "—"
     );
@@ -410,30 +616,47 @@ export function ProspectsTable({
   function renderColumnCell(key: ProspectColumnKey, p: ProspectRow) {
     switch (key) {
       case "business":
-        return p.business_name ?? "—";
+        return renderEditableContactValue(
+          p,
+          formatProspectLabel(p.business_name),
+          "—"
+        );
       case "email":
-        return (
-          <span className="text-xs text-slate-500">{p.email ?? "—"}</span>
-        );
+        return renderEditableContactValue(p, p.email);
       case "phone":
-        return (
-          <span className="text-xs text-slate-700">{p.phone ?? "—"}</span>
-        );
+        return renderEditableContactValue(p, p.phone);
       case "type":
-        return <span className="text-xs text-slate-700">{p.type}</span>;
+        return <span className="text-sm text-slate-700">{p.type}</span>;
       case "coach":
         return (
-          <span className="text-xs text-slate-700">
+          <span className="text-sm text-slate-700">
             {p.coach_name ?? p.coach_business_name ?? "Unknown coach"}
           </span>
         );
       case "actions":
         return renderRowActions?.(p) ?? null;
+      case "status":
+        return (
+          <ProspectStatusCell
+            row={p}
+            editable={editable && Boolean(onUpdateProspect)}
+            saving={savingFieldById[p.id] === "status"}
+            onSave={async (prospect_status) => {
+              if (!onUpdateProspect) return;
+              setSavingFieldById((prev) => ({ ...prev, [p.id]: "status" }));
+              try {
+                await onUpdateProspect(p, { prospect_status });
+              } finally {
+                setSavingFieldById((prev) => ({ ...prev, [p.id]: null }));
+              }
+            }}
+          />
+        );
       case "last_score":
-        return p.last_score != null ? `${p.last_score} / 100` : "—";
+        return p.last_score != null ? `${p.last_score}` : "—";
       case "last_assessed":
         return (
-          <span className="text-xs text-slate-500">
+          <span className="text-sm text-slate-500">
             {formatProspectLastAssessed(p.last_completed_at)}
           </span>
         );
@@ -453,6 +676,23 @@ export function ProspectsTable({
         return renderOptionalText(p.boss_level);
       case "next_call":
         return <ProspectNextCallCell next={p.next_call} />;
+      case "next_action":
+        return (
+          <ProspectNextActionCell
+            nextAction={p.next_action}
+            editable={editable && Boolean(onUpdateProspect)}
+            saving={savingFieldById[p.id] === "next_action"}
+            onSave={async (values) => {
+              if (!onUpdateProspect) return;
+              setSavingFieldById((prev) => ({ ...prev, [p.id]: "next_action" }));
+              try {
+                await onUpdateProspect(p, { next_action: values });
+              } finally {
+                setSavingFieldById((prev) => ({ ...prev, [p.id]: null }));
+              }
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -466,17 +706,35 @@ export function ProspectsTable({
         return "Last assessed";
       case "next_call":
         return "Next call";
+      case "next_action":
+        return "Next action";
       default:
         return COLUMN_OPTIONS.find((option) => option.key === key)?.label ?? key;
     }
   }
 
-  const columnMenuOptions = COLUMN_OPTIONS.filter((option) => {
-    if (option.key === "type" && !showTypeColumn) return false;
-    if (option.key === "coach" && !showCoachColumn) return false;
-    if (option.key === "actions" && !renderRowActions) return false;
-    return true;
-  });
+  const visibleTableKeys = useMemo(
+    () => visibleColumns.map((column) => column.key),
+    [visibleColumns]
+  );
+
+  const applicableTableKeys = useMemo(
+    () => columnMenuOptions.map((option) => option.key),
+    [columnMenuOptions]
+  );
+
+  function buildExportInput(mode: "shown" | "all") {
+    return {
+      mode,
+      visibleTableKeys,
+      applicableTableKeys,
+      columnOrder,
+    };
+  }
+
+  function handleExportCsv(mode: "shown" | "all") {
+    exportProspectsToCsv(sortedProspects, buildExportInput(mode));
+  }
 
   return (
     <div
@@ -499,26 +757,33 @@ export function ProspectsTable({
             />
           </div>
 
+          {onAddClick ? (
+            <TableToolbarAddButton
+              onClick={onAddClick}
+              active={addActive}
+              label={addLabel}
+            />
+          ) : null}
+
           <div ref={filtersMenuRef} className="relative">
-            <button
-              type="button"
+            <TableToolbarButton
+              label="Filters"
               aria-haspopup="true"
               aria-expanded={filtersMenuOpen}
+              active={filtersMenuOpen}
+              badge={activeFilterCount > 0 ? activeFilterCount : null}
               onClick={() => {
                 setFiltersMenuOpen((open) => !open);
                 setSortMenuOpen(false);
                 setColumnsMenuOpen(false);
               }}
-              title="Filters"
-              className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${filtersMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden />
-              {activeFilterCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                  {activeFilterCount}
-                </span>
-              ) : null}
-            </button>
+              icon={
+                <SlidersHorizontal
+                  className="h-5 w-5 text-slate-500"
+                  aria-hidden
+                />
+              }
+            />
             {filtersMenuOpen ? (
               <div
                 role="menu"
@@ -615,31 +880,51 @@ export function ProspectsTable({
                       <option value="other">Scheduled</option>
                     </select>
                   </div>
+                  <div>
+                    <label
+                      htmlFor="prospect-status-filter"
+                      className="mb-1 block text-xs font-medium text-slate-600"
+                    >
+                      Status
+                    </label>
+                    <select
+                      id="prospect-status-filter"
+                      value={statusFilter}
+                      onChange={(e) =>
+                        setStatusFilter(e.target.value as ProspectStatusFilter)
+                      }
+                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="all">All</option>
+                      {PROSPECT_STATUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             ) : null}
           </div>
 
           <div ref={sortMenuRef} className="relative">
-            <button
-              type="button"
+            <TableToolbarButton
+              label="Sort"
               aria-haspopup="true"
               aria-expanded={sortMenuOpen}
+              active={sortMenuOpen}
+              badge={hasActiveSort ? 1 : null}
+              title={hasActiveSort ? "Sort (active)" : "Sort"}
               onClick={() => {
                 setSortMenuOpen((open) => !open);
                 setFiltersMenuOpen(false);
                 setColumnsMenuOpen(false);
               }}
-              title={hasActiveSort ? "Sort (active)" : "Sort"}
-              className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${sortMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <ArrowUpDown className="h-4 w-4 text-slate-500" aria-hidden />
-              {hasActiveSort ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                  1
-                </span>
-              ) : null}
-            </button>
+              icon={
+                <ArrowUpDown className="h-5 w-5 text-slate-500" aria-hidden />
+              }
+            />
             {sortMenuOpen ? (
               <div
                 role="menu"
@@ -695,52 +980,131 @@ export function ProspectsTable({
           </div>
 
           <div ref={columnsMenuRef} className="relative">
-            <button
-              type="button"
+            <TableToolbarButton
+              label="Columns"
               aria-haspopup="true"
               aria-expanded={columnsMenuOpen}
+              active={columnsMenuOpen}
               onClick={() => {
                 setColumnsMenuOpen((open) => !open);
                 setFiltersMenuOpen(false);
                 setSortMenuOpen(false);
               }}
-              title="Columns"
-              className={`inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${columnsMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <Columns3 className="h-4 w-4 text-slate-500" aria-hidden />
-            </button>
+              icon={
+                <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
+              }
+            />
             {columnsMenuOpen ? (
               <div
                 role="menu"
-                className="absolute left-0 z-[90] mt-1 w-[min(92vw,16rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                className="absolute left-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
               >
-                <p className="mb-2 text-xs font-medium text-slate-600">
-                  Show columns
+                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Shown
                 </p>
-                <div className="space-y-2">
-                  {columnMenuOptions.map((option) => (
-                    <label
-                      key={option.key}
-                      className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                <ul className="space-y-0.5 px-2">
+                  {shownColumnOptions.map(({ key, label }) => (
+                    <li
+                      key={key}
+                      role="none"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingColumnKey(key);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", key);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const droppedKey =
+                          (e.dataTransfer.getData(
+                            "text/plain"
+                          ) as ProspectColumnKey) || draggingColumnKey;
+                        if (droppedKey) moveColumnInOrder(droppedKey, key);
+                        setDraggingColumnKey(null);
+                      }}
+                      onDragEnd={() => setDraggingColumnKey(null)}
+                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={columnVisibility[option.key]}
-                        onChange={(e) =>
-                          setColumnVisibility((prev) => ({
-                            ...prev,
-                            [option.key]: e.target.checked,
-                          }))
-                        }
-                        className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                      />
-                      {option.label}
-                    </label>
+                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                        <GripVertical
+                          className="h-3.5 w-3.5 text-slate-400"
+                          aria-hidden
+                        />
+                        <input
+                          type="checkbox"
+                          checked={columnVisibility[key]}
+                          onChange={(e) =>
+                            setColumnVisibility((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }))
+                          }
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <span>{label}</span>
+                      </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
+                <div className="my-2 border-t border-slate-200" />
+                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Hidden
+                </p>
+                <ul className="space-y-0.5 px-2">
+                  {hiddenColumnOptions.map(({ key, label }) => (
+                    <li
+                      key={key}
+                      role="none"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingColumnKey(key);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", key);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const droppedKey =
+                          (e.dataTransfer.getData(
+                            "text/plain"
+                          ) as ProspectColumnKey) || draggingColumnKey;
+                        if (droppedKey) moveColumnInOrder(droppedKey, key);
+                        setDraggingColumnKey(null);
+                      }}
+                      onDragEnd={() => setDraggingColumnKey(null)}
+                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                        <GripVertical
+                          className="h-3.5 w-3.5 text-slate-400"
+                          aria-hidden
+                        />
+                        <input
+                          type="checkbox"
+                          checked={columnVisibility[key]}
+                          onChange={(e) =>
+                            setColumnVisibility((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }))
+                          }
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <span>{label}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
           </div>
+
+          <TableCsvExportButton
+            disabled={loading || sortedProspects.length === 0}
+            onExportShown={() => handleExportCsv("shown")}
+            onExportAll={() => handleExportCsv("all")}
+          />
 
           {!loading && prospects.length > 0 ? (
             <span className="ml-auto text-xs text-slate-500">
@@ -758,10 +1122,10 @@ export function ProspectsTable({
             {emptyMessage}
           </p>
         ) : (
-          <table className="min-w-full text-left text-sm">
-            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm">
+          <table className="min-w-full text-left text-base">
+            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-sm uppercase tracking-wide text-slate-500 shadow-sm">
               <tr>
-                <th className="px-4 py-3 text-left">Name</th>
+                <th className="px-4 py-3 text-left">Lead</th>
                 {visibleColumns.map((column) => (
                   <th key={column.key} className="px-4 py-3 text-left">
                     {renderColumnHeader(column.key)}
@@ -800,13 +1164,38 @@ export function ProspectsTable({
                   }
                   role={onRowClick ? "button" : undefined}
                 >
-                  <td className="px-4 py-2 font-medium text-slate-900">
-                    {p.full_name}
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    <div className="min-w-[10rem]">
+                      {editable && onUpdateProspect ? (
+                        <button
+                          type="button"
+                          data-row-action
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openContactEdit(p);
+                          }}
+                          className="text-left hover:text-sky-700"
+                          title="Edit contact details"
+                        >
+                          {formatProspectPersonName(p.full_name) || p.full_name}
+                        </button>
+                      ) : (
+                        <span>
+                          {formatProspectPersonName(p.full_name) || p.full_name}
+                        </span>
+                      )}
+                      <ProspectLeadSubtitle
+                        jobTitle={p.job_title}
+                        businessName={p.business_name}
+                        editable={editable && Boolean(onUpdateProspect)}
+                        onEdit={() => openContactEdit(p)}
+                      />
+                    </div>
                   </td>
                   {visibleColumns.map((column) => (
                     <td
                       key={column.key}
-                      className={`px-4 py-2 text-slate-700 ${column.key === "actions" ? "" : ""}`}
+                      className="px-4 py-3 text-slate-700"
                       {...(column.key === "actions"
                         ? {
                             "data-row-action": true,
@@ -820,7 +1209,7 @@ export function ProspectsTable({
                   ))}
                   {onDelete ? (
                     <td
-                      className="sticky right-0 z-10 bg-white px-2 py-2 text-center align-middle group-hover:bg-slate-50"
+                      className="sticky right-0 z-10 bg-white px-2 py-3 text-center align-middle group-hover:bg-slate-50"
                       data-row-action
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -864,6 +1253,31 @@ export function ProspectsTable({
           </table>
         )}
       </div>
+
+      <ProspectContactEditModal
+        prospect={editModalProspect}
+        saving={
+          editModalProspect
+            ? savingFieldById[editModalProspect.id] === "contact"
+            : false
+        }
+        onClose={() => setEditModalProspect(null)}
+        onSave={async (patch) => {
+          if (!editModalProspect || !onUpdateProspect) return;
+          setSavingFieldById((prev) => ({
+            ...prev,
+            [editModalProspect.id]: "contact",
+          }));
+          try {
+            await onUpdateProspect(editModalProspect, patch);
+          } finally {
+            setSavingFieldById((prev) => ({
+              ...prev,
+              [editModalProspect.id]: null,
+            }));
+          }
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,10 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { PLAYBOOKS } from "@/lib/bossData";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getTotalScore } from "@/lib/bossScores";
+
+const VALID_PLAYBOOK_REFS = new Set(PLAYBOOKS.map((p) => p.ref));
 
 const PILLAR_KEYS = ["foundation", "vision", "velocity", "value"] as const;
 type PillarKey = (typeof PILLAR_KEYS)[number];
@@ -115,6 +118,54 @@ function normalizePillarNotes(raw: unknown): Partial<Record<PillarKey, string>> 
   return Object.keys(out).length ? out : {};
 }
 
+function normalizePlaybookNotes(
+  raw: unknown
+): Partial<Record<string, string>> | null {
+  if (raw === undefined) return null;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const out: Partial<Record<string, string>> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (VALID_PLAYBOOK_REFS.has(k) && typeof v === "string") out[k] = v;
+  }
+  return out;
+}
+
+async function mergeContactJsonNotes(
+  contactId: string,
+  column: "pillar_session_notes" | "playbook_session_notes",
+  patch: Partial<Record<string, string>>
+): Promise<{ error: string | null }> {
+  const { data: existing, error: readNotesError } = await supabaseAdmin
+    .from("contacts")
+    .select("pillar_session_notes, playbook_session_notes")
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (readNotesError) {
+    return { error: "Failed to load notes." };
+  }
+
+  const prev =
+    (existing?.[column] as Record<string, string> | null | undefined) ?? {};
+  const merged = { ...prev, ...patch };
+
+  const { error: notesError } = await supabaseAdmin
+    .from("contacts")
+    .update({ [column]: merged })
+    .eq("id", contactId);
+
+  if (notesError) {
+    return {
+      error:
+        column === "pillar_session_notes"
+          ? "Failed to save pillar notes."
+          : "Failed to save playbook notes.",
+    };
+  }
+
+  return { error: null };
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -128,7 +179,9 @@ export async function GET(
 
   const { data: contact, error: contactError } = await supabaseAdmin
     .from("contacts")
-    .select("id, full_name, email, business_name, coach_id, pillar_session_notes")
+    .select(
+      "id, full_name, email, business_name, coach_id, pillar_session_notes, playbook_session_notes"
+    )
     .eq("id", contactId)
     .maybeSingle();
 
@@ -166,6 +219,7 @@ export async function GET(
       business_name: (contact.business_name as string | null) ?? null,
       coach_id: (contact.coach_id as string | null) ?? null,
       pillar_session_notes: contact.pillar_session_notes ?? null,
+      playbook_session_notes: contact.playbook_session_notes ?? null,
     },
     assessment: latest
       ? {
@@ -208,7 +262,7 @@ export async function PATCH(
 
   const coachWriteId = coachIdForAssessmentWrites(auth, contact.coach_id as string | null);
 
-  let body: { answers?: unknown; pillarNotes?: unknown };
+  let body: { answers?: unknown; pillarNotes?: unknown; playbookNotes?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -217,10 +271,15 @@ export async function PATCH(
 
   const answersPatch = normalizeAnswers(body.answers);
   const pillarNotesPatch = normalizePillarNotes(body.pillarNotes);
+  const playbookNotesPatch = normalizePlaybookNotes(body.playbookNotes);
 
-  if (!answersPatch && pillarNotesPatch === null) {
+  if (
+    !answersPatch &&
+    pillarNotesPatch === null &&
+    playbookNotesPatch === null
+  ) {
     return NextResponse.json(
-      { error: "Provide answers and/or pillarNotes." },
+      { error: "Provide answers, pillarNotes, and/or playbookNotes." },
       { status: 400 }
     );
   }
@@ -235,34 +294,25 @@ export async function PATCH(
     );
   }
 
-  if (pillarNotesPatch && Object.keys(pillarNotesPatch).length > 0) {
-    const { data: existing, error: readNotesError } = await supabaseAdmin
-      .from("contacts")
-      .select("pillar_session_notes")
-      .eq("id", contactId)
-      .maybeSingle();
-
-    if (readNotesError) {
-      return NextResponse.json(
-        { error: "Failed to load notes." },
-        { status: 500 }
-      );
+  if (pillarNotesPatch) {
+    const { error } = await mergeContactJsonNotes(
+      contactId,
+      "pillar_session_notes",
+      pillarNotesPatch
+    );
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
     }
+  }
 
-    const prev =
-      (existing?.pillar_session_notes as Record<string, string> | null) ?? {};
-    const merged = { ...prev, ...pillarNotesPatch };
-
-    const { error: notesError } = await supabaseAdmin
-      .from("contacts")
-      .update({ pillar_session_notes: merged })
-      .eq("id", contactId);
-
-    if (notesError) {
-      return NextResponse.json(
-        { error: "Failed to save pillar notes." },
-        { status: 500 }
-      );
+  if (playbookNotesPatch) {
+    const { error } = await mergeContactJsonNotes(
+      contactId,
+      "playbook_session_notes",
+      playbookNotesPatch
+    );
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
     }
   }
 

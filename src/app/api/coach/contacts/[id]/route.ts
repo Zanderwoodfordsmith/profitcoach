@@ -1,8 +1,48 @@
 import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import {
+  updateProspectFields,
+  type ProspectFieldPatch,
+} from "@/lib/prospects/updateProspectFields";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const authCheck = await requireCoachRequest(request);
+  if (authCheck.error || !authCheck.userId) {
+    const status = authCheck.error === "Invalid access token." ? 401 : 403;
+    return NextResponse.json(
+      { error: authCheck.error ?? "Unauthorized" },
+      { status }
+    );
+  }
+
+  const { id: contactId } = await context.params;
+  if (!contactId?.trim()) {
+    return NextResponse.json({ error: "Missing contact id." }, { status: 400 });
+  }
+
+  let body: ProspectFieldPatch;
+  try {
+    body = (await request.json()) as ProspectFieldPatch;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  try {
+    const updated = await updateProspectFields(
+      contactId,
+      authCheck.userId,
+      body
+    );
+    return NextResponse.json(updated);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unable to update prospect.";
+    const status = message === "Prospect not found." ? 404 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
 
 export async function DELETE(request: Request, context: RouteContext) {
   const authCheck = await requireCoachRequest(request);

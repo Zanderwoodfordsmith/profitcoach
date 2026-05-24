@@ -22,24 +22,41 @@ import {
 } from "lucide-react";
 import { DateTime } from "luxon";
 
-import { supabaseClient } from "@/lib/supabaseClient";
 import {
   communityCalendarMondayStart,
   expandCommunityCalendar,
 } from "@/lib/communityCalendarExpand";
 import type {
+  CommunityCalendarEventExceptionRow,
   CommunityCalendarEventRow,
   CommunityCalendarOccurrence,
 } from "@/lib/communityCalendarTypes";
+import { communityCalendarOccurrenceKey } from "@/lib/communityCalendarTypes";
+import {
+  communityCalendarCoverUrl,
+  communityCalendarCancellationHoverTitle,
+  communityCalendarCancelledBadgeClass,
+  communityCalendarCancelledTextClass,
+  communityCalendarWeekBlockClass,
+  communityCalendarWeekBlockTimeClass,
+} from "@/lib/communityCalendarDisplay";
+import { CommunityCalendarCoverImage } from "@/components/community/CommunityCalendarCoverImage";
 import {
   COMMUNITY_CALENDAR_TIMEZONES,
   defaultCommunityCalendarTimezone,
 } from "@/lib/communityCalendarTimezones";
 import {
+  cancelCommunityCalendarOccurrence,
+  deleteCommunityCalendarEventSeries,
+  loadCommunityCalendarData,
+} from "@/lib/communityCalendarData";
+import {
   communityAccessHint,
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { AddCommunityEventModal } from "@/components/community/AddCommunityEventModal";
+import { CommunityCalendarCancelModal } from "@/components/community/CommunityCalendarCancelModal";
+import type { CommunityCalendarCancelScope } from "@/components/community/CommunityCalendarCancelModal";
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 import { useBelowBreakpoint } from "@/hooks/useBreakpoint";
 
@@ -158,19 +175,27 @@ function minutesInDay(dt: DateTime): number {
   );
 }
 
+function formatCompactTimePart(dt: DateTime, omitMeridiem = false): string {
+  const meridiem = dt.toFormat("a").toLowerCase();
+  const hour12 = dt.hour % 12 || 12;
+  const core =
+    dt.minute === 0
+      ? String(hour12)
+      : `${hour12}:${String(dt.minute).padStart(2, "0")}`;
+  return omitMeridiem ? core : `${core}${meridiem}`;
+}
+
 function formatWeekBlockRange(start: DateTime, end: DateTime, tz: string): string {
   const a = start.setZone(tz);
   const b = end.setZone(tz);
-  const sameDay = a.toISODate() === b.toISODate();
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  if (sameDay) {
-    return `${fmt.format(a.toJSDate())} – ${fmt.format(b.toJSDate())}`;
-  }
-  return `${fmt.format(a.toJSDate())} – ${fmt.format(b.toJSDate())}`;
+  const sameMeridiem = a.toFormat("a") === b.toFormat("a");
+  return `${formatCompactTimePart(a, sameMeridiem)}-${formatCompactTimePart(b)}`;
+}
+
+function formatMonthEventStart(iso: string, tz: string): string {
+  return formatCompactTimePart(
+    DateTime.fromISO(iso, { zone: "utc" }).setZone(tz)
+  );
 }
 
 function formatRangeLabel(
@@ -215,13 +240,16 @@ export function CommunityCalendar({
       setViewMode((mode) => (mode === "calendar" ? "list" : mode));
     }
   }, [isBelowMd]);
-  const [calendarLayout, setCalendarLayout] = useState<CalendarLayout>("week");
+  const [calendarLayout, setCalendarLayout] = useState<CalendarLayout>("month");
   const [viewTz, setViewTz] = useState(defaultCommunityCalendarTimezone);
   const [focusDate, setFocusDate] = useState(() => {
     const z = defaultCommunityCalendarTimezone();
     return DateTime.now().setZone(z).startOf("day");
   });
   const [rows, setRows] = useState<CommunityCalendarEventRow[]>([]);
+  const [exceptions, setExceptions] = useState<
+    CommunityCalendarEventExceptionRow[]
+  >([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [listPage, setListPage] = useState(1);
@@ -234,6 +262,9 @@ export function CommunityCalendar({
     null
   );
   const [eventMenuOpenId, setEventMenuOpenId] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] =
+    useState<CommunityCalendarOccurrence | null>(null);
+  const [cancelSaving, setCancelSaving] = useState(false);
   const tzPickerRef = useRef<HTMLDivElement>(null);
   const eventMenuRef = useRef<HTMLDivElement>(null);
 
@@ -270,14 +301,10 @@ export function CommunityCalendar({
     setLoading(true);
     setLoadError(null);
     try {
-      const { data, error } = await supabaseClient
-        .from("community_calendar_events")
-        .select(
-          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, created_at, updated_at"
-        )
-        .order("starts_at", { ascending: true });
-      if (error) throw error;
-      setRows((data ?? []) as CommunityCalendarEventRow[]);
+      const { events, exceptions: loadedExceptions } =
+        await loadCommunityCalendarData();
+      setRows(events);
+      setExceptions(loadedExceptions);
     } catch (e) {
       const msg = supabaseErrorMessage(e);
       const hint = communityAccessHint(msg);
@@ -286,6 +313,7 @@ export function CommunityCalendar({
           "Could not load calendar."
       );
       setRows([]);
+      setExceptions([]);
     } finally {
       setLoading(false);
     }
@@ -301,17 +329,6 @@ export function CommunityCalendar({
     const end = vm.endOf("month");
     return { start, end };
   }, [focusDate, viewTz]);
-
-  const weekMonday = useMemo(() => {
-    const d = focusDate.setZone(viewTz).startOf("day");
-    return communityCalendarMondayStart(d);
-  }, [focusDate, viewTz]);
-
-  const weekRangeUtc = useMemo(() => {
-    const start = weekMonday.startOf("day");
-    const end = weekMonday.plus({ days: 6 }).endOf("day");
-    return { startUtc: start.toUTC(), endUtc: end.toUTC() };
-  }, [weekMonday]);
 
   const gridStart = useMemo(() => {
     const first = focusDate.setZone(viewTz).startOf("month");
@@ -336,16 +353,36 @@ export function CommunityCalendar({
   );
 
   const occurrencesInMonth = useMemo(() => {
-    return expandCommunityCalendar(rows, monthRange.start, monthRange.end);
-  }, [rows, monthRange.start, monthRange.end]);
+    return expandCommunityCalendar(
+      rows,
+      monthRange.start,
+      monthRange.end,
+      exceptions
+    );
+  }, [rows, monthRange.start, monthRange.end, exceptions]);
+
+  const effectiveViewMode =
+    isBelowMd && viewMode === "calendar" ? "list" : viewMode;
+
+  const weekMonday = useMemo(() => {
+    const d = focusDate.setZone(viewTz).startOf("day");
+    return communityCalendarMondayStart(d);
+  }, [focusDate, viewTz]);
+
+  const weekRangeUtc = useMemo(() => {
+    const start = weekMonday.startOf("day");
+    const end = weekMonday.plus({ days: 6 }).endOf("day");
+    return { startUtc: start.toUTC(), endUtc: end.toUTC() };
+  }, [weekMonday]);
 
   const occurrencesInWeek = useMemo(() => {
     return expandCommunityCalendar(
       rows,
       weekRangeUtc.startUtc,
-      weekRangeUtc.endUtc
+      weekRangeUtc.endUtc,
+      exceptions
     );
-  }, [rows, weekRangeUtc.startUtc, weekRangeUtc.endUtc]);
+  }, [rows, weekRangeUtc.startUtc, weekRangeUtc.endUtc, exceptions]);
 
   const weekSegments = useMemo(
     () => layoutWeekSegments(occurrencesInWeek, weekMonday, viewTz),
@@ -476,12 +513,12 @@ export function CommunityCalendar({
     const vm = focusDate.setZone(viewTz);
     const start = vm.startOf("month");
     const end = vm.endOf("month");
-    const expanded = expandCommunityCalendar(rows, start, end);
+    const expanded = expandCommunityCalendar(rows, start, end, exceptions);
     return expanded.sort(
       (a, b) =>
         new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime()
     );
-  }, [rows, focusDate, viewTz]);
+  }, [rows, focusDate, viewTz, exceptions]);
 
   const listTotalPages = Math.max(
     1,
@@ -549,40 +586,57 @@ export function CommunityCalendar({
     if (viewMode === "list") setListPage(1);
   };
 
-  const effectiveViewMode =
-    isBelowMd && viewMode === "calendar" ? "list" : viewMode;
-
   const periodNavLabel =
     effectiveViewMode === "list" || calendarLayout === "month" ? "month" : "week";
 
-  const deleteEvent = useCallback(
-    async (eventId: string) => {
-      if (!canAddEvent) return;
-      const confirmed = window.confirm(
-        "Delete this event? This cannot be undone."
-      );
-      if (!confirmed) return;
+  const cancelTargetEventRow = useMemo(
+    () => rows.find((row) => row.id === cancelTarget?.eventId) ?? null,
+    [rows, cancelTarget]
+  );
+
+  const confirmCancelSession = useCallback(
+    async (
+      scope: CommunityCalendarCancelScope,
+      cancellationReason?: string | null
+    ) => {
+      if (!canAddEvent || !cancelTarget) return;
+      setCancelSaving(true);
       try {
-        const { error } = await supabaseClient
-          .from("community_calendar_events")
-          .delete()
-          .eq("id", eventId);
-        if (error) throw error;
+        if (scope === "occurrence") {
+          await cancelCommunityCalendarOccurrence(
+            cancelTarget.eventId,
+            cancelTarget.startsAtIso,
+            cancellationReason
+          );
+        } else {
+          await deleteCommunityCalendarEventSeries(cancelTarget.eventId);
+        }
         setEventMenuOpenId(null);
         setSelectedOccurrence((occ) =>
-          occ?.eventId === eventId ? null : occ
+          occ &&
+          (scope === "series" ||
+            communityCalendarOccurrenceKey(occ.eventId, occ.startsAtIso) ===
+              communityCalendarOccurrenceKey(
+                cancelTarget.eventId,
+                cancelTarget.startsAtIso
+              ))
+            ? null
+            : occ
         );
+        setCancelTarget(null);
         setRefreshNonce((n) => n + 1);
       } catch (e) {
         const msg = supabaseErrorMessage(e);
         const hint = communityAccessHint(msg);
         setLoadError(
           [msg, hint ?? ""].filter(Boolean).join("\n\n") ||
-            "Could not delete event."
+            "Could not cancel session."
         );
+      } finally {
+        setCancelSaving(false);
       }
     },
-    [canAddEvent]
+    [canAddEvent, cancelTarget]
   );
 
   const selectedEventRow = useMemo(
@@ -601,13 +655,25 @@ export function CommunityCalendar({
             ...prev,
             recording_link_url: row.recording_link_url,
             recording_video_url: row.recording_video_url,
+            cancellationReason:
+              exceptions.find(
+                (ex) =>
+                  communityCalendarOccurrenceKey(
+                    ex.event_id,
+                    ex.occurrence_start
+                  ) ===
+                  communityCalendarOccurrenceKey(
+                    prev.eventId,
+                    prev.startsAtIso
+                  )
+              )?.cancellation_reason ?? prev.cancellationReason ?? null,
           }
     );
-  }, [rows, selectedOccurrence?.eventId]);
+  }, [rows, exceptions, selectedOccurrence?.eventId, selectedOccurrence?.startsAtIso]);
 
   return (
     <>
-      <div className="mx-auto flex min-h-0 w-full max-w-[62rem] min-w-0 flex-col gap-5 pt-5 lg:mx-0 lg:pt-6">
+      <div className="flex min-h-0 w-full min-w-0 flex-col gap-5 pt-5 lg:pt-6">
         {loadError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             <p className="font-semibold text-rose-900">
@@ -827,18 +893,20 @@ export function CommunityCalendar({
                               <button
                                 type="button"
                                 onClick={() => setSelectedOccurrence(ev)}
-                                className="line-clamp-2 text-left text-[11px] font-medium leading-snug text-sky-700 hover:underline"
+                                title={communityCalendarCancellationHoverTitle(ev)}
+                                className={`line-clamp-2 text-left text-[11px] font-medium leading-snug hover:underline ${
+                                  ev.isCancelled
+                                    ? communityCalendarCancelledTextClass()
+                                    : "text-sky-700"
+                                }`}
                               >
-                                {DateTime.fromISO(ev.startsAtIso, {
-                                  zone: "utc",
-                                })
-                                  .setZone(viewTz)
-                                  .toLocaleString({
-                                    timeZone: viewTz,
-                                    hour: "numeric",
-                                    minute: "2-digit",
-                                  })}{" "}
-                                — {ev.title}
+                                {ev.isCancelled ? (
+                                  <span className="font-semibold uppercase tracking-wide text-[9px] not-italic no-underline text-rose-500">
+                                    Cancelled ·{" "}
+                                  </span>
+                                ) : null}
+                                {formatMonthEventStart(ev.startsAtIso, viewTz)}{" "}
+                                {ev.title}
                               </button>
                             </li>
                           ))}
@@ -974,9 +1042,10 @@ export function CommunityCalendar({
                                 const leftPct = seg.lane * laneW;
                                 const alt =
                                   ev.eventId.charCodeAt(0) % 2 === 0;
-                                const blockClass = alt
-                                  ? "border border-sky-500/30 bg-sky-500 text-white shadow-sm"
-                                  : "border border-sky-200 bg-sky-100 text-slate-800 shadow-sm";
+                                const blockClass = communityCalendarWeekBlockClass(
+                                  Boolean(ev.isCancelled),
+                                  alt
+                                );
                                 const timeLine = formatWeekBlockRange(
                                   seg.start,
                                   seg.end,
@@ -984,15 +1053,23 @@ export function CommunityCalendar({
                                 );
                                 const inner = (
                                   <>
-                                    <p className="line-clamp-2 text-[11px] font-semibold leading-snug">
+                                    {ev.isCancelled ? (
+                                      <p className="text-[9px] font-bold uppercase tracking-wide text-rose-500">
+                                        Cancelled
+                                      </p>
+                                    ) : null}
+                                    <p
+                                      className={`line-clamp-2 text-[11px] font-semibold leading-snug ${
+                                        ev.isCancelled ? "line-through" : ""
+                                      }`}
+                                    >
                                       {ev.title}
                                     </p>
                                     <p
-                                      className={`mt-0.5 text-[10px] font-medium leading-tight ${
+                                      className={`mt-0.5 text-[10px] font-medium leading-tight ${communityCalendarWeekBlockTimeClass(
+                                        Boolean(ev.isCancelled),
                                         alt
-                                          ? "text-white/90"
-                                          : "text-slate-600"
-                                      }`}
+                                      )}`}
                                     >
                                       {timeLine}
                                     </p>
@@ -1012,6 +1089,7 @@ export function CommunityCalendar({
                                     <button
                                       type="button"
                                       onClick={() => setSelectedOccurrence(ev)}
+                                      title={communityCalendarCancellationHoverTitle(ev)}
                                       className={`flex h-full w-full flex-col rounded-md px-1.5 py-1 text-left ${blockClass} hover:opacity-95`}
                                     >
                                       {inner}
@@ -1041,6 +1119,10 @@ export function CommunityCalendar({
                   const label = formatRangeLabel(s, e, viewTz);
                   const sourceEventRow =
                     rows.find((row) => row.id === ev.eventId) ?? null;
+                  const occurrenceKey = communityCalendarOccurrenceKey(
+                    ev.eventId,
+                    ev.startsAtIso
+                  );
                   const isPast =
                     e.isValid && e <= DateTime.now().toUTC();
                   const hasRecording =
@@ -1049,26 +1131,30 @@ export function CommunityCalendar({
                   return (
                     <div
                       key={`${ev.eventId}-${ev.startsAtIso}`}
-                      className="relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300"
+                      className={`relative rounded-xl border bg-white p-4 shadow-sm hover:border-slate-300 ${
+                        ev.isCancelled
+                          ? "border-rose-100 bg-rose-50/60"
+                          : "border-slate-200"
+                      }`}
                     >
-                      {canAddEvent && sourceEventRow ? (
+                      {canAddEvent && sourceEventRow && !ev.isCancelled ? (
                         <div className="absolute right-3 top-3 z-10" ref={eventMenuRef}>
                           <button
                             type="button"
                             aria-haspopup="menu"
-                            aria-expanded={eventMenuOpenId === ev.eventId}
+                            aria-expanded={eventMenuOpenId === occurrenceKey}
                             aria-label="Event options"
                             onClick={(evt) => {
                               evt.stopPropagation();
                               setEventMenuOpenId((id) =>
-                                id === ev.eventId ? null : ev.eventId
+                                id === occurrenceKey ? null : occurrenceKey
                               );
                             }}
                             className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                           >
                             <Ellipsis className="h-4 w-4" />
                           </button>
-                          {eventMenuOpenId === ev.eventId ? (
+                          {eventMenuOpenId === occurrenceKey ? (
                             <div
                               role="menu"
                               className="absolute right-0 mt-1 min-w-[9rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
@@ -1091,12 +1177,13 @@ export function CommunityCalendar({
                                 role="menuitem"
                                 onClick={(evt) => {
                                   evt.stopPropagation();
-                                  void deleteEvent(ev.eventId);
+                                  setCancelTarget(ev);
+                                  setEventMenuOpenId(null);
                                 }}
                                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
-                                Delete
+                                Cancel session
                               </button>
                             </div>
                           ) : null}
@@ -1105,15 +1192,15 @@ export function CommunityCalendar({
                       <button
                         type="button"
                         onClick={() => setSelectedOccurrence(ev)}
+                        title={communityCalendarCancellationHoverTitle(ev)}
                         className="flex w-full flex-col gap-3 pr-8 text-left sm:flex-row sm:gap-4"
                       >
                       <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-56">
-                        {ev.cover_image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={ev.cover_image_url}
-                            alt=""
-                            className="h-full w-full object-cover"
+                        {communityCalendarCoverUrl(ev) ? (
+                          <CommunityCalendarCoverImage
+                            occurrence={ev}
+                            variant="thumbnail"
+                            className="h-full w-full object-contain object-center"
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
@@ -1122,8 +1209,19 @@ export function CommunityCalendar({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
+                        {ev.isCancelled ? (
+                          <p className={communityCalendarCancelledBadgeClass()}>
+                            Cancelled
+                          </p>
+                        ) : null}
                         <p className="text-sm text-slate-600">{label}</p>
-                        <h3 className="mt-1 text-lg font-bold text-slate-900">
+                        <h3
+                          className={`mt-1 text-lg font-bold ${
+                            ev.isCancelled
+                              ? communityCalendarCancelledTextClass()
+                              : "text-slate-900"
+                          }`}
+                        >
                           {ev.title}
                         </h3>
                         <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">
@@ -1233,13 +1331,25 @@ export function CommunityCalendar({
             setSelectedOccurrence(null);
             setEditingEvent(selectedEventRow);
           }}
-          onDelete={async () => {
+          onDelete={() => {
             if (!selectedEventRow) return;
+            setCancelTarget(selectedOccurrence);
             setSelectedOccurrence(null);
-            await deleteEvent(selectedEventRow.id);
           }}
           onClose={() => setSelectedOccurrence(null)}
           onRecordingSaved={() => setRefreshNonce((n) => n + 1)}
+          onCancellationReasonSaved={() => setRefreshNonce((n) => n + 1)}
+        />
+      ) : null}
+      {cancelTarget && cancelTargetEventRow ? (
+        <CommunityCalendarCancelModal
+          occurrence={cancelTarget}
+          eventRow={cancelTargetEventRow}
+          saving={cancelSaving}
+          onClose={() => {
+            if (!cancelSaving) setCancelTarget(null);
+          }}
+          onConfirm={confirmCancelSession}
         />
       ) : null}
     </>

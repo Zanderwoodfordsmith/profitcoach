@@ -6,6 +6,7 @@ import {
   templateItemToOutlineLine,
 } from "@/lib/actionPlans/mappers";
 import type { ActionOutlineLine, PushActionPlanResult } from "@/lib/actionPlans/types";
+import { supabaseErrorMessage } from "@/lib/supabaseErrorMessage";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type TemplateItemRow = {
@@ -87,7 +88,7 @@ export async function activateActionPlanForCoach(input: {
     })
     .select("id")
     .single();
-  if (assignmentError) throw assignmentError;
+  if (assignmentError) throw new Error(supabaseErrorMessage(assignmentError));
 
   const rows = items.map((item) => {
     const line = {
@@ -116,7 +117,7 @@ export async function activateActionPlanForCoach(input: {
       .from("coach_action_plan_assignments")
       .delete()
       .eq("id", assignment.id);
-    throw insertError;
+    throw new Error(supabaseErrorMessage(insertError));
   }
 
   return assignment.id as string;
@@ -180,7 +181,7 @@ export async function inviteCoachesToActionPlan(input: {
     } catch (err) {
       result.failed.push({
         coachId,
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: supabaseErrorMessage(err),
       });
     }
   }

@@ -1,12 +1,17 @@
 import type { ProspectNextCall } from "./prospectNextCall";
+import type { ProspectNextAction } from "./actionPlans/prospectFollowUp";
+import type { ProspectStatusDisplay } from "./prospectStatus";
 
 export type ProspectRow = {
   id: string;
   full_name: string;
+  job_title: string | null;
   email: string | null;
   business_name: string | null;
   phone: string | null;
   type: string;
+  prospect_status: string | null;
+  status: ProspectStatusDisplay;
   coach_id?: string;
   coach_name?: string | null;
   coach_business_name?: string | null;
@@ -20,4 +25,5 @@ export type ProspectRow = {
   preferred_support: string | null;
   boss_level: string | null;
   next_call?: ProspectNextCall | null;
+  next_action?: ProspectNextAction | null;
 };

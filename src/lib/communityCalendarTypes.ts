@@ -48,4 +48,34 @@ export type CommunityCalendarOccurrence = {
   location_url: string | null;
   recording_link_url: string | null;
   recording_video_url: string | null;
+  /** True when this occurrence was cancelled but kept visible on the calendar. */
+  isCancelled?: boolean;
+  cancellationReason?: string | null;
 };
+
+/** Cancelled/skipped instance of a recurring event. */
+export type CommunityCalendarEventExceptionRow = {
+  id: string;
+  event_id: string;
+  occurrence_start: string;
+  cancellation_reason: string | null;
+  created_at: string;
+};
+
+/** UTC epoch ms — avoids ISO string format mismatches from Postgres vs Luxon. */
+export function communityCalendarOccurrenceStartMs(iso: string): number {
+  return Date.parse(iso);
+}
+
+export function communityCalendarOccurrenceKey(
+  eventId: string,
+  startsAtIso: string
+): string {
+  return `${eventId}|${communityCalendarOccurrenceStartMs(startsAtIso)}`;
+}
+
+export function isActiveCommunityCalendarOccurrence(
+  occurrence: CommunityCalendarOccurrence
+): boolean {
+  return !occurrence.isCancelled;
+}

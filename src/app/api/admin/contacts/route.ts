@@ -64,6 +64,8 @@ export async function GET(request: Request) {
         full_name: string;
         email: string | null;
         business_name: string | null;
+        job_title: string | null;
+        prospect_status: string | null;
         phone: string | null;
         type: string;
         created_at: string;
@@ -80,7 +82,7 @@ export async function GET(request: Request) {
         }
 
         return query;
-      }, "id, coach_id, full_name, email, business_name, type, created_at");
+      }, "id, coach_id, full_name, email, business_name, job_title, prospect_status, type, created_at");
 
     if (contactsError) {
       console.error("admin/contacts GET contacts:", contactsError);
@@ -123,6 +125,8 @@ export async function GET(request: Request) {
           id: c.id,
           coach_id: c.coach_id,
           full_name: c.full_name,
+          job_title: c.job_title ?? null,
+          prospect_status: c.prospect_status ?? null,
           email: c.email ?? null,
           business_name: c.business_name ?? null,
           phone: c.phone ?? null,

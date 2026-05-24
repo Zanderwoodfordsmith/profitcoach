@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { PageHeaderDescriptionInfo } from "./PageHeaderDescriptionInfo";
 
 export type PageHeaderDescriptionPlacement = "info" | "below";
@@ -33,6 +33,8 @@ export type StickyPageHeaderProps = {
    * Set `false` to disable (e.g. nested layouts). Default matches coach/admin `main` horizontal padding.
    */
   bleedInset?: string | false;
+  /** Ref on the outer sticky shell — for measuring height without breaking stickiness. */
+  rootRef?: Ref<HTMLDivElement>;
 };
 
 export function StickyPageHeader({
@@ -46,9 +48,10 @@ export function StickyPageHeader({
   actions,
   className,
   bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px]",
+  rootRef,
 }: StickyPageHeaderProps) {
   const shell = [
-    "sticky top-0 z-10 border-b border-slate-200/90 bg-white pb-1 pt-4 shadow-sm",
+    "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-4 shadow-sm",
     typeof bleedInset === "string" ? bleedInset : "",
     className,
   ]
@@ -56,7 +59,7 @@ export function StickyPageHeader({
     .join(" ");
 
   return (
-    <div className={shell}>
+    <div ref={rootRef} className={shell}>
       <div
         className={`flex flex-wrap justify-between gap-3 ${tabs ? "items-end" : "items-start"}`}
       >

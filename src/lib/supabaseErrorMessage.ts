@@ -63,6 +63,15 @@ export function communityAccessHint(errorMessage: string): string | null {
     if (m.includes("community_calendar_events") && m.includes("relation")) {
       return "Create the community calendar table: run supabase/migrations/20260604120000_community_calendar_events.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
     }
+    if (m.includes("community_calendar_event_exceptions") && m.includes("relation")) {
+      return "Add calendar session cancellation support: run supabase/migrations/20260724140000_community_calendar_event_exceptions.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
+    if (
+      m.includes("community_calendar_event_exceptions") &&
+      m.includes("cancellation_reason")
+    ) {
+      return "Add cancellation reason support: run supabase/migrations/20260724150000_community_calendar_exception_reason.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
     return "A database migration may be missing. From the repo root run `supabase db push`, or in Supabase Dashboard → SQL Editor run the migration file that matches the missing object in the error above. For the original community tables, see supabase/migrations/20260502120000_community_feed.sql.";
   }
   if (

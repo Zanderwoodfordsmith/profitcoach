@@ -1,11 +1,13 @@
 import { DateTime } from "luxon";
 
 import type {
+  CommunityCalendarEventExceptionRow,
   CommunityCalendarEventRow,
   CommunityCalendarOccurrence,
   MonthWeekOrdinal,
   RecurrencePayload,
 } from "@/lib/communityCalendarTypes";
+import { communityCalendarOccurrenceKey } from "@/lib/communityCalendarTypes";
 
 function luxonToMon0Sun6(weekday: number): number {
   return (weekday + 6) % 7;
@@ -139,8 +141,16 @@ function collectRecurringStarts(
 export function expandCommunityCalendar(
   rows: CommunityCalendarEventRow[],
   rangeStart: DateTime,
-  rangeEnd: DateTime
+  rangeEnd: DateTime,
+  exceptions: CommunityCalendarEventExceptionRow[] = []
 ): CommunityCalendarOccurrence[] {
+  const cancellationByKey = new Map<string, string | null>();
+  for (const ex of exceptions) {
+    cancellationByKey.set(
+      communityCalendarOccurrenceKey(ex.event_id, ex.occurrence_start),
+      ex.cancellation_reason?.trim() || null
+    );
+  }
   const out: CommunityCalendarOccurrence[] = [];
   const rs = rangeStart.toUTC();
   const re = rangeEnd.toUTC();
@@ -161,18 +171,22 @@ export function expandCommunityCalendar(
       const sUtc = anchor.toUTC();
       const eUtc = endAnchor.toUTC();
       if (eUtc >= rs && sUtc <= re) {
+        const startsAtIso = sUtc.toISO()!;
+        const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
         out.push({
           eventId: row.id,
           title: row.title,
           description: row.description,
           cover_image_url: row.cover_image_url,
-          startsAtIso: sUtc.toISO()!,
+          startsAtIso,
           endsAtIso: eUtc.toISO()!,
           display_timezone: row.display_timezone,
           location_kind: row.location_kind,
           location_url: row.location_url,
           recording_link_url: row.recording_link_url,
           recording_video_url: row.recording_video_url,
+          isCancelled: cancellationByKey.has(occurrenceKey),
+          cancellationReason: cancellationByKey.get(occurrenceKey) ?? null,
         });
       }
       continue;
@@ -183,18 +197,22 @@ export function expandCommunityCalendar(
       const sUtc = startInst.toUTC();
       const eUtc = startInst.plus(duration).toUTC();
       if (eUtc < rs || sUtc > re) continue;
+      const startsAtIso = sUtc.toISO()!;
+      const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
       out.push({
         eventId: row.id,
         title: row.title,
         description: row.description,
         cover_image_url: row.cover_image_url,
-        startsAtIso: sUtc.toISO()!,
+        startsAtIso,
         endsAtIso: eUtc.toISO()!,
         display_timezone: row.display_timezone,
         location_kind: row.location_kind,
         location_url: row.location_url,
         recording_link_url: row.recording_link_url,
         recording_video_url: row.recording_video_url,
+        isCancelled: cancellationByKey.has(occurrenceKey),
+        cancellationReason: cancellationByKey.get(occurrenceKey) ?? null,
       });
     }
   }
@@ -206,9 +224,43 @@ export function expandCommunityCalendar(
 
   const seen = new Set<string>();
   return out.filter((o) => {
-    const k = `${o.eventId}|${o.startsAtIso}`;
+    const k = communityCalendarOccurrenceKey(o.eventId, o.startsAtIso);
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
   });
+}
+
+/** Whether `date` falls in the Mon–Sun week starting at `weekMonday`. */
+export function isDateInCalendarWeek(
+  weekMonday: DateTime,
+  date: DateTime
+): boolean {
+  const start = communityCalendarMondayStart(weekMonday).startOf("day");
+  const end = start.plus({ days: 6 }).endOf("day");
+  const d = date.startOf("day");
+  return d >= start && d <= end;
+}
+
+/** True when `now` is after the end of the last occurrence in the week. */
+export function isPastLastEventInWeek(
+  occurrences: CommunityCalendarOccurrence[],
+  now: DateTime = DateTime.now()
+): boolean {
+  if (occurrences.length === 0) return false;
+
+  const lastEndMs = Math.max(
+    ...occurrences.map((o) =>
+      DateTime.fromISO(o.endsAtIso, { zone: "utc" }).toMillis()
+    )
+  );
+  return now.toUTC().toMillis() > lastEndMs;
+}
+
+/** @deprecated Use isPastLastEventInWeek */
+export function isPastLastActiveEventInWeek(
+  occurrences: CommunityCalendarOccurrence[],
+  now?: DateTime
+): boolean {
+  return isPastLastEventInWeek(occurrences, now);
 }

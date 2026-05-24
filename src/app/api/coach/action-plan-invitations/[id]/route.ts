@@ -4,6 +4,7 @@ import {
   loadInvitationPreview,
 } from "@/lib/actionPlans/invitationService";
 import { requireCoachForActions } from "@/lib/actionPlans/requireCoachForActions";
+import { supabaseErrorMessage } from "@/lib/supabaseErrorMessage";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -23,7 +24,7 @@ export async function GET(
   } catch (err) {
     console.error("coach/action-plan-invitations/[id] GET error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error." },
+      { error: supabaseErrorMessage(err) },
       { status: 404 },
     );
   }
@@ -58,7 +59,7 @@ export async function POST(
   } catch (err) {
     console.error("coach/action-plan-invitations/[id] POST error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error." },
+      { error: supabaseErrorMessage(err) },
       { status: 400 },
     );
   }

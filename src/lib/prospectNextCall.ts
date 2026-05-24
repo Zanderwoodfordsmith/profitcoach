@@ -157,6 +157,132 @@ export function formatProspectNextCall(
   return `${when} · ${status}`;
 }
 
+function normalizePhone(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+/**
+ * Phone from GHL appointments when `contacts.phone` was never saved (e.g. assessment
+ * completed before contact patch logic, or email-step contact created first).
+ */
+export async function loadFallbackPhonesByContactId(
+  supabase: SupabaseClient,
+  contacts: { id: string; email: string | null; coach_id?: string | null }[]
+): Promise<Record<string, string>> {
+  if (contacts.length === 0) return {};
+
+  const byContact: Record<string, string> = {};
+  const contactIds = contacts.map((c) => c.id);
+
+  const { data: byIdRows, error: byIdError } = await supabase
+    .from("ghl_appointments")
+    .select("contact_id, prospect_phone, updated_at")
+    .in("contact_id", contactIds)
+    .not("prospect_phone", "is", null)
+    .order("updated_at", { ascending: false });
+
+  if (byIdError) {
+    if (byIdError.code !== "42P01" && !isMissingColumnError(byIdError)) {
+      console.warn("loadFallbackPhonesByContactId (by contact_id):", byIdError);
+    }
+  } else {
+    for (const row of byIdRows ?? []) {
+      const contactId = (row as { contact_id?: string | null }).contact_id;
+      const phone = normalizePhone(
+        (row as { prospect_phone?: string | null }).prospect_phone
+      );
+      if (contactId && phone && !byContact[contactId]) {
+        byContact[contactId] = phone;
+      }
+    }
+  }
+
+  const stillMissing = contacts.filter(
+    (c) => !byContact[c.id] && c.email?.trim()
+  );
+  if (stillMissing.length === 0) return byContact;
+
+  const emails = [
+    ...new Set(stillMissing.map((c) => c.email!.trim().toLowerCase())),
+  ];
+
+  const { data: byEmailRows, error: byEmailError } = await supabase
+    .from("ghl_appointments")
+    .select("prospect_email, prospect_phone, coach_id, updated_at")
+    .in("prospect_email", emails)
+    .not("prospect_phone", "is", null)
+    .order("updated_at", { ascending: false });
+
+  if (byEmailError) {
+    if (byEmailError.code !== "42P01" && !isMissingColumnError(byEmailError)) {
+      console.warn("loadFallbackPhonesByContactId (by email):", byEmailError);
+    }
+    return byContact;
+  }
+
+  const phoneByCoachEmail: Record<string, string> = {};
+  for (const row of byEmailRows ?? []) {
+    const email = (row as { prospect_email?: string | null }).prospect_email
+      ?.trim()
+      .toLowerCase();
+    const phone = normalizePhone(
+      (row as { prospect_phone?: string | null }).prospect_phone
+    );
+    const coachId = (row as { coach_id?: string | null }).coach_id ?? "";
+    if (!email || !phone) continue;
+    const key = `${coachId}:${email}`;
+    if (!phoneByCoachEmail[key]) phoneByCoachEmail[key] = phone;
+  }
+
+  for (const contact of stillMissing) {
+    const key = `${contact.coach_id ?? ""}:${contact.email!.trim().toLowerCase()}`;
+    const phone = phoneByCoachEmail[key];
+    if (phone) byContact[contact.id] = phone;
+  }
+
+  return byContact;
+}
+
+/**
+ * Most recent past GHL appointment per contact (for showed / no-show status).
+ */
+export async function loadLatestPastCallsByContactId(
+  supabase: SupabaseClient,
+  contactIds: string[]
+): Promise<Record<string, string>> {
+  if (contactIds.length === 0) return {};
+
+  const nowIso = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("ghl_appointments")
+    .select("contact_id, status_normalized, start_time")
+    .in("contact_id", contactIds)
+    .not("start_time", "is", null)
+    .lt("start_time", nowIso)
+    .in("status_normalized", ["showed", "noshow"])
+    .order("start_time", { ascending: false });
+
+  if (error) {
+    if (error.code === "42P01" || isMissingColumnError(error)) {
+      return {};
+    }
+    console.warn("loadLatestPastCallsByContactId:", error);
+    return {};
+  }
+
+  const byContact: Record<string, string> = {};
+  for (const row of data ?? []) {
+    const contactId = (row as { contact_id?: string | null }).contact_id;
+    const status = (row as { status_normalized?: string }).status_normalized;
+    if (!contactId || byContact[contactId] || !status) continue;
+    byContact[contactId] = status;
+  }
+
+  return byContact;
+}
+
 /**
  * Earliest upcoming GHL appointment per contact (non-cancelled, start_time >= now).
  */

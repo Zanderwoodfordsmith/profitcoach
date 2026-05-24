@@ -55,7 +55,13 @@ import { devPerfEnd, devPerfStart } from "@/lib/devPerf";
 import { paginationItems } from "@/lib/communityPagination";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { expandCommunityCalendar } from "@/lib/communityCalendarExpand";
-import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
+import type {
+  CommunityCalendarOccurrence,
+} from "@/lib/communityCalendarTypes";
+import {
+  communityCalendarOccurrenceKey,
+  isActiveCommunityCalendarOccurrence,
+} from "@/lib/communityCalendarTypes";
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 import { formatCommunityEventHappeningWhen } from "@/lib/communityRelativeTime";
 
@@ -892,21 +898,30 @@ export function CommunityFeed() {
     void (async () => {
       const now = DateTime.now();
       const rangeEnd = now.plus({ days: 120 });
-      const { data, error } = await supabaseClient
-        .from("community_calendar_events")
-        .select(
-          "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, created_at, updated_at"
-        )
-        .order("starts_at", { ascending: true });
-      if (cancelled || error) return;
+      const [eventsResult, exceptionsResult] = await Promise.all([
+        supabaseClient
+          .from("community_calendar_events")
+          .select(
+            "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, created_at, updated_at"
+          )
+          .order("starts_at", { ascending: true }),
+        supabaseClient
+          .from("community_calendar_event_exceptions")
+          .select("id, event_id, occurrence_start, cancellation_reason, created_at"),
+      ]);
+      if (cancelled || eventsResult.error || exceptionsResult.error) return;
       const occurrences = expandCommunityCalendar(
-        (data ?? []) as Parameters<typeof expandCommunityCalendar>[0],
+        (eventsResult.data ?? []) as Parameters<typeof expandCommunityCalendar>[0],
         now,
-        rangeEnd
+        rangeEnd,
+        (exceptionsResult.data ?? []) as Parameters<
+          typeof expandCommunityCalendar
+        >[3]
       );
       const nowMs = now.toMillis();
+      const activeOccurrences = occurrences.filter(isActiveCommunityCalendarOccurrence);
       const live =
-        occurrences.find((occ) => {
+        activeOccurrences.find((occ) => {
           const startMs = DateTime.fromISO(occ.startsAtIso, {
             zone: "utc",
           }).toMillis();
@@ -917,7 +932,7 @@ export function CommunityFeed() {
         }) ?? null;
       const next =
         live ??
-        occurrences.find((occ) => {
+        activeOccurrences.find((occ) => {
           const startMs = DateTime.fromISO(occ.startsAtIso, {
             zone: "utc",
           }).toMillis();

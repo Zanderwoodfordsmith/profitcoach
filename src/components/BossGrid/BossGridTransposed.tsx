@@ -30,8 +30,9 @@ export type BossGridTransposedProps = {
   scoreBarLabels?: "none" | "neutral";
   /** Glass: show full playbook name in every cell (wrapped) instead of dot + flip card */
   glassAlwaysShowPlaybookNames?: boolean;
-  /** Glass: optional — scroll/focus pillar notes when user clicks "Add notes" in the question panel */
-  onTooltipAddNotes?: (playbookRef: string) => void;
+  /** Glass: per-playbook session notes shown in the scoring panel */
+  playbookNotes?: Record<string, string>;
+  onPlaybookNotesChange?: (ref: string, notes: string) => void;
   /** Glass: hide built-in score bar (counts + /100) — use an external summary row instead */
   hideGlassScoreBar?: boolean;
 };
@@ -163,7 +164,8 @@ export function BossGridTransposed({
   title,
   scoreBarLabels = "none",
   glassAlwaysShowPlaybookNames = false,
-  onTooltipAddNotes,
+  playbookNotes,
+  onPlaybookNotesChange,
   hideGlassScoreBar = false,
 }: BossGridTransposedProps) {
   const router = useRouter();
@@ -201,9 +203,8 @@ export function BossGridTransposed({
   const handleTooltipPickScore = useCallback(
     (ref: string, score: 0 | 1 | 2) => {
       onScoreChange?.(ref, score);
-      dismissTooltip();
     },
-    [dismissTooltip, onScoreChange]
+    [onScoreChange]
   );
 
   const tooltipPortalProps = {
@@ -215,7 +216,8 @@ export function BossGridTransposed({
       glass && playbookLinkBase
         ? (ref: string) => `${playbookLinkBase}/${ref}`
         : undefined,
-    onTooltipAddNotes: glass ? onTooltipAddNotes : undefined,
+    playbookNotes: glass ? playbookNotes : undefined,
+    onPlaybookNotesChange: glass ? onPlaybookNotesChange : undefined,
     onDismiss: glass ? dismissTooltip : undefined,
     anchorRef: glass ? tooltipAnchorRef : undefined,
   };
@@ -250,6 +252,8 @@ export function BossGridTransposed({
       interactive={interactive}
       onScoreChange={onScoreChange}
       playbookLinkBase={playbookLinkBase}
+      playbookNotes={playbookNotes}
+      onPlaybookNotesChange={onPlaybookNotesChange}
     />
   );
 

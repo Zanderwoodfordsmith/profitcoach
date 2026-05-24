@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { CalendarEmbed } from "@/components/CalendarEmbed";
 import { BossScorecardVennDiagram } from "@/components/scorecard/BossScorecardVennDiagram";
+import { ScorecardCompassKey } from "@/components/scorecard/ScorecardCompassKey";
 import { BossScoreThankYouHeading } from "@/components/scorecard/BossScoreWordmark";
 import { ScorecardInsightCard } from "@/components/scorecard/ScorecardInsightCard";
 import { ScorecardPreviewFloatingControls } from "@/components/scorecard/ScorecardPreviewFloatingControls";
@@ -405,6 +406,7 @@ export function BossScorecardResults({
             answers={result.answers}
             outcomeScores={result.outcomeScores}
           />
+          <ScorecardCompassKey answers={result.answers} />
           <PillarProgressBars pillarScores={result.pillarScores} />
         </section>
 

@@ -119,6 +119,7 @@ export function ContactBossWorkshopBody({
   const [error, setError] = useState<string | null>(null);
   const [matrixAnswers, setMatrixAnswers] = useState<Record<string, 0 | 1 | 2>>({});
   const [pillarNotes, setPillarNotes] = useState<Partial<Record<string, string>>>({});
+  const [playbookNotes, setPlaybookNotes] = useState<Record<string, string>>({});
   const [internalWorkshopMode, setInternalWorkshopMode] = useState(true);
   const workshopModeControlled =
     typeof workshopModeProp === "boolean" && typeof onWorkshopModeChange === "function";
@@ -130,8 +131,10 @@ export function ContactBossWorkshopBody({
 
   const answersDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playbookNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswersRef = useRef<Record<string, 0 | 1 | 2> | null>(null);
   const pendingNotesRef = useRef<Partial<Record<string, string>> | null>(null);
+  const pendingPlaybookNotesRef = useRef<Partial<Record<string, string>> | null>(null);
 
   useEffect(() => {
     if (contactId) {
@@ -143,6 +146,7 @@ export function ContactBossWorkshopBody({
     setAssessment(null);
     setMatrixAnswers({});
     setPillarNotes({});
+    setPlaybookNotes({});
     setError(null);
     setLoading(false);
   }, [contactId]);
@@ -175,6 +179,7 @@ export function ContactBossWorkshopBody({
           email: string | null;
           business_name: string | null;
           pillar_session_notes?: unknown;
+          playbook_session_notes?: unknown;
         };
         assessment?: Assessment | null;
       };
@@ -216,6 +221,22 @@ export function ContactBossWorkshopBody({
         setPillarNotes({});
       }
 
+      const rawPlaybookNotes = json.contact.playbook_session_notes as
+        | Record<string, unknown>
+        | null
+        | undefined;
+      const playbookNotesLoaded: Record<string, string> = {};
+      if (
+        rawPlaybookNotes &&
+        typeof rawPlaybookNotes === "object" &&
+        !Array.isArray(rawPlaybookNotes)
+      ) {
+        for (const [k, v] of Object.entries(rawPlaybookNotes)) {
+          if (typeof v === "string") playbookNotesLoaded[k] = v;
+        }
+      }
+      setPlaybookNotes(playbookNotesLoaded);
+
       const latest = json.assessment;
       if (latest) {
         const ans = (latest.answers ?? {}) as Record<string, 0 | 1 | 2>;
@@ -244,6 +265,7 @@ export function ContactBossWorkshopBody({
     async (body: {
       answers?: Record<string, 0 | 1 | 2>;
       pillarNotes?: Partial<Record<string, string>>;
+      playbookNotes?: Partial<Record<string, string>>;
     }) => {
       setSessionError(null);
       const {
@@ -318,14 +340,26 @@ export function ContactBossWorkshopBody({
     }
   }, [persistSession, showPillarNotes]);
 
+  const flushPendingPlaybookNotes = useCallback(() => {
+    const pending = pendingPlaybookNotesRef.current;
+    pendingPlaybookNotesRef.current = null;
+    if (pending && Object.keys(pending).length > 0) {
+      void persistSession({ playbookNotes: pending });
+    }
+  }, [persistSession]);
+
   useEffect(() => {
     return () => {
       if (answersDebounceRef.current) clearTimeout(answersDebounceRef.current);
       if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current);
+      if (playbookNotesDebounceRef.current) {
+        clearTimeout(playbookNotesDebounceRef.current);
+      }
       flushPendingAnswers();
       flushPendingNotes();
+      flushPendingPlaybookNotes();
     };
-  }, [flushPendingAnswers, flushPendingNotes]);
+  }, [flushPendingAnswers, flushPendingNotes, flushPendingPlaybookNotes]);
 
   const handleScoreChange = useCallback(
     (ref: string, score: 0 | 1 | 2) => {
@@ -360,6 +394,24 @@ export function ContactBossWorkshopBody({
     [flushPendingNotes, showPillarNotes]
   );
 
+  const handlePlaybookNotesChange = useCallback(
+    (ref: string, notes: string) => {
+      setPlaybookNotes((prev) => ({ ...prev, [ref]: notes }));
+      pendingPlaybookNotesRef.current = {
+        ...(pendingPlaybookNotesRef.current ?? {}),
+        [ref]: notes,
+      };
+      if (playbookNotesDebounceRef.current) {
+        clearTimeout(playbookNotesDebounceRef.current);
+      }
+      playbookNotesDebounceRef.current = setTimeout(() => {
+        playbookNotesDebounceRef.current = null;
+        flushPendingPlaybookNotes();
+      }, NOTES_DEBOUNCE_MS);
+    },
+    [flushPendingPlaybookNotes]
+  );
+
   const areaScores = computeAreaScores(matrixAnswers);
   const liveTotal = getTotalScore(matrixAnswers);
   const pillarDialStats = useMemo(() => computeBossPillarDialStats(matrixAnswers), [matrixAnswers]);
@@ -371,6 +423,7 @@ export function ContactBossWorkshopBody({
     : undefined;
 
   const scratchNoSave = !contactId && !draftCoachId;
+  const canSavePlaybookNotes = Boolean(contactId || draftCoachId);
 
   useEffect(() => {
     if (variant !== "page") return;
@@ -493,13 +546,10 @@ export function ContactBossWorkshopBody({
             onScoreChange={handleScoreChange}
             playbookLinkBase={playbookBase}
             scoreBarLabels="neutral"
-            onTooltipAddNotes={
-              showPillarNotes
-                ? (_ref: string) => {
-                    document
-                      .getElementById("boss-pillar-session-notes")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }
+            playbookNotes={canSavePlaybookNotes ? playbookNotes : undefined}
+            onPlaybookNotesChange={
+              workshopMode && canSavePlaybookNotes
+                ? handlePlaybookNotesChange
                 : undefined
             }
           />

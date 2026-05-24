@@ -20,6 +20,7 @@ function coachOptionFromInfo(coach: {
   full_name: string | null;
   coach_business_name: string | null;
   email: string | null;
+  joined_at: string | null;
 }) {
   return {
     id: coach.id,
@@ -27,6 +28,7 @@ function coachOptionFromInfo(coach: {
     full_name: coach.full_name,
     coach_business_name: coach.coach_business_name,
     email: coach.email,
+    joined_at: coach.joined_at,
   };
 }
 

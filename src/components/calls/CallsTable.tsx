@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   Columns3,
+  GripVertical,
   Search,
   SlidersHorizontal,
 } from "lucide-react";
+import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import type { CallRow } from "@/lib/callRow";
 import {
   callStatusClass,
@@ -59,18 +61,10 @@ type Props = {
   coachFilterOptions?: CoachFilterOption[];
   coachFilter?: string | "all";
   onCoachFilterChange?: (coachId: string | "all") => void;
+  settingsStorageKey?: string;
 };
 
-const DEFAULT_COLUMN_VISIBILITY: CallColumnVisibility = {
-  call: true,
-  business: true,
-  email: true,
-  phone: false,
-  status: true,
-  coach: true,
-  match: false,
-  actions: true,
-};
+const CALLS_TABLE_SETTINGS_STORAGE_KEY = "calls-table-settings-v2";
 
 const COLUMN_OPTIONS: Array<{ key: CallColumnKey; label: string }> = [
   { key: "call", label: "When" },
@@ -82,6 +76,58 @@ const COLUMN_OPTIONS: Array<{ key: CallColumnKey; label: string }> = [
   { key: "match", label: "Match" },
   { key: "actions", label: "Actions" },
 ];
+
+const DEFAULT_COLUMN_VISIBILITY: CallColumnVisibility = {
+  call: true,
+  business: true,
+  email: true,
+  phone: false,
+  status: true,
+  coach: true,
+  match: false,
+  actions: false,
+};
+
+const DEFAULT_COLUMN_ORDER: CallColumnKey[] = COLUMN_OPTIONS.map(
+  (option) => option.key
+);
+
+type PersistedCallTableSettings = {
+  columnVisibility: CallColumnVisibility;
+  columnOrder: CallColumnKey[];
+};
+
+function parsePersistedCallTableSettings(
+  raw: string
+): PersistedCallTableSettings | null {
+  try {
+    const parsed = JSON.parse(raw) as Partial<PersistedCallTableSettings>;
+    if (!parsed.columnVisibility || !parsed.columnOrder) return null;
+    const validKeys = new Set<CallColumnKey>(
+      COLUMN_OPTIONS.map((option) => option.key)
+    );
+    const columnVisibility = { ...DEFAULT_COLUMN_VISIBILITY };
+    for (const key of validKeys) {
+      if (typeof parsed.columnVisibility[key] === "boolean") {
+        columnVisibility[key] = parsed.columnVisibility[key] as boolean;
+      }
+    }
+    const seen = new Set<CallColumnKey>();
+    const columnOrder: CallColumnKey[] = [];
+    for (const key of parsed.columnOrder) {
+      if (validKeys.has(key) && !seen.has(key)) {
+        columnOrder.push(key);
+        seen.add(key);
+      }
+    }
+    for (const key of DEFAULT_COLUMN_ORDER) {
+      if (!seen.has(key)) columnOrder.push(key);
+    }
+    return { columnVisibility, columnOrder };
+  } catch {
+    return null;
+  }
+}
 
 function matchStatusLabel(status: string): string {
   switch (status) {
@@ -130,6 +176,7 @@ export function CallsTable({
   coachFilterOptions,
   coachFilter: controlledCoachFilter,
   onCoachFilterChange,
+  settingsStorageKey = CALLS_TABLE_SETTINGS_STORAGE_KEY,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const [timingFilter, setTimingFilter] = useState<TimingFilter>("all");
@@ -142,6 +189,12 @@ export function CallsTable({
   const [sortOrder, setSortOrder] = useState<CallSortOrder>("desc");
   const [columnVisibility, setColumnVisibility] =
     useState<CallColumnVisibility>(DEFAULT_COLUMN_VISIBILITY);
+  const [columnOrder, setColumnOrder] =
+    useState<CallColumnKey[]>(DEFAULT_COLUMN_ORDER);
+  const [draggingColumnKey, setDraggingColumnKey] =
+    useState<CallColumnKey | null>(null);
+  const [hasLoadedPersistedSettings, setHasLoadedPersistedSettings] =
+    useState(false);
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -171,6 +224,33 @@ export function CallsTable({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(settingsStorageKey);
+    if (raw) {
+      const parsed = parsePersistedCallTableSettings(raw);
+      if (parsed) {
+        setColumnVisibility(parsed.columnVisibility);
+        setColumnOrder(parsed.columnOrder);
+      }
+    }
+    setHasLoadedPersistedSettings(true);
+  }, [settingsStorageKey]);
+
+  useEffect(() => {
+    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
+    const payload: PersistedCallTableSettings = {
+      columnVisibility,
+      columnOrder,
+    };
+    window.localStorage.setItem(settingsStorageKey, JSON.stringify(payload));
+  }, [
+    hasLoadedPersistedSettings,
+    settingsStorageKey,
+    columnVisibility,
+    columnOrder,
+  ]);
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (timingFilter !== "all") count += 1;
@@ -183,14 +263,65 @@ export function CallsTable({
   const hasActiveSort =
     sortField !== "start_time" || sortOrder !== "desc";
 
-  const visibleColumns = useMemo(() => {
-    const cols = new Set<CallColumnKey>(COLUMN_OPTIONS.map((option) => option.key));
-    if (!showCoachColumn) cols.delete("coach");
-    if (!renderRowActions) cols.delete("actions");
-    return COLUMN_OPTIONS.filter(
-      (option) => cols.has(option.key) && columnVisibility[option.key]
-    );
-  }, [showCoachColumn, renderRowActions, columnVisibility]);
+  const columnMenuOptions = useMemo(
+    () =>
+      COLUMN_OPTIONS.filter((option) => {
+        if (option.key === "coach" && !showCoachColumn) return false;
+        if (option.key === "actions" && !renderRowActions) return false;
+        return true;
+      }),
+    [showCoachColumn, renderRowActions]
+  );
+
+  const applicableColumnKeys = useMemo(
+    () => new Set(columnMenuOptions.map((option) => option.key)),
+    [columnMenuOptions]
+  );
+
+  const shownColumnOptions = useMemo(
+    () =>
+      columnOrder
+        .filter(
+          (key) => applicableColumnKeys.has(key) && columnVisibility[key]
+        )
+        .map(
+          (key) => columnMenuOptions.find((option) => option.key === key)!
+        ),
+    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
+  );
+
+  const hiddenColumnOptions = useMemo(
+    () =>
+      columnOrder
+        .filter(
+          (key) => applicableColumnKeys.has(key) && !columnVisibility[key]
+        )
+        .map(
+          (key) => columnMenuOptions.find((option) => option.key === key)!
+        ),
+    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
+  );
+
+  const visibleColumns = useMemo(
+    () => shownColumnOptions,
+    [shownColumnOptions]
+  );
+
+  function moveColumnInOrder(
+    draggedKey: CallColumnKey,
+    targetKey: CallColumnKey
+  ) {
+    if (draggedKey === targetKey) return;
+    setColumnOrder((prev) => {
+      const from = prev.indexOf(draggedKey);
+      const to = prev.indexOf(targetKey);
+      if (from < 0 || to < 0) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
 
   const filteredCalls = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -353,12 +484,6 @@ export function CallsTable({
     }
   }
 
-  const columnMenuOptions = COLUMN_OPTIONS.filter((option) => {
-    if (option.key === "coach" && !showCoachColumn) return false;
-    if (option.key === "actions" && !renderRowActions) return false;
-    return true;
-  });
-
   return (
     <div
       className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm"
@@ -381,25 +506,24 @@ export function CallsTable({
           </div>
 
           <div ref={filtersMenuRef} className="relative">
-            <button
-              type="button"
+            <TableToolbarButton
+              label="Filters"
               aria-haspopup="true"
               aria-expanded={filtersMenuOpen}
+              active={filtersMenuOpen}
+              badge={activeFilterCount > 0 ? activeFilterCount : null}
               onClick={() => {
                 setFiltersMenuOpen((open) => !open);
                 setSortMenuOpen(false);
                 setColumnsMenuOpen(false);
               }}
-              title="Filters"
-              className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${filtersMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden />
-              {activeFilterCount > 0 ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                  {activeFilterCount}
-                </span>
-              ) : null}
-            </button>
+              icon={
+                <SlidersHorizontal
+                  className="h-5 w-5 text-slate-500"
+                  aria-hidden
+                />
+              }
+            />
             {filtersMenuOpen ? (
               <div
                 role="menu"
@@ -504,25 +628,22 @@ export function CallsTable({
           </div>
 
           <div ref={sortMenuRef} className="relative">
-            <button
-              type="button"
+            <TableToolbarButton
+              label="Sort"
               aria-haspopup="true"
               aria-expanded={sortMenuOpen}
+              active={sortMenuOpen}
+              badge={hasActiveSort ? 1 : null}
+              title={hasActiveSort ? "Sort (active)" : "Sort"}
               onClick={() => {
                 setSortMenuOpen((open) => !open);
                 setFiltersMenuOpen(false);
                 setColumnsMenuOpen(false);
               }}
-              title={hasActiveSort ? "Sort (active)" : "Sort"}
-              className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${sortMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <ArrowUpDown className="h-4 w-4 text-slate-500" aria-hidden />
-              {hasActiveSort ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                  1
-                </span>
-              ) : null}
-            </button>
+              icon={
+                <ArrowUpDown className="h-5 w-5 text-slate-500" aria-hidden />
+              }
+            />
             {sortMenuOpen ? (
               <div
                 role="menu"
@@ -577,49 +698,122 @@ export function CallsTable({
           </div>
 
           <div ref={columnsMenuRef} className="relative">
-            <button
-              type="button"
+            <TableToolbarButton
+              label="Columns"
               aria-haspopup="true"
               aria-expanded={columnsMenuOpen}
+              active={columnsMenuOpen}
               onClick={() => {
                 setColumnsMenuOpen((open) => !open);
                 setFiltersMenuOpen(false);
                 setSortMenuOpen(false);
               }}
-              title="Columns"
-              className={`inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${columnsMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-            >
-              <Columns3 className="h-4 w-4 text-slate-500" aria-hidden />
-            </button>
+              icon={
+                <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
+              }
+            />
             {columnsMenuOpen ? (
               <div
                 role="menu"
-                className="absolute left-0 z-[90] mt-1 w-[min(92vw,16rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                className="absolute left-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
               >
-                <p className="mb-2 text-xs font-medium text-slate-600">
-                  Show columns
+                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Shown
                 </p>
-                <div className="space-y-2">
-                  {columnMenuOptions.map((option) => (
-                    <label
-                      key={option.key}
-                      className="flex cursor-pointer items-center gap-2 text-sm text-slate-700"
+                <ul className="space-y-0.5 px-2">
+                  {shownColumnOptions.map(({ key, label }) => (
+                    <li
+                      key={key}
+                      role="none"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingColumnKey(key);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", key);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const droppedKey =
+                          (e.dataTransfer.getData(
+                            "text/plain"
+                          ) as CallColumnKey) || draggingColumnKey;
+                        if (droppedKey) moveColumnInOrder(droppedKey, key);
+                        setDraggingColumnKey(null);
+                      }}
+                      onDragEnd={() => setDraggingColumnKey(null)}
+                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
                     >
-                      <input
-                        type="checkbox"
-                        checked={columnVisibility[option.key]}
-                        onChange={(e) =>
-                          setColumnVisibility((prev) => ({
-                            ...prev,
-                            [option.key]: e.target.checked,
-                          }))
-                        }
-                        className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                      />
-                      {option.label}
-                    </label>
+                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                        <GripVertical
+                          className="h-3.5 w-3.5 text-slate-400"
+                          aria-hidden
+                        />
+                        <input
+                          type="checkbox"
+                          checked={columnVisibility[key]}
+                          onChange={(e) =>
+                            setColumnVisibility((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }))
+                          }
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <span>{label}</span>
+                      </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
+                <div className="my-2 border-t border-slate-200" />
+                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Hidden
+                </p>
+                <ul className="space-y-0.5 px-2">
+                  {hiddenColumnOptions.map(({ key, label }) => (
+                    <li
+                      key={key}
+                      role="none"
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingColumnKey(key);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", key);
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const droppedKey =
+                          (e.dataTransfer.getData(
+                            "text/plain"
+                          ) as CallColumnKey) || draggingColumnKey;
+                        if (droppedKey) moveColumnInOrder(droppedKey, key);
+                        setDraggingColumnKey(null);
+                      }}
+                      onDragEnd={() => setDraggingColumnKey(null)}
+                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                        <GripVertical
+                          className="h-3.5 w-3.5 text-slate-400"
+                          aria-hidden
+                        />
+                        <input
+                          type="checkbox"
+                          checked={columnVisibility[key]}
+                          onChange={(e) =>
+                            setColumnVisibility((prev) => ({
+                              ...prev,
+                              [key]: e.target.checked,
+                            }))
+                          }
+                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                        />
+                        <span>{label}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
           </div>

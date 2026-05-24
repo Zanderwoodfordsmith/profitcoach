@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadCallTableRows } from "@/lib/loadCallTableRows";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -101,18 +100,6 @@ export default function CoachCallsPage() {
               router.push(`/coach/contacts/${row.contact_id}`);
             }
           }}
-          renderRowActions={(row) =>
-            row.contact_id ? (
-              <Link
-                href={`/coach/contacts/${row.contact_id}`}
-                className="font-medium text-sky-700 hover:text-sky-900"
-              >
-                View prospect
-              </Link>
-            ) : (
-              <span className="text-xs text-slate-400">No linked contact</span>
-            )
-          }
           emptyMessage="No calls yet. When prospects book through your calendar, they will appear here."
         />
       </div>

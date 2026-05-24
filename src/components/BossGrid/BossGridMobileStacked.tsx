@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { AREAS, BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
@@ -40,6 +39,8 @@ export type BossGridMobileStackedProps = {
   interactive?: boolean;
   onScoreChange?: (ref: string, score: 0 | 1 | 2) => void;
   playbookLinkBase?: string;
+  playbookNotes?: Record<string, string>;
+  onPlaybookNotesChange?: (ref: string, notes: string) => void;
 };
 
 export function BossGridMobileStacked({
@@ -47,8 +48,9 @@ export function BossGridMobileStacked({
   interactive = false,
   onScoreChange,
   playbookLinkBase,
+  playbookNotes,
+  onPlaybookNotesChange,
 }: BossGridMobileStackedProps) {
-  const router = useRouter();
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(PILLARS.map((p) => [p.key, true]))
   );
@@ -103,6 +105,8 @@ export function BossGridMobileStacked({
                   const area = AREAS.find((a) => a.id === playbook.area);
                   const canScore = interactive && Boolean(onScoreChange);
                   const canLink = Boolean(playbookLinkBase);
+                  const canNotes = interactive && Boolean(onPlaybookNotesChange);
+                  const notes = playbookNotes?.[playbook.ref] ?? "";
 
                   const inner = (
                     <>
@@ -124,36 +128,46 @@ export function BossGridMobileStacked({
                     </>
                   );
 
-                  if (canLink && !canScore) {
-                    return (
-                      <li key={playbook.ref}>
-                        <Link
-                          href={`${playbookLinkBase}/${playbook.ref}`}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50"
-                        >
-                          {inner}
-                        </Link>
-                      </li>
-                    );
-                  }
-
                   return (
-                    <li key={playbook.ref}>
-                      <button
-                        type="button"
-                        disabled={!canScore && !canLink}
-                        onClick={() => {
-                          if (canScore && onScoreChange) {
-                            const next = (((score ?? 0) + 1) % 3) as 0 | 1 | 2;
-                            onScoreChange(playbook.ref, next);
-                          } else if (canLink && playbookLinkBase) {
-                            router.push(`${playbookLinkBase}/${playbook.ref}`);
-                          }
-                        }}
-                        className="flex w-full items-start gap-3 px-4 py-3 text-left hover:bg-slate-50 disabled:cursor-default disabled:hover:bg-transparent"
-                      >
-                        {inner}
-                      </button>
+                    <li key={playbook.ref} className="px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        {canScore ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = (((score ?? 0) + 1) % 3) as 0 | 1 | 2;
+                              onScoreChange!(playbook.ref, next);
+                            }}
+                            className="flex min-w-0 flex-1 items-start gap-3 text-left hover:opacity-90"
+                          >
+                            {inner}
+                          </button>
+                        ) : canLink && playbookLinkBase ? (
+                          <Link
+                            href={`${playbookLinkBase}/${playbook.ref}`}
+                            className="flex min-w-0 flex-1 items-start gap-3 hover:opacity-90"
+                          >
+                            {inner}
+                          </Link>
+                        ) : (
+                          <div className="flex min-w-0 flex-1 items-start gap-3">{inner}</div>
+                        )}
+                      </div>
+                      {canNotes ? (
+                        <label className="mt-3 flex flex-col gap-1">
+                          <span className="text-[11px] font-medium text-slate-600">
+                            Session notes
+                          </span>
+                          <textarea
+                            className="min-h-[64px] w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-sm text-slate-900 outline-none ring-sky-500 focus:border-sky-300 focus:ring-1"
+                            value={notes}
+                            onChange={(e) =>
+                              onPlaybookNotesChange!(playbook.ref, e.target.value)
+                            }
+                            placeholder="Notes for this playbook…"
+                          />
+                        </label>
+                      ) : null}
                     </li>
                   );
                 })}

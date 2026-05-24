@@ -6,6 +6,8 @@ import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
 import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote";
 import { StickyPageHeader } from "@/components/layout";
+import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
+import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -1484,19 +1486,6 @@ export default function AdminPage() {
       <StickyPageHeader
         title="Coaches"
         tabs={<CoachesHubTabs />}
-        actions={
-          <button
-            type="button"
-            onClick={() => {
-              setShowAddCoach(true);
-              setCreateError(null);
-              setCreateSuccess(null);
-            }}
-            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-          >
-            + Add coach
-          </button>
-        }
       />
 
       {checkingRole ? (
@@ -1510,7 +1499,7 @@ export default function AdminPage() {
       {!checkingRole && !loading && coaches.length === 0 && !error ? (
         <p className="text-sm text-slate-600">
           No coaches found yet. Use the{" "}
-          <span className="font-semibold">Add coach</span> button above
+          <span className="font-semibold">Add</span> button in the toolbar
           to invite or create your first coach.
         </p>
       ) : null}
@@ -1710,27 +1699,34 @@ export default function AdminPage() {
               />
             </div>
 
+            <TableToolbarAddButton
+              onClick={() => {
+                setShowAddCoach(true);
+                setCreateError(null);
+                setCreateSuccess(null);
+              }}
+            />
+
             <div ref={filtersMenuRef} className="relative">
-              <button
-                type="button"
+              <TableToolbarButton
+                label="Filters"
                 aria-haspopup="true"
                 aria-expanded={filtersMenuOpen}
                 aria-controls="coach-filters-menu"
+                active={filtersMenuOpen}
+                badge={activeFilterCount > 0 ? activeFilterCount : null}
                 onClick={() => {
                   setFiltersMenuOpen((open) => !open);
                   setSortMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
-                title="Filters"
-                className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${filtersMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-              >
-                <SlidersHorizontal className="h-4 w-4 text-slate-500" aria-hidden />
-                {activeFilterCount > 0 ? (
-                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                    {activeFilterCount}
-                  </span>
-                ) : null}
-              </button>
+                icon={
+                  <SlidersHorizontal
+                    className="h-5 w-5 text-slate-500"
+                    aria-hidden
+                  />
+                }
+              />
               {filtersMenuOpen ? (
                 <div
                   id="coach-filters-menu"
@@ -1793,26 +1789,23 @@ export default function AdminPage() {
             </div>
 
             <div ref={sortMenuRef} className="relative">
-              <button
-                type="button"
+              <TableToolbarButton
+                label="Sort"
                 aria-haspopup="true"
                 aria-expanded={sortMenuOpen}
                 aria-controls="coach-sort-menu"
+                active={sortMenuOpen}
+                badge={hasActiveSort ? 1 : null}
+                title={hasActiveSort ? "Sort (active)" : "Sort"}
                 onClick={() => {
                   setSortMenuOpen((open) => !open);
                   setFiltersMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
-                title={hasActiveSort ? "Sort (active)" : "Sort"}
-                className={`relative inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${sortMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-              >
-                <ArrowUpDown className="h-4 w-4 text-slate-500" aria-hidden />
-                {hasActiveSort ? (
-                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold leading-none text-white">
-                    1
-                  </span>
-                ) : null}
-              </button>
+                icon={
+                  <ArrowUpDown className="h-5 w-5 text-slate-500" aria-hidden />
+                }
+              />
               {sortMenuOpen ? (
                 <div
                   id="coach-sort-menu"
@@ -1873,22 +1866,22 @@ export default function AdminPage() {
             </div>
 
             <div ref={columnsMenuRef} className="relative">
-              <button
-                type="button"
+              <TableToolbarButton
+                label="Columns"
                 id="coach-columns-trigger"
                 aria-haspopup="true"
                 aria-expanded={columnsMenuOpen}
                 aria-controls="coach-columns-menu"
+                active={columnsMenuOpen}
                 onClick={() => {
                   setColumnsMenuOpen((open) => !open);
                   setFiltersMenuOpen(false);
                   setSortMenuOpen(false);
                 }}
-                title="Columns"
-                className={`inline-flex items-center rounded-md p-2 text-slate-600 outline-none transition hover:bg-slate-100 hover:text-slate-800 focus:ring-2 focus:ring-sky-500 ${columnsMenuOpen ? "bg-slate-100 text-slate-900" : ""}`}
-              >
-                <Columns3 className="h-4 w-4 text-slate-500" aria-hidden />
-              </button>
+                icon={
+                  <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
+                }
+              />
               {columnsMenuOpen ? (
                 <div
                   id="coach-columns-menu"

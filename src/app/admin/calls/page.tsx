@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { loadCallTableRows } from "@/lib/loadCallTableRows";
@@ -176,22 +175,6 @@ export default function AdminCallsPage() {
           showCoachColumn={true}
           coachFilterOptions={coachOptions}
           onRowClick={navigateToCall}
-          renderRowActions={(row) =>
-            row.contact_id ? (
-              <Link
-                href={`/coach/contacts/${row.contact_id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigateToCall(row);
-                }}
-                className="font-medium text-sky-700 hover:text-sky-900"
-              >
-                View prospect
-              </Link>
-            ) : (
-              <span className="text-xs text-slate-400">No linked contact</span>
-            )
-          }
           emptyMessage="No calls found. Bookings from GHL calendars will appear here."
         />
       </div>

@@ -7,7 +7,10 @@ import {
 } from "@/lib/bossScorecardScores";
 import { buildBossScorecardGhlCustomFields } from "@/lib/ghlLeadWebhookCustomFields";
 import type { QualifyingData } from "@/lib/bossScorecardQuestions";
-import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
+import {
+  tryInsertContactStripping,
+  tryUpdateContactStripping,
+} from "@/lib/contactSchemaSafeInsert";
 import {
   fireLeadWebhook,
   getCoachLeadWebhookUrl,
@@ -198,6 +201,29 @@ async function resolveCoachForAssessment(
   return { coachId: coach.id, coachSlug };
 }
 
+async function patchExistingContactFields(
+  contactId: string,
+  existing: { full_name?: string | null; business_name?: string | null },
+  fullName: string,
+  businessName: string | null,
+  phone: string | null
+): Promise<void> {
+  const patch: Record<string, unknown> = {};
+  if (
+    fullName &&
+    (existing.full_name == null || existing.full_name === "Unknown")
+  ) {
+    patch.full_name = fullName;
+  }
+  if (phone) patch.phone = phone;
+  if (businessName && !existing.business_name) {
+    patch.business_name = businessName;
+  }
+  if (Object.keys(patch).length > 0) {
+    await tryUpdateContactStripping(contactId, patch);
+  }
+}
+
 async function resolveOrCreateContact(
   coachId: string,
   fullName: string,
@@ -206,23 +232,42 @@ async function resolveOrCreateContact(
   phone: string | null
 ): Promise<{ contactId: string | null; error?: NextResponse }> {
   let contactId: string | null = null;
+  let existingContact: {
+    id: string;
+    full_name?: string | null;
+    business_name?: string | null;
+  } | null = null;
 
   if (email) {
     const { data: existing, error: contactLookupError } = await supabaseAdmin
       .from("contacts")
-      .select("id")
+      .select("id, full_name, business_name")
       .eq("coach_id", coachId)
       .eq("email", email)
       .maybeSingle();
 
     if (!contactLookupError && existing) {
       contactId = existing.id as string;
+      existingContact = existing as {
+        id: string;
+        full_name?: string | null;
+        business_name?: string | null;
+      };
     } else if (contactLookupError) {
       console.error("assessments contact lookup:", contactLookupError);
     }
   }
 
-  if (contactId) return { contactId };
+  if (contactId && existingContact) {
+    await patchExistingContactFields(
+      contactId,
+      existingContact,
+      fullName,
+      businessName,
+      phone
+    );
+    return { contactId };
+  }
 
   const baseInsert: Record<string, unknown> = {
     coach_id: coachId,
@@ -248,7 +293,15 @@ async function resolveOrCreateContact(
         .eq("email", email)
         .maybeSingle();
       if (!racedLookupError && raced?.id) {
-        return { contactId: raced.id as string };
+        const racedId = raced.id as string;
+        await patchExistingContactFields(
+          racedId,
+          {},
+          fullName,
+          businessName,
+          phone
+        );
+        return { contactId: racedId };
       }
       return {
         contactId: null,

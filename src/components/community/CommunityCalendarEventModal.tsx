@@ -19,6 +19,13 @@ import {
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
+import { CommunityCalendarCoverImage } from "@/components/community/CommunityCalendarCoverImage";
+import {
+  communityCalendarCancelledBadgeClass,
+  communityCalendarCoverUrl,
+} from "@/lib/communityCalendarDisplay";
+import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
+import { updateCommunityCalendarCancellationReason } from "@/lib/communityCalendarData";
 
 type Props = {
   occurrence: CommunityCalendarOccurrence;
@@ -27,6 +34,7 @@ type Props = {
   onEdit?: () => void;
   onDelete?: () => void | Promise<void>;
   onRecordingSaved?: () => void;
+  onCancellationReasonSaved?: () => void;
 };
 
 function formatEventRange(occurrence: CommunityCalendarOccurrence): string {
@@ -70,18 +78,31 @@ export function CommunityCalendarEventModal({
   onEdit,
   onDelete,
   onRecordingSaved,
+  onCancellationReasonSaved,
 }: Props) {
   const whenLabel = useMemo(() => formatEventRange(occurrence), [occurrence]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [recordingLinkDraft, setRecordingLinkDraft] = useState(
     occurrence.recording_link_url ?? ""
   );
+  const [cancellationReasonDraft, setCancellationReasonDraft] = useState(
+    occurrence.cancellationReason ?? ""
+  );
   const [recordingSaving, setRecordingSaving] = useState(false);
+  const [cancellationReasonSaving, setCancellationReasonSaving] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [cancellationReasonError, setCancellationReasonError] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     setRecordingLinkDraft(occurrence.recording_link_url ?? "");
     setRecordingError(null);
+  }, [occurrence]);
+
+  useEffect(() => {
+    setCancellationReasonDraft(occurrence.cancellationReason ?? "");
+    setCancellationReasonError(null);
   }, [occurrence]);
 
   const isPast = useMemo(() => {
@@ -90,6 +111,7 @@ export function CommunityCalendarEventModal({
   }, [occurrence.endsAtIso]);
 
   const watchUrl = useMemo(() => recordingWatchUrl(occurrence), [occurrence]);
+  const coverUrl = useMemo(() => communityCalendarCoverUrl(occurrence), [occurrence]);
 
   const saveRecordingLink = useCallback(async () => {
     const trimmed = recordingLinkDraft.trim();
@@ -123,16 +145,43 @@ export function CommunityCalendarEventModal({
     }
   }, [recordingLinkDraft, occurrence.eventId, onRecordingSaved]);
 
+  const saveCancellationReason = useCallback(async () => {
+    setCancellationReasonSaving(true);
+    setCancellationReasonError(null);
+    try {
+      await updateCommunityCalendarCancellationReason(
+        occurrence.eventId,
+        occurrence.startsAtIso,
+        cancellationReasonDraft.trim() || null
+      );
+      onCancellationReasonSaved?.();
+    } catch (e) {
+      const msg = supabaseErrorMessage(e);
+      const hint = communityAccessHint(msg);
+      setCancellationReasonError(
+        [msg, hint ?? ""].filter(Boolean).join("\n\n") ||
+          "Could not save cancellation reason."
+      );
+    } finally {
+      setCancellationReasonSaving(false);
+    }
+  }, [
+    cancellationReasonDraft,
+    occurrence.eventId,
+    occurrence.startsAtIso,
+    onCancellationReasonSaved,
+  ]);
+
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/55 px-4 py-6">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/55 p-4 sm:p-6">
       <button
         type="button"
         aria-label="Close event card"
         onClick={onClose}
         className="absolute inset-0 cursor-default"
       />
-      <article className="relative z-[121] w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
-        {canManage ? (
+      <article className="relative z-[121] flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        {canManage && !occurrence.isCancelled ? (
           <div className="absolute right-12 top-3 z-20">
             <button
               type="button"
@@ -171,7 +220,7 @@ export function CommunityCalendarEventModal({
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  Cancel session
                 </button>
               </div>
             ) : null}
@@ -181,32 +230,65 @@ export function CommunityCalendarEventModal({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute right-3 top-3 rounded-full bg-white/90 p-1 text-slate-600 shadow-sm hover:text-slate-900"
+          className="absolute right-3 top-3 z-20 rounded-full bg-white/90 p-1 text-slate-600 shadow-sm hover:text-slate-900"
         >
           <X className="h-4 w-4" />
         </button>
-        <div className="relative h-44 w-full overflow-hidden bg-slate-100">
-          {occurrence.cover_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={occurrence.cover_image_url}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
-              Community event
-            </div>
-          )}
-        </div>
-        <div className="space-y-3 p-5">
-          <h2 className="text-2xl font-bold leading-tight text-slate-900">
+        <CommunityCalendarCoverImage occurrence={occurrence} variant="hero" />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="space-y-3 p-5">
+          {occurrence.isCancelled ? (
+            <p className={communityCalendarCancelledBadgeClass()}>Cancelled</p>
+          ) : null}
+          <h2
+            className={`text-2xl font-bold leading-tight ${
+              occurrence.isCancelled
+                ? "text-rose-600 line-through"
+                : "text-slate-900"
+            }`}
+          >
             {occurrence.title}
           </h2>
           <p className="flex items-start gap-2 text-sm text-slate-700">
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
             <span>{whenLabel}</span>
           </p>
+          {occurrence.isCancelled ? (
+            <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+              <p>This session has been cancelled and will not take place.</p>
+              {occurrence.cancellationReason?.trim() ? (
+                <p className="mt-2 font-medium text-rose-900">
+                  {occurrence.cancellationReason.trim()}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+          {occurrence.isCancelled && canManage ? (
+            <div className="space-y-2 border-t border-rose-100 pt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Cancellation reason
+              </p>
+              <textarea
+                value={cancellationReasonDraft}
+                onChange={(e) => setCancellationReasonDraft(e.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="Why was this session cancelled?"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-200"
+              />
+              {cancellationReasonError ? (
+                <p className="text-xs text-rose-700">{cancellationReasonError}</p>
+              ) : null}
+              <button
+                type="button"
+                disabled={cancellationReasonSaving}
+                onClick={() => void saveCancellationReason()}
+                className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-900 disabled:opacity-50"
+              >
+                {cancellationReasonSaving ? "Saving…" : "Save reason"}
+              </button>
+            </div>
+          ) : null}
           {occurrence.location_kind === "link" && occurrence.location_url ? (
             <p className="flex items-start gap-2 text-sm">
               <LinkIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
@@ -231,6 +313,12 @@ export function CommunityCalendarEventModal({
                 .split(/\r?\n/)
                 .map((line) => line.trim())
                 .filter(Boolean)
+                .filter((line) => {
+                  const url = maybeUrl(line);
+                  if (!url) return true;
+                  if (coverUrl && url === coverUrl) return false;
+                  return inferCommunityPostMediaKindFromUrl(url) !== "image";
+                })
                 .map((line, idx) => {
                   const url = maybeUrl(line);
                   if (url) {
@@ -255,7 +343,7 @@ export function CommunityCalendarEventModal({
                 })}
             </div>
           ) : null}
-          {isPast && watchUrl ? (
+          {isPast && watchUrl && !occurrence.isCancelled ? (
             <div className="border-t border-slate-100 pt-3">
               <a
                 href={watchUrl}
@@ -268,7 +356,7 @@ export function CommunityCalendarEventModal({
               </a>
             </div>
           ) : null}
-          {isPast && canManage ? (
+          {isPast && canManage && !occurrence.isCancelled ? (
             <div className="space-y-2 border-t border-slate-100 pt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Recording link
@@ -297,6 +385,7 @@ export function CommunityCalendarEventModal({
               </p>
             </div>
           ) : null}
+          </div>
         </div>
       </article>
     </div>

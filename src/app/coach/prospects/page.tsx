@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
@@ -13,6 +12,8 @@ import {
   type ProspectRow,
 } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
+import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
+import type { UpdatedProspectFields } from "@/lib/prospects/updateProspectFields";
 
 export default function CoachProspectsPage() {
   const router = useRouter();
@@ -81,6 +82,8 @@ export default function CoachProspectsPage() {
           full_name: string;
           email: string | null;
           business_name: string | null;
+          job_title: string | null;
+          prospect_status: string | null;
           phone: string | null;
           type: string;
           created_at: string;
@@ -92,7 +95,7 @@ export default function CoachProspectsPage() {
               .eq("coach_id", effectiveId)
               .eq("type", "prospect")
               .order("created_at", { ascending: false }),
-          "id, full_name, email, business_name, type, created_at"
+          "id, full_name, email, business_name, job_title, prospect_status, type, created_at"
         );
 
       if (cancelled) return;
@@ -110,10 +113,13 @@ export default function CoachProspectsPage() {
           contactsData.map((c) => ({
             id: c.id,
             full_name: c.full_name,
+            job_title: c.job_title ?? null,
+            prospect_status: c.prospect_status ?? null,
             email: c.email ?? null,
             business_name: c.business_name ?? null,
             phone: c.phone ?? null,
             type: c.type ?? "prospect",
+            coach_id: effectiveId,
           }))
         );
 
@@ -265,24 +271,62 @@ export default function CoachProspectsPage() {
     }
   }
 
+  async function handleUpdateProspect(
+    row: ProspectRow,
+    patch: ProspectFieldPatch
+  ) {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setError("You must be signed in to update a prospect.");
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${session.access_token}`,
+      "Content-Type": "application/json",
+    };
+    if (impersonatingCoachId) {
+      headers["x-impersonate-coach-id"] = impersonatingCoachId;
+    }
+
+    const res = await fetch(`/api/coach/contacts/${row.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(patch),
+    });
+    const body = (await res.json().catch(() => ({}))) as UpdatedProspectFields & {
+      error?: string;
+    };
+    if (!res.ok) {
+      throw new Error(body.error ?? "Unable to update prospect.");
+    }
+
+    setProspects((prev) =>
+      prev.map((p) =>
+        p.id === row.id
+          ? {
+              ...p,
+              full_name: body.full_name,
+              email: body.email,
+              phone: body.phone,
+              job_title: body.job_title,
+              business_name: body.business_name,
+              prospect_status: body.prospect_status,
+              status: body.status,
+              next_action: body.next_action,
+            }
+          : p
+      )
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Prospects"
         description="Add prospects and share your assessment link, or view those who have completed assessments."
-        actions={
-          <button
-            type="button"
-            onClick={() => {
-              setShowAddProspect(true);
-              setCreateError(null);
-              setCreateSuccess(null);
-            }}
-            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-          >
-            + Add prospect
-          </button>
-        }
       />
 
       <div className="flex w-full flex-col gap-4">
@@ -323,15 +367,14 @@ export default function CoachProspectsPage() {
         error={error}
         showCoachColumn={false}
         showTypeColumn={true}
+        onAddClick={() => {
+          setShowAddProspect(true);
+          setCreateError(null);
+          setCreateSuccess(null);
+        }}
         onRowClick={(id) => router.push(`/coach/contacts/${id}`)}
-        renderRowActions={(row) => (
-          <Link
-            href={`/coach/contacts/${row.id}`}
-            className="font-medium text-sky-700 hover:text-sky-900"
-          >
-            View prospect
-          </Link>
-        )}
+        editable
+        onUpdateProspect={handleUpdateProspect}
         onDelete={handleDeleteProspect}
         deletingId={deletingId}
         emptyMessage="No prospects yet. Add one below or share your assessment link."

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { BookOpen, StickyNote } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
@@ -218,7 +218,8 @@ type TooltipPanelProps = {
   onPortalMouseLeave?: () => void;
   answerScores?: AnswersMap;
   getPlaybookUrl?: (ref: string) => string | null;
-  onTooltipAddNotes?: (ref: string) => void;
+  playbookNotes?: Record<string, string>;
+  onPlaybookNotesChange?: (ref: string, notes: string) => void;
   onDismiss?: () => void;
   /** When set, position tracks this element on scroll/resize (glass matrix). */
   anchorRef?: RefObject<HTMLElement | null>;
@@ -232,23 +233,30 @@ function BossQuestionTooltipPanel({
   onPortalMouseLeave,
   answerScores,
   getPlaybookUrl,
-  onTooltipAddNotes,
+  playbookNotes,
+  onPlaybookNotesChange,
   onDismiss,
   anchorRef,
 }: TooltipPanelProps) {
   const groupId = useId();
   const current = answerScores?.[tooltip.ref] as 0 | 1 | 2 | undefined;
   const [local, setLocal] = useState<0 | 1 | 2 | undefined>(current);
+  const savedNotes = playbookNotes?.[tooltip.ref] ?? "";
+  const [localNotes, setLocalNotes] = useState(savedNotes);
 
   useEffect(() => {
     setLocal(current);
   }, [current, tooltip.ref]);
 
+  useEffect(() => {
+    setLocalNotes(savedNotes);
+  }, [savedNotes, tooltip.ref]);
+
   const playbookUrl = getPlaybookUrl?.(tooltip.ref) ?? null;
   const playbookMeta = getPlaybookMeta(tooltip.ref);
   const playbookTitle = playbookMeta?.name ?? tooltip.ref;
   const showScoreRadios = Boolean(onPickScore);
-  const showNotes = Boolean(onTooltipAddNotes);
+  const showNotes = Boolean(onPlaybookNotesChange);
   const showPlaybook = Boolean(playbookUrl);
 
   const [box, setBox] = useState<{
@@ -401,21 +409,29 @@ function BossQuestionTooltipPanel({
 
       {showNotes ? (
         <div
-          className={`flex flex-col gap-3 sm:flex-row sm:flex-wrap ${
+          className={
             showScoreRadios ? "mt-4 border-t border-slate-200 pt-4" : ""
-          }`}
+          }
         >
-          <button
-            type="button"
-            className="inline-flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-full border-2 border-slate-300 bg-transparent px-5 text-sm font-semibold text-slate-800 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
-            onClick={() => {
-              onTooltipAddNotes?.(tooltip.ref);
-              onDismiss?.();
-            }}
-          >
-            <StickyNote className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            Add notes
-          </button>
+          <label className="flex flex-col gap-1.5" htmlFor={`${groupId}-notes`}>
+            <span className="text-sm font-semibold text-slate-700">
+              Session notes
+            </span>
+            <span className="text-xs text-slate-500">
+              Saved automatically for this client.
+            </span>
+            <textarea
+              id={`${groupId}-notes`}
+              className="min-h-[88px] w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-snug text-slate-900 outline-none ring-sky-500 focus:border-sky-300 focus:ring-2"
+              value={localNotes}
+              onChange={(e) => {
+                const next = e.target.value;
+                setLocalNotes(next);
+                onPlaybookNotesChange?.(tooltip.ref, next);
+              }}
+              placeholder="What did you discuss for this playbook?"
+            />
+          </label>
         </div>
       ) : null}
     </div>
@@ -430,7 +446,8 @@ export function BossQuestionTooltipPortal({
   onPortalMouseLeave,
   answerScores,
   getPlaybookUrl,
-  onTooltipAddNotes,
+  playbookNotes,
+  onPlaybookNotesChange,
   onDismiss,
   anchorRef,
 }: {
@@ -441,7 +458,8 @@ export function BossQuestionTooltipPortal({
   onPortalMouseLeave?: () => void;
   answerScores?: AnswersMap;
   getPlaybookUrl?: (ref: string) => string | null;
-  onTooltipAddNotes?: (ref: string) => void;
+  playbookNotes?: Record<string, string>;
+  onPlaybookNotesChange?: (ref: string, notes: string) => void;
   onDismiss?: () => void;
   anchorRef?: RefObject<HTMLElement | null>;
 }) {
@@ -468,7 +486,8 @@ export function BossQuestionTooltipPortal({
       onPortalMouseLeave={onPortalMouseLeave}
       answerScores={answerScores}
       getPlaybookUrl={getPlaybookUrl}
-      onTooltipAddNotes={onTooltipAddNotes}
+      playbookNotes={playbookNotes}
+      onPlaybookNotesChange={onPlaybookNotesChange}
       onDismiss={onDismiss}
       anchorRef={anchorRef}
     />,

@@ -11,6 +11,8 @@ import {
   type ProspectRow,
 } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
+import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
+import type { UpdatedProspectFields } from "@/lib/prospects/updateProspectFields";
 
 export default function AdminProspectsPage() {
   const router = useRouter();
@@ -185,6 +187,52 @@ export default function AdminProspectsPage() {
     }
   }
 
+  async function handleUpdateProspect(
+    row: ProspectRow,
+    patch: ProspectFieldPatch
+  ) {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setError("You must be signed in to update a prospect.");
+      return;
+    }
+
+    const res = await fetch(`/api/admin/contacts/${row.id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(patch),
+    });
+    const body = (await res.json().catch(() => ({}))) as UpdatedProspectFields & {
+      error?: string;
+    };
+    if (!res.ok) {
+      throw new Error(body.error ?? "Unable to update prospect.");
+    }
+
+    setProspects((prev) =>
+      prev.map((p) =>
+        p.id === row.id
+          ? {
+              ...p,
+              full_name: body.full_name,
+              email: body.email,
+              phone: body.phone,
+              job_title: body.job_title,
+              business_name: body.business_name,
+              prospect_status: body.prospect_status,
+              status: body.status,
+              next_action: body.next_action,
+            }
+          : p
+      )
+    );
+  }
+
   async function handleCreateProspect(e: React.FormEvent) {
     e.preventDefault();
     setCreateError(null);
@@ -269,19 +317,6 @@ export default function AdminProspectsPage() {
       <StickyPageHeader
         title="Prospects"
         description="View prospects by coach, filter, and add prospects directly from the admin area."
-        actions={
-          <button
-            type="button"
-            onClick={() => {
-              setShowAddProspect(true);
-              setCreateError(null);
-              setCreateSuccess(null);
-            }}
-            className="inline-flex items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500"
-          >
-            + Add prospect
-          </button>
-        }
       />
 
       {loading && (
@@ -324,19 +359,17 @@ export default function AdminProspectsPage() {
         showCoachColumn={true}
         showTypeColumn={false}
         coachFilterOptions={coachOptions}
+        onAddClick={() => {
+          setShowAddProspect(true);
+          setCreateError(null);
+          setCreateSuccess(null);
+        }}
         onRowClick={(id) => {
           const row = prospects.find((p) => p.id === id);
           if (row) navigateToProspect(row);
         }}
-        renderRowActions={(row) => (
-          <button
-            type="button"
-            className="font-medium text-sky-700 hover:text-sky-900"
-            onClick={() => navigateToProspect(row)}
-          >
-            View prospect
-          </button>
-        )}
+        editable
+        onUpdateProspect={handleUpdateProspect}
         onDelete={handleDeleteProspect}
         deletingId={deletingId}
         emptyMessage="No prospects found for this selection."

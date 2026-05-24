@@ -9,6 +9,7 @@ type CoachInfo = {
   full_name: string | null;
   coach_business_name: string | null;
   email: string | null;
+  joined_at: string | null;
 };
 
 export type CsvPaymentStatus =
@@ -142,7 +143,9 @@ export async function loadCoachDirectory(
 ): Promise<CoachDirectory> {
   const { data: coachesData, error: coachesError } = await supabase
     .from("coaches")
-    .select("id, slug, profiles!inner(full_name, coach_business_name)")
+    .select(
+      "id, slug, profiles!inner(full_name, coach_business_name, disco_community_joined_on, created_at)"
+    )
     .order("slug", { ascending: true });
 
   if (coachesError) {
@@ -158,6 +161,10 @@ export async function loadCoachDirectory(
         full_name: (profile?.full_name as string | null) ?? null,
         coach_business_name: (profile?.coach_business_name as string | null) ?? null,
         email: null,
+        joined_at:
+          (profile?.disco_community_joined_on as string | null) ??
+          (profile?.created_at as string | null) ??
+          null,
       };
     }) ?? [];
 
