@@ -1,3 +1,5 @@
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
 type SupabaseLikeError = {
   code?: string | null;
   message?: string | null;
@@ -17,6 +19,71 @@ export function isMissingColumnError(error: SupabaseLikeError): boolean {
     msg.includes("could not find") ||
     (msg.includes("column") && msg.includes("contacts"))
   );
+}
+
+export const CONTACTS_SESSION_NOTES_MIGRATION_HINT =
+  "Apply Supabase migrations for contacts session notes (pillar_session_notes and playbook_session_notes), then retry.";
+
+type WorkshopSessionContact = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  business_name: string | null;
+  coach_id: string | null;
+  pillar_session_notes: unknown;
+  playbook_session_notes: unknown;
+};
+
+/**
+ * Loads a contact for the BOSS workshop session API, falling back when note
+ * columns are missing (migration not applied yet).
+ */
+export async function loadContactForWorkshopSession(
+  contactId: string
+): Promise<{ contact: WorkshopSessionContact | null; error: SupabaseLikeError }> {
+  const withNotes =
+    "id, full_name, email, business_name, coach_id, pillar_session_notes, playbook_session_notes";
+  const base = "id, full_name, email, business_name, coach_id";
+
+  const first = await supabaseAdmin
+    .from("contacts")
+    .select(withNotes)
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (!first.error && first.data) {
+    return { contact: first.data as WorkshopSessionContact, error: null };
+  }
+
+  if (first.error && !isMissingColumnError(first.error)) {
+    return { contact: null, error: first.error };
+  }
+
+  const fallback = await supabaseAdmin
+    .from("contacts")
+    .select(base)
+    .eq("id", contactId)
+    .maybeSingle();
+
+  if (fallback.error) {
+    return { contact: null, error: fallback.error };
+  }
+
+  if (!fallback.data) {
+    return { contact: null, error: null };
+  }
+
+  return {
+    contact: {
+      ...(fallback.data as Omit<
+        WorkshopSessionContact,
+        "pillar_session_notes" | "playbook_session_notes"
+      >),
+      pillar_session_notes: {},
+      playbook_session_notes: {},
+    },
+    error: null,
+  };
 }
 
 /**

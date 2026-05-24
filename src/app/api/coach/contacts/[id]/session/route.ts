@@ -2,6 +2,11 @@ import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { PLAYBOOKS } from "@/lib/bossData";
 import { isCoachClientHubAllowedUserId } from "@/lib/coachClientHubAccessServer";
+import {
+  CONTACTS_SESSION_NOTES_MIGRATION_HINT,
+  isMissingColumnError,
+  loadContactForWorkshopSession,
+} from "@/lib/contactsSchemaSafeSelect";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getTotalScore } from "@/lib/bossScores";
 
@@ -151,7 +156,11 @@ async function mergeContactJsonNotes(
     .maybeSingle();
 
   if (readNotesError) {
-    return { error: "Failed to load notes." };
+    return {
+      error: isMissingColumnError(readNotesError)
+        ? CONTACTS_SESSION_NOTES_MIGRATION_HINT
+        : "Failed to load notes.",
+    };
   }
 
   const prev =
@@ -165,8 +174,9 @@ async function mergeContactJsonNotes(
 
   if (notesError) {
     return {
-      error:
-        column === "pillar_session_notes"
+      error: isMissingColumnError(notesError)
+        ? CONTACTS_SESSION_NOTES_MIGRATION_HINT
+        : column === "pillar_session_notes"
           ? "Failed to save pillar notes."
           : "Failed to save playbook notes.",
     };
@@ -186,15 +196,22 @@ export async function GET(
 
   const { id: contactId } = await context.params;
 
-  const { data: contact, error: contactError } = await supabaseAdmin
-    .from("contacts")
-    .select(
-      "id, full_name, email, business_name, coach_id, pillar_session_notes, playbook_session_notes"
-    )
-    .eq("id", contactId)
-    .maybeSingle();
+  const { contact, error: contactError } =
+    await loadContactForWorkshopSession(contactId);
 
-  if (contactError || !contact) {
+  if (contactError) {
+    console.error("coach/contacts session GET contact:", contactError);
+    return NextResponse.json(
+      {
+        error: isMissingColumnError(contactError)
+          ? CONTACTS_SESSION_NOTES_MIGRATION_HINT
+          : "Unable to load contact.",
+      },
+      { status: 500 }
+    );
+  }
+
+  if (!contact) {
     return NextResponse.json({ error: "Contact not found." }, { status: 404 });
   }
 

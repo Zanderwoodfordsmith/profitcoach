@@ -41,6 +41,8 @@ export type BossGridMobileStackedProps = {
   playbookLinkBase?: string;
   playbookNotes?: Record<string, string>;
   onPlaybookNotesChange?: (ref: string, notes: string) => void;
+  /** Opens the full workshop scoring sheet (coach live session). */
+  onOpenPlaybook?: (ref: string) => void;
 };
 
 export function BossGridMobileStacked({
@@ -50,6 +52,7 @@ export function BossGridMobileStacked({
   playbookLinkBase,
   playbookNotes,
   onPlaybookNotesChange,
+  onOpenPlaybook,
 }: BossGridMobileStackedProps) {
   const [openPillars, setOpenPillars] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(PILLARS.map((p) => [p.key, true]))
@@ -104,8 +107,10 @@ export function BossGridMobileStacked({
                   const scoreKey = score ?? "unscored";
                   const area = AREAS.find((a) => a.id === playbook.area);
                   const canScore = interactive && Boolean(onScoreChange);
+                  const useWorkshopSheet = canScore && Boolean(onOpenPlaybook);
                   const canLink = Boolean(playbookLinkBase);
-                  const canNotes = interactive && Boolean(onPlaybookNotesChange);
+                  const canNotes =
+                    interactive && Boolean(onPlaybookNotesChange) && !useWorkshopSheet;
                   const notes = playbookNotes?.[playbook.ref] ?? "";
 
                   const inner = (
@@ -135,6 +140,10 @@ export function BossGridMobileStacked({
                           <button
                             type="button"
                             onClick={() => {
+                              if (useWorkshopSheet) {
+                                onOpenPlaybook!(playbook.ref);
+                                return;
+                              }
                               const next = (((score ?? 0) + 1) % 3) as 0 | 1 | 2;
                               onScoreChange!(playbook.ref, next);
                             }}

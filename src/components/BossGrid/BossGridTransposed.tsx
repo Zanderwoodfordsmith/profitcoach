@@ -171,16 +171,18 @@ export function BossGridTransposed({
   const router = useRouter();
   const tooltipDelay =
     glass && interactive ? 320 : BOSS_QUESTION_TOOLTIP_DELAY_MS;
+  const workshopSheetMode = Boolean(glass && onScoreChange);
   const {
     tooltip,
     tooltipVisible,
     handleCellHover,
     openTooltipPinned,
+    openWorkshopSheet,
     dismissTooltip,
     cancelHide,
     scheduleHide,
     tooltipAnchorRef,
-  } = useBossQuestionTooltip(tooltipDelay);
+  } = useBossQuestionTooltip(tooltipDelay, { workshopSheetMode });
   const [collapsedLevels, setCollapsedLevels] = useState<Set<number>>(new Set());
   const isLightGlass = glass && glassTheme === "light";
   const useChromeColor = Boolean(glass && !isLightGlass && chromeColor);
@@ -254,6 +256,7 @@ export function BossGridTransposed({
       playbookLinkBase={playbookLinkBase}
       playbookNotes={playbookNotes}
       onPlaybookNotesChange={onPlaybookNotesChange}
+      onOpenPlaybook={workshopSheetMode ? openWorkshopSheet : undefined}
     />
   );
 
