@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { PLAYBOOKS } from "@/lib/bossData";
+import { isCoachClientHubAllowedUserId } from "@/lib/coachClientHubAccessServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { getTotalScore } from "@/lib/bossScores";
 
@@ -93,6 +94,14 @@ function coachIdForAssessmentWrites(
     return contactCoachId;
   }
   return null;
+}
+
+async function assertCoachClientHubAccess(auth: WorkshopAuthOk): Promise<boolean> {
+  const effectiveId =
+    auth.profileRole === "admin" && auth.impersonateCoachId
+      ? auth.impersonateCoachId
+      : auth.user.id;
+  return isCoachClientHubAllowedUserId(effectiveId);
 }
 
 function normalizeAnswers(raw: unknown): AnswersMap | null {
@@ -196,6 +205,13 @@ export async function GET(
     );
   }
 
+  if (!(await assertCoachClientHubAccess(auth))) {
+    return NextResponse.json(
+      { error: "Client hub is not enabled for this coach account." },
+      { status: 403 }
+    );
+  }
+
   const { data: latest, error: assessError } = await supabaseAdmin
     .from("assessments")
     .select("id, total_score, completed_at, answers")
@@ -256,6 +272,13 @@ export async function PATCH(
   if (!canAccessContactForWorkshop(auth, contact.coach_id as string | null)) {
     return NextResponse.json(
       { error: "You do not have access to this contact." },
+      { status: 403 }
+    );
+  }
+
+  if (!(await assertCoachClientHubAccess(auth))) {
+    return NextResponse.json(
+      { error: "Client hub is not enabled for this coach account." },
       { status: 403 }
     );
   }

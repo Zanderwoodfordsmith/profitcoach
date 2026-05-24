@@ -6,6 +6,7 @@ import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
 import {
   ProspectsTable,
@@ -18,6 +19,7 @@ import type { UpdatedProspectFields } from "@/lib/prospects/updateProspectFields
 export default function CoachProspectsPage() {
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
+  const { allowed: clientHubAllowed } = useCoachClientHubAccess(impersonatingCoachId);
   const [prospects, setProspects] = useState<ProspectRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -372,7 +374,11 @@ export default function CoachProspectsPage() {
           setCreateError(null);
           setCreateSuccess(null);
         }}
-        onRowClick={(id) => router.push(`/coach/contacts/${id}`)}
+        onRowClick={
+          clientHubAllowed
+            ? (id) => router.push(`/coach/contacts/${id}`)
+            : undefined
+        }
         editable
         onUpdateProspect={handleUpdateProspect}
         onDelete={handleDeleteProspect}

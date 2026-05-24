@@ -30,6 +30,8 @@ type DashboardSidebarProps = {
     name: string;
     avatarUrl: string | null;
   } | null;
+  /** Coach-only: show Clients / Playbooks under Delivery (limited rollout). */
+  showCoachDeliveryNav?: boolean;
 };
 
 function isCommunityCalendarActive(pathname: string | null, communityHref: string) {
@@ -41,6 +43,7 @@ export function DashboardSidebar({
   signingOut = false,
   onSignOut,
   avatarOverride = null,
+  showCoachDeliveryNav = false,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
@@ -190,7 +193,7 @@ export function DashboardSidebar({
               })}
             </ul>
           </div>
-          {variant === "admin" ? (
+          {variant === "admin" || (variant === "coach" && showCoachDeliveryNav) ? (
             <>
               <div className="mt-5 px-1">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
@@ -377,7 +380,7 @@ export function DashboardSidebar({
                 })}
               </ul>
             </div>
-            {variant === "admin" ? (
+            {variant === "admin" || (variant === "coach" && showCoachDeliveryNav) ? (
               <>
                 <div className="px-4 pb-3">
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
@@ -406,34 +409,36 @@ export function DashboardSidebar({
                     })}
                   </ul>
                 </div>
-                <div className="px-4 pb-3">
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-                    Admin
-                  </p>
-                  <ul className="space-y-0.5">
-                    {adminSectionNavItems.map((item) => {
-                      const active = navLinkActive(pathname, item.href, item.coachesHub);
-                      const Icon = item.icon;
-                      return (
-                        <li key={item.href}>
-                          <Link
-                            href={item.href}
-                            onClick={closeMobileSheets}
-                            className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
-                              active
-                                ? "bg-sky-500/80 text-white"
-                                : "text-slate-100/90 hover:bg-white/10"
-                            }`}
-                          >
-                            <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                            {item.label}
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
               </>
+            ) : null}
+            {variant === "admin" ? (
+              <div className="px-4 pb-3">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                  Admin
+                </p>
+                <ul className="space-y-0.5">
+                  {adminSectionNavItems.map((item) => {
+                    const active = navLinkActive(pathname, item.href, item.coachesHub);
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={closeMobileSheets}
+                          className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                            active
+                              ? "bg-sky-500/80 text-white"
+                              : "text-slate-100/90 hover:bg-white/10"
+                          }`}
+                        >
+                          <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                          {item.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             ) : null}
             <div className="border-t border-white/15 px-4 py-3">
               <button

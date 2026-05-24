@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { loadCallTableRows } from "@/lib/loadCallTableRows";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
 import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
 
 export default function CoachCallsPage() {
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
+  const { allowed: clientHubAllowed } = useCoachClientHubAccess(impersonatingCoachId);
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export default function CoachCallsPage() {
           error={error}
           showCoachColumn={false}
           onRowClick={(row) => {
-            if (row.contact_id) {
+            if (row.contact_id && clientHubAllowed) {
               router.push(`/coach/contacts/${row.contact_id}`);
             }
           }}

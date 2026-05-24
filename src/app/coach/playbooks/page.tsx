@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { PlaybooksLibrary } from "@/components/playbooks/PlaybooksLibrary";
+import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { PLAYBOOKS } from "@/lib/bossData";
@@ -100,13 +101,15 @@ export default function CoachPlaybooksPage() {
   }
 
   return (
-    <PlaybooksLibrary
-      summaries={summaries}
-      loading={loading}
-      error={error}
-      title="Playbooks"
-      description="Browse the full library. Open a playbook for the client-facing overview—your coach link is applied automatically when you share it."
-      buildHref={hrefForRef}
-    />
+    <CoachClientHubGate>
+      <PlaybooksLibrary
+        summaries={summaries}
+        loading={loading}
+        error={error}
+        title="Playbooks"
+        description="Browse the full library. Open a playbook for the client-facing overview—your coach link is applied automatically when you share it."
+        buildHref={hrefForRef}
+      />
+    </CoachClientHubGate>
   );
 }

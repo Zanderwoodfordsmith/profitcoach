@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import {
   ProspectsTable,
   type ProspectRow,
@@ -145,6 +146,7 @@ export default function CoachClientsPage() {
   }
 
   return (
+    <CoachClientHubGate>
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Clients"
@@ -255,5 +257,6 @@ export default function CoachClientsPage() {
       />
       </div>
     </div>
+    </CoachClientHubGate>
   );
 }

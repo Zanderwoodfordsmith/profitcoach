@@ -12,6 +12,7 @@ import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
+import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
@@ -136,6 +137,9 @@ export default function CoachLayout({
     : "max-w-[calc(100vw-1.5rem)]";
   const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
+  const { allowed: coachClientHubAllowed } = useCoachClientHubAccess(
+    impersonatingCoachId
+  );
 
   useEffect(() => {
     if (!isMinimalWorkshopChrome) {
@@ -288,6 +292,7 @@ export default function CoachLayout({
           variant="coach"
           signingOut={signingOut}
           onSignOut={handleSignOut}
+          showCoachDeliveryNav={coachClientHubAllowed}
           avatarOverride={
             isImpersonatingCoach
               ? {
