@@ -26,18 +26,27 @@ export {
 const WINS_ROLLING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const WINS_CATEGORY_SLUG = "wins";
 
-let winsCategoryIdCache: string | null | undefined;
+const communityCategoryIdCache = new Map<string, string | null>();
 
-async function resolveWinsCategoryId(): Promise<string | null> {
-  if (winsCategoryIdCache !== undefined) return winsCategoryIdCache;
+export async function resolveCommunityCategoryId(
+  slug: string
+): Promise<string | null> {
+  if (communityCategoryIdCache.has(slug)) {
+    return communityCategoryIdCache.get(slug) ?? null;
+  }
   const { data, error } = await supabaseClient
     .from("community_categories")
     .select("id")
-    .eq("slug", WINS_CATEGORY_SLUG)
+    .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
-  winsCategoryIdCache = data?.id ?? null;
-  return winsCategoryIdCache;
+  const id = data?.id ?? null;
+  communityCategoryIdCache.set(slug, id);
+  return id;
+}
+
+async function resolveWinsCategoryId(): Promise<string | null> {
+  return resolveCommunityCategoryId(WINS_CATEGORY_SLUG);
 }
 
 function joinedCategorySlug(
@@ -71,7 +80,7 @@ const WINS_POST_SELECT = `
   feed_like_count,
   feed_poll_vote_count,
   last_comment_at,
-  category:community_categories!inner!category_id ( id, slug, label ),
+  category:community_categories!category_id ( id, slug, label ),
   author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
 `;
 
@@ -87,7 +96,7 @@ const WINS_POST_SELECT_LEGACY = `
   category_id,
   author_id,
   feed_poll_vote_count,
-  category:community_categories!inner!category_id ( id, slug, label ),
+  category:community_categories!category_id ( id, slug, label ),
   author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
 `;
 

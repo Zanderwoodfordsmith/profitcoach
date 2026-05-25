@@ -17,6 +17,7 @@ import {
   isWinNotificationEligible,
   isWinPostVisibleNow,
   loadPermanentlySkippedWinPostIds,
+  resolveCommunityCategoryId,
 } from "@/lib/adminWinsReplyQueue";
 import {
   loadNotificationReadState,
@@ -115,6 +116,13 @@ export function DashboardTopActions({
     if (!uid) return;
     setLoadingNotifications(true);
     try {
+      const [announcementsCategoryId, winsCategoryId] = await Promise.all([
+        resolveCommunityCategoryId("announcements"),
+        variant === "admin"
+          ? resolveCommunityCategoryId("wins")
+          : Promise.resolve(null),
+      ]);
+
       const repliesPromise = supabaseClient
         .from("community_post_comments")
         .select(
@@ -137,28 +145,30 @@ export function DashboardTopActions({
         .order("created_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
 
-      const announcementsPromise = supabaseClient
-        .from("community_posts")
-        .select(
-          `
+      const announcementsPromise = announcementsCategoryId
+        ? supabaseClient
+            .from("community_posts")
+            .select(
+              `
             id,
             title,
             body,
             created_at,
             published_at,
             author_id,
-            category:community_categories!inner!category_id ( slug ),
+            category:community_categories!category_id ( slug ),
             author:profiles!author_id ( id, role, full_name, first_name, last_name, avatar_url )
           `
-        )
-        .eq("category.slug", "announcements")
-        .neq("author_id", uid)
-        .lte("published_at", new Date().toISOString())
-        .order("published_at", { ascending: false })
-        .limit(NOTIFICATION_ITEMS_MAX);
+            )
+            .eq("category_id", announcementsCategoryId)
+            .neq("author_id", uid)
+            .lte("published_at", new Date().toISOString())
+            .order("published_at", { ascending: false })
+            .limit(NOTIFICATION_ITEMS_MAX)
+        : Promise.resolve({ data: [], error: null });
 
       const winsPromise =
-        variant === "admin"
+        variant === "admin" && winsCategoryId
           ? supabaseClient
               .from("community_posts")
               .select(
@@ -169,11 +179,11 @@ export function DashboardTopActions({
             created_at,
             published_at,
             author_id,
-            category:community_categories!inner!category_id ( slug ),
+            category:community_categories!category_id ( slug ),
             author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
           `
               )
-              .eq("category.slug", "wins")
+              .eq("category_id", winsCategoryId)
               .neq("author_id", uid)
               .order("created_at", { ascending: false })
               .limit(NOTIFICATION_ITEMS_MAX)
