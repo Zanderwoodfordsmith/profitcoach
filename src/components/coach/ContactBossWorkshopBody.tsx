@@ -126,6 +126,9 @@ export function ContactBossWorkshopBody({
   const workshopMode = workshopModeControlled ? workshopModeProp : internalWorkshopMode;
   const setWorkshopMode = workshopModeControlled ? onWorkshopModeChange! : setInternalWorkshopMode;
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [scoresSaveState, setScoresSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
 
   const draftContactIdRef = useRef<string | null>(null);
 
@@ -267,13 +270,16 @@ export function ContactBossWorkshopBody({
       pillarNotes?: Partial<Record<string, string>>;
       playbookNotes?: Partial<Record<string, string>>;
     }) => {
+      const savingScores = Boolean(body.answers);
       setSessionError(null);
+      if (savingScores) setScoresSaveState("saving");
       const {
         data: { session },
       } = await supabaseClient.auth.getSession();
       const token = session?.access_token;
       if (!token) {
         setSessionError("Not signed in.");
+        if (savingScores) setScoresSaveState("error");
         return;
       }
 
@@ -281,6 +287,7 @@ export function ContactBossWorkshopBody({
       if (!targetId) {
         if (!draftCoachId) {
           setSessionError("Select a contact to save.");
+          if (savingScores) setScoresSaveState("error");
           return;
         }
         try {
@@ -293,6 +300,7 @@ export function ContactBossWorkshopBody({
           onDraftContactCreated?.(created);
         } catch (e) {
           setSessionError(e instanceof Error ? e.message : "Could not create contact.");
+          if (savingScores) setScoresSaveState("error");
           return;
         }
       }
@@ -314,12 +322,17 @@ export function ContactBossWorkshopBody({
 
       if (!res.ok) {
         setSessionError(json.error ?? "Could not save.");
+        if (savingScores) setScoresSaveState("error");
         return;
       }
 
       if (json.assessment) {
         setAssessment(json.assessment);
         setMatrixAnswers(json.assessment.answers ?? {});
+        setScoresSaveState("saved");
+      } else if (savingScores) {
+        setScoresSaveState("error");
+        setSessionError("Scores could not be saved. Please try again.");
       }
     },
     [contactId, draftCoachId, impersonatingCoachId, onDraftContactCreated]
@@ -360,6 +373,19 @@ export function ContactBossWorkshopBody({
       flushPendingPlaybookNotes();
     };
   }, [flushPendingAnswers, flushPendingNotes, flushPendingPlaybookNotes]);
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState !== "hidden") return;
+      if (answersDebounceRef.current) {
+        clearTimeout(answersDebounceRef.current);
+        answersDebounceRef.current = null;
+      }
+      flushPendingAnswers();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [flushPendingAnswers]);
 
   const handleScoreChange = useCallback(
     (ref: string, score: 0 | 1 | 2) => {
@@ -466,6 +492,12 @@ export function ContactBossWorkshopBody({
         <p className="text-sm text-rose-600" role="alert">
           {sessionError}
         </p>
+      )}
+      {!sessionError && scoresSaveState === "saving" && (
+        <p className="text-sm text-slate-600">Saving scores…</p>
+      )}
+      {!sessionError && scoresSaveState === "saved" && (
+        <p className="text-sm text-emerald-700">Scores saved.</p>
       )}
 
       {assessment && !loading && !error && (

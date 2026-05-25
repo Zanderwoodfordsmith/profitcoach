@@ -1352,7 +1352,9 @@ export function PostDetailModal({
   const card = (
       <div
         className={`relative w-full ${
-          presentation === "embedded" ? "h-full" : "max-w-[calc(42rem*1.15)]"
+          presentation === "embedded"
+            ? "flex min-h-0 flex-1 flex-col"
+            : "max-w-[calc(42rem*1.15)]"
         }`}
         onClick={presentation === "overlay" ? (e) => e.stopPropagation() : undefined}
       >
@@ -1367,10 +1369,10 @@ export function PostDetailModal({
           </button>
         ) : null}
         <div
-          className={`relative flex min-h-0 w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl ${
+          className={`relative flex min-h-0 w-full flex-col overflow-hidden bg-white ${
             presentation === "embedded"
-              ? "h-full max-h-none"
-              : "max-h-[90dvh]"
+              ? "min-h-0 flex-1"
+              : "max-h-[90dvh] rounded-2xl border border-slate-200 shadow-xl"
           }`}
         >
         <div
@@ -1709,31 +1711,32 @@ export function PostDetailModal({
                         profileHrefByUserId={mentionProfileHrefByUserId}
                       />
                     ) : (
-                      <div className="relative">
-                        <div className="line-clamp-9 overflow-hidden break-words">
-                          <CommunityPostMarkdownBody
-                            body={post.body}
-                            nameById={nameById}
-                            profileHrefByUserId={mentionProfileHrefByUserId}
-                            className="block text-inherit"
+                      <>
+                        <div className="relative">
+                          <div className="line-clamp-9 overflow-hidden break-words">
+                            <CommunityPostMarkdownBody
+                              body={post.body}
+                              nameById={nameById}
+                              profileHrefByUserId={mentionProfileHrefByUserId}
+                              className="block text-inherit"
+                            />
+                          </div>
+                          <div
+                            aria-hidden
+                            className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white via-white/90 to-transparent"
                           />
                         </div>
-                        {/* Fade + control sit on the last line only — avoids pr-* on the clamp box (which indents every line). */}
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] flex justify-end bg-gradient-to-l from-white from-10% via-white to-transparent py-0.5 pl-16 sm:pl-20">
-                          <div className="pointer-events-auto inline-flex items-baseline gap-0.5">
-                            <span className="text-slate-400" aria-hidden>
-                              …
-                            </span>
-                            <button
-                              type="button"
-                              className="font-medium text-sky-600 hover:text-sky-500 hover:underline"
-                              onClick={() => setBodyExpanded(true)}
-                            >
-                              See more
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                        <button
+                          type="button"
+                          className="mt-1 inline-flex items-baseline gap-0.5 font-medium text-sky-600 hover:text-sky-500 hover:underline"
+                          onClick={() => setBodyExpanded(true)}
+                        >
+                          <span className="text-slate-400" aria-hidden>
+                            …
+                          </span>
+                          See more
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

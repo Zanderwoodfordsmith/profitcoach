@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { PLAYBOOKS } from "@/lib/bossData";
@@ -421,14 +422,17 @@ export async function PATCH(
           coach_id: coachWriteId,
           contact_id: contactId,
           source: "coach_session",
+          assessment_type: "diagnostic_50",
           total_score,
           answers: answersPatch,
           completed_at: new Date().toISOString(),
+          report_token: randomUUID(),
         })
         .select("id, total_score, answers, completed_at")
         .single();
 
       if (insertError || !inserted) {
+        console.error("coach/contacts session assessment insert:", insertError);
         return NextResponse.json(
           { error: "Failed to create assessment." },
           { status: 500 }

@@ -235,7 +235,7 @@ export function AdminWinsReplyQueue() {
           </div>
         </div>
 
-        <div className="flex min-h-[min(52vh,28rem)] flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <PostDetailModal
             key={currentPost.id}
             post={currentPost}
