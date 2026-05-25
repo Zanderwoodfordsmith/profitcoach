@@ -147,7 +147,7 @@ export function DashboardTopActions({
             created_at,
             published_at,
             author_id,
-            category:community_categories!category_id ( slug ),
+            category:community_categories!inner!category_id ( slug ),
             author:profiles!author_id ( id, role, full_name, first_name, last_name, avatar_url )
           `
         )
@@ -169,7 +169,7 @@ export function DashboardTopActions({
             created_at,
             published_at,
             author_id,
-            category:community_categories!category_id ( slug ),
+            category:community_categories!inner!category_id ( slug ),
             author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
           `
               )

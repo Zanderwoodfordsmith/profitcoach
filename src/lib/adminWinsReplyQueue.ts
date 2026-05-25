@@ -24,6 +24,37 @@ export {
 };
 
 const WINS_ROLLING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const WINS_CATEGORY_SLUG = "wins";
+
+let winsCategoryIdCache: string | null | undefined;
+
+async function resolveWinsCategoryId(): Promise<string | null> {
+  if (winsCategoryIdCache !== undefined) return winsCategoryIdCache;
+  const { data, error } = await supabaseClient
+    .from("community_categories")
+    .select("id")
+    .eq("slug", WINS_CATEGORY_SLUG)
+    .maybeSingle();
+  if (error) throw error;
+  winsCategoryIdCache = data?.id ?? null;
+  return winsCategoryIdCache;
+}
+
+function joinedCategorySlug(
+  category:
+    | { slug: string }
+    | { slug: string }[]
+    | null
+    | undefined
+): string | null {
+  if (!category) return null;
+  const row = Array.isArray(category) ? category[0] : category;
+  return row?.slug ?? null;
+}
+
+function isWinsCategoryPost(category: Parameters<typeof joinedCategorySlug>[0]): boolean {
+  return joinedCategorySlug(category) === WINS_CATEGORY_SLUG;
+}
 
 const WINS_POST_SELECT = `
   id,
@@ -40,7 +71,7 @@ const WINS_POST_SELECT = `
   feed_like_count,
   feed_poll_vote_count,
   last_comment_at,
-  category:community_categories!category_id ( id, slug, label ),
+  category:community_categories!inner!category_id ( id, slug, label ),
   author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
 `;
 
@@ -56,7 +87,7 @@ const WINS_POST_SELECT_LEGACY = `
   category_id,
   author_id,
   feed_poll_vote_count,
-  category:community_categories!category_id ( id, slug, label ),
+  category:community_categories!inner!category_id ( id, slug, label ),
   author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
 `;
 
@@ -184,12 +215,12 @@ export function isWinPostVisibleNow(
   return !Number.isNaN(atMs) && atMs <= Date.now();
 }
 
-async function fetchWinPostRows(): Promise<WinPostRow[]> {
+async function fetchWinPostRows(winsCategoryId: string): Promise<WinPostRow[]> {
   const runQuery = (select: string) =>
     supabaseClient
       .from("community_posts")
       .select(select)
-      .eq("category.slug", "wins")
+      .eq("category_id", winsCategoryId)
       .order("created_at", { ascending: true });
 
   let res = await runQuery(WINS_POST_SELECT.trim());
@@ -221,9 +252,12 @@ export async function fetchUserCommentedPostIds(
 export async function fetchPendingAdminWinsQueue(
   adminUserId: string
 ): Promise<CommunityPostRow[]> {
+  const winsCategoryId = await resolveWinsCategoryId();
+  if (!winsCategoryId) return [];
+
   const lastSessionEndedAt = loadLastSessionEndedAt(adminUserId);
 
-  const candidates = await fetchWinPostRows();
+  const candidates = await fetchWinPostRows(winsCategoryId);
   const eligible = candidates.filter((row) =>
     isWinPostEligible(row.published_at, row.created_at, lastSessionEndedAt)
   );
@@ -247,7 +281,7 @@ export async function fetchPendingAdminWinsQueue(
     supabaseClient
       .from("community_posts")
       .select(select)
-      .eq("category.slug", "wins")
+      .eq("category_id", winsCategoryId)
       .in("id", pendingIds)
       .order("created_at", { ascending: true });
 
@@ -258,7 +292,9 @@ export async function fetchPendingAdminWinsQueue(
   if (fullRes.error) throw fullRes.error;
 
   const rawRows = (fullRes.data ?? []) as unknown as RawCommunityPostRow[];
-  const pendingRaw = rawRows.filter((row) => pendingIdSet.has(row.id));
+  const pendingRaw = rawRows.filter(
+    (row) => pendingIdSet.has(row.id) && isWinsCategoryPost(row.category)
+  );
 
   if (pendingRaw.length === 0) return [];
 
@@ -270,7 +306,7 @@ export async function fetchPendingAdminWinsQueue(
   enriched.sort(
     (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
   );
-  return enriched;
+  return enriched.filter((post) => post.category?.slug === WINS_CATEGORY_SLUG);
 }
 
 /** Same eligibility window as the queue (for notification bell). */
