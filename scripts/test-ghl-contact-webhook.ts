@@ -37,6 +37,20 @@ if (!("error" in parsed)) {
   assert(parsed.ghlLocationId === "BsRxKtV0lVHcvvZ6qHtu", "location id parsed");
 }
 
+const withNames = parseGhlContactWebhookPayload({
+  crm_contact_id: "4EtTsoPeXPYryiTwoQsM",
+  email: "new.ghl@example.com",
+  first_name: "Alex",
+  last_name: "Prospect",
+  phone: "+441234567890",
+  location_id: "BsRxKtV0lVHcvvZ6qHtu",
+});
+assert(!("error" in withNames), "parse GHL-originated contact payload");
+if (!("error" in withNames)) {
+  assert(withNames.firstName === "Alex", "first name parsed");
+  assert(withNames.phone === "+441234567890", "phone parsed");
+}
+
 const fromFlatContactId = parseGhlContactWebhookPayload({
   contact_id: "UsLL2LaM9Hi1E0YBsaLk",
   profit_coach_contact_id: "00000000-0000-4000-8000-000000000002",

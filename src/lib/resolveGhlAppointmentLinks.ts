@@ -104,6 +104,28 @@ async function lookupCoachByCalendarId(
   return null;
 }
 
+async function lookupContactByCrmContactId(
+  crmContactId: string
+): Promise<{ id: string; coach_id: string | null } | null> {
+  const { data, error } = await supabaseAdmin
+    .from("contacts")
+    .select("id, coach_id")
+    .eq("crm_contact_id", crmContactId)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === "42703") return null;
+    console.warn("ghl contact webhook lookup by crm_contact_id:", error);
+    return null;
+  }
+
+  if (!data?.id) return null;
+  return {
+    id: data.id as string,
+    coach_id: (data.coach_id as string | null) ?? null,
+  };
+}
+
 async function lookupContactByCoachAndEmail(
   coachId: string,
   email: string
@@ -203,6 +225,7 @@ export async function resolveGhlContactLinks(input: {
   profitCoachContactId: string | null;
   ghlLocationId: string | null;
   email: string | null;
+  crmContactId?: string | null;
 }): Promise<ResolvedGhlContactLinks> {
   if (input.profitCoachContactId) {
     const { data, error } = await supabaseAdmin
@@ -246,6 +269,17 @@ export async function resolveGhlContactLinks(input: {
       contactId: data.id as string,
       matchStatus: "matched",
     };
+  }
+
+  if (input.crmContactId) {
+    const existing = await lookupContactByCrmContactId(input.crmContactId);
+    if (existing) {
+      return {
+        coachId: existing.coach_id,
+        contactId: existing.id,
+        matchStatus: "matched",
+      };
+    }
   }
 
   if (!input.ghlLocationId) {

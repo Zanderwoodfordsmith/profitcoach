@@ -1,10 +1,23 @@
+import {
+  tryInsertContactStripping,
+  tryUpdateContactStripping,
+} from "@/lib/contactSchemaSafeInsert";
+import { splitFullName } from "@/lib/splitFullName";
+
 export type GhlContactMatchStatus =
   | "matched"
+  | "created"
   | "unmatched_contact"
   | "unmatched_coach";
 
 export type GhlContactWebhookPayload = {
   email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  business_name?: string | null;
+  company_name?: string | null;
   location?: { id?: string | null; name?: string | null } | null;
   location_id?: string | null;
   /** Profit Coach contacts.id when sent as UUID; otherwise treated as CRM id. */
@@ -23,6 +36,11 @@ export type ParsedGhlContactWebhook = {
   profitCoachContactId: string | null;
   ghlLocationId: string | null;
   email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  fullName: string | null;
+  phone: string | null;
+  businessName: string | null;
 };
 
 const UUID_RE =
@@ -71,6 +89,16 @@ function readProfitCoachContactId(
   return null;
 }
 
+function resolveContactFullName(input: {
+  fullName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+}): string {
+  if (input.fullName) return input.fullName;
+  const joined = [input.firstName, input.lastName].filter(Boolean).join(" ").trim();
+  return joined || "Unknown";
+}
+
 export function parseGhlContactWebhookPayload(
   body: GhlContactWebhookPayload
 ): ParsedGhlContactWebhook | { error: string } {
@@ -91,7 +119,22 @@ export function parseGhlContactWebhookPayload(
     ghlLocationId:
       asTrimmedString(body.location_id) ?? asTrimmedString(location?.id),
     email: normalizeEmail(body.email),
+    firstName: asTrimmedString(body.first_name),
+    lastName: asTrimmedString(body.last_name),
+    fullName: asTrimmedString(body.full_name),
+    phone: asTrimmedString(body.phone),
+    businessName:
+      asTrimmedString(body.business_name) ?? asTrimmedString(body.company_name),
   };
+}
+
+export function resolveGhlContactDisplayName(
+  parsed: Pick<
+    ParsedGhlContactWebhook,
+    "fullName" | "firstName" | "lastName"
+  >
+): string {
+  return resolveContactFullName(parsed);
 }
 
 export function getGhlContactWebhookSecret(): string {
@@ -119,4 +162,81 @@ export function getProspectCrmContactUrl(input: {
   const crmContactId = input.crm_contact_id?.trim();
   if (!crmLocationId || !crmContactId) return null;
   return buildCrmContactDetailUrl(crmLocationId, crmContactId);
+}
+
+export type CreateProspectFromGhlContactResult =
+  | { contactId: string; created: boolean }
+  | { error: string };
+
+/**
+ * Creates a new prospect when GHL originates the contact (manual add, import, etc.).
+ * Requires email so the row can be deduped per coach.
+ */
+export async function createProspectFromGhlContact(input: {
+  coachId: string;
+  parsed: ParsedGhlContactWebhook;
+}): Promise<CreateProspectFromGhlContactResult> {
+  const { coachId, parsed } = input;
+
+  if (!parsed.email) {
+    return {
+      error:
+        "Email is required to create a prospect from GHL. Map contact.email in the workflow body.",
+    };
+  }
+
+  const fullName = resolveContactFullName(parsed);
+  let firstName = parsed.firstName;
+  let lastName = parsed.lastName;
+  if (fullName !== "Unknown" && !firstName && !lastName) {
+    const split = splitFullName(fullName);
+    firstName = split.first_name;
+    lastName = split.last_name;
+  }
+
+  const insertPayload: Record<string, unknown> = {
+    coach_id: coachId,
+    type: "prospect",
+    full_name: fullName,
+    email: parsed.email,
+    phone: parsed.phone,
+    business_name: parsed.businessName,
+    crm_contact_id: parsed.crmContactId,
+  };
+  if (firstName) insertPayload.first_name = firstName;
+  if (lastName) insertPayload.last_name = lastName;
+
+  const { data, error } = await tryInsertContactStripping(insertPayload);
+  if (error) {
+    return { error: error.message };
+  }
+  if (!data?.id) {
+    return { error: "Failed to create prospect." };
+  }
+
+  return { contactId: data.id, created: true };
+}
+
+export async function linkProspectCrmContactId(
+  contactId: string,
+  crmContactId: string,
+  patch?: Record<string, unknown>
+): Promise<{ contactId: string; crm_contact_id: string } | { error: string }> {
+  const updatePayload = {
+    crm_contact_id: crmContactId,
+    ...patch,
+  };
+
+  const { data, error } = await tryUpdateContactStripping(contactId, updatePayload);
+  if (error) {
+    if (error.code === "42703") {
+      return { error: "crm_contact_id column is not migrated yet." };
+    }
+    return { error: error.message };
+  }
+  if (!data?.id) {
+    return { error: "Failed to update contact." };
+  }
+
+  return { contactId: data.id, crm_contact_id: crmContactId };
 }
