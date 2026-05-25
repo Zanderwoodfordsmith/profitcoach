@@ -11,6 +11,7 @@ import {
   BossGridGlass,
   BossGridProfitSystemGlass,
   BossGridTransposed,
+  WorkshopProspectMatrix,
 } from "@/components/BossGrid";
 import { PLAYBOOKS } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
@@ -22,6 +23,23 @@ function sampleAnswers(): AnswersMap {
     map[p.ref] = (i % 3) as 0 | 1 | 2;
   });
   return map;
+}
+
+/** Sample prospect scores for admin preview of priority UI (not shown to coaches yet). */
+function sampleProspectNotes(): Record<string, string> {
+  const scores: Record<string, { urgency: number; impact: number; ease: number }> = {
+    "1.0": { urgency: 4, impact: 3, ease: 3 },
+    "1.4": { urgency: 4, impact: 3, ease: 2 },
+    "2.5": { urgency: 3, impact: 3, ease: 3 },
+    "3.1": { urgency: 3, impact: 2, ease: 3 },
+    "3.6": { urgency: 4, impact: 3, ease: 1 },
+    "4.2": { urgency: 2, impact: 3, ease: 1 },
+  };
+  const notes: Record<string, string> = {};
+  for (const [ref, value] of Object.entries(scores)) {
+    notes[`${ref}__prospect_scores`] = JSON.stringify(value);
+  }
+  return notes;
 }
 
 export default function AdminSettingsBossGridPage() {
@@ -85,6 +103,20 @@ export default function AdminSettingsBossGridPage() {
           </Link>
         }
       />
+
+      {/* Prospect priority (WIP — admin preview only) */}
+      <section className="rounded-xl border border-dashed border-sky-200 bg-sky-50/40 p-4 sm:p-6">
+        <h2 className="text-sm font-medium text-slate-800">Prospect priority (work in progress)</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Hidden from coach workshops until ready. Sample data below for design review.
+        </p>
+        <div className="mt-4">
+          <WorkshopProspectMatrix
+            playbookNotes={sampleProspectNotes()}
+            clientName="Sample Client"
+          />
+        </div>
+      </section>
 
       {/* 0. Profit System Glass – full-page growth matrix (dark glass) */}
       <section className="w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-900">

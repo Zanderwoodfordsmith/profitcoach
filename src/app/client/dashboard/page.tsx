@@ -251,7 +251,8 @@ export default function ClientDashboardPage() {
   }, [impersonatingContactId]);
 
   const handleScoreChange = useCallback(
-    async (ref: string, score: 0 | 1 | 2) => {
+    async (ref: string, score: 0 | 1 | 2 | null) => {
+      if (score === null) return;
       const next = { ...(editingScores ? localAnswers : assessment?.answers ?? {}), [ref]: score };
       setLocalAnswers(next);
       const {

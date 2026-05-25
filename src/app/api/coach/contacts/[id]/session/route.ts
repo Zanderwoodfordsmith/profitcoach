@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { PLAYBOOKS } from "@/lib/bossData";
+import { isPlaybookSessionNotesKey } from "@/lib/playbookSessionNotes";
 import {
   CONTACTS_SESSION_NOTES_MIGRATION_HINT,
   isMissingColumnError,
@@ -124,8 +125,8 @@ function normalizePlaybookNotes(
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const out: Partial<Record<string, string>> = {};
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-    if (VALID_PLAYBOOK_REFS.has(k) && typeof v === "string") out[k] = v;
-    if (k.endsWith("__actions") && typeof v === "string") out[k] = v;
+    if (typeof v !== "string") continue;
+    if (isPlaybookSessionNotesKey(k, VALID_PLAYBOOK_REFS)) out[k] = v;
   }
   return out;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, Layers } from "lucide-react";
 import { Outfit } from "next/font/google";
@@ -20,7 +20,7 @@ const outfit = Outfit({ subsets: ["latin"], variable: "--font-outfit" });
 export type BossGridTransposedProps = {
   answers: AnswersMap;
   interactive?: boolean;
-  onScoreChange?: (ref: string, score: 0 | 1 | 2) => void;
+  onScoreChange?: (ref: string, score: 0 | 1 | 2 | null) => void;
   playbookLinkBase?: string;
   /** When true, uses glass design: simple cells (color + dots), flip on hover to show playbook name */
   glass?: boolean;
@@ -39,10 +39,16 @@ export type BossGridTransposedProps = {
   /** Glass: per-playbook session notes shown in the scoring panel */
   playbookNotes?: Record<string, string>;
   onPlaybookNotesChange?: (ref: string, notes: string) => void;
+  /** Display name for coach-authored comments and activity */
+  coachName?: string;
+  clientName?: string;
+  allowClientComments?: boolean;
   /** Glass: hide built-in score bar (counts + /100) — use an external summary row instead */
   hideGlassScoreBar?: boolean;
   /** Glass: label for the top-left header cell (replaces the grid icon). */
   gridCornerLabel?: string;
+  /** Exposes click-to-open workshop sheet for external controls (e.g. priority matrix). */
+  onRegisterOpenPlaybookSheet?: (open: (ref: string) => void) => void;
 };
 
 // Match Profit System Glass pillar colors
@@ -198,8 +204,12 @@ export function BossGridTransposed({
   glassAlwaysShowPlaybookNames = false,
   playbookNotes,
   onPlaybookNotesChange,
+  coachName,
+  clientName,
+  allowClientComments,
   hideGlassScoreBar = false,
   gridCornerLabel,
+  onRegisterOpenPlaybookSheet,
 }: BossGridTransposedProps) {
   const router = useRouter();
   const tooltipDelay =
@@ -239,7 +249,7 @@ export function BossGridTransposed({
   };
 
   const handleTooltipPickScore = useCallback(
-    (ref: string, score: 0 | 1 | 2) => {
+    (ref: string, score: 0 | 1 | 2 | null) => {
       onScoreChange?.(ref, score);
     },
     [onScoreChange]
@@ -256,6 +266,9 @@ export function BossGridTransposed({
         : undefined,
     playbookNotes: glass ? playbookNotes : undefined,
     onPlaybookNotesChange: glass ? onPlaybookNotesChange : undefined,
+    coachName: glass ? coachName : undefined,
+    clientName: glass ? clientName : undefined,
+    allowClientComments: glass ? allowClientComments : undefined,
     onDismiss: glass ? dismissTooltip : undefined,
     anchorRef: glass ? tooltipAnchorRef : undefined,
   };
@@ -277,11 +290,31 @@ export function BossGridTransposed({
 
   const tryOpenBossScorePanel = useCallback(
     (ref: string, el: HTMLElement | null) => {
-      if (!glass || !onScoreChange || !el) return false;
+      if (!glass || !onScoreChange) return false;
+      if (workshopSheetMode) {
+        openWorkshopSheet(ref);
+        return true;
+      }
+      if (!el) return false;
       openTooltipPinned(ref, el);
       return true;
     },
-    [glass, onScoreChange, openTooltipPinned]
+    [glass, onScoreChange, openTooltipPinned, openWorkshopSheet, workshopSheetMode]
+  );
+
+  useEffect(() => {
+    if (!onRegisterOpenPlaybookSheet || !onScoreChange) return;
+    onRegisterOpenPlaybookSheet((ref) => {
+      openWorkshopSheet(ref);
+    });
+  }, [onRegisterOpenPlaybookSheet, onScoreChange, openWorkshopSheet]);
+
+  const navigateToPlaybook = useCallback(
+    (ref: string) => {
+      if (onScoreChange || !playbookLinkBase) return;
+      router.push(`${playbookLinkBase}/${ref}`);
+    },
+    [onScoreChange, playbookLinkBase, router]
   );
 
   const mobileStackedView = (
@@ -684,8 +717,8 @@ export function BossGridTransposed({
                       if (interactive && onScoreChange) {
                         const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                         onScoreChange(playbook.ref, next);
-                      } else if (playbookLinkBase) {
-                        router.push(`${playbookLinkBase}/${playbook.ref}`);
+                      } else {
+                        navigateToPlaybook(playbook.ref);
                       }
                     };
                     const isClickable = glass
@@ -726,7 +759,9 @@ export function BossGridTransposed({
                                         if (interactive && onScoreChange) {
                                           const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                           onScoreChange(playbook.ref, next);
-                                        } else if (playbookLinkBase) router.push(`${playbookLinkBase}/${playbook.ref}`);
+                                        } else {
+                                          navigateToPlaybook(playbook.ref);
+                                        }
                                       }
                                     }
                                   : undefined
@@ -781,8 +816,8 @@ export function BossGridTransposed({
                                         if (interactive && onScoreChange) {
                                           const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                           onScoreChange(playbook.ref, next);
-                                        } else if (playbookLinkBase) {
-                                          router.push(`${playbookLinkBase}/${playbook.ref}`);
+                                        } else {
+                                          navigateToPlaybook(playbook.ref);
                                         }
                                       }
                                     }
@@ -840,7 +875,9 @@ export function BossGridTransposed({
                                         if (interactive && onScoreChange) {
                                           const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                           onScoreChange(playbook.ref, next);
-                                        } else if (playbookLinkBase) router.push(`${playbookLinkBase}/${playbook.ref}`);
+                                        } else {
+                                          navigateToPlaybook(playbook.ref);
+                                        }
                                       }
                                     }
                                   : undefined
@@ -892,7 +929,9 @@ export function BossGridTransposed({
                                       if (interactive && onScoreChange) {
                                         const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                         onScoreChange(playbook.ref, next);
-                                      } else if (playbookLinkBase) router.push(`${playbookLinkBase}/${playbook.ref}`);
+                                      } else {
+                                        navigateToPlaybook(playbook.ref);
+                                      }
                                     }
                                   }
                                 : undefined
@@ -975,10 +1014,13 @@ export function BossGridTransposed({
                               ? (e) => {
                                   if (e.key === "Enter" || e.key === " ") {
                                     e.preventDefault();
+                                    if (tryOpenBossScorePanel(playbook.ref, e.currentTarget as HTMLElement)) return;
                                     if (interactive && onScoreChange) {
                                       const next = ((score ?? 0) + 1) % 3 as 0 | 1 | 2;
                                       onScoreChange(playbook.ref, next);
-                                    } else if (playbookLinkBase) router.push(`${playbookLinkBase}/${playbook.ref}`);
+                                    } else {
+                                      navigateToPlaybook(playbook.ref);
+                                    }
                                   }
                                 }
                               : undefined
