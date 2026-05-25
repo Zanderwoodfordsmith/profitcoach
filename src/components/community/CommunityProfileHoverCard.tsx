@@ -226,8 +226,10 @@ export function CommunityProfileHoverCard({
 
     measure();
     const el = bioPreviewRef.current;
+    if (!el) return;
+
     const resizeObserver =
-      typeof ResizeObserver !== "undefined" && el
+      typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(measure)
         : null;
     resizeObserver?.observe(el);
@@ -276,8 +278,10 @@ export function CommunityProfileHoverCard({
     window.addEventListener("resize", update);
 
     const cardEl = cardRef.current;
+    if (!cardEl) return;
+
     const resizeObserver =
-      typeof ResizeObserver !== "undefined" && cardEl
+      typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(update)
         : null;
     resizeObserver?.observe(cardEl);
