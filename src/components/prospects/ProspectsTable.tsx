@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   Columns3,
-  ExternalLink,
   GripVertical,
   Loader2,
   ListTodo,
@@ -28,6 +28,7 @@ import {
 import type { ProspectRow } from "@/lib/prospectRow";
 import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
 import { ProspectContactEditModal } from "@/components/prospects/ProspectContactEditModal";
+import { ProspectCrmLinkModal } from "@/components/prospects/ProspectCrmLinkModal";
 import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
@@ -124,24 +125,34 @@ type Props = {
 const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v5";
 const PROSPECTS_PAGE_SIZE = 50;
 const TABLE_SECTION_PADDING = "px-5 sm:px-6";
-const TABLE_CHECKBOX_PADDING = "pl-5 pr-2 sm:pl-6";
+const TABLE_CHECKBOX_CELL = "px-1 text-center";
+const TABLE_CHECKBOX_INPUT =
+  "h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500";
 const TABLE_CELL_Y = "py-2";
+const TABLE_HEAD_CELL = "h-10 bg-slate-50 py-0 align-middle";
 const TABLE_CELL_X = "px-4";
+const TABLE_LEAD_CELL = "pl-1 pr-4";
 const TABLE_COACH_CELL = "whitespace-nowrap";
 const TABLE_NEXT_ACTION_CELL = "whitespace-nowrap";
 const TABLE_STATUS_CELL = "whitespace-nowrap";
 const TABLE_EMAIL_CELL = "pl-4 pr-6 min-w-0";
 const TABLE_PHONE_CELL = "whitespace-nowrap";
 
-const TABLE_CHECKBOX_COL_WIDTH = 72;
-const TABLE_LEAD_COL_WIDTH = 180;
+const TABLE_CHECKBOX_COL_WIDTH = 36;
+const TABLE_LEAD_COL_WIDTH = 220;
+const TABLE_LEFT_RAIL_WIDTH = TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH;
 const TABLE_PHONE_COL_WIDTH = 168;
 const TABLE_EMAIL_COL_WIDTH = 220;
 const TABLE_EMAIL_COL_WIDTH_EXPANDED = 320;
-const TABLE_CRM_COL_WIDTH = 72;
 
-const TABLE_CRM_HEADER_RAIL = `${TABLE_CELL_Y} ${TABLE_CELL_X} shrink-0 border-l border-slate-200 bg-slate-50 whitespace-nowrap text-left`;
-const TABLE_CRM_BODY_RAIL = `${TABLE_CELL_Y} ${TABLE_CELL_X} shrink-0 border-l border-slate-200`;
+const TABLE_STICKY_CHECKBOX_CELL = "sticky left-0 z-[12]";
+const TABLE_STICKY_LEAD_CELL = "sticky z-[11]";
+
+function stickyProspectRowBg(isSelected: boolean) {
+  return isSelected
+    ? "bg-sky-50/70 group-hover:bg-sky-50"
+    : "bg-white group-hover:bg-slate-50";
+}
 
 function getProspectColumnWidth(
   key: ProspectColumnKey,
@@ -302,32 +313,60 @@ function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefi
   );
 }
 
-function ProspectCrmLinkCell({ row }: { row: ProspectRow }) {
+function ProspectLeadCrmLink({
+  row,
+  editable,
+  onLinkClick,
+}: {
+  row: ProspectRow;
+  editable: boolean;
+  onLinkClick: (row: ProspectRow) => void;
+}) {
   const url = getProspectCrmContactUrl(row);
-  if (!url) {
+
+  if (url) {
     return (
-      <span
-        className="inline-flex h-8 w-8 items-center justify-center text-slate-300"
-        title="Not linked to CRM yet"
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        data-row-action
+        onClick={(e) => e.stopPropagation()}
+        className="inline-flex shrink-0 rounded p-0.5 text-sky-600 hover:bg-sky-50 hover:text-sky-800"
+        title="Open in CRM"
+        aria-label={`Open ${row.full_name} in CRM`}
       >
-        <ExternalLink className="h-4 w-4" aria-hidden />
-      </span>
+        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+      </a>
+    );
+  }
+
+  if (editable) {
+    return (
+      <button
+        type="button"
+        data-row-action
+        onClick={(e) => {
+          e.stopPropagation();
+          onLinkClick(row);
+        }}
+        className="inline-flex shrink-0 rounded p-0.5 text-slate-300 hover:bg-slate-50 hover:text-sky-600"
+        title="Link to CRM contact"
+        aria-label={`Link ${row.full_name} to CRM`}
+      >
+        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+      </button>
     );
   }
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      data-row-action
-      onClick={(e) => e.stopPropagation()}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sky-600 hover:bg-sky-50 hover:text-sky-800"
-      title="Open in CRM"
-      aria-label={`Open ${row.full_name} in CRM`}
+    <span
+      className="inline-flex shrink-0 p-0.5 text-slate-300"
+      title="Not linked to CRM"
+      aria-hidden
     >
-      <ExternalLink className="h-4 w-4" aria-hidden />
-    </a>
+      <ArrowUpRight className="h-3.5 w-3.5" />
+    </span>
   );
 }
 
@@ -378,11 +417,13 @@ export function ProspectsTable({
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
   const [savingFieldById, setSavingFieldById] = useState<
-    Record<string, "next_action" | "status" | "contact" | null>
+    Record<string, "next_action" | "status" | "contact" | "crm_link" | null>
   >({});
   const [editModalProspect, setEditModalProspect] = useState<ProspectRow | null>(
     null
   );
+  const [crmLinkModalProspect, setCrmLinkModalProspect] =
+    useState<ProspectRow | null>(null);
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -905,10 +946,8 @@ export function ProspectsTable({
   const scrollableColCount = 2 + visibleColumns.length;
   const colCount = scrollableColCount;
 
-  const scrollableTableMinWidth = useMemo(
+  const scrollableMiddleMinWidth = useMemo(
     () =>
-      TABLE_CHECKBOX_COL_WIDTH +
-      TABLE_LEAD_COL_WIDTH +
       visibleColumns.reduce(
         (sum, column) =>
           sum + getProspectColumnWidth(column.key, emailColumnExpanded),
@@ -917,7 +956,31 @@ export function ProspectsTable({
     [visibleColumns, emailColumnExpanded]
   );
 
-  const tableMinWidth = scrollableTableMinWidth;
+  const tableMinWidth = TABLE_LEFT_RAIL_WIDTH + scrollableMiddleMinWidth;
+
+  function renderLeftRailColGroup() {
+    return (
+      <colgroup>
+        <col style={{ width: TABLE_CHECKBOX_COL_WIDTH }} />
+        <col style={{ width: TABLE_LEAD_COL_WIDTH }} />
+      </colgroup>
+    );
+  }
+
+  function renderScrollableColGroup() {
+    return (
+      <colgroup>
+        {visibleColumns.map((column) => (
+          <col
+            key={column.key}
+            style={{
+              width: getProspectColumnWidth(column.key, emailColumnExpanded),
+            }}
+          />
+        ))}
+      </colgroup>
+    );
+  }
 
   function renderTableColGroup() {
     return (
@@ -992,6 +1055,11 @@ export function ProspectsTable({
   function openContactEdit(prospect: ProspectRow) {
     if (!editable || !onUpdateProspect) return;
     setEditModalProspect(prospect);
+  }
+
+  function openCrmLink(prospect: ProspectRow) {
+    if (!editable || !onUpdateProspect) return;
+    setCrmLinkModalProspect(prospect);
   }
 
   function renderEditableContactValue(
@@ -1273,7 +1341,7 @@ export function ProspectsTable({
   }
 
   function renderColumnHeaderCellClass(key: ProspectColumnKey): string {
-    const base = `${TABLE_CELL_Y} text-left`;
+    const base = `${TABLE_HEAD_CELL} text-left`;
     if (key === "email") {
       return `${base} ${TABLE_EMAIL_CELL}`;
     }
@@ -1315,28 +1383,35 @@ export function ProspectsTable({
   const showProspectsTable =
     loading || sortedProspects.length > 0 || Boolean(error);
 
-  function renderProspectsTableHead() {
+  function renderProspectsLeftRailHead() {
     return (
-      <thead className="border-b border-slate-200 bg-slate-50 text-sm uppercase tracking-wide text-slate-500">
+      <thead className="text-sm uppercase tracking-wide text-slate-500">
         <tr>
-          <th
-            className={`${TABLE_CELL_Y} text-center ${TABLE_CHECKBOX_PADDING}`}
-          >
-            <input
-              ref={selectAllHeaderRef}
-              type="checkbox"
-              checked={allPageSelected}
-              onChange={togglePageSelection}
-              disabled={paginatedProspects.length === 0}
-              aria-label="Select all prospects on this page"
-              className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
-            />
+          <th className={`${TABLE_HEAD_CELL} ${TABLE_CHECKBOX_CELL}`}>
+            <div className="flex h-full items-center justify-center">
+              <input
+                ref={selectAllHeaderRef}
+                type="checkbox"
+                checked={allPageSelected}
+                onChange={togglePageSelection}
+                disabled={paginatedProspects.length === 0}
+                aria-label="Select all prospects on this page"
+                className={`${TABLE_CHECKBOX_INPUT} disabled:cursor-not-allowed disabled:opacity-40`}
+              />
+            </div>
           </th>
-          <th
-            className={`${TABLE_CELL_X} ${TABLE_CELL_Y} text-left`}
-          >
-            Lead
+          <th className={`${TABLE_HEAD_CELL} ${TABLE_LEAD_CELL} text-left`}>
+            <div className="flex h-full items-center">Lead</div>
           </th>
+        </tr>
+      </thead>
+    );
+  }
+
+  function renderProspectsScrollableTableHead() {
+    return (
+      <thead className="bg-slate-50 text-sm uppercase tracking-wide text-slate-500">
+        <tr>
           {visibleColumns.map((column) => (
             <th
               key={column.key}
@@ -1347,26 +1422,6 @@ export function ProspectsTable({
           ))}
         </tr>
       </thead>
-    );
-  }
-
-  function renderProspectCrmRailRow(
-    p: ProspectRow,
-    options: { isSelected: boolean }
-  ) {
-    const { isSelected } = options;
-    return (
-      <div
-        key={p.id}
-        className={`${TABLE_CRM_BODY_RAIL} flex items-center border-t border-slate-100 hover:bg-slate-50${
-          isSelected ? " bg-sky-50/70" : " bg-white"
-        }`}
-        style={{ width: TABLE_CRM_COL_WIDTH, minHeight: "2.75rem" }}
-        data-row-action
-        onClick={(e) => e.stopPropagation()}
-      >
-        <ProspectCrmLinkCell row={p} />
-      </div>
     );
   }
 
@@ -1385,7 +1440,7 @@ export function ProspectsTable({
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:max-w-xs">
             <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               aria-hidden
             />
             <input
@@ -1393,7 +1448,7 @@ export function ProspectsTable({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search prospects"
-              className="block w-full rounded-md border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              className="block w-full border-0 border-b border-slate-300 bg-transparent py-2 pl-5 pr-1 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-0"
             />
           </div>
 
@@ -1878,22 +1933,28 @@ export function ProspectsTable({
       ) : null}
       {showProspectsTable ? (
         <div className="flex border-b border-slate-200 bg-slate-50">
+          <div
+            className="shrink-0 bg-slate-50"
+            style={{ width: TABLE_LEFT_RAIL_WIDTH }}
+          >
+            <table
+              className={prospectsTableClassName}
+              style={{ width: TABLE_LEFT_RAIL_WIDTH }}
+            >
+              {renderLeftRailColGroup()}
+              {renderProspectsLeftRailHead()}
+            </table>
+          </div>
           <div className="min-w-0 flex-1 overflow-hidden">
             <div style={{ transform: `translateX(-${tableScrollLeft}px)` }}>
               <table
                 className={prospectsTableClassName}
-                style={prospectsTableStyle}
+                style={{ minWidth: scrollableMiddleMinWidth }}
               >
-                {renderTableColGroup()}
-                {renderProspectsTableHead()}
+                {renderScrollableColGroup()}
+                {renderProspectsScrollableTableHead()}
               </table>
             </div>
-          </div>
-          <div
-            className={TABLE_CRM_HEADER_RAIL}
-            style={{ width: TABLE_CRM_COL_WIDTH }}
-          >
-            CRM
           </div>
         </div>
       ) : null}
@@ -1939,7 +2000,7 @@ export function ProspectsTable({
                   }
                 >
                   <td
-                    className={`${TABLE_CELL_Y} text-center align-middle ${TABLE_CHECKBOX_PADDING}`}
+                    className={`${TABLE_STICKY_CHECKBOX_CELL} ${stickyProspectRowBg(isSelected)} ${TABLE_CELL_Y} align-middle ${TABLE_CHECKBOX_CELL}`}
                     data-row-action
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -1964,29 +2025,39 @@ export function ProspectsTable({
                         handleProspectSelectionClick(p.id, shiftKey);
                       }}
                       aria-label={`Select ${p.full_name}`}
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                      className={TABLE_CHECKBOX_INPUT}
                     />
                   </td>
-                  <td className={`${TABLE_CELL_X} ${TABLE_CELL_Y} font-medium text-slate-900`}>
+                  <td
+                    className={`${TABLE_STICKY_LEAD_CELL} ${stickyProspectRowBg(isSelected)} ${TABLE_LEAD_CELL} ${TABLE_CELL_Y} font-medium text-slate-900`}
+                    style={{ left: TABLE_CHECKBOX_COL_WIDTH }}
+                  >
                     <div className="min-w-0">
-                      {editable && onUpdateProspect ? (
-                        <button
-                          type="button"
-                          data-row-action
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openContactEdit(p);
-                          }}
-                          className="text-left hover:text-sky-700"
-                          title="Edit contact details"
-                        >
-                          {formatProspectPersonName(p.full_name) || p.full_name}
-                        </button>
-                      ) : (
-                        <span>
-                          {formatProspectPersonName(p.full_name) || p.full_name}
-                        </span>
-                      )}
+                      <div className="flex min-w-0 items-center gap-1">
+                        {editable && onUpdateProspect ? (
+                          <button
+                            type="button"
+                            data-row-action
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openContactEdit(p);
+                            }}
+                            className="min-w-0 truncate text-left hover:text-sky-700"
+                            title="Edit contact details"
+                          >
+                            {formatProspectPersonName(p.full_name) || p.full_name}
+                          </button>
+                        ) : (
+                          <span className="min-w-0 truncate">
+                            {formatProspectPersonName(p.full_name) || p.full_name}
+                          </span>
+                        )}
+                        <ProspectLeadCrmLink
+                          row={p}
+                          editable={editable && Boolean(onUpdateProspect)}
+                          onLinkClick={openCrmLink}
+                        />
+                      </div>
                       <ProspectLeadSubtitle
                         jobTitle={p.job_title}
                         businessName={p.business_name}
@@ -2027,24 +2098,6 @@ export function ProspectsTable({
           </table>
           )}
         </div>
-        {showProspectsTable ? (
-          <div
-            className="shrink-0 bg-white"
-            style={{ width: TABLE_CRM_COL_WIDTH }}
-          >
-            {paginatedProspects.map((p) =>
-              renderProspectCrmRailRow(p, {
-                isSelected: selectedIdSet.has(p.id),
-              })
-            )}
-            {loading ? (
-              <div
-                className={`${TABLE_CRM_BODY_RAIL} border-t border-slate-100 bg-white text-sm text-slate-600`}
-                style={{ width: TABLE_CRM_COL_WIDTH, minHeight: "2.75rem" }}
-              />
-            ) : null}
-          </div>
-        ) : null}
       </div>
 
       {!loading && sortedProspects.length > PROSPECTS_PAGE_SIZE ? (
@@ -2104,6 +2157,33 @@ export function ProspectsTable({
           </p>
         </nav>
       ) : null}
+
+      <ProspectCrmLinkModal
+        prospect={crmLinkModalProspect}
+        saving={
+          crmLinkModalProspect
+            ? savingFieldById[crmLinkModalProspect.id] === "crm_link"
+            : false
+        }
+        onClose={() => setCrmLinkModalProspect(null)}
+        onSave={async (crmContactId) => {
+          if (!crmLinkModalProspect || !onUpdateProspect) return;
+          setSavingFieldById((prev) => ({
+            ...prev,
+            [crmLinkModalProspect.id]: "crm_link",
+          }));
+          try {
+            await onUpdateProspect(crmLinkModalProspect, {
+              crm_contact_id: crmContactId,
+            });
+          } finally {
+            setSavingFieldById((prev) => ({
+              ...prev,
+              [crmLinkModalProspect.id]: null,
+            }));
+          }
+        }}
+      />
 
       <ProspectContactEditModal
         prospect={editModalProspect}

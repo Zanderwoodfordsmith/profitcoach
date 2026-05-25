@@ -6,6 +6,27 @@ const DIAL_R = 42;
 const DIAL_CIRCUMFERENCE = 2 * Math.PI * DIAL_R;
 const MAX_PILLAR_SCORE = 30;
 
+const PILLAR_DIALS = [
+  {
+    pillar: "vision" as const,
+    label: "Clarify Vision",
+    strokeClass: "stroke-[#0c5290]",
+  },
+  {
+    pillar: "velocity" as const,
+    label: "Control Velocity",
+    strokeClass: "stroke-[#42a1ee]",
+  },
+  {
+    pillar: "value" as const,
+    label: "Create Value",
+    strokeClass: "stroke-[#1ca0c2]",
+  },
+] as const;
+
+const DIAL_CARD_SHELL =
+  "overflow-hidden rounded-t-lg border border-b-0 border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+
 type SpeedDialsProps = {
   pillarScores: PillarScores;
   gridCols: string;
@@ -13,43 +34,49 @@ type SpeedDialsProps = {
 };
 
 export function SpeedDials({ pillarScores, gridCols, "aria-label": ariaLabel }: SpeedDialsProps) {
-  const dials: { pillar: keyof PillarScores; label: string; strokeClass: string }[] = [
-    { pillar: "vision", label: "Clarify Vision", strokeClass: "stroke-[#0c5290]" },
-    { pillar: "velocity", label: "Control Velocity", strokeClass: "stroke-[#42a1ee]" },
-    { pillar: "value", label: "Create Value", strokeClass: "stroke-[#1ca0c2]" },
-  ];
+  const scores = [
+    pillarScores.vision,
+    pillarScores.velocity,
+    pillarScores.value,
+  ] as const;
 
   return (
     <div
-      className="grid w-full gap-x-3 gap-y-0 mb-0 py-2"
-      style={{
-        gridTemplateColumns: gridCols,
-      }}
+      className="mb-0 grid w-full gap-x-3 gap-y-0 py-2"
+      style={{ gridTemplateColumns: gridCols }}
       role="img"
       aria-label={ariaLabel ?? "Pillar scores"}
     >
       <div />
       <div />
-      <div className="flex justify-center items-center rounded-t-lg border-2 border-b-0 border-[#6d737a] bg-transparent px-2 py-6 shadow-sm">
-        <SingleDial
-          score={pillarScores.vision}
-          label={dials[0].label}
-          strokeClass={dials[0].strokeClass}
+      {PILLAR_DIALS.map((dial, index) => (
+        <DialCard
+          key={dial.pillar}
+          label={dial.label}
+          score={scores[index]}
+          strokeClass={dial.strokeClass}
         />
+      ))}
+    </div>
+  );
+}
+
+function DialCard({
+  label,
+  score,
+  strokeClass,
+}: {
+  label: string;
+  score: number;
+  strokeClass: string;
+}) {
+  return (
+    <div className={DIAL_CARD_SHELL}>
+      <div className="border-b border-slate-100 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+        {label}
       </div>
-      <div className="flex justify-center items-center rounded-t-lg border-2 border-b-0 border-[#6d737a] bg-transparent px-2 py-6 shadow-sm">
-        <SingleDial
-          score={pillarScores.velocity}
-          label={dials[1].label}
-          strokeClass={dials[1].strokeClass}
-        />
-      </div>
-      <div className="flex justify-center items-center rounded-t-lg border-2 border-b-0 border-[#6d737a] bg-transparent px-2 py-6 shadow-sm">
-        <SingleDial
-          score={pillarScores.value}
-          label={dials[2].label}
-          strokeClass={dials[2].strokeClass}
-        />
+      <div className="flex justify-center px-2 py-3">
+        <SingleDial score={score} label={label} strokeClass={strokeClass} />
       </div>
     </div>
   );
@@ -68,12 +95,12 @@ function SingleDial({
   const dash = (score / MAX_PILLAR_SCORE) * DIAL_CIRCUMFERENCE;
 
   return (
-    <div className="flex flex-col items-center flex-shrink-0" role="img" aria-label={`${label}: ${pct}%`}>
-      <svg
-        className="h-[173px] w-[173px]"
-        viewBox="0 0 100 100"
-        aria-hidden
-      >
+    <div
+      className="flex flex-shrink-0 flex-col items-center"
+      role="img"
+      aria-label={`${label}: ${pct}%`}
+    >
+      <svg className="h-[160px] w-[160px]" viewBox="0 0 100 100" aria-hidden>
         <circle
           cx="50"
           cy="50"
@@ -93,12 +120,20 @@ function SingleDial({
           strokeDasharray={`${dash} ${DIAL_CIRCUMFERENCE}`}
           transform="rotate(-90 50 50)"
         />
-        <text x="50" y="55" textAnchor="middle" fill="#334155" fontSize="1.27rem" fontWeight="700">
+        <text
+          x="50"
+          y="55"
+          textAnchor="middle"
+          fill="#334155"
+          fontSize="1.27rem"
+          fontWeight="700"
+        >
           <tspan>{pct}</tspan>
-          <tspan fill="rgba(51,65,85,0.55)" fontSize="0.65em">%</tspan>
+          <tspan fill="rgba(51,65,85,0.55)" fontSize="0.65em">
+            %
+          </tspan>
         </text>
       </svg>
-      <span className="mt-1.5 text-[1.3rem] leading-tight text-slate-500">{label}</span>
     </div>
   );
 }

@@ -24,6 +24,7 @@ export type ProspectFieldPatch = {
   job_title?: string | null;
   business_name?: string | null;
   prospect_status?: string | null;
+  crm_contact_id?: string | null;
   next_action?: { text: string; due_at: string | null } | null;
 };
 
@@ -34,6 +35,7 @@ export type UpdatedProspectFields = {
   job_title: string | null;
   business_name: string | null;
   prospect_status: string | null;
+  crm_contact_id: string | null;
   status: ProspectStatusDisplay;
   next_action: ProspectNextAction | null;
 };
@@ -118,6 +120,9 @@ export async function updateProspectFields(
   if (patch.prospect_status !== undefined) {
     contactPatch.prospect_status = patch.prospect_status?.trim() || null;
   }
+  if (patch.crm_contact_id !== undefined) {
+    contactPatch.crm_contact_id = patch.crm_contact_id?.trim() || null;
+  }
 
   if (Object.keys(contactPatch).length > 0) {
     const { error } = await tryUpdateContactStripping(contactId, contactPatch);
@@ -139,7 +144,9 @@ export async function updateProspectFields(
 
   const { data: refreshed, error: refreshError } = await supabaseAdmin
     .from("contacts")
-    .select("full_name, email, phone, job_title, business_name, prospect_status")
+    .select(
+      "full_name, email, phone, job_title, business_name, prospect_status, crm_contact_id"
+    )
     .eq("id", contactId)
     .maybeSingle();
 
@@ -165,6 +172,7 @@ export async function updateProspectFields(
     job_title: (refreshed.job_title as string | null) ?? null,
     business_name: (refreshed.business_name as string | null) ?? null,
     prospect_status,
+    crm_contact_id: (refreshed.crm_contact_id as string | null) ?? null,
     status: resolveProspectStatus({
       prospect_status,
       last_completed_at: latest?.completed_at ?? null,

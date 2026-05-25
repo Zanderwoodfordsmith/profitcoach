@@ -1,20 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useBossWorkshopChrome } from "@/contexts/BossWorkshopChromeContext";
 import { StickyPageHeader } from "@/components/layout";
 import { ContactBossWorkshopBody } from "@/components/coach/ContactBossWorkshopBody";
+import {
+  NEW_PERSON_VALUE,
+  WorkshopSessionPicker,
+  type WorkshopSessionSummary,
+} from "@/components/coach/WorkshopSessionPicker";
 
 type PickRow = {
   id: string;
   full_name: string;
   business_name: string | null;
+  job_title: string | null;
   type: string;
   coach_name?: string | null;
 };
+
+function syncContactUrl(selectedId: string) {
+  const url = new URL(window.location.href);
+  if (selectedId && selectedId !== NEW_PERSON_VALUE) {
+    url.searchParams.set("contact", selectedId);
+  } else {
+    url.searchParams.delete("contact");
+  }
+  window.history.replaceState({}, "", url.toString());
+}
+
+function authHeaders(
+  token: string,
+  impersonatingCoachId: string | null
+): Record<string, string> {
+  const h: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (impersonatingCoachId) {
+    h["x-impersonate-coach-id"] = impersonatingCoachId;
+  }
+  return h;
+}
 
 export default function CoachWorkshopPage() {
   const router = useRouter();
@@ -23,11 +50,17 @@ export default function CoachWorkshopPage() {
   const isMinimalChrome = chrome?.isMinimalWorkshopChrome ?? false;
   const [contacts, setContacts] = useState<PickRow[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
+  const [newPersonName, setNewPersonName] = useState("");
+  const [newPersonTitle, setNewPersonTitle] = useState("");
+  const [newPersonBusiness, setNewPersonBusiness] = useState("");
+  const [newPersonConfirmError, setNewPersonConfirmError] = useState<string | null>(
+    null
+  );
+  const [newPersonConfirming, setNewPersonConfirming] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adminUnscoped, setAdminUnscoped] = useState(false);
   const [draftCoachId, setDraftCoachId] = useState<string | null>(null);
-  const [workshopMode, setWorkshopMode] = useState(true);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("contact");
@@ -83,6 +116,7 @@ export default function CoachWorkshopPage() {
             id: string;
             full_name: string;
             business_name: string | null;
+            job_title: string | null;
             type: string;
             coach_name?: string | null;
           }>;
@@ -98,6 +132,7 @@ export default function CoachWorkshopPage() {
           id: r.id,
           full_name: r.full_name,
           business_name: r.business_name ?? null,
+          job_title: r.job_title ?? null,
           type: r.type,
           coach_name: r.coach_name ?? null,
         }));
@@ -116,7 +151,7 @@ export default function CoachWorkshopPage() {
 
       const { data: rows, error: listError } = await supabaseClient
         .from("contacts")
-        .select("id, full_name, business_name, type")
+        .select("id, full_name, business_name, job_title, type")
         .eq("coach_id", effectiveCoachId)
         .order("full_name", { ascending: true });
 
@@ -140,52 +175,154 @@ export default function CoachWorkshopPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (!selectedId) return;
+    if (!selectedId || selectedId === NEW_PERSON_VALUE) return;
     if (!contacts.length) return;
     if (!contacts.some((c) => c.id === selectedId)) {
       setSelectedId("");
-      const url = new URL(window.location.href);
-      url.searchParams.delete("contact");
-      window.history.replaceState({}, "", url.toString());
+      syncContactUrl("");
     }
   }, [loading, contacts, selectedId]);
 
-  const selected = contacts.find((c) => c.id === selectedId);
+  const isEditingNewPerson = selectedId === NEW_PERSON_VALUE;
 
-  const handleDraftContactCreated = useCallback((id: string) => {
-    const label = `Workshop — ${new Date().toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short",
-    })}`;
-    setContacts((prev) => {
-      if (prev.some((c) => c.id === id)) return prev;
-      return [
-        {
-          id,
-          full_name: label,
-          business_name: null,
-          type: "prospect",
-          coach_name: null,
-        },
-        ...prev,
-      ];
-    });
-    setSelectedId(id);
-    const url = new URL(window.location.href);
-    url.searchParams.set("contact", id);
-    window.history.replaceState({}, "", url.toString());
+  const sessionSummary = useMemo((): WorkshopSessionSummary | null => {
+    if (!selectedId || selectedId === NEW_PERSON_VALUE) return null;
+    const contact = contacts.find((c) => c.id === selectedId);
+    if (!contact) return null;
+    return {
+      fullName: contact.full_name,
+      jobTitle: contact.job_title,
+      businessName: contact.business_name,
+    };
+  }, [contacts, selectedId]);
+
+  const clearNewPersonDraft = useCallback(() => {
+    setNewPersonName("");
+    setNewPersonTitle("");
+    setNewPersonBusiness("");
+    setNewPersonConfirmError(null);
   }, []);
+
+  const handleSelectedIdChange = useCallback(
+    (value: string) => {
+      setSelectedId(value);
+      setNewPersonConfirmError(null);
+      if (value !== NEW_PERSON_VALUE) {
+        clearNewPersonDraft();
+      }
+      syncContactUrl(value);
+    },
+    [clearNewPersonDraft]
+  );
+
+  const handleChangeSession = useCallback(() => {
+    setSelectedId("");
+    clearNewPersonDraft();
+    syncContactUrl("");
+  }, [clearNewPersonDraft]);
+
+  const handleCancelNewPerson = useCallback(() => {
+    handleChangeSession();
+  }, [handleChangeSession]);
+
+  const handleConfirmNewPerson = useCallback(async () => {
+    const fullName = newPersonName.trim();
+    if (!fullName) {
+      setNewPersonConfirmError("Please enter a name.");
+      return;
+    }
+    if (!draftCoachId) {
+      setNewPersonConfirmError("Unable to create prospect for this account.");
+      return;
+    }
+
+    setNewPersonConfirming(true);
+    setNewPersonConfirmError(null);
+
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setNewPersonConfirmError("Not signed in.");
+        return;
+      }
+
+      const res = await fetch("/api/coach/contacts", {
+        method: "POST",
+        headers: {
+          ...authHeaders(token, impersonatingCoachId),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName,
+          jobTitle: newPersonTitle.trim() || undefined,
+          businessName: newPersonBusiness.trim() || undefined,
+          type: "prospect",
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        contactId?: string;
+      };
+
+      if (!res.ok || !json.contactId) {
+        throw new Error(json.error ?? "Could not create prospect.");
+      }
+
+      const jobTitle = newPersonTitle.trim() || null;
+      const businessName = newPersonBusiness.trim() || null;
+
+      setContacts((prev) => {
+        if (prev.some((c) => c.id === json.contactId)) return prev;
+        return [
+          {
+            id: json.contactId!,
+            full_name: fullName,
+            business_name: businessName,
+            job_title: jobTitle,
+            type: "prospect",
+            coach_name: null,
+          },
+          ...prev,
+        ];
+      });
+      setSelectedId(json.contactId);
+      clearNewPersonDraft();
+      syncContactUrl(json.contactId);
+    } catch (e) {
+      setNewPersonConfirmError(
+        e instanceof Error ? e.message : "Could not create prospect."
+      );
+    } finally {
+      setNewPersonConfirming(false);
+    }
+  }, [
+    newPersonName,
+    newPersonTitle,
+    newPersonBusiness,
+    draftCoachId,
+    impersonatingCoachId,
+    clearNewPersonDraft,
+  ]);
+
+  const activeContactId =
+    selectedId && selectedId !== NEW_PERSON_VALUE ? selectedId : null;
 
   useEffect(() => {
     const prev = document.title;
-    document.title = "BOSS score";
+    document.title = sessionSummary
+      ? `BOSS score — ${sessionSummary.fullName}`
+      : "BOSS score";
     return () => {
       document.title = prev;
     };
-  }, []);
+  }, [sessionSummary]);
 
   const clientsHref = adminUnscoped ? "/admin/clients" : "/coach/clients";
   const clientsLabel = adminUnscoped ? "Admin clients" : "Clients";
+  const showNewPersonOption = Boolean(draftCoachId);
 
   const setWorkshopTopRight = chrome?.setWorkshopTopRight;
   const registerMinimalSlot = chrome?.isMinimalWorkshopChrome;
@@ -208,44 +345,37 @@ export default function CoachWorkshopPage() {
     }
 
     setWorkshopTopRight(
-      <div className="rounded-lg border border-slate-200/90 bg-white/95 px-3 py-2 text-left shadow-md backdrop-blur-sm">
-        <label
-          htmlFor="workshop-contact-top-slot"
-          className="block text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-        >
-          Who are you working with?
-        </label>
-        <select
-          id="workshop-contact-top-slot"
-          className="mt-1 w-full min-w-[12rem] max-w-[min(100vw-2.5rem,20rem)] rounded-md border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
-          value={selectedId}
-          onChange={(e) => {
-            const v = e.target.value;
-            setSelectedId(v);
-            const url = new URL(window.location.href);
-            if (v) url.searchParams.set("contact", v);
-            else url.searchParams.delete("contact");
-            window.history.replaceState({}, "", url.toString());
-          }}
-        >
-          <option value="">Blank session (save creates a prospect)</option>
-          {contacts.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.full_name}
-              {c.business_name ? ` — ${c.business_name}` : ""} ({c.type}
-              {c.coach_name ? ` · ${c.coach_name}` : ""})
-            </option>
-          ))}
-        </select>
-        {!contacts.length ? (
-          <p className="mt-2 max-w-[20rem] text-xs leading-snug text-slate-600">
-            No contacts yet. Add people from{" "}
-            <a className="font-medium text-sky-700 hover:underline" href={clientsHref}>
-              {clientsLabel}
-            </a>
-            .
-          </p>
-        ) : null}
+      <div
+        className={
+          sessionSummary
+            ? "rounded-lg border border-sky-200/90 bg-white px-3 py-2.5 text-left shadow-md ring-1 ring-slate-900/5 backdrop-blur-sm"
+            : "rounded-xl border border-sky-200/90 bg-white px-3.5 py-3 text-left shadow-lg ring-1 ring-slate-900/5 backdrop-blur-sm sm:min-w-[18rem]"
+        }
+      >
+        <WorkshopSessionPicker
+          idPrefix="workshop-top"
+          compact
+          contacts={contacts}
+          selectedId={selectedId}
+          onSelectedIdChange={handleSelectedIdChange}
+          sessionSummary={sessionSummary}
+          onChangeSession={handleChangeSession}
+          newPersonName={newPersonName}
+          onNewPersonNameChange={setNewPersonName}
+          newPersonTitle={newPersonTitle}
+          onNewPersonTitleChange={setNewPersonTitle}
+          newPersonBusiness={newPersonBusiness}
+          onNewPersonBusinessChange={setNewPersonBusiness}
+          isEditingNewPerson={isEditingNewPerson}
+          onConfirmNewPerson={handleConfirmNewPerson}
+          onCancelNewPerson={handleCancelNewPerson}
+          confirmError={newPersonConfirmError}
+          confirming={newPersonConfirming}
+          showNewPersonOption={showNewPersonOption}
+          adminUnscoped={adminUnscoped}
+          clientsHref={clientsHref}
+          clientsLabel={clientsLabel}
+        />
       </div>
     );
     return () => setWorkshopTopRight(null);
@@ -254,8 +384,21 @@ export default function CoachWorkshopPage() {
     registerMinimalSlot,
     loading,
     error,
+    sessionSummary,
     contacts,
     selectedId,
+    handleSelectedIdChange,
+    handleChangeSession,
+    newPersonName,
+    newPersonTitle,
+    newPersonBusiness,
+    isEditingNewPerson,
+    handleConfirmNewPerson,
+    handleCancelNewPerson,
+    newPersonConfirmError,
+    newPersonConfirming,
+    showNewPersonOption,
+    adminUnscoped,
     clientsHref,
     clientsLabel,
   ]);
@@ -264,22 +407,10 @@ export default function CoachWorkshopPage() {
     <div className="flex flex-col gap-6">
       <StickyPageHeader
         title="BOSS score"
-        actions={
-          <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-700">
-            <input
-              type="checkbox"
-              className="h-4 w-4 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-              checked={workshopMode}
-              onChange={(e) => setWorkshopMode(e.target.checked)}
-            />
-            Live scoring session
-          </label>
-        }
         description={
           <span className="text-base leading-relaxed text-slate-700">
-            The growth matrix is always available below. Optionally pick someone from the list, or
-            start scoring right away — we create a prospect for your coach account on first save when
-            nobody is selected.
+            Choose someone from the list, or pick <strong>+ Add new person</strong>, enter their
+            details, and click <strong>Start session</strong> to begin scoring.
           </span>
         }
       />
@@ -289,73 +420,41 @@ export default function CoachWorkshopPage() {
 
       {!isMinimalChrome && !loading && !error && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <label
-            htmlFor="workshop-contact-select"
-            className="mb-3 block text-base font-medium text-slate-800"
-          >
-            Who are you working with? (optional)
-          </label>
-          <select
-            id="workshop-contact-select"
-            className="w-full max-w-md rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
-            value={selectedId}
-            onChange={(e) => {
-              const v = e.target.value;
-              setSelectedId(v);
-              const url = new URL(window.location.href);
-              if (v) url.searchParams.set("contact", v);
-              else url.searchParams.delete("contact");
-              window.history.replaceState({}, "", url.toString());
-            }}
-          >
-            <option value="">Blank session (save creates a prospect)</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.full_name}
-                {c.business_name ? ` — ${c.business_name}` : ""} ({c.type}
-                {c.coach_name ? ` · ${c.coach_name}` : ""})
-              </option>
-            ))}
-          </select>
-          {!contacts.length ? (
-            <p className="mt-3 text-sm text-slate-600">
-              No contacts yet. Add people from{" "}
-              <a className="font-medium text-sky-700 hover:underline" href={clientsHref}>
-                {clientsLabel}
-              </a>
-              .
-            </p>
-          ) : null}
+          <WorkshopSessionPicker
+            idPrefix="workshop-main"
+            contacts={contacts}
+            selectedId={selectedId}
+            onSelectedIdChange={handleSelectedIdChange}
+            sessionSummary={sessionSummary}
+            onChangeSession={handleChangeSession}
+            newPersonName={newPersonName}
+            onNewPersonNameChange={setNewPersonName}
+            newPersonTitle={newPersonTitle}
+            onNewPersonTitleChange={setNewPersonTitle}
+            newPersonBusiness={newPersonBusiness}
+            onNewPersonBusinessChange={setNewPersonBusiness}
+            isEditingNewPerson={isEditingNewPerson}
+            onConfirmNewPerson={handleConfirmNewPerson}
+            onCancelNewPerson={handleCancelNewPerson}
+            confirmError={newPersonConfirmError}
+            confirming={newPersonConfirming}
+            showNewPersonOption={showNewPersonOption}
+            adminUnscoped={adminUnscoped}
+            clientsHref={clientsHref}
+            clientsLabel={clientsLabel}
+          />
         </div>
       )}
 
-      {!loading && !error && selectedId ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-4 sm:p-5">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-            Session for
-          </p>
-          <p className="text-base font-semibold text-slate-900">
-            {selected?.full_name ?? "Contact"}
-            {selected?.business_name ? (
-              <span className="font-normal text-slate-600">
-                {" "}
-                · {selected.business_name}
-              </span>
-            ) : null}
-          </p>
-        </div>
-      ) : null}
-
       {!loading && !error ? (
         <ContactBossWorkshopBody
-          contactId={selectedId || null}
+          contactId={activeContactId}
           draftCoachId={draftCoachId}
-          onDraftContactCreated={handleDraftContactCreated}
           variant="embedded"
           showPillarNotes={false}
-          workshopMode={workshopMode}
-          onWorkshopModeChange={setWorkshopMode}
           showLiveScoringCheckbox={false}
+          canAddNewPerson={showNewPersonOption}
+          editingNewPerson={isEditingNewPerson}
         />
       ) : null}
     </div>

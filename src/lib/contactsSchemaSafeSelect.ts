@@ -22,7 +22,7 @@ export function isMissingColumnError(error: SupabaseLikeError): boolean {
 }
 
 export const CONTACTS_SESSION_NOTES_MIGRATION_HINT =
-  "Apply Supabase migrations for contacts session notes (pillar_session_notes and playbook_session_notes), then retry.";
+  "Apply Supabase migrations for contacts workshop session fields (session_answers, pillar_session_notes, playbook_session_notes), then retry.";
 
 type WorkshopSessionContact = {
   id: string;
@@ -30,6 +30,7 @@ type WorkshopSessionContact = {
   email: string | null;
   business_name: string | null;
   coach_id: string | null;
+  session_answers: unknown;
   pillar_session_notes: unknown;
   playbook_session_notes: unknown;
 };
@@ -42,7 +43,7 @@ export async function loadContactForWorkshopSession(
   contactId: string
 ): Promise<{ contact: WorkshopSessionContact | null; error: SupabaseLikeError }> {
   const withNotes =
-    "id, full_name, email, business_name, coach_id, pillar_session_notes, playbook_session_notes";
+    "id, full_name, email, business_name, coach_id, session_answers, pillar_session_notes, playbook_session_notes";
   const base = "id, full_name, email, business_name, coach_id";
 
   const first = await supabaseAdmin
@@ -77,8 +78,9 @@ export async function loadContactForWorkshopSession(
     contact: {
       ...(fallback.data as Omit<
         WorkshopSessionContact,
-        "pillar_session_notes" | "playbook_session_notes"
+        "session_answers" | "pillar_session_notes" | "playbook_session_notes"
       >),
+      session_answers: {},
       pillar_session_notes: {},
       playbook_session_notes: {},
     },

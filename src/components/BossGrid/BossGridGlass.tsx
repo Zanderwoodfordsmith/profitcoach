@@ -153,24 +153,49 @@ export function BossGridGlass({
             >
               Foundation
             </div>
-            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#0c5290] rounded-t-lg shadow-sm">
-              <div className="flex w-full items-center justify-between gap-2">
-                <span>Clarify Vision</span>
-                <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.vision / 30) * 100)}%</span>
+            {(
+              [
+                {
+                  key: "vision",
+                  name: "Clarify Vision",
+                  pct: Math.round((pillarScores.vision / 30) * 100),
+                  bg: "bg-[#0c5290]",
+                },
+                {
+                  key: "velocity",
+                  name: "Control Velocity",
+                  pct: Math.round((pillarScores.velocity / 30) * 100),
+                  bg: "bg-[#42a1ee]",
+                },
+                {
+                  key: "value",
+                  name: "Create Value",
+                  pct: Math.round((pillarScores.value / 30) * 100),
+                  bg: "bg-[#1ca0c2]",
+                },
+              ] as const
+            ).map((pillar) => (
+              <div
+                key={pillar.key}
+                className={`flex flex-col justify-center items-stretch rounded-t-lg shadow-sm ${showDials ? "p-2" : "p-3"} text-[calc(0.8rem+6px)] font-medium leading-tight text-white ${pillar.bg}`}
+              >
+                {showDials ? (
+                  <div className="flex w-full items-center justify-end gap-2">
+                    <div className="h-4 w-1 rounded-sm bg-white/50" />
+                    <span className="text-sm font-medium opacity-90">
+                      {pillar.pct}%
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <span>{pillar.name}</span>
+                    <span className="text-sm font-medium opacity-90">
+                      {pillar.pct}%
+                    </span>
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#42a1ee] rounded-t-lg shadow-sm">
-              <div className="flex w-full items-center justify-between gap-2">
-                <span>Control Velocity</span>
-                <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.velocity / 30) * 100)}%</span>
-              </div>
-            </div>
-            <div className="flex flex-col justify-center items-stretch p-3 text-[calc(0.8rem+6px)] font-medium leading-tight text-white bg-[#1ca0c2] rounded-t-lg shadow-sm">
-              <div className="flex w-full items-center justify-between gap-2">
-                <span>Create Value</span>
-                <span className="text-sm font-medium opacity-90">{Math.round((pillarScores.value / 30) * 100)}%</span>
-              </div>
-            </div>
+            ))}
           </>
         )}
         {showHeaders && <div className="bg-transparent" style={{ gridColumn: 1, gridRow: 2 }} />}

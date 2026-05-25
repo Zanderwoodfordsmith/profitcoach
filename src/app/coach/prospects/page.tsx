@@ -350,6 +350,7 @@ export default function CoachProspectsPage() {
               prospect_status: body.prospect_status,
               status: body.status,
               next_action: body.next_action,
+              crm_contact_id: body.crm_contact_id,
             }
           : p
       )

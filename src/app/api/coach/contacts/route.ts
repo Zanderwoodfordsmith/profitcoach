@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 type Body = {
   fullName: string;
   email?: string;
+  jobTitle?: string;
   businessName?: string;
   sendInvite?: boolean;
   type?: "prospect" | "client";
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
 
   const fullName = body.fullName?.trim();
   const email = body.email?.trim() || null;
+  const jobTitle = body.jobTitle?.trim() || null;
   const businessName = body.businessName?.trim() || null;
   const sendInvite = !!body.sendInvite;
   const contactType = body.type === "client" ? "client" : "prospect";
@@ -87,6 +89,7 @@ export async function POST(request: Request) {
         coach_id: coachId,
         full_name: fullName,
         email,
+        job_title: jobTitle,
         business_name: businessName,
         type: contactType,
       })

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
@@ -28,6 +29,11 @@ type Assessment = {
   answers: Record<string, 0 | 1 | 2>;
 };
 
+type WorkshopSessionScores = {
+  answers: Record<string, 0 | 1 | 2>;
+  total_score: number;
+};
+
 const ANSWERS_DEBOUNCE_MS = 500;
 const NOTES_DEBOUNCE_MS = 800;
 
@@ -42,9 +48,16 @@ function authHeaders(
   return h;
 }
 
+export type PendingNewWorkshopContact = {
+  fullName: string;
+  jobTitle?: string;
+  businessName?: string;
+};
+
 async function createWorkshopDraftContact(
   token: string,
-  impersonatingCoachId: string | null
+  impersonatingCoachId: string | null,
+  contact: PendingNewWorkshopContact
 ): Promise<string> {
   const headers: Record<string, string> = {
     ...authHeaders(token, impersonatingCoachId),
@@ -54,10 +67,9 @@ async function createWorkshopDraftContact(
     method: "POST",
     headers,
     body: JSON.stringify({
-      fullName: `Workshop — ${new Date().toLocaleString(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })}`,
+      fullName: contact.fullName,
+      jobTitle: contact.jobTitle?.trim() || undefined,
+      businessName: contact.businessName?.trim() || undefined,
       type: "prospect",
     }),
   });
@@ -80,8 +92,15 @@ export type ContactBossWorkshopBodyProps = {
    * viewing all coaches without impersonation).
    */
   draftCoachId?: string | null;
+  /** Name for a new prospect when `contactId` is null — required before the first save. */
+  pendingNewContact?: PendingNewWorkshopContact | null;
   /** Called after a draft workshop contact is created so the parent can sync selection / URL. */
-  onDraftContactCreated?: (id: string) => void;
+  onDraftContactCreated?: (contact: {
+    id: string;
+    fullName: string;
+    jobTitle?: string | null;
+    businessName?: string | null;
+  }) => void;
   /** Full contact header (name, back links). Omit when embedded in another page header. */
   variant?: "page" | "embedded";
   /** Shown in page variant only (e.g. back to clients + playbooks). */
@@ -95,11 +114,16 @@ export type ContactBossWorkshopBodyProps = {
   onWorkshopModeChange?: (next: boolean) => void;
   /** When false, omits the inline “Live scoring session” checkbox (parent renders it). Default true. */
   showLiveScoringCheckbox?: boolean;
+  /** When true, gate copy mentions “Add new person” in the contact picker. */
+  canAddNewPerson?: boolean;
+  /** When true, gate copy prompts user to confirm new-person details in the picker. */
+  editingNewPerson?: boolean;
 };
 
 export function ContactBossWorkshopBody({
   contactId,
   draftCoachId = null,
+  pendingNewContact = null,
   onDraftContactCreated,
   variant = "page",
   headerLeading,
@@ -107,6 +131,8 @@ export function ContactBossWorkshopBody({
   workshopMode: workshopModeProp,
   onWorkshopModeChange,
   showLiveScoringCheckbox = true,
+  canAddNewPerson = false,
+  editingNewPerson = false,
 }: ContactBossWorkshopBodyProps) {
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
@@ -129,6 +155,8 @@ export function ContactBossWorkshopBody({
   const [scoresSaveState, setScoresSaveState] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [showSavedToast, setShowSavedToast] = useState(false);
+  const [savedToastVisible, setSavedToastVisible] = useState(false);
 
   const draftContactIdRef = useRef<string | null>(null);
 
@@ -185,6 +213,7 @@ export function ContactBossWorkshopBody({
           playbook_session_notes?: unknown;
         };
         assessment?: Assessment | null;
+        session?: WorkshopSessionScores | null;
       };
 
       if (cancelled) return;
@@ -240,19 +269,26 @@ export function ContactBossWorkshopBody({
       }
       setPlaybookNotes(playbookNotesLoaded);
 
-      const latest = json.assessment;
-      if (latest) {
-        const ans = (latest.answers ?? {}) as Record<string, 0 | 1 | 2>;
-        setAssessment({
-          id: latest.id,
-          total_score: latest.total_score,
-          completed_at: latest.completed_at,
-          answers: ans,
-        });
+      const loadedSession = json.session;
+      if (loadedSession?.answers) {
+        const ans = loadedSession.answers as Record<string, 0 | 1 | 2>;
+        setAssessment(null);
         setMatrixAnswers(ans);
       } else {
-        setAssessment(null);
-        setMatrixAnswers({});
+        const latest = json.assessment;
+        if (latest) {
+          const ans = (latest.answers ?? {}) as Record<string, 0 | 1 | 2>;
+          setAssessment({
+            id: latest.id,
+            total_score: latest.total_score,
+            completed_at: latest.completed_at,
+            answers: ans,
+          });
+          setMatrixAnswers(ans);
+        } else {
+          setAssessment(null);
+          setMatrixAnswers({});
+        }
       }
 
       setLoading(false);
@@ -290,14 +326,28 @@ export function ContactBossWorkshopBody({
           if (savingScores) setScoresSaveState("error");
           return;
         }
+        const fullName = pendingNewContact?.fullName?.trim();
+        if (!fullName) {
+          setSessionError("Enter a name above to save scores.");
+          if (savingScores) setScoresSaveState("error");
+          return;
+        }
+        const jobTitle = pendingNewContact?.jobTitle?.trim() || undefined;
+        const businessName = pendingNewContact?.businessName?.trim() || undefined;
         try {
           const created = await createWorkshopDraftContact(
             token,
-            impersonatingCoachId
+            impersonatingCoachId,
+            { fullName, jobTitle, businessName }
           );
           draftContactIdRef.current = created;
           targetId = created;
-          onDraftContactCreated?.(created);
+          onDraftContactCreated?.({
+            id: created,
+            fullName,
+            jobTitle: jobTitle ?? null,
+            businessName: businessName ?? null,
+          });
         } catch (e) {
           setSessionError(e instanceof Error ? e.message : "Could not create contact.");
           if (savingScores) setScoresSaveState("error");
@@ -318,6 +368,7 @@ export function ContactBossWorkshopBody({
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
         assessment?: Assessment | null;
+        session?: WorkshopSessionScores | null;
       };
 
       if (!res.ok) {
@@ -326,16 +377,20 @@ export function ContactBossWorkshopBody({
         return;
       }
 
-      if (json.assessment) {
+      if (json.session?.answers) {
+        setAssessment(null);
+        setMatrixAnswers(json.session.answers);
+        if (savingScores) setScoresSaveState("saved");
+      } else if (json.assessment) {
         setAssessment(json.assessment);
         setMatrixAnswers(json.assessment.answers ?? {});
-        setScoresSaveState("saved");
+        if (savingScores) setScoresSaveState("saved");
       } else if (savingScores) {
         setScoresSaveState("error");
         setSessionError("Scores could not be saved. Please try again.");
       }
     },
-    [contactId, draftCoachId, impersonatingCoachId, onDraftContactCreated]
+    [contactId, draftCoachId, impersonatingCoachId, onDraftContactCreated, pendingNewContact]
   );
 
   const flushPendingAnswers = useCallback(() => {
@@ -448,8 +503,9 @@ export function ContactBossWorkshopBody({
     ? `/coach/contacts/${contactId}/playbooks`
     : undefined;
 
-  const scratchNoSave = !contactId && !draftCoachId;
-  const canSavePlaybookNotes = Boolean(contactId || draftCoachId);
+  const scratchNoSave = !contactId && !pendingNewContact;
+  const sessionGateActive = scratchNoSave;
+  const canSavePlaybookNotes = Boolean(contactId || pendingNewContact);
 
   useEffect(() => {
     if (variant !== "page") return;
@@ -460,29 +516,40 @@ export function ContactBossWorkshopBody({
     };
   }, [variant, contact?.full_name]);
 
-  const noAssessmentBanner =
-    !loading && !error && !assessment ? (
-      !contactId && draftCoachId ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
-          {showPillarNotes ? (
-            <>
-              No contact selected yet — the matrix is ready. When you change a cell or pillar notes,
-              we create a prospect for this coach and save there.
-            </>
-          ) : (
-            <>
-              No contact selected yet — the matrix is ready. When you change a cell, we create a
-              prospect for this coach and save there.
-            </>
-          )}
-        </p>
-      ) : contactId ? (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
-          No assessment row yet. Start scoring in <strong>Live scoring session</strong> — we will
-          create one when you first mark a cell.
-        </p>
-      ) : null
-    ) : null;
+  useEffect(() => {
+    if (scoresSaveState !== "saved") return;
+
+    setShowSavedToast(true);
+    setSavedToastVisible(false);
+
+    const enterTimer = window.setTimeout(() => setSavedToastVisible(true), 20);
+    const fadeOutTimer = window.setTimeout(() => setSavedToastVisible(false), 2200);
+    const hideTimer = window.setTimeout(() => {
+      setShowSavedToast(false);
+      setScoresSaveState("idle");
+    }, 2800);
+
+    return () => {
+      window.clearTimeout(enterTimer);
+      window.clearTimeout(fadeOutTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [scoresSaveState]);
+
+  const sessionGateMessage = editingNewPerson
+    ? {
+        title: "Add their details",
+        body: "Fill in their name and click Start session in the panel above.",
+      }
+    : canAddNewPerson
+      ? {
+          title: "Start a session",
+          body: "Choose someone from the list above, or select + Add new person to score someone new.",
+        }
+      : {
+          title: "Select a contact",
+          body: "Choose someone from the list above to start scoring.",
+        };
 
   const inner = (
     <div className="flex w-full flex-col gap-6">
@@ -496,9 +563,6 @@ export function ContactBossWorkshopBody({
       {!sessionError && scoresSaveState === "saving" && (
         <p className="text-sm text-slate-600">Saving scores…</p>
       )}
-      {!sessionError && scoresSaveState === "saved" && (
-        <p className="text-sm text-emerald-700">Scores saved.</p>
-      )}
 
       {assessment && !loading && !error && (
         <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -511,8 +575,6 @@ export function ContactBossWorkshopBody({
           </p>
         </section>
       )}
-
-      {!loading && !error && noAssessmentBanner}
 
       {showCharts && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -544,20 +606,11 @@ export function ContactBossWorkshopBody({
       )}
 
       {!loading && !error && (
-        <section className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm sm:p-6">
-          <BossScoreDialStrip totalScore={liveTotal} pillarStats={pillarDialStats} className="mb-6" />
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-            <div className="min-w-0 flex-1">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Answer mix</h3>
-              <BossAnswerMixBar
-                onTrack={answerMix.green}
-                building={answerMix.amber}
-                needsAttention={answerMix.red}
-                notAnswered={answerMix.unanswered}
-              />
-            </div>
-            {showLiveScoringCheckbox ? (
-              <label className="flex shrink-0 cursor-pointer items-center gap-2 self-start text-sm font-medium text-slate-700 sm:self-end">
+        <>
+          <BossScoreDialStrip totalScore={liveTotal} pillarStats={pillarDialStats} />
+          {showLiveScoringCheckbox ? (
+            <div className="flex justify-end">
+              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                 <input
                   type="checkbox"
                   className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
@@ -566,32 +619,92 @@ export function ContactBossWorkshopBody({
                 />
                 Live scoring session
               </label>
+            </div>
+          ) : null}
+          <section className="relative mt-3">
+            {sessionGateActive ? (
+              <>
+                <div
+                  className="absolute inset-0 z-10 rounded-xl bg-slate-300/50"
+                  aria-hidden
+                />
+                <div
+                  className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center bg-slate-900/10 p-4 sm:p-6"
+                  aria-hidden={false}
+                >
+                  <div className="pointer-events-auto max-w-md rounded-xl border border-slate-200 bg-white px-7 py-8 text-center shadow-xl sm:max-w-lg sm:px-8 sm:py-9">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-sky-700">
+                      BOSS score
+                    </p>
+                    <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
+                      {sessionGateMessage.title}
+                    </h3>
+                    <p className="mt-3 text-base leading-relaxed text-slate-600">
+                      {sessionGateMessage.body}
+                    </p>
+                  </div>
+                </div>
+              </>
             ) : null}
+            <div
+              className={
+                sessionGateActive ? "pointer-events-none select-none opacity-55" : undefined
+              }
+            >
+              <BossGridTransposed
+                answers={matrixAnswers}
+                glass
+                glassTheme="light"
+                glassAlwaysShowPlaybookNames
+                hideGlassScoreBar
+                gridCornerLabel="Areas"
+                interactive={workshopMode && !sessionGateActive}
+                onScoreChange={handleScoreChange}
+                playbookLinkBase={playbookBase}
+                scoreBarLabels="neutral"
+                playbookNotes={canSavePlaybookNotes ? playbookNotes : undefined}
+                onPlaybookNotesChange={
+                  workshopMode && canSavePlaybookNotes && !sessionGateActive
+                    ? handlePlaybookNotesChange
+                    : undefined
+                }
+              />
+            </div>
+          </section>
+          <div className="mt-4">
+            <BossAnswerMixBar
+              onTrack={answerMix.green}
+              building={answerMix.amber}
+              needsAttention={answerMix.red}
+              notAnswered={answerMix.unanswered}
+            />
           </div>
-          <BossGridTransposed
-            answers={matrixAnswers}
-            glass
-            glassTheme="light"
-            glassAlwaysShowPlaybookNames
-            hideGlassScoreBar
-            interactive={workshopMode && !scratchNoSave}
-            onScoreChange={handleScoreChange}
-            playbookLinkBase={playbookBase}
-            scoreBarLabels="neutral"
-            playbookNotes={canSavePlaybookNotes ? playbookNotes : undefined}
-            onPlaybookNotesChange={
-              workshopMode && canSavePlaybookNotes
-                ? handlePlaybookNotesChange
-                : undefined
-            }
-          />
-        </section>
+        </>
       )}
     </div>
   );
 
+  const scoresSavedToast =
+    showSavedToast && !sessionError ? (
+      <div
+        role="status"
+        aria-live="polite"
+        className={`fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg bg-emerald-500 px-3.5 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-900/15 transition-all duration-500 ease-out sm:bottom-6 sm:right-6 ${
+          savedToastVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+        }`}
+      >
+        <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} aria-hidden />
+        Scores saved.
+      </div>
+    ) : null;
+
   if (variant === "embedded") {
-    return inner;
+    return (
+      <>
+        {inner}
+        {scoresSavedToast}
+      </>
+    );
   }
 
   return (
@@ -613,6 +726,7 @@ export function ContactBossWorkshopBody({
         }
       />
       {inner}
+      {scoresSavedToast}
     </div>
   );
 }

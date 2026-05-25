@@ -1,8 +1,6 @@
-import { randomUUID } from "crypto";
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { PLAYBOOKS } from "@/lib/bossData";
-import { isCoachClientHubAllowedUserId } from "@/lib/coachClientHubAccessServer";
 import {
   CONTACTS_SESSION_NOTES_MIGRATION_HINT,
   isMissingColumnError,
@@ -28,6 +26,11 @@ type WorkshopAuthOk = {
 };
 
 type WorkshopAuth = WorkshopAuthFailure | WorkshopAuthOk;
+
+type SessionPayload = {
+  answers: AnswersMap;
+  total_score: number;
+};
 
 async function authenticateWorkshopSession(request: Request): Promise<WorkshopAuth> {
   const authHeader = request.headers.get("authorization") ?? "";
@@ -85,31 +88,6 @@ function canAccessContactForWorkshop(
   return false;
 }
 
-/** Coach id stored on new assessments; null if contact has no coach (cannot insert answers). */
-function coachIdForAssessmentWrites(
-  auth: WorkshopAuthOk,
-  contactCoachId: string | null
-): string | null {
-  if (auth.profileRole === "coach") {
-    return auth.user.id;
-  }
-  if (auth.profileRole === "admin") {
-    if (auth.impersonateCoachId) {
-      return auth.impersonateCoachId;
-    }
-    return contactCoachId;
-  }
-  return null;
-}
-
-async function assertCoachClientHubAccess(auth: WorkshopAuthOk): Promise<boolean> {
-  const effectiveId =
-    auth.profileRole === "admin" && auth.impersonateCoachId
-      ? auth.impersonateCoachId
-      : auth.user.id;
-  return isCoachClientHubAllowedUserId(effectiveId);
-}
-
 function normalizeAnswers(raw: unknown): AnswersMap | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const answers: AnswersMap = {};
@@ -120,6 +98,12 @@ function normalizeAnswers(raw: unknown): AnswersMap | null {
     }
   }
   return answers;
+}
+
+function sessionFromAnswers(raw: unknown): SessionPayload | null {
+  const answers = normalizeAnswers(raw);
+  if (!answers || Object.keys(answers).length === 0) return null;
+  return { answers, total_score: getTotalScore(answers) };
 }
 
 function normalizePillarNotes(raw: unknown): Partial<Record<PillarKey, string>> | null {
@@ -141,6 +125,7 @@ function normalizePlaybookNotes(
   const out: Partial<Record<string, string>> = {};
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (VALID_PLAYBOOK_REFS.has(k) && typeof v === "string") out[k] = v;
+    if (k.endsWith("__actions") && typeof v === "string") out[k] = v;
   }
   return out;
 }
@@ -186,6 +171,57 @@ async function mergeContactJsonNotes(
   return { error: null };
 }
 
+async function saveSessionAnswers(
+  contactId: string,
+  answers: AnswersMap
+): Promise<{ session: SessionPayload | null; error: string | null }> {
+  const total_score = getTotalScore(answers);
+  if (total_score < 0 || total_score > 100) {
+    return { session: null, error: "Invalid total score from answers." };
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from("contacts")
+    .update({ session_answers: answers })
+    .eq("id", contactId);
+
+  if (updateError) {
+    return {
+      session: null,
+      error: isMissingColumnError(updateError)
+        ? CONTACTS_SESSION_NOTES_MIGRATION_HINT
+        : "Failed to save session scores.",
+    };
+  }
+
+  return { session: { answers, total_score }, error: null };
+}
+
+async function loadLegacyAssessmentSession(
+  contactId: string
+): Promise<SessionPayload | null> {
+  const { data: latest, error: assessError } = await supabaseAdmin
+    .from("assessments")
+    .select("total_score, answers")
+    .eq("contact_id", contactId)
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (assessError || !latest) return null;
+
+  const answers = normalizeAnswers(latest.answers);
+  if (!answers || Object.keys(answers).length === 0) return null;
+
+  return {
+    answers,
+    total_score:
+      typeof latest.total_score === "number"
+        ? latest.total_score
+        : getTotalScore(answers),
+  };
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -223,27 +259,9 @@ export async function GET(
     );
   }
 
-  if (!(await assertCoachClientHubAccess(auth))) {
-    return NextResponse.json(
-      { error: "Client hub is not enabled for this coach account." },
-      { status: 403 }
-    );
-  }
-
-  const { data: latest, error: assessError } = await supabaseAdmin
-    .from("assessments")
-    .select("id, total_score, completed_at, answers")
-    .eq("contact_id", contactId)
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (assessError) {
-    return NextResponse.json(
-      { error: "Unable to load latest assessment." },
-      { status: 500 }
-    );
-  }
+  const session =
+    sessionFromAnswers(contact.session_answers) ??
+    (await loadLegacyAssessmentSession(contactId));
 
   return NextResponse.json({
     contact: {
@@ -255,14 +273,7 @@ export async function GET(
       pillar_session_notes: contact.pillar_session_notes ?? null,
       playbook_session_notes: contact.playbook_session_notes ?? null,
     },
-    assessment: latest
-      ? {
-          id: latest.id as string,
-          total_score: latest.total_score as number,
-          completed_at: latest.completed_at as string,
-          answers: (latest.answers ?? {}) as AnswersMap,
-        }
-      : null,
+    session,
   });
 }
 
@@ -294,15 +305,6 @@ export async function PATCH(
     );
   }
 
-  if (!(await assertCoachClientHubAccess(auth))) {
-    return NextResponse.json(
-      { error: "Client hub is not enabled for this coach account." },
-      { status: 403 }
-    );
-  }
-
-  const coachWriteId = coachIdForAssessmentWrites(auth, contact.coach_id as string | null);
-
   let body: { answers?: unknown; pillarNotes?: unknown; playbookNotes?: unknown };
   try {
     body = await request.json();
@@ -321,16 +323,6 @@ export async function PATCH(
   ) {
     return NextResponse.json(
       { error: "Provide answers, pillarNotes, and/or playbookNotes." },
-      { status: 400 }
-    );
-  }
-
-  if (answersPatch && !coachWriteId) {
-    return NextResponse.json(
-      {
-        error:
-          "This contact has no assigned coach; assign a coach before saving scores.",
-      },
       { status: 400 }
     );
   }
@@ -357,99 +349,18 @@ export async function PATCH(
     }
   }
 
-  let assessmentOut: {
-    id: string;
-    total_score: number;
-    answers: AnswersMap;
-    completed_at: string;
-  } | null = null;
+  let sessionOut: SessionPayload | null = null;
 
-  if (answersPatch && coachWriteId) {
-    const total_score = getTotalScore(answersPatch);
-    if (total_score < 0 || total_score > 100) {
-      return NextResponse.json(
-        { error: "Invalid total score from answers." },
-        { status: 400 }
-      );
+  if (answersPatch) {
+    const { session, error } = await saveSessionAnswers(contactId, answersPatch);
+    if (error) {
+      return NextResponse.json({ error }, { status: 500 });
     }
-
-    const { data: latest, error: fetchError } = await supabaseAdmin
-      .from("assessments")
-      .select("id")
-      .eq("contact_id", contactId)
-      .order("completed_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (fetchError) {
-      return NextResponse.json(
-        { error: "Unable to load assessment." },
-        { status: 500 }
-      );
-    }
-
-    if (latest?.id) {
-      const { error: updateError } = await supabaseAdmin
-        .from("assessments")
-        .update({ answers: answersPatch, total_score })
-        .eq("id", latest.id as string);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: "Failed to update assessment." },
-          { status: 500 }
-        );
-      }
-
-      const { data: row } = await supabaseAdmin
-        .from("assessments")
-        .select("id, total_score, answers, completed_at")
-        .eq("id", latest.id as string)
-        .maybeSingle();
-
-      if (row) {
-        assessmentOut = {
-          id: row.id as string,
-          total_score: row.total_score as number,
-          answers: (row.answers ?? {}) as AnswersMap,
-          completed_at: row.completed_at as string,
-        };
-      }
-    } else {
-      const { data: inserted, error: insertError } = await supabaseAdmin
-        .from("assessments")
-        .insert({
-          coach_id: coachWriteId,
-          contact_id: contactId,
-          source: "coach_session",
-          assessment_type: "diagnostic_50",
-          total_score,
-          answers: answersPatch,
-          completed_at: new Date().toISOString(),
-          report_token: randomUUID(),
-        })
-        .select("id, total_score, answers, completed_at")
-        .single();
-
-      if (insertError || !inserted) {
-        console.error("coach/contacts session assessment insert:", insertError);
-        return NextResponse.json(
-          { error: "Failed to create assessment." },
-          { status: 500 }
-        );
-      }
-
-      assessmentOut = {
-        id: inserted.id as string,
-        total_score: inserted.total_score as number,
-        answers: (inserted.answers ?? {}) as AnswersMap,
-        completed_at: inserted.completed_at as string,
-      };
-    }
+    sessionOut = session;
   }
 
   return NextResponse.json({
     ok: true,
-    assessment: assessmentOut,
+    session: sessionOut,
   });
 }

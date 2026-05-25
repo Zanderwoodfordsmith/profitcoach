@@ -223,28 +223,84 @@ export function BossGridBordered({
           <>
             <div className="flex flex-col justify-center items-center p-2 min-w-0 bg-transparent" />
             {PILLAR_SPEC.map((pillar, pillarIdx) => {
-              const pct = pillarIdx === 0 ? 0 : pillarIdx === 1 ? Math.round((pillarScores.vision / 30) * 100) : pillarIdx === 2 ? Math.round((pillarScores.velocity / 30) * 100) : Math.round((pillarScores.value / 30) * 100);
+              const pct =
+                pillarIdx === 0
+                  ? 0
+                  : pillarIdx === 1
+                    ? Math.round((pillarScores.vision / 30) * 100)
+                    : pillarIdx === 2
+                      ? Math.round((pillarScores.velocity / 30) * 100)
+                      : Math.round((pillarScores.value / 30) * 100);
+              const useSimplifiedHeader = showDials && pillarIdx > 0;
+
               return (
                 <div
                   key={pillar.name}
                   className="flex flex-col justify-center items-stretch rounded-t-lg border border-b-0 border-[#F1F5F9] px-3"
                   style={{
-                    height: 44,
+                    height: useSimplifiedHeader ? 36 : 44,
                     background: pillar.bg,
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.015)",
+                    boxShadow:
+                      "0 1px 3px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.015)",
                   }}
                 >
-                  <div className="flex w-full items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <div style={{ width: 3, height: 18, borderRadius: 2, background: pillar.main }} />
-                      <span style={{ fontSize: 19.5, fontWeight: 660, color: pillar.main, letterSpacing: -0.2 }}>
-                        {pillar.name}
+                  {useSimplifiedHeader ? (
+                    <div className="flex w-full items-center justify-end gap-2">
+                      <div
+                        style={{
+                          width: 3,
+                          height: 16,
+                          borderRadius: 2,
+                          background: pillar.main,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: pillar.main,
+                          opacity: 0.65,
+                        }}
+                      >
+                        {pct}%
                       </span>
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: pillar.main, opacity: 0.45 }}>
-                      {pct}%
-                    </span>
-                  </div>
+                  ) : (
+                    <div className="flex w-full items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div
+                          style={{
+                            width: 3,
+                            height: 18,
+                            borderRadius: 2,
+                            background: pillar.main,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 19.5,
+                            fontWeight: 660,
+                            color: pillar.main,
+                            letterSpacing: -0.2,
+                          }}
+                        >
+                          {pillar.name}
+                        </span>
+                      </div>
+                      {pct > 0 ? (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: pillar.main,
+                            opacity: 0.45,
+                          }}
+                        >
+                          {pct}%
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               );
             })}

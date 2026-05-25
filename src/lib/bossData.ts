@@ -132,6 +132,23 @@ export const LEVEL_COLORS_DIAGRAM = [
   "#238BF7", // 5 Owner
 ];
 
+/** Level ladder icons (index 0 = Level 1 … 4 = Level 5) */
+export const LEVEL_ICONS = [
+  "/levels/overwhelm.png",
+  "/levels/overworked.png",
+  "/levels/organised.png",
+  "/levels/overseer.png",
+  "/levels/owner.png",
+] as const;
+
+export function getLevelIcon(levelId: number): string | null {
+  return LEVEL_ICONS[levelId - 1] ?? null;
+}
+
+export function getLevelColor(levelId: number): string | null {
+  return LEVEL_COLORS_DIAGRAM[levelId - 1] ?? null;
+}
+
 /** Alternative warm color palette for wheel */
 export const WHEEL_COLORS_ALT = [
   "#E06D69",
