@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export function FeedbackFormCard() {
+type FeedbackFormCardProps = {
+  onSubmitted?: () => void;
+};
+
+export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
   const [feedbackType, setFeedbackType] = useState<"bug" | "feature" | "general">(
     "bug"
   );
@@ -58,6 +62,7 @@ export function FeedbackFormCard() {
               setFeedbackTitle("");
               setFeedbackDetails("");
               setFeedbackEmail("");
+              onSubmitted?.();
             } catch (err) {
               const msg =
                 err instanceof Error ? err.message : "Could not submit feedback.";

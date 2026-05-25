@@ -1888,7 +1888,7 @@ export function PostDetailModal({
                                   }))
                                 }
                                 rows={3}
-                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
                               <div className="flex gap-2">
                                 <button
@@ -1952,7 +1952,7 @@ export function PostDetailModal({
                                 }
                                 placeholder="Write a reply…"
                                 rows={3}
-                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
                               <div className="flex gap-2">
                                 <button
@@ -2092,7 +2092,7 @@ export function PostDetailModal({
                                                 }))
                                               }
                                               rows={3}
-                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
                                             <div className="flex gap-2">
                                               <button
@@ -2166,7 +2166,7 @@ export function PostDetailModal({
                                               }
                                               placeholder="Write a reply…"
                                               rows={3}
-                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                                              className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
                                             <div className="flex gap-2">
                                               <button
@@ -2239,7 +2239,7 @@ export function PostDetailModal({
                       placeholder="Your comment"
                       autoResize
                       maxAutoHeightPx={220}
-                      className="w-full border-0 bg-transparent px-3.5 py-1.5 text-sm leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                      className="w-full border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
                     />
                   </div>
                   {showCommentComposerActions ? (

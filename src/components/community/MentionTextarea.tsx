@@ -17,7 +17,6 @@ export type MentionUser = {
   id: string;
   display_name: string;
   avatar_url: string | null;
-  handle: string | null;
   role: string;
 };
 
@@ -730,15 +729,8 @@ export function MentionTextarea({
                       {profileInitialsFromName(u.display_name)}
                     </span>
                   )}
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-slate-900">
-                      {u.display_name}
-                    </span>
-                    {u.handle ? (
-                      <span className="block truncate text-xs text-slate-500">
-                        @{u.handle}
-                      </span>
-                    ) : null}
+                  <span className="min-w-0 flex-1 truncate font-medium text-slate-900">
+                    {u.display_name}
                   </span>
                 </button>
               </li>

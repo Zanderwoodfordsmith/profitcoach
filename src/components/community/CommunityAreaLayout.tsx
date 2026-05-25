@@ -21,6 +21,8 @@ export function CommunityAreaLayout({
     pathname === base || pathname === `${base}/`;
   const isCalendarPage =
     pathname === `${base}/calendar` || pathname === `${base}/calendar/`;
+  const isFeedbackPage =
+    pathname === `${base}/feedback` || pathname === `${base}/feedback/`;
 
   const isMap =
     !isMembers &&
@@ -28,16 +30,22 @@ export function CommunityAreaLayout({
     searchParams.get("tab") === "map";
   const isFeed = !isMembers && onCommunityHome && !isMap;
 
-  const description = isMembers
-    ? "Browse all members, see who's online, and find staff admins."
-    : isCalendarPage
-      ? "See upcoming community events in calendar or list view."
-      : "Browse posts and see where coaches are based.";
+  const description = isFeedbackPage
+    ? "Review and prioritise bugs, features, and feedback from staff."
+    : isMembers
+      ? "Browse all members, see who's online, and find staff admins."
+      : isCalendarPage
+        ? "See upcoming community events in calendar or list view."
+        : "Browse posts and see where coaches are based.";
 
-  const pageTitle = isCalendarPage ? "Calendar" : "Community";
+  const pageTitle = isFeedbackPage
+    ? "Feedback inbox"
+    : isCalendarPage
+      ? "Calendar"
+      : "Community";
 
   const tabs = useMemo(() => {
-    if (isCalendarPage) return undefined;
+    if (isCalendarPage || isFeedbackPage) return undefined;
     return (
       <PageHeaderUnderlineTabs
         ariaLabel="Community views"
@@ -63,7 +71,7 @@ export function CommunityAreaLayout({
         ]}
       />
     );
-  }, [base, isCalendarPage, isFeed, isMap, isMembers]);
+  }, [base, isCalendarPage, isFeedbackPage, isFeed, isMap, isMembers]);
 
   return (
     <>
