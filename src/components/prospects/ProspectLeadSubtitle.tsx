@@ -29,7 +29,7 @@ export function ProspectLeadSubtitle({
 
   if (!editable) {
     return subtitle ? (
-      <span className="mt-0.5 block text-sm text-slate-500">{subtitle}</span>
+      <span className="mt-px block text-xs leading-snug text-slate-500">{subtitle}</span>
     ) : null;
   }
 
@@ -41,7 +41,7 @@ export function ProspectLeadSubtitle({
         e.stopPropagation();
         onEdit?.();
       }}
-      className="mt-0.5 block max-w-full text-left text-sm text-slate-500 hover:text-sky-700"
+      className="mt-px block max-w-full text-left text-xs leading-snug text-slate-500 hover:text-sky-700"
       title="Edit contact details"
     >
       {subtitle || (

@@ -12,7 +12,7 @@ type CoachCard = {
   full_name: string | null;
   coach_business_name: string | null;
   avatar_url: string | null;
-  bio: string | null;
+  directory_summary: string | null;
   location: string | null;
   linkedin_url: string | null;
 };
@@ -256,9 +256,9 @@ export default function DirectoryClient() {
                         </p>
                       ) : null}
                     </div>
-                    {c.bio ? (
+                    {c.directory_summary ? (
                       <p className="line-clamp-3 text-sm leading-relaxed text-slate-600">
-                        {bioSnippet(c.bio)}
+                        {bioSnippet(c.directory_summary)}
                       </p>
                     ) : null}
                     <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">

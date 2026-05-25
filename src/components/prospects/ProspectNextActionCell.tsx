@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { useEffect, useRef, useState } from "react";
 import { formatDueDateLabel } from "@/lib/actionPlans/actionOutlineUtils";
 import type { ProspectNextAction } from "@/lib/actionPlans/prospectFollowUp";
@@ -51,7 +52,7 @@ export function ProspectNextActionCell({
   if (editing) {
     return (
       <div
-        className="flex min-w-[11rem] flex-col gap-1"
+        className="flex min-w-[14rem] flex-col gap-1 sm:min-w-[16rem]"
         data-row-action
         onClick={(e) => e.stopPropagation()}
       >
@@ -79,7 +80,7 @@ export function ProspectNextActionCell({
   }
 
   if (!nextAction?.text) {
-    if (!editable) return <span className="text-slate-400">—</span>;
+    if (!editable) return <ProspectEmptyValue />;
     return (
       <button
         type="button"
@@ -88,7 +89,7 @@ export function ProspectNextActionCell({
           e.stopPropagation();
           setEditing(true);
         }}
-        className="text-left text-sm text-slate-400 hover:text-sky-700"
+        className="whitespace-nowrap text-xs text-slate-400 hover:text-sky-700"
       >
         {saving ? "Saving…" : "Add next action"}
       </button>
@@ -100,25 +101,28 @@ export function ProspectNextActionCell({
     : null;
 
   const content = (
-    <div className="flex min-w-[10rem] flex-col gap-0.5">
-      <span className="text-sm font-medium text-slate-800">{nextAction.text}</span>
+    <span className="block min-w-0 truncate whitespace-nowrap text-sm text-slate-800">
+      <span className="font-medium">{nextAction.text}</span>
       {dueLabel ? (
-        <span className="text-xs text-slate-500">{dueLabel}</span>
+        <span className="font-normal text-slate-500"> · {dueLabel}</span>
       ) : null}
-    </div>
+    </span>
   );
 
   if (!editable) return content;
 
   return (
-    <div className="flex items-start gap-2" data-row-action>
+    <div
+      className="flex min-w-0 items-center gap-2 whitespace-nowrap"
+      data-row-action
+    >
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           setEditing(true);
         }}
-        className="text-left hover:text-sky-700"
+        className="min-w-0 truncate text-left hover:text-sky-700"
         title="Edit next action"
       >
         {content}

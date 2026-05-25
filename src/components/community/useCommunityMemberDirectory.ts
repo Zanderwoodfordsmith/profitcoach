@@ -14,6 +14,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
+import { resolveCommunityBio } from "@/lib/profileBioFields";
 
 export type CommunityRosterMember = {
   id: string;
@@ -23,6 +24,8 @@ export type CommunityRosterMember = {
   coach_business_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  community_bio?: string | null;
+  linkedin_url: string | null;
   location: string | null;
   role: string;
   created_at: string | null;
@@ -46,6 +49,8 @@ type StaffProfileRow = {
   coach_business_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  community_bio?: string | null;
+  linkedin_url: string | null;
   location: string | null;
   role: string;
   created_at: string | null;
@@ -70,7 +75,8 @@ function mergeRoster(
       last_name: p.last_name,
       coach_business_name: p.coach_business_name,
       avatar_url: p.avatar_url,
-      bio: p.bio,
+      bio: resolveCommunityBio(p),
+      linkedin_url: p.linkedin_url,
       location: p.location,
       role: p.role,
       created_at: p.created_at,
@@ -152,7 +158,7 @@ function useCommunityMemberDirectoryState() {
     const { data: profiles, error: pErr } = await supabaseClient
       .from("profiles")
       .select(
-        "id, full_name, first_name, last_name, coach_business_name, avatar_url, bio, location, role, created_at, disco_community_joined_on"
+        "id, full_name, first_name, last_name, coach_business_name, avatar_url, bio, community_bio, linkedin_url, location, role, created_at, disco_community_joined_on"
       )
       .in("role", ["coach", "admin"]);
 

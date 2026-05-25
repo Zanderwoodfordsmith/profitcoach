@@ -195,6 +195,7 @@ export function CommunitySidebar({
                         avatar_url: m.avatar_url,
                         role: m.role,
                         bio: m.bio,
+                        linkedin_url: m.linkedin_url,
                         coach_business_name: m.coach_business_name,
                         slug: m.slug,
                       }}

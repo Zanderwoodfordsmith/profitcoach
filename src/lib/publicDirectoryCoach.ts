@@ -1,4 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import {
+  resolveDirectoryBio,
+  resolveDirectorySummary,
+} from "@/lib/profileBioFields";
 
 export type PublicDirectoryCoach = {
   slug: string;
@@ -6,7 +10,8 @@ export type PublicDirectoryCoach = {
   full_name: string | null;
   coach_business_name: string | null;
   avatar_url: string | null;
-  bio: string | null;
+  directory_summary: string | null;
+  directory_bio: string | null;
   location: string | null;
   linkedin_url: string | null;
 };
@@ -20,7 +25,7 @@ export async function getPublicDirectoryCoachBySlug(
   const { data, error } = await supabaseAdmin
     .from("coaches")
     .select(
-      `slug, directory_level, profiles!inner ( full_name, coach_business_name, avatar_url, bio, location, linkedin_url )`
+      `slug, directory_level, profiles!inner ( full_name, coach_business_name, avatar_url, bio, directory_summary, directory_bio, location, linkedin_url )`
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -40,6 +45,8 @@ export async function getPublicDirectoryCoachBySlug(
           coach_business_name: string | null;
           avatar_url: string | null;
           bio: string | null;
+          directory_summary: string | null;
+          directory_bio: string | null;
           location: string | null;
           linkedin_url: string | null;
         }
@@ -48,6 +55,8 @@ export async function getPublicDirectoryCoachBySlug(
           coach_business_name: string | null;
           avatar_url: string | null;
           bio: string | null;
+          directory_summary: string | null;
+          directory_bio: string | null;
           location: string | null;
           linkedin_url: string | null;
         }>
@@ -63,7 +72,8 @@ export async function getPublicDirectoryCoachBySlug(
     full_name: p.full_name ?? null,
     coach_business_name: p.coach_business_name ?? null,
     avatar_url: p.avatar_url ?? null,
-    bio: p.bio ?? null,
+    directory_summary: resolveDirectorySummary(p),
+    directory_bio: resolveDirectoryBio(p),
     location: p.location ?? null,
     linkedin_url: p.linkedin_url ?? null,
   };

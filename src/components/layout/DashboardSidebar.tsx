@@ -478,7 +478,7 @@ export function DashboardSidebar({
           aria-label="Feedback"
         >
           <div
-            className="relative w-full max-w-3xl"
+            className="relative w-full max-w-[38.4rem]"
             onClick={(e) => e.stopPropagation()}
           >
             <button

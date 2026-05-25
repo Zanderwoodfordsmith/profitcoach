@@ -90,19 +90,49 @@ export async function loadContactForWorkshopSession(
  * Tries selecting contacts with `phone`; falls back without it when the column
  * is missing (migration not applied yet).
  */
+function withDefaultOptionalContactFields<T extends Record<string, unknown>>(
+  rows: unknown[],
+  fields: Array<keyof T & string>
+): T[] {
+  return rows.map((row) => {
+    const next = { ...(row as Record<string, unknown>) };
+    for (const field of fields) {
+      if (next[field] === undefined) next[field] = null;
+    }
+    return next as T;
+  });
+}
+
 export async function selectContactsWithOptionalPhone<
   T extends Record<string, unknown>,
 >(
   fetch: (columns: string) => PromiseLike<SupabaseSelectResult>,
-  baseColumns: string
+  baseColumns: string,
+  extraOptionalColumns: string[] = []
 ): Promise<{ data: T[]; error: SupabaseLikeError }> {
-  const withPhone = `${baseColumns}, phone`;
-  const first = await fetch(withPhone);
+  const optionalColumns = ["phone", ...extraOptionalColumns];
+  const withOptional = `${baseColumns}, ${optionalColumns.join(", ")}`;
+  const first = await fetch(withOptional);
   if (!first.error) {
     return { data: (first.data ?? []) as unknown as T[], error: null };
   }
   if (!isMissingColumnError(first.error)) {
     return { data: [], error: first.error };
+  }
+
+  for (let i = optionalColumns.length - 1; i >= 0; i -= 1) {
+    const columns = [baseColumns, ...optionalColumns.slice(0, i)].join(", ");
+    const attempt = await fetch(columns);
+    if (!attempt.error) {
+      const missing = optionalColumns.slice(i);
+      return {
+        data: withDefaultOptionalContactFields<T>(attempt.data ?? [], missing),
+        error: null,
+      };
+    }
+    if (!isMissingColumnError(attempt.error)) {
+      return { data: [], error: attempt.error };
+    }
   }
 
   const fallback = await fetch(baseColumns);
@@ -111,10 +141,7 @@ export async function selectContactsWithOptionalPhone<
   }
 
   return {
-    data: (fallback.data ?? []).map((row) => ({
-      ...(row as Record<string, unknown>),
-      phone: null,
-    })) as unknown as T[],
+    data: withDefaultOptionalContactFields<T>(fallback.data ?? [], optionalColumns),
     error: null,
   };
 }

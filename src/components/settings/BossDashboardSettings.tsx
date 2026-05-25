@@ -31,6 +31,9 @@ type ProfileData = {
   avatar_url: string | null;
   linkedin_url: string | null;
   bio: string | null;
+  community_bio: string | null;
+  directory_summary: string | null;
+  directory_bio: string | null;
   location: string | null;
   timezone?: string | null;
   latitude?: number | null;
@@ -78,7 +81,9 @@ export function BossDashboardSettings({
   const [lastName, setLastName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [bio, setBio] = useState("");
+  const [communityBio, setCommunityBio] = useState("");
+  const [directorySummary, setDirectorySummary] = useState("");
+  const [directoryBio, setDirectoryBio] = useState("");
   const [location, setLocation] = useState("");
   const [leadWebhookUrl, setLeadWebhookUrl] = useState("");
   const [calendarEmbedCode, setCalendarEmbedCode] = useState("");
@@ -199,7 +204,9 @@ export function BossDashboardSettings({
     setLastName(data.last_name ?? "");
     setBusinessName(data.coach_business_name ?? "");
     setLinkedinUrl(data.linkedin_url ?? "");
-    setBio(data.bio ?? "");
+    setCommunityBio(data.community_bio ?? data.bio ?? "");
+    setDirectorySummary(data.directory_summary ?? data.bio ?? "");
+    setDirectoryBio(data.directory_bio ?? "");
     setLocation(data.location ?? "");
     setLeadWebhookUrl(data.lead_webhook_url ?? "");
     setCalendarEmbedCode(data.calendar_embed_code ?? "");
@@ -268,7 +275,9 @@ export function BossDashboardSettings({
         last_name: lastName.trim() || null,
         coach_business_name: businessName.trim() || null,
         linkedin_url: linkedinUrl.trim() || null,
-        bio: bio.trim() || null,
+        community_bio: communityBio.trim() || null,
+        directory_summary: directorySummary.trim() || null,
+        directory_bio: directoryBio.trim() || null,
         location: location.trim() || null,
       }),
     });
@@ -693,13 +702,17 @@ export function BossDashboardSettings({
               wrapperClassName="w-full max-w-lg"
             />
             <OutlinedTextArea
-              id="bio"
-              label="Bio"
+              id="community_bio"
+              label="Community bio"
               rows={4}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
+              value={communityBio}
+              onChange={(e) => setCommunityBio(e.target.value)}
               wrapperClassName="w-full max-w-lg"
             />
+            <p className="-mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
+              Shown to other coaches in the community roster, sidebar hover
+              cards, and members map.
+            </p>
           <div>
             <OutlinedTextField
               id="location"
@@ -772,6 +785,32 @@ export function BossDashboardSettings({
                 {directoryError}
               </p>
             ) : null}
+            <div className="mt-6 space-y-4">
+              <OutlinedTextArea
+                id="directory_summary"
+                label="Directory short summary"
+                rows={3}
+                value={directorySummary}
+                onChange={(e) => setDirectorySummary(e.target.value)}
+                wrapperClassName="w-full max-w-lg"
+              />
+              <p className="-mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
+                A brief intro shown on directory cards. Keep it to a few
+                sentences.
+              </p>
+              <OutlinedTextArea
+                id="directory_bio"
+                label="Directory detailed bio"
+                rows={6}
+                value={directoryBio}
+                onChange={(e) => setDirectoryBio(e.target.value)}
+                wrapperClassName="w-full max-w-lg"
+              />
+              <p className="-mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
+                Optional longer copy for your public directory profile page. Leave
+                blank to use your short summary there instead.
+              </p>
+            </div>
           </div>
           <ProfileSecurityFields
             impersonatingCoachId={impersonatingCoachId}

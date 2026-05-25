@@ -67,6 +67,7 @@ export async function GET(request: Request) {
         job_title: string | null;
         prospect_status: string | null;
         phone: string | null;
+        crm_contact_id: string | null;
         type: string;
         created_at: string;
       }>(async (columns) => {
@@ -82,7 +83,9 @@ export async function GET(request: Request) {
         }
 
         return query;
-      }, "id, coach_id, full_name, email, business_name, job_title, prospect_status, type, created_at");
+      }, "id, coach_id, full_name, email, business_name, job_title, prospect_status, type, created_at", [
+        "crm_contact_id",
+      ]);
 
     if (contactsError) {
       console.error("admin/contacts GET contacts:", contactsError);
@@ -95,20 +98,51 @@ export async function GET(request: Request) {
     const coachIds = Array.from(
       new Set(contacts.map((c) => c.coach_id).filter(Boolean)) as Set<string>
     );
-    let coachById: Record<string, { full_name: string | null; coach_business_name: string | null }> = {};
+    let coachById: Record<
+      string,
+      {
+        full_name: string | null;
+        coach_business_name: string | null;
+        crm_location_id: string | null;
+      }
+    > = {};
 
     if (coachIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabaseAdmin
-        .from("profiles")
-        .select("id, full_name, coach_business_name")
-        .in("id", coachIds);
+      const [{ data: profiles, error: profilesError }, { data: coachRows }] =
+        await Promise.all([
+          supabaseAdmin
+            .from("profiles")
+            .select("id, full_name, coach_business_name")
+            .in("id", coachIds),
+          supabaseAdmin
+            .from("coaches")
+            .select("id, crm_location_id")
+            .in("id", coachIds),
+        ]);
       if (!profilesError && profiles) {
-        for (const row of profiles as Array<{ id: string; full_name: string | null; coach_business_name: string | null }>) {
+        for (const row of profiles as Array<{
+          id: string;
+          full_name: string | null;
+          coach_business_name: string | null;
+        }>) {
           coachById[row.id] = {
             full_name: row.full_name ?? null,
             coach_business_name: row.coach_business_name ?? null,
+            crm_location_id: null,
           };
         }
+      }
+      for (const row of coachRows ?? []) {
+        const id = (row as { id: string }).id;
+        const crmLocationId =
+          ((row as { crm_location_id?: string | null }).crm_location_id as
+            | string
+            | null) ?? null;
+        coachById[id] = {
+          full_name: coachById[id]?.full_name ?? null,
+          coach_business_name: coachById[id]?.coach_business_name ?? null,
+          crm_location_id: crmLocationId,
+        };
       }
     }
 
@@ -120,6 +154,7 @@ export async function GET(request: Request) {
         const coachMeta = coachEntry ?? {
           full_name: null,
           coach_business_name: null,
+          crm_location_id: null,
         };
         return {
           id: c.id,
@@ -133,6 +168,9 @@ export async function GET(request: Request) {
           type: c.type,
           coach_name: coachMeta.full_name,
           coach_business_name: coachMeta.coach_business_name,
+          crm_contact_id: c.crm_contact_id ?? null,
+          crm_location_id: coachMeta.crm_location_id ?? null,
+          created_at: c.created_at ?? null,
         };
       })
     );

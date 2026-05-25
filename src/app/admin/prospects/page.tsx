@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
+import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
@@ -31,6 +32,22 @@ export default function AdminProspectsPage() {
   const [sendInvite, setSendInvite] = useState(false);
   const [coaches, setCoaches] = useState<Array<{ id: string; slug: string; full_name: string | null; coach_business_name: string | null }>>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const [pageHeaderHeight, setPageHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = pageHeaderRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      setPageHeaderHeight(Math.round(el.getBoundingClientRect().height));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading, showAddProspect]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,28 +167,24 @@ export default function AdminProspectsPage() {
     [router, setImpersonatingCoachId]
   );
 
-  async function handleDeleteProspect(row: ProspectRow) {
-    if (
-      !confirm(
-        `Delete prospect "${row.full_name}"? This cannot be undone.`
-      )
-    ) {
-      return;
+  async function handleDeleteProspect(
+    row: ProspectRow,
+    options?: { skipConfirm?: boolean }
+  ) {
+    const accessToken = await getValidSupabaseAccessToken();
+    if (!accessToken) {
+      const message = "You must be signed in to delete a prospect.";
+      setError(message);
+      throw new Error(message);
     }
 
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) {
-      setError("You must be signed in to delete a prospect.");
-      return;
+    if (!options?.skipConfirm) {
+      setDeletingId(row.id);
     }
-
-    setDeletingId(row.id);
     try {
       const res = await fetch(`/api/admin/contacts/${row.id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -182,8 +195,11 @@ export default function AdminProspectsPage() {
       setError(
         err instanceof Error ? err.message : "Unable to delete prospect."
       );
+      throw err;
     } finally {
-      setDeletingId(null);
+      if (!options?.skipConfirm) {
+        setDeletingId(null);
+      }
     }
   }
 
@@ -315,6 +331,7 @@ export default function AdminProspectsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
+        rootRef={pageHeaderRef}
         title="Prospects"
         description="View prospects by coach, filter, and add prospects directly from the admin area."
       />
@@ -352,10 +369,12 @@ export default function AdminProspectsPage() {
         />
       )}
 
+      <div className="min-w-0 sm:-mx-3 sm:w-[calc(100%+1.5rem)]">
       <ProspectsTable
         prospects={prospects}
         loading={loading}
         error={error}
+        stickyTopOffset={pageHeaderHeight}
         showCoachColumn={true}
         showTypeColumn={false}
         coachFilterOptions={coachOptions}
@@ -374,6 +393,7 @@ export default function AdminProspectsPage() {
         deletingId={deletingId}
         emptyMessage="No prospects found for this selection."
       />
+      </div>
     </div>
   );
 }

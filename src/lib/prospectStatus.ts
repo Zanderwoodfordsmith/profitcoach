@@ -41,11 +41,11 @@ export const PROSPECT_STATUS_OPTIONS = PROSPECT_STATUS_VALUES.map((value) => ({
 export function prospectStatusBadgeClass(value: ProspectStatusValue): string {
   switch (value) {
     case "new":
-      return "bg-sky-100 text-sky-800";
+      return "bg-orange-100 text-orange-800";
     case "assessed":
-      return "bg-violet-100 text-violet-800";
+      return "bg-yellow-100 text-yellow-800";
     case "call_booked":
-      return "bg-indigo-100 text-indigo-800";
+      return "bg-emerald-100 text-emerald-800";
     case "call_confirmed":
       return "bg-cyan-100 text-cyan-800";
     case "showed":

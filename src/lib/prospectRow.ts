@@ -26,4 +26,7 @@ export type ProspectRow = {
   boss_level: string | null;
   next_call?: ProspectNextCall | null;
   next_action?: ProspectNextAction | null;
+  crm_contact_id?: string | null;
+  crm_location_id?: string | null;
+  created_at?: string | null;
 };

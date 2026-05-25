@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     const profileResult = await supabaseAdmin
       .from("profiles")
       .select(
-        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, location, ai_context, timezone, latitude, longitude, location_geocoded_source, landing_copy_overrides, landing_variant_preference"
+        "first_name, last_name, full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, location, ai_context, timezone, latitude, longitude, location_geocoded_source, landing_copy_overrides, landing_variant_preference"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -168,6 +168,9 @@ export async function GET(request: Request) {
         avatar_url?: string | null;
         linkedin_url?: string | null;
         bio?: string | null;
+        community_bio?: string | null;
+        directory_summary?: string | null;
+        directory_bio?: string | null;
         location?: string | null;
         ai_context?: CoachAiContext | null;
         timezone?: string | null;
@@ -186,6 +189,9 @@ export async function GET(request: Request) {
         avatar_url: prof?.avatar_url ?? null,
         linkedin_url: prof?.linkedin_url ?? null,
         bio: prof?.bio ?? null,
+        community_bio: prof?.community_bio ?? null,
+        directory_summary: prof?.directory_summary ?? null,
+        directory_bio: prof?.directory_bio ?? null,
         location: prof?.location ?? null,
         ai_context: prof?.ai_context ?? {},
         timezone: prof?.timezone ?? null,
@@ -227,6 +233,9 @@ export async function GET(request: Request) {
       avatar_url?: string | null;
       linkedin_url?: string | null;
       bio?: string | null;
+      community_bio?: string | null;
+      directory_summary?: string | null;
+      directory_bio?: string | null;
       location?: string | null;
       ai_context?: CoachAiContext | null;
       timezone?: string | null;
@@ -245,6 +254,9 @@ export async function GET(request: Request) {
       avatar_url: prof?.avatar_url ?? null,
       linkedin_url: prof?.linkedin_url ?? null,
       bio: prof?.bio ?? null,
+      community_bio: prof?.community_bio ?? null,
+      directory_summary: prof?.directory_summary ?? null,
+      directory_bio: prof?.directory_bio ?? null,
       location: prof?.location ?? null,
       ai_context: prof?.ai_context ?? {},
       timezone: prof?.timezone ?? null,
@@ -310,6 +322,9 @@ type PatchBody = {
   coach_business_name?: string | null;
   linkedin_url?: string | null;
   bio?: string | null;
+  community_bio?: string | null;
+  directory_summary?: string | null;
+  directory_bio?: string | null;
   location?: string | null;
   avatar_url?: string | null;
   /** IANA timezone id, e.g. Europe/London */
@@ -401,6 +416,12 @@ export async function PATCH(request: Request) {
   if (body.linkedin_url !== undefined)
     updates.linkedin_url = body.linkedin_url?.trim() || null;
   if (body.bio !== undefined) updates.bio = body.bio?.trim() ?? null;
+  if (body.community_bio !== undefined)
+    updates.community_bio = body.community_bio?.trim() ?? null;
+  if (body.directory_summary !== undefined)
+    updates.directory_summary = body.directory_summary?.trim() ?? null;
+  if (body.directory_bio !== undefined)
+    updates.directory_bio = body.directory_bio?.trim() ?? null;
   if (body.location !== undefined) updates.location = body.location?.trim() ?? null;
   if (body.avatar_url !== undefined) updates.avatar_url = body.avatar_url || null;
   if (body.timezone !== undefined) {

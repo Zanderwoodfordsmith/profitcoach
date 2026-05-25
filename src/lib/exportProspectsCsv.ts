@@ -21,6 +21,7 @@ export type ProspectTableColumnKey =
   | "actions"
   | "last_score"
   | "last_assessed"
+  | "created_at"
   | "revenue"
   | "team_size"
   | "years_in_business"
@@ -43,6 +44,7 @@ export type ProspectExportColumnKey =
   | "status"
   | "last_score"
   | "last_assessed"
+  | "created_at"
   | "revenue"
   | "team_size"
   | "years_in_business"
@@ -68,6 +70,7 @@ const EXPORT_COLUMN_DEFS: Array<{
   { key: "status", label: "Status" },
   { key: "last_score", label: "Last score" },
   { key: "last_assessed", label: "Last assessed" },
+  { key: "created_at", label: "Date created" },
   { key: "revenue", label: "Revenue" },
   { key: "team_size", label: "Team size" },
   { key: "years_in_business", label: "Years in business" },
@@ -91,6 +94,7 @@ const TABLE_KEY_TO_EXPORT: Partial<
   status: ["status"],
   last_score: ["last_score"],
   last_assessed: ["last_assessed"],
+  created_at: ["created_at"],
   revenue: ["revenue"],
   team_size: ["team_size"],
   years_in_business: ["years_in_business"],
@@ -129,6 +133,8 @@ function getExportCellValue(
       return row.last_completed_at
         ? formatProspectLastAssessed(row.last_completed_at)
         : "";
+    case "created_at":
+      return row.created_at ? formatProspectLastAssessed(row.created_at) : "";
     case "revenue":
       return row.revenue;
     case "team_size":

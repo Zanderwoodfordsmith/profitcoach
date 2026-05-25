@@ -1,6 +1,13 @@
 import { extractGhlCalendarIdFromEmbed } from "@/lib/extractGhlCalendarIdFromEmbed";
+import type { GhlContactMatchStatus } from "@/lib/ghlContactWebhook";
 import type { GhlAppointmentMatchStatus } from "@/lib/ghlAppointmentWebhook";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
+export type ResolvedGhlContactLinks = {
+  coachId: string | null;
+  contactId: string | null;
+  matchStatus: GhlContactMatchStatus;
+};
 
 export type ResolvedGhlAppointmentLinks = {
   coachId: string | null;
@@ -188,6 +195,96 @@ export async function resolveGhlAppointmentLinks(input: {
     coachId,
     contactId,
     assessmentId,
+    matchStatus: "matched",
+  };
+}
+
+export async function resolveGhlContactLinks(input: {
+  profitCoachContactId: string | null;
+  ghlLocationId: string | null;
+  email: string | null;
+}): Promise<ResolvedGhlContactLinks> {
+  if (input.profitCoachContactId) {
+    const { data, error } = await supabaseAdmin
+      .from("contacts")
+      .select("id, coach_id")
+      .eq("id", input.profitCoachContactId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("ghl contact webhook lookup by id:", error);
+      return {
+        coachId: null,
+        contactId: null,
+        matchStatus: "unmatched_contact",
+      };
+    }
+
+    if (!data?.id) {
+      return {
+        coachId: null,
+        contactId: null,
+        matchStatus: "unmatched_contact",
+      };
+    }
+
+    const coachId = (data.coach_id as string | null) ?? null;
+    if (input.ghlLocationId && coachId) {
+      const locationCoachId = await lookupCoachByLocationId(input.ghlLocationId);
+      if (locationCoachId && locationCoachId !== coachId) {
+        console.warn(
+          "ghl contact webhook location coach mismatch:",
+          input.ghlLocationId,
+          coachId,
+          locationCoachId
+        );
+      }
+    }
+
+    return {
+      coachId,
+      contactId: data.id as string,
+      matchStatus: "matched",
+    };
+  }
+
+  if (!input.ghlLocationId) {
+    return {
+      coachId: null,
+      contactId: null,
+      matchStatus: "unmatched_coach",
+    };
+  }
+
+  const coachId = await lookupCoachByLocationId(input.ghlLocationId);
+  if (!coachId) {
+    return {
+      coachId: null,
+      contactId: null,
+      matchStatus: "unmatched_coach",
+    };
+  }
+
+  if (!input.email) {
+    return {
+      coachId,
+      contactId: null,
+      matchStatus: "unmatched_contact",
+    };
+  }
+
+  const contactId = await lookupContactByCoachAndEmail(coachId, input.email);
+  if (!contactId) {
+    return {
+      coachId,
+      contactId: null,
+      matchStatus: "unmatched_contact",
+    };
+  }
+
+  return {
+    coachId,
+    contactId,
     matchStatus: "matched",
   };
 }

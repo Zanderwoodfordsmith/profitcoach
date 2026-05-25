@@ -21,6 +21,9 @@ type ContactRecord = {
   coach_id?: string | null;
   coach_name?: string | null;
   coach_business_name?: string | null;
+  crm_contact_id?: string | null;
+  crm_location_id?: string | null;
+  created_at?: string | null;
 };
 
 export async function enrichProspectRows(
@@ -80,6 +83,9 @@ export async function enrichProspectRows(
       boss_level: summary?.boss_level ?? null,
       next_call: nextCallByContact[contact.id] ?? null,
       next_action: nextActionByContact[contact.id] ?? null,
+      crm_contact_id: contact.crm_contact_id ?? null,
+      crm_location_id: contact.crm_location_id ?? null,
+      created_at: contact.created_at ?? null,
     };
   });
 }

@@ -18,7 +18,6 @@ type FeedbackRow = {
   type: FeedbackType;
   title: string | null;
   details: string;
-  contact_email: string | null;
   page_path: string | null;
   user_agent: string | null;
   status: FeedbackStatus;
@@ -290,7 +289,6 @@ export default function AdminCommunityFeedbackPage() {
         type,
         title,
         details,
-        contact_email,
         page_path,
         user_agent,
         status,
@@ -494,7 +492,7 @@ export default function AdminCommunityFeedbackPage() {
           aria-label="Add feedback"
         >
           <div
-            className="relative w-full max-w-3xl"
+            className="relative w-full max-w-[38.4rem]"
             onClick={(e) => e.stopPropagation()}
           >
             <button

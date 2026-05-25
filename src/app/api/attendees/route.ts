@@ -7,7 +7,7 @@ type RpcRow = {
   full_name: string | null;
   coach_business_name: string | null;
   avatar_url: string | null;
-  bio: string | null;
+  directory_summary: string | null;
   location: string | null;
   linkedin_url: string | null;
   total_count: string | number | null;
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
       full_name: r.full_name,
       coach_business_name: r.coach_business_name,
       avatar_url: r.avatar_url,
-      bio: r.bio,
+      directory_summary: r.directory_summary,
       location: r.location,
       linkedin_url: r.linkedin_url,
     }));

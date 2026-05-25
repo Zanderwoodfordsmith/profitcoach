@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props) {
     title: coach.full_name
       ? `${coach.full_name} | Coach directory`
       : "Coach | Coach directory",
-    description: coach.bio?.slice(0, 160) ?? undefined,
+    description: coach.directory_bio?.slice(0, 160) ?? coach.directory_summary?.slice(0, 160) ?? undefined,
   };
 }
 
@@ -68,9 +68,9 @@ export default async function DirectoryCoachPage({ params }: Props) {
             ) : null}
           </div>
 
-          {coach.bio ? (
+          {coach.directory_bio ? (
             <div className="space-y-3 text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">
-              {coach.bio}
+              {coach.directory_bio}
             </div>
           ) : null}
 

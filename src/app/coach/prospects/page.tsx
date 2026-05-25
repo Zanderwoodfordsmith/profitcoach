@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
@@ -36,6 +37,22 @@ export default function CoachProspectsPage() {
   const [newBusinessName, setNewBusinessName] = useState("");
   const [sendInvite, setSendInvite] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const [pageHeaderHeight, setPageHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = pageHeaderRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      setPageHeaderHeight(Math.round(el.getBoundingClientRect().height));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading, showAddProspect]);
 
   useEffect(() => {
     let cancelled = false;
@@ -78,27 +95,40 @@ export default function CoachProspectsPage() {
       setUserId(user.id);
       setEffectiveCoachId(effectiveId);
 
-      const { data: contactsData, error: contactsError } =
-        await selectContactsWithOptionalPhone<{
-          id: string;
-          full_name: string;
-          email: string | null;
-          business_name: string | null;
-          job_title: string | null;
-          prospect_status: string | null;
-          phone: string | null;
-          type: string;
-          created_at: string;
-        }>(
-          async (columns) =>
-            supabaseClient
-              .from("contacts")
-              .select(columns)
-              .eq("coach_id", effectiveId)
-              .eq("type", "prospect")
-              .order("created_at", { ascending: false }),
-          "id, full_name, email, business_name, job_title, prospect_status, type, created_at"
-        );
+      const [{ data: contactsData, error: contactsError }, { data: coachRow }] =
+        await Promise.all([
+          selectContactsWithOptionalPhone<{
+            id: string;
+            full_name: string;
+            email: string | null;
+            business_name: string | null;
+            job_title: string | null;
+            prospect_status: string | null;
+            phone: string | null;
+            crm_contact_id: string | null;
+            type: string;
+            created_at: string;
+          }>(
+            async (columns) =>
+              supabaseClient
+                .from("contacts")
+                .select(columns)
+                .eq("coach_id", effectiveId)
+                .eq("type", "prospect")
+                .order("created_at", { ascending: false }),
+            "id, full_name, email, business_name, job_title, prospect_status, type, created_at",
+            ["crm_contact_id"]
+          ),
+          supabaseClient
+            .from("coaches")
+            .select("crm_location_id")
+            .eq("id", effectiveId)
+            .maybeSingle(),
+        ]);
+
+      const crmLocationId =
+        ((coachRow as { crm_location_id?: string | null } | null)
+          ?.crm_location_id as string | null) ?? null;
 
       if (cancelled) return;
 
@@ -122,6 +152,9 @@ export default function CoachProspectsPage() {
             phone: c.phone ?? null,
             type: c.type ?? "prospect",
             coach_id: effectiveId,
+            crm_contact_id: c.crm_contact_id ?? null,
+            crm_location_id: crmLocationId,
+            created_at: c.created_at ?? null,
           }))
         );
 
@@ -229,31 +262,27 @@ export default function CoachProspectsPage() {
     }
   }
 
-  async function handleDeleteProspect(row: ProspectRow) {
-    if (
-      !confirm(
-        `Delete prospect "${row.full_name}"? This cannot be undone.`
-      )
-    ) {
-      return;
-    }
-
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) {
-      setError("You must be signed in to delete a prospect.");
-      return;
+  async function handleDeleteProspect(
+    row: ProspectRow,
+    options?: { skipConfirm?: boolean }
+  ) {
+    const accessToken = await getValidSupabaseAccessToken();
+    if (!accessToken) {
+      const message = "You must be signed in to delete a prospect.";
+      setError(message);
+      throw new Error(message);
     }
 
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     };
     if (impersonatingCoachId) {
       headers["x-impersonate-coach-id"] = impersonatingCoachId;
     }
 
-    setDeletingId(row.id);
+    if (!options?.skipConfirm) {
+      setDeletingId(row.id);
+    }
     try {
       const res = await fetch(`/api/coach/contacts/${row.id}`, {
         method: "DELETE",
@@ -268,8 +297,11 @@ export default function CoachProspectsPage() {
       setError(
         err instanceof Error ? err.message : "Unable to delete prospect."
       );
+      throw err;
     } finally {
-      setDeletingId(null);
+      if (!options?.skipConfirm) {
+        setDeletingId(null);
+      }
     }
   }
 
@@ -327,11 +359,11 @@ export default function CoachProspectsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
+        rootRef={pageHeaderRef}
         title="Prospects"
         description="Add prospects and share your assessment link, or view those who have completed assessments."
       />
 
-      <div className="flex w-full flex-col gap-4">
       {loading && (
         <p className="text-sm text-slate-600">Loading…</p>
       )}
@@ -363,10 +395,12 @@ export default function CoachProspectsPage() {
         />
       )}
 
+      <div className="min-w-0 sm:-mx-3 sm:w-[calc(100%+1.5rem)]">
       <ProspectsTable
         prospects={prospects}
         loading={loading}
         error={error}
+        stickyTopOffset={pageHeaderHeight}
         showCoachColumn={false}
         showTypeColumn={true}
         onAddClick={() => {

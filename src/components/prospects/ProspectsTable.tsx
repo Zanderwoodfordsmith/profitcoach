@@ -3,16 +3,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   Columns3,
+  ExternalLink,
   GripVertical,
   Loader2,
+  ListTodo,
   Search,
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
-import { TableCsvExportButton } from "@/components/table/TableCsvExportButton";
+import { TableCsvExportButton, type CsvExportScope } from "@/components/table/TableCsvExportButton";
 import { exportProspectsToCsv } from "@/lib/exportProspectsCsv";
 import {
   formatProspectLastAssessed,
@@ -25,10 +29,14 @@ import type { ProspectRow } from "@/lib/prospectRow";
 import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
 import { ProspectContactEditModal } from "@/components/prospects/ProspectContactEditModal";
 import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
+import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
 import { formatProspectLabel, formatProspectPersonName } from "@/lib/prospectDisplayFormat";
 import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
+import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
+import { getProspectCrmContactUrl } from "@/lib/ghlContactWebhook";
+import { paginationItems } from "@/lib/communityPagination";
 
 export type { ProspectRow };
 
@@ -36,7 +44,12 @@ type AssessmentFilter = "all" | "assessed" | "not_assessed";
 type NextCallFilter = "all" | "has_call" | "no_call";
 type NextCallStatusFilter = "all" | "booked" | "confirmed" | "other";
 type ProspectStatusFilter = "all" | import("@/lib/prospectStatus").ProspectStatusValue;
-type ProspectSortField = "name" | "last_assessed" | "last_score" | "next_call";
+type ProspectSortField =
+  | "name"
+  | "created_at"
+  | "last_assessed"
+  | "last_score"
+  | "next_call";
 type ProspectSortOrder =
   | "asc"
   | "desc"
@@ -52,6 +65,7 @@ type ProspectColumnKey =
   | "actions"
   | "last_score"
   | "last_assessed"
+  | "created_at"
   | "revenue"
   | "team_size"
   | "years_in_business"
@@ -86,7 +100,10 @@ type Props = {
   coachFilter?: string | "all";
   onCoachFilterChange?: (coachId: string | "all") => void;
   /** When set, shows a delete button on the right of each row. */
-  onDelete?: (row: ProspectRow) => void | Promise<void>;
+  onDelete?: (
+    row: ProspectRow,
+    options?: { skipConfirm?: boolean }
+  ) => void | Promise<void>;
   deletingId?: string | null;
   /** Persists column visibility and order to localStorage. */
   settingsStorageKey?: string;
@@ -100,9 +117,66 @@ type Props = {
   onAddClick?: () => void;
   addActive?: boolean;
   addLabel?: string;
+  /** Height of sticky page header above this table (e.g. StickyPageHeader). */
+  stickyTopOffset?: number;
 };
 
-const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v4";
+const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v5";
+const PROSPECTS_PAGE_SIZE = 50;
+const TABLE_SECTION_PADDING = "px-5 sm:px-6";
+const TABLE_CHECKBOX_PADDING = "pl-5 pr-2 sm:pl-6";
+const TABLE_CELL_Y = "py-2";
+const TABLE_CELL_X = "px-4";
+const TABLE_COACH_CELL = "whitespace-nowrap";
+const TABLE_NEXT_ACTION_CELL = "whitespace-nowrap";
+const TABLE_STATUS_CELL = "whitespace-nowrap";
+const TABLE_EMAIL_CELL = "pl-4 pr-6 min-w-0";
+const TABLE_PHONE_CELL = "whitespace-nowrap";
+
+const TABLE_CHECKBOX_COL_WIDTH = 72;
+const TABLE_LEAD_COL_WIDTH = 180;
+const TABLE_PHONE_COL_WIDTH = 168;
+const TABLE_EMAIL_COL_WIDTH = 220;
+const TABLE_EMAIL_COL_WIDTH_EXPANDED = 320;
+const TABLE_CRM_COL_WIDTH = 72;
+
+const TABLE_CRM_HEADER_RAIL = `${TABLE_CELL_Y} ${TABLE_CELL_X} shrink-0 border-l border-slate-200 bg-slate-50 whitespace-nowrap text-left`;
+const TABLE_CRM_BODY_RAIL = `${TABLE_CELL_Y} ${TABLE_CELL_X} shrink-0 border-l border-slate-200`;
+
+function getProspectColumnWidth(
+  key: ProspectColumnKey,
+  emailExpanded = false
+): number {
+  switch (key) {
+    case "phone":
+      return TABLE_PHONE_COL_WIDTH;
+    case "email":
+      return emailExpanded
+        ? TABLE_EMAIL_COL_WIDTH_EXPANDED
+        : TABLE_EMAIL_COL_WIDTH;
+    case "status":
+      return 112;
+    case "coach":
+      return 176;
+    case "next_action":
+      return 256;
+    case "next_call":
+      return 240;
+    case "last_score":
+      return 88;
+    case "last_assessed":
+    case "created_at":
+      return 120;
+    case "type":
+      return 96;
+    case "business":
+      return 160;
+    case "actions":
+      return 120;
+    default:
+      return 140;
+  }
+}
 
 const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "business", label: "Business" },
@@ -114,6 +188,7 @@ const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "status", label: "Status" },
   { key: "last_score", label: "Last score" },
   { key: "last_assessed", label: "Last assessed" },
+  { key: "created_at", label: "Date created" },
   { key: "revenue", label: "Revenue" },
   { key: "team_size", label: "Team size" },
   { key: "years_in_business", label: "Years in business" },
@@ -135,6 +210,7 @@ const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
   status: true,
   last_score: true,
   last_assessed: true,
+  created_at: true,
   revenue: false,
   team_size: false,
   years_in_business: false,
@@ -200,31 +276,58 @@ function nextCallStatusClass(status: string | null | undefined): string {
 
 function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefined }) {
   if (!next?.start_time) {
-    return <span className="text-slate-400">—</span>;
+    return <ProspectEmptyValue />;
   }
 
   const when = formatProspectNextCallWhen(next);
   if (!when) {
-    return <span className="text-slate-400">—</span>;
+    return <ProspectEmptyValue />;
   }
 
   const callName = getProspectNextCallName(next);
   const statusLabel = getProspectNextCallStatusLabel(next.status_normalized);
 
   return (
-    <div className="flex min-w-[9rem] flex-col gap-0.5">
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-medium text-slate-800" title={callName}>
-          {callName}
-        </span>
-        <span
-          className={`inline-flex shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
-        >
-          {statusLabel}
-        </span>
-      </div>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span
+        className={`inline-flex w-fit shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium leading-none ${nextCallStatusClass(next.status_normalized)}`}
+      >
+        {statusLabel}
+      </span>
+      <span className="font-medium text-slate-800" title={callName}>
+        {callName}
+      </span>
       <span className="text-sm text-slate-500">{when}</span>
     </div>
+  );
+}
+
+function ProspectCrmLinkCell({ row }: { row: ProspectRow }) {
+  const url = getProspectCrmContactUrl(row);
+  if (!url) {
+    return (
+      <span
+        className="inline-flex h-8 w-8 items-center justify-center text-slate-300"
+        title="Not linked to CRM yet"
+      >
+        <ExternalLink className="h-4 w-4" aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      data-row-action
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-sky-600 hover:bg-sky-50 hover:text-sky-800"
+      title="Open in CRM"
+      aria-label={`Open ${row.full_name} in CRM`}
+    >
+      <ExternalLink className="h-4 w-4" aria-hidden />
+    </a>
   );
 }
 
@@ -248,8 +351,10 @@ export function ProspectsTable({
   onAddClick,
   addActive = false,
   addLabel,
+  stickyTopOffset = 0,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [emailColumnExpanded, setEmailColumnExpanded] = useState(false);
   const [assessmentFilter, setAssessmentFilter] =
     useState<AssessmentFilter>("all");
   const [nextCallFilter, setNextCallFilter] = useState<NextCallFilter>("all");
@@ -278,10 +383,31 @@ export function ProspectsTable({
   const [editModalProspect, setEditModalProspect] = useState<ProspectRow | null>(
     null
   );
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkNextActionOpen, setBulkNextActionOpen] = useState(false);
+  const [bulkNextActionText, setBulkNextActionText] = useState("");
+  const [bulkNextActionDue, setBulkNextActionDue] = useState("");
+  const [bulkNextActionSaving, setBulkNextActionSaving] = useState(false);
+  const [bulkNextActionError, setBulkNextActionError] = useState<string | null>(
+    null
+  );
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+  const [rowDeleteError, setRowDeleteError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ProspectRow[] | null>(
+    null
+  );
 
   const filtersMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
   const columnsMenuRef = useRef<HTMLDivElement | null>(null);
+  const selectAllHeaderRef = useRef<HTMLInputElement | null>(null);
+  const bulkNextActionRef = useRef<HTMLDivElement | null>(null);
+  const bodyScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastSelectionAnchorIdRef = useRef<string | null>(null);
+  const selectionShiftKeyRef = useRef(false);
+  const [tableScrollLeft, setTableScrollLeft] = useState(0);
 
   const coachFilter = controlledCoachFilter ?? internalCoachFilter;
   const setCoachFilter = onCoachFilterChange ?? setInternalCoachFilter;
@@ -291,19 +417,23 @@ export function ProspectsTable({
   );
 
   useEffect(() => {
-    if (!filtersMenuOpen && !sortMenuOpen && !columnsMenuOpen) return;
+    if (!filtersMenuOpen && !sortMenuOpen && !columnsMenuOpen && !bulkNextActionOpen) {
+      return;
+    }
     function handlePointerDown(e: MouseEvent) {
       const target = e.target as Node;
       if (filtersMenuRef.current?.contains(target)) return;
       if (sortMenuRef.current?.contains(target)) return;
       if (columnsMenuRef.current?.contains(target)) return;
+      if (bulkNextActionRef.current?.contains(target)) return;
       setFiltersMenuOpen(false);
       setSortMenuOpen(false);
       setColumnsMenuOpen(false);
+      setBulkNextActionOpen(false);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen]);
+  }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen, bulkNextActionOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -521,6 +651,15 @@ export function ProspectsTable({
         return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
       }
 
+      if (sortField === "created_at") {
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : null;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : null;
+        if (aTime == null && bTime == null) return 0;
+        if (aTime == null) return sortOrder === "missing_first" ? -1 : 1;
+        if (bTime == null) return sortOrder === "missing_first" ? 1 : -1;
+        return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+      }
+
       const aTime = a.next_call?.start_time
         ? new Date(a.next_call.start_time).getTime()
         : null;
@@ -536,7 +675,277 @@ export function ProspectsTable({
     return rows;
   }, [filteredProspects, sortField, sortOrder]);
 
-  const colCount = 1 + visibleColumns.length + (onDelete ? 1 : 0);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedProspects.length / PROSPECTS_PAGE_SIZE)
+  );
+
+  const paginatedProspects = useMemo(() => {
+    const start = (page - 1) * PROSPECTS_PAGE_SIZE;
+    return sortedProspects.slice(start, start + PROSPECTS_PAGE_SIZE);
+  }, [sortedProspects, page]);
+
+  const pageNumbers = useMemo(
+    () => paginationItems(page, totalPages),
+    [page, totalPages]
+  );
+
+  const paginationRangeLabel =
+    sortedProspects.length === 0
+      ? "0 prospects"
+      : `${(page - 1) * PROSPECTS_PAGE_SIZE + 1}-${Math.min(
+          page * PROSPECTS_PAGE_SIZE,
+          sortedProspects.length
+        )} of ${sortedProspects.length}`;
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    searchTerm,
+    assessmentFilter,
+    nextCallFilter,
+    nextCallStatusFilter,
+    statusFilter,
+    coachFilter,
+    sortField,
+    sortOrder,
+  ]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const prospectIdSet = useMemo(
+    () => new Set(prospects.map((p) => p.id)),
+    [prospects]
+  );
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const next = prev.filter((id) => prospectIdSet.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [prospectIdSet]);
+
+  const pageIds = useMemo(
+    () => paginatedProspects.map((p) => p.id),
+    [paginatedProspects]
+  );
+
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+
+  const selectedOnPageCount = useMemo(
+    () => pageIds.filter((id) => selectedIdSet.has(id)).length,
+    [pageIds, selectedIdSet]
+  );
+
+  const allPageSelected =
+    pageIds.length > 0 && selectedOnPageCount === pageIds.length;
+  const somePageSelected =
+    selectedOnPageCount > 0 && selectedOnPageCount < pageIds.length;
+
+  const selectedProspects = useMemo(() => {
+    const byId = new Map(prospects.map((p) => [p.id, p]));
+    return selectedIds
+      .map((id) => byId.get(id))
+      .filter((row): row is ProspectRow => Boolean(row));
+  }, [prospects, selectedIds]);
+
+  const selectedCount = selectedProspects.length;
+  const allMatchingSelected =
+    sortedProspects.length > 0 && selectedCount === sortedProspects.length;
+
+  useEffect(() => {
+    const input = selectAllHeaderRef.current;
+    if (input) {
+      input.indeterminate = somePageSelected;
+    }
+  }, [somePageSelected, allPageSelected]);
+
+  useEffect(() => {
+    if (selectedCount === 0) {
+      setBulkNextActionOpen(false);
+    }
+  }, [selectedCount]);
+
+  function handleProspectSelectionClick(id: string, shiftKey: boolean) {
+    const orderedIds = sortedProspects.map((p) => p.id);
+
+    if (shiftKey && lastSelectionAnchorIdRef.current) {
+      const anchorIdx = orderedIds.indexOf(lastSelectionAnchorIdRef.current);
+      const currentIdx = orderedIds.indexOf(id);
+      if (anchorIdx !== -1 && currentIdx !== -1) {
+        const start = Math.min(anchorIdx, currentIdx);
+        const end = Math.max(anchorIdx, currentIdx);
+        const rangeIds = orderedIds.slice(start, end + 1);
+        setSelectedIds((prev) => [...new Set([...prev, ...rangeIds])]);
+        lastSelectionAnchorIdRef.current = id;
+        return;
+      }
+    }
+
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+    lastSelectionAnchorIdRef.current = id;
+  }
+
+  function togglePageSelection() {
+    if (allPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+      return;
+    }
+    setSelectedIds((prev) => [...new Set([...prev, ...pageIds])]);
+  }
+
+  function selectAllMatchingProspects() {
+    setSelectedIds(sortedProspects.map((p) => p.id));
+  }
+
+  function clearSelection() {
+    setSelectedIds([]);
+    lastSelectionAnchorIdRef.current = null;
+  }
+
+  function requestBulkDelete() {
+    if (selectedIds.length === 0) return;
+
+    const rowsToDelete = selectedProspects;
+    if (rowsToDelete.length === 0) {
+      setBulkDeleteError("Unable to delete the selected prospects.");
+      return;
+    }
+
+    setRowDeleteError(null);
+    setBulkDeleteError(null);
+    setPendingDelete(rowsToDelete);
+  }
+
+  async function executePendingDelete() {
+    if (!onDelete || !pendingDelete?.length) return;
+
+    const rowsToDelete = pendingDelete;
+    setPendingDelete(null);
+    setBulkDeleteError(null);
+    setRowDeleteError(null);
+    setBulkDeleting(true);
+
+    const deletedIds: string[] = [];
+    let lastError: string | null = null;
+
+    try {
+      for (const row of rowsToDelete) {
+        try {
+          await onDelete(row, { skipConfirm: true });
+          deletedIds.push(row.id);
+        } catch (err: unknown) {
+          lastError =
+            err instanceof Error ? err.message : "Unable to delete prospect.";
+          break;
+        }
+      }
+
+      if (deletedIds.length > 0) {
+        setSelectedIds((prev) => prev.filter((id) => !deletedIds.includes(id)));
+        if (deletedIds.length === rowsToDelete.length) {
+          lastSelectionAnchorIdRef.current = null;
+        }
+      }
+
+      if (lastError) {
+        if (rowsToDelete.length === 1) {
+          setRowDeleteError(lastError);
+        } else {
+          setBulkDeleteError(lastError);
+        }
+      }
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
+
+  function openBulkNextAction() {
+    setBulkNextActionError(null);
+    setBulkNextActionOpen((open) => !open);
+  }
+
+  async function handleBulkNextAction(e: React.FormEvent) {
+    e.preventDefault();
+    if (!onUpdateProspect || selectedProspects.length === 0 || bulkNextActionSaving) {
+      return;
+    }
+
+    const text = bulkNextActionText.trim();
+    if (!text) {
+      setBulkNextActionError("Enter a next action.");
+      return;
+    }
+
+    const due_at = bulkNextActionDue.trim() || null;
+    setBulkNextActionError(null);
+    setBulkNextActionSaving(true);
+    try {
+      for (const row of selectedProspects) {
+        await onUpdateProspect(row, { next_action: { text, due_at } });
+      }
+      setBulkNextActionOpen(false);
+      setBulkNextActionText("");
+      setBulkNextActionDue("");
+    } catch (err: unknown) {
+      setBulkNextActionError(
+        err instanceof Error ? err.message : "Unable to update next actions."
+      );
+    } finally {
+      setBulkNextActionSaving(false);
+    }
+  }
+
+  const scrollableColCount = 2 + visibleColumns.length;
+  const colCount = scrollableColCount;
+
+  const scrollableTableMinWidth = useMemo(
+    () =>
+      TABLE_CHECKBOX_COL_WIDTH +
+      TABLE_LEAD_COL_WIDTH +
+      visibleColumns.reduce(
+        (sum, column) =>
+          sum + getProspectColumnWidth(column.key, emailColumnExpanded),
+        0
+      ),
+    [visibleColumns, emailColumnExpanded]
+  );
+
+  const tableMinWidth = scrollableTableMinWidth;
+
+  function renderTableColGroup() {
+    return (
+      <colgroup>
+        <col style={{ width: TABLE_CHECKBOX_COL_WIDTH }} />
+        <col style={{ width: TABLE_LEAD_COL_WIDTH }} />
+        {visibleColumns.map((column) => (
+          <col
+            key={column.key}
+            style={{
+              width: getProspectColumnWidth(column.key, emailColumnExpanded),
+            }}
+          />
+        ))}
+      </colgroup>
+    );
+  }
+
+  const prospectsTableClassName =
+    "w-full table-fixed border-separate border-spacing-0 text-left text-base";
+  const prospectsTableStyle = { minWidth: tableMinWidth };
+
+  useEffect(() => {
+    setTableScrollLeft(0);
+    if (bodyScrollRef.current) {
+      bodyScrollRef.current.scrollLeft = 0;
+    }
+  }, [visibleColumns, tableMinWidth]);
 
   const sortOrderOptions = useMemo(() => {
     if (sortField === "name") {
@@ -557,6 +966,13 @@ export function ProspectsTable({
         { value: "desc" as const, label: "Most recent first" },
         { value: "asc" as const, label: "Oldest first" },
         { value: "missing_first" as const, label: "Not assessed first" },
+      ];
+    }
+    if (sortField === "created_at") {
+      return [
+        { value: "desc" as const, label: "Newest first" },
+        { value: "asc" as const, label: "Oldest first" },
+        { value: "missing_first" as const, label: "Missing date first" },
       ];
     }
     return [
@@ -581,13 +997,37 @@ export function ProspectsTable({
   function renderEditableContactValue(
     prospect: ProspectRow,
     value: string | null | undefined,
-    emptyLabel = "—"
+    { truncate = true }: { truncate?: boolean } = {}
   ) {
-    const display = value?.trim() || emptyLabel;
-    if (!editable || !onUpdateProspect) {
+    const trimmed = value?.trim();
+    const textClass = truncate
+      ? "block min-w-0 truncate text-sm text-slate-700"
+      : "block min-w-0 break-all text-sm text-slate-700";
+    const buttonClass = truncate
+      ? "block w-full min-w-0 truncate text-left text-sm text-slate-700 hover:text-sky-700"
+      : "block w-full min-w-0 break-all text-left text-sm text-slate-700 hover:text-sky-700";
+    if (!trimmed) {
+      if (!editable || !onUpdateProspect) {
+        return <ProspectEmptyValue />;
+      }
       return (
-        <span className="text-sm text-slate-700">{display}</span>
+        <button
+          type="button"
+          data-row-action
+          onClick={(e) => {
+            e.stopPropagation();
+            openContactEdit(prospect);
+          }}
+          className="text-left hover:text-sky-700"
+          title="Edit contact details"
+        >
+          <ProspectEmptyValue />
+        </button>
       );
+    }
+
+    if (!editable || !onUpdateProspect) {
+      return <span className={textClass}>{trimmed}</span>;
     }
     return (
       <button
@@ -597,11 +1037,52 @@ export function ProspectsTable({
           e.stopPropagation();
           openContactEdit(prospect);
         }}
-        className="text-left text-sm text-slate-700 hover:text-sky-700"
+        className={buttonClass}
         title="Edit contact details"
       >
-        {display}
+        {trimmed}
       </button>
+    );
+  }
+
+  function renderPhoneCell(prospect: ProspectRow) {
+    const raw = prospect.phone?.trim();
+    if (!raw) {
+      if (editable && onUpdateProspect) {
+        return (
+          <button
+            type="button"
+            data-row-action
+            onClick={(e) => {
+              e.stopPropagation();
+              openContactEdit(prospect);
+            }}
+            className="text-left hover:text-sky-700"
+            title="Edit contact details"
+          >
+            <ProspectEmptyValue />
+          </button>
+        );
+      }
+      return <ProspectEmptyValue />;
+    }
+
+    const formatted = formatPhoneDisplay(raw) ?? raw;
+    const telHref = phoneToTelHref(raw);
+    if (!telHref) {
+      return <span className="text-sm text-slate-700">{formatted}</span>;
+    }
+
+    return (
+      <a
+        href={telHref}
+        data-row-action
+        onClick={(e) => e.stopPropagation()}
+        className="block min-w-0 truncate text-sm text-sky-600 hover:text-sky-800 hover:underline"
+        title={`Call ${formatted}`}
+      >
+        {formatted}
+      </a>
     );
   }
 
@@ -609,7 +1090,7 @@ export function ProspectsTable({
     return value ? (
       <span className="text-sm text-slate-700">{value}</span>
     ) : (
-      "—"
+      <ProspectEmptyValue />
     );
   }
 
@@ -618,18 +1099,23 @@ export function ProspectsTable({
       case "business":
         return renderEditableContactValue(
           p,
-          formatProspectLabel(p.business_name),
-          "—"
+          formatProspectLabel(p.business_name)
         );
       case "email":
-        return renderEditableContactValue(p, p.email);
+        return emailColumnExpanded ? (
+          renderEditableContactValue(p, p.email, { truncate: false })
+        ) : (
+          <div className="min-w-0 truncate" title={p.email ?? undefined}>
+            {renderEditableContactValue(p, p.email)}
+          </div>
+        );
       case "phone":
-        return renderEditableContactValue(p, p.phone);
+        return renderPhoneCell(p);
       case "type":
         return <span className="text-sm text-slate-700">{p.type}</span>;
       case "coach":
         return (
-          <span className="text-sm text-slate-700">
+          <span className="block text-sm text-slate-700 whitespace-nowrap">
             {p.coach_name ?? p.coach_business_name ?? "Unknown coach"}
           </span>
         );
@@ -653,12 +1139,26 @@ export function ProspectsTable({
           />
         );
       case "last_score":
-        return p.last_score != null ? `${p.last_score}` : "—";
+        return p.last_score != null ? (
+          `${p.last_score}`
+        ) : (
+          <ProspectEmptyValue />
+        );
       case "last_assessed":
-        return (
+        return p.last_completed_at ? (
           <span className="text-sm text-slate-500">
             {formatProspectLastAssessed(p.last_completed_at)}
           </span>
+        ) : (
+          <ProspectEmptyValue />
+        );
+      case "created_at":
+        return p.created_at ? (
+          <span className="whitespace-nowrap text-sm text-slate-500">
+            {formatProspectLastAssessed(p.created_at)}
+          </span>
+        ) : (
+          <ProspectEmptyValue />
         );
       case "revenue":
         return renderOptionalText(p.revenue);
@@ -700,6 +1200,38 @@ export function ProspectsTable({
 
   function renderColumnHeader(key: ProspectColumnKey) {
     switch (key) {
+      case "email":
+        return (
+          <span className="inline-flex items-center gap-1 normal-case tracking-normal">
+            <span>Email</span>
+            <button
+              type="button"
+              data-row-action
+              onClick={(e) => {
+                e.stopPropagation();
+                setEmailColumnExpanded((expanded) => !expanded);
+              }}
+              className="inline-flex rounded p-0.5 text-slate-400 hover:bg-slate-200/80 hover:text-slate-600"
+              title={
+                emailColumnExpanded
+                  ? "Collapse email column"
+                  : "Expand email column"
+              }
+              aria-label={
+                emailColumnExpanded
+                  ? "Collapse email column"
+                  : "Expand email column"
+              }
+              aria-pressed={emailColumnExpanded}
+            >
+              {emailColumnExpanded ? (
+                <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+              )}
+            </button>
+          </span>
+        );
       case "last_score":
         return "Last score";
       case "last_assessed":
@@ -732,16 +1264,124 @@ export function ProspectsTable({
     };
   }
 
-  function handleExportCsv(mode: "shown" | "all") {
-    exportProspectsToCsv(sortedProspects, buildExportInput(mode));
+  function handleExportCsv(mode: "shown" | "all", scope: CsvExportScope) {
+    const rows =
+      scope === "selected" && selectedCount > 0
+        ? selectedProspects
+        : sortedProspects;
+    exportProspectsToCsv(rows, buildExportInput(mode));
+  }
+
+  function renderColumnHeaderCellClass(key: ProspectColumnKey): string {
+    const base = `${TABLE_CELL_Y} text-left`;
+    if (key === "email") {
+      return `${base} ${TABLE_EMAIL_CELL}`;
+    }
+    if (key === "phone") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_PHONE_CELL}`;
+    }
+    if (key === "coach") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_COACH_CELL}`;
+    }
+    if (key === "next_action") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_NEXT_ACTION_CELL}`;
+    }
+    if (key === "status") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_STATUS_CELL}`;
+    }
+    return `${base} ${TABLE_CELL_X}`;
+  }
+
+  function renderColumnBodyCellClass(key: ProspectColumnKey): string {
+    const base = `${TABLE_CELL_Y} text-slate-700`;
+    if (key === "email") {
+      return `${base} ${TABLE_EMAIL_CELL}`;
+    }
+    if (key === "phone") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_PHONE_CELL}`;
+    }
+    if (key === "coach") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_COACH_CELL}`;
+    }
+    if (key === "next_action") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_NEXT_ACTION_CELL}`;
+    }
+    if (key === "status") {
+      return `${base} ${TABLE_CELL_X} ${TABLE_STATUS_CELL}`;
+    }
+    return `${base} ${TABLE_CELL_X}`;
+  }
+
+  const showProspectsTable =
+    loading || sortedProspects.length > 0 || Boolean(error);
+
+  function renderProspectsTableHead() {
+    return (
+      <thead className="border-b border-slate-200 bg-slate-50 text-sm uppercase tracking-wide text-slate-500">
+        <tr>
+          <th
+            className={`${TABLE_CELL_Y} text-center ${TABLE_CHECKBOX_PADDING}`}
+          >
+            <input
+              ref={selectAllHeaderRef}
+              type="checkbox"
+              checked={allPageSelected}
+              onChange={togglePageSelection}
+              disabled={paginatedProspects.length === 0}
+              aria-label="Select all prospects on this page"
+              className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+            />
+          </th>
+          <th
+            className={`${TABLE_CELL_X} ${TABLE_CELL_Y} text-left`}
+          >
+            Lead
+          </th>
+          {visibleColumns.map((column) => (
+            <th
+              key={column.key}
+              className={renderColumnHeaderCellClass(column.key)}
+            >
+              {renderColumnHeader(column.key)}
+            </th>
+          ))}
+        </tr>
+      </thead>
+    );
+  }
+
+  function renderProspectCrmRailRow(
+    p: ProspectRow,
+    options: { isSelected: boolean }
+  ) {
+    const { isSelected } = options;
+    return (
+      <div
+        key={p.id}
+        className={`${TABLE_CRM_BODY_RAIL} flex items-center border-t border-slate-100 hover:bg-slate-50${
+          isSelected ? " bg-sky-50/70" : " bg-white"
+        }`}
+        style={{ width: TABLE_CRM_COL_WIDTH, minHeight: "2.75rem" }}
+        data-row-action
+        onClick={(e) => e.stopPropagation()}
+      >
+        <ProspectCrmLinkCell row={p} />
+      </div>
+    );
   }
 
   return (
-    <div
-      className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm"
-      style={{ maxHeight: "calc(100vh - 14rem)" }}
-    >
-      <div className="border-b border-slate-100 px-4 py-3">
+    <div className="flex w-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div
+        className="sticky z-20 bg-white shadow-sm"
+        style={{ top: stickyTopOffset }}
+      >
+      <div className={`border-b border-slate-100 py-3 ${TABLE_SECTION_PADDING}`}>
+        {(rowDeleteError || (error && !loading)) ? (
+          <p className="mb-2 text-sm text-rose-600">
+            {rowDeleteError ?? error}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:max-w-xs">
             <Search
@@ -947,6 +1587,7 @@ export function ProspectsTable({
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="name">Name</option>
+                      <option value="created_at">Date created</option>
                       <option value="last_assessed">Last assessed</option>
                       <option value="last_score">Last score</option>
                       <option value="next_call">Next call</option>
@@ -1102,58 +1743,192 @@ export function ProspectsTable({
 
           <TableCsvExportButton
             disabled={loading || sortedProspects.length === 0}
-            onExportShown={() => handleExportCsv("shown")}
-            onExportAll={() => handleExportCsv("all")}
+            selectedCount={selectedCount}
+            totalMatchingCount={sortedProspects.length}
+            onExportShown={(scope) => handleExportCsv("shown", scope)}
+            onExportAll={(scope) => handleExportCsv("all", scope)}
           />
 
           {!loading && prospects.length > 0 ? (
             <span className="ml-auto text-xs text-slate-500">
-              {sortedProspects.length === prospects.length
-                ? `${prospects.length} prospect${prospects.length === 1 ? "" : "s"}`
-                : `${sortedProspects.length} of ${prospects.length}`}
+              {selectedCount > 0
+                ? `${selectedCount} selected`
+                : sortedProspects.length === prospects.length
+                  ? `${prospects.length} prospect${prospects.length === 1 ? "" : "s"}`
+                  : `${sortedProspects.length} of ${prospects.length}`}
             </span>
           ) : null}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
-        {!loading && sortedProspects.length === 0 && !error ? (
-          <p className="px-4 py-8 text-center text-sm text-slate-500">
-            {emptyMessage}
-          </p>
-        ) : (
-          <table className="min-w-full text-left text-base">
-            <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-sm uppercase tracking-wide text-slate-500 shadow-sm">
-              <tr>
-                <th className="px-4 py-3 text-left">Lead</th>
-                {visibleColumns.map((column) => (
-                  <th key={column.key} className="px-4 py-3 text-left">
-                    {renderColumnHeader(column.key)}
-                  </th>
-                ))}
-                {onDelete ? (
-                  <th
-                    className="sticky right-0 z-20 bg-slate-50 px-2 py-3 text-center"
-                    aria-label="Delete"
-                  />
-                ) : null}
-              </tr>
-            </thead>
-            <tbody>
-              {sortedProspects.map((p) => (
+      {selectedCount > 0 ? (
+        <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-sky-100 bg-sky-50 py-2 text-sm ${TABLE_SECTION_PADDING}`}>
+          <span className="font-medium text-sky-900">
+            {selectedCount} selected
+          </span>
+          {bulkDeleteError ? (
+            <span className="text-rose-600">{bulkDeleteError}</span>
+          ) : null}
+          {allPageSelected && !allMatchingSelected ? (
+            <button
+              type="button"
+              onClick={selectAllMatchingProspects}
+              className="font-medium text-sky-700 hover:text-sky-900"
+            >
+              Select all {sortedProspects.length} matching prospects
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={clearSelection}
+            className="text-slate-600 hover:text-slate-900"
+          >
+            Clear selection
+          </button>
+          {editable && onUpdateProspect ? (
+            <div ref={bulkNextActionRef} className="relative">
+              <button
+                type="button"
+                onClick={openBulkNextAction}
+                className="inline-flex items-center gap-1.5 font-medium text-sky-700 hover:text-sky-900"
+              >
+                <ListTodo className="h-4 w-4" aria-hidden />
+                Set next action
+              </button>
+              {bulkNextActionOpen ? (
+                <form
+                  onSubmit={(e) => void handleBulkNextAction(e)}
+                  className="absolute left-0 top-full z-[90] mt-1 w-[min(92vw,18rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                >
+                  <p className="mb-2 text-xs font-medium text-slate-600">
+                    Apply to {selectedCount} prospect
+                    {selectedCount === 1 ? "" : "s"}
+                  </p>
+                  <label className="mb-2 block">
+                    <span className="mb-1 block text-xs text-slate-500">
+                      Next action
+                    </span>
+                    <input
+                      type="text"
+                      value={bulkNextActionText}
+                      onChange={(e) => {
+                        setBulkNextActionText(e.target.value);
+                        setBulkNextActionError(null);
+                      }}
+                      placeholder="e.g. Follow up on assessment"
+                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      autoFocus
+                    />
+                  </label>
+                  <label className="mb-3 block">
+                    <span className="mb-1 block text-xs text-slate-500">
+                      Due date (optional)
+                    </span>
+                    <input
+                      type="date"
+                      value={bulkNextActionDue}
+                      onChange={(e) => setBulkNextActionDue(e.target.value)}
+                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    />
+                  </label>
+                  {bulkNextActionError ? (
+                    <p className="mb-2 text-xs text-rose-600">
+                      {bulkNextActionError}
+                    </p>
+                  ) : null}
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBulkNextActionOpen(false)}
+                      className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={bulkNextActionSaving}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {bulkNextActionSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : null}
+                      Apply
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+            </div>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={requestBulkDelete}
+              disabled={bulkDeleting}
+              className="inline-flex items-center gap-1.5 font-medium text-rose-600 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {bulkDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Trash2 className="h-4 w-4" aria-hidden />
+              )}
+              Delete selected
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {showProspectsTable ? (
+        <div className="flex border-b border-slate-200 bg-slate-50">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div style={{ transform: `translateX(-${tableScrollLeft}px)` }}>
+              <table
+                className={prospectsTableClassName}
+                style={prospectsTableStyle}
+              >
+                {renderTableColGroup()}
+                {renderProspectsTableHead()}
+              </table>
+            </div>
+          </div>
+          <div
+            className={TABLE_CRM_HEADER_RAIL}
+            style={{ width: TABLE_CRM_COL_WIDTH }}
+          >
+            CRM
+          </div>
+        </div>
+      ) : null}
+      </div>
+
+      <div className="flex min-w-0">
+        <div
+          ref={bodyScrollRef}
+          className="min-w-0 flex-1 overflow-x-auto"
+          onScroll={(e) => setTableScrollLeft(e.currentTarget.scrollLeft)}
+        >
+          {!showProspectsTable ? (
+            <p className={`py-8 text-center text-sm text-slate-500 ${TABLE_SECTION_PADDING}`}>
+              {emptyMessage}
+            </p>
+          ) : (
+            <table className={prospectsTableClassName} style={prospectsTableStyle}>
+              {renderTableColGroup()}
+              <tbody>
+              {paginatedProspects.map((p) => {
+                const isSelected = selectedIdSet.has(p.id);
+                return (
                 <tr
                   key={p.id}
                   className={
                     onRowClick
-                      ? "group cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                      : "group border-t border-slate-100 hover:bg-slate-50"
+                      ? `group cursor-pointer border-t border-slate-100 hover:bg-slate-50${isSelected ? " bg-sky-50/70" : ""}`
+                      : `group border-t border-slate-100 hover:bg-slate-50${isSelected ? " bg-sky-50/70" : ""}`
                   }
                   onClick={
                     onRowClick
                       ? (e) => {
                           if (
                             (e.target as HTMLElement).closest(
-                              "[data-row-action]"
+                              "[data-row-action], button, a, input, select, textarea, label"
                             )
                           ) {
                             return;
@@ -1162,10 +1937,38 @@ export function ProspectsTable({
                         }
                       : undefined
                   }
-                  role={onRowClick ? "button" : undefined}
                 >
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    <div className="min-w-[10rem]">
+                  <td
+                    className={`${TABLE_CELL_Y} text-center align-middle ${TABLE_CHECKBOX_PADDING}`}
+                    data-row-action
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        selectionShiftKeyRef.current = e.shiftKey;
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        selectionShiftKeyRef.current = e.shiftKey;
+                      }}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setBulkDeleteError(null);
+                        const shiftKey =
+                          "shiftKey" in e.nativeEvent
+                            ? Boolean((e.nativeEvent as MouseEvent).shiftKey)
+                            : selectionShiftKeyRef.current;
+                        handleProspectSelectionClick(p.id, shiftKey);
+                      }}
+                      aria-label={`Select ${p.full_name}`}
+                      className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                  </td>
+                  <td className={`${TABLE_CELL_X} ${TABLE_CELL_Y} font-medium text-slate-900`}>
+                    <div className="min-w-0">
                       {editable && onUpdateProspect ? (
                         <button
                           type="button"
@@ -1195,7 +1998,7 @@ export function ProspectsTable({
                   {visibleColumns.map((column) => (
                     <td
                       key={column.key}
-                      className="px-4 py-3 text-slate-700"
+                      className={renderColumnBodyCellClass(column.key)}
                       {...(column.key === "actions"
                         ? {
                             "data-row-action": true,
@@ -1207,43 +2010,14 @@ export function ProspectsTable({
                       {renderColumnCell(column.key, p)}
                     </td>
                   ))}
-                  {onDelete ? (
-                    <td
-                      className="sticky right-0 z-10 bg-white px-2 py-3 text-center align-middle group-hover:bg-slate-50"
-                      data-row-action
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => void onDelete(p)}
-                        disabled={deletingId === p.id}
-                        title={
-                          deletingId === p.id
-                            ? "Deleting prospect…"
-                            : `Delete ${p.full_name}`
-                        }
-                        aria-label={
-                          deletingId === p.id
-                            ? "Deleting prospect"
-                            : `Delete ${p.full_name}`
-                        }
-                        className="inline-flex rounded p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {deletingId === p.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                        ) : (
-                          <Trash2 className="h-4 w-4" aria-hidden />
-                        )}
-                      </button>
-                    </td>
-                  ) : null}
                 </tr>
-              ))}
+              );
+              })}
               {loading ? (
                 <tr>
                   <td
                     colSpan={colCount}
-                    className="px-4 py-3 text-sm text-slate-600"
+                    className={`${TABLE_CELL_X} ${TABLE_CELL_Y} text-sm text-slate-600`}
                   >
                     Loading…
                   </td>
@@ -1251,8 +2025,85 @@ export function ProspectsTable({
               ) : null}
             </tbody>
           </table>
-        )}
+          )}
+        </div>
+        {showProspectsTable ? (
+          <div
+            className="shrink-0 bg-white"
+            style={{ width: TABLE_CRM_COL_WIDTH }}
+          >
+            {paginatedProspects.map((p) =>
+              renderProspectCrmRailRow(p, {
+                isSelected: selectedIdSet.has(p.id),
+              })
+            )}
+            {loading ? (
+              <div
+                className={`${TABLE_CRM_BODY_RAIL} border-t border-slate-100 bg-white text-sm text-slate-600`}
+                style={{ width: TABLE_CRM_COL_WIDTH, minHeight: "2.75rem" }}
+              />
+            ) : null}
+          </div>
+        ) : null}
       </div>
+
+      {!loading && sortedProspects.length > PROSPECTS_PAGE_SIZE ? (
+        <nav
+          className={`flex flex-col gap-3 border-t border-slate-100 py-3 sm:flex-row sm:items-center sm:justify-between ${TABLE_SECTION_PADDING}`}
+          aria-label="Prospects pagination"
+        >
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+              Previous
+            </button>
+            <div className="flex flex-wrap items-center gap-1 pl-1">
+              {pageNumbers.map((item, idx) =>
+                item === "ellipsis" ? (
+                  <span
+                    key={`e-${idx}`}
+                    className="px-1.5 text-sm text-slate-500"
+                    aria-hidden
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setPage(item)}
+                    className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
+                      item === page
+                        ? "bg-sky-100 text-sky-800"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                    aria-current={item === page ? "page" : undefined}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+            </button>
+          </div>
+          <p className="text-sm text-slate-500 sm:text-right">
+            {paginationRangeLabel}
+          </p>
+        </nav>
+      ) : null}
 
       <ProspectContactEditModal
         prospect={editModalProspect}
@@ -1278,6 +2129,71 @@ export function ProspectsTable({
           }
         }}
       />
+
+      {pendingDelete ? (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 p-4"
+          role="presentation"
+          onClick={() => setPendingDelete(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="prospect-delete-dialog-title"
+            className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="prospect-delete-dialog-title"
+              className="text-lg font-semibold text-slate-900"
+            >
+              Delete prospect{pendingDelete.length === 1 ? "" : "s"}?
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {pendingDelete.length === 1 ? (
+                <>
+                  Delete <span className="font-medium">{pendingDelete[0].full_name}</span>? This
+                  cannot be undone.
+                </>
+              ) : (
+                <>
+                  Delete {pendingDelete.length} selected prospects? This cannot be undone.
+                </>
+              )}
+            </p>
+            {pendingDelete.length > 1 ? (
+              <ul className="mt-3 max-h-40 space-y-1 overflow-y-auto text-sm text-slate-500">
+                {pendingDelete.map((row) => (
+                  <li key={row.id}>
+                    {row.full_name}
+                    {row.email ? ` · ${row.email}` : ""}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void executePendingDelete()}
+                disabled={bulkDeleting}
+                className="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {bulkDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : null}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
