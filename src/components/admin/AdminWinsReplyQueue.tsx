@@ -48,15 +48,31 @@ export function AdminWinsReplyQueue() {
   }, []);
 
   useEffect(() => {
-    if (isWinsQueueCheckedThisSession()) {
-      setPhase("ready");
-      return;
-    }
-
     let cancelled = false;
-    markWinsQueueCheckedThisSession();
 
     void (async () => {
+      if (isWinsQueueCheckedThisSession()) {
+        setPhase("ready");
+        try {
+          const {
+            data: { user },
+          } = await supabaseClient.auth.getUser();
+          if (!cancelled && user?.id) {
+            const { data: profile } = await supabaseClient
+              .from("profiles")
+              .select("role")
+              .eq("id", user.id)
+              .maybeSingle();
+            if ((profile?.role as string | null) === "admin") {
+              setAdminUserId(user.id);
+            }
+          }
+        } catch {
+          // ignore — session persist is best-effort on revisit
+        }
+        return;
+      }
+
       setPhase("checking");
       try {
         const {
@@ -73,7 +89,6 @@ export function AdminWinsReplyQueue() {
           .maybeSingle();
         if (cancelled) return;
         if ((profile?.role as string | null) !== "admin") {
-          if (!cancelled) setPhase("ready");
           return;
         }
 
@@ -97,7 +112,10 @@ export function AdminWinsReplyQueue() {
           console.error("[AdminWinsReplyQueue] load failed", err);
         }
       } finally {
-        if (!cancelled) setPhase("ready");
+        if (!cancelled) {
+          markWinsQueueCheckedThisSession();
+          setPhase("ready");
+        }
       }
     })();
 

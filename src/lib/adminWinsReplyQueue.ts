@@ -31,9 +31,9 @@ const communityCategoryIdCache = new Map<string, string | null>();
 export async function resolveCommunityCategoryId(
   slug: string
 ): Promise<string | null> {
-  if (communityCategoryIdCache.has(slug)) {
-    return communityCategoryIdCache.get(slug) ?? null;
-  }
+  const cached = communityCategoryIdCache.get(slug);
+  if (cached) return cached;
+
   const { data, error } = await supabaseClient
     .from("community_categories")
     .select("id")
@@ -41,28 +41,12 @@ export async function resolveCommunityCategoryId(
     .maybeSingle();
   if (error) throw error;
   const id = data?.id ?? null;
-  communityCategoryIdCache.set(slug, id);
+  if (id) communityCategoryIdCache.set(slug, id);
   return id;
 }
 
 async function resolveWinsCategoryId(): Promise<string | null> {
   return resolveCommunityCategoryId(WINS_CATEGORY_SLUG);
-}
-
-function joinedCategorySlug(
-  category:
-    | { slug: string }
-    | { slug: string }[]
-    | null
-    | undefined
-): string | null {
-  if (!category) return null;
-  const row = Array.isArray(category) ? category[0] : category;
-  return row?.slug ?? null;
-}
-
-function isWinsCategoryPost(category: Parameters<typeof joinedCategorySlug>[0]): boolean {
-  return joinedCategorySlug(category) === WINS_CATEGORY_SLUG;
 }
 
 const WINS_POST_SELECT = `
@@ -302,7 +286,7 @@ export async function fetchPendingAdminWinsQueue(
 
   const rawRows = (fullRes.data ?? []) as unknown as RawCommunityPostRow[];
   const pendingRaw = rawRows.filter(
-    (row) => pendingIdSet.has(row.id) && isWinsCategoryPost(row.category)
+    (row) => pendingIdSet.has(row.id) && row.category_id === winsCategoryId
   );
 
   if (pendingRaw.length === 0) return [];
@@ -315,7 +299,7 @@ export async function fetchPendingAdminWinsQueue(
   enriched.sort(
     (a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
   );
-  return enriched.filter((post) => post.category?.slug === WINS_CATEGORY_SLUG);
+  return enriched;
 }
 
 /** Same eligibility window as the queue (for notification bell). */
