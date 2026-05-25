@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { coachCommunityPathFromAdminPath } from "@/lib/auth/loginReturnPath";
 import {
   displayNameFromProfile,
   profileInitialsFromName,
@@ -585,7 +586,12 @@ export function PostDetailModal({
 
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}${pathname}?post=${post.id}`;
+    const sharePath =
+      coachCommunityPathFromAdminPath(pathname) ??
+      (pathname.startsWith("/coach/community")
+        ? pathname
+        : "/coach/community");
+    return `${window.location.origin}${sharePath}?post=${post.id}`;
   }, [pathname, post.id]);
 
   const needsBodyTruncation = useMemo(

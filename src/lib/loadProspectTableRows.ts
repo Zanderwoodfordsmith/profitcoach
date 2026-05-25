@@ -42,7 +42,7 @@ export async function enrichProspectRows(
     loadLatestAssessmentsByContactId(supabase, contactIds),
     loadNextCallsByContactId(supabase, contactIds),
     loadLatestPastCallsByContactId(supabase, contactIds),
-    loadProspectNextActionsForContacts(contacts),
+    loadProspectNextActionsForContacts(supabase, contacts),
     loadFallbackPhonesByContactId(supabase, contacts),
   ]);
 

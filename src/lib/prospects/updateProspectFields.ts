@@ -138,7 +138,9 @@ export async function updateProspectFields(
       dueAt: patch.next_action?.due_at ?? null,
     });
   } else {
-    const existing = await loadProspectNextActionsByCoach(coachId, [contactId]);
+    const existing = await loadProspectNextActionsByCoach(supabaseAdmin, coachId, [
+      contactId,
+    ]);
     nextAction = existing[contactId] ?? null;
   }
 

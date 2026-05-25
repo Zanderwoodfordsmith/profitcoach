@@ -12,6 +12,7 @@ import {
   authLabelClassName,
   authPrimaryButtonClassName,
 } from "@/components/auth/AuthSplitShell";
+import { resolvePostLoginPath } from "@/lib/auth/loginReturnPath";
 
 const PROSPECT_PORTAL_MESSAGE =
   "This account is linked as a prospect only. The client dashboard is for invited clients. Use your coach’s assessment link to submit or update your BOSS score; your coach will give you portal access when you become a client.";
@@ -92,13 +93,13 @@ export default function LoginPage() {
     } catch {
       role = "coach";
     }
-    if (role === "admin") {
-      router.push("/admin/community");
-    } else if (role === "client") {
-      router.push("/client");
-    } else {
-      router.push("/coach/community");
-    }
+    const nextParam = new URLSearchParams(window.location.search).get("next");
+    router.push(
+      resolvePostLoginPath(
+        role as "admin" | "coach" | "client",
+        nextParam
+      )
+    );
   }
 
   return (

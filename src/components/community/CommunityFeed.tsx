@@ -64,6 +64,10 @@ import {
 } from "@/lib/communityCalendarTypes";
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 import { formatCommunityEventHappeningWhen } from "@/lib/communityRelativeTime";
+import {
+  buildLoginUrl,
+  coachCommunityPathFromAdminPath,
+} from "@/lib/auth/loginReturnPath";
 
 const POSTS_PER_PAGE = 20;
 /**
@@ -1405,7 +1409,11 @@ export function CommunityFeed() {
       try {
         const session = await resolveSupabaseBrowserSession();
         if (!session?.user) {
-          if (!cancelled) router.replace("/login");
+          if (!cancelled) {
+            router.replace(
+              buildLoginUrl(`${pathname}${window.location.search}`)
+            );
+          }
           return;
         }
 
@@ -1417,7 +1425,18 @@ export function CommunityFeed() {
             .eq("id", session.user.id)
             .maybeSingle();
           if (!cancelled) {
-            setViewerIsAdmin((me?.role as string | null) === "admin");
+            const isAdmin = (me?.role as string | null) === "admin";
+            setViewerIsAdmin(isAdmin);
+            if (!isAdmin) {
+              const coachPath = coachCommunityPathFromAdminPath(pathname);
+              if (coachPath) {
+                const query = searchParams.toString();
+                router.replace(
+                  query ? `${coachPath}?${query}` : coachPath
+                );
+                return;
+              }
+            }
           }
         } catch {
           if (!cancelled) setViewerIsAdmin(pathname.startsWith("/admin"));
@@ -1470,7 +1489,7 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId, loadCategories, pathname, router]);
+  }, [impersonatingCoachId, loadCategories, pathname, router, searchParams]);
 
   useEffect(() => {
     if (!feedBootstrapOk) return;

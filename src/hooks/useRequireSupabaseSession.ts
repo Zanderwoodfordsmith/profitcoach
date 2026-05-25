@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { buildLoginUrl } from "@/lib/auth/loginReturnPath";
 import { resolveSupabaseBrowserSession } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -20,7 +21,11 @@ export function useRequireSupabaseSession(): boolean {
       const session = await resolveSupabaseBrowserSession();
       if (cancelled) return;
       if (!session?.user) {
-        router.replace("/login");
+        const returnPath =
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}`
+            : null;
+        router.replace(buildLoginUrl(returnPath));
         return;
       }
       wasAuthedRef.current = true;
@@ -37,7 +42,7 @@ export function useRequireSupabaseSession(): boolean {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT" && wasAuthedRef.current) {
-        router.replace("/login");
+        router.replace(buildLoginUrl());
       }
     });
     return () => subscription.unsubscribe();

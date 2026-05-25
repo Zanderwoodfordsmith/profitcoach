@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createOutlineLine } from "@/lib/actionPlans/actionOutlineUtils";
 import { fromDatetimeLocalValue } from "@/lib/actionPlans/mappers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -37,12 +38,13 @@ export function dbActionToProspectNextAction(row: DbActionItem): ProspectNextAct
 }
 
 export async function loadProspectNextActionsByCoach(
+  supabase: SupabaseClient,
   coachId: string,
   contactIds: string[]
 ): Promise<Record<string, ProspectNextAction>> {
   if (!contactIds.length) return {};
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabase
     .from("coach_action_items")
     .select("id, text, depth, sort_order, due_at, contact_id, done")
     .eq("coach_id", coachId)
@@ -63,6 +65,7 @@ export async function loadProspectNextActionsByCoach(
 }
 
 export async function loadProspectNextActionsForContacts(
+  supabase: SupabaseClient,
   contacts: Array<{ id: string; coach_id?: string | null }>
 ): Promise<Record<string, ProspectNextAction>> {
   const byCoach = new Map<string, string[]>();
@@ -76,7 +79,7 @@ export async function loadProspectNextActionsForContacts(
   const merged: Record<string, ProspectNextAction> = {};
   await Promise.all(
     [...byCoach.entries()].map(async ([coachId, contactIds]) => {
-      const chunk = await loadProspectNextActionsByCoach(coachId, contactIds);
+      const chunk = await loadProspectNextActionsByCoach(supabase, coachId, contactIds);
       Object.assign(merged, chunk);
     })
   );
