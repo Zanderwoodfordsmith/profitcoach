@@ -7,6 +7,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useBossWorkshopChrome } from "@/contexts/BossWorkshopChromeContext";
 import { StickyPageHeader } from "@/components/layout";
 import { ContactBossWorkshopBody } from "@/components/coach/ContactBossWorkshopBody";
+import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import {
   NEW_PERSON_VALUE,
   WorkshopSessionPicker,
@@ -61,6 +62,10 @@ export default function CoachWorkshopPage() {
   const [error, setError] = useState<string | null>(null);
   const [adminUnscoped, setAdminUnscoped] = useState(false);
   const [draftCoachId, setDraftCoachId] = useState<string | null>(null);
+  const [hasScorecardForContact, setHasScorecardForContact] = useState(false);
+  const [scorecardModalContactId, setScorecardModalContactId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("contact");
@@ -196,6 +201,41 @@ export default function CoachWorkshopPage() {
     };
   }, [contacts, selectedId]);
 
+  useEffect(() => {
+    if (!selectedId || selectedId === NEW_PERSON_VALUE) {
+      setHasScorecardForContact(false);
+      return;
+    }
+
+    let cancelled = false;
+    async function checkScorecard() {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        if (!cancelled) setHasScorecardForContact(false);
+        return;
+      }
+
+      const res = await fetch(
+        `/api/coach/contacts/${encodeURIComponent(selectedId)}/scorecard-report`,
+        { headers: authHeaders(token, impersonatingCoachId) }
+      );
+      if (!cancelled) setHasScorecardForContact(res.ok);
+    }
+
+    void checkScorecard();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, impersonatingCoachId]);
+
+  const handleViewScorecard = useCallback(() => {
+    if (!selectedId || selectedId === NEW_PERSON_VALUE) return;
+    setScorecardModalContactId(selectedId);
+  }, [selectedId]);
+
   const clearNewPersonDraft = useCallback(() => {
     setNewPersonName("");
     setNewPersonTitle("");
@@ -313,8 +353,8 @@ export default function CoachWorkshopPage() {
   useEffect(() => {
     const prev = document.title;
     document.title = sessionSummary
-      ? `BOSS score — ${sessionSummary.fullName}`
-      : "BOSS score";
+      ? `BOSS Score Premium — ${sessionSummary.fullName}`
+      : "BOSS Score Premium";
     return () => {
       document.title = prev;
     };
@@ -375,6 +415,8 @@ export default function CoachWorkshopPage() {
           adminUnscoped={adminUnscoped}
           clientsHref={clientsHref}
           clientsLabel={clientsLabel}
+          showScorecardLink={hasScorecardForContact}
+          onViewScorecard={handleViewScorecard}
         />
       </div>
     );
@@ -400,13 +442,14 @@ export default function CoachWorkshopPage() {
     showNewPersonOption,
     adminUnscoped,
     clientsHref,
-    clientsLabel,
+    handleViewScorecard,
+    hasScorecardForContact,
   ]);
 
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
-        title="BOSS score"
+        title="BOSS Score Premium"
         description={
           <span className="text-base leading-relaxed text-slate-700">
             Choose someone from the list, or pick <strong>+ Add new person</strong>, enter their
@@ -442,6 +485,8 @@ export default function CoachWorkshopPage() {
             adminUnscoped={adminUnscoped}
             clientsHref={clientsHref}
             clientsLabel={clientsLabel}
+            showScorecardLink={hasScorecardForContact}
+            onViewScorecard={handleViewScorecard}
           />
         </div>
       )}
@@ -457,6 +502,11 @@ export default function CoachWorkshopPage() {
           editingNewPerson={isEditingNewPerson}
         />
       ) : null}
+
+      <ScorecardGlanceModal
+        contactId={scorecardModalContactId}
+        onClose={() => setScorecardModalContactId(null)}
+      />
     </div>
   );
 }

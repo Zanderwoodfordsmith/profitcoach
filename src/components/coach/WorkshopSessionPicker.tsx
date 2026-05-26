@@ -41,6 +41,8 @@ type WorkshopSessionPickerProps = {
   clientsHref: string;
   clientsLabel: string;
   compact?: boolean;
+  showScorecardLink?: boolean;
+  onViewScorecard?: () => void;
 };
 
 function formatSessionSubtitle(summary: WorkshopSessionSummary): string {
@@ -51,10 +53,14 @@ function WorkshopSessionSummaryView({
   summary,
   onChangeSession,
   compact,
+  showScorecardLink = false,
+  onViewScorecard,
 }: {
   summary: WorkshopSessionSummary;
   onChangeSession: () => void;
   compact?: boolean;
+  showScorecardLink?: boolean;
+  onViewScorecard?: () => void;
 }) {
   const subtitle = formatSessionSubtitle(summary);
 
@@ -68,19 +74,34 @@ function WorkshopSessionSummaryView({
               : "text-xs font-semibold uppercase tracking-wide text-slate-500"
           }
         >
-          Session
+          Review
         </p>
-        <button
-          type="button"
-          onClick={onChangeSession}
-          className={
-            compact
-              ? "shrink-0 text-[11px] font-medium text-sky-700 hover:text-sky-800 hover:underline"
-              : "shrink-0 text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
-          }
-        >
-          Change
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {showScorecardLink && onViewScorecard ? (
+            <button
+              type="button"
+              onClick={onViewScorecard}
+              className={
+                compact
+                  ? "text-[11px] font-medium text-sky-700 hover:text-sky-800 hover:underline"
+                  : "text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
+              }
+            >
+              View BOSS Score
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onChangeSession}
+            className={
+              compact
+                ? "shrink-0 text-[11px] font-medium text-sky-700 hover:text-sky-800 hover:underline"
+                : "shrink-0 text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
+            }
+          >
+            Change
+          </button>
+        </div>
       </div>
       <p
         className={
@@ -131,6 +152,8 @@ export function WorkshopSessionPicker({
   clientsHref,
   clientsLabel,
   compact = false,
+  showScorecardLink = false,
+  onViewScorecard,
 }: WorkshopSessionPickerProps) {
   const selectId = `${idPrefix}-contact-select`;
   const nameId = `${idPrefix}-new-name`;
@@ -164,6 +187,8 @@ export function WorkshopSessionPicker({
         summary={sessionSummary}
         onChangeSession={onChangeSession}
         compact={compact}
+        showScorecardLink={showScorecardLink}
+        onViewScorecard={onViewScorecard}
       />
     );
   }

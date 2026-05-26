@@ -4,6 +4,7 @@ import { ArrowUpDown, ChevronDown, Plus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { notifyFeedbackCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type FeedbackStatus = "new" | "in_review" | "resolved";
@@ -383,6 +384,7 @@ export default function AdminCommunityFeedbackPage() {
     setRows((prev) =>
       prev.map((r) => (r.id === id ? { ...r, ...patch } : r))
     );
+    notifyFeedbackCountsChanged();
   }
 
   return (

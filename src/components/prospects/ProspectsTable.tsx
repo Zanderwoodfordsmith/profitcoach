@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowUpDown,
   ArrowUpRight,
@@ -32,6 +33,7 @@ import { ProspectCrmLinkModal } from "@/components/prospects/ProspectCrmLinkModa
 import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
+import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import { formatProspectLabel, formatProspectPersonName } from "@/lib/prospectDisplayFormat";
 import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
@@ -49,7 +51,8 @@ type ProspectSortField =
   | "name"
   | "created_at"
   | "last_assessed"
-  | "last_score"
+  | "boss_score"
+  | "boss_score_premium"
   | "next_call";
 type ProspectSortOrder =
   | "asc"
@@ -64,8 +67,8 @@ type ProspectColumnKey =
   | "type"
   | "coach"
   | "actions"
-  | "last_score"
-  | "last_assessed"
+  | "boss_score"
+  | "boss_score_premium"
   | "created_at"
   | "revenue"
   | "team_size"
@@ -122,7 +125,7 @@ type Props = {
   stickyTopOffset?: number;
 };
 
-const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v5";
+const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v6";
 const PROSPECTS_PAGE_SIZE = 50;
 const TABLE_SECTION_PADDING = "px-5 sm:px-6";
 const TABLE_CHECKBOX_CELL = "px-1 text-center";
@@ -173,9 +176,9 @@ function getProspectColumnWidth(
       return 256;
     case "next_call":
       return 240;
-    case "last_score":
-      return 88;
-    case "last_assessed":
+    case "boss_score":
+    case "boss_score_premium":
+      return 104;
     case "created_at":
       return 120;
     case "type":
@@ -197,8 +200,8 @@ const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "coach", label: "Coach" },
   { key: "actions", label: "Actions" },
   { key: "status", label: "Status" },
-  { key: "last_score", label: "Last score" },
-  { key: "last_assessed", label: "Last assessed" },
+  { key: "boss_score", label: "BOSS Score" },
+  { key: "boss_score_premium", label: "BOSS Score Premium" },
   { key: "created_at", label: "Date created" },
   { key: "revenue", label: "Revenue" },
   { key: "team_size", label: "Team size" },
@@ -219,8 +222,8 @@ const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
   coach: true,
   actions: false,
   status: true,
-  last_score: true,
-  last_assessed: true,
+  boss_score: true,
+  boss_score_premium: true,
   created_at: true,
   revenue: false,
   team_size: false,
@@ -251,16 +254,26 @@ function parsePersistedProspectTableSettings(
     const validKeys = new Set<ProspectColumnKey>(
       COLUMN_OPTIONS.map((option) => option.key)
     );
+    const legacyKeyMap: Record<string, ProspectColumnKey> = {
+      last_score: "boss_score",
+      last_assessed: "boss_score",
+    };
     const columnVisibility = { ...DEFAULT_COLUMN_VISIBILITY };
-    for (const key of validKeys) {
-      if (typeof parsed.columnVisibility[key] === "boolean") {
-        columnVisibility[key] = parsed.columnVisibility[key] as boolean;
+    for (const [rawKey, value] of Object.entries(parsed.columnVisibility)) {
+      const key = validKeys.has(rawKey as ProspectColumnKey)
+        ? (rawKey as ProspectColumnKey)
+        : legacyKeyMap[rawKey];
+      if (key && typeof value === "boolean") {
+        columnVisibility[key] = value;
       }
     }
     const seen = new Set<ProspectColumnKey>();
     const columnOrder: ProspectColumnKey[] = [];
-    for (const key of parsed.columnOrder) {
-      if (validKeys.has(key) && !seen.has(key)) {
+    for (const rawKey of parsed.columnOrder) {
+      const key = validKeys.has(rawKey as ProspectColumnKey)
+        ? (rawKey as ProspectColumnKey)
+        : legacyKeyMap[rawKey as string];
+      if (key && validKeys.has(key) && !seen.has(key)) {
         columnOrder.push(key);
         seen.add(key);
       }
@@ -370,6 +383,17 @@ function ProspectLeadCrmLink({
   );
 }
 
+function compareNumericScores(
+  aScore: number | null,
+  bScore: number | null,
+  sortOrder: ProspectSortOrder
+): number {
+  if (aScore == null && bScore == null) return 0;
+  if (aScore == null) return sortOrder === "missing_first" ? -1 : 1;
+  if (bScore == null) return sortOrder === "missing_first" ? 1 : -1;
+  return sortOrder === "asc" ? aScore - bScore : bScore - aScore;
+}
+
 export function ProspectsTable({
   prospects,
   loading,
@@ -392,6 +416,14 @@ export function ProspectsTable({
   addLabel,
   stickyTopOffset = 0,
 }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const workshopBasePath = pathname.startsWith("/admin")
+    ? "/admin/workshop"
+    : "/coach/workshop";
+  const [scorecardModalContactId, setScorecardModalContactId] = useState<
+    string | null
+  >(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [emailColumnExpanded, setEmailColumnExpanded] = useState(false);
   const [assessmentFilter, setAssessmentFilter] =
@@ -613,10 +645,10 @@ export function ProspectsTable({
         if (!haystack.includes(term)) return false;
       }
 
-      if (assessmentFilter === "assessed" && !p.last_completed_at) {
+      if (assessmentFilter === "assessed" && !p.last_assessed_at) {
         return false;
       }
-      if (assessmentFilter === "not_assessed" && p.last_completed_at) {
+      if (assessmentFilter === "not_assessed" && p.last_assessed_at) {
         return false;
       }
 
@@ -670,21 +702,24 @@ export function ProspectsTable({
         return sortOrder === "desc" ? -cmp : cmp;
       }
 
-      if (sortField === "last_score") {
-        const aScore = a.last_score;
-        const bScore = b.last_score;
-        if (aScore == null && bScore == null) return 0;
-        if (aScore == null) return sortOrder === "missing_first" ? -1 : 1;
-        if (bScore == null) return sortOrder === "missing_first" ? 1 : -1;
-        return sortOrder === "asc" ? aScore - bScore : bScore - aScore;
+      if (sortField === "boss_score") {
+        return compareNumericScores(a.boss_score, b.boss_score, sortOrder);
+      }
+
+      if (sortField === "boss_score_premium") {
+        return compareNumericScores(
+          a.boss_score_premium,
+          b.boss_score_premium,
+          sortOrder
+        );
       }
 
       if (sortField === "last_assessed") {
-        const aTime = a.last_completed_at
-          ? new Date(a.last_completed_at).getTime()
+        const aTime = a.last_assessed_at
+          ? new Date(a.last_assessed_at).getTime()
           : null;
-        const bTime = b.last_completed_at
-          ? new Date(b.last_completed_at).getTime()
+        const bTime = b.last_assessed_at
+          ? new Date(b.last_assessed_at).getTime()
           : null;
         if (aTime == null && bTime == null) return 0;
         if (aTime == null) return sortOrder === "missing_first" ? -1 : 1;
@@ -1017,7 +1052,7 @@ export function ProspectsTable({
         { value: "desc" as const, label: "Z → A" },
       ];
     }
-    if (sortField === "last_score") {
+    if (sortField === "boss_score" || sortField === "boss_score_premium") {
       return [
         { value: "desc" as const, label: "Highest first" },
         { value: "asc" as const, label: "Lowest first" },
@@ -1206,19 +1241,61 @@ export function ProspectsTable({
             }}
           />
         );
-      case "last_score":
-        return p.last_score != null ? (
-          `${p.last_score}`
+      case "boss_score":
+        return p.boss_score != null ? (
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <button
+              type="button"
+              data-row-action
+              onClick={(e) => {
+                e.stopPropagation();
+                setScorecardModalContactId(p.id);
+              }}
+              className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+            >
+              {p.boss_score}%
+            </button>
+            {p.boss_score_at ? (
+              <span className="text-[11px] leading-none text-slate-400">
+                {formatProspectLastAssessed(p.boss_score_at)}
+              </span>
+            ) : null}
+          </div>
         ) : (
           <ProspectEmptyValue />
         );
-      case "last_assessed":
-        return p.last_completed_at ? (
-          <span className="text-sm text-slate-500">
-            {formatProspectLastAssessed(p.last_completed_at)}
-          </span>
+      case "boss_score_premium":
+        return p.boss_score_premium != null ? (
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <button
+              type="button"
+              data-row-action
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`${workshopBasePath}?contact=${encodeURIComponent(p.id)}`);
+              }}
+              className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+            >
+              {p.boss_score_premium}
+            </button>
+            {p.boss_score_premium_at ? (
+              <span className="text-[11px] leading-none text-slate-400">
+                {formatProspectLastAssessed(p.boss_score_premium_at)}
+              </span>
+            ) : null}
+          </div>
         ) : (
-          <ProspectEmptyValue />
+          <button
+            type="button"
+            data-row-action
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`${workshopBasePath}?contact=${encodeURIComponent(p.id)}`);
+            }}
+            className="text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+          >
+            Start
+          </button>
         );
       case "created_at":
         return p.created_at ? (
@@ -1300,10 +1377,10 @@ export function ProspectsTable({
             </button>
           </span>
         );
-      case "last_score":
-        return "Last score";
-      case "last_assessed":
-        return "Last assessed";
+      case "boss_score":
+        return "BOSS Score";
+      case "boss_score_premium":
+        return "BOSS Score Premium";
       case "next_call":
         return "Next call";
       case "next_action":
@@ -1644,7 +1721,8 @@ export function ProspectsTable({
                       <option value="name">Name</option>
                       <option value="created_at">Date created</option>
                       <option value="last_assessed">Last assessed</option>
-                      <option value="last_score">Last score</option>
+                      <option value="boss_score">BOSS Score</option>
+                      <option value="boss_score_premium">BOSS Score Premium</option>
                       <option value="next_call">Next call</option>
                     </select>
                   </div>
@@ -2274,6 +2352,11 @@ export function ProspectsTable({
           </div>
         </div>
       ) : null}
+
+      <ScorecardGlanceModal
+        contactId={scorecardModalContactId}
+        onClose={() => setScorecardModalContactId(null)}
+      />
     </div>
   );
 }

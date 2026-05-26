@@ -19,8 +19,8 @@ export type ProspectTableColumnKey =
   | "type"
   | "coach"
   | "actions"
-  | "last_score"
-  | "last_assessed"
+  | "boss_score"
+  | "boss_score_premium"
   | "created_at"
   | "revenue"
   | "team_size"
@@ -42,8 +42,10 @@ export type ProspectExportColumnKey =
   | "type"
   | "coach"
   | "status"
-  | "last_score"
-  | "last_assessed"
+  | "boss_score"
+  | "boss_score_at"
+  | "boss_score_premium"
+  | "boss_score_premium_at"
   | "created_at"
   | "revenue"
   | "team_size"
@@ -68,8 +70,10 @@ const EXPORT_COLUMN_DEFS: Array<{
   { key: "type", label: "Type" },
   { key: "coach", label: "Coach" },
   { key: "status", label: "Status" },
-  { key: "last_score", label: "Last score" },
-  { key: "last_assessed", label: "Last assessed" },
+  { key: "boss_score", label: "BOSS Score" },
+  { key: "boss_score_at", label: "BOSS Score date" },
+  { key: "boss_score_premium", label: "BOSS Score Premium" },
+  { key: "boss_score_premium_at", label: "BOSS Score Premium date" },
   { key: "created_at", label: "Date created" },
   { key: "revenue", label: "Revenue" },
   { key: "team_size", label: "Team size" },
@@ -92,8 +96,8 @@ const TABLE_KEY_TO_EXPORT: Partial<
   type: ["type"],
   coach: ["coach"],
   status: ["status"],
-  last_score: ["last_score"],
-  last_assessed: ["last_assessed"],
+  boss_score: ["boss_score", "boss_score_at"],
+  boss_score_premium: ["boss_score_premium", "boss_score_premium_at"],
   created_at: ["created_at"],
   revenue: ["revenue"],
   team_size: ["team_size"],
@@ -127,11 +131,17 @@ function getExportCellValue(
       return row.coach_name ?? row.coach_business_name ?? "";
     case "status":
       return row.status.label;
-    case "last_score":
-      return row.last_score ?? "";
-    case "last_assessed":
-      return row.last_completed_at
-        ? formatProspectLastAssessed(row.last_completed_at)
+    case "boss_score":
+      return row.boss_score != null ? `${row.boss_score}%` : "";
+    case "boss_score_at":
+      return row.boss_score_at
+        ? formatProspectLastAssessed(row.boss_score_at)
+        : "";
+    case "boss_score_premium":
+      return row.boss_score_premium ?? "";
+    case "boss_score_premium_at":
+      return row.boss_score_premium_at
+        ? formatProspectLastAssessed(row.boss_score_premium_at)
         : "";
     case "created_at":
       return row.created_at ? formatProspectLastAssessed(row.created_at) : "";

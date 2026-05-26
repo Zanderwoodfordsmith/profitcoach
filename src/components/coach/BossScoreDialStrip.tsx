@@ -13,7 +13,7 @@ const CARD_HEADER =
   "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";
 
 type BossScoreDialStripProps = {
-  totalScore: number;
+  totalScore: number | null;
   pillarStats: BossPillarDialStat[];
   className?: string;
 };
@@ -104,26 +104,37 @@ function RingGauge({
 function BossScoreHeroCard({
   cappedTotal,
   overallPct,
+  notStarted = false,
   className = "",
 }: {
   cappedTotal: number;
   overallPct: number;
+  notStarted?: boolean;
   className?: string;
 }) {
   return (
     <DialCard
-      header="BOSS score"
+      header="BOSS Score Premium"
       className={className}
       bodyClassName="flex justify-center px-7 py-8 sm:px-8 sm:py-9 md:px-9 md:py-10"
     >
-      <RingGauge
-        size="hero"
-        pctFill={overallPct}
-        color={OVERALL_COLOR}
-        centerPrimary={`${cappedTotal}`}
-        centerSecondary="/ 100"
-        ariaLabel={`BOSS score ${cappedTotal} out of 100`}
-      />
+      {notStarted ? (
+        <div className="flex h-[10.5rem] w-[10.5rem] flex-col items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-slate-50/80 text-center sm:h-[11.5rem] sm:w-[11.5rem] md:h-[13rem] md:w-[13rem]">
+          <p className="text-sm font-semibold text-slate-700">Not started</p>
+          <p className="mt-1 max-w-[8rem] text-xs text-slate-500">
+            Score playbooks together to build their Premium score.
+          </p>
+        </div>
+      ) : (
+        <RingGauge
+          size="hero"
+          pctFill={overallPct}
+          color={OVERALL_COLOR}
+          centerPrimary={`${cappedTotal}`}
+          centerSecondary="/ 100"
+          ariaLabel={`BOSS Score Premium ${cappedTotal} out of 100`}
+        />
+      )}
     </DialCard>
   );
 }
@@ -271,8 +282,9 @@ export function BossAnswerMixBar({
 }
 
 export function BossScoreDialStrip({ totalScore, pillarStats, className = "" }: BossScoreDialStripProps) {
-  const cappedTotal = Math.min(100, Math.max(0, totalScore));
-  const overallPct = Math.round(cappedTotal);
+  const hasScores = totalScore != null;
+  const cappedTotal = hasScores ? Math.min(100, Math.max(0, totalScore)) : 0;
+  const overallPct = hasScores ? Math.round(cappedTotal) : 0;
 
   return (
     <div className={`w-full ${className}`}>
@@ -280,6 +292,7 @@ export function BossScoreDialStrip({ totalScore, pillarStats, className = "" }: 
         <BossScoreHeroCard
           cappedTotal={cappedTotal}
           overallPct={overallPct}
+          notStarted={!hasScores}
           className="mx-auto w-full max-w-[20rem] shrink-0 md:mx-0 md:w-[19.5rem]"
         />
         <PillarScoresPanel pillarStats={pillarStats} />

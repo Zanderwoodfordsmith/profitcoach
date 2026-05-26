@@ -8,7 +8,7 @@ import {
   normalizeProspectLabel,
   normalizeProspectPersonName,
 } from "@/lib/prospectDisplayFormat";
-import { loadLatestAssessmentsByContactId } from "@/lib/prospectAssessmentSummary";
+import { loadLatestProspectAssessmentAtByContactId } from "@/lib/prospectAssessmentSummary";
 import {
   loadLatestPastCallsByContactId,
   loadNextCallsByContactId,
@@ -158,14 +158,12 @@ export async function updateProspectFields(
 
   const prospect_status = (refreshed.prospect_status as string | null) ?? null;
 
-  const [latestByContact, nextCallByContact, pastCallByContact] =
+  const [latestAtByContact, nextCallByContact, pastCallByContact] =
     await Promise.all([
-      loadLatestAssessmentsByContactId(supabaseAdmin, [contactId]),
+      loadLatestProspectAssessmentAtByContactId(supabaseAdmin, [contactId]),
       loadNextCallsByContactId(supabaseAdmin, [contactId]),
       loadLatestPastCallsByContactId(supabaseAdmin, [contactId]),
     ]);
-
-  const latest = latestByContact[contactId];
 
   return {
     full_name: (refreshed.full_name as string) ?? "Unknown",
@@ -177,7 +175,7 @@ export async function updateProspectFields(
     crm_contact_id: (refreshed.crm_contact_id as string | null) ?? null,
     status: resolveProspectStatus({
       prospect_status,
-      last_completed_at: latest?.completed_at ?? null,
+      last_completed_at: latestAtByContact[contactId] ?? null,
       next_call: nextCallByContact[contactId] ?? null,
       last_past_call_status: pastCallByContact[contactId] ?? null,
       next_action: nextAction,

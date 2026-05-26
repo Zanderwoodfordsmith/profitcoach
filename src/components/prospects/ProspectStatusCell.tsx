@@ -61,7 +61,7 @@ export function ProspectStatusCell({
 
   const autoValue = resolveAutoProspectStatus({
     prospect_status: null,
-    last_completed_at: row.last_completed_at,
+    last_completed_at: row.last_assessed_at,
     next_call: row.next_call,
     last_past_call_status: undefined,
     next_action: row.next_action,

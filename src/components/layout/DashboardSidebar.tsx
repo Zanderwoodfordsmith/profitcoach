@@ -18,6 +18,7 @@ import {
   navLinkActive,
 } from "@/components/layout/dashboardNavItems";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
+import { useNewFeedbackCount } from "@/components/layout/useNewFeedbackCount";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
 export type DashboardSidebarVariant = "coach" | "admin";
@@ -52,6 +53,7 @@ export function DashboardSidebar({
 
   const { profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
+  const newFeedbackCount = useNewFeedbackCount(variant === "admin");
 
   const mainItems = mainNavItems(prefix);
   const mobilePrimary = mobilePrimaryNavItems(prefix);
@@ -64,6 +66,15 @@ export function DashboardSidebar({
 
   const closeMobileSheets = () => {
     setMobileMoreOpen(false);
+  };
+
+  const renderFeedbackInboxBadge = (href: string) => {
+    if (href !== "/admin/community/feedback" || newFeedbackCount <= 0) return null;
+    return (
+      <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white">
+        {newFeedbackCount > 99 ? "99+" : newFeedbackCount}
+      </span>
+    );
   };
 
   const renderMobileNavLink = (item: (typeof mobilePrimary)[number]) => {
@@ -243,7 +254,8 @@ export function DashboardSidebar({
                         }`}
                       >
                         <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                        {item.label}
+                        <span className="min-w-0 flex-1">{item.label}</span>
+                        {renderFeedbackInboxBadge(item.href)}
                       </Link>
                     </li>
                   );
@@ -432,7 +444,8 @@ export function DashboardSidebar({
                           }`}
                         >
                           <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                          {item.label}
+                          <span className="min-w-0 flex-1">{item.label}</span>
+                          {renderFeedbackInboxBadge(item.href)}
                         </Link>
                       </li>
                     );

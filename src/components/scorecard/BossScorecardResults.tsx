@@ -231,18 +231,21 @@ export function BossScorecardResults({
   coachSlug,
   coachName: coachNameProp,
   isPreview = false,
+  coachGlance = false,
 }: {
   result: ScorecardResultPayload;
   coachSlug: string;
   coachName?: string | null;
   isPreview?: boolean;
+  /** Compact read-only view for coaches (modal) — hides prospect CTAs and calendar. */
+  coachGlance?: boolean;
 }) {
   const [calendarEmbed, setCalendarEmbed] = useState<string | null>(null);
   const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const effectiveSlug = coachSlug || getPrimaryCoachSlug();
 
   useEffect(() => {
-    if (!effectiveSlug) return;
+    if (coachGlance || !effectiveSlug) return;
     fetch(`/api/public/coaches/${encodeURIComponent(effectiveSlug)}/calendar`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -262,7 +265,7 @@ export function BossScorecardResults({
         }
       })
       .catch(() => {});
-  }, [effectiveSlug]);
+  }, [effectiveSlug, coachGlance]);
 
   const coachName =
     coachNameProp ??
@@ -308,28 +311,36 @@ export function BossScorecardResults({
 
   return (
     <div
-      className="min-h-screen text-slate-900"
+      className={coachGlance ? "text-slate-900" : "min-h-screen text-slate-900"}
       style={{ background: SCORECARD_PAGE_BG }}
     >
-      <header className="border-b border-slate-200/70 bg-white/35 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3 md:px-6 md:py-4">
-          <Image
-            src="/profit-coach-logo.svg"
-            alt="Profit Coach"
-            width={220}
-            height={56}
-            className="h-10 w-auto md:h-11"
-            priority
-          />
-        </div>
-      </header>
+      {!coachGlance ? (
+        <header className="border-b border-slate-200/70 bg-white/35 backdrop-blur-md">
+          <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3 md:px-6 md:py-4">
+            <Image
+              src="/profit-coach-logo.svg"
+              alt="Profit Coach"
+              width={220}
+              height={56}
+              className="h-10 w-auto md:h-11"
+              priority
+            />
+          </div>
+        </header>
+      ) : null}
 
-      <main className="mx-auto max-w-5xl space-y-16 px-4 pb-10 pt-4 md:space-y-20 md:px-6 md:pb-14 md:pt-5">
+      <main
+        className={
+          coachGlance
+            ? "space-y-10"
+            : "mx-auto max-w-5xl space-y-16 px-4 pb-10 pt-4 md:space-y-20 md:px-6 md:pb-14 md:pt-5"
+        }
+      >
         {/* Hero */}
         <section>
-          <BossScoreThankYouHeading />
+          {!coachGlance ? <BossScoreThankYouHeading /> : null}
 
-          <div className="relative mt-[50px] md:mt-[54px]">
+          <div className={coachGlance ? "relative" : "relative mt-[50px] md:mt-[54px]"}>
             <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
               <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 shadow-sm ring-4 ring-[#f8fbff]">
                 Your score
@@ -439,27 +450,29 @@ export function BossScorecardResults({
           <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-500 md:text-lg">
             {focusSectionSubtitle}
           </p>
-          <div
-            className="mt-5 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm"
-            aria-hidden
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          {!coachGlance ? (
+            <div
+              className="mt-5 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm"
+              aria-hidden
             >
-              <path d="M12 5v14" />
-              <path d="m19 12-7 7-7-7" />
-            </svg>
-          </div>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 5v14" />
+                <path d="m19 12-7 7-7-7" />
+              </svg>
+            </div>
+          ) : null}
         </div>
 
-        {/* Coach pitch + calendar */}
+        {!coachGlance ? (
         <section className="mt-6 overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-[0_20px_60px_-24px_rgba(15,23,42,0.25)]">
           <div className="grid items-center gap-8 p-8 md:grid-cols-2 md:gap-10 md:p-10 lg:gap-14 lg:p-12">
             <div>
@@ -546,6 +559,7 @@ export function BossScorecardResults({
             </div>
           </div>
         </section>
+        ) : null}
       </main>
 
       {isPreview ? (

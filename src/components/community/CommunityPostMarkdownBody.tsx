@@ -103,11 +103,14 @@ function buildComponents(
 }
 
 const baseMarkdownClass =
-  "min-w-0 whitespace-pre-wrap break-words text-inherit leading-normal " +
-  "[&_p]:my-0 [&_p]:whitespace-normal [&_p]:leading-relaxed [&_p:not(:last-child)]:mb-0 [&_p:empty]:hidden " +
+  "min-w-0 break-words text-inherit leading-normal whitespace-normal " +
+  "[&_p]:my-0 [&_p]:whitespace-normal [&_p]:leading-relaxed [&_p:empty]:hidden " +
+  "[&_p+_p]:mt-[1lh] [&_ul+_p]:mt-[1lh] [&_ol+_p]:mt-[1lh] " +
+  "[&_p+_blockquote]:mt-[1lh] [&_blockquote+_p]:mt-[1lh] " +
   "[&_strong]:font-bold [&_em]:italic " +
-  "[&_ul]:my-0.5 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 " +
-  "[&_li]:my-0 [&_li]:leading-relaxed " +
+  "[&_ul]:mb-0 [&_ul]:list-outside [&_ul]:list-disc [&_ul]:whitespace-normal [&_ul]:pl-5 " +
+  "[&_ol]:mb-0 [&_ol]:list-outside [&_ol]:list-decimal [&_ol]:whitespace-normal [&_ol]:pl-5 " +
+  "[&_li]:my-0 [&_li]:leading-relaxed [&_li]:whitespace-normal " +
   "[&_h1]:mt-3 [&_h1]:mb-1.5 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:leading-snug " +
   "[&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:leading-snug " +
   "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:leading-snug " +

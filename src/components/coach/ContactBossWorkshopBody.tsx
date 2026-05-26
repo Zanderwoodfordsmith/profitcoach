@@ -112,7 +112,7 @@ export type ContactBossWorkshopBodyProps = {
    */
   workshopMode?: boolean;
   onWorkshopModeChange?: (next: boolean) => void;
-  /** When false, omits the inline “Live scoring session” checkbox (parent renders it). Default true. */
+  /** When false, omits the inline “Score together” checkbox (parent renders it). Default true. */
   showLiveScoringCheckbox?: boolean;
   /** When true, gate copy mentions “Add new person” in the contact picker. */
   canAddNewPerson?: boolean;
@@ -500,9 +500,11 @@ export function ContactBossWorkshopBody({
 
   const areaScores = computeAreaScores(matrixAnswers);
   const liveTotal = getTotalScore(matrixAnswers);
+  const hasPremiumScores = Object.keys(matrixAnswers).length > 0;
+  const displayPremiumTotal = hasPremiumScores ? liveTotal : null;
   const pillarDialStats = useMemo(() => computeBossPillarDialStats(matrixAnswers), [matrixAnswers]);
   const answerMix = useMemo(() => computeScoreBreakdown(matrixAnswers), [matrixAnswers]);
-  const showCharts = !workshopMode && (assessment != null || liveTotal > 0);
+  const showCharts = !workshopMode && hasPremiumScores;
 
   const playbookBase = contactId
     ? `/coach/contacts/${contactId}/playbooks`
@@ -515,7 +517,9 @@ export function ContactBossWorkshopBody({
   useEffect(() => {
     if (variant !== "page") return;
     const prev = document.title;
-    document.title = contact ? `BOSS score — ${contact.full_name}` : "BOSS score";
+    document.title = contact
+      ? `BOSS Score Premium — ${contact.full_name}`
+      : "BOSS Score Premium";
     return () => {
       document.title = prev;
     };
@@ -584,7 +588,7 @@ export function ContactBossWorkshopBody({
             <div className="flex justify-center">
               <BossWheel
                 areaScores={areaScores}
-                totalScore={assessment?.total_score ?? liveTotal}
+                totalScore={displayPremiumTotal ?? liveTotal}
                 answers={matrixAnswers}
                 colorScheme={wheelColorScheme}
                 viewMode={wheelViewMode}
@@ -608,7 +612,7 @@ export function ContactBossWorkshopBody({
 
       {!loading && !error && (
         <>
-          <BossScoreDialStrip totalScore={liveTotal} pillarStats={pillarDialStats} />
+          <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
           {showLiveScoringCheckbox ? (
             <div className="flex justify-end">
               <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
@@ -618,7 +622,7 @@ export function ContactBossWorkshopBody({
                   checked={workshopMode}
                   onChange={(e) => setWorkshopMode(e.target.checked)}
                 />
-                Live scoring session
+                Score together
               </label>
             </div>
           ) : null}
@@ -713,7 +717,7 @@ export function ContactBossWorkshopBody({
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         leading={headerLeading}
-        title="BOSS score"
+        title="BOSS Score Premium"
         descriptionPlacement="below"
         description={
           contact ? (

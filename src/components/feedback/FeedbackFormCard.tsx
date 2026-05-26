@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bug, Lightbulb, MessageSquare } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { notifyFeedbackCountsChanged } from "@/components/layout/useNewFeedbackCount";
 
 type FeedbackFormCardProps = {
   onSubmitted?: () => void;
@@ -99,6 +100,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
               setFeedbackType("feature");
               setFeedbackTitle("");
               setFeedbackDetails("");
+              notifyFeedbackCountsChanged();
               onSubmitted?.();
             } catch (err) {
               const msg =
