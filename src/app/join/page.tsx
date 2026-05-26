@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AuthSplitShell,
@@ -13,7 +13,7 @@ import {
  * Sendable program link: creates the same coach account as /signup (coach role).
  * Share as /join?key=YOUR_COACH_SIGNUP_SECRET
  */
-export default function ProgramJoinPage() {
+function ProgramJoinPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const signupKey = searchParams.get("key")?.trim() ?? "";
@@ -180,5 +180,22 @@ export default function ProgramJoinPage() {
       </form>
       )}
     </AuthSplitShell>
+  );
+}
+
+export default function ProgramJoinPageWithSuspense() {
+  return (
+    <Suspense
+      fallback={
+        <AuthSplitShell
+          title="Create your coach account"
+          subtitle="One login for your Signature self-evaluation and your Profit Coach workspace."
+        >
+          <p className="text-sm text-slate-600">Loading…</p>
+        </AuthSplitShell>
+      }
+    >
+      <ProgramJoinPage />
+    </Suspense>
   );
 }

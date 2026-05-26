@@ -41,14 +41,15 @@ import {
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import {
   assessmentContactToSessionPayload,
-  getAssessmentProspectFirstName,
+  LANDING_CONTACT_SESSION_KEY,
+  mergeAssessmentContactWithSession,
   parseAssessmentContactParams,
+  readLandingContactSession,
+  resolveAssessmentProspectFirstName,
 } from "@/lib/assessmentContactParams";
-import { splitFullName } from "@/lib/splitFullName";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
-const LANDING_CONTACT_KEY = "boss_landing_contact";
 const RESULT_STORAGE_KEY = "boss_scorecard_result";
 
 type Screen =
@@ -120,6 +121,11 @@ export default function ScorecardAssessmentPage({
     [searchParams]
   );
   const isFromLandingFunnel = landingVariant != null;
+  const landingSession = isFromLandingFunnel ? readLandingContactSession() : null;
+  const initialContact = mergeAssessmentContactWithSession(
+    urlContact,
+    landingSession
+  );
 
   const [screenIndex, setScreenIndex] = useState(0);
   const [answers, setAnswers] = useState<ScorecardAnswers>({});
@@ -131,16 +137,21 @@ export default function ScorecardAssessmentPage({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [gateChecked, setGateChecked] = useState(false);
 
-  const [fullName, setFullName] = useState(urlContact.fullName ?? "");
-  const [email, setEmail] = useState(urlContact.email ?? "");
-  const [phone, setPhone] = useState(urlContact.phone ?? "");
-  const [businessName, setBusinessName] = useState(urlContact.businessName ?? "");
+  const [fullName, setFullName] = useState(initialContact.fullName ?? "");
+  const [email, setEmail] = useState(initialContact.email ?? "");
+  const [phone, setPhone] = useState(initialContact.phone ?? "");
+  const [businessName, setBusinessName] = useState(
+    initialContact.businessName ?? ""
+  );
 
-  const prospectFirstName = useMemo(() => {
-    const fromUrl = getAssessmentProspectFirstName(urlContact);
-    if (fromUrl) return fromUrl;
-    return splitFullName(fullName).first_name;
-  }, [urlContact, fullName]);
+  const prospectFirstName = useMemo(
+    () =>
+      resolveAssessmentProspectFirstName(urlContact, {
+        sessionContact: landingSession,
+        fullName,
+      }),
+    [urlContact, landingSession, fullName]
+  );
 
   const currentScreen = SCREENS[screenIndex] ?? SCREENS[0];
   const progress = getScorecardProgress(currentScreen.step);
@@ -156,7 +167,7 @@ export default function ScorecardAssessmentPage({
     directLeadCaptured.current = true;
     try {
       sessionStorage.setItem(
-        LANDING_CONTACT_KEY,
+        LANDING_CONTACT_SESSION_KEY,
         JSON.stringify(assessmentContactToSessionPayload(urlContact))
       );
     } catch {
@@ -196,29 +207,14 @@ export default function ScorecardAssessmentPage({
 
   useEffect(() => {
     if (!isFromLandingFunnel) return;
-    try {
-      const raw = sessionStorage.getItem(LANDING_CONTACT_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        firstName?: string;
-        lastName?: string;
-        fullName?: string;
-        email?: string;
-        phone?: string;
-        businessName?: string;
-      };
-      const first = parsed.firstName?.trim();
-      const last = parsed.lastName?.trim();
-      const derivedFullName =
-        [first, last].filter(Boolean).join(" ") || parsed.fullName;
-      if (derivedFullName) setFullName(derivedFullName);
-      if (parsed.email) setEmail(parsed.email);
-      if (parsed.phone) setPhone(parsed.phone);
-      if (parsed.businessName) setBusinessName(parsed.businessName);
-    } catch {
-      // ignore
-    }
-  }, [isFromLandingFunnel]);
+    const session = readLandingContactSession();
+    if (!session) return;
+    const merged = mergeAssessmentContactWithSession(urlContact, session);
+    if (merged.fullName) setFullName(merged.fullName);
+    if (merged.email) setEmail(merged.email);
+    if (merged.phone) setPhone(merged.phone);
+    if (merged.businessName) setBusinessName(merged.businessName);
+  }, [isFromLandingFunnel, urlContact]);
 
   const reportProgress = useCallback(
     (screen: number, abandoned = false) => {
@@ -295,19 +291,9 @@ export default function ScorecardAssessmentPage({
     const generatingStarted = Date.now();
     const totalScore = computeScorecardTotal(answers);
     const bossLevel = getBossLevel(totalScore);
-    const prospectFirstName =
-      (() => {
-        try {
-          const raw = sessionStorage.getItem(LANDING_CONTACT_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw) as { firstName?: string };
-            if (parsed.firstName?.trim()) return parsed.firstName.trim();
-          }
-        } catch {
-          // ignore
-        }
-        return splitFullName(fullName).first_name;
-      })();
+    const prospectFirstName = resolveAssessmentProspectFirstName(urlContact, {
+      fullName,
+    });
 
     const trimmedOpenText = openText.trim() || null;
 

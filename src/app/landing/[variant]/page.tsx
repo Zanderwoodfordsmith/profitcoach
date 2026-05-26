@@ -13,8 +13,8 @@ import {
 import { LandingVariantC } from "@/components/landing/LandingVariantC";
 import { LandingVariantD } from "@/components/landing/LandingVariantD";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { LANDING_CONTACT_SESSION_KEY } from "@/lib/assessmentContactParams";
 
-const LANDING_CONTACT_KEY = "boss_landing_contact";
 const SESSION_COOKIE = "landing_session_id";
 
 const COUNTRY_CODES = [
@@ -266,7 +266,7 @@ export default function LandingVariantPage() {
     }).catch(() => {});
     try {
       sessionStorage.setItem(
-        LANDING_CONTACT_KEY,
+        LANDING_CONTACT_SESSION_KEY,
         JSON.stringify({
           firstName: first,
           lastName: last,

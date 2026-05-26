@@ -40,6 +40,64 @@ export function parseAssessmentContactParams(
   };
 }
 
+export const LANDING_CONTACT_SESSION_KEY = "boss_landing_contact";
+
+export type LandingContactSession = {
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  businessName?: string;
+};
+
+/** Opt-in details stored when a prospect completes the landing funnel form. */
+export function readLandingContactSession(): LandingContactSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(LANDING_CONTACT_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as LandingContactSession;
+  } catch {
+    return null;
+  }
+}
+
+export function landingContactSessionToAssessmentContact(
+  session: LandingContactSession
+): AssessmentContactFromUrl {
+  const firstName = session.firstName?.trim() || null;
+  const lastName = session.lastName?.trim() || null;
+  const fromParts = [firstName, lastName].filter(Boolean).join(" ").trim();
+  const fullName = session.fullName?.trim() || fromParts || null;
+
+  return {
+    firstName,
+    lastName,
+    fullName,
+    email: session.email?.trim().toLowerCase() || null,
+    phone: session.phone?.trim() || null,
+    businessName: session.businessName?.trim() || null,
+  };
+}
+
+/** URL contact wins; session fills gaps after landing opt-in. */
+export function mergeAssessmentContactWithSession(
+  urlContact: AssessmentContactFromUrl,
+  session: LandingContactSession | null
+): AssessmentContactFromUrl {
+  if (!session) return urlContact;
+  const fromSession = landingContactSessionToAssessmentContact(session);
+  return {
+    firstName: urlContact.firstName ?? fromSession.firstName,
+    lastName: urlContact.lastName ?? fromSession.lastName,
+    fullName: urlContact.fullName ?? fromSession.fullName,
+    email: urlContact.email ?? fromSession.email,
+    phone: urlContact.phone ?? fromSession.phone,
+    businessName: urlContact.businessName ?? fromSession.businessName,
+  };
+}
+
 /** First name for personalised assessment greetings (URL param, then full name). */
 export function getAssessmentProspectFirstName(
   contact: AssessmentContactFromUrl
@@ -48,6 +106,31 @@ export function getAssessmentProspectFirstName(
   if (fromParam) return fromParam;
   const fromFull = contact.fullName?.trim();
   if (fromFull) return splitFullName(fromFull).first_name;
+  return null;
+}
+
+/** First name for greetings: URL params, landing opt-in session, then typed full name. */
+export function resolveAssessmentProspectFirstName(
+  urlContact: AssessmentContactFromUrl,
+  options?: {
+    sessionContact?: LandingContactSession | null;
+    fullName?: string | null;
+  }
+): string | null {
+  const fromUrl = getAssessmentProspectFirstName(urlContact);
+  if (fromUrl) return fromUrl;
+
+  const session = options?.sessionContact ?? readLandingContactSession();
+  if (session) {
+    const fromSession = getAssessmentProspectFirstName(
+      landingContactSessionToAssessmentContact(session)
+    );
+    if (fromSession) return fromSession;
+  }
+
+  const typedFull = options?.fullName?.trim();
+  if (typedFull) return splitFullName(typedFull).first_name;
+
   return null;
 }
 

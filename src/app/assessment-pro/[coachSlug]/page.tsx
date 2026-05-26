@@ -9,17 +9,18 @@ import { AssessmentPersonalisedGreeting } from "@/components/scorecard/Assessmen
 import { BossScoreProWordmark } from "@/components/scorecard/BossScoreWordmark";
 import {
   assessmentContactToSessionPayload,
-  getAssessmentProspectFirstName,
+  LANDING_CONTACT_SESSION_KEY,
+  mergeAssessmentContactWithSession,
   parseAssessmentContactParams,
+  readLandingContactSession,
+  resolveAssessmentProspectFirstName,
 } from "@/lib/assessmentContactParams";
 import { BOSS_PRO_INTRO } from "@/lib/bossProAssessmentCopy";
 import { SCORECARD_PAGE_BG } from "@/lib/bossScorecardQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { splitFullName } from "@/lib/splitFullName";
 import { QUESTIONS_BY_LEVEL } from "@/lib/assessmentQuestions";
 
 const outfit = Outfit({ subsets: ["latin"] });
-const LANDING_CONTACT_KEY = "boss_landing_contact";
 
 type AnswersMap = Record<string, 0 | 1 | 2>;
 
@@ -65,6 +66,12 @@ export default function BossProAssessmentPage({
     [searchParams]
   );
 
+  const landingSession = landingVariant ? readLandingContactSession() : null;
+  const initialContact = mergeAssessmentContactWithSession(
+    urlContact,
+    landingSession
+  );
+
   const [coachName, setCoachName] = useState<string | null>(null);
   const [coachBusiness, setCoachBusiness] = useState<string | null>(null);
   const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
@@ -79,16 +86,21 @@ export default function BossProAssessmentPage({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [fullName, setFullName] = useState(urlContact.fullName ?? "");
-  const [email, setEmail] = useState(urlContact.email ?? "");
-  const [phone, setPhone] = useState(urlContact.phone ?? "");
-  const [businessName, setBusinessName] = useState(urlContact.businessName ?? "");
+  const [fullName, setFullName] = useState(initialContact.fullName ?? "");
+  const [email, setEmail] = useState(initialContact.email ?? "");
+  const [phone, setPhone] = useState(initialContact.phone ?? "");
+  const [businessName, setBusinessName] = useState(
+    initialContact.businessName ?? ""
+  );
 
-  const prospectFirstName = useMemo(() => {
-    const fromUrl = getAssessmentProspectFirstName(urlContact);
-    if (fromUrl) return fromUrl;
-    return splitFullName(fullName).first_name;
-  }, [urlContact, fullName]);
+  const prospectFirstName = useMemo(
+    () =>
+      resolveAssessmentProspectFirstName(urlContact, {
+        sessionContact: landingSession,
+        fullName,
+      }),
+    [urlContact, landingSession, fullName]
+  );
 
   const [clientDashboardChecked, setClientDashboardChecked] = useState(false);
   const [isClientFromDashboard, setIsClientFromDashboard] = useState(false);
@@ -136,7 +148,7 @@ export default function BossProAssessmentPage({
     directLeadCaptured.current = true;
     try {
       sessionStorage.setItem(
-        LANDING_CONTACT_KEY,
+        LANDING_CONTACT_SESSION_KEY,
         JSON.stringify(assessmentContactToSessionPayload(urlContact))
       );
     } catch {
@@ -276,29 +288,15 @@ export default function BossProAssessmentPage({
 
   useEffect(() => {
     if (!landingVariant) return;
-    try {
-      const raw = sessionStorage.getItem("boss_landing_contact");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as {
-        firstName?: string;
-        lastName?: string;
-        fullName?: string;
-        email?: string;
-        phone?: string;
-        businessName?: string;
-      };
-      const first = parsed.firstName?.trim();
-      const last = parsed.lastName?.trim();
-      const derivedFullName = [first, last].filter(Boolean).join(" ") || parsed.fullName;
-      if (derivedFullName != null) setFullName(derivedFullName);
-      if (parsed.email != null) setEmail(parsed.email);
-      if (parsed.phone != null) setPhone(parsed.phone);
-      if (parsed.businessName != null) setBusinessName(parsed.businessName);
-      setStep("assessment");
-    } catch {
-      // ignore invalid or missing sessionStorage
-    }
-  }, [landingVariant]);
+    const session = readLandingContactSession();
+    if (!session) return;
+    const merged = mergeAssessmentContactWithSession(urlContact, session);
+    if (merged.fullName) setFullName(merged.fullName);
+    if (merged.email) setEmail(merged.email);
+    if (merged.phone) setPhone(merged.phone);
+    if (merged.businessName) setBusinessName(merged.businessName);
+    setStep("assessment");
+  }, [landingVariant, urlContact]);
 
   const levelQuestions = useMemo(
     () => QUESTIONS_BY_LEVEL[currentLevel] ?? [],
