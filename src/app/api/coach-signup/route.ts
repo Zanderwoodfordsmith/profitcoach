@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  looksLikeBotSignup,
+  validateCoachSignupSecret,
+} from "@/lib/coachSignupGuard";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -8,6 +12,7 @@ type Body = {
   email: string;
   password: string;
   slug: string;
+  signupKey?: string;
 };
 
 export async function POST(request: Request) {
@@ -32,6 +37,18 @@ export async function POST(request: Request) {
         error:
           "Slug can only contain lowercase letters, numbers, and hyphens.",
       },
+      { status: 400 }
+    );
+  }
+
+  const secretError = validateCoachSignupSecret(body.signupKey);
+  if (secretError) {
+    return NextResponse.json({ error: secretError }, { status: 403 });
+  }
+
+  if (looksLikeBotSignup({ fullName, businessName, email, slug })) {
+    return NextResponse.json(
+      { error: "Unable to create account. Please check your details." },
       { status: 400 }
     );
   }

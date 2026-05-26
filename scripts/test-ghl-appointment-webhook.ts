@@ -78,13 +78,22 @@ assert(
   isCalendarSyncReady({
     crmLocationId: "BsRxKtV0lVHcvvZ6qHtu",
     calendarEmbedCode: embed,
+    leadWebhookUrl: "https://hooks.example.com/coach-leads",
   }),
-  "calendar sync ready when both set"
+  "calendar sync ready when location, calendar, and webhook set"
+);
+assert(
+  !isCalendarSyncReady({
+    crmLocationId: "BsRxKtV0lVHcvvZ6qHtu",
+    calendarEmbedCode: embed,
+  }),
+  "calendar sync not ready without webhook"
 );
 assert(
   getCalendarSyncStatus({
     crmLocationId: "BsRxKtV0lVHcvvZ6qHtu",
     calendarEmbedCode: embed,
+    leadWebhookUrl: "https://hooks.example.com/coach-leads",
     audience: "coach",
   }).ready,
   "coach sync status ready"

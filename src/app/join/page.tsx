@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   AuthSplitShell,
   authInputClassName,
@@ -11,9 +11,12 @@ import {
 
 /**
  * Sendable program link: creates the same coach account as /signup (coach role).
+ * Share as /join?key=YOUR_COACH_SIGNUP_SECRET
  */
 export default function ProgramJoinPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const signupKey = searchParams.get("key")?.trim() ?? "";
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,6 +42,7 @@ export default function ProgramJoinPage() {
           email,
           password,
           slug,
+          signupKey,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -73,6 +77,12 @@ export default function ProgramJoinPage() {
         </p>
       }
     >
+      {!signupKey ? (
+        <p className="text-sm leading-relaxed text-slate-600">
+          Coach signup is by invitation only. Use the program join link you were
+          sent from your admin.
+        </p>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4 text-sm">
         <div className="space-y-1.5">
           <label htmlFor="fullName" className={authLabelClassName}>
@@ -168,6 +178,7 @@ export default function ProgramJoinPage() {
           {loading ? "Creating account…" : "Create account"}
         </button>
       </form>
+      )}
     </AuthSplitShell>
   );
 }

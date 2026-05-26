@@ -603,7 +603,7 @@ function ReportDesignSystemContent() {
               </p>
             </div>
             <Link
-              href="/diagnostic/BCA"
+              href="/assessment-pro/BCA"
               className="inline-flex w-fit items-center justify-center rounded-full bg-[#10b981] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_-10px_rgba(16,185,129,0.45)] transition hover:brightness-110 active:scale-[0.98]"
             >
               Retake diagnostic →

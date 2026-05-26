@@ -9,8 +9,10 @@ import {
   ChevronRight,
   Columns3,
   GripVertical,
+  Link2,
   Loader2,
   ListTodo,
+  Play,
   Search,
   SlidersHorizontal,
   Trash2,
@@ -40,6 +42,8 @@ import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
 import { getProspectCrmContactUrl } from "@/lib/ghlContactWebhook";
 import { paginationItems } from "@/lib/communityPagination";
+import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } from "@/lib/assessmentContactParams";
+import { splitFullName } from "@/lib/splitFullName";
 
 export type { ProspectRow };
 
@@ -123,6 +127,10 @@ type Props = {
   addLabel?: string;
   /** Height of sticky page header above this table (e.g. StickyPageHeader). */
   stickyTopOffset?: number;
+  /** Coach public slug for personalised Boss assessment links (coach prospects view). */
+  coachSlug?: string | null;
+  /** Coach slug per coach id (admin prospects view). */
+  coachSlugByCoachId?: Record<string, string>;
 };
 
 const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v6";
@@ -200,8 +208,8 @@ const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
   { key: "coach", label: "Coach" },
   { key: "actions", label: "Actions" },
   { key: "status", label: "Status" },
-  { key: "boss_score", label: "BOSS Score" },
-  { key: "boss_score_premium", label: "BOSS Score Premium" },
+  { key: "boss_score", label: "Boss" },
+  { key: "boss_score_premium", label: "Boss Pro" },
   { key: "created_at", label: "Date created" },
   { key: "revenue", label: "Revenue" },
   { key: "team_size", label: "Team size" },
@@ -383,6 +391,20 @@ function ProspectLeadCrmLink({
   );
 }
 
+function resolveCoachSlugForProspect(
+  prospect: ProspectRow,
+  coachSlug?: string | null,
+  coachSlugByCoachId?: Record<string, string>
+): string | null {
+  const direct = coachSlug?.trim();
+  if (direct) return direct;
+  const coachId = prospect.coach_id?.trim();
+  if (coachId && coachSlugByCoachId?.[coachId]?.trim()) {
+    return coachSlugByCoachId[coachId].trim();
+  }
+  return null;
+}
+
 function compareNumericScores(
   aScore: number | null,
   bScore: number | null,
@@ -415,6 +437,8 @@ export function ProspectsTable({
   addActive = false,
   addLabel,
   stickyTopOffset = 0,
+  coachSlug = null,
+  coachSlugByCoachId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -471,6 +495,11 @@ export function ProspectsTable({
   const [pendingDelete, setPendingDelete] = useState<ProspectRow[] | null>(
     null
   );
+  const [copiedBossLinkProspectId, setCopiedBossLinkProspectId] = useState<
+    string | null
+  >(null);
+  const [copiedBossProLinkProspectId, setCopiedBossProLinkProspectId] =
+    useState<string | null>(null);
 
   const filtersMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1097,6 +1126,62 @@ export function ProspectsTable({
     setCrmLinkModalProspect(prospect);
   }
 
+  async function copyPersonalisedAssessmentLink(
+    prospect: ProspectRow,
+    product: "boss-score" | "boss-pro"
+  ) {
+    const slug = resolveCoachSlugForProspect(
+      prospect,
+      coachSlug,
+      coachSlugByCoachId
+    );
+    if (!slug) return;
+
+    const email = prospect.email?.trim();
+    if (!email) {
+      openContactEdit(prospect);
+      return;
+    }
+
+    const { first_name, last_name } = splitFullName(prospect.full_name);
+    const input = {
+      coachSlug: slug,
+      firstName: first_name ?? undefined,
+      lastName: last_name ?? undefined,
+      email,
+      phone: prospect.phone ?? undefined,
+      businessName: prospect.business_name ?? undefined,
+      origin:
+        typeof window !== "undefined" ? window.location.origin : undefined,
+    };
+
+    const link =
+      product === "boss-score"
+        ? buildPersonalisedAssessmentLink(input)
+        : buildPersonalisedAssessmentProLink(input);
+
+    const setCopiedId =
+      product === "boss-score"
+        ? setCopiedBossLinkProspectId
+        : setCopiedBossProLinkProspectId;
+
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedId(prospect.id);
+      window.setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      // Coach can copy from Funnel settings if clipboard is blocked.
+    }
+  }
+
+  async function copyBossAssessmentLink(prospect: ProspectRow) {
+    await copyPersonalisedAssessmentLink(prospect, "boss-score");
+  }
+
+  async function copyBossProAssessmentLink(prospect: ProspectRow) {
+    await copyPersonalisedAssessmentLink(prospect, "boss-pro");
+  }
+
   function renderEditableContactValue(
     prospect: ProspectRow,
     value: string | null | undefined,
@@ -1261,6 +1346,30 @@ export function ProspectsTable({
               </span>
             ) : null}
           </div>
+        ) : resolveCoachSlugForProspect(p, coachSlug, coachSlugByCoachId) ? (
+          <button
+            type="button"
+            data-row-action
+            onClick={(e) => {
+              e.stopPropagation();
+              void copyBossAssessmentLink(p);
+            }}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+            title={
+              p.email?.trim()
+                ? "Copy personalised Boss assessment link"
+                : "Add an email to copy a personalised Boss assessment link"
+            }
+          >
+            {copiedBossLinkProspectId === p.id ? (
+              "Copied!"
+            ) : (
+              <>
+                <Link2 className="h-3 w-3 shrink-0" aria-hidden />
+                Get link
+              </>
+            )}
+          </button>
         ) : (
           <ProspectEmptyValue />
         );
@@ -1285,17 +1394,48 @@ export function ProspectsTable({
             ) : null}
           </div>
         ) : (
-          <button
-            type="button"
-            data-row-action
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`${workshopBasePath}?contact=${encodeURIComponent(p.id)}`);
-            }}
-            className="text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
-          >
-            Start
-          </button>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <button
+              type="button"
+              data-row-action
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(
+                  `${workshopBasePath}?contact=${encodeURIComponent(p.id)}`
+                );
+              }}
+              className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+              title="Open Boss Pro workshop for this prospect"
+            >
+              <Play className="h-3 w-3 shrink-0" aria-hidden />
+              Start
+            </button>
+            {resolveCoachSlugForProspect(p, coachSlug, coachSlugByCoachId) ? (
+              <button
+                type="button"
+                data-row-action
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void copyBossProAssessmentLink(p);
+                }}
+                className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                title={
+                  p.email?.trim()
+                    ? "Copy personalised Boss Pro assessment link"
+                    : "Add an email to copy a personalised Boss Pro assessment link"
+                }
+              >
+                {copiedBossProLinkProspectId === p.id ? (
+                  "Copied!"
+                ) : (
+                  <>
+                    <Link2 className="h-3 w-3 shrink-0" aria-hidden />
+                    Get link
+                  </>
+                )}
+              </button>
+            ) : null}
+          </div>
         );
       case "created_at":
         return p.created_at ? (
@@ -1378,9 +1518,9 @@ export function ProspectsTable({
           </span>
         );
       case "boss_score":
-        return "BOSS Score";
+        return "Boss";
       case "boss_score_premium":
-        return "BOSS Score Premium";
+        return "Boss Pro";
       case "next_call":
         return "Next call";
       case "next_action":
@@ -1721,8 +1861,8 @@ export function ProspectsTable({
                       <option value="name">Name</option>
                       <option value="created_at">Date created</option>
                       <option value="last_assessed">Last assessed</option>
-                      <option value="boss_score">BOSS Score</option>
-                      <option value="boss_score_premium">BOSS Score Premium</option>
+                      <option value="boss_score">Boss</option>
+                      <option value="boss_score_premium">Boss Pro</option>
                       <option value="next_call">Next call</option>
                     </select>
                   </div>

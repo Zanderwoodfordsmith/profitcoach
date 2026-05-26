@@ -20,6 +20,35 @@ export function BossScoreWordmark({ className }: BossScoreWordmarkProps) {
   );
 }
 
+type BossScoreProWordmarkProps = {
+  className?: string;
+  /** Hero intro title vs in-flow assessment header */
+  variant?: "hero" | "header";
+};
+
+export function BossScoreProWordmark({
+  className,
+  variant = "hero",
+}: BossScoreProWordmarkProps) {
+  const badgeClass =
+    variant === "hero"
+      ? "-right-3 -top-2 px-2 py-0.5 text-[0.28em] sm:-right-4 sm:-top-2.5 sm:px-2.5 sm:py-1 sm:text-[0.26em] md:-right-5 md:-top-3"
+      : "-right-2 -top-1.5 px-1.5 py-0.5 text-[0.32em] sm:-right-2.5 sm:-top-2";
+
+  return (
+    <span className={`relative inline-block ${className ?? ""}`}>
+      <BossScoreWordmark />
+      <span
+        className={`absolute rounded-md font-bold uppercase tracking-[0.14em] text-white shadow-sm ${badgeClass}`}
+        style={{ backgroundImage: BOSS_SCORE_TITLE_GRADIENT }}
+        aria-label="Pro tier"
+      >
+        Pro
+      </span>
+    </span>
+  );
+}
+
 type BossScoreThankYouHeadingProps = {
   className?: string;
 };

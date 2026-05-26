@@ -353,8 +353,8 @@ export default function CoachWorkshopPage() {
   useEffect(() => {
     const prev = document.title;
     document.title = sessionSummary
-      ? `BOSS Score Premium — ${sessionSummary.fullName}`
-      : "BOSS Score Premium";
+      ? `Boss Pro — ${sessionSummary.fullName}`
+      : "Boss Pro";
     return () => {
       document.title = prev;
     };
@@ -449,7 +449,7 @@ export default function CoachWorkshopPage() {
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
-        title="BOSS Score Premium"
+        title="Boss Pro"
         description={
           <span className="text-base leading-relaxed text-slate-700">
             Choose someone from the list, or pick <strong>+ Add new person</strong>, enter their

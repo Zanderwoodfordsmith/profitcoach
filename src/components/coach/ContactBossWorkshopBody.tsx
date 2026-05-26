@@ -22,13 +22,6 @@ type Contact = {
   business_name: string | null;
 };
 
-type Assessment = {
-  id: string;
-  total_score: number;
-  completed_at: string;
-  answers: Record<string, 0 | 1 | 2>;
-};
-
 type WorkshopSessionScores = {
   answers: Record<string, 0 | 1 | 2>;
   total_score: number;
@@ -140,7 +133,6 @@ export function ContactBossWorkshopBody({
   const [wheelViewMode] = useWheelViewMode();
 
   const [contact, setContact] = useState<Contact | null>(null);
-  const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [loading, setLoading] = useState(Boolean(contactId));
   const [error, setError] = useState<string | null>(null);
   const [matrixAnswers, setMatrixAnswers] = useState<Record<string, 0 | 1 | 2>>({});
@@ -174,7 +166,6 @@ export function ContactBossWorkshopBody({
     }
     draftContactIdRef.current = null;
     setContact(null);
-    setAssessment(null);
     setMatrixAnswers({});
     setPillarNotes({});
     setPlaybookNotes({});
@@ -212,7 +203,6 @@ export function ContactBossWorkshopBody({
           pillar_session_notes?: unknown;
           playbook_session_notes?: unknown;
         };
-        assessment?: Assessment | null;
         session?: WorkshopSessionScores | null;
       };
 
@@ -271,24 +261,9 @@ export function ContactBossWorkshopBody({
 
       const loadedSession = json.session;
       if (loadedSession?.answers) {
-        const ans = loadedSession.answers as Record<string, 0 | 1 | 2>;
-        setAssessment(null);
-        setMatrixAnswers(ans);
+        setMatrixAnswers(loadedSession.answers as Record<string, 0 | 1 | 2>);
       } else {
-        const latest = json.assessment;
-        if (latest) {
-          const ans = (latest.answers ?? {}) as Record<string, 0 | 1 | 2>;
-          setAssessment({
-            id: latest.id,
-            total_score: latest.total_score,
-            completed_at: latest.completed_at,
-            answers: ans,
-          });
-          setMatrixAnswers(ans);
-        } else {
-          setAssessment(null);
-          setMatrixAnswers({});
-        }
+        setMatrixAnswers({});
       }
 
       setLoading(false);
@@ -367,7 +342,6 @@ export function ContactBossWorkshopBody({
       });
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
-        assessment?: Assessment | null;
         session?: WorkshopSessionScores | null;
       };
 
@@ -378,12 +352,7 @@ export function ContactBossWorkshopBody({
       }
 
       if (json.session?.answers) {
-        setAssessment(null);
         setMatrixAnswers(json.session.answers);
-        if (savingScores) setScoresSaveState("saved");
-      } else if (json.assessment) {
-        setAssessment(json.assessment);
-        setMatrixAnswers(json.assessment.answers ?? {});
         if (savingScores) setScoresSaveState("saved");
       } else if (savingScores) {
         setScoresSaveState("error");
@@ -518,8 +487,8 @@ export function ContactBossWorkshopBody({
     if (variant !== "page") return;
     const prev = document.title;
     document.title = contact
-      ? `BOSS Score Premium — ${contact.full_name}`
-      : "BOSS Score Premium";
+      ? `Boss Pro — ${contact.full_name}`
+      : "Boss Pro";
     return () => {
       document.title = prev;
     };
@@ -569,18 +538,6 @@ export function ContactBossWorkshopBody({
           {sessionError}
         </p>
       )}
-      {assessment && !loading && !error && (
-        <section className="space-y-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Latest assessment</h2>
-          <p className="text-sm text-slate-700">
-            Completed {new Date(assessment.completed_at).toLocaleString()} • Score{" "}
-            <span className="font-semibold text-emerald-600">
-              {assessment.total_score} / 100
-            </span>
-          </p>
-        </section>
-      )}
-
       {showCharts && (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
@@ -717,7 +674,7 @@ export function ContactBossWorkshopBody({
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         leading={headerLeading}
-        title="BOSS Score Premium"
+        title="Boss Pro"
         descriptionPlacement="below"
         description={
           contact ? (

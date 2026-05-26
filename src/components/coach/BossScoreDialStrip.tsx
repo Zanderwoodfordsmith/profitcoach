@@ -114,7 +114,7 @@ function BossScoreHeroCard({
 }) {
   return (
     <DialCard
-      header="BOSS Score Premium"
+      header="Boss Pro"
       className={className}
       bodyClassName="flex justify-center px-7 py-8 sm:px-8 sm:py-9 md:px-9 md:py-10"
     >
@@ -122,7 +122,7 @@ function BossScoreHeroCard({
         <div className="flex h-[10.5rem] w-[10.5rem] flex-col items-center justify-center rounded-full border-2 border-dashed border-slate-200 bg-slate-50/80 text-center sm:h-[11.5rem] sm:w-[11.5rem] md:h-[13rem] md:w-[13rem]">
           <p className="text-sm font-semibold text-slate-700">Not started</p>
           <p className="mt-1 max-w-[8rem] text-xs text-slate-500">
-            Score playbooks together to build their Premium score.
+            Score playbooks together to build their Boss Pro score.
           </p>
         </div>
       ) : (
@@ -132,7 +132,7 @@ function BossScoreHeroCard({
           color={OVERALL_COLOR}
           centerPrimary={`${cappedTotal}`}
           centerSecondary="/ 100"
-          ariaLabel={`BOSS Score Premium ${cappedTotal} out of 100`}
+          ariaLabel={`Boss Pro ${cappedTotal} out of 100`}
         />
       )}
     </DialCard>

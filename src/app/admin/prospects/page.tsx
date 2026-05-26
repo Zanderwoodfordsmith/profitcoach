@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
@@ -156,6 +156,16 @@ export default function AdminProspectsPage() {
           ).values()
         )
       : coachOptionsFromList;
+
+  const coachSlugByCoachId = useMemo(
+    () =>
+      Object.fromEntries(
+        coaches
+          .map((coach) => [coach.id, coach.slug.trim()] as const)
+          .filter(([, slug]) => slug.length > 0)
+      ),
+    [coaches]
+  );
 
   const navigateToProspect = useCallback(
     (row: ProspectRow) => {
@@ -392,6 +402,7 @@ export default function AdminProspectsPage() {
         onUpdateProspect={handleUpdateProspect}
         onDelete={handleDeleteProspect}
         deletingId={deletingId}
+        coachSlugByCoachId={coachSlugByCoachId}
         emptyMessage="No prospects found for this selection."
       />
       </div>

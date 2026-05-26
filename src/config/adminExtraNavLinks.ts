@@ -30,19 +30,19 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Default route redirects to /assessment/BCA (13-question funnel)",
   },
   {
-    href: "/diagnostic",
-    label: "Legacy 50-q diagnostic",
-    hint: "Preserved full diagnostic for client retakes",
+    href: "/assessment-pro",
+    label: "Boss Pro assessment",
+    hint: "50-question Boss Pro; /diagnostic redirects here",
   },
   {
     href: "/join",
     label: "Program join",
-    hint: "Coach signup via program link",
+    hint: "Coach signup via program link (?key= from COACH_SIGNUP_SECRET)",
   },
   {
     href: "/signup",
     label: "Signup",
-    hint: "Profit Coach coach signup",
+    hint: "Profit Coach coach signup (?key= from COACH_SIGNUP_SECRET)",
   },
   {
     href: "/admin/client-success",

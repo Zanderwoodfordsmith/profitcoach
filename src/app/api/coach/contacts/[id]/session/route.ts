@@ -198,31 +198,6 @@ async function saveSessionAnswers(
   return { session: { answers, total_score }, error: null };
 }
 
-async function loadLegacyAssessmentSession(
-  contactId: string
-): Promise<SessionPayload | null> {
-  const { data: latest, error: assessError } = await supabaseAdmin
-    .from("assessments")
-    .select("total_score, answers")
-    .eq("contact_id", contactId)
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (assessError || !latest) return null;
-
-  const answers = normalizeAnswers(latest.answers);
-  if (!answers || Object.keys(answers).length === 0) return null;
-
-  return {
-    answers,
-    total_score:
-      typeof latest.total_score === "number"
-        ? latest.total_score
-        : getTotalScore(answers),
-  };
-}
-
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -260,9 +235,7 @@ export async function GET(
     );
   }
 
-  const session =
-    sessionFromAnswers(contact.session_answers) ??
-    (await loadLegacyAssessmentSession(contactId));
+  const session = sessionFromAnswers(contact.session_answers);
 
   return NextResponse.json({
     contact: {

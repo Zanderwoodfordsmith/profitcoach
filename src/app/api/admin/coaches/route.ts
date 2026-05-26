@@ -6,6 +6,11 @@ import {
   hasCalendarEmbed,
   isCalendarSyncReady,
 } from "@/lib/ghlCalendarSync";
+import {
+  resolveCommunityBio,
+  resolveDirectoryBio,
+  resolveDirectorySummary,
+} from "@/lib/profileBioFields";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -90,7 +95,7 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
     );
 
     let calendarEmbedMissing = false;
@@ -101,21 +106,21 @@ export async function GET(request: Request) {
     let accountBillingMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       calendarEmbedMissing = true;
       accountBillingMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       conferenceStatusMissing = true;
       accountBillingMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       webhookMissing = true;
       crmMissing = true;
@@ -135,7 +140,7 @@ export async function GET(request: Request) {
     let directoryMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, ladder_goal_level, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       directoryMissing = true;
     }
@@ -143,7 +148,7 @@ export async function GET(request: Request) {
     let goalLevelMissing = false;
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        "id, slug, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, created_at, disco_community_joined_on, coaching_income_reported_2024)"
       );
       goalLevelMissing = true;
       directoryMissing = true;
@@ -222,6 +227,12 @@ export async function GET(request: Request) {
       const id = row.id as string;
       const ach = achievementsByUser.get(id) ?? [];
       const currentLevel = deriveCurrentLevelId(ach);
+      const bioFields = {
+        bio: (prof?.bio as string | null) ?? null,
+        community_bio: (prof?.community_bio as string | null) ?? null,
+        directory_summary: (prof?.directory_summary as string | null) ?? null,
+        directory_bio: (prof?.directory_bio as string | null) ?? null,
+      };
       return {
         id,
         slug: row.slug as string,
@@ -278,7 +289,14 @@ export async function GET(request: Request) {
               crmLocationId: row.crm_location_id as string | null,
               calendarEmbedCode: row.calendar_embed_code as string | null,
               ghlCalendarId: row.ghl_calendar_id as string | null,
+              leadWebhookUrl: row.lead_webhook_url as string | null,
             }),
+        has_lead_webhook: webhookMissing
+          ? false
+          : Boolean((row.lead_webhook_url as string | null)?.trim()),
+        has_community_bio: Boolean(resolveCommunityBio(bioFields)),
+        has_directory_summary: Boolean(resolveDirectorySummary(bioFields)),
+        has_directory_bio: Boolean(resolveDirectoryBio(bioFields)),
         has_sales_robot_account: accountBillingMissing
           ? false
           : !!row.has_sales_robot_account,

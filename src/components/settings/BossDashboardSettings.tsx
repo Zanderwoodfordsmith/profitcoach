@@ -19,7 +19,6 @@ import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
-import { buildPersonalisedAssessmentLink } from "@/lib/assessmentContactParams";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -126,15 +125,6 @@ export function BossDashboardSettings({
   >(null);
   const [funnelSaveError, setFunnelSaveError] = useState<string | null>(null);
 
-  const [linkFirstName, setLinkFirstName] = useState("");
-  const [linkLastName, setLinkLastName] = useState("");
-  const [linkEmail, setLinkEmail] = useState("");
-  const [linkPhone, setLinkPhone] = useState("");
-  const [generatedAssessmentLink, setGeneratedAssessmentLink] = useState<
-    string | null
-  >(null);
-  const [linkGenerateError, setLinkGenerateError] = useState<string | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
 
   const calendarSyncStatus = useMemo(
@@ -142,9 +132,10 @@ export function BossDashboardSettings({
       getCalendarSyncStatus({
         crmLocationId,
         calendarEmbedCode,
+        leadWebhookUrl,
         audience: "coach",
       }),
-    [crmLocationId, calendarEmbedCode]
+    [crmLocationId, calendarEmbedCode, leadWebhookUrl]
   );
 
   const loadProfile = useCallback(async () => {
@@ -227,6 +218,14 @@ export function BossDashboardSettings({
   }, [router, impersonatingCoachId, variant]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read ?tab= from URL on coach settings
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "funnel" || tab === "profile" || tab === "workspace") {
+      setInternalTab(tab);
+    }
+  }, []);
+
+  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data bootstrap after async profile-role + coach profile fetches
     void loadProfile();
   }, [loadProfile]);
@@ -236,18 +235,6 @@ export function BossDashboardSettings({
       setAppOrigin(window.location.origin);
     }
   }, []);
-
-  const assessmentLinkExample = useMemo(() => {
-    const slug = coachSlug.trim();
-    if (!slug) return null;
-    return buildPersonalisedAssessmentLink({
-      coachSlug: slug,
-      firstName: "John",
-      lastName: "Jones",
-      email: "john@example.com",
-      origin: appOrigin,
-    });
-  }, [coachSlug, appOrigin]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -403,43 +390,6 @@ export function BossDashboardSettings({
     } else {
       setFunnelSaveMessage("error");
       setFunnelSaveError(body.error ?? "Save failed.");
-    }
-  }
-
-  function handleGenerateAssessmentLink() {
-    setLinkGenerateError(null);
-    setLinkCopied(false);
-    const slug = coachSlug.trim();
-    if (!slug) return;
-
-    const email = linkEmail.trim();
-    if (!email) {
-      setLinkGenerateError("Email is required to generate a personalised link.");
-      setGeneratedAssessmentLink(null);
-      return;
-    }
-
-    const origin = appOrigin;
-    setGeneratedAssessmentLink(
-      buildPersonalisedAssessmentLink({
-        coachSlug: slug,
-        firstName: linkFirstName,
-        lastName: linkLastName,
-        email,
-        phone: linkPhone,
-        origin,
-      })
-    );
-  }
-
-  async function handleCopyAssessmentLink() {
-    if (!generatedAssessmentLink) return;
-    try {
-      await navigator.clipboard.writeText(generatedAssessmentLink);
-      setLinkCopied(true);
-      window.setTimeout(() => setLinkCopied(false), 2000);
-    } catch {
-      setLinkGenerateError("Could not copy — select the link and copy manually.");
     }
   }
 
@@ -854,20 +804,7 @@ export function BossDashboardSettings({
           leadWebhookUrl={leadWebhookUrl}
           onLeadWebhookUrlChange={setLeadWebhookUrl}
           calendarSyncStatus={calendarSyncStatus}
-          linkFirstName={linkFirstName}
-          onLinkFirstNameChange={setLinkFirstName}
-          linkLastName={linkLastName}
-          onLinkLastNameChange={setLinkLastName}
-          linkEmail={linkEmail}
-          onLinkEmailChange={setLinkEmail}
-          linkPhone={linkPhone}
-          onLinkPhoneChange={setLinkPhone}
-          assessmentLinkExample={assessmentLinkExample}
-          generatedAssessmentLink={generatedAssessmentLink}
-          linkGenerateError={linkGenerateError}
-          linkCopied={linkCopied}
-          onGenerateAssessmentLink={handleGenerateAssessmentLink}
-          onCopyAssessmentLink={() => void handleCopyAssessmentLink()}
+          impersonatingCoachId={impersonatingCoachId}
           saving={funnelSaving}
           saveMessage={funnelSaveMessage}
           saveError={funnelSaveError}

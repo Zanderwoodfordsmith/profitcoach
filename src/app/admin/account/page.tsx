@@ -65,14 +65,14 @@ const bossProgrammeLinks = [
     hint: "Post-scorecard results experience.",
   },
   {
-    href: "/diagnostic/BCA",
-    label: "Legacy 50-q diagnostic",
-    hint: "Full diagnostic preserved for client retakes.",
+    href: "/assessment-pro/BCA",
+    label: "Boss Pro assessment",
+    hint: "50-question Boss Pro flow (direct link).",
   },
   {
-    href: "/diagnostic/BCA/thank-you?preview=1",
-    label: "Legacy diagnostic results",
-    hint: "ReportV3 results for 50-q diagnostic.",
+    href: "/assessment-pro/BCA/thank-you?preview=1",
+    label: "Boss Pro results",
+    hint: "ReportV3 results for Boss Pro assessment.",
   },
   {
     href: "/admin/prospects",

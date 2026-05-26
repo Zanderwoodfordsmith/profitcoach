@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createOutlineLine } from "@/lib/actionPlans/actionOutlineUtils";
 import { fromDatetimeLocalValue } from "@/lib/actionPlans/mappers";
+import { isMissingColumnError } from "@/lib/contactsSchemaSafeSelect";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const PROSPECT_FOLLOWUP_GROUP_TEXT = "Prospect follow-up";
@@ -52,7 +53,13 @@ export async function loadProspectNextActionsByCoach(
     .eq("done", false);
 
   if (error) {
-    console.error("loadProspectNextActionsByCoach:", error);
+    if (error.code === "42P01" || isMissingColumnError(error)) {
+      return {};
+    }
+    console.warn(
+      "loadProspectNextActionsByCoach:",
+      error.message ?? error.code ?? error
+    );
     return {};
   }
 

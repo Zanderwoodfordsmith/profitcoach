@@ -1,23 +1,29 @@
 "use client";
 
+import { AssessmentPersonalisedGreeting } from "@/components/scorecard/AssessmentPersonalisedGreeting";
 import { SmileyRatingScale } from "@/components/scorecard/SmileyRatingScale";
 import { SCORECARD_INTRO } from "@/lib/bossScorecardCopy";
 
 type ScorecardAssessmentIntroProps = {
   onStart: () => void;
   disabled?: boolean;
+  firstName?: string | null;
 };
 
 export function ScorecardAssessmentIntro({
   onStart,
   disabled = false,
+  firstName,
 }: ScorecardAssessmentIntroProps) {
   return (
     <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200 md:p-12 lg:p-14">
       <div className="mx-auto max-w-xl space-y-10 text-center md:space-y-12">
-        <p className="text-xl leading-relaxed text-slate-600 md:text-2xl md:leading-relaxed">
-          {SCORECARD_INTRO.subtitle}
-        </p>
+        <div className="space-y-2 md:space-y-2.5">
+          <AssessmentPersonalisedGreeting firstName={firstName} />
+          <p className="text-xl leading-relaxed text-slate-600 md:text-2xl md:leading-relaxed">
+            {SCORECARD_INTRO.subtitle}
+          </p>
+        </div>
 
         <div className="space-y-6 md:space-y-8">
           <p className="text-xl font-medium text-slate-800 md:text-[1.35rem]">

@@ -41,6 +41,7 @@ import {
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import {
   assessmentContactToSessionPayload,
+  getAssessmentProspectFirstName,
   parseAssessmentContactParams,
 } from "@/lib/assessmentContactParams";
 import { splitFullName } from "@/lib/splitFullName";
@@ -134,6 +135,12 @@ export default function ScorecardAssessmentPage({
   const [email, setEmail] = useState(urlContact.email ?? "");
   const [phone, setPhone] = useState(urlContact.phone ?? "");
   const [businessName, setBusinessName] = useState(urlContact.businessName ?? "");
+
+  const prospectFirstName = useMemo(() => {
+    const fromUrl = getAssessmentProspectFirstName(urlContact);
+    if (fromUrl) return fromUrl;
+    return splitFullName(fullName).first_name;
+  }, [urlContact, fullName]);
 
   const currentScreen = SCREENS[screenIndex] ?? SCREENS[0];
   const progress = getScorecardProgress(currentScreen.step);
@@ -472,6 +479,7 @@ export default function ScorecardAssessmentPage({
             <ScorecardAssessmentIntro
               onStart={advanceScreen}
               disabled={submitting || isGeneratingReport}
+              firstName={prospectFirstName}
             />
           ) : null}
 

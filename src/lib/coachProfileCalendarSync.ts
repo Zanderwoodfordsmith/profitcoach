@@ -9,12 +9,14 @@ type CoachCalendarRow = {
   crm_location_id?: string | null;
   calendar_embed_code?: string | null;
   ghl_calendar_id?: string | null;
+  lead_webhook_url?: string | null;
 };
 
 export function buildCoachCalendarSyncFields(coachRow: CoachCalendarRow | null) {
   const crmLocationId = coachRow?.crm_location_id ?? null;
   const calendarEmbedCode = coachRow?.calendar_embed_code ?? null;
   const ghlCalendarId = coachRow?.ghl_calendar_id ?? null;
+  const leadWebhookUrl = coachRow?.lead_webhook_url ?? null;
   const crmLocationConfigured = Boolean(crmLocationId?.trim());
 
   return {
@@ -22,6 +24,7 @@ export function buildCoachCalendarSyncFields(coachRow: CoachCalendarRow | null) 
       crmLocationId,
       calendarEmbedCode,
       ghlCalendarId,
+      leadWebhookUrl,
     }),
     crm_location_configured: crmLocationConfigured,
     has_calendar_embed: hasCalendarEmbed(calendarEmbedCode, ghlCalendarId),
@@ -29,6 +32,7 @@ export function buildCoachCalendarSyncFields(coachRow: CoachCalendarRow | null) 
       crmLocationId,
       calendarEmbedCode,
       ghlCalendarId,
+      leadWebhookUrl,
       audience: "coach",
     }),
   };

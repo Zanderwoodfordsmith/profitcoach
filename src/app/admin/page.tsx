@@ -31,7 +31,7 @@ import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
-const COACH_TABLE_SETTINGS_STORAGE_KEY = "admin-coaches-table-settings-v1";
+const COACH_TABLE_SETTINGS_STORAGE_KEY = "admin-coaches-table-settings-v2";
 
 function ladderLevelShortName(id: string | null | undefined): string | null {
   if (!id?.trim()) return null;
@@ -51,6 +51,53 @@ function formatGoalDateDisplay(iso: string): string {
   const t = Date.parse(`${iso}T12:00:00`);
   if (Number.isNaN(t)) return iso;
   return formatDateDisplay(new Date(t));
+}
+
+function SetupCompleteCell({
+  complete,
+  label,
+  detail,
+  onClick,
+}: {
+  complete: boolean;
+  label: string;
+  detail?: string | null;
+  onClick?: () => void;
+}) {
+  const title = complete
+    ? detail
+      ? `${label}: set — ${detail}`
+      : `${label}: set`
+    : `${label}: not set`;
+  const indicator = complete ? (
+    <span className="text-sm font-semibold text-emerald-600" aria-hidden>
+      ✓
+    </span>
+  ) : (
+    <span className="text-sm text-slate-300" aria-hidden>
+      —
+    </span>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        title={title}
+        aria-label={title}
+        className="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center rounded hover:bg-slate-100"
+      >
+        {indicator}
+      </button>
+    );
+  }
+
+  return (
+    <span title={title} aria-label={title} className="inline-flex min-h-[1.75rem] min-w-[1.75rem] items-center justify-center">
+      {indicator}
+    </span>
+  );
 }
 
 function ReadonlyLadderLevelCell({
@@ -95,6 +142,10 @@ type CoachRow = {
   crm_location_id: string | null;
   has_calendar_embed: boolean;
   calendar_sync_ready: boolean;
+  has_lead_webhook: boolean;
+  has_community_bio: boolean;
+  has_directory_summary: boolean;
+  has_directory_bio: boolean;
   has_sales_robot_account: boolean;
   sales_robot_active_campaigns: number | null;
   sales_robot_paying_accounts: number | null;
@@ -131,7 +182,11 @@ type CoachTableColumnVisibility = {
   payingAccounts: boolean;
   profitCoachEmail: boolean;
   recurringPayment: boolean;
+  calendarEmbed: boolean;
   leadWebhook: boolean;
+  communityBio: boolean;
+  directorySummary: boolean;
+  directoryBio: boolean;
   landing: boolean;
   viewAs: boolean;
 };
@@ -165,37 +220,78 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   payingAccounts: true,
   profitCoachEmail: true,
   recurringPayment: true,
+  calendarEmbed: true,
   leadWebhook: true,
+  communityBio: true,
+  directorySummary: true,
+  directoryBio: true,
   landing: true,
   viewAs: true,
 };
 
-const COACH_TABLE_COLUMN_OPTIONS: Array<{
+type CoachColumnCategory =
+  | "member"
+  | "ladder"
+  | "directory"
+  | "integrations"
+  | "billing"
+  | "actions";
+
+type CoachColumnOption = {
   key: keyof CoachTableColumnVisibility;
   label: string;
+  category: CoachColumnCategory;
+};
+
+const COACH_TABLE_COLUMN_GROUPS: Array<{
+  id: CoachColumnCategory;
+  label: string;
 }> = [
-  { key: "slug", label: "Slug" },
-  { key: "joinDate", label: "Join date" },
-  { key: "memberFor", label: "Member for" },
-  { key: "goalLevel", label: "Goal" },
-  { key: "clients", label: "Clients" },
-  { key: "linkedinProfile", label: "LinkedIn" },
-  { key: "directory", label: "Directory" },
-  { key: "certification", label: "Certification" },
-  { key: "conference", label: "Conference" },
-  { key: "currentLevel", label: "Current level" },
-  { key: "goalBy", label: "Goal by" },
-  { key: "lastLogin", label: "Last login" },
-  { key: "crm", label: "CRM" },
-  { key: "salesRobot", label: "Sales Robot" },
-  { key: "activeCampaigns", label: "Active campaigns" },
-  { key: "payingAccounts", label: "Paying accounts" },
-  { key: "profitCoachEmail", label: "PC email" },
-  { key: "recurringPayment", label: "Billing" },
-  { key: "leadWebhook", label: "Lead webhook" },
-  { key: "landing", label: "Landing / preview" },
-  { key: "viewAs", label: "View as coach" },
+  { id: "member", label: "Member" },
+  { id: "ladder", label: "Ladder & goals" },
+  { id: "directory", label: "Directory & profile" },
+  { id: "integrations", label: "Integrations & setup" },
+  { id: "billing", label: "Payment & accounts" },
+  { id: "actions", label: "Actions" },
 ];
+
+const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
+  { key: "slug", label: "Slug", category: "member" },
+  { key: "joinDate", label: "Join date", category: "member" },
+  { key: "memberFor", label: "Member for", category: "member" },
+  { key: "clients", label: "Clients", category: "member" },
+  { key: "linkedinProfile", label: "LinkedIn", category: "member" },
+  { key: "conference", label: "Conference", category: "member" },
+  { key: "lastLogin", label: "Last login", category: "member" },
+  { key: "goalLevel", label: "Goal", category: "ladder" },
+  { key: "currentLevel", label: "Current level", category: "ladder" },
+  { key: "goalBy", label: "Goal by", category: "ladder" },
+  { key: "directory", label: "Directory", category: "directory" },
+  { key: "certification", label: "Certification", category: "directory" },
+  { key: "communityBio", label: "Community bio", category: "directory" },
+  { key: "directorySummary", label: "Directory summary", category: "directory" },
+  { key: "directoryBio", label: "Directory bio", category: "directory" },
+  { key: "crm", label: "CRM", category: "integrations" },
+  { key: "calendarEmbed", label: "Calendar embed", category: "integrations" },
+  { key: "leadWebhook", label: "Lead webhook", category: "integrations" },
+  { key: "salesRobot", label: "Sales Robot", category: "billing" },
+  { key: "activeCampaigns", label: "Active campaigns", category: "billing" },
+  { key: "payingAccounts", label: "Paying accounts", category: "billing" },
+  { key: "profitCoachEmail", label: "PC email", category: "billing" },
+  { key: "recurringPayment", label: "Billing", category: "billing" },
+  { key: "landing", label: "Landing / preview", category: "actions" },
+  { key: "viewAs", label: "View as coach", category: "actions" },
+];
+
+function coachColumnsForCategory(
+  options: CoachColumnOption[],
+  category: CoachColumnCategory,
+  order: Array<keyof CoachTableColumnVisibility>
+): CoachColumnOption[] {
+  return options
+    .filter((col) => col.category === category)
+    .sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key));
+}
 
 const COACH_TABLE_COLUMN_OPTION_BY_KEY = new Map(
   COACH_TABLE_COLUMN_OPTIONS.map((option) => [option.key, option] as const)
@@ -468,9 +564,10 @@ export default function AdminPage() {
       getCalendarSyncStatus({
         crmLocationId: crmLocationIdValue,
         calendarEmbedConfigured: webhookEditHasCalendarEmbed,
+        leadWebhookUrl: webhookEditValue,
         audience: "admin",
       }),
-    [crmLocationIdValue, webhookEditHasCalendarEmbed]
+    [crmLocationIdValue, webhookEditHasCalendarEmbed, webhookEditValue]
   );
 
   useEffect(() => {
@@ -689,7 +786,10 @@ export default function AdminPage() {
                   ? { ladder_goal_target_date: body.ladder_goal_target_date }
                   : {}),
                 ...(body.lead_webhook_url !== undefined
-                  ? { lead_webhook_url: body.lead_webhook_url }
+                  ? {
+                      lead_webhook_url: body.lead_webhook_url,
+                      has_lead_webhook: Boolean(body.lead_webhook_url?.trim()),
+                    }
                   : {}),
                 ...(body.crm_profile_name !== undefined
                   ? { crm_profile_name: body.crm_profile_name }
@@ -743,9 +843,7 @@ export default function AdminPage() {
   const normalizedCoachSearchTerm = coachSearchTerm.trim().toLowerCase();
   const orderedColumnOptions = columnOrder
     .map((key) => COACH_TABLE_COLUMN_OPTION_BY_KEY.get(key))
-    .filter((option): option is { key: keyof CoachTableColumnVisibility; label: string } =>
-      Boolean(option)
-    );
+    .filter((option): option is CoachColumnOption => Boolean(option));
   const shownColumnOptions = orderedColumnOptions.filter(
     ({ key }) => columnVisibility[key]
   );
@@ -779,6 +877,49 @@ export default function AdminPage() {
       next.splice(to, 0, moved);
       return next;
     });
+  }
+
+  function renderColumnMenuItem({ key, label }: CoachColumnOption) {
+    return (
+      <li
+        key={key}
+        role="none"
+        draggable
+        onDragStart={(e) => {
+          setDraggingColumnKey(key);
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", key);
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const droppedKey =
+            (e.dataTransfer.getData("text/plain") as keyof CoachTableColumnVisibility) ||
+            draggingColumnKey;
+          if (droppedKey) moveColumnInOrder(droppedKey, key);
+          setDraggingColumnKey(null);
+        }}
+        onDragEnd={() => setDraggingColumnKey(null)}
+        className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
+      >
+        <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+          <GripVertical className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+          <input
+            type="checkbox"
+            role="menuitemcheckbox"
+            className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+            checked={columnVisibility[key]}
+            onChange={(e) =>
+              setColumnVisibility((prev) => ({
+                ...prev,
+                [key]: e.target.checked,
+              }))
+            }
+          />
+          <span>{label}</span>
+        </div>
+      </li>
+    );
   }
 
   function openCoachEditModal(coach: CoachRow) {
@@ -1074,9 +1215,54 @@ export default function AdminPage() {
         </th>
       );
     }
+    if (key === "calendarEmbed") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-16 bg-slate-50 px-1 py-2 text-center"
+          title="Calendar embed configured"
+        >
+          Cal.
+        </th>
+      );
+    }
     if (key === "leadWebhook") {
       return (
-        <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">Lead webhook</th>
+        <th
+          className="sticky top-0 z-10 w-16 bg-slate-50 px-1 py-2 text-center"
+          title="Lead webhook URL configured"
+        >
+          Webhook
+        </th>
+      );
+    }
+    if (key === "communityBio") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-16 bg-slate-50 px-1 py-2 text-center"
+          title="Community bio filled in"
+        >
+          Comm. bio
+        </th>
+      );
+    }
+    if (key === "directorySummary") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-16 bg-slate-50 px-1 py-2 text-center"
+          title="Directory summary filled in"
+        >
+          Dir. sum.
+        </th>
+      );
+    }
+    if (key === "directoryBio") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-16 bg-slate-50 px-1 py-2 text-center"
+          title="Full directory bio filled in"
+        >
+          Dir. bio
+        </th>
       );
     }
     if (key === "landing") {
@@ -1415,25 +1601,55 @@ export default function AdminPage() {
         </td>
       );
     }
+    if (key === "calendarEmbed") {
+      return (
+        <td className="px-1 py-2 text-center align-middle">
+          <SetupCompleteCell
+            complete={coach.has_calendar_embed}
+            label="Calendar embed"
+          />
+        </td>
+      );
+    }
     if (key === "leadWebhook") {
       return (
-        <td className="max-w-[14rem] px-2 py-2 align-middle">
-          <button
-            type="button"
+        <td className="px-1 py-2 text-center align-middle">
+          <SetupCompleteCell
+            complete={coach.has_lead_webhook}
+            label="Lead webhook"
+            detail={coach.lead_webhook_url}
             onClick={() => openCoachEditModal(coach)}
-            className="block w-full max-w-[14rem] truncate rounded px-1 py-0.5 text-left text-xs underline-offset-2 hover:bg-slate-100 hover:underline"
-            title={
-              coach.lead_webhook_url
-                ? `Edit lead webhook (${coach.lead_webhook_url})`
-                : "Set lead webhook URL"
-            }
-          >
-            {coach.lead_webhook_url ? (
-              <span className="text-slate-700">{coach.lead_webhook_url}</span>
-            ) : (
-              <span className="text-slate-400">Not set</span>
-            )}
-          </button>
+          />
+        </td>
+      );
+    }
+    if (key === "communityBio") {
+      return (
+        <td className="px-1 py-2 text-center align-middle">
+          <SetupCompleteCell
+            complete={coach.has_community_bio}
+            label="Community bio"
+          />
+        </td>
+      );
+    }
+    if (key === "directorySummary") {
+      return (
+        <td className="px-1 py-2 text-center align-middle">
+          <SetupCompleteCell
+            complete={coach.has_directory_summary}
+            label="Directory summary"
+          />
+        </td>
+      );
+    }
+    if (key === "directoryBio") {
+      return (
+        <td className="px-1 py-2 text-center align-middle">
+          <SetupCompleteCell
+            complete={coach.has_directory_bio}
+            label="Directory bio"
+          />
         </td>
       );
     }
@@ -1893,93 +2109,30 @@ export default function AdminPage() {
                     Shown
                   </p>
                   <ul className="space-y-0.5 px-2">
-                    {shownColumnOptions.map(({ key, label }) => (
-                      <li
-                        key={key}
-                        role="none"
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggingColumnKey(key);
-                          e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("text/plain", key);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const droppedKey =
-                            (e.dataTransfer.getData("text/plain") as keyof CoachTableColumnVisibility) ||
-                            draggingColumnKey;
-                          if (droppedKey) moveColumnInOrder(droppedKey, key);
-                          setDraggingColumnKey(null);
-                        }}
-                        onDragEnd={() => setDraggingColumnKey(null)}
-                        className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                      >
-                        <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                          <GripVertical className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-                          <input
-                            type="checkbox"
-                            role="menuitemcheckbox"
-                            className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                            checked={columnVisibility[key]}
-                            onChange={(e) =>
-                              setColumnVisibility((prev) => ({
-                                ...prev,
-                                [key]: e.target.checked,
-                              }))
-                            }
-                          />
-                          <span>{label}</span>
-                        </div>
-                      </li>
-                    ))}
+                    {shownColumnOptions.map(renderColumnMenuItem)}
                   </ul>
                   <div className="my-2 border-t border-slate-200" />
                   <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Hidden
                   </p>
-                  <ul className="space-y-0.5 px-2">
-                    {hiddenColumnOptions.map(({ key, label }) => (
-                      <li
-                        key={key}
-                        role="none"
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggingColumnKey(key);
-                          e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("text/plain", key);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const droppedKey =
-                            (e.dataTransfer.getData("text/plain") as keyof CoachTableColumnVisibility) ||
-                            draggingColumnKey;
-                          if (droppedKey) moveColumnInOrder(droppedKey, key);
-                          setDraggingColumnKey(null);
-                        }}
-                        onDragEnd={() => setDraggingColumnKey(null)}
-                        className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                      >
-                        <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                          <GripVertical className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-                          <input
-                            type="checkbox"
-                            role="menuitemcheckbox"
-                            className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                            checked={columnVisibility[key]}
-                            onChange={(e) =>
-                              setColumnVisibility((prev) => ({
-                                ...prev,
-                                [key]: e.target.checked,
-                              }))
-                            }
-                          />
-                          <span>{label}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  {COACH_TABLE_COLUMN_GROUPS.map((group) => {
+                    const items = coachColumnsForCategory(
+                      hiddenColumnOptions,
+                      group.id,
+                      columnOrder
+                    );
+                    if (items.length === 0) return null;
+                    return (
+                      <Fragment key={group.id}>
+                        <p className="px-3 pt-2 pb-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-slate-400">
+                          {group.label}
+                        </p>
+                        <ul className="space-y-0.5 px-2">
+                          {items.map(renderColumnMenuItem)}
+                        </ul>
+                      </Fragment>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>

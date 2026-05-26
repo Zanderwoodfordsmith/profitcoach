@@ -9,6 +9,7 @@ export type CalendarSyncStatus = {
   ready: boolean;
   hasCrmLocation: boolean;
   hasCalendarEmbed: boolean;
+  hasLeadWebhook: boolean;
   tone: CalendarSyncStatusTone;
   message: string;
 };
@@ -52,24 +53,50 @@ export function hasCalendarEmbed(
   return Boolean(extractGhlCalendarIdFromEmbed(calendarEmbedCode));
 }
 
+export function hasLeadWebhookUrl(
+  leadWebhookUrl: string | null | undefined
+): boolean {
+  const trimmed = leadWebhookUrl?.trim();
+  return Boolean(trimmed && /^https?:\/\//i.test(trimmed));
+}
+
+function formatMissingList(items: string[]): string {
+  if (items.length === 0) return "";
+  if (items.length === 1) return items[0]!;
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
+}
+
+function missingCrmSetupLabels(input: {
+  hasCrmLocation: boolean;
+  hasCalendarEmbed: boolean;
+  hasLeadWebhook: boolean;
+}): string[] {
+  const missing: string[] = [];
+  if (!input.hasCrmLocation) missing.push("CRM location ID");
+  if (!input.hasCalendarEmbed) missing.push("calendar embed");
+  if (!input.hasLeadWebhook) missing.push("lead webhook URL");
+  return missing;
+}
+
 export function isCalendarSyncReady(input: {
   crmLocationId?: string | null;
   crmLocationConfigured?: boolean;
   calendarEmbedCode?: string | null;
   ghlCalendarId?: string | null;
   calendarEmbedConfigured?: boolean;
+  leadWebhookUrl?: string | null;
 }): boolean {
   const hasCrmLocation =
     Boolean(normalizeCrmLocationId(input.crmLocationId ?? "")) ||
     !!input.crmLocationConfigured;
-  return (
-    hasCrmLocation &&
-    hasCalendarEmbed(
-      input.calendarEmbedCode,
-      input.ghlCalendarId,
-      input.calendarEmbedConfigured
-    )
+  const hasCalendarEmbedFlag = hasCalendarEmbed(
+    input.calendarEmbedCode,
+    input.ghlCalendarId,
+    input.calendarEmbedConfigured
   );
+  const hasLeadWebhook = hasLeadWebhookUrl(input.leadWebhookUrl);
+  return hasCrmLocation && hasCalendarEmbedFlag && hasLeadWebhook;
 }
 
 export function getCalendarSyncStatus(input: {
@@ -78,6 +105,7 @@ export function getCalendarSyncStatus(input: {
   calendarEmbedCode?: string | null;
   ghlCalendarId?: string | null;
   calendarEmbedConfigured?: boolean;
+  leadWebhookUrl?: string | null;
   /** Coach-facing copy omits admin-only steps. */
   audience?: "admin" | "coach";
 }): CalendarSyncStatus {
@@ -90,44 +118,39 @@ export function getCalendarSyncStatus(input: {
     input.ghlCalendarId,
     input.calendarEmbedConfigured
   );
-  const ready = hasCrmLocation && hasCalendarEmbedFlag;
+  const hasLeadWebhook = hasLeadWebhookUrl(input.leadWebhookUrl);
+  const ready = hasCrmLocation && hasCalendarEmbedFlag && hasLeadWebhook;
+  const missing = missingCrmSetupLabels({
+    hasCrmLocation,
+    hasCalendarEmbed: hasCalendarEmbedFlag,
+    hasLeadWebhook,
+  });
 
   if (ready) {
     return {
       ready: true,
       hasCrmLocation,
       hasCalendarEmbed: hasCalendarEmbedFlag,
+      hasLeadWebhook,
       tone: "success",
       message:
         audience === "coach"
-          ? "Calendar linked — bookings sync to your prospect list."
-          : "Calendar linked — bookings sync to the prospect list.",
+          ? "CRM, calendar, and lead webhook connected — bookings and leads sync to your prospect list."
+          : "CRM, calendar, and lead webhook connected — bookings and leads sync to the prospect list.",
     };
   }
 
-  if (hasCrmLocation && !hasCalendarEmbedFlag) {
+  if (missing.length === 3) {
     return {
       ready: false,
       hasCrmLocation,
       hasCalendarEmbed: hasCalendarEmbedFlag,
-      tone: "warning",
+      hasLeadWebhook,
+      tone: "neutral",
       message:
         audience === "coach"
-          ? "CRM location is linked. Paste your calendar embed below to finish setup."
-          : "CRM location set. Coach still needs to paste their calendar embed in settings.",
-    };
-  }
-
-  if (!hasCrmLocation && hasCalendarEmbedFlag) {
-    return {
-      ready: false,
-      hasCrmLocation,
-      hasCalendarEmbed: hasCalendarEmbedFlag,
-      tone: "warning",
-      message:
-        audience === "coach"
-          ? "Calendar embed saved. Booking sync starts once admin links your CRM location."
-          : "Calendar embed saved. Add CRM location ID here to enable booking sync.",
+          ? "Add CRM location ID, calendar embed, and lead webhook URL to finish setup."
+          : "Add CRM location ID, calendar embed, and lead webhook URL to finish setup.",
     };
   }
 
@@ -135,10 +158,8 @@ export function getCalendarSyncStatus(input: {
     ready: false,
     hasCrmLocation,
     hasCalendarEmbed: hasCalendarEmbedFlag,
-    tone: "neutral",
-    message:
-      audience === "coach"
-        ? "Paste your calendar embed to show booking on scorecard results."
-        : "Add CRM location ID and ask the coach to paste their calendar embed.",
+    hasLeadWebhook,
+    tone: "warning",
+    message: `Still needed: ${formatMissingList(missing)}.`,
   };
 }

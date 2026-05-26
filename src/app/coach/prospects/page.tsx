@@ -2,8 +2,6 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { enrichProspectRows } from "@/lib/loadProspectTableRows";
-import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -37,6 +35,7 @@ export default function CoachProspectsPage() {
   const [newBusinessName, setNewBusinessName] = useState("");
   const [sendInvite, setSendInvite] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [coachSlug, setCoachSlug] = useState<string | null>(null);
   const pageHeaderRef = useRef<HTMLDivElement>(null);
   const [pageHeaderHeight, setPageHeaderHeight] = useState(0);
 
@@ -95,81 +94,42 @@ export default function CoachProspectsPage() {
       setUserId(user.id);
       setEffectiveCoachId(effectiveId);
 
-      const [{ data: contactsData, error: contactsError }, { data: coachRow }] =
-        await Promise.all([
-          selectContactsWithOptionalPhone<{
-            id: string;
-            full_name: string;
-            email: string | null;
-            business_name: string | null;
-            job_title: string | null;
-            prospect_status: string | null;
-            phone: string | null;
-            crm_contact_id: string | null;
-            type: string;
-            created_at: string;
-          }>(
-            async (columns) =>
-              supabaseClient
-                .from("contacts")
-                .select(columns)
-                .eq("coach_id", effectiveId)
-                .eq("type", "prospect")
-                .order("created_at", { ascending: false }),
-            "id, full_name, email, business_name, job_title, prospect_status, type, created_at",
-            ["crm_contact_id"]
-          ),
-          supabaseClient
-            .from("coaches")
-            .select("crm_location_id")
-            .eq("id", effectiveId)
-            .maybeSingle(),
-        ]);
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
 
-      const crmLocationId =
-        ((coachRow as { crm_location_id?: string | null } | null)
-          ?.crm_location_id as string | null) ?? null;
+      if (!session?.access_token) {
+        router.replace("/login");
+        return;
+      }
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${session.access_token}`,
+      };
+      if (roleBody.role === "admin" && impersonatingCoachId) {
+        headers["x-impersonate-coach-id"] = impersonatingCoachId;
+      }
+
+      const res = await fetch("/api/coach/prospects", { headers });
+      const body = (await res.json().catch(() => ({}))) as {
+        prospects?: ProspectRow[];
+        coachSlug?: string | null;
+        error?: string;
+      };
 
       if (cancelled) return;
 
-      if (contactsError) {
-        console.error("coach/prospects contacts:", contactsError);
-        setError("Unable to load prospects.");
+      if (!res.ok) {
+        console.error("coach/prospects:", body.error);
+        setError(body.error ?? "Unable to load prospects.");
         setLoading(false);
         return;
       }
 
-      try {
-        const mapped = await enrichProspectRows(
-          supabaseClient,
-          contactsData.map((c) => ({
-            id: c.id,
-            full_name: c.full_name,
-            job_title: c.job_title ?? null,
-            prospect_status: c.prospect_status ?? null,
-            email: c.email ?? null,
-            business_name: c.business_name ?? null,
-            phone: c.phone ?? null,
-            type: c.type ?? "prospect",
-            coach_id: effectiveId,
-            crm_contact_id: c.crm_contact_id ?? null,
-            crm_location_id: crmLocationId,
-            created_at: c.created_at ?? null,
-          }))
-        );
-
-        if (!cancelled) {
-          setProspects(mapped);
-        }
-      } catch (err) {
-        console.error("coach/prospects enrich:", err);
-        if (!cancelled) {
-          setError("Unable to load prospects.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+      if (!cancelled) {
+        setProspects(body.prospects ?? []);
+        setCoachSlug(body.coachSlug ?? null);
+        setLoading(false);
       }
       return;
     }
@@ -418,6 +378,7 @@ export default function CoachProspectsPage() {
         onUpdateProspect={handleUpdateProspect}
         onDelete={handleDeleteProspect}
         deletingId={deletingId}
+        coachSlug={coachSlug}
         emptyMessage="No prospects yet. Add one below or share your assessment link."
       />
       </div>

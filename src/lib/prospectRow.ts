@@ -17,11 +17,11 @@ export type ProspectRow = {
   coach_id?: string;
   coach_name?: string | null;
   coach_business_name?: string | null;
-  /** Area scorecard (BOSS Score) — 0–100%. */
+  /** Area scorecard (Boss) — 0–100%. */
   boss_score: number | null;
   boss_score_at: string | null;
   boss_score_report_token: string | null;
-  /** Full playbook grid (BOSS Score Premium) — 0–100. */
+  /** Full playbook grid (Boss Pro) — 0–100. */
   boss_score_premium: number | null;
   boss_score_premium_at: string | null;
   boss_score_premium_source: BossScorePremiumSource | null;
