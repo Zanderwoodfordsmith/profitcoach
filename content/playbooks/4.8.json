@@ -2,57 +2,57 @@
   "ref": "4.8",
   "level": 4,
   "area": 8,
-  "name": "Management",
+  "name": "AI & Automation",
   "subtitle": "Level 4 · Overseer · Infrastructure & Systems",
-  "whatThisIs": "Management is how you move from doing everything yourself to having other people execute without constant oversight. It is the difference between delegation that fails and delegation that frees you up to work on higher-level problems.\n\nMost owners confuse leadership with management. Leadership sets direction. Management ensures execution. Without structured management systems, your team becomes dependent on you for every decision. They wait for your approval, your guidance, your permission. You become the bottleneck, not the catalyst.\n\nThis playbook builds the infrastructure that translates your strategy into daily discipline — clear authority lines, visible accountability, and managers who can run their areas without you having to watch over them.",
+  "whatThisIs": "AI and automation are how you get your time back. Not by working faster — by working less on things that can run without you. When you are spending hours every week on repetitive tasks that a computer could handle in minutes, you are not running a business. You are being run by it.\n\nThis playbook is about intelligent leverage. Finding the tasks that consume time through repetition, then using technology to handle them automatically. The goal is not to become a tech expert. It is to free up your capacity for the work that actually needs your brain.\n\nThis is your first step into building systems that scale without adding people. It is not about complex enterprise software. It is about simple tools and workflows that take work off your plate this week.",
   "whatItLooksLike": {
     "broken": {
       "emoji": "🔴",
       "label": "When this is broken",
-      "content": "You are still making most decisions because no one else has clear authority to act. Your team checks with you constantly, even on things they should handle themselves. Performance problems drag on for weeks because there is no clear accountability system. When you take a week off, everything slows down or stops until you get back."
+      "content": "You spend hours every week doing the same tasks over and over. Data entry, sending follow-up emails, updating spreadsheets, creating reports — work that feels necessary but leaves you exhausted and behind. You know technology could help but you do not know where to start. Every manual process is a bottleneck with your name on it."
     },
     "ok": {
       "emoji": "🟠",
       "label": "When this is OK",
-      "content": "You have some management structure but it is inconsistent. Some areas run smoothly when the right person is there, others fall apart when they are not. Decision-making authority is unclear — people sometimes step up, sometimes wait for permission. You have tried accountability systems but they fade away when other priorities take over."
+      "content": "You have tried a few automation tools but they are not connected to each other. Some things run automatically, others still require your input. You can see the potential but the setup feels overwhelming. You are saving some time but not as much as you hoped, and maintaining the automations sometimes feels like more work than doing it manually."
     },
     "working": {
       "emoji": "🟢",
       "label": "When this is working",
-      "content": "Every area of the business has a clear owner who can make decisions within their scope without asking you. Performance issues are addressed quickly and consistently through regular management rhythms. Your KPIs are visible to everyone and reviewed consistently. People know what they are accountable for and when they will be measured. You can step away for a week and things actually improve while you are gone."
+      "content": "Routine tasks happen without your involvement. Lead enquiries get auto-responses and enter your CRM. Reports generate automatically. Follow-up sequences run based on customer behaviour. You focus on strategy, relationships, and growth while the repetitive work handles itself. Technology amplifies your impact instead of consuming your time."
     }
   },
   "thingsToThinkAbout": [
-    "Is your structure actually scalable or just names on a chart? Most org charts are wishful thinking — they show what you want, not what actually works. Real structure means clear lines of authority where people can make decisions without checking up the chain. If everything still comes back to you, the structure is decoration, not function.",
-    "Do your managers know what decisions they can make? The biggest bottleneck in growing businesses is unclear decision authority. People wait for permission they do not need and make decisions they should not be making. A simple decision authority matrix — who decides what, when, and within what limits — transforms how fast things move.",
-    "Would your performance problems be obvious to an outsider? If someone walked into your business today, could they tell within an hour who is performing and who is not? Visible accountability means the numbers, the standards, and the gaps are clear to everyone. No surprises, no politics, just facts.",
-    "Are you developing managers or just promoting doers? Your best technician is rarely your best manager. Management is a distinct skill set — setting expectations, running meetings, having difficult conversations, measuring outcomes. If you promote people without developing these capabilities, you lose a great doer and gain a mediocre manager.",
-    "Do your managers have skin in the game? If your managers are not measured on the outcomes they control, they will manage activities instead of results. The right KPIs align what they focus on with what the business actually needs from their area."
+    "Where do you spend time on things a computer could do better? Map out your typical week. How many hours go to data entry, sending routine emails, updating records, or generating reports? Every manual, repetitive task is a candidate for automation. Start with the time sinks, not the nice-to-haves.",
+    "What client data lives in your head or scattered across different places? If customer information is stored in emails, spreadsheets, and your memory, you are creating work for yourself every time you need to find something. A proper CRM centralises everything so the system remembers what you used to have to recall.",
+    "Which reports do you create manually every week or month? Financial summaries, sales reports, customer updates — if you are pulling numbers from different places and formatting them by hand, you are doing work a dashboard should handle. Automated reporting gives you visibility without the effort.",
+    "What content or analysis could AI help you create faster? Writing proposals, analysing feedback, creating social media posts, answering common questions — AI tools can handle first drafts, research, and routine analysis. You review and refine instead of starting from scratch every time.",
+    "Which workflows require you to be the connection point? If every process needs your input to move to the next stage, you become the bottleneck. Look for handoffs where one system can trigger the next without waiting for you to remember to do something."
   ],
   "quickWins": [
-    "This week: List every decision that came to you yesterday that someone else should have been able to make. Pick the top three and document who should make them going forward.",
-    "This week: Book 15 minutes with each of your key people. Ask them: \"What decisions are you waiting for permission to make?\" The answers will surprise you.",
-    "This week: Pick one area where performance is unclear. Define one simple metric that would make success visible to everyone. Start tracking it this week."
+    "This week: List every task you did this week that felt repetitive or mechanical. Pick the one that takes the most time and research one automation tool that could handle it.",
+    "This week: Set up automatic responses for common enquiries. If people email you the same questions, create template responses that send immediately when they contact you.",
+    "This week: Export your contact data from wherever it lives now and put it all in one spreadsheet. Even if you do nothing else, centralising the data is the first step toward a proper CRM."
   ],
   "relatedPlaybooks": [
+    {
+      "ref": "2.3",
+      "description": ""
+    },
     {
       "ref": "3.8",
       "description": ""
     },
     {
-      "ref": "4.9",
+      "ref": "2.0",
       "description": ""
     },
     {
-      "ref": "4.3",
+      "ref": "1.8",
       "description": ""
     },
     {
-      "ref": "3.9",
-      "description": ""
-    },
-    {
-      "ref": "4.7",
+      "ref": "2.5",
       "description": ""
     }
   ],
@@ -64,149 +64,173 @@
       "actions": [
         {
           "number": 1,
-          "title": "Management Layer Map",
-          "description": "Define the structure that actually works at your size and stage. Not the ideal future state, but the practical management layers you need right now to get decisions made without everything coming back to you.",
+          "title": "Task & Time Audit",
+          "description": "Map exactly where your time goes on manual, repetitive work. Identify the highest-impact automation opportunities based on time saved and effort to implement.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Define the management structure your business needs right now - not the org chart you'll need in five years. This is about getting clear on who reports to whom, who makes which decisions, and where the gaps are. The output is a simple map showing your actual management layers, who sits in them, and what each layer is responsible for.\n\nMost businesses between £200K and £5M need 2-3 management layers at most. More than that creates bureaucracy. Fewer than that means everything comes back to you."
+              "content": "Map exactly where your time goes on manual, repetitive work and identify the highest-impact automation opportunities based on time saved and effort to implement. This is similar to the Time & Energy audit (2.0) but focused specifically on finding tasks that technology can handle instead of you."
             },
             {
               "title": "Why It Matters",
-              "content": "Without a clear management structure, every decision, every problem, and every question flows to one person: you. That works at £200K. It breaks at £500K. It's completely unsustainable at £1M+. A management layer map shows you what structure you actually need so you can stop being the answer to every question and start building a business that runs without you in the middle of everything."
+              "content": "Automation works best when you automate the right things. Most businesses either automate nothing (because it feels overwhelming) or automate something complex and impressive that saves 20 minutes per month. The biggest wins are usually the boring, repetitive tasks you do every day without thinking about them. This audit identifies those high-frequency, low-value tasks so you automate for maximum impact."
             },
             {
               "title": "How to Use This",
-              "content": "Grab a blank sheet of paper or whiteboard. Work through the checklist below. Be honest about how things actually work, not how you wish they worked.\n\n---"
+              "content": "List your recurring tasks, score them on automation potential, and prioritise the best candidates.\n\n---"
             },
             {
-              "title": "Management Layer Map Checklist",
-              "content": "- [ ] **List every person in the business** - Include yourself, full-time, part-time, contractors, and freelancers. Everyone who does work for the business.\n- [ ] **Draw who actually reports to whom right now** - Not the official structure. The real one. Who do people actually go to when they need a decision? Who do they ask for help? That's your current structure.\n- [ ] ⚡ Quick Win: **Circle yourself and count the lines coming into you** - If more than 5-6 people report directly to you, you've found your bottleneck. This is the core problem a management layer solves.\n- [ ] **Identify the natural team clusters** - People who work together on similar things. Sales and marketing. Operations and fulfilment. Finance and admin. These clusters hint at where management layers need to exist.\n- [ ] **Decide how many layers you need** - For most businesses at this stage: Layer 1 is you (owner/MD). Layer 2 is team leads or managers (2-4 people). Layer 3 is everyone else. That's it. Three layers. No more.\n- [ ] **Name the Layer 2 roles** - These are your managers or team leads. What areas do they cover? Sales? Operations? Finance? Don't create roles for the sake of it. Only add a manager where there's enough work and enough people to justify one.\n- [ ] **Check if the right people are in Layer 2** - Do your current team leads have the skills and temperament to manage others? Being good at the work doesn't mean they can manage people doing the work. Be honest here.\n- [ ] **Define what each layer is responsible for** - Layer 1: strategy, direction, and key relationships. Layer 2: execution, team management, and day-to-day decisions. Layer 3: delivery of specific work. Write this down clearly.\n- [ ] **Identify gaps** - Where do you need a manager but don't have one? Where are you personally filling a management role that someone else should own? Where is nobody managing at all?\n- [ ] **Draw the target structure** - What should your management layers look like in 6-12 months? This is your roadmap. You don't need to fill every gap now, but you need to know where you're heading.\n- [ ] ⚡ Quick Win: **Pick one direct report you could shift to report to a Layer 2 manager instead** - Move one person this week. Reduce your direct reports by one. That's immediate relief.\n\n---"
+              "title": "Task Inventory",
+              "content": "- [ ] List every task you or your team does on a recurring basis (daily, weekly, monthly). Aim for 20-30 items.\n- [ ] For each task, note: how often it happens, how long it takes each time, and who currently does it\n- [ ] Calculate the total time per month for each task (frequency x duration)\n- [ ] ⚡ Quick Win: Identify the task you personally do most often that involves copying data from one place to another. This is almost certainly automatable."
+            },
+            {
+              "title": "Score Each Task for Automation Potential",
+              "content": "Rate each task on three criteria (1-5 scale):\n\n- [ ] **Repetitiveness:** Is the task the same every time (5) or different every time (1)?\n- [ ] **Rule-based:** Can the task be described with clear rules and if/then logic (5) or does it require judgment and creativity (1)?\n- [ ] **Digital:** Does the task happen on a computer using digital tools (5) or is it physical/relationship-based (1)?\n\nCalculate: Repetitiveness + Rule-based + Digital = Automation Score (out of 15)\n\n- [ ] Tasks scoring 12-15: Strong automation candidates\n- [ ] Tasks scoring 8-11: Possible automation with some setup\n- [ ] Tasks scoring 7 or below: Better suited for delegation than automation"
+            },
+            {
+              "title": "Prioritise by Impact",
+              "content": "- [ ] Sort your strong candidates (12-15 score) by monthly time saved\n- [ ] Estimate the setup effort for each: Quick (under 1 hour), Moderate (1-4 hours), or Complex (4+ hours)\n- [ ] Create your priority list: high time saved + quick setup = do first\n- [ ] Pick your top 3 automation candidates to focus on"
+            },
+            {
+              "title": "Common Automation Opportunities",
+              "content": "Review this list and check any that apply to your business:\n\n- [ ] New enquiry notifications and auto-responses\n- [ ] Data entry from one system to another (email to CRM, form to spreadsheet)\n- [ ] Sending follow-up emails after specific events (meeting booked, invoice sent, onboarding started)\n- [ ] Social media posting from a scheduled queue\n- [ ] Invoice creation and sending\n- [ ] Report generation and distribution\n- [ ] Calendar scheduling and reminders\n- [ ] File organisation and backup\n- [ ] Customer feedback collection at set intervals\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- You have a clear, honest picture of how your business is actually managed\n- You know exactly how many management layers you need (probably 2-3)\n- Direct reports to you are reduced to a manageable number (5-6 maximum)\n- Gaps in management are identified with a plan to fill them\n- The team understands who they report to and who makes decisions in their area"
+              "content": "- A complete inventory of recurring tasks with time estimates\n- Each task scored for automation potential\n- A prioritised list of the top 3 automation opportunities\n- A clear picture of how much time automation could reclaim per month\n- A starting point for the workflow automation work in Actions 3 and 4"
             },
             {
               "title": "Coach Notes",
-              "content": "Most owners at this stage resist adding management layers because \"we're too small\" or \"I like being close to everything.\" Acknowledge that. Then ask: \"How many hours a week do you spend answering questions that someone else could handle?\" The number is usually shocking. This isn't about adding bureaucracy. It's about creating enough structure so the owner can focus on the work only they can do. Watch for the temptation to promote the best performer into management. Best salesperson doesn't equal best sales manager. Discuss what management actually requires before making that move."
+              "content": "This audit often reveals that the owner spends 5-10 hours per week on tasks that could be fully automated. The emotional response is usually a mix of frustration (\"I have been doing this manually for years\") and overwhelm (\"I do not know how to automate anything\"). Reassure them: start with one. The first automation win builds confidence and momentum. Common first wins: auto-responding to enquiries, scheduling social media, and automating invoice reminders. These can each be set up in under an hour with tools like Zapier, Mailchimp, or built-in features of their existing software."
             }
           ]
         },
         {
           "number": 2,
-          "title": "Decision Authority Matrix",
-          "description": "Document who can make what decisions at what levels. Clear boundaries so people know when to act independently and when to escalate. This single tool eliminates most bottlenecks and reduces the constant stream of \"quick questions.\"",
+          "title": "CRM Implementation",
+          "description": "Set up a simple customer relationship management system so all client data, communication history, and next actions live in one place instead of your memory.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Document who can make what decisions, at what level, and with what limits. The output is a simple matrix that tells every person in the business: \"Here's what you can decide on your own, here's what you need to check with someone about, and here's what needs to go to the owner.\" No more guessing. No more bottlenecks caused by people waiting for permission they didn't need."
+              "content": "Set up a simple customer relationship management system so all client data, communication history, and next actions live in one place instead of your memory, your inbox, and scattered spreadsheets. This does not need to be expensive or complex. A basic CRM used consistently beats a sophisticated one that nobody touches."
             },
             {
               "title": "Why It Matters",
-              "content": "In most small businesses, decision-making works like this: everyone asks the owner. For everything. From hiring decisions to whether they can buy a new keyboard. The owner becomes the bottleneck, the team becomes passive, and growth stalls because nothing moves without one person's approval. A decision authority matrix fixes this by making the rules explicit. People move faster because they know their boundaries. You move faster because you only see the decisions that genuinely need you."
+              "content": "When client information lives in your head, three things happen: you forget things (follow-ups, preferences, conversation history), nothing is transferable (if you are unavailable, nobody else can help the client), and you cannot see patterns (which clients are at risk, which prospects need chasing, where deals are getting stuck). A CRM solves all three. It is your business's memory system. And unlike your memory, it does not lose things after a busy week."
             },
             {
               "title": "How to Use This",
-              "content": "Build a simple table or spreadsheet. Rows are decision categories. Columns are authority levels. Work through the checklist to populate it.\n\n---"
+              "content": "Choose a CRM, set it up with the basics, migrate your existing data, and build the daily habit of using it.\n\n---"
             },
             {
-              "title": "Decision Authority Matrix Checklist",
-              "content": "- [ ] **List your common decision categories** - Spending, hiring, client issues, pricing, scheduling, process changes, vendor selection, refunds, and anything else that regularly needs a decision. Aim for 10-15 categories.\n- [ ] ⚡ Quick Win: **Think about the last 10 decisions people asked you to make** - How many of those could someone else have made? That list tells you exactly where to start delegating authority.\n- [ ] **Define three authority levels** - Level A: Decide and act (no approval needed). Level B: Decide, then inform (tell me what you did). Level C: Recommend, then wait for approval (bring it to me before acting).\n- [ ] **Set spending thresholds** - Example: Under £100, anyone can approve. £100-£500, team leads approve. £500-£2,000, you approve. Over £2,000, discuss with partner/advisor first. Adjust the numbers to fit your business.\n- [ ] **Assign authority for hiring decisions** - Who can approve a new hire? Who can approve a contractor? Who handles recruitment process decisions? Hiring is one of the biggest bottleneck areas.\n- [ ] **Assign authority for client-facing decisions** - Who can issue a refund? Who can offer a discount? Who can change scope or delivery timelines? These come up constantly and slow teams down when they need approval.\n- [ ] **Assign authority for operational decisions** - Who can change a process? Who can approve time off? Who can reassign work? These feel small but accumulate into massive bottlenecks.\n- [ ] **Assign authority for pricing decisions** - Who can adjust pricing? Who can create a custom package? Who can offer payment terms? Be specific.\n- [ ] **Check for \"ghost authority\"** - Where do people already make decisions without formal permission? Make those official. If someone's been handling refunds for a year, give them the authority properly.\n- [ ] **Create the matrix document** - Simple table: Decision type in rows, roles across columns, authority level (A/B/C) in each cell. One page maximum.\n- [ ] **Share it with the team** - Walk through it together. Answer questions. Adjust based on their feedback. This only works if people know it exists and trust it.\n- [ ] ⚡ Quick Win: **Identify three decisions you currently make that could be Level A for a team member** - Hand those over today. Instant time savings for you, instant empowerment for them.\n\n---"
+              "title": "Choose Your CRM",
+              "content": "- [ ] ⚡ Quick Win: If you have fewer than 50 contacts and need something today, start with a well-structured Google Sheet or Notion database. A simple system you use beats a fancy system you do not.\n- [ ] For a proper CRM, evaluate based on your needs:\n  - **Simple and free:** HubSpot Free, Zoho Free, or Notion\n  - **Simple and paid:** Pipedrive, Close, or Capsule (£15-30/month)\n  - **All-in-one:** HubSpot, GoHighLevel, or Keap (includes email marketing, automation)\n- [ ] Choose based on: ease of use (will you actually open it daily?), integration with your email and calendar, and cost\n- [ ] Do NOT over-research. Pick one that seems right and commit for 90 days. You can switch later."
+            },
+            {
+              "title": "Initial Setup (2-3 Hours)",
+              "content": "- [ ] Create your pipeline stages (match your actual sales process):\n  - Example: New Lead > Contacted > Meeting Booked > Proposal Sent > Negotiation > Won > Lost\n- [ ] Set up your contact fields: Name, Company, Email, Phone, Source (how they found you), Status, Last Contact Date, Next Action, Notes\n- [ ] Import your existing contacts: export from your spreadsheet, phone, or email and import into the CRM\n- [ ] Connect your email if the CRM supports it (auto-logs email conversations)\n- [ ] Connect your calendar if supported (auto-logs meetings)\n- [ ] Create a simple dashboard view: what needs attention today?"
+            },
+            {
+              "title": "Build the Daily Habit",
+              "content": "- [ ] Start every working day by opening your CRM and checking: who needs a follow-up today?\n- [ ] After every client call, meeting, or significant email: update the contact record (2 minutes max)\n- [ ] Log the key point from every conversation: what was discussed, what was agreed, what is the next action\n- [ ] Move deals through pipeline stages as they progress\n- [ ] Every Friday: review your pipeline. Which deals are stuck? Which leads have gone cold? Who needs chasing?"
+            },
+            {
+              "title": "Make It Useful",
+              "content": "- [ ] Set up reminders for follow-ups so nothing falls through the cracks\n- [ ] Use tags or categories to segment contacts: Hot Lead, Current Client, Past Client, Partner, etc.\n- [ ] Track how leads found you (Source field) so you can measure which channels produce results\n- [ ] After 30 days, review: is the CRM helping you stay on top of relationships? What is missing?\n- [ ] After 90 days, consider adding automation: auto-emails when a deal moves to a new stage, reminder sequences for cold leads, etc.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- Team members know exactly what they can decide without asking\n- Decisions happen faster because people aren't waiting in a queue for your approval\n- You spend less time on low-stakes decisions and more time on high-impact ones\n- Fewer interruptions to your day for things that don't need you\n- New team members ramp up faster because the rules are written down, not tribal knowledge"
+              "content": "- All client and prospect data in one accessible place\n- Communication history logged and searchable\n- A clear pipeline showing where every opportunity stands\n- Follow-ups happening on time because the system reminds you\n- The ability to hand off client relationships to team members without losing context"
             },
             {
               "title": "Coach Notes",
-              "content": "The hardest part is letting go. Most owners know intellectually that they should delegate decisions, but emotionally they struggle to trust others with them. Start small. Hand over low-risk decisions first (supplies purchasing, scheduling). As trust builds, expand. If an owner resists, ask: \"What's the worst that could happen if [person] made this decision wrong? And how does that compare to the cost of you making every decision yourself?\" The maths usually makes the case. Review the matrix every 6 months. As people grow and the business changes, authority levels should shift too."
+              "content": "CRM resistance is common: \"I already know my clients.\" Challenge: \"What happens when you go on holiday? What happens when you hire someone? What if a client calls and you cannot remember what you discussed 3 months ago?\" The daily habit is everything - a CRM is only as good as the data in it. The first 2 weeks are the hardest as the habit forms. Check in every session: \"Are you updating your CRM daily?\" If not, diagnose why. Usually it is too complex (simplify) or too slow (switch tools). For most businesses under £1M, Pipedrive or HubSpot Free are the sweet spot."
             }
           ]
         },
         {
           "number": 3,
-          "title": "Accountability Framework",
-          "description": "Build visible, consistent performance tracking that makes problems obvious before they become disasters. Regular reviews, clear metrics, and a process for addressing gaps that does not depend on your mood or availability.",
+          "title": "Workflow Automation",
+          "description": "Build simple automated workflows using tools like Zapier so routine processes happen without your input. Lead notifications, data entry, follow-up sequences, and basic reporting.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Create a visible, consistent system for tracking performance and addressing gaps. This covers what gets measured, how often it's reviewed, and what happens when targets are missed. Accountability isn't about punishment. It's about making expectations clear, tracking against them, and having honest conversations when things aren't on track."
+              "content": "Build simple automated workflows using tools like Zapier, Make, or built-in software features so routine processes happen without your input. Start with your highest-impact automation candidate from the Task Audit (Action 1) and get it running this week."
             },
             {
               "title": "Why It Matters",
-              "content": "Without a framework, accountability is inconsistent. Some people get away with underperformance because nobody notices. Others get called out unfairly because their work is more visible. Most owners avoid accountability conversations entirely because there's no structured way to have them. This framework gives you the structure. It makes the conversation about the numbers and the expectations, not about personalities. That makes it easier for everyone."
+              "content": "Every manual step in a recurring workflow is a step that depends on someone remembering to do it. Automated workflows run every time, on time, without reminders. A lead fills in a form and automatically gets added to your CRM, receives a welcome email, and creates a task for you to follow up - all without you touching anything. This is not futuristic technology. It is available now for £20-50/month and most automations take under an hour to set up."
             },
             {
               "title": "How to Use This",
-              "content": "Work through the steps in order. Set up the system first, then start using it with one person before rolling it out to the whole team.\n\n---"
+              "content": "Pick one automation, build it, test it, and get it running. Then add the next one. One at a time.\n\n---"
             },
             {
-              "title": "Step 1: Define What You're Measuring",
-              "content": "- [ ] **List the key outputs for each role** - Not activities (how busy they are) but outputs (what they produce). Sales: revenue booked, deals closed. Operations: projects delivered on time. Marketing: qualified leads generated.\n- [ ] **Set 2-3 measurable targets per person** - Specific numbers with deadlines. \"Improve customer satisfaction\" is not a target. \"Achieve NPS of 8+ by end of Q2\" is a target.\n- [ ] ⚡ Quick Win: **Ask each team member what they think their key metrics should be** - People who set their own targets are more likely to hit them. Use their input, then adjust if needed.\n- [ ] **Make sure targets are visible** - Everyone should be able to see their own targets and progress at any time. Spreadsheet, dashboard, whiteboard - the format doesn't matter. Visibility does."
+              "title": "Choose Your First Automation",
+              "content": "- [ ] Review your top 3 candidates from the Task Audit (Action 1)\n- [ ] ⚡ Quick Win: Start with the simplest one that saves the most time. Common first automations:\n  - New form submission > auto-email response + add to CRM\n  - New enquiry > Slack/email notification to you\n  - Invoice overdue > automatic reminder email to client\n  - New client signed > trigger onboarding email sequence\n  - Social media post scheduled from a content calendar"
             },
             {
-              "title": "Step 2: Set Up the Review Rhythm",
-              "content": "- [ ] **Schedule regular one-to-ones** - Weekly or fortnightly, 15-30 minutes, same time each week. Not optional. Not \"when we get a chance.\" Fixed in the calendar.\n- [ ] **Use a consistent one-to-one format** - Three sections: (1) What were your targets? (2) What did you deliver? (3) What's getting in the way? Same structure every time. No surprises.\n- [ ] **Track performance over time** - A simple spreadsheet showing targets vs actuals week by week. Patterns matter more than individual weeks. One bad week isn't a problem. Five bad weeks is a trend.\n- [ ] **Separate performance reviews from catch-ups** - The weekly one-to-one is about this week's work. Deeper performance conversations (development, career progression, pay) happen quarterly or twice yearly. Don't mix them."
+              "title": "Build It",
+              "content": "- [ ] Choose your automation tool:\n  - **Zapier** (beginner-friendly, widest range of app connections, free tier available)\n  - **Make (formerly Integromat)** (more powerful, slightly steeper learning curve, better value)\n  - **Built-in features** (many tools like HubSpot, Mailchimp, Xero have their own automation)\n- [ ] Map the workflow: Trigger (what starts it) > Actions (what happens automatically)\n- [ ] Set it up step by step:\n  - Define the trigger: \"When [event] happens in [app]...\"\n  - Define the action(s): \"Do [this] in [app]...\"\n  - Map the data: which fields from the trigger populate which fields in the action?\n- [ ] Test with a real example: trigger the automation and check that every step works correctly\n- [ ] Fix any issues and test again until it runs cleanly"
             },
             {
-              "title": "Step 3: Address Gaps",
-              "content": "- [ ] **Define your escalation process** - What happens when someone consistently misses targets? Step 1: coaching conversation (what's going on, how can I help?). Step 2: performance improvement plan (clear expectations, fixed timeline). Step 3: consequence (role change or exit).\n- [ ] **Have the conversation early** - Most owners wait too long. The first miss should trigger a supportive conversation, not silence followed by an explosion at miss number five.\n- [ ] **Document everything** - Brief notes after each one-to-one. What was discussed, what was agreed, what the next actions are. This protects both parties and creates a clear record.\n- [ ] ⚡ Quick Win: **Have one honest performance conversation this week** - Pick the person whose performance you've been avoiding discussing. Use the one-to-one format above. You'll feel better, and so will they (uncertainty is worse than a direct conversation)."
+              "title": "Common Automation Recipes",
+              "content": "- [ ] **Lead capture:** Website form > CRM contact created > Welcome email sent > Task created for follow-up\n- [ ] **Invoice chasing:** Invoice overdue by 7 days > Reminder email sent > Overdue by 14 days > Second reminder + notification to you\n- [ ] **Client onboarding:** Contract signed > Welcome email with next steps > Calendar invite for kickoff > Folder created in shared drive\n- [ ] **Social scheduling:** Content calendar updated > Post automatically published at scheduled time\n- [ ] **Report generation:** End of week > Pull data from sources > Format into report > Email to you or team"
             },
             {
-              "title": "Step 4: Recognise and Reward",
-              "content": "- [ ] **Acknowledge strong performance publicly** - In team meetings, in Slack, in writing. People who consistently hit their targets should know it's noticed.\n- [ ] **Link performance to progression** - People who consistently deliver should get more responsibility, development, and eventually more pay. Make this connection explicit.\n- [ ] **Address the \"quiet performer\" problem** - Some of your best people are invisible because they just get on with it. The framework should surface them, not just the noisy ones.\n\n---"
+              "title": "Monitor and Expand",
+              "content": "- [ ] Check your first automation weekly for the first month: is it running correctly? Any errors?\n- [ ] Calculate time saved: how many minutes per week has this automation freed up?\n- [ ] Once stable, build your second automation from the priority list\n- [ ] Aim for 3-5 working automations within 90 days\n- [ ] Set a quarterly review: are automations still running? Do any need updating? What should be automated next?\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- Every team member has clear, measurable targets they understand\n- Performance is reviewed consistently, not sporadically\n- Underperformance is caught and addressed within 2-3 weeks, not 2-3 months\n- Strong performers feel recognised and stay longer\n- You have a clear, documented process for managing people - no more winging it"
+              "content": "- At least one workflow fully automated and running reliably\n- Time reclaimed from manual, repetitive work\n- Fewer dropped balls on routine tasks (follow-ups, reminders, notifications)\n- A growing library of automations that compound time savings\n- Confidence that \"automation\" is not scary or complex - it is practical and accessible"
             },
             {
               "title": "Coach Notes",
-              "content": "Most owners hate accountability conversations. They feel like confrontation. Reframe it: \"You're not criticising someone. You're helping them see where they stand so they can improve.\" The framework does the heavy lifting - it moves the conversation from personal judgement to objective measurement. Start with yourself. Set your own targets, track them, review them. When the team sees you holding yourself accountable, they'll take the framework seriously. If a client resists one-to-ones, ask: \"How would you feel if your coach only checked in with you once a quarter instead of every week?\" They'll get the point."
+              "content": "The biggest blocker is overwhelm: clients see automation possibilities everywhere and freeze. Force a single starting point: \"What one manual process annoys you most?\" Build that one, celebrate the win, then move to the next. Zapier is the easiest entry point for non-technical users - their visual workflow builder is intuitive. Warn clients about over-automating: not every process should be automated. Automate the repetitive and rule-based; keep the human touch where relationships matter. A personalised follow-up email from you is worth more than an automated one, even if it takes longer."
             }
           ]
         },
         {
           "number": 4,
-          "title": "Manager Development Plan",
-          "description": "Develop your key people into genuine managers who can run their areas. The specific skills, tools, and mindsets that separate doers from managers — and a structured way to build those capabilities.",
+          "title": "AI Content & Analysis Tools",
+          "description": "Implement AI tools for content creation, customer analysis, and routine decision-making. First drafts instead of blank pages, insights instead of raw data, responses instead of thinking from scratch.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Identify the people in your business who need to become genuine managers and build a specific development plan for each one. This isn't about sending them on a leadership course. It's about equipping them with the practical skills, tools, and mindsets that separate someone who does great work from someone who can get great work out of others."
+              "content": "Implement AI tools for content creation, customer analysis, and routine decision support. This is about using AI as an accelerator - not a replacement for thinking, but a tool that gives you first drafts instead of blank pages, insights instead of raw data, and quick answers instead of hours of research."
             },
             {
               "title": "Why It Matters",
-              "content": "The number one constraint on growth in businesses between £500K and £5M is management capability. You hire great people but then expect them to magically become managers. They don't. They default to doing the work themselves (because they're good at it) instead of managing the people doing the work. The result: the best people burn out, the team stays dependent, and you remain stuck in the middle. Developing your managers is the single highest-leverage investment you can make."
+              "content": "AI tools have reached the point where they can genuinely save hours per week for a small business owner. Writing a proposal from scratch takes 2 hours; editing an AI-generated first draft takes 30 minutes. Analysing customer feedback manually takes an afternoon; asking AI to identify themes takes 5 minutes. The business owners who learn to use AI effectively will have a significant time and quality advantage over those who do not. This is not about becoming a tech expert. It is about knowing which tools to use and when."
             },
             {
               "title": "How to Use This",
-              "content": "Identify who needs development, assess where they are now, and build a practical plan for each person. Review progress monthly.\n\n---"
+              "content": "Identify where AI can help most in your business, choose your tools, and start using them this week.\n\n---"
             },
             {
-              "title": "Step 1: Identify Who Needs to Develop",
-              "content": "- [ ] **List everyone in a management or team lead role** - Anyone who has people reporting to them, formally or informally.\n- [ ] **Identify anyone you want to move into management in the next 12 months** - Include them now so development starts before they need the skills.\n- [ ] ⚡ Quick Win: **Pick the one person whose management development would have the biggest impact on you** - Whose growth would free up the most of your time or unblock the biggest team? Start with them."
+              "title": "Identify Your AI Opportunities",
+              "content": "- [ ] Review these categories and tick every task where you could use AI help:\n\n### Content Creation\n- [ ] Writing social media posts\n- [ ] Drafting emails to clients\n- [ ] Creating proposals or quotes\n- [ ] Writing blog posts or articles\n- [ ] Creating marketing copy\n- [ ] Writing job descriptions\n- [ ] Producing meeting agendas and summaries\n\n### Analysis and Research\n- [ ] Summarising customer feedback\n- [ ] Analysing competitor offerings\n- [ ] Researching industry trends\n- [ ] Reviewing financial data for patterns\n- [ ] Identifying themes across client conversations\n\n### Communication and Response\n- [ ] Drafting responses to common questions\n- [ ] Creating template emails for recurring situations\n- [ ] Preparing for difficult conversations\n- [ ] Writing standard operating procedures\n\n- [ ] ⚡ Quick Win: Pick the one task from the list above that you do most frequently. Use an AI tool for it today. Even a basic prompt like \"Write a first draft of [thing]\" will show you the potential."
             },
             {
-              "title": "Step 2: Assess Current Capability",
-              "content": "- [ ] **Rate each person against core management skills** - Use a simple 1-5 scale for: delegation, giving feedback, running meetings, prioritisation, difficult conversations, hiring, developing their team, and managing their own time.\n- [ ] **Ask them to self-assess against the same skills** - The gap between your rating and theirs is revealing. If they rate themselves 5 on delegation but you rate them 2, that's your starting point.\n- [ ] **Identify their biggest gap** - Not all 8 skills at once. What's the one thing that would make the biggest difference if they improved it? Focus there first.\n- [ ] **Check for mindset issues, not just skill gaps** - Some people struggle with management because they still see themselves as a doer, not a leader. They feel guilty delegating. They jump in to fix things instead of coaching. Mindset work often matters more than skill training."
+              "title": "Choose Your Tools",
+              "content": "- [ ] **General AI assistant:** ChatGPT, Claude, or Gemini (for writing, analysis, brainstorming, and research)\n- [ ] **Email AI:** Built-in features in Gmail or Outlook, or Superhuman (for faster email drafting and responses)\n- [ ] **Content AI:** Jasper, Copy.ai, or just ChatGPT/Claude (for marketing copy, social posts, and long-form content)\n- [ ] **Meeting AI:** Otter.ai, Fireflies, or Fathom (for automatic meeting transcription and summaries)\n- [ ] Start with ONE general tool (ChatGPT or Claude) and learn to use it well before adding specialised tools"
             },
             {
-              "title": "Step 3: Build the Development Plan",
-              "content": "- [ ] **Set 1-2 specific development goals per quarter** - \"Get better at management\" is not a goal. \"Conduct weekly one-to-ones with all 4 direct reports for 12 consecutive weeks\" is a goal.\n- [ ] **Assign practical learning activities** - Shadow you in a difficult conversation. Run the team meeting for 4 weeks. Deliver feedback to a team member with you observing. Real practice beats theory.\n- [ ] **Schedule regular development check-ins** - Monthly, 30 minutes. Review what they've practiced, what's working, what's hard. This is separate from their operational one-to-one.\n- [ ] **Give them management tools** - One-to-one templates, delegation frameworks, meeting agendas. Don't expect them to invent management from scratch. Give them the structure and let them adapt it.\n- [ ] ⚡ Quick Win: **Have each developing manager run their next team meeting solo** - Step back, let them lead, give them feedback afterwards. One meeting is worth a month of reading about leadership.\n- [ ] **Connect them with peers** - Other managers in similar roles (inside or outside the business) who they can learn from. Management can be lonely, especially for first-time managers."
+              "title": "Build the AI Habit",
+              "content": "- [ ] Set a rule: \"Before I start writing anything from scratch, I ask AI for a first draft\"\n- [ ] Save your best prompts: when you find a prompt that produces great results, save it for reuse\n- [ ] Create prompt templates for your recurring tasks:\n  - \"Write a follow-up email to a client who [situation]. Keep it professional and [tone].\"\n  - \"Summarise these meeting notes into action items with owners and deadlines.\"\n  - \"Draft a social media post about [topic] for [audience]. Keep it under 200 words.\"\n- [ ] Spend 15 minutes per week experimenting with new ways AI can help"
             },
             {
-              "title": "Step 4: Track and Adjust",
-              "content": "- [ ] **Review the plan quarterly** - Is the person growing? Are the activities working? Adjust based on what you're seeing.\n- [ ] **Look for evidence, not just effort** - Is their team performing better? Are they handling more decisions without you? Are their people developing? These are the real measures of management development.\n- [ ] **Be honest about fit** - Not everyone is cut out for management, and that's fine. If someone has been developing for 6-12 months with limited progress, consider whether a senior individual contributor role might suit them better. Being a great specialist is valuable too.\n\n---"
+              "title": "Quality Control",
+              "content": "- [ ] Never send AI output without reviewing and editing it - AI is your starting point, not your finish line\n- [ ] Check facts: AI can generate plausible-sounding but incorrect information. Verify anything important.\n- [ ] Maintain your voice: edit AI drafts to sound like you, not like a robot\n- [ ] Be transparent where appropriate: some contexts require disclosure that AI was used\n- [ ] Track time saved: after 30 days, estimate how many hours AI has saved you per week\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- Your managers have clear development plans with specific, practical goals\n- Management capability across the business improves visibly within 3-6 months\n- You spend less time managing the people who should be managing others\n- Team members under developing managers report better leadership and clearer direction\n- You have a bench of capable managers ready for the business's next stage of growth"
+              "content": "- AI tools integrated into your daily workflow for content, analysis, and communication\n- First drafts produced in minutes instead of hours\n- Routine analysis and summarisation handled in seconds\n- A library of reusable prompts for your most common tasks\n- Measurable time savings that free you for higher-value work"
             },
             {
               "title": "Coach Notes",
-              "content": "This is a long game. Management development takes 6-18 months to show real results. Set that expectation upfront. The owner will want fast results, and some quick wins will come (better meetings, clearer delegation), but deep capability takes time. Watch for the owner who says \"I'll just do it myself because it's faster.\" That's the exact behaviour that created the management gap in the first place. Every time they jump in, they're robbing their manager of a learning opportunity. Help them see that short-term slowdown creates long-term speed."
+              "content": "AI adoption varies hugely by client. Some are already using ChatGPT daily; others have never tried it. Meet them where they are. For beginners, start with one simple use case: \"Use ChatGPT to draft your next client email.\" Let them experience the time saving before expanding. For more advanced users, push toward prompt engineering and integration (using AI within their existing tools). The most important principle to reinforce: AI generates first drafts, humans create final versions. Clients who skip the editing step produce generic, impersonal content that can damage their brand. The sweet spot is AI speed with human judgment and personality layered on top."
             }
           ]
         }

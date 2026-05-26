@@ -16,8 +16,13 @@ import {
   resolveAssessmentProspectFirstName,
 } from "@/lib/assessmentContactParams";
 import { BOSS_PRO_INTRO } from "@/lib/bossProAssessmentCopy";
+import {
+  BOSS_PRO_SCORE_LABELS,
+  bossProScoreAriaLabel,
+} from "@/lib/bossProScoringLabels";
 import { SCORECARD_PAGE_BG } from "@/lib/bossScorecardQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { METHODOLOGY_VERSION } from "@/lib/bossMethodologyMigration";
 import { QUESTIONS_BY_LEVEL } from "@/lib/assessmentQuestions";
 
 const outfit = Outfit({ subsets: ["latin"] });
@@ -377,6 +382,7 @@ export default function BossProAssessmentPage({
           coachSlug: coachSlug?.trim() || "BCA",
           from_landing: landingVariant ?? undefined,
           assessment_type: "diagnostic_50",
+          methodology_version: METHODOLOGY_VERSION,
           contact: {
             full_name: fullName,
             email,
@@ -612,8 +618,7 @@ export default function BossProAssessmentPage({
               </div>
               <div className="flex flex-wrap justify-start gap-4 px-4 md:px-8">
                 {[0, 1, 2].map((value) => {
-                  const label =
-                    value === 0 ? "No" : value === 1 ? "Partially" : "Yes";
+                  const label = BOSS_PRO_SCORE_LABELS[value as 0 | 1 | 2];
                   const score = answers[currentQuestion.ref];
                   const selected = score === value;
                   const colorClasses =
@@ -633,7 +638,7 @@ export default function BossProAssessmentPage({
                       key={value}
                       type="button"
                       className={`rounded-xl border-2 px-6 py-4 text-lg font-semibold transition whitespace-nowrap min-w-[7rem] ${colorClasses}`}
-                      aria-label={`${label}. ${value === 0 ? "Not in place" : value === 1 ? "Partially in place" : "Fully in place"}.`}
+                      aria-label={bossProScoreAriaLabel(value as 0 | 1 | 2)}
                       disabled={submitting || questionPhase !== "idle"}
                       onClick={() => {
                         const newAnswers = {

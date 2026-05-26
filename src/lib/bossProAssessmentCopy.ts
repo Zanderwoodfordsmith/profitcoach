@@ -1,14 +1,12 @@
 /** Boss Pro (50-question) assessment intro screen. */
+import { BOSS_PRO_RATING_LEGEND } from "./bossProScoringLabels";
+
 export const BOSS_PRO_INTRO = {
   titleAssessment: "Full diagnostic",
   subtitle:
     "Score how your business runs across 50 questions in the five BOSS levels and get a score out of 100.",
-  instruction: "Tap No, Partially, or Yes for each question.",
-  ratingLegend: [
-    { label: "No", hint: "Not in place" },
-    { label: "Partially", hint: "Partly in place" },
-    { label: "Yes", hint: "Fully in place" },
-  ] as const,
+  instruction: "Tap the option that matches how this area is working in your business.",
+  ratingLegend: BOSS_PRO_RATING_LEGEND,
   whatYouGetDetailsLabel: "What you'll get",
   whatYouGetBullets: [
     "A score out of 100 across all five BOSS levels.",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { bossProGridScoreDescription } from "@/lib/bossProScoringLabels";
 import { BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import {
   computePillarScores,
@@ -313,7 +314,7 @@ function PillarCard({
               }
               aria-label={
                 interactive && onScoreChange
-                  ? `${playbook.name}: ${score === 0 ? "Not in place" : score === 1 ? "Partially in place" : score === 2 ? "Fully in place" : "Not scored"}. Click to cycle. Right-click to open playbook.`
+                  ? `${playbook.name}: ${bossProGridScoreDescription(score)}. Click to cycle. Right-click to open playbook.`
                   : onPlaybookClick
                     ? `${playbook.name}. Click to open playbook.`
                     : undefined

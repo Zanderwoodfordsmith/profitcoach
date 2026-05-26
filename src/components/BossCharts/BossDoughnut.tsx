@@ -1,5 +1,6 @@
 "use client";
 
+import { BOSS_PRO_SCORE_LABELS } from "@/lib/bossProScoringLabels";
 import { PLAYBOOK_COUNT } from "@/lib/bossData";
 import { computeScoreBreakdown, type AnswersMap } from "@/lib/bossScores";
 import { wedgePath } from "./wedgePath";
@@ -11,9 +12,9 @@ const DOUGHNUT_R_OUTER = 95;
 
 const SEGMENT_COLORS = ["#b7e1cd", "#fce8b2", "#f4c7c3", "#e2e8f0"];
 const SEGMENT_LABELS = [
-  "Fully in place",
-  "Partially in place",
-  "Not in place",
+  BOSS_PRO_SCORE_LABELS[2],
+  BOSS_PRO_SCORE_LABELS[1],
+  BOSS_PRO_SCORE_LABELS[0],
   "Not answered",
 ];
 

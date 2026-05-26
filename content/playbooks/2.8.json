@@ -2,57 +2,57 @@
   "ref": "2.8",
   "level": 2,
   "area": 8,
-  "name": "AI & Automation",
+  "name": "Systems",
   "subtitle": "Level 2 · Overworked · Infrastructure & Systems",
-  "whatThisIs": "AI and automation are how you get your time back. Not by working faster — by working less on things that can run without you. When you are spending hours every week on repetitive tasks that a computer could handle in minutes, you are not running a business. You are being run by it.\n\nThis playbook is about intelligent leverage. Finding the tasks that consume time through repetition, then using technology to handle them automatically. The goal is not to become a tech expert. It is to free up your capacity for the work that actually needs your brain.\n\nThis is your first step into building systems that scale without adding people. It is not about complex enterprise software. It is about simple tools and workflows that take work off your plate this week.",
+  "whatThisIs": "Systems are what turn your business from a collection of activities into a connected machine. They reduce your dependency on specific people (including you) and make sure things get done the same way every time, regardless of who is doing them. When systems are working, processes flow smoothly, nothing falls through the cracks, and you can scale without things breaking.\n\nThis playbook is about connecting the dots between all the moving parts of your business. Marketing systems, sales systems, delivery systems, finance systems — making sure they talk to each other instead of operating in silos. It is the difference between running a business and building one.\n\nSystems are not about bureaucracy. They are about freedom. The freedom to grow without everything depending on your personal involvement.",
   "whatItLooksLike": {
     "broken": {
       "emoji": "🔴",
       "label": "When this is broken",
-      "content": "You spend hours every week doing the same tasks over and over. Data entry, sending follow-up emails, updating spreadsheets, creating reports — work that feels necessary but leaves you exhausted and behind. You know technology could help but you do not know where to start. Every manual process is a bottleneck with your name on it."
+      "content": "Everything runs through you because you are the only person who knows how all the pieces connect. When someone is off sick, their work stops completely. Information lives in individual heads instead of documented processes. You spend more time fixing things that went wrong than preventing them from going wrong in the first place."
     },
     "ok": {
       "emoji": "🟠",
       "label": "When this is OK",
-      "content": "You have tried a few automation tools but they are not connected to each other. Some things run automatically, others still require your input. You can see the potential but the setup feels overwhelming. You are saving some time but not as much as you hoped, and maintaining the automations sometimes feels like more work than doing it manually."
+      "content": "You have some processes documented but they are not connected to each other. Your marketing system works but it does not talk properly to your sales system. People follow different approaches for the same task depending on who trained them. You know systems would help but building them feels like a luxury you cannot afford time for."
     },
     "working": {
       "emoji": "🟢",
       "label": "When this is working",
-      "content": "Routine tasks happen without your involvement. Lead enquiries get auto-responses and enter your CRM. Reports generate automatically. Follow-up sequences run based on customer behaviour. You focus on strategy, relationships, and growth while the repetitive work handles itself. Technology amplifies your impact instead of consuming your time."
+      "content": "Work flows smoothly from one stage to the next without manual handovers or gaps. Everyone knows exactly what to do and when to do it. Your tools and platforms are connected so information flows automatically between them. New team members can get up to speed quickly by following documented systems. The business runs consistently whether you are there or not."
     }
   },
   "thingsToThinkAbout": [
-    "Where do you spend time on things a computer could do better? Map out your typical week. How many hours go to data entry, sending routine emails, updating records, or generating reports? Every manual, repetitive task is a candidate for automation. Start with the time sinks, not the nice-to-haves.",
-    "What client data lives in your head or scattered across different places? If customer information is stored in emails, spreadsheets, and your memory, you are creating work for yourself every time you need to find something. A proper CRM centralises everything so the system remembers what you used to have to recall.",
-    "Which reports do you create manually every week or month? Financial summaries, sales reports, customer updates — if you are pulling numbers from different places and formatting them by hand, you are doing work a dashboard should handle. Automated reporting gives you visibility without the effort.",
-    "What content or analysis could AI help you create faster? Writing proposals, analysing feedback, creating social media posts, answering common questions — AI tools can handle first drafts, research, and routine analysis. You review and refine instead of starting from scratch every time.",
-    "Which workflows require you to be the connection point? If every process needs your input to move to the next stage, you become the bottleneck. Look for handoffs where one system can trigger the next without waiting for you to remember to do something."
+    "Is execution consistent across similar cases? When you handle the same type of project or customer twice, does it happen the same way both times? If the process changes depending on mood, memory, or who is involved, you do not have a system — you have organised chaos.",
+    "Are your tools and platforms talking to each other? Your CRM, your accounts package, your project management tool, your email system — do they share information or are you manually copying data between them? Every manual handover is a place where things go wrong and time gets wasted.",
+    "Who actually owns each system? Systems do not maintain themselves. Someone needs to be responsible for keeping them current, training people on them, and improving them when gaps appear. If no one owns the system, the system will slowly break down.",
+    "Where does friction persist in your workflows? Look for the places where work stops, gets delayed, or requires someone to chase someone else. These friction points are where systematic thinking pays off most. One good system eliminates the problem forever instead of managing it daily.",
+    "Is your business getting faster over time? Good systems compound. Each iteration should be quicker and smoother than the last. If you are not getting measurably faster at delivering results, your systems are not working hard enough for you."
   ],
   "quickWins": [
-    "This week: List every task you did this week that felt repetitive or mechanical. Pick the one that takes the most time and research one automation tool that could handle it.",
-    "This week: Set up automatic responses for common enquiries. If people email you the same questions, create template responses that send immediately when they contact you.",
-    "This week: Export your contact data from wherever it lives now and put it all in one spreadsheet. Even if you do nothing else, centralising the data is the first step toward a proper CRM."
+    "This week: Pick your most frustrating weekly task and document exactly how it gets done. Write it down step by step as if you were training someone else to do it.",
+    "This week: Identify one place where you manually copy information between two systems and investigate if they can be connected automatically. Even one automation saves hours over time.",
+    "This week: Ask your team: \"What is the most annoying part of getting your work done?\" Their answers will show you where systems are missing or broken."
   ],
   "relatedPlaybooks": [
     {
-      "ref": "2.3",
+      "ref": "2.8",
       "description": ""
     },
     {
-      "ref": "3.8",
+      "ref": "4.8",
       "description": ""
     },
     {
-      "ref": "2.0",
+      "ref": "5.8",
       "description": ""
     },
     {
-      "ref": "1.8",
+      "ref": "3.7",
       "description": ""
     },
     {
-      "ref": "2.5",
+      "ref": "2.6",
       "description": ""
     }
   ],
@@ -64,173 +64,161 @@
       "actions": [
         {
           "number": 1,
-          "title": "Task & Time Audit",
-          "description": "Map exactly where your time goes on manual, repetitive work. Identify the highest-impact automation opportunities based on time saved and effort to implement.",
+          "title": "System Mapping",
+          "description": "Map out your existing workflows to see how work actually moves through your business. You cannot improve what you cannot see, and most businesses are surprised by how disconnected their systems actually are.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Map exactly where your time goes on manual, repetitive work and identify the highest-impact automation opportunities based on time saved and effort to implement. This is similar to the Time & Energy audit (2.0) but focused specifically on finding tasks that technology can handle instead of you."
+              "content": "Map how work actually moves through your business, from the moment a lead comes in to the moment a customer is fully served and paid for. You are drawing a picture of reality, not how you think it works or how you wish it worked. Most businesses are surprised by how disconnected their systems are once they see it all on paper."
             },
             {
               "title": "Why It Matters",
-              "content": "Automation works best when you automate the right things. Most businesses either automate nothing (because it feels overwhelming) or automate something complex and impressive that saves 20 minutes per month. The biggest wins are usually the boring, repetitive tasks you do every day without thinking about them. This audit identifies those high-frequency, low-value tasks so you automate for maximum impact."
+              "content": "You cannot improve a system you cannot see. Most business owners carry a rough mental model of how their business works, but that model is usually incomplete, outdated, or wrong. System mapping exposes the gaps, bottlenecks, and manual workarounds that slow everything down. It also reveals the single points of failure where one person leaving or one tool breaking would cause chaos."
             },
             {
               "title": "How to Use This",
-              "content": "List your recurring tasks, score them on automation potential, and prioritise the best candidates.\n\n---"
+              "content": "Get a large whiteboard, a wall with sticky notes, or a digital tool like Miro. You need space. Work through each workflow below and draw the actual path work takes.\n\n---"
             },
             {
-              "title": "Task Inventory",
-              "content": "- [ ] List every task you or your team does on a recurring basis (daily, weekly, monthly). Aim for 20-30 items.\n- [ ] For each task, note: how often it happens, how long it takes each time, and who currently does it\n- [ ] Calculate the total time per month for each task (frequency x duration)\n- [ ] ⚡ Quick Win: Identify the task you personally do most often that involves copying data from one place to another. This is almost certainly automatable."
+              "title": "Core Workflow Mapping",
+              "content": "- [ ] **Map your sales workflow** - From first contact to closed deal. Every step, every handoff, every tool used. Include: where leads come from, how they get qualified, who contacts them, how proposals get created, and how deals get closed.\n- [ ] **Map your delivery workflow** - From closed deal to completed work. How does a new customer get onboarded? Who does the work? How is progress tracked? When and how does the customer get what they paid for?\n- [ ] **Map your financial workflow** - From invoice to cash in the bank. How do invoices get created? When are they sent? How do payments get reconciled? Who chases overdue accounts?\n- [ ] ⚡ Quick Win: **Map your most repeated daily task** - The thing you or your team do most often. Draw every step. You will almost certainly spot at least one unnecessary step you can eliminate today."
             },
             {
-              "title": "Score Each Task for Automation Potential",
-              "content": "Rate each task on three criteria (1-5 scale):\n\n- [ ] **Repetitiveness:** Is the task the same every time (5) or different every time (1)?\n- [ ] **Rule-based:** Can the task be described with clear rules and if/then logic (5) or does it require judgment and creativity (1)?\n- [ ] **Digital:** Does the task happen on a computer using digital tools (5) or is it physical/relationship-based (1)?\n\nCalculate: Repetitiveness + Rule-based + Digital = Automation Score (out of 15)\n\n- [ ] Tasks scoring 12-15: Strong automation candidates\n- [ ] Tasks scoring 8-11: Possible automation with some setup\n- [ ] Tasks scoring 7 or below: Better suited for delegation than automation"
+              "title": "Identify Gaps and Problems",
+              "content": "- [ ] **Mark every manual handoff** - Any point where information moves from one person to another by email, verbal instruction, or someone \"just knowing.\" These are your highest-risk failure points.\n- [ ] **Mark every point where information is re-entered** - If the same data gets typed into two different systems, that is a gap in your system design. It wastes time and introduces errors.\n- [ ] **Identify your bottlenecks** - Where does work queue up waiting for one person, one approval, or one tool? These are the points where speed dies.\n- [ ] **Find your single points of failure** - If one specific person were sick for a week, which workflows would stop? Those are your fragile points.\n- [ ] **Note where the real process differs from the official process** - People often create workarounds when the system does not work. Those workarounds are useful data. They tell you where the system is broken."
             },
             {
-              "title": "Prioritise by Impact",
-              "content": "- [ ] Sort your strong candidates (12-15 score) by monthly time saved\n- [ ] Estimate the setup effort for each: Quick (under 1 hour), Moderate (1-4 hours), or Complex (4+ hours)\n- [ ] Create your priority list: high time saved + quick setup = do first\n- [ ] Pick your top 3 automation candidates to focus on"
-            },
-            {
-              "title": "Common Automation Opportunities",
-              "content": "Review this list and check any that apply to your business:\n\n- [ ] New enquiry notifications and auto-responses\n- [ ] Data entry from one system to another (email to CRM, form to spreadsheet)\n- [ ] Sending follow-up emails after specific events (meeting booked, invoice sent, onboarding started)\n- [ ] Social media posting from a scheduled queue\n- [ ] Invoice creation and sending\n- [ ] Report generation and distribution\n- [ ] Calendar scheduling and reminders\n- [ ] File organisation and backup\n- [ ] Customer feedback collection at set intervals\n\n---"
+              "title": "Document What You Find",
+              "content": "- [ ] **Create a simple visual diagram for each core workflow** - Does not need to be fancy. Boxes and arrows showing steps, people, and tools. Keep it on one page per workflow.\n- [ ] ⚡ Quick Win: **Share the maps with your team and ask: \"Is this right?\"** - They will spot things you missed. The people doing the work every day know the real process better than anyone.\n- [ ] **Prioritise your problem areas** - Rank the gaps and bottlenecks by impact. Which ones cost you the most time, money, or customer satisfaction? Those get fixed first.\n- [ ] **Save a dated copy of your current-state maps** - This is your baseline. When you improve systems later, you will want to compare back to where you started.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- A complete inventory of recurring tasks with time estimates\n- Each task scored for automation potential\n- A prioritised list of the top 3 automation opportunities\n- A clear picture of how much time automation could reclaim per month\n- A starting point for the workflow automation work in Actions 3 and 4"
+              "content": "- Visual maps of your 3-4 core business workflows as they actually operate today\n- Every manual handoff, data re-entry point, and bottleneck identified\n- Single points of failure flagged\n- A prioritised list of system problems to address\n- A shared understanding across the team of how work actually flows"
             },
             {
               "title": "Coach Notes",
-              "content": "This audit often reveals that the owner spends 5-10 hours per week on tasks that could be fully automated. The emotional response is usually a mix of frustration (\"I have been doing this manually for years\") and overwhelm (\"I do not know how to automate anything\"). Reassure them: start with one. The first automation win builds confidence and momentum. Common first wins: auto-responding to enquiries, scheduling social media, and automating invoice reminders. These can each be set up in under an hour with tools like Zapier, Mailchimp, or built-in features of their existing software."
+              "content": "This is a revealing exercise and some clients find it uncomfortable. They built these systems (or let them evolve) and seeing the mess on paper can feel like a personal failure. Reframe it: every business has system gaps. The ones that map them can fix them. The ones that do not just keep tripping over the same problems.\n\nEncourage the client to involve their team in the mapping session. The owner's view of how work flows is often different from the team's experience. The truth usually sits somewhere in between. A 90-minute session with 2-3 key people in the room produces a much more accurate map than the owner working alone.\n\nDo not let this turn into a redesign session. Map first, fix later. The goal today is to see reality clearly."
             }
           ]
         },
         {
           "number": 2,
-          "title": "CRM Implementation",
-          "description": "Set up a simple customer relationship management system so all client data, communication history, and next actions live in one place instead of your memory.",
+          "title": "Integration Audit",
+          "description": "Review every tool and platform you use and identify where information should flow automatically but currently requires manual input. Focus on the highest-volume handovers first.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Set up a simple customer relationship management system so all client data, communication history, and next actions live in one place instead of your memory, your inbox, and scattered spreadsheets. This does not need to be expensive or complex. A basic CRM used consistently beats a sophisticated one that nobody touches."
+              "content": "Review every tool and platform your business uses, identify where information should flow automatically but currently requires manual input, and prioritise the integrations that would save the most time. Most small businesses are running 10-20 software tools that barely talk to each other. The result is hours of manual data transfer every week, errors that nobody catches, and a team that spends more time feeding systems than serving customers."
             },
             {
               "title": "Why It Matters",
-              "content": "When client information lives in your head, three things happen: you forget things (follow-ups, preferences, conversation history), nothing is transferable (if you are unavailable, nobody else can help the client), and you cannot see patterns (which clients are at risk, which prospects need chasing, where deals are getting stuck). A CRM solves all three. It is your business's memory system. And unlike your memory, it does not lose things after a busy week."
+              "content": "Every time someone copies data from one system to another, three things happen: it takes time, it introduces the chance of error, and it creates a delay. Multiply that by dozens of manual transfers happening every week and you have a significant hidden cost. Integration is not about buying more technology. It is about making the technology you already have work together so your team can focus on the work that actually matters."
             },
             {
               "title": "How to Use This",
-              "content": "Choose a CRM, set it up with the basics, migrate your existing data, and build the daily habit of using it.\n\n---"
+              "content": "Start with a complete inventory of your tools, then map the data flows between them to find the gaps.\n\n---"
             },
             {
-              "title": "Choose Your CRM",
-              "content": "- [ ] ⚡ Quick Win: If you have fewer than 50 contacts and need something today, start with a well-structured Google Sheet or Notion database. A simple system you use beats a fancy system you do not.\n- [ ] For a proper CRM, evaluate based on your needs:\n  - **Simple and free:** HubSpot Free, Zoho Free, or Notion\n  - **Simple and paid:** Pipedrive, Close, or Capsule (£15-30/month)\n  - **All-in-one:** HubSpot, GoHighLevel, or Keap (includes email marketing, automation)\n- [ ] Choose based on: ease of use (will you actually open it daily?), integration with your email and calendar, and cost\n- [ ] Do NOT over-research. Pick one that seems right and commit for 90 days. You can switch later."
+              "title": "Tool Inventory",
+              "content": "- [ ] **List every software tool and platform your business uses** - CRM, accounting, email marketing, project management, communication, file storage, scheduling, invoicing, analytics. Include everything, even the small ones.\n- [ ] **For each tool, note: who uses it, what data it holds, and what it costs** - This often reveals forgotten subscriptions and duplicate tools doing the same job.\n- [ ] ⚡ Quick Win: **Identify any tools you are paying for but nobody uses regularly** - Cancel them today. Most businesses have 2-3 zombie subscriptions costing money for nothing.\n- [ ] **Flag any tools where the same data exists in multiple places** - Customer contact details in your CRM, email tool, and invoicing software. That is three places the same information can be wrong."
             },
             {
-              "title": "Initial Setup (2-3 Hours)",
-              "content": "- [ ] Create your pipeline stages (match your actual sales process):\n  - Example: New Lead > Contacted > Meeting Booked > Proposal Sent > Negotiation > Won > Lost\n- [ ] Set up your contact fields: Name, Company, Email, Phone, Source (how they found you), Status, Last Contact Date, Next Action, Notes\n- [ ] Import your existing contacts: export from your spreadsheet, phone, or email and import into the CRM\n- [ ] Connect your email if the CRM supports it (auto-logs email conversations)\n- [ ] Connect your calendar if supported (auto-logs meetings)\n- [ ] Create a simple dashboard view: what needs attention today?"
+              "title": "Data Flow Analysis",
+              "content": "- [ ] **Map how data moves between your tools** - When a new lead comes in, what happens? Does it get entered into the CRM automatically, or does someone type it in? When an invoice gets paid, does your accounting software know, or does someone reconcile manually?\n- [ ] **Identify every manual data transfer** - Each one is a candidate for automation. List them all with an estimate of how long each takes per week.\n- [ ] **Mark the transfers that cause the most errors** - Where do things go wrong? Mismatched customer details, missed invoices, leads that fall through the cracks. These are your priority fixes.\n- [ ] **Check what native integrations already exist** - Most popular tools connect natively or through Zapier, Make, or similar platforms. Before building anything custom, check what is already available out of the box."
             },
             {
-              "title": "Build the Daily Habit",
-              "content": "- [ ] Start every working day by opening your CRM and checking: who needs a follow-up today?\n- [ ] After every client call, meeting, or significant email: update the contact record (2 minutes max)\n- [ ] Log the key point from every conversation: what was discussed, what was agreed, what is the next action\n- [ ] Move deals through pipeline stages as they progress\n- [ ] Every Friday: review your pipeline. Which deals are stuck? Which leads have gone cold? Who needs chasing?"
-            },
-            {
-              "title": "Make It Useful",
-              "content": "- [ ] Set up reminders for follow-ups so nothing falls through the cracks\n- [ ] Use tags or categories to segment contacts: Hot Lead, Current Client, Past Client, Partner, etc.\n- [ ] Track how leads found you (Source field) so you can measure which channels produce results\n- [ ] After 30 days, review: is the CRM helping you stay on top of relationships? What is missing?\n- [ ] After 90 days, consider adding automation: auto-emails when a deal moves to a new stage, reminder sequences for cold leads, etc.\n\n---"
+              "title": "Prioritise and Plan",
+              "content": "- [ ] **Rank integrations by time saved per week** - A transfer that takes 5 minutes daily (25 minutes per week) multiplied by 50 weeks is over 20 hours per year. That adds up fast.\n- [ ] **Rank integrations by error risk** - Some manual transfers are low-risk (copying a name). Others are high-risk (entering financial data). Prioritise the high-risk ones even if they do not save the most time.\n- [ ] ⚡ Quick Win: **Pick the single easiest integration to set up this week** - Usually connecting your form tool to your CRM, or your invoicing tool to your accounting software. One Zapier connection, 15 minutes, done.\n- [ ] **Create a phased integration plan** - Not everything needs to happen at once. Quick wins this week, medium-effort integrations this month, complex ones this quarter.\n- [ ] **Estimate costs for each integration** - Some are free (native connections). Some need middleware (Zapier at £20-50/month). Some need custom work. Know the cost before you commit.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- All client and prospect data in one accessible place\n- Communication history logged and searchable\n- A clear pipeline showing where every opportunity stands\n- Follow-ups happening on time because the system reminds you\n- The ability to hand off client relationships to team members without losing context"
+              "content": "- A complete inventory of every tool and platform in the business with costs\n- A clear map of where data flows automatically and where it requires manual input\n- Zombie subscriptions identified and cancelled\n- A prioritised list of integrations to build, ranked by time saved and error risk\n- At least one quick-win integration set up and running"
             },
             {
               "title": "Coach Notes",
-              "content": "CRM resistance is common: \"I already know my clients.\" Challenge: \"What happens when you go on holiday? What happens when you hire someone? What if a client calls and you cannot remember what you discussed 3 months ago?\" The daily habit is everything - a CRM is only as good as the data in it. The first 2 weeks are the hardest as the habit forms. Check in every session: \"Are you updating your CRM daily?\" If not, diagnose why. Usually it is too complex (simplify) or too slow (switch tools). For most businesses under £1M, Pipedrive or HubSpot Free are the sweet spot."
+              "content": "This action often triggers \"shiny object syndrome\" where the client wants to replace everything with one perfect system. Redirect them. The goal is not to change tools. It is to connect the tools you have. New tools come with migration costs, learning curves, and their own integration problems.\n\nStart with the integration that annoys the team the most. That builds momentum and buy-in. If the first integration saves someone 30 minutes a week of tedious data entry, they will champion the next one.\n\nFor very small businesses with only 3-5 tools, this audit may only take 30 minutes. That is fine. The exercise is still valuable because it forces the owner to see the full picture of their tech stack and make deliberate choices about what stays."
             }
           ]
         },
         {
           "number": 3,
-          "title": "Workflow Automation",
-          "description": "Build simple automated workflows using tools like Zapier so routine processes happen without your input. Lead notifications, data entry, follow-up sequences, and basic reporting.",
+          "title": "Standardisation Framework",
+          "description": "Create consistent approaches for the work that gets repeated most often. Standard operating procedures that people actually follow, not perfect documents that sit in folders.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Build simple automated workflows using tools like Zapier, Make, or built-in software features so routine processes happen without your input. Start with your highest-impact automation candidate from the Task Audit (Action 1) and get it running this week."
+              "content": "Build consistent, documented approaches for the work that gets repeated most often in your business. These are standard operating procedures (SOPs) that people will actually follow, not 40-page manuals that gather dust. The goal is simple: anyone in the business should be able to pick up a documented process and deliver a consistent result, even if the usual person is unavailable."
             },
             {
               "title": "Why It Matters",
-              "content": "Every manual step in a recurring workflow is a step that depends on someone remembering to do it. Automated workflows run every time, on time, without reminders. A lead fills in a form and automatically gets added to your CRM, receives a welcome email, and creates a task for you to follow up - all without you touching anything. This is not futuristic technology. It is available now for £20-50/month and most automations take under an hour to set up."
+              "content": "Without standardisation, quality depends on who does the work. Your best person delivers a great result. Your newest person delivers something different. The customer experience becomes unpredictable. Standardisation does not mean removing creativity or judgement. It means building a reliable floor that nobody drops below. The best businesses standardise the routine so their people can focus their energy on the exceptional."
             },
             {
               "title": "How to Use This",
-              "content": "Pick one automation, build it, test it, and get it running. Then add the next one. One at a time.\n\n---"
+              "content": "Work through the steps in order. You are building a framework for creating SOPs, not trying to document everything at once. Start with the highest-impact processes and expand from there.\n\n---"
             },
             {
-              "title": "Choose Your First Automation",
-              "content": "- [ ] Review your top 3 candidates from the Task Audit (Action 1)\n- [ ] ⚡ Quick Win: Start with the simplest one that saves the most time. Common first automations:\n  - New form submission > auto-email response + add to CRM\n  - New enquiry > Slack/email notification to you\n  - Invoice overdue > automatic reminder email to client\n  - New client signed > trigger onboarding email sequence\n  - Social media post scheduled from a content calendar"
+              "title": "Step 1: Identify What to Standardise First",
+              "content": "- [ ] **List every process that happens more than once a week** - Customer onboarding, invoicing, lead follow-up, content publishing, reporting, quality checks. Get them all down.\n- [ ] ⚡ Quick Win: **Pick the process that causes the most inconsistency or complaints** - This is your first SOP. Document it this week.\n- [ ] **Identify processes where mistakes are most costly** - Financial processes, customer-facing communications, and compliance tasks should be standardised before internal admin.\n- [ ] **Flag processes that currently depend on one person's knowledge** - If only Sarah knows how to run payroll or only James knows how to set up a new client, those are fragile processes that need documenting urgently."
             },
             {
-              "title": "Build It",
-              "content": "- [ ] Choose your automation tool:\n  - **Zapier** (beginner-friendly, widest range of app connections, free tier available)\n  - **Make (formerly Integromat)** (more powerful, slightly steeper learning curve, better value)\n  - **Built-in features** (many tools like HubSpot, Mailchimp, Xero have their own automation)\n- [ ] Map the workflow: Trigger (what starts it) > Actions (what happens automatically)\n- [ ] Set it up step by step:\n  - Define the trigger: \"When [event] happens in [app]...\"\n  - Define the action(s): \"Do [this] in [app]...\"\n  - Map the data: which fields from the trigger populate which fields in the action?\n- [ ] Test with a real example: trigger the automation and check that every step works correctly\n- [ ] Fix any issues and test again until it runs cleanly"
+              "title": "Step 2: Build Your SOP Template",
+              "content": "- [ ] **Create a standard template for all SOPs** - Every SOP should include: process name, purpose (why it exists), trigger (what starts it), steps (in order), tools needed, output (what \"done\" looks like), and owner (who is responsible).\n- [ ] **Keep steps to 7-12 per process** - If a process has 30 steps, it is either too complex or needs breaking into smaller sub-processes. Simplicity drives adoption.\n- [ ] **Include screenshots or visuals for tool-based steps** - A screenshot of where to click beats a paragraph of description every time.\n- [ ] **Add a \"common mistakes\" section** - What goes wrong most often? Warn people upfront so they avoid the traps."
             },
             {
-              "title": "Common Automation Recipes",
-              "content": "- [ ] **Lead capture:** Website form > CRM contact created > Welcome email sent > Task created for follow-up\n- [ ] **Invoice chasing:** Invoice overdue by 7 days > Reminder email sent > Overdue by 14 days > Second reminder + notification to you\n- [ ] **Client onboarding:** Contract signed > Welcome email with next steps > Calendar invite for kickoff > Folder created in shared drive\n- [ ] **Social scheduling:** Content calendar updated > Post automatically published at scheduled time\n- [ ] **Report generation:** End of week > Pull data from sources > Format into report > Email to you or team"
+              "title": "Step 3: Document Your First 3 SOPs",
+              "content": "- [ ] **Watch someone do the process in real time** - Do not write the SOP from memory. Watch it happen, note the actual steps (including the shortcuts and workarounds), and document reality.\n- [ ] **Have someone else follow your draft SOP without help** - If they can complete the process using only the document, it works. If they get stuck, the document needs more detail at that step.\n- [ ] ⚡ Quick Win: **Record a screen capture of the process** - A 5-minute video paired with a written checklist is often more useful than a detailed written SOP alone.\n- [ ] **Get feedback from the team** - Ask: \"Is anything missing? Is anything confusing? Would you actually use this?\" Revise based on what they say."
             },
             {
-              "title": "Monitor and Expand",
-              "content": "- [ ] Check your first automation weekly for the first month: is it running correctly? Any errors?\n- [ ] Calculate time saved: how many minutes per week has this automation freed up?\n- [ ] Once stable, build your second automation from the priority list\n- [ ] Aim for 3-5 working automations within 90 days\n- [ ] Set a quarterly review: are automations still running? Do any need updating? What should be automated next?\n\n---"
+              "title": "Step 4: Organise and Maintain",
+              "content": "- [ ] **Choose a single location for all SOPs** - A shared drive folder, a wiki, or a project management tool. One place, consistently organised, accessible to everyone who needs it.\n- [ ] **Create a naming convention** - Department, process name, version. Example: \"Sales - Lead Follow-Up - v2.\" Consistent naming makes finding things easy.\n- [ ] **Assign an owner for each SOP** - One person is responsible for keeping it current. Not for doing all the work, but for ensuring the document stays accurate.\n- [ ] **Set a review schedule** - Every SOP gets reviewed at least once every 6 months. Processes change. Documents that do not keep up become misleading.\n- [ ] **Track which SOPs exist and which are still needed** - A simple tracker showing: process name, SOP status (documented / needs update / not yet written), owner, and last review date.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- At least one workflow fully automated and running reliably\n- Time reclaimed from manual, repetitive work\n- Fewer dropped balls on routine tasks (follow-ups, reminders, notifications)\n- A growing library of automations that compound time savings\n- Confidence that \"automation\" is not scary or complex - it is practical and accessible"
+              "content": "- A clear framework and template for creating SOPs across the business\n- Your top 3 highest-impact processes documented and tested\n- A single, organised location where all SOPs live\n- Clear ownership and a review schedule so documents stay current\n- Reduced dependency on individual knowledge and more consistent delivery"
             },
             {
               "title": "Coach Notes",
-              "content": "The biggest blocker is overwhelm: clients see automation possibilities everywhere and freeze. Force a single starting point: \"What one manual process annoys you most?\" Build that one, celebrate the win, then move to the next. Zapier is the easiest entry point for non-technical users - their visual workflow builder is intuitive. Warn clients about over-automating: not every process should be automated. Automate the repetitive and rule-based; keep the human touch where relationships matter. A personalised follow-up email from you is worth more than an automated one, even if it takes longer."
+              "content": "The resistance to SOPs usually comes in two flavours. \"We are too small for that\" (you are not, you are exactly the right size to start). And \"it will stifle creativity\" (it will not, it will free creativity by handling the routine).\n\nPush the client to document processes as they are, not as they wish they were. If the real process includes workarounds and shortcuts, document those. You can improve the process later. For now, you need an accurate record of how things actually work.\n\nThe biggest trap is trying to document everything at once. Three good SOPs that get used are worth more than thirty that sit in a folder. Start with the three processes that would cause the most damage if the person who does them disappeared tomorrow."
             }
           ]
         },
         {
           "number": 4,
-          "title": "AI Content & Analysis Tools",
-          "description": "Implement AI tools for content creation, customer analysis, and routine decision-making. First drafts instead of blank pages, insights instead of raw data, responses instead of thinking from scratch.",
+          "title": "System Ownership Matrix",
+          "description": "Assign clear ownership for each system so someone is accountable for keeping it current and improving it over time. Systems without owners become systems that do not work.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Implement AI tools for content creation, customer analysis, and routine decision support. This is about using AI as an accelerator - not a replacement for thinking, but a tool that gives you first drafts instead of blank pages, insights instead of raw data, and quick answers instead of hours of research."
+              "content": "Assign clear ownership for every system, tool, and process in your business so that someone specific is accountable for keeping it running, keeping it current, and improving it over time. Right now, most of your systems are \"everyone's responsibility,\" which really means they are nobody's responsibility. This matrix changes that."
             },
             {
               "title": "Why It Matters",
-              "content": "AI tools have reached the point where they can genuinely save hours per week for a small business owner. Writing a proposal from scratch takes 2 hours; editing an AI-generated first draft takes 30 minutes. Analysing customer feedback manually takes an afternoon; asking AI to identify themes takes 5 minutes. The business owners who learn to use AI effectively will have a significant time and quality advantage over those who do not. This is not about becoming a tech expert. It is about knowing which tools to use and when."
+              "content": "Unowned systems decay. The CRM that nobody maintains fills up with duplicate contacts. The process document that nobody updates becomes misleading. The software subscription that nobody reviews keeps charging for features you stopped using. When every system has an owner, problems get spotted early, improvements happen naturally, and nothing falls through the cracks because \"I thought someone else was handling it.\""
             },
             {
               "title": "How to Use This",
-              "content": "Identify where AI can help most in your business, choose your tools, and start using them this week.\n\n---"
+              "content": "Pull together your system map and tool inventory from previous actions. Then assign ownership for each one using the framework below.\n\n---"
             },
             {
-              "title": "Identify Your AI Opportunities",
-              "content": "- [ ] Review these categories and tick every task where you could use AI help:\n\n### Content Creation\n- [ ] Writing social media posts\n- [ ] Drafting emails to clients\n- [ ] Creating proposals or quotes\n- [ ] Writing blog posts or articles\n- [ ] Creating marketing copy\n- [ ] Writing job descriptions\n- [ ] Producing meeting agendas and summaries\n\n### Analysis and Research\n- [ ] Summarising customer feedback\n- [ ] Analysing competitor offerings\n- [ ] Researching industry trends\n- [ ] Reviewing financial data for patterns\n- [ ] Identifying themes across client conversations\n\n### Communication and Response\n- [ ] Drafting responses to common questions\n- [ ] Creating template emails for recurring situations\n- [ ] Preparing for difficult conversations\n- [ ] Writing standard operating procedures\n\n- [ ] ⚡ Quick Win: Pick the one task from the list above that you do most frequently. Use an AI tool for it today. Even a basic prompt like \"Write a first draft of [thing]\" will show you the potential."
+              "title": "Build the Matrix",
+              "content": "- [ ] **Create a spreadsheet or table with these columns** - System/tool name, description (what it does), owner (one person), backup owner (who covers if the owner is away), review frequency, and last review date.\n- [ ] **List every system, tool, and documented process** - Your CRM, accounting software, project management tool, email platform, every SOP, and every recurring workflow. Include the infrastructure too - hosting, domains, backups.\n- [ ] ⚡ Quick Win: **Identify any systems that currently have no clear owner** - These are your highest-risk items. Assign an owner to each one today, even if it is temporary.\n- [ ] **Assign one owner per system** - Not a team. Not \"shared.\" One person whose name is next to it. They do not have to do all the work, but they are accountable for the system's health."
             },
             {
-              "title": "Choose Your Tools",
-              "content": "- [ ] **General AI assistant:** ChatGPT, Claude, or Gemini (for writing, analysis, brainstorming, and research)\n- [ ] **Email AI:** Built-in features in Gmail or Outlook, or Superhuman (for faster email drafting and responses)\n- [ ] **Content AI:** Jasper, Copy.ai, or just ChatGPT/Claude (for marketing copy, social posts, and long-form content)\n- [ ] **Meeting AI:** Otter.ai, Fireflies, or Fathom (for automatic meeting transcription and summaries)\n- [ ] Start with ONE general tool (ChatGPT or Claude) and learn to use it well before adding specialised tools"
+              "title": "Define Ownership Responsibilities",
+              "content": "- [ ] **Clarify what \"owning\" a system means** - The owner is responsible for: keeping it running, keeping documentation current, managing access and permissions, flagging problems, and recommending improvements.\n- [ ] **Set review frequency for each system** - Critical systems (CRM, finance) get monthly reviews. Supporting systems (file storage, internal tools) get quarterly reviews. Documentation gets reviewed every 6 months.\n- [ ] **Define what a system review includes** - Is it working as expected? Is the documentation accurate? Are there unused features or licences? Are there problems that need fixing? Is there a better option available?\n- [ ] **Assign backup owners for critical systems** - If your CRM owner is on holiday when something breaks, who steps in? Critical systems need a named backup."
             },
             {
-              "title": "Build the AI Habit",
-              "content": "- [ ] Set a rule: \"Before I start writing anything from scratch, I ask AI for a first draft\"\n- [ ] Save your best prompts: when you find a prompt that produces great results, save it for reuse\n- [ ] Create prompt templates for your recurring tasks:\n  - \"Write a follow-up email to a client who [situation]. Keep it professional and [tone].\"\n  - \"Summarise these meeting notes into action items with owners and deadlines.\"\n  - \"Draft a social media post about [topic] for [audience]. Keep it under 200 words.\"\n- [ ] Spend 15 minutes per week experimenting with new ways AI can help"
-            },
-            {
-              "title": "Quality Control",
-              "content": "- [ ] Never send AI output without reviewing and editing it - AI is your starting point, not your finish line\n- [ ] Check facts: AI can generate plausible-sounding but incorrect information. Verify anything important.\n- [ ] Maintain your voice: edit AI drafts to sound like you, not like a robot\n- [ ] Be transparent where appropriate: some contexts require disclosure that AI was used\n- [ ] Track time saved: after 30 days, estimate how many hours AI has saved you per week\n\n---"
+              "title": "Clean Up and Communicate",
+              "content": "- [ ] **Identify overlapping systems** - Two project management tools, three places for file storage, duplicate CRMs. Ownership clarity often reveals redundancy. Flag these for consolidation.\n- [ ] ⚡ Quick Win: **Share the matrix with the whole team** - Everyone should know who owns what. This eliminates \"I did not know who to ask\" and \"I thought you were handling that.\"\n- [ ] **Add system ownership to your onboarding process** - When someone new joins, they should see the matrix and know who to ask about each system.\n- [ ] **Schedule the first round of reviews** - Put the review dates in calendars now. If it is not scheduled, it will not happen.\n- [ ] **Review the matrix itself quarterly** - As people change roles, leave, or join, the matrix needs updating. Build this into your quarterly operations review.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- AI tools integrated into your daily workflow for content, analysis, and communication\n- First drafts produced in minutes instead of hours\n- Routine analysis and summarisation handled in seconds\n- A library of reusable prompts for your most common tasks\n- Measurable time savings that free you for higher-value work"
+              "content": "- A complete matrix showing every system, its owner, backup owner, and review schedule\n- No unowned systems, tools, or processes in the business\n- Clear definition of what system ownership means and what is expected\n- Overlapping and redundant systems identified for consolidation\n- A living document that stays current through regular reviews"
             },
             {
               "title": "Coach Notes",
-              "content": "AI adoption varies hugely by client. Some are already using ChatGPT daily; others have never tried it. Meet them where they are. For beginners, start with one simple use case: \"Use ChatGPT to draft your next client email.\" Let them experience the time saving before expanding. For more advanced users, push toward prompt engineering and integration (using AI within their existing tools). The most important principle to reinforce: AI generates first drafts, humans create final versions. Clients who skip the editing step produce generic, impersonal content that can damage their brand. The sweet spot is AI speed with human judgment and personality layered on top."
+              "content": "This exercise often creates awkward conversations because it reveals how much has been running on autopilot. That is normal and healthy. The point is not to blame anyone for the gaps. It is to close them going forward.\n\nWatch for the business owner trying to own everything. In small businesses, the founder often defaults to \"I will just own it all.\" Push back. The goal is to distribute ownership so the business does not depend entirely on one person. Even in a 3-person team, each person should own something.\n\nThe matrix does not need to be complicated. A simple Google Sheet with 6 columns is enough. The value is in the assignment and accountability, not in the format. If the client spends more than an hour building the document, they are overengineering it."
             }
           ]
         }

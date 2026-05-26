@@ -38,6 +38,7 @@ type Body = {
   };
   answers: Record<string, number>;
   total_score: number;
+  methodology_version?: number;
   boss_level?: string;
   qualifying_data?: Record<string, unknown>;
   open_text?: string | null;
@@ -381,6 +382,10 @@ export async function POST(request: Request) {
     total_score: body.total_score,
     answers: body.answers,
     assessment_type: assessmentType,
+    methodology_version:
+      assessmentType === "diagnostic_50"
+        ? (body.methodology_version ?? 2)
+        : 2,
   };
 
   if (assessmentType === "boss_scorecard") {

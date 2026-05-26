@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
+import { BOSS_PRO_SCORE_LABELS, bossProGridScoreDescription } from "@/lib/bossProScoringLabels";
 import { BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
 import {
   computePillarScores,
@@ -256,15 +257,15 @@ export function BossGridGlass({
             <p className="mb-2 text-sm font-medium text-slate-900">{question.question}</p>
             <ul className="space-y-1 text-xs text-slate-600">
               <li>
-                <span className="font-semibold text-red-600">Not in place:</span>{" "}
+                <span className="font-semibold text-red-600">{BOSS_PRO_SCORE_LABELS[0]}:</span>{" "}
                 {question.scoringGuide.red}
               </li>
               <li>
-                <span className="font-semibold text-amber-600">Partially:</span>{" "}
+                <span className="font-semibold text-amber-600">{BOSS_PRO_SCORE_LABELS[1]}:</span>{" "}
                 {question.scoringGuide.amber}
               </li>
               <li>
-                <span className="font-semibold text-emerald-600">Fully in place:</span>{" "}
+                <span className="font-semibold text-emerald-600">{BOSS_PRO_SCORE_LABELS[2]}:</span>{" "}
                 {question.scoringGuide.green}
               </li>
             </ul>
@@ -371,7 +372,7 @@ function PillarCardGlass({
               }
               aria-label={
                 interactive && onScoreChange
-                  ? `${playbook.name}: ${score === 0 ? "Not in place" : score === 1 ? "Partially in place" : score === 2 ? "Fully in place" : "Not scored"}. Click to cycle. Right-click to open playbook.`
+                  ? `${playbook.name}: ${bossProGridScoreDescription(score)}. Click to cycle. Right-click to open playbook.`
                   : onPlaybookClick
                     ? `${playbook.name}. Click to open playbook.`
                     : undefined

@@ -2,459 +2,614 @@
   "ref": "2.5",
   "level": 2,
   "area": 5,
-  "name": "Lead Generation",
+  "name": "Sales & Conversion",
   "subtitle": "Level 2 · Overworked · Revenue & Marketing",
-  "whatThisIs": "Lead generation is the lifeblood of growth. Without a consistent flow of qualified prospects, every month feels like starting from zero. You win some deals, celebrate briefly, then wake up next month with an empty pipeline and have to scramble again.\n\nThis playbook builds a systematic acquisition engine so you never have to pray that the phone rings. It covers the full lead generation system: choosing the right channels, creating content that attracts prospects, capturing them effectively, and measuring what actually works. The goal is predictable, consistent lead flow that feeds your sales process every week.\n\nThis is not about being everywhere at once. It is about finding what works for your business and doubling down on it.",
+  "whatThisIs": "Sales and conversion is where marketing effort becomes revenue. It is the bridge between having prospects and having customers. Get this right and you multiply the value of every lead, every conversation, every pound spent on marketing. Get it wrong and you are burning money on leads that never convert.\n\nThis playbook is about building a systematic sales process that works consistently across all mediums — whether you are selling in person, on the phone, over Zoom, or through digital channels. It covers the complete journey from initial conversation to signed contract, with clear metrics so you know exactly where deals are won and lost.\n\nThis is not about learning sales tricks or persuasion techniques. It is about creating a repeatable system that converts prospects into customers predictably, scales beyond just you, and improves every month.",
   "whatItLooksLike": {
     "broken": {
       "emoji": "🔴",
       "label": "When this is broken",
-      "content": "You never know where next month's leads will come from. Most of your business comes from word of mouth or one-off marketing efforts that worked once but you cannot replicate. You try random tactics — social media one week, paid ads the next — but nothing sticks. You spend money on marketing but cannot tell if it is working because you do not track the numbers."
+      "content": "Your conversion rates vary wildly depending on your mood, the prospect, or what you had for breakfast. You wing every sales conversation with no clear process. Some deals close, others disappear, and you have no idea why. You cannot explain to someone else how to sell your product because you do not have a system — just instinct and hope."
     },
     "ok": {
       "emoji": "🟠",
       "label": "When this is OK",
-      "content": "You get some leads from a couple of channels but the flow is inconsistent. Some months are good, others are terrible, and you are not sure what made the difference. You know roughly what you spend on marketing but not what it costs to get each lead. You have content but it feels random rather than strategic."
+      "content": "You have some sales processes but they are different for phone calls versus Zoom versus email. Your close rate is decent but inconsistent across your team. You know roughly how many leads convert but you cannot pinpoint where most deals are lost. Some months are great, others are disappointing, and you cannot predict which will be which."
     },
     "working": {
       "emoji": "🟢",
       "label": "When this is working",
-      "content": "You have 2-3 lead generation channels that consistently produce qualified prospects every week. You know exactly what it costs to generate a lead from each channel and which channels deliver the highest quality prospects. Your content strategy is focused and builds authority in your niche. You have weekly lead targets and you hit them regularly through a mix of organic and paid efforts."
+      "content": "You have one core sales process that adapts to any medium — phone, Zoom, in-person, or digital. Every conversation follows the same diagnostic framework so you are comparing like with like. You know your exact conversion rates at every stage and can spot problems immediately. New salespeople can learn your system and hit targets within 90 days. Revenue becomes predictable because conversion is systematic."
     }
   },
   "thingsToThinkAbout": [
-    "Which channel consistently produces your best customers? Most businesses spread their effort across five channels when one or two could deliver all the leads they need. Double down on what is already working before chasing the next shiny marketing tactic.",
-    "Do you know what it actually costs to get a qualified lead? Without cost-per-lead numbers, you are flying blind. You might be spending £100 to generate a lead worth £50, or missing out on a channel that delivers £500 leads for £20 each.",
-    "Is your content strategy focused or scattered? Publishing random content hoping something sticks is not a strategy. The best lead generation content consistently addresses the same problems for the same people. Repetition builds authority.",
-    "Are you capturing leads or just creating awareness? Getting attention is not the same as generating leads. Every piece of marketing should have a clear next step that moves prospects from \"interested\" to \"contact details captured.\"",
-    "What weekly volume do you need to hit your revenue targets? If you need £50k revenue and your average deal is £5k, you need ten customers. If 20% of leads convert, you need fifty leads. Work backwards from revenue to weekly lead targets."
+    "Do you have one sales process or four different approaches? Most businesses sell differently on the phone versus Zoom versus email versus in-person. This creates inconsistency, makes training impossible, and means you never get good at any single approach.",
+    "Can you explain exactly where deals are lost? If you cannot tell the difference between prospects who do not show up, prospects who show but do not buy, and prospects who want to think about it, you cannot improve. Each problem needs a different solution.",
+    "Would your sales process work if you recorded every conversation? The test of a real system is whether it sounds professional when played back. If you would be embarrassed by a recording, you do not have a process — you have improvisation.",
+    "Do you handle objections or do they handle you? The same five objections come up in 80% of sales conversations. If you do not have prepared, practiced responses that feel natural, you are losing deals you should win.",
+    "Is your sales training \"shadow me once\" or something more systematic? Most SMEs train new salespeople by having them listen to a few calls and then hope for the best. Real sales training means scripts, role-play, recorded calls, and weekly coaching sessions."
   ],
-  "actionsIntro": "This playbook is organised into three sections that build your complete lead generation system:",
+  "actionsIntro": "This is a larger playbook organised into four sections. When you open it in the Profit System, you will find:",
   "quickWins": [
-    "This week: Audit your current lead sources. List every way leads found you in the last three months. Circle the top two sources by both volume and quality.",
-    "This week: Calculate your target weekly lead volume. Take your monthly revenue goal, divide by average deal size, then multiply by the leads needed per sale. That is your weekly target.",
-    "This week: Pick one piece of content you have created recently and turn it into a lead magnet by adding a clear call-to-action and a simple way to capture contact details."
+    "This week: Map your last 20 prospects through the 5-stage pipeline. Count how many progressed from each stage to the next. Your lowest conversion rate shows you where to focus first.",
+    "This week: Write down the exact words you use to open every sales conversation. If it changes depending on your mood, you need a script. If you do not have one, create a 30-second opening that works for phone, Zoom, or in-person.",
+    "This week: List the five objections you hear most often. Write a 60-second response to each one. Practice them out loud until they sound natural, not rehearsed."
   ],
   "relatedPlaybooks": [
     {
-      "ref": "1.5",
+      "ref": "2.5",
+      "description": ""
+    },
+    {
+      "ref": "4.7",
+      "description": ""
+    },
+    {
+      "ref": "3.6",
+      "description": ""
+    },
+    {
+      "ref": "3.4",
       "description": ""
     },
     {
       "ref": "3.5",
-      "description": ""
-    },
-    {
-      "ref": "4.5",
-      "description": ""
-    },
-    {
-      "ref": "5.5",
-      "description": ""
-    },
-    {
-      "ref": "3.7",
       "description": ""
     }
   ],
   "actions": [],
   "actionSections": [
     {
-      "title": "Channel Strategy",
-      "description": "Finding the 2-3 channels that work best for your business.",
+      "title": "Sales Architecture & Pipeline",
+      "description": "Building the foundation for systematic selling.",
       "actions": [
         {
           "number": 1,
-          "title": "Channel Audit",
-          "description": "Review all the ways leads currently find you, identify what is working and what is not, and eliminate the channels that drain time without delivering results.",
+          "title": "The 4 Selling Mediums",
+          "description": "Understand when to use in-person, phone, Zoom, and async channels, and how they work together rather than competing with each other.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Review every way leads currently find your business, measure which channels are actually working, and eliminate the ones that drain time without delivering results. This gives you a clear, data-driven picture of your current lead generation so you can double down on winners and stop wasting effort on losers."
+              "content": "Understand the four channels through which you can sell - in-person, phone, video call (Zoom), and asynchronous (email, DM, text) - and decide which combination works best for your business, your offer, and your buyers. Each medium has different strengths, conversion rates, and scalability. Most businesses default to one without considering whether it is actually the best fit."
             },
             {
               "title": "Why It Matters",
-              "content": "Most business owners are spread across too many channels. A bit of social media here, some networking there, occasional ads, maybe a blog post when they remember. The result: mediocre results from everything and great results from nothing. A channel audit reveals the truth. Usually 1-2 channels produce 80% of your leads and the rest are noise. Once you know which is which, you can redirect all that scattered effort into what actually works."
+              "content": "The medium you sell through affects your conversion rate, your reach, and your time investment. In-person meetings convert highest but scale worst. Async messages scale best but convert lowest. Choosing the wrong medium for your offer means either leaving money on the table (selling a high-ticket offer over email) or burning time unnecessarily (doing face-to-face meetings for a low-ticket product). Getting this right is a leverage decision that affects every sale you make."
             },
             {
               "title": "How to Use This",
-              "content": "Look at the last 3-6 months of data. If you do not have formal tracking, reconstruct from memory, your CRM, your inbox, or by asking new clients \"how did you find us?\"\n\n---"
+              "content": "Review each medium below and assess honestly which ones you currently use, which you should use, and where the gaps are.\n\n---"
             },
             {
-              "title": "Inventory Your Channels",
-              "content": "- [ ] List every channel that has generated at least one lead in the last 6 months:\n  - Referrals / word of mouth\n  - Website organic search (SEO)\n  - Social media (list each platform separately)\n  - Paid advertising (list each platform)\n  - Email marketing\n  - Content marketing (blog, podcast, YouTube)\n  - Networking events / speaking\n  - Partnerships / joint ventures\n  - Directories / listings\n  - Cold outreach (email, phone, LinkedIn)\n  - Other: ___\n- [ ] For each channel, estimate or count: how many leads per month?\n- [ ] ⚡ Quick Win: Ask your last 5 new clients \"How did you first hear about us?\" The answers often reveal your best channel."
+              "title": "Audit Your Current Sales Mediums",
+              "content": "- [ ] List every way you currently sell (in-person meetings, phone calls, Zoom calls, emails, DMs, proposals sent without a call, etc.)\n- [ ] ⚡ Quick Win: For each medium, estimate your conversion rate. Even a rough guess will reveal which channels actually work and which waste time.\n- [ ] Note how much of your selling time goes to each medium\n- [ ] Identify whether you chose these mediums strategically or just fell into them by habit"
             },
             {
-              "title": "Measure Each Channel",
-              "content": "For each active channel:\n\n- [ ] **Lead volume:** How many leads per month (average over last 3-6 months)?\n- [ ] **Lead quality:** What percentage of leads from this channel become paying customers?\n- [ ] **Cost:** What do you spend on this channel monthly (include your time at your hourly rate)?\n- [ ] **Cost per lead:** Total cost / number of leads\n- [ ] **Cost per customer:** Total cost / number of customers acquired\n- [ ] **Time investment:** How many hours per week do you or your team spend on this channel?"
+              "title": "Evaluate Each Medium for Your Business",
+              "content": "### In-Person\n\n- [ ] Assess: Is your offer high enough value to justify the time and travel cost of face-to-face selling?\n- [ ] Consider where in-person adds value others cannot: complex demonstrations, relationship-heavy industries, high-trust purchases\n- [ ] If you use in-person selling, define a minimum deal size that justifies the time investment\n\n### Phone\n\n- [ ] Assess: Could your current in-person meetings work just as well as phone calls?\n- [ ] Phone works well for: quick qualification, warm leads, follow-ups, relationship maintenance, and selling to time-poor buyers\n- [ ] Note: phone removes visual cues but adds personal connection compared to async\n\n### Video Call (Zoom)\n\n- [ ] Assess: Is video call your primary selling channel? If not, should it be?\n- [ ] Video gives you most of the benefits of in-person (visual cues, rapport, screen sharing, demonstrations) with none of the travel cost\n- [ ] For most service businesses selling to other businesses, video call is the optimal primary channel\n\n### Asynchronous (Email, DM, Text)\n\n- [ ] Assess: Are you trying to close deals through messaging that would close faster on a call?\n- [ ] Async is best for: initial outreach, qualification, follow-up nurture, sending proposals after a live conversation\n- [ ] Async is worst for: handling objections, building trust, closing high-value deals for the first time"
             },
             {
-              "title": "Rank and Decide",
-              "content": "- [ ] Rank channels by cost per customer (lowest = best efficiency)\n- [ ] Rank channels by lead quality (highest conversion rate = best quality)\n- [ ] Rank channels by volume (most leads = best scale)\n- [ ] Identify your top 2-3 channels that score well across multiple rankings\n- [ ] Identify channels that score poorly on all three: these are candidates for elimination\n- [ ] For each channel, decide: **Double down** (invest more), **Maintain** (keep current effort), **Reduce** (scale back), or **Eliminate** (stop completely)"
-            },
-            {
-              "title": "Action Plan",
-              "content": "- [ ] Eliminate or pause the bottom-performing channels this week - free up the time\n- [ ] Redirect freed-up time and budget to your top 2-3 channels\n- [ ] Set up proper tracking for your top channels if it does not already exist (so the next audit is data-driven, not estimated)\n- [ ] Schedule a channel audit every 6 months to stay focused on what works\n\n---"
+              "title": "Design Your Sales Medium Strategy",
+              "content": "- [ ] Choose your primary selling medium (the channel where most deals close)\n- [ ] Choose your supporting mediums (channels that feed into or follow the primary)\n- [ ] Map the typical path: e.g. DM → phone qualifier → Zoom close → email follow-up\n- [ ] ⚡ Quick Win: If you are currently trying to close over email or DM, switch one prospect to a call this week and compare the result.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- A complete inventory of every lead generation channel with performance data\n- Your top 2-3 channels identified with clear evidence of why they work\n- Underperforming channels eliminated or reduced\n- Time and budget redirected to the highest-performing channels\n- A tracking system in place for future measurement"
+              "content": "- A clear understanding of which selling mediums you currently use and their conversion rates\n- A strategic choice of primary and supporting sales channels\n- A mapped prospect journey across mediums\n- Eliminated or reduced use of low-converting channels for high-value sales"
             },
             {
               "title": "Coach Notes",
-              "content": "The most common finding: referrals are the best channel but get zero systematic effort, while social media gets hours of attention but generates few actual leads. Challenge clients to be honest about time spent vs. results produced. The hardest part is eliminating channels - owners feel like they should be everywhere. Push back: \"Being average on 7 channels is worse than being excellent on 2.\" The channel audit is the foundation for everything else in this playbook. Do it first."
+              "content": "Most business owners have never thought about this consciously. They sell the way they started selling and never question it. The biggest unlock is usually moving from trying to close through async channels to using async for qualification and calls for closing. For high-ticket offers (£2,000+), live conversation is almost always necessary for the first sale. For repeat purchases from existing customers, async works fine. Push clients to track conversion rates by medium for 30 days. The data usually makes the right strategy obvious."
             }
           ]
         },
         {
           "number": 2,
-          "title": "Channel Selection",
-          "description": "Choose 2-3 primary channels to focus on based on where your ideal customers actually spend time and where you can realistically compete.",
+          "title": "5-Stage Sales Pipeline",
+          "description": "Map every prospect journey through Lead → Booked → Showed → Proposal → Won/Lost, with clear entry and exit criteria for each stage.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Choose 2-3 primary lead generation channels to focus on based on where your ideal customers actually spend time and where you can realistically compete. This is about strategic focus, not spreading thin. Pick your channels, commit to them, and ignore everything else until they are working."
+              "content": "Map your prospect journey through five clear stages - Lead, Booked, Showed, Proposal, Won/Lost - with defined entry criteria, exit criteria, and actions for each stage. This gives you a visual pipeline showing exactly where every prospect sits and what needs to happen next to move them forward."
             },
             {
               "title": "Why It Matters",
-              "content": "You cannot be great at every channel. LinkedIn, Facebook, Google Ads, YouTube, email, networking, SEO, referrals, cold outreach - each one is a full-time job to do well. The businesses that generate consistent leads are not on every channel. They are excellent on 2-3 channels that match their audience, their strengths, and their budget. Channel selection is the strategic decision that determines whether your marketing effort produces results or just produces activity."
+              "content": "Without a pipeline, sales is a guessing game. You do not know how many prospects you have, where they are stuck, or what your real forecast looks like. A structured pipeline turns sales from an art into a process. It shows you where deals die (so you can fix the bottleneck), how long your sales cycle takes (so you can forecast revenue), and whether you have enough prospects at the top to hit your targets. Every business that scales beyond the owner doing all the selling needs this foundation."
             },
             {
               "title": "How to Use This",
-              "content": "Use your Channel Audit (Action 1) data as the starting point. Then apply the selection criteria below to choose your primary channels.\n\n---"
+              "content": "Work through each stage below. Define what qualifies a prospect for that stage and what moves them to the next one. Then map your current prospects into the pipeline.\n\n---"
             },
             {
-              "title": "Selection Criteria",
-              "content": "For each potential channel, assess:\n\n- [ ] **Audience presence:** Are your ideal customers actually here? (A LinkedIn strategy is pointless if your customers are tradespeople who do not use LinkedIn)\n- [ ] **Proven results:** Has this channel already produced leads for you, or are you hoping it will?\n- [ ] **Competitive landscape:** Can you realistically stand out here? (Competing with huge brands on Google Ads might not be viable on a small budget)\n- [ ] **Skill and resource fit:** Do you or your team have the skills to execute well on this channel? Can you commit the time it requires?\n- [ ] **Cost viability:** Can you afford to invest consistently for 3-6 months before expecting significant returns?\n- [ ] **Scalability:** If it works, can you scale it up? (Networking produces great leads but does not scale. Paid ads scale but cost money.)"
+              "title": "Stage 1: Lead",
+              "content": "- [ ] Define what qualifies someone as a lead (e.g. expressed interest, downloaded something, was referred, responded to outreach)\n- [ ] List all sources that generate leads for your business\n- [ ] Define the action that moves a lead to \"Booked\" (e.g. they agree to a call, they fill in a booking form)\n- [ ] Set a maximum time a lead can sit without action before it is archived or re-engaged (e.g. 14 days)\n- [ ] ⚡ Quick Win: List every prospect you are currently \"talking to\" but have not booked a call with. Those are leads that need an action today."
             },
             {
-              "title": "Make Your Selection",
-              "content": "- [ ] ⚡ Quick Win: If your Channel Audit showed one channel clearly outperforming the rest, that is your primary channel. Start there.\n- [ ] Choose your **Primary Channel** (the one you invest the most time and money in): ___\n- [ ] Choose your **Secondary Channel** (your backup and diversification): ___\n- [ ] Choose your **Opportunity Channel** (one you are testing with limited investment): ___\n- [ ] For each channel, define: what does \"doing it well\" look like? (Posting frequency, ad budget, outreach volume, etc.)"
+              "title": "Stage 2: Booked",
+              "content": "- [ ] Define what \"Booked\" means specifically (date and time confirmed, calendar invite sent, reminder sequence active)\n- [ ] Set up a confirmation and reminder process for booked calls (see Action 8: Show Rate System)\n- [ ] Define the action that moves a booked prospect to \"Showed\" (they turn up to the call or meeting)"
             },
             {
-              "title": "Channel Commitment",
-              "content": "- [ ] Set a minimum commitment period: 90 days of consistent effort before evaluating results\n- [ ] Define weekly activities for each channel (e.g., \"3 LinkedIn posts, 10 connection requests, 2 comments on prospect posts\")\n- [ ] Assign a specific person responsible for each channel (even if that person is you)\n- [ ] Set monthly KPIs: leads generated, engagement metrics, cost per lead\n- [ ] Agree on what \"not working\" looks like so you can make a data-driven decision at 90 days"
+              "title": "Stage 3: Showed",
+              "content": "- [ ] A prospect enters this stage when they attend the scheduled call or meeting\n- [ ] Define what happens during the call (see Action 4: Diagnostic Call Framework)\n- [ ] The exit action is either: a proposal is made/sent, or the prospect is disqualified\n- [ ] Track how many booked calls result in shows. This is your show rate."
             },
             {
-              "title": "What to Ignore",
-              "content": "- [ ] List the channels you are NOT going to focus on for the next 90 days\n- [ ] For each, set a reminder to reassess at the 90-day mark\n- [ ] Give yourself permission to say no to new channel ideas for the next 90 days (\"That sounds interesting, I will evaluate it at the next review\")\n- [ ] Unsubscribe from marketing emails and courses about channels you are not using - they create FOMO and distraction\n\n---"
+              "title": "Stage 4: Proposal",
+              "content": "- [ ] Define what counts as a proposal (verbal offer on the call, written proposal sent, quote delivered)\n- [ ] Set a maximum follow-up window (e.g. proposals not responded to within 7 days get a follow-up sequence)\n- [ ] The exit is Won or Lost. Every proposal must resolve to one of these.\n- [ ] ⚡ Quick Win: Check right now - how many outstanding proposals do you have with no next action scheduled? Follow up on all of them today."
+            },
+            {
+              "title": "Stage 5: Won / Lost",
+              "content": "- [ ] Won: Define the handoff process from sales to delivery/onboarding\n- [ ] Lost: Record the reason for every lost deal (price, timing, competitor, no decision, not qualified)\n- [ ] Review lost reasons monthly to identify patterns you can fix\n- [ ] For \"not now\" losses, move to a nurture sequence (see Action 9: Follow-Up Engine)"
+            },
+            {
+              "title": "Build Your Pipeline View",
+              "content": "- [ ] Choose a tool for tracking your pipeline (CRM, spreadsheet, Kanban board - anything visual)\n- [ ] Enter all current prospects into the correct stage\n- [ ] Set a daily or weekly review rhythm to update pipeline status\n- [ ] Calculate your current conversion rates: Lead→Booked, Booked→Showed, Showed→Proposal, Proposal→Won\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- 2-3 channels selected with clear rationale for each choice\n- Weekly activity targets defined for each channel\n- A 90-day commitment to consistent execution before re-evaluation\n- Non-selected channels parked with review dates\n- Focused effort that produces results instead of scattered activity that produces noise"
+              "content": "- Five clearly defined pipeline stages with entry and exit criteria\n- Every current prospect mapped to a stage\n- A visual pipeline view in your chosen tool\n- Conversion rates calculated between each stage\n- A review rhythm to keep the pipeline current"
             },
             {
               "title": "Coach Notes",
-              "content": "The hardest part of channel selection is what you decide NOT to do. Owners see competitors on TikTok and panic, or hear a podcast about webinars and want to try it. Your job is to protect their focus. The 90-day commitment is critical - most channels need 8-12 weeks of consistent effort before producing reliable results. Clients who switch channels every month never give any channel enough time to work. Common winning combinations for SMEs: referrals + LinkedIn, SEO + email marketing, or local networking + Google Ads. The best channel combination depends on the business type, audience, and owner's strengths."
+              "content": "The pipeline is useless if it is not kept up to date. Push clients to make pipeline review a non-negotiable weekly habit, ideally Monday morning. The most common mistake is letting prospects sit in a stage with no next action. Every prospect needs a next action with a date. If a client says \"I will follow up when they are ready,\" that means the deal is dead - teach them to set a specific follow-up date instead. The conversion rate data is gold. If the bottleneck is Booked→Showed, fix the reminder system. If it is Showed→Proposal, fix the sales call. If it is Proposal→Won, fix the offer or follow-up."
             }
           ]
         },
         {
           "number": 3,
-          "title": "Channel Testing Plan",
-          "description": "Set up simple tests for each channel so you can measure what works and scale up the winners while killing the losers quickly.",
+          "title": "Pipeline Metrics Dashboard",
+          "description": "Track conversion rates at every stage so you can identify the single constraint limiting your growth and focus your improvement efforts there.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Set up simple, structured tests for your selected lead generation channels so you can measure what works, scale the winners, and kill the losers quickly. This is not about gut feel - it is about running small experiments, tracking the numbers, and letting the data decide."
+              "content": "Build a simple dashboard tracking conversion rates at every stage of your sales pipeline. The purpose is to identify the single constraint limiting your growth right now so you can focus improvement efforts on the one number that matters most, rather than trying to fix everything at once."
             },
             {
               "title": "Why It Matters",
-              "content": "Even the right channel can fail if executed poorly. A Channel Testing Plan lets you try different approaches within your chosen channels and find what resonates with your audience. Testing one ad headline against another, one content format against another, or one outreach script against another compounds over time. Small improvements in conversion at each stage multiply across your entire funnel."
+              "content": "Sales is a chain of conversions. Leads become booked calls. Booked calls become attended calls. Attended calls become proposals. Proposals become wins. If you improve the weakest link by even a small percentage, the impact flows through to revenue. But if you do not measure each link, you will either guess wrong about where the problem is or try to improve everything simultaneously and improve nothing. Eli Goldratt's Theory of Constraints applies perfectly to sales: find the bottleneck, fix it, then find the next one."
             },
             {
               "title": "How to Use This",
-              "content": "For each of your selected channels (from Action 2), design 2-3 simple tests to run over the next 30-60 days. Keep tests small, measurable, and time-bound.\n\n---"
+              "content": "You need your 5-Stage Sales Pipeline (4.5 Action 2) set up first. Pull data from the last 30-90 days if available, or start tracking from today.\n\n---"
             },
             {
-              "title": "Design Your Tests",
-              "content": "For each primary channel:\n\n- [ ] Identify one variable to test first (headline, offer, audience, format, timing, or call-to-action)\n- [ ] Create Version A (your current approach or best guess) and Version B (one change)\n- [ ] ⚡ Quick Win: Pick the simplest test you can start this week. For example: try a different subject line on your next email, a different hook on your next LinkedIn post, or a different headline on your landing page.\n- [ ] Define the success metric: what number will tell you which version won? (Click rate, response rate, lead conversion rate, cost per lead)\n- [ ] Set a time frame: how long will you run each test? (Usually 2-4 weeks or until you have enough data)"
+              "title": "Define Your Core Metrics",
+              "content": "- [ ] Lead Volume: How many new leads enter the pipeline per week/month?\n- [ ] Lead→Booked Rate: What percentage of leads book a call?\n- [ ] Show Rate: What percentage of booked calls are attended?\n- [ ] Proposal Rate: What percentage of attended calls result in a proposal or offer?\n- [ ] Close Rate: What percentage of proposals convert to paying customers?\n- [ ] ⚡ Quick Win: Calculate your overall conversion rate (leads to customers). Even if the stage-by-stage data is rough, knowing your end-to-end rate immediately tells you whether you have a volume problem or a conversion problem."
             },
             {
-              "title": "Test Framework",
-              "content": "- [ ] **Test 1:** Channel: ___ | Variable: ___ | Version A: ___ | Version B: ___ | Metric: ___ | Duration: ___\n- [ ] **Test 2:** Channel: ___ | Variable: ___ | Version A: ___ | Version B: ___ | Metric: ___ | Duration: ___\n- [ ] **Test 3:** Channel: ___ | Variable: ___ | Version A: ___ | Version B: ___ | Metric: ___ | Duration: ___\n- [ ] Run only one test per channel at a time (testing multiple variables simultaneously makes it impossible to know what caused the change)"
+              "title": "Identify Your Revenue Formula",
+              "content": "- [ ] Write out your revenue equation: Leads x Conversion Rate x Average Deal Value = Revenue\n- [ ] Calculate each number using your current data\n- [ ] Work backwards from your revenue target: how many leads do you need to hit your monthly number?\n- [ ] If the lead volume required is unrealistic, your conversion rates need to improve before you scale lead generation"
             },
             {
-              "title": "Track and Evaluate",
-              "content": "- [ ] Record results weekly: what happened with each test?\n- [ ] At the end of each test period, declare a winner based on the data\n- [ ] Keep the winner, discard the loser, and design the next test\n- [ ] Document what you learned: build a \"what works for us\" reference over time\n- [ ] After 90 days of testing, you should have a clear picture of what works on each channel"
+              "title": "Build Your Dashboard",
+              "content": "- [ ] Choose a format: spreadsheet, CRM dashboard, whiteboard, or printed scorecard\n- [ ] Track weekly numbers for each pipeline metric\n- [ ] ⚡ Quick Win: A simple spreadsheet with one row per week and columns for each metric is enough. Do not over-engineer this.\n- [ ] Include a rolling 4-week average so you can spot trends rather than reacting to individual weeks\n- [ ] Add your target numbers alongside actuals so gaps are immediately visible\n- [ ] Set up a visual indicator (red/amber/green) for each metric against target"
             },
             {
-              "title": "Scaling Winners",
-              "content": "- [ ] Once a test produces a clear winner, increase investment: more budget, more time, more frequency\n- [ ] Track whether results hold as you scale (sometimes what works small breaks at scale)\n- [ ] Set a rule: only scale after 2+ weeks of consistent results\n- [ ] When a channel stops producing despite good execution, it may be saturated - test a new approach before abandoning it\n\n---"
+              "title": "Find Your Single Constraint",
+              "content": "- [ ] Compare conversion rates across stages. The stage with the biggest drop-off is your current bottleneck.\n- [ ] Common bottlenecks and their fixes:\n  - Low Lead→Booked: messaging, targeting, or speed of follow-up\n  - Low Show Rate: reminder system, perceived value of the call, ease of booking\n  - Low Proposal Rate: sales call structure, qualification, or offer-market fit\n  - Low Close Rate: pricing, objection handling, follow-up, or proposal format\n- [ ] Choose ONE metric to focus on improving this month\n- [ ] Set a specific improvement target (e.g. \"increase show rate from 60% to 75%\")\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- Structured tests running on each of your primary channels\n- Data-driven decisions about what works and what does not\n- Continuous improvement in lead generation performance over time\n- A documented \"playbook\" of what works for your specific business and audience\n- Confidence that your marketing spend is being optimised, not guessed"
+              "content": "- A working dashboard tracking conversion rates at every pipeline stage\n- Your revenue formula calculated and documented\n- A clear picture of how many leads you need to hit your revenue target\n- Your single biggest constraint identified\n- A specific improvement target set for this month"
             },
             {
               "title": "Coach Notes",
-              "content": "Testing discipline separates businesses that grow from businesses that stay stuck. Most SME owners try something once, decide it \"did not work,\" and move on. Push for proper tests: enough volume, enough time, and only one variable changed. The biggest mistake is testing too many things at once and learning nothing. Start with the highest-impact variable - usually the headline/hook/offer, not the colour of the button. For clients new to testing, start with just one simple A/B test and build the habit."
+              "content": "Resist the urge to build a complex dashboard. A single sheet of paper on the wall with five numbers updated weekly is more effective than a sophisticated CRM dashboard nobody looks at. The constraint focus is critical. Clients who try to improve all five metrics simultaneously make no progress. Clients who focus on one metric for 4-6 weeks see real movement. If the data does not exist yet, start tracking from today and use the first 30 days as a baseline. Do not wait for perfect data to start making decisions. Connect this to the Leading Indicators action (2.1) so pipeline metrics feed into the broader goal-tracking system."
             }
           ]
         }
       ]
     },
     {
-      "title": "Content & Messaging",
-      "description": "Creating content that attracts prospects and positions you as the obvious choice.",
+      "title": "Core Sales Process",
+      "description": "The systematic approach that works across all mediums.",
       "actions": [
         {
           "number": 4,
-          "title": "Content Strategy",
-          "description": "Develop a focused content plan that consistently addresses your ideal customer's problems and builds authority in your niche.",
+          "title": "Diagnostic Call Framework",
+          "description": "One master script that adapts to phone, Zoom, or in-person: open the conversation, diagnose the problem, paint the desired future, make the offer, and secure commitment.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Develop a focused content plan that consistently addresses your ideal customer's problems and builds authority in your niche. This is not about posting for the sake of posting. It is about creating content that attracts the right people, demonstrates your expertise, and moves them toward becoming a lead."
+              "content": "Build one master sales call script that works across phone, Zoom, and in-person meetings. The framework follows five phases: open the conversation, diagnose the problem, paint the desired future, make the offer, and secure commitment. This is not about being scripted or pushy. It is about having a reliable structure so every sales conversation covers the right ground in the right order."
             },
             {
               "title": "Why It Matters",
-              "content": "Random content produces random results. Posting about your holiday one week, sharing an industry article the next, and writing a tip the week after creates no momentum. A content strategy focuses your effort: same audience, same problems, same message, repeated consistently until you own that space in your prospect's mind. The businesses that generate leads through content are not the ones with the best content - they are the ones with the most consistent, focused content."
+              "content": "Most business owners wing their sales calls. Some talk too much about their product. Some never ask for the sale. Some diagnose the problem brilliantly but forget to make an offer. A framework gives you consistency. It ensures you spend most of the call listening (not pitching), that you understand the prospect's real problem before offering solutions, and that every call ends with a clear next step. The diagnostic approach also positions you as an expert rather than a vendor, because you are leading the conversation rather than reacting to it."
             },
             {
               "title": "How to Use This",
-              "content": "Define your content pillars, create a simple publishing rhythm, and commit to 90 days of consistency.\n\n---"
+              "content": "Work through each phase below. Write your version of each section in your own words. Then practise the full flow at least three times before using it live.\n\n---"
             },
             {
-              "title": "Define Your Content Foundation",
-              "content": "- [ ] **Who are you creating content for?** Write a one-sentence description of your ideal reader/viewer (use your ICP from 1.5 Ideal Customer)\n- [ ] **What problem do you solve?** List the top 5 problems your ideal customer faces that your business addresses\n- [ ] **What is your unique angle?** Why should someone listen to you rather than anyone else on this topic? (Experience, methodology, results, perspective)\n- [ ] ⚡ Quick Win: Write down the 10 questions clients ask you most often. Each one is a piece of content waiting to be created."
+              "title": "Phase 1: Open (5 minutes)",
+              "content": "- [ ] Write your opening: set the agenda, explain how the call will work, and get permission to ask questions\n- [ ] Include a rapport-building question that is genuine, not formulaic (avoid \"so, how's the weather?\")\n- [ ] State the outcome of the call clearly: \"By the end, you will know whether we can help and what that looks like\"\n- [ ] ⚡ Quick Win: The single most powerful opening move is to give the prospect control. \"I want to make sure this is useful for you. What would make this call a good use of your time?\" This immediately shifts the dynamic."
             },
             {
-              "title": "Choose Your Content Pillars (3-5 Topics)",
-              "content": "- [ ] Select 3-5 recurring themes that you will create content about. Every piece should fit within one of these pillars.\n- [ ] Each pillar should address a specific problem or aspiration your ideal customer has\n- [ ] Example pillars for a business coach: \"Cash flow management\", \"Time as a business owner\", \"Hiring and team\", \"Growth strategy\", \"Owner mindset\"\n- [ ] Test each pillar: could you create 20+ pieces of content about this topic without running out of things to say?"
+              "title": "Phase 2: Diagnose (15-20 minutes)",
+              "content": "- [ ] Prepare 5-7 diagnostic questions that uncover the prospect's current situation, challenges, and root causes\n- [ ] Questions should move from surface to depth: What is happening? How long has it been happening? What have you tried? What is it costing you?\n- [ ] Listen for the emotional driver underneath the logical problem. People buy to solve pain or achieve desire, not to acquire features.\n- [ ] Take notes during this phase. Repeating their own words back to them later is the most powerful selling technique that exists.\n- [ ] Do not offer solutions during this phase. Diagnose first. Prescribe later."
             },
             {
-              "title": "Set Your Publishing Rhythm",
-              "content": "- [ ] Choose your primary content format: written posts, short videos, long-form articles, podcast, or a mix\n- [ ] Set a realistic publishing frequency you can maintain for 90 days (consistency beats volume - 2 great posts per week beats 7 mediocre ones)\n- [ ] Create a simple content calendar for the next 4 weeks: topic + pillar + format for each piece\n- [ ] Block time in your weekly schedule for content creation (batch creating is more efficient than daily scrambling)\n- [ ] Decide who creates the content: you, a team member, or a combination"
+              "title": "Phase 3: Paint the Future (5-10 minutes)",
+              "content": "- [ ] Summarise what you have heard: \"So if I understand correctly, the situation is X, and what that means is Y\"\n- [ ] Ask the prospect to describe what success looks like: \"If we were having this conversation 12 months from now and things had gone well, what would be different?\"\n- [ ] Bridge the gap between their current situation and their desired future. This gap is what your offer fills.\n- [ ] ⚡ Quick Win: Let the prospect sell themselves. The more they talk about what they want, the more committed they become before you even make an offer."
             },
             {
-              "title": "Content That Generates Leads (Not Just Likes)",
-              "content": "- [ ] Every piece of content should include one of these:\n  - A direct call to action (\"DM me 'cashflow' for our forecast template\")\n  - A link to a lead magnet or resource\n  - An invitation to a conversation (\"If this sounds like your business, let's talk\")\n  - A demonstration of results that prompts enquiries\n- [ ] Create one signature piece of content per month: a deep-dive post, guide, or case study that showcases your expertise\n- [ ] Repurpose: every long piece can become 3-5 shorter pieces. One article becomes a LinkedIn post, a tweet thread, an email, and a quote graphic."
+              "title": "Phase 4: Make the Offer (5-10 minutes)",
+              "content": "- [ ] Present your solution in terms of their specific problems and desired outcomes, not your features\n- [ ] Structure the offer clearly: what they get, what it costs, what happens next\n- [ ] Address the obvious objection before they raise it (usually price or time commitment)\n- [ ] Use their own words from Phase 2 to connect the offer to their situation\n- [ ] Include social proof relevant to their situation (a similar client, a relevant result)"
             },
             {
-              "title": "Track and Refine",
-              "content": "- [ ] Track which posts get the most engagement and which generate actual leads (these are often different)\n- [ ] After 30 days, review: which pillar resonates most? Which format performs best?\n- [ ] Double down on what works. Stop doing what does not.\n- [ ] At 90 days, assess: is content generating measurable leads? If not, adjust the strategy or the call-to-action.\n\n---"
+              "title": "Phase 5: Secure Commitment (5 minutes)",
+              "content": "- [ ] Ask for the decision directly. Do not hint or hope. \"Based on everything we have discussed, would you like to go ahead?\"\n- [ ] If yes: define the immediate next step (payment, contract, onboarding call) and complete it on the call if possible\n- [ ] If not now: set a specific follow-up date and action. \"No problem. When would be a good time to revisit this? I will send you X in the meantime.\"\n- [ ] If no: thank them, ask what would need to change for them to reconsider in the future, and add to nurture\n- [ ] Never end a call without a defined next step. \"I will be in touch\" is not a next step.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- 3-5 content pillars defined and aligned with your ideal customer's problems\n- A realistic publishing rhythm committed to for 90 days\n- A 4-week content calendar created\n- Every piece of content designed to move readers toward becoming leads\n- A tracking system to measure what generates leads, not just engagement"
+              "content": "- A written call framework covering all five phases\n- 5-7 diagnostic questions tailored to your prospects\n- A clear offer presentation structure\n- Confidence to ask for the sale directly\n- Every call ending with a defined next step regardless of outcome"
             },
             {
               "title": "Coach Notes",
-              "content": "Content strategy overwhelm is real. Clients hear \"you need to be on LinkedIn, YouTube, email, and have a blog\" and freeze. Simplify: one channel, one format, 2-3 times per week. That is enough. The most important thing is consistency over 90 days. Most businesses quit content after 6 weeks because they do not see immediate leads. Content compounds - the first 60 days build authority, leads typically start flowing after 90 days of consistent output. Hold them accountable to the rhythm, not the results, for the first quarter."
+              "content": "The diagnosis phase is where most clients need the most coaching. Business owners love talking about their solution but hate asking probing questions because it feels intrusive. Reframe it: you cannot help someone you do not understand. A doctor who prescribes without diagnosing is negligent. The same applies in sales. Role-play this framework with clients before they use it live. Record a few practice runs so they can hear how they sound. The most common mistake is rushing through diagnosis to get to the pitch. If anything, slow down the diagnosis and speed up the offer. A well-diagnosed prospect practically closes themselves."
             }
           ]
         },
         {
           "number": 5,
-          "title": "Lead Magnets",
-          "description": "Create valuable resources that prospects exchange their contact details for — the bridge between attention and captured leads.",
+          "title": "Risk Reversal & Guarantees",
+          "description": "Use guarantees strategically to remove the biggest objection — \"what if it does not work\" — without creating operational nightmares or attracting problem customers.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Create one or more valuable resources that prospects exchange their contact details for. A lead magnet bridges the gap between \"someone who is interested\" and \"someone whose details I have.\" It should solve a specific problem, demonstrate your expertise, and make the prospect want to learn more."
+              "content": "Design a guarantee or risk reversal strategy that removes the \"what if it does not work\" objection from your prospects' minds without creating operational nightmares for your business. The right guarantee makes buying feel safe. The wrong one attracts tyre-kickers and drains your cash. This action helps you find the right balance."
             },
             {
               "title": "Why It Matters",
-              "content": "Content creates awareness. Lead magnets create leads. Without a lead magnet, your content marketing is just brand building - nice but hard to measure. A good lead magnet captures contact details so you can follow up, nurture, and eventually convert. It also pre-qualifies prospects: someone who downloads your \"Cash Flow Forecast Template\" is signalling they have a cash flow problem you can solve."
+              "content": "Every purchase involves risk. The buyer is trading certain money for an uncertain outcome. The more you can shift that risk from the buyer to yourself, the easier the buying decision becomes. Alex Hormozi calls this \"the grand slam offer\" principle: make the offer so good people feel stupid saying no. But risk reversal is not just about money-back guarantees. It can be performance guarantees, conditional guarantees, milestone-based commitments, or simply removing barriers to getting started. The goal is to answer the prospect's unspoken question: \"What happens if this does not work for me?\""
             },
             {
               "title": "How to Use This",
-              "content": "Choose a lead magnet format, create it, and set up a simple delivery mechanism. Start with one. You can add more later based on what works.\n\n---"
+              "content": "Think about the specific risks your prospects worry about before buying. Then design a guarantee that directly addresses those fears.\n\n---"
             },
             {
-              "title": "Choose Your Lead Magnet",
-              "content": "- [ ] ⚡ Quick Win: Think about the tool, template, or checklist you wish you had when you started. That is probably a great lead magnet.\n- [ ] Select a format that matches your audience and your strengths:\n  - **Checklist or cheat sheet** (quick to consume, easy to create - great first lead magnet)\n  - **Template or worksheet** (practical, high perceived value)\n  - **Calculator or assessment** (interactive, highly engaging)\n  - **Short guide or PDF** (5-10 pages max, focused on one problem)\n  - **Video training or webinar replay** (good for demonstrating expertise)\n  - **Swipe file or example collection** (saves the prospect time)"
+              "title": "Identify Your Buyer's Risks",
+              "content": "- [ ] List the top 3-5 fears or concerns your prospects have before buying\n- [ ] Common fears: it will not work for me, I will waste money, I will waste time, it is not what I expected, I will look foolish, I cannot get out if it is wrong\n- [ ] ⚡ Quick Win: Look at your last 10 lost deals. What reasons did people give for not buying? Those reasons are the risks your guarantee should address.\n- [ ] Rank these fears by frequency and intensity\n- [ ] Note which fears are rational (based on real risk) and which are emotional (based on uncertainty)"
             },
             {
-              "title": "Design for Conversion",
-              "content": "- [ ] Focus on ONE specific problem your ideal customer has - not a broad topic\n- [ ] The title should promise a clear outcome: \"The 13-Week Cash Flow Forecast Template\" not \"Guide to Finance\"\n- [ ] It should deliver value in under 15 minutes of the prospect's time - if it takes longer, they will not use it\n- [ ] Include a subtle bridge to your paid offering: \"This template covers the basics. For a full diagnostic of your business finances, [link/CTA]\"\n- [ ] Make it look professional: clean design, your branding, well-formatted"
+              "title": "Choose Your Guarantee Type",
+              "content": "- [ ] **Unconditional money-back guarantee**: Full refund within a time period, no questions asked. Strongest signal but highest risk to you. Best for: lower-priced products, digital offerings, subscription-based services.\n- [ ] **Conditional guarantee**: Refund or credit if specific conditions are met (e.g. \"If you follow the programme and do not see results in 90 days, we will refund you\"). Protects against tyre-kickers while still shifting risk.\n- [ ] **Performance guarantee**: You commit to a specific measurable outcome. If you do not deliver, you keep working until you do or refund the difference. Best for: consultants, agencies, service providers.\n- [ ] **Milestone guarantee**: Break the engagement into stages with go/no-go decisions. Client can exit after any milestone without further commitment.\n- [ ] **Extended trial or pilot**: Let the client experience a small piece of the full offer before committing. Reduces perceived risk without requiring a formal guarantee."
             },
             {
-              "title": "Create and Launch",
-              "content": "- [ ] Create the lead magnet content\n- [ ] Set up a simple landing page with: headline, 3-4 bullet points of what they will get, email capture form, and a clear button\n- [ ] Set up automatic email delivery: when someone submits their details, they immediately receive the resource\n- [ ] Create a thank-you page that appears after sign-up (this is a great place for a secondary CTA - book a call, join a community, etc.)\n- [ ] Test the entire flow yourself before promoting it"
+              "title": "Design Your Specific Guarantee",
+              "content": "- [ ] Choose the guarantee type that best fits your offer and audience\n- [ ] Define the exact terms: what is guaranteed, for how long, under what conditions\n- [ ] Calculate the financial risk to your business. What percentage of clients would you expect to claim?\n- [ ] ⚡ Quick Win: Ask 3 past clients what would have made their buying decision easier. Their answers will tell you exactly what to guarantee.\n- [ ] Test whether the guarantee creates perverse incentives (people buying with the intention to claim)\n- [ ] Write the guarantee in plain language, not legal jargon"
             },
             {
-              "title": "Promote and Measure",
-              "content": "- [ ] Add the lead magnet link to your email signature, social media bio, and website\n- [ ] Reference it in your content: \"I created a free [resource] that helps with exactly this - link in comments\"\n- [ ] Consider running a small paid ad to the landing page to test conversion ($5-10/day for 2 weeks)\n- [ ] Track: landing page visits, sign-up rate, email delivery rate, and how many sign-ups become leads or customers\n- [ ] If conversion rate is below 20%, test a different headline. If it is above 30%, the magnet is working well.\n\n---"
+              "title": "Implement and Communicate",
+              "content": "- [ ] Add the guarantee to your sales script at the objection-handling stage\n- [ ] Include it on your website, proposals, and marketing materials\n- [ ] Train anyone who sells for you on how to present the guarantee with confidence\n- [ ] Track claim rates monthly. If claims are above 5-10%, the guarantee terms need tightening or your delivery needs improving.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- One lead magnet created, designed, and live\n- A landing page and automated email delivery system set up\n- The lead magnet promoted across your content and channels\n- Contact details being captured from interested prospects\n- A measurable conversion path from content viewer to captured lead"
+              "content": "- A clear understanding of the risks your buyers perceive\n- A specific guarantee designed to address those risks\n- Financial exposure calculated and deemed acceptable\n- The guarantee integrated into your sales process and materials\n- A tracking system for claim rates"
             },
             {
               "title": "Coach Notes",
-              "content": "The biggest mistake with lead magnets: making them too broad or too long. \"The Ultimate Guide to Running a Business\" is too generic. \"The 5-Minute Daily Cash Check for Business Owners\" is specific and actionable. Push clients toward the narrowest, most practical option. The lead magnet does not need to be perfect - it needs to be useful. A simple, well-targeted checklist outperforms a beautifully designed 40-page guide that nobody reads. Also ensure the follow-up sequence is in place - capturing an email and doing nothing with it wastes the entire effort. Connect to Lead Nurture (3.5) for what happens after capture."
+              "content": "Many clients resist guarantees because they focus on the downside (people claiming refunds). Reframe it: a guarantee that increases conversions by 20% but gets claimed 5% of the time is a massive net win. The other reframe is that if you cannot guarantee your work, what does that say about your confidence in your own product? Conditional guarantees are usually the sweet spot for service businesses. They shift risk while filtering out people who are not serious. Push clients to actually use the guarantee in sales conversations, not just put it on the website. Spoken guarantees convert better than written ones because they feel personal and committed."
             }
           ]
         },
         {
           "number": 6,
-          "title": "Referral System",
-          "description": "Build a simple system to generate referrals from existing customers, the highest-quality lead source most businesses completely ignore.",
+          "title": "Objection Handling System",
+          "description": "Prepare and practice responses to the five objections that appear in 80% of sales conversations, including which ones to handle before the call and which ones to address live.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Build a simple, repeatable system to generate referrals from existing customers, past clients, and your network. Referrals are the highest-quality lead source most businesses completely ignore. This action turns \"I get referrals sometimes\" into \"I systematically generate referrals every month.\""
+              "content": "Prepare and practise responses to the five objections that appear in roughly 80% of all sales conversations. Instead of being caught off guard each time, you will build a documented response for each objection and rehearse until the responses feel natural. The goal is not to \"overcome\" objections through manipulation but to genuinely address legitimate concerns so the prospect can make an informed decision."
             },
             {
               "title": "Why It Matters",
-              "content": "Referred leads convert at 3-5x the rate of cold leads, spend more, and stay longer. Despite this, most business owners leave referrals to chance - they hope happy clients will mention them but never actually ask. A referral system does not need to be complex. It needs to be consistent. When you make asking for referrals a habit and make it easy for people to refer, the volume increases dramatically."
+              "content": "Objections are not rejection. They are requests for more information or reassurance. The prospect who objects is still engaged. The one who says nothing and disappears is the one you have lost. Most salespeople (and business owners who sell) either freeze when they hear an objection, get defensive, or start discounting. All three responses kill deals. A prepared, empathetic response keeps the conversation moving and often reveals the real concern behind the stated objection."
             },
             {
               "title": "How to Use This",
-              "content": "Design your referral system, then implement it over the next 30 days.\n\n---"
+              "content": "Work through each of the five universal objections below. Write your specific responses in your own words and practise them until they feel natural, not robotic.\n\n---"
             },
             {
-              "title": "Build the System",
-              "content": "### When to Ask\n\n- [ ] Identify the natural \"ask moments\" in your client journey: when clients are happiest with your work (after a win, after a deliverable, at a milestone, during a renewal conversation)\n- [ ] ⚡ Quick Win: Contact 3 of your happiest current clients this week and ask: \"Is there anyone you know who might benefit from what we do?\" That is a referral system in its simplest form.\n- [ ] Set triggers: after every positive client interaction, ask. Make it reflexive, not random.\n\n### How to Ask\n\n- [ ] Script your referral request (keep it natural, not salesy):\n  - \"You mentioned you found [specific result] really valuable. Do you know anyone else facing a similar challenge?\"\n  - \"We are looking to work with more businesses like yours. Who in your network might be a good fit?\"\n  - \"I have space for [X] new clients this quarter. If you know anyone who could benefit, I would love an introduction.\"\n- [ ] Make it specific: instead of \"anyone who needs help,\" say \"business owners doing £200K+ who are struggling with [specific problem]\"\n- [ ] Offer to make it easy: \"I can send you a short message you could forward, or I'm happy for you to just share my name and number\"\n\n### What to Offer\n\n- [ ] Decide whether to offer a referral incentive:\n  - **No incentive:** Works well in professional services where the referral itself is a favour between trusted contacts\n  - **Reciprocal value:** Offer something valuable to the referrer (a free session, a discount on future work, access to an exclusive resource)\n  - **Financial incentive:** A commission or gift for successful referrals (works best for product businesses or structured programmes)\n- [ ] Whatever you choose, make the offer clear and consistent\n\n### How to Follow Up\n\n- [ ] When you receive a referral, contact them within 24 hours (speed matters - the warm introduction cools quickly)\n- [ ] Always reference the referrer: \"Sarah mentioned you might be looking at improving your cash flow management\"\n- [ ] Update the referrer on what happened (within appropriate confidentiality): \"I spoke with James - great connection, thank you\"\n- [ ] Regardless of outcome, thank the referrer personally"
+              "title": "Step 1: Map Your Common Objections",
+              "content": "- [ ] Review your last 20 sales conversations and list every objection you heard\n- [ ] Group similar objections together (most will fall into the five categories below)\n- [ ] ⚡ Quick Win: Note the one objection that throws you off most. Write a response for that one first.\n- [ ] Identify any objections unique to your industry or offer that do not fit the five universals"
             },
             {
-              "title": "Systematise It",
-              "content": "- [ ] Create a referral tracking list: who referred whom, when, and what happened\n- [ ] Add \"ask for referral\" as a step in your client delivery process (not a one-off effort, a built-in habit)\n- [ ] Set a monthly target: [X] referral asks per month\n- [ ] Review monthly: how many asks, how many referrals received, how many converted?\n- [ ] Send a quarterly thank-you to your top referrers (handwritten note, small gift, or simply a genuine message)\n\n---"
+              "title": "Step 2: Build Responses to the Five Universal Objections",
+              "content": "### \"It's too expensive\" (Price)\n\n- [ ] Write a response that reframes cost in terms of value, ROI, or cost of inaction\n- [ ] Prepare a comparison: what is the cost of not solving this problem for another 6-12 months?\n- [ ] If relevant, offer payment terms or a smaller starting package rather than discounting\n\n### \"I need to think about it\" (Stall)\n\n- [ ] Write a response that respects the request while uncovering the real concern underneath\n- [ ] Ask: \"Of course. What specifically do you want to think about? Is it the investment, the timing, or whether this is the right approach?\"\n- [ ] Set a specific follow-up date. \"Thinking about it\" with no deadline means the deal dies quietly.\n\n### \"I need to talk to my partner/team\" (Authority)\n\n- [ ] Write a response that helps them sell it internally rather than trying to bypass the decision-maker\n- [ ] Offer to join a call with the other decision-maker or send a summary they can share\n- [ ] Ask what the other person's main concern is likely to be, then address it proactively\n\n### \"The timing is not right\" (Priority)\n\n- [ ] Write a response that explores whether timing is a real constraint or a polite deflection\n- [ ] Ask: \"What would need to change for the timing to be right?\" If they cannot answer specifically, timing is not the real issue.\n- [ ] If timing is genuinely bad, propose a start date that works and get commitment now\n\n### \"I've tried something like this before and it did not work\" (Scepticism)\n\n- [ ] Write a response that acknowledges their experience without dismissing it\n- [ ] Ask what specifically did not work and why. Then show how your approach addresses that gap.\n- [ ] Use social proof from a client who had the same concern and succeeded"
+            },
+            {
+              "title": "Step 3: Practise and Refine",
+              "content": "- [ ] Role-play each objection with a colleague, partner, or coach until responses feel conversational\n- [ ] Record yourself delivering each response and listen back critically\n- [ ] ⚡ Quick Win: Practise the \"think about it\" response first. This is the most common objection and the one most people handle worst.\n- [ ] Create a one-page cheat sheet with your five responses for reference before calls\n- [ ] After each real sales call, note which objections came up and how your response worked. Refine based on what actually happens.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- A repeatable referral process built into your client journey\n- A scripted, natural way to ask for referrals at the right moments\n- A clear incentive structure (even if the incentive is simply gratitude)\n- Monthly referral targets being tracked and hit\n- A growing source of high-quality, pre-qualified leads from trusted introductions"
+              "content": "- Written responses to the five universal sales objections\n- Responses practised until they feel natural and conversational\n- A one-page reference sheet for pre-call preparation\n- A process for capturing new objections and building responses over time\n- Increased confidence in handling pushback without freezing, discounting, or getting defensive"
             },
             {
               "title": "Coach Notes",
-              "content": "Referral reluctance is almost universal. Clients say \"I do not want to seem pushy.\" Reframe: if your service genuinely helps people, not asking for referrals is doing their network a disservice. The key insight: the best time to ask is right after a win, when the client is most delighted. Also push for specificity in the ask - \"Do you know any business owners?\" is too vague. \"Do you know any business owners doing £500K+ who are frustrated by their cash flow?\" gives the referrer a specific person to think of. Track referrals carefully - they often become your highest-ROI lead source by far."
+              "content": "Objection handling is a skill, which means it improves with deliberate practice, not just experience. Most clients have heard the same objections dozens of times but have never written down a good response. The exercise of writing it out is transformative. Watch for clients who interpret \"handling objections\" as \"pressuring people into buying.\" That is not the goal. The goal is to make sure the prospect has all the information they need to make a good decision for themselves. If the answer is genuinely no, let them go gracefully. The follow-up process (Action 9) will catch the ones who need more time. Role-play is the key coaching tool here. Do not just talk about it. Actually play the prospect and throw objections at them."
             }
           ]
         }
       ]
     },
     {
-      "title": "Measurement & Optimisation",
-      "description": "Tracking what matters and improving results over time.\n\n---",
+      "title": "Conversion Optimization",
+      "description": "Improving show rates, close rates, and deal sizes.",
       "actions": [
         {
           "number": 7,
-          "title": "Lead Tracking System",
-          "description": "Set up simple tracking so you know exactly how many leads each channel generates, what they cost, and which ones convert best.",
+          "title": "Async-to-Call Flow",
+          "description": "Use DM, email, and text to start conversations, qualify prospects, and book calls — without trying to close deals through messaging.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Set up simple tracking so you know exactly how many leads each channel generates, what they cost, and which ones convert to paying customers. This does not require expensive software. A well-structured spreadsheet beats a fancy CRM that nobody uses."
+              "content": "Build a structured process for using DMs, email, and text messages to start conversations, qualify prospects, and book calls - without trying to close deals through messaging. Async channels are brilliant for opening doors and filtering prospects. They are terrible for closing. This action maps the handoff from written conversation to live call so you get the right people on calls and waste less time on unqualified ones."
             },
             {
               "title": "Why It Matters",
-              "content": "Without tracking, your marketing is a black box. You spend money, you do activities, and customers appear - but you have no idea which activities produced which customers. Tracking connects the dots: this channel produced this lead, this lead became this customer, this customer generated this revenue. Once you can see those connections, you can invest in what works and stop wasting money on what does not."
+              "content": "Two mistakes dominate async selling. First, trying to close through DMs or email, which leads to long message threads that go nowhere because you cannot read tone, handle objections, or build trust in real time. Second, jumping to \"let's get on a call\" too early, which feels pushy and scares off prospects who are not ready. The async-to-call flow solves both problems. It gives you a sequence: start the conversation casually, establish relevance, qualify interest, then transition to a call when the prospect is warm and ready."
             },
             {
               "title": "How to Use This",
-              "content": "Start with a simple system. You can upgrade later once the habit is established.\n\n---"
+              "content": "Map your async flow for each channel you use (DM, email, text). Follow the steps below in order.\n\n---"
             },
             {
-              "title": "Setup",
-              "content": "- [ ] ⚡ Quick Win: Create a spreadsheet with these columns: Date, Lead Name, Source (how they found you), Status (New / Contacted / Meeting Booked / Proposal Sent / Won / Lost), Value (if won), Notes\n- [ ] Add every current lead and opportunity to the tracker\n- [ ] Set up a \"source\" dropdown with your active channels: Referral, Website, LinkedIn, Google Ads, Email, Networking, Cold Outreach, Other\n- [ ] Make this your single source of truth for leads - everything goes in here"
+              "title": "Step 1: Define Your Async Channels",
+              "content": "- [ ] List every async channel where you interact with prospects (LinkedIn DM, Instagram DM, email, SMS, WhatsApp, Facebook Messenger, etc.)\n- [ ] For each channel, note the typical conversation style (formal vs. casual, long vs. short messages)\n- [ ] ⚡ Quick Win: Pick your highest-volume async channel and build the flow for that one first. Add others later.\n- [ ] Identify which channels generate the most booked calls currently"
             },
             {
-              "title": "Daily/Weekly Habits",
-              "content": "- [ ] Add every new enquiry or lead to the tracker the day it comes in (takes 30 seconds per lead)\n- [ ] Update statuses as leads progress through your pipeline\n- [ ] Every Friday, spend 5 minutes reviewing: How many new leads this week? From which channels? What stage is each at?\n- [ ] Flag any lead that has been in the same status for more than 2 weeks - it needs attention or a decision"
+              "title": "Step 2: Build Your Opening Sequence",
+              "content": "- [ ] Write 3-5 opening message templates for each channel (not copy-paste scripts, but frameworks you personalise)\n- [ ] First message purpose: start a relevant conversation, not pitch or sell\n- [ ] Good openers: react to something they posted, ask a genuine question, share something useful, reference a mutual connection\n- [ ] Bad openers: \"Hi, I help businesses like yours...\" or anything that sounds like it was sent to 500 people\n- [ ] ⚡ Quick Win: Go through your last 10 successful conversations that led to calls. What did the opening message look like? Use that pattern."
             },
             {
-              "title": "Monthly Metrics",
-              "content": "At the end of each month, calculate:\n\n- [ ] **Total new leads** this month\n- [ ] **Leads by source:** How many from each channel?\n- [ ] **Conversion rate:** What percentage of leads became customers?\n- [ ] **Conversion rate by source:** Which channel produces the highest-quality leads?\n- [ ] **Average time to close:** How long from first contact to paying customer?\n- [ ] **Cost per lead by channel:** Total channel cost / leads from that channel\n- [ ] **Cost per customer by channel:** Total channel cost / customers from that channel"
+              "title": "Step 3: Build Your Qualification Flow",
+              "content": "- [ ] After the conversation is flowing, ask 2-3 qualifying questions through messaging:\n  - What is their situation? (Are they a fit for what you offer?)\n  - What have they tried? (Are they problem-aware and solution-seeking?)\n  - What is their timeline? (Are they ready to act or just browsing?)\n- [ ] If qualified, transition to a call. If not, either nurture or gracefully exit.\n- [ ] Write your transition phrase: the message that moves from async chat to booked call"
             },
             {
-              "title": "Use the Data",
-              "content": "- [ ] Compare this month to last month: are lead numbers improving, declining, or flat?\n- [ ] Identify your best channel by cost per customer (not just volume - quality matters)\n- [ ] Identify bottlenecks in your pipeline: where are leads getting stuck?\n- [ ] Share the numbers with your coach or accountability partner monthly\n- [ ] Adjust your marketing spend and effort based on what the data shows, not what you feel\n\n---"
+              "title": "Step 4: Design the Call Transition",
+              "content": "- [ ] Write 2-3 transition messages that naturally move from messaging to a call\n- [ ] Good transitions: \"This is getting interesting - would it be easier to jump on a quick call to dig into this properly?\" or \"I think I can help but I would need to understand more. Fancy a 20-minute call this week?\"\n- [ ] Include a direct booking link or propose specific times (reduce friction)\n- [ ] If they hesitate, offer a low-commitment framing: \"No pitch, just a conversation to see if it makes sense\"\n- [ ] Once booked, send a confirmation with date, time, and what you will cover"
+            },
+            {
+              "title": "Step 5: Handle Common Async Objections",
+              "content": "- [ ] \"Can you just send me more info?\" - Respond with a short summary and restate the call offer. Do not send a full proposal over message.\n- [ ] \"I'm not ready yet\" - Respect it, offer something useful (article, resource), and set a future follow-up date\n- [ ] \"What does it cost?\" - Give a range if appropriate, then pivot: \"The exact investment depends on your situation, which is why the call is useful\"\n- [ ] Radio silence after initial response - Send one follow-up after 3-5 days, then move to nurture\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- A single, simple system tracking every lead from source to outcome\n- Weekly visibility on pipeline health\n- Monthly metrics that show what is working and what is not\n- Data-driven decisions about where to invest marketing time and money\n- A foundation for more sophisticated tracking as the business grows"
+              "content": "- A documented async-to-call flow for your primary channel\n- Opening message templates you can personalise quickly\n- A qualification framework that filters before the call, not during it\n- Transition messages that move warm prospects to booked calls naturally\n- Fewer dead-end message threads and more qualified calls on your calendar"
             },
             {
               "title": "Coach Notes",
-              "content": "Start simple. A Google Sheet beats a CRM for most businesses under £1M if the alternative is a CRM that nobody uses. The critical habit is adding every lead the day it arrives and updating statuses weekly. If the client says \"I will catch up on the tracker later,\" it will never happen. Build the habit before upgrading the tool. The most powerful number: cost per customer by channel. When a client sees they are paying £500 per customer from paid ads but £0 per customer from referrals (which they never systematically pursue), the strategic implication is obvious."
+              "content": "The biggest mindset shift for clients is accepting that the purpose of messaging is to book the call, not to sell. Many business owners write long, detailed DMs trying to convince someone to buy. That almost never works. Keep messages short, conversational, and focused on getting to a live conversation. The qualification step is critical. Without it, clients end up on calls with people who were never going to buy. Teach clients to see async as a filter, not a sales channel. The metric that matters is \"messages sent to calls booked\" ratio. If it takes 50 DMs to book one call, the opening messages need work. If calls are booked but prospects are unqualified, the qualification questions need work."
             }
           ]
         },
         {
           "number": 8,
-          "title": "Weekly Lead Targets",
-          "description": "Calculate how many leads you need each week to hit your revenue goals and track progress against those targets.",
+          "title": "Show Rate System",
+          "description": "The reminder sequences, incentives, and personal touches that turn booked calls into attended calls, because you cannot close people who do not show up.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Calculate how many leads you need each week to hit your revenue goals and set up a simple system to track progress against those targets. This turns \"I need more leads\" (vague) into \"I need 12 leads per week\" (specific and measurable)."
+              "content": "Build a reminder and engagement system that turns booked calls into attended calls. You will design a sequence of touchpoints between booking and the call that increases perceived value, builds anticipation, and makes it easy for the prospect to show up. The target is a show rate of 80% or higher."
             },
             {
               "title": "Why It Matters",
-              "content": "Without a lead target, you cannot tell whether your marketing is working until the revenue shows up (or does not) weeks or months later. A weekly lead target gives you an early warning system. If you need 12 leads per week and you are getting 6, you know NOW that you will miss your revenue target in 60-90 days - with enough time to do something about it. This is one of the simplest and most powerful metrics in your business."
+              "content": "Every no-show is wasted pipeline. You generated the lead, had the conversation, booked the call, and then the prospect did not turn up. If your show rate is 60%, you are losing 40% of your qualified pipeline to a problem that is almost entirely solvable with systems. A 20-percentage-point improvement in show rate has the same revenue impact as generating 20% more leads, but it costs almost nothing. This is one of the highest-leverage fixes in any sales process."
             },
             {
               "title": "How to Use This",
-              "content": "Work backwards from your revenue goal to calculate the exact number of weekly leads you need.\n\n---"
+              "content": "Map the time between booking and the call. Then build touchpoints at each gap.\n\n---"
             },
             {
-              "title": "The Calculation",
-              "content": "- [ ] **Step 1: Monthly revenue target.** What monthly revenue do you need to hit your annual goal? £___/month\n- [ ] **Step 2: Average deal value.** What is the average value of a new customer? £___\n- [ ] **Step 3: New customers needed per month.** Monthly target / Average deal value = ___ customers per month\n- [ ] **Step 4: Conversion rate.** What percentage of leads become customers? ___% (If you do not know, use 10-20% as a starting estimate)\n- [ ] **Step 5: Monthly leads needed.** Customers needed / Conversion rate = ___ leads per month\n- [ ] **Step 6: Weekly lead target.** Monthly leads / 4.3 = ___ leads per week\n\n- [ ] ⚡ Quick Win: Do this calculation right now. Write the weekly number on a Post-It and stick it where you see it every day."
+              "title": "Step 1: Measure Your Current Show Rate",
+              "content": "- [ ] Pull data from the last 30-60 days: how many calls were booked vs. how many were attended?\n- [ ] Calculate your show rate: (Attended / Booked) x 100\n- [ ] ⚡ Quick Win: If you do not track this, start today. Even a simple tally on a notepad gives you the number within two weeks.\n- [ ] Set a target show rate (80% is good, 85%+ is excellent)"
             },
             {
-              "title": "Example",
-              "content": "If your monthly revenue target is £50,000, your average deal is £5,000, and your conversion rate is 20%:\n- 50,000 / 5,000 = 10 customers needed\n- 10 / 0.20 = 50 leads needed per month\n- 50 / 4.3 = ~12 leads per week"
+              "title": "Step 2: Build Your Confirmation Sequence",
+              "content": "- [ ] Immediately after booking: send a confirmation email or message with date, time, link/location, and what to expect\n- [ ] Include one sentence on the value of the call: what they will get from showing up\n- [ ] 24 hours before the call: send a reminder via the channel they are most likely to see (email, SMS, or DM)\n- [ ] 1 hour before the call: send a short \"looking forward to speaking\" message\n- [ ] ⚡ Quick Win: Add a personal touch to the 24-hour reminder. \"Hi [Name], looking forward to our call tomorrow at 2pm. I have been thinking about [specific thing they mentioned] and have some ideas.\" Personalisation dramatically increases show rates."
             },
             {
-              "title": "Set Up Tracking",
-              "content": "- [ ] Add your weekly lead target to your Lead Tracking System (Action 7)\n- [ ] Every Friday, count new leads this week and compare to target\n- [ ] Use a simple traffic light: Green (on or above target), Amber (within 25% of target), Red (more than 25% below)\n- [ ] If you are Red for 2 consecutive weeks, treat it as urgent: diagnose the cause and adjust your lead generation activities immediately"
+              "title": "Step 3: Increase Perceived Value",
+              "content": "- [ ] Send a short piece of content between booking and the call (article, video, case study) that relates to their situation\n- [ ] Frame it as \"I thought this might be useful before our conversation\"\n- [ ] This positions you as helpful before they have paid anything and increases their investment in the relationship\n- [ ] If appropriate, send a brief pre-call questionnaire (2-3 questions max) so they start thinking about their problem before the call"
             },
             {
-              "title": "Refine Over Time",
-              "content": "- [ ] After 3 months of tracking, replace estimated conversion rates with your actual numbers\n- [ ] Recalculate the lead target with real data - it may change significantly\n- [ ] If your conversion rate improves (through better sales process or lead quality), your lead target drops\n- [ ] If your average deal value increases (through pricing or upselling), your lead target drops\n- [ ] Review and adjust quarterly alongside your revenue goals\n\n---"
+              "title": "Step 4: Reduce Friction",
+              "content": "- [ ] Make the call link or location easy to find in every message (do not make them search for it)\n- [ ] If using Zoom, include the link in the calendar invite, the confirmation email, and the reminder\n- [ ] Offer easy rescheduling rather than cancellation. Include a reschedule link in your reminders.\n- [ ] If a prospect reschedules, treat it as a positive signal, not a negative one. They are still engaged."
+            },
+            {
+              "title": "Step 5: Handle No-Shows",
+              "content": "- [ ] If someone does not show, wait 5 minutes then send a message: \"Hi [Name], I had us down for a call just now. No worries if something came up. Here is my calendar link to rebook.\"\n- [ ] Follow up once more 24 hours later if no response\n- [ ] After two no-shows with no communication, move to nurture rather than continuing to chase\n- [ ] Track no-show reasons when given. If multiple people cite the same reason, there is a systemic issue to fix.\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- A specific weekly lead target calculated from your revenue goals\n- A simple tracking system showing whether you are on pace each week\n- Early warning when lead flow drops below what is needed\n- A clear connection between marketing activity and revenue outcomes\n- A number your whole team can rally around and be accountable for"
+              "content": "- A documented reminder sequence covering booking confirmation through to call time\n- A pre-call engagement touchpoint that increases perceived value\n- Easy access to call links and rescheduling options in every communication\n- A no-show follow-up process that recovers missed calls\n- Show rate tracked weekly with a clear improvement target"
             },
             {
               "title": "Coach Notes",
-              "content": "This is one of the most impactful calculations you can do in a coaching session. Most clients have never worked backwards from revenue to leads. The number is often either surprisingly manageable (\"I only need 8 leads a week?\") or surprisingly high (\"I need 40 leads a week and I'm getting 5?\"). Either way, it creates clarity. If the number seems unreachable, look at the levers: can you improve conversion rate? Increase average deal value? Both are often easier than dramatically increasing lead volume. Review this monthly and celebrate weeks when the target is hit."
+              "content": "Show rate problems are almost always system problems, not lead quality problems. If the prospect was interested enough to book, they are interested enough to attend. They no-show because they forgot, something came up, or they did not feel the call was important enough to prioritise. Your system needs to solve all three: reminders for forgetting, easy rescheduling for schedule conflicts, and value framing for priority. The pre-call content is underused by most businesses. A client who arrives on the call having read or watched something you sent is significantly more engaged and converts at a higher rate. Push clients to automate this sequence so it runs without manual effort."
             }
           ]
         },
         {
           "number": 9,
-          "title": "Conversion Rate Optimisation",
-          "description": "Test and improve how many visitors become leads by optimising landing pages, forms, and calls-to-action.",
+          "title": "Follow-Up Engine",
+          "description": "What happens to prospects who do not buy immediately: the systematic nurture process that converts maybes into yeses over time.",
           "detailSections": [
             {
               "title": "What to Do",
-              "content": "Test and improve how many website visitors, content viewers, or prospects become actual leads by optimising your landing pages, forms, and calls-to-action. A small improvement in conversion rate has a multiplying effect on your entire lead generation system without increasing traffic or spend."
+              "content": "Build a systematic nurture process that converts \"not now\" prospects into future customers. Most sales are not lost. They are just not won yet. This action creates a structured follow-up sequence for prospects who showed interest but did not buy, so they stay warm until the timing is right. You will design touchpoints across days, weeks, and months that keep you top of mind without being annoying."
             },
             {
               "title": "Why It Matters",
-              "content": "If 100 people visit your website and 2 become leads (2% conversion), doubling your conversion to 4% doubles your leads without spending a penny more on marketing. Most SME websites convert at 1-3%, but well-optimised pages convert at 5-10%+. The difference is not about design or technology - it is about clarity, relevance, and removing friction. Conversion optimisation is the highest-leverage marketing activity because it makes everything else work harder."
+              "content": "Research consistently shows that 80% of sales require five or more follow-ups, yet most salespeople stop after one or two. The reason is simple: follow-up feels awkward. Without a system, you rely on memory and motivation, both of which fade quickly. A Follow-Up Engine removes the personal discomfort by making follow-up automatic and value-driven rather than \"just checking in.\" The revenue sitting in your unconverted pipeline is often larger than the revenue you need from new leads. Activating it is the cheapest growth strategy available."
             },
             {
               "title": "How to Use This",
-              "content": "Audit your current conversion points, identify the biggest leaks, and fix them one at a time.\n\n---"
+              "content": "Categorise your unconverted prospects, then build a follow-up sequence for each category.\n\n---"
             },
             {
-              "title": "Audit Your Conversion Points",
-              "content": "- [ ] List every place where a visitor can become a lead: website contact form, landing pages, social media DMs, phone calls, email sign-ups, booking pages\n- [ ] For each, find or estimate the current conversion rate (visitors or viewers / leads captured)\n- [ ] ⚡ Quick Win: Check your website's contact page right now. Is the form simple (name + email + one question)? Or does it ask for 8 fields that nobody wants to fill in? Reduce to the minimum.\n- [ ] Identify your highest-traffic conversion point - this is where optimisation will have the biggest impact"
+              "title": "Step 1: Categorise Your Unconverted Prospects",
+              "content": "- [ ] Pull a list of every prospect who engaged but did not buy in the last 6 months\n- [ ] Sort them into categories:\n  - Hot: interested but timing or budget was wrong (follow up within 1-2 weeks)\n  - Warm: engaged but not convinced (follow up within 2-4 weeks)\n  - Cool: early-stage interest, did not progress (monthly nurture)\n- [ ] ⚡ Quick Win: Identify the 5 hottest unconverted prospects right now. Send each one a personal message today. At least one will re-engage.\n- [ ] Remove anyone who explicitly said no or asked not to be contacted"
             },
             {
-              "title": "Common Conversion Killers (Check Each)",
-              "content": "- [ ] **Unclear headline:** Does the visitor know within 5 seconds what you do, who you help, and what they should do next?\n- [ ] **Too many options:** Does your page give one clear action, or does it offer 5 different things to click?\n- [ ] **Weak call-to-action:** Does your CTA tell them what happens next? \"Submit\" is weak. \"Get your free template\" is strong.\n- [ ] **Too much friction:** Are you asking for too much information? Every additional form field reduces conversion by 5-10%.\n- [ ] **No social proof:** Are there testimonials, client logos, or results visible near the conversion point?\n- [ ] **Slow page load:** Does your page load in under 3 seconds? Slow pages lose visitors before they even see your offer.\n- [ ] **Mobile unfriendly:** Does the page work well on a phone? (50%+ of visitors are on mobile)"
+              "title": "Step 2: Build Your Short-Term Follow-Up (Days 1-14)",
+              "content": "- [ ] Day 1 after the call: send a thank-you message summarising what you discussed and the offer\n- [ ] Day 3: share a relevant piece of content, case study, or testimonial related to their situation\n- [ ] Day 7: check in with a specific question, not \"just following up.\" Ask about something they mentioned on the call.\n- [ ] Day 14: make a direct but low-pressure offer. \"I have a slot opening next week. Want to revisit this?\"\n- [ ] If no response after Day 14, move to the medium-term sequence"
             },
             {
-              "title": "Fix and Test",
-              "content": "- [ ] Prioritise: fix the biggest conversion killer first\n- [ ] Make one change at a time so you can measure the impact\n- [ ] Run each change for 2-4 weeks before evaluating (unless the sample size is very small)\n- [ ] Track before and after: what was the conversion rate before the change, and what is it now?\n- [ ] If the change improved conversion, keep it and move to the next fix. If not, revert and try something different."
+              "title": "Step 3: Build Your Medium-Term Follow-Up (Weeks 3-12)",
+              "content": "- [ ] Every 2-3 weeks, send one touchpoint that provides value rather than asks for a sale\n- [ ] Touchpoint types: useful article, industry insight, relevant case study, event invitation, tool or resource\n- [ ] Every third touchpoint, include a soft call-to-action: \"If your situation has changed, I would love to pick up where we left off\"\n- [ ] ⚡ Quick Win: Create a library of 10-12 follow-up content pieces you can rotate. Build it once, use it for every prospect.\n- [ ] Track opens and responses. If someone re-engages, move them back to the short-term sequence."
             },
             {
-              "title": "Ongoing Optimisation",
-              "content": "- [ ] Review conversion rates monthly as part of your lead tracking routine\n- [ ] Test one new element per month: headline, CTA, form length, testimonial placement, page layout\n- [ ] Set a conversion rate target for your main landing page (aim for at least 5% as a starting goal)\n- [ ] As you add new lead magnets or landing pages, apply the same principles from the start\n- [ ] Document what works so you build a \"conversion playbook\" for your business over time\n\n---"
+              "title": "Step 4: Build Your Long-Term Nurture (3-12 months)",
+              "content": "- [ ] Monthly touchpoint: newsletter, LinkedIn content, or personal message\n- [ ] Quarterly check-in: a brief personal note referencing their situation. \"Hi [Name], we spoke in January about X. Has anything changed on that front?\"\n- [ ] Annual triggers: end of financial year, budget planning season, New Year, industry events\n- [ ] Keep the tone helpful and patient. Long-term nurture is about being present when they are ready, not pressuring them to be ready now."
+            },
+            {
+              "title": "Step 5: Automate What You Can",
+              "content": "- [ ] Set up email sequences for the short and medium-term follow-up in your CRM or email tool\n- [ ] Use calendar reminders for personal touchpoints that cannot be automated\n- [ ] Create templates for each follow-up type so sending takes minutes, not hours\n- [ ] Review your follow-up pipeline weekly: who is in which stage, who has re-engaged, who needs a personal touch\n\n---"
             },
             {
               "title": "Expected Outcome",
-              "content": "- All conversion points identified and current rates measured\n- The biggest conversion killers identified and fixed\n- Measurable improvement in how many visitors become leads\n- An ongoing testing habit that continuously improves conversion\n- More leads from the same traffic, without increasing marketing spend"
+              "content": "- Every unconverted prospect categorised and in a follow-up sequence\n- A documented short-term sequence (Days 1-14) for recent near-misses\n- A medium-term value-driven nurture flow (Weeks 3-12)\n- A long-term monthly nurture keeping you top of mind for 3-12 months\n- Automated sequences for repeatable touchpoints\n- A content library of 10-12 follow-up assets"
             },
             {
               "title": "Coach Notes",
-              "content": "Conversion optimisation is often overlooked because it is less exciting than launching a new marketing campaign. But the maths is compelling: a client spending £2,000/month on ads with a 2% landing page conversion gets 40 leads. Improving to 4% conversion gives them 80 leads for the same spend. That is equivalent to doubling their ad budget. Start with the simplest fixes first - reducing form fields, clarifying the headline, and adding one testimonial near the CTA. These three changes alone often produce a 30-50% improvement in conversion rate. Connect to Lead Magnets (Action 5) for the content side and Channel Testing (Action 3) for the traffic side."
+              "content": "Follow-up is where most clients feel uncomfortable, and that discomfort is costing them serious money. Reframe follow-up as a service, not an imposition. If you genuinely believe your offer helps people, following up is the responsible thing to do. The prospect is busy and forgetful, not uninterested. The biggest implementation barrier is building the content library. Help clients create it in a single session rather than trying to build it one piece at a time. Once the library exists, follow-up becomes easy. Track \"reactivation rate\" as a key metric: what percentage of nurtured prospects eventually buy. Even 10-15% reactivation from a systematic follow-up engine represents significant revenue from prospects who would otherwise have been lost."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Sales Team Development",
+      "description": "Scaling sales beyond just the founder.\n\n---",
+      "actions": [
+        {
+          "number": 10,
+          "title": "Call Recording & Coaching",
+          "description": "Record every sales conversation, review wins and losses against your framework, and improve one specific behaviour per week per salesperson.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a system to record every sales conversation, review wins and losses against your Diagnostic Call Framework, and improve one specific behaviour per week per salesperson. This is not surveillance. It is the same deliberate practice approach that elite performers use in every field: record, review, identify one thing to improve, practise it, repeat."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Sales skill improves through reviewed repetition, not just raw experience. A salesperson who makes 100 calls without reviewing any of them will repeat the same mistakes for years. A salesperson who reviews 5 calls per week and fixes one specific issue each time will be dramatically better within a month. Recording also eliminates the \"I think the call went well\" problem. Memory is unreliable. The recording tells you exactly what happened, and it is often very different from what you remember."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up recording technology, then build a weekly review habit. Follow the steps below in order.\n\n---"
+            },
+            {
+              "title": "Step 1: Set Up Recording",
+              "content": "- [ ] Choose a recording tool: Zoom records natively, phone calls can use apps like Otter.ai or dedicated call recording software\n- [ ] ⚡ Quick Win: If you use Zoom, turn on cloud recording now. It takes 30 seconds and captures every call automatically.\n- [ ] Ensure you comply with recording laws in your jurisdiction (in the UK, inform the other party at the start of the call)\n- [ ] Create a simple filing system: date, prospect name, outcome (won/lost/pending)\n- [ ] Set up automatic transcription if your tool supports it (makes review faster)"
+            },
+            {
+              "title": "Step 2: Build Your Review Framework",
+              "content": "- [ ] Create a scorecard based on your Diagnostic Call Framework (Action 4) with key behaviours to rate:\n  - Did you open by setting an agenda and getting permission?\n  - Did you ask diagnostic questions before presenting solutions?\n  - Did you listen more than you talked? (Aim for 70/30 prospect/seller split)\n  - Did you uncover the emotional driver, not just the logical problem?\n  - Did you present the offer in terms of their specific situation?\n  - Did you ask for the decision directly?\n  - Did the call end with a clear next step?\n- [ ] Rate each behaviour 1-5 on every reviewed call\n- [ ] ⚡ Quick Win: Review your last recorded call right now against this scorecard. You will immediately spot 2-3 things you do well and 1-2 that need work."
+            },
+            {
+              "title": "Step 3: Establish the Weekly Review Rhythm",
+              "content": "- [ ] Block 30 minutes per week for call review (Friday afternoon works well)\n- [ ] Review at least 2 calls per week: one win and one loss\n- [ ] For wins: identify what you did well so you can repeat it deliberately\n- [ ] For losses: identify the moment the deal started slipping and what you could have done differently\n- [ ] If you have a sales team, review one call per salesperson per week as a coaching exercise"
+            },
+            {
+              "title": "Step 4: Focus on One Behaviour at a Time",
+              "content": "- [ ] From your review, identify the single behaviour that would make the biggest difference if improved\n- [ ] Make that behaviour your focus for the entire week. Before every call, remind yourself of the one thing you are working on.\n- [ ] Track whether the behaviour improves across the week\n- [ ] Next week, pick a new behaviour or continue with the same one if it is not yet consistent\n- [ ] Keep a log of behaviours worked on and progress made\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every sales call recorded and filed consistently\n- A scorecard for evaluating calls against your framework\n- A weekly review habit with at least 2 calls reviewed per week\n- One specific improvement focus per week per salesperson\n- A log showing skill progression over time"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Recording calls is one of the most resisted and most effective coaching tools available. Clients hate hearing themselves on tape. Push through the discomfort. The insight is worth it. Keep the review session positive: start with what went well, then identify one improvement area. Never review a call by listing everything wrong. That destroys confidence. The one-behaviour-per-week rule is essential. Trying to fix three things simultaneously means fixing none of them. If you coach a client's sales team, use call recordings in group sessions. Hearing a colleague's great call teaches faster than any training manual. Just make sure the culture is supportive, not judgemental. Connect this to the Diagnostic Call Framework (Action 4) so the review scorecard matches the call structure."
+            }
+          ]
+        },
+        {
+          "number": 11,
+          "title": "Sales Training System",
+          "description": "Onboard new salespeople with scripts, role-play scenarios, and a 90-day development plan so they can hit targets quickly.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Build an onboarding and development system for new salespeople that includes scripts, role-play scenarios, and a 90-day development plan. The goal is to get a new salesperson from zero to competent in 90 days without relying on \"shadow me and figure it out.\" This system makes your sales knowledge transferable so you are not the only person who can sell effectively."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most small businesses hire salespeople and throw them in the deep end. \"Here is a phone, here are some leads, go sell.\" The result is slow ramp-up, inconsistent performance, and high turnover. A structured training system solves all three. It compresses the learning curve from 6-12 months to 90 days. It creates consistency because everyone learns the same framework. And it reduces turnover because people who feel supported and competent stay longer than those who feel lost and failing."
+            },
+            {
+              "title": "How to Use This",
+              "content": "You need your Diagnostic Call Framework (Action 4), Objection Handling System (Action 6), and Call Recording system (Action 10) in place before building this. Work through the sections below.\n\n---"
+            },
+            {
+              "title": "Step 1: Document Your Sales Knowledge",
+              "content": "- [ ] Write out your complete sales script based on the Diagnostic Call Framework\n- [ ] Document your product knowledge: what you sell, who it is for, what problems it solves, pricing, FAQs\n- [ ] Create a \"competitor cheat sheet\" covering the top 3-5 alternatives prospects might consider and how you compare\n- [ ] ⚡ Quick Win: Record yourself doing a mock sales call using your framework. This single recording becomes the most valuable training asset you own.\n- [ ] Compile 3-5 examples of great calls (from your recordings) that new hires can study"
+            },
+            {
+              "title": "Step 2: Build Role-Play Scenarios",
+              "content": "- [ ] Create 5-7 realistic prospect scenarios covering different industries, objections, and personality types\n- [ ] For each scenario, write a one-paragraph brief the role-player uses to \"become\" the prospect\n- [ ] Include at least one scenario per universal objection (price, timing, authority, stall, scepticism)\n- [ ] Build in a \"difficult prospect\" scenario for advanced practice (hostile, dismissive, or constantly interrupting)\n- [ ] ⚡ Quick Win: Create one role-play scenario based on your most common prospect type. You can use this in hiring interviews to assess sales potential."
+            },
+            {
+              "title": "Step 3: Design the 90-Day Development Plan",
+              "content": "### Week 1-2: Foundation\n\n- [ ] Product knowledge training: what you sell, how it works, who it helps, results achieved\n- [ ] Study the sales script and Diagnostic Call Framework\n- [ ] Listen to 10 recorded calls (mix of wins and losses)\n- [ ] Shadow 5 live calls with the business owner or senior salesperson\n\n### Week 3-4: Guided Practice\n\n- [ ] Daily role-play sessions (15-20 minutes each) working through all scenarios\n- [ ] First supervised live calls with coaching debrief after each one\n- [ ] Begin handling inbound enquiries with support available\n- [ ] Weekly review against the call scorecard (Action 10)\n\n### Month 2: Supervised Selling\n\n- [ ] Full call volume with weekly call review and coaching\n- [ ] Focus on one skill improvement per week\n- [ ] Track conversion metrics against team benchmarks\n- [ ] Introduce objection handling practice using real scenarios from their calls\n\n### Month 3: Independent Selling\n\n- [ ] Full autonomy with continued weekly review\n- [ ] Performance compared against targets with clear feedback\n- [ ] Identify whether the new hire is on track, needs additional support, or is not a fit\n- [ ] End-of-90-days review: decision to confirm, extend probation, or part ways\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A documented sales training package covering scripts, product knowledge, and competitor information\n- 5-7 role-play scenarios for practice and assessment\n- A structured 90-day onboarding plan with clear milestones\n- Faster ramp-up time for new salespeople\n- Consistent sales approach across the team"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part for business owners is documenting what they do instinctively. They have sold successfully for years but cannot explain their process because it feels intuitive. The recording exercise (recording themselves doing a mock call) forces the tacit knowledge into explicit form. Push for it. Role-play resistance is also common. Adults feel silly pretending to be prospects. Normalise it by doing it yourself first. The 90-day timeline is a guideline, not a rigid rule. Some people ramp faster, some slower. The key is having clear milestones so you know whether someone is on track rather than guessing. If a new hire is not showing improvement by the end of Month 2, it is usually a fit issue rather than a training issue."
+            }
+          ]
+        },
+        {
+          "number": 12,
+          "title": "Setter & Closer Structure",
+          "description": "When you are ready to scale beyond doing all the selling yourself, how to split lead qualification from deal closing and route the best prospects to your best closers.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design the structure for splitting lead qualification (setting) from deal closing when you are ready to scale beyond doing all the selling yourself. A setter qualifies prospects, books calls, and ensures only the right people reach the closer. A closer runs the diagnostic call, makes the offer, and wins the deal. This division lets you handle more volume, reduces wasted time on unqualified prospects, and creates a clear career path for your sales team."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "In early-stage businesses, the owner does everything: finds leads, qualifies them, books calls, runs calls, closes deals, and follows up. That works until it does not. The ceiling is typically 15-20 sales conversations per week before quality drops. Beyond that, you need to split the role. The setter-closer model is the most common and effective way to do this. It works because each role requires different skills. Setting requires speed, volume, and friendly persistence. Closing requires depth, empathy, and commercial acumen. Few people excel at both."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Only move to a setter-closer model when you have a documented sales process (Actions 1-6) and enough lead volume to justify the split. Work through the checklist below to design the structure.\n\n---"
+            },
+            {
+              "title": "Assess Readiness",
+              "content": "- [ ] Confirm you have a documented sales process that someone else can follow\n- [ ] Calculate your current weekly sales call volume. If it is under 10 per week, you probably do not need this yet.\n- [ ] Calculate how much of your selling time goes to qualification vs. closing. If more than 40% is qualification, the split will create immediate leverage.\n- [ ] ⚡ Quick Win: Track your time for one week. Log every sales-related activity and categorise it as setting (qualification, booking, admin) or closing (running calls, proposals, negotiation). The ratio tells you exactly where the bottleneck is."
+            },
+            {
+              "title": "Define the Setter Role",
+              "content": "- [ ] Write a clear job description: what setters do, what they do not do, and how they are measured\n- [ ] Core setter activities: respond to inbound leads, conduct outbound outreach, qualify using 2-3 key questions, book calls for closers\n- [ ] Setters should NOT: make offers, discuss pricing, send proposals, or try to close\n- [ ] Define qualification criteria: what makes a prospect qualified to be booked with a closer?\n- [ ] Set setter KPIs: number of conversations started, qualification rate, calls booked per week, show rate of booked calls"
+            },
+            {
+              "title": "Define the Closer Role",
+              "content": "- [ ] Write a clear job description: what closers do, what they do not do, and how they are measured\n- [ ] Core closer activities: run diagnostic calls, present offers, handle objections, close deals, manage proposal follow-up\n- [ ] Closers should NOT: prospect, respond to initial enquiries, or handle admin\n- [ ] Set closer KPIs: calls attended, proposal rate, close rate, average deal value, revenue per month"
+            },
+            {
+              "title": "Design the Handoff Process",
+              "content": "- [ ] Define the information the setter passes to the closer before each call (prospect name, company, situation summary, key pain points, qualification notes)\n- [ ] Choose a format: CRM notes, shared document, Slack message, or handoff form\n- [ ] ⚡ Quick Win: Create a simple one-page handoff form with 5 fields. Keep it fast for the setter to complete and useful for the closer to review.\n- [ ] Set a standard: closers review the handoff notes before every call so they walk in prepared\n- [ ] Build a feedback loop: closers tell setters when a booked prospect was not actually qualified, so qualification criteria improve over time"
+            },
+            {
+              "title": "Set Compensation Structure",
+              "content": "- [ ] Decide how setters are paid: base salary + bonus per qualified booking, or base + commission on deals that close from their bookings\n- [ ] Decide how closers are paid: base salary + commission on closed deals, or higher base with smaller bonus\n- [ ] Align incentives: setters should be rewarded for quality (bookings that show up and convert), not just volume\n- [ ] Closers should be rewarded for revenue, not just close rate (prevents cherry-picking easy deals)\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A clear decision on whether you are ready for the setter-closer split\n- Written role definitions for both setter and closer positions\n- Qualification criteria that filter prospects before they reach a closer\n- A documented handoff process ensuring closers are prepared for every call\n- A compensation structure that aligns incentives with business outcomes"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Timing matters. Clients who split too early create overhead without enough volume to justify it. Clients who split too late burn out and their close rate drops because they are exhausted from doing everything. The sweet spot is usually when the owner is consistently doing 15+ sales conversations per week and growth is limited by their available time. The first hire should usually be a setter, not a closer. It is easier to find and train someone to qualify and book calls than to close. The owner stays as the closer until the second sales hire. Common mistakes: setters who over-qualify (filtering out good prospects) and closers who blame setters for lead quality rather than improving their own conversion. The feedback loop between roles is what makes the system work. Without it, setter and closer end up in conflict rather than collaboration."
             }
           ]
         }

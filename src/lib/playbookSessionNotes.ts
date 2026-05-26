@@ -1,5 +1,7 @@
 /** Workshop state captured per BOSS playbook ref during live scoring. */
 
+import { BOSS_PRO_SCORE_LABELS } from "@/lib/bossProScoringLabels";
+
 export type WorkshopAuthorRole = "coach" | "client";
 
 export type WorkshopPriority = "urgent" | "high" | "normal" | "low";
@@ -650,11 +652,7 @@ export function appendWorkshopActivity(
   return [...events, next];
 }
 
-export const SCORE_LABELS: Record<0 | 1 | 2, string> = {
-  0: "Not in place",
-  1: "Partially",
-  2: "Fully in place",
-};
+export const SCORE_LABELS: Record<0 | 1 | 2, string> = BOSS_PRO_SCORE_LABELS;
 
 export function formatActivityMessage(event: WorkshopActivityEvent): string {
   switch (event.type) {

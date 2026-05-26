@@ -53,27 +53,28 @@ import {
   type WorkshopActivityEvent,
   type WorkshopComment,
 } from "@/lib/playbookSessionNotes";
+import { BOSS_PRO_SCORE_LABELS } from "@/lib/bossProScoringLabels";
 import type { BossQuestionTooltipAnchor } from "./bossQuestionTooltip";
 import { WorkshopActivityPanel } from "./WorkshopActivityPanel";
 
 const SCORE_PILLS = [
   {
     value: 0 as const,
-    label: "Not in place",
+    label: BOSS_PRO_SCORE_LABELS[0],
     dot: "bg-red-500",
     active: "border-red-400 bg-red-50 text-red-900 ring-1 ring-red-300/60",
     idle: "border-slate-200 bg-white text-slate-600 hover:border-red-200 hover:bg-red-50/40",
   },
   {
     value: 1 as const,
-    label: "Partially",
+    label: BOSS_PRO_SCORE_LABELS[1],
     dot: "bg-amber-500",
     active: "border-amber-400 bg-amber-50 text-amber-950 ring-1 ring-amber-300/60",
     idle: "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50/40",
   },
   {
     value: 2 as const,
-    label: "Fully in place",
+    label: BOSS_PRO_SCORE_LABELS[2],
     dot: "bg-emerald-500",
     active: "border-emerald-400 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-300/60",
     idle: "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/40",

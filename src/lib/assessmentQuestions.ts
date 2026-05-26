@@ -1,4 +1,4 @@
-/** Legacy 50-question BOSS diagnostic — used by `/diagnostic` only. */
+/** BOSS Pro 50-question diagnostic — methodology v2 (outcome-based). */
 
 export type AssessmentQuestion = {
   ref: string;
@@ -47,7 +47,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 2,
     question:
-      "Do you have clear boundaries around your working hours, energy, and recovery, and do you protect them?",
+      "Are you protecting your working hours, energy, and recovery so you can perform sustainably?",
     scoringGuide: {
       red: "I work all hours and I'm burning out",
       amber: "I've tried but I regularly break my own rules",
@@ -64,7 +64,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 3,
     question:
-      "Do you have consistent daily/weekly habits and routines that keep you performing at your best?",
+      "Do your daily and weekly habits actually keep you performing at your best?",
     scoringGuide: {
       red: "Every day is different and unstructured",
       amber: "I have some habits but they're inconsistent",
@@ -82,12 +82,12 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 4,
     question:
-      "Are you actively developing your leadership skills, communication, decision-making, and emotional intelligence?",
+      "Is your leadership delivering results — clear communication, sound decisions, and a team that follows your direction?",
     scoringGuide: {
-      red: "I haven't focused on this",
-      amber: "I'm aware of my gaps but not actively developing",
+      red: "My team doesn't get clear direction and decisions stall",
+      amber: "I'm leading but inconsistently — some areas work, others don't",
       green:
-        "I invest in my leadership development and see the results",
+        "My leadership is effective and the business responds to how I lead",
     },
   },
   {
@@ -100,7 +100,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 5,
     question:
-      "Have you designed your life so the business serves the lifestyle you want, not the other way round?",
+      "Is your business giving you the lifestyle you designed — time, income, and freedom on your terms?",
     scoringGuide: {
       red: "My business runs my life",
       amber: "I've made some progress but I'm not there yet",
@@ -119,11 +119,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 1,
     question:
-      "Do you know exactly what you need from your business, financially and personally, and why you're doing this?",
+      "Do you know exactly what you need from this business — financially and personally — and does that drive your decisions?",
     scoringGuide: {
-      red: "I've never clearly defined this",
+      red: "I've never clearly defined this and I drift",
       amber:
-        "I have a rough idea but it's not written down or clear",
+        "I have a rough idea but it doesn't consistently guide what I do",
       green:
         "I know my number, my lifestyle needs, and why this business exists for me",
     },
@@ -138,13 +138,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 2,
     question:
-      "Do you have clear, measurable business goals that you're actively working towards?",
+      "Are you actively hitting clear, measurable business goals — not just setting them?",
     scoringGuide: {
-      red: "I don't have written goals",
+      red: "I don't have written goals or I ignore them",
       amber:
-        "I have goals in my head but they're not specific or tracked",
+        "I have goals but I'm not tracking progress or adjusting course",
       green:
-        "I have clear goals with numbers and deadlines and I review them regularly",
+        "I have clear goals with numbers and deadlines and I review progress regularly",
     },
   },
   {
@@ -157,13 +157,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 3,
     question:
-      "Do you have a clear, compelling 3-year vision for your business that your team knows and buys into?",
+      "Does your team know where the business is heading in the next three years and is that vision shaping what they do?",
     scoringGuide: {
-      red: "I haven't created one",
+      red: "There is no shared direction and work feels disconnected",
       amber:
-        "I have a rough picture but it's not communicated well",
+        "We have a rough picture but it doesn't guide day-to-day decisions",
       green:
-        "I have a vivid vision and my team can articulate where we're heading",
+        "We have a vivid vision and my team can articulate where we're heading",
     },
   },
   {
@@ -176,13 +176,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 4,
     question:
-      "Have you turned your vision into a specific, measurable, time-bound strategic target that drives your decisions?",
+      "Does your strategic target actually filter what you say yes and no to?",
     scoringGuide: {
-      red: "My direction is still vague",
+      red: "I take on too much because direction is still vague",
       amber:
-        "I have a general direction but it's not specific enough to say no to things",
+        "I have a general direction but it's not specific enough to say no",
       green:
-        "I have a strategic intent that is specific enough to guide every major decision",
+        "I have a strategic intent specific enough to guide every major decision",
     },
   },
   {
@@ -195,11 +195,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 5,
     question:
-      "Does your company have a clear mission, a purpose beyond profit, that would outlast you as the founder?",
+      "Does your company have a mission beyond profit that your team and customers actually feel in how you operate?",
     scoringGuide: {
       red: "The business is just about making money",
       amber:
-        "I have a sense of purpose but it's not articulated or embedded",
+        "We have a sense of purpose but it's not embedded in how we work",
       green:
         "We have a clear mission that the team and customers connect with",
     },
@@ -211,17 +211,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Defined Strategy",
     areaCode: "D",
     pillar: "Clarify Vision",
-    playbook: "Core Offer",
+    playbook: "Ideal Customer",
     page: 3,
     questionNumberOnPage: 1,
     question:
-      "Do you have one clear core offer, for a defined target market, that you can explain in one sentence?",
+      "Do you have a clearly defined ideal customer — and does your marketing and sales focus on winning them?",
     scoringGuide: {
-      red: "I offer too many things to too many people",
+      red: "I'll work with anyone who'll pay",
       amber:
-        "I have an offer but it's not sharp or clearly differentiated",
+        "I have a general idea but I'm not focused or consistent in who I target",
       green:
-        "I have a clear offer, for a clear market, and I know why people buy it",
+        "I have a clear ideal customer based on real results and I know their pain in their own words",
     },
   },
   {
@@ -230,17 +230,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Defined Strategy",
     areaCode: "D",
     pillar: "Clarify Vision",
-    playbook: "Business Model",
+    playbook: "Core Offer",
     page: 3,
     questionNumberOnPage: 2,
     question:
-      "Do you understand how money flows through your business, your revenue streams, pricing model, and how you make profit?",
+      "Do you have one clear core offer for that customer that wins sales — not just a list of things you could do?",
     scoringGuide: {
-      red: "I've never mapped this out",
+      red: "I offer too many things and buyers are confused about what they're getting",
       amber:
-        "I know roughly but I haven't structured it properly",
+        "I have a main offer but it's not sharp or consistently winning work",
       green:
-        "I have a clear business model with defined revenue streams and I understand my unit economics",
+        "I have a clear offer for a clear market and I know why people buy it",
     },
   },
   {
@@ -249,17 +249,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Defined Strategy",
     areaCode: "D",
     pillar: "Clarify Vision",
-    playbook: "Positioning",
+    playbook: "Business Model",
     page: 3,
     questionNumberOnPage: 3,
     question:
-      "Are you clearly positioned against your competitors, do customers know why they should choose you?",
+      "Is your business model producing healthy profit — do you know how you make money on each sale?",
     scoringGuide: {
-      red: "I look like everyone else in my market",
+      red: "I'm busy but I don't know if the model actually works",
       amber:
-        "I have some differentiation but it's not clear or consistent",
+        "I know roughly how we make money but margins are unclear or inconsistent",
       green:
-        "I have a clear unique position and my market knows exactly what makes me different",
+        "I have a clear business model with defined revenue streams and healthy unit economics",
     },
   },
   {
@@ -272,10 +272,10 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 4,
     question:
-      "Do you have a deliberate growth strategy, you know where to grow next and where NOT to invest?",
+      "Is your growth focused on the right opportunities — do you know where to invest and where to stop?",
     scoringGuide: {
-      red: "I chase opportunities as they come",
-      amber: "I have ideas about growth but no structured plan",
+      red: "I chase whatever comes and spread resources too thin",
+      amber: "I have growth ideas but no clear priorities or allocation",
       green:
         "I have a clear growth strategy with defined priorities and resource allocation",
     },
@@ -290,11 +290,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 5,
     question:
-      "Do you have a plan for your eventual exit, whether that's selling, succession, or another path?",
+      "Are you actively building toward your exit — whether that's selling, succession, or stepping back?",
     scoringGuide: {
-      red: "I've never thought about it",
+      red: "I've never thought about it and the business depends on me",
       amber:
-        "I've thought about it but have no concrete plan",
+        "I've thought about it but I'm not building toward a concrete outcome",
       green:
         "I know my exit path, I'm building towards it, and I know what drives my valuation",
     },
@@ -310,7 +310,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 1,
     question:
-      "Do you consistently finish what you start, do you have a system to prioritise, plan your week, and get things done?",
+      "Do you consistently finish what you commit to — does your planning actually turn into completed work?",
     scoringGuide: {
       red: "I start lots of things and finish few",
       amber: "I plan sometimes but execution is inconsistent",
@@ -328,13 +328,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 2,
     question:
-      "Have you mapped out how your business actually works, the key processes from lead to delivery to cash?",
+      "Can you see how work flows through your business — from first contact to delivery to cash — and spot where it breaks?",
     scoringGuide: {
-      red: "It's all in my head",
+      red: "Work gets stuck and I can't see where or why",
       amber:
-        "I've mapped some of it but not the full picture",
+        "I understand parts of the flow but bottlenecks still surprise me",
       green:
-        "I have a clear visual map of how the whole business operates",
+        "I can trace the full path and I know where to fix delays and handoffs",
     },
   },
   {
@@ -347,11 +347,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 3,
     question:
-      "Do you plan in structured time horizons, annual goals, quarterly plans, and 90-day sprints with clear projects?",
+      "Are your annual, quarterly, and 90-day plans driving real projects with milestones you hit?",
     scoringGuide: {
       red: "I don't plan beyond the next few weeks",
       amber:
-        "I have some planning but it's not structured across time horizons",
+        "I have some planning but projects slip or lack clear milestones",
       green:
         "I have annual, quarterly, and 90-day plans with clear projects and milestones",
     },
@@ -366,11 +366,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 4,
     question:
-      "Do you have a regular meeting rhythm, weekly huddles, monthly reviews, and quarterly planning sessions, with clear agendas?",
+      "Do your regular meetings and reviews actually move the business forward — with clear outcomes and accountability?",
     scoringGuide: {
-      red: "Meetings are ad hoc or non-existent",
+      red: "Meetings are ad hoc or a waste of time",
       amber:
-        "I have some regular meetings but they lack structure or rhythm",
+        "We meet but decisions and follow-through are inconsistent",
       green:
         "I have a full meeting cadence that runs the business with clear agendas and accountability",
     },
@@ -385,11 +385,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 5,
     question:
-      "Do you have a succession plan so the business can continue and thrive without you?",
+      "Could your business continue and thrive without you — do you have people and structures in place?",
     scoringGuide: {
       red: "The business depends entirely on me",
       amber:
-        "I've started thinking about it but there's no formal plan",
+        "I've started building depth but there's no real continuity plan",
       green:
         "I have key people, governance structures, and the business can run independently",
     },
@@ -405,13 +405,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 1,
     question:
-      "Do you know exactly how much cash you have, what's coming in, and whether you can pay your bills for the next 13 weeks?",
+      "Do you know whether you can pay your bills over the coming months — and do you review cash often enough to catch problems early?",
     scoringGuide: {
       red: "I check my bank balance and hope for the best",
       amber:
-        "I have a rough idea but no rolling forecast",
+        "I have a rough idea but I don't review cash regularly enough",
       green:
-        "I have a cash flow forecast and I review it weekly",
+        "I know I can pay my bills, I review cash weekly, and I act before crises hit",
     },
   },
   {
@@ -424,12 +424,12 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 2,
     question:
-      "Have you audited your costs, cut unnecessary spending, and got your overheads under control?",
+      "Are your costs under control — do you know where money goes and cut waste deliberately?",
     scoringGuide: {
       red: "I don't really know where all my money goes",
-      amber: "I've looked at it but not systematically",
+      amber: "I've looked at it but not systematically or regularly",
       green:
-        "I've done a full expense audit, eliminated waste, and I review costs regularly",
+        "I've audited expenses, eliminated waste, and I review costs regularly",
     },
   },
   {
@@ -442,13 +442,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 3,
     question:
-      "Are your prices set deliberately for profit, do you know your margins on every product/service and are they healthy?",
+      "Are you making healthy profit on what you sell — are your prices and margins working?",
     scoringGuide: {
       red: "I guessed my prices or just matched competitors",
       amber:
-        "I've thought about pricing but I'm not confident my margins are right",
+        "I've thought about pricing but margins aren't consistently healthy",
       green:
-        "I've done proper margin analysis, my pricing is strategic, and my profits are healthy",
+        "My pricing is strategic, I know my margins, and profits are healthy",
     },
   },
   {
@@ -461,7 +461,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 4,
     question:
-      "Do you deliberately allocate your profit into buckets, owner pay, tax, profit reserve, and reinvestment?",
+      "Do you deliberately allocate profit — owner pay, tax, reserves, and reinvestment — rather than taking whatever is left?",
     scoringGuide: {
       red: 'Whatever\'s left at the end is "profit"',
       amber:
@@ -480,7 +480,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 5,
     question:
-      "Are you building personal wealth beyond the business, optimising tax, investing, and creating financial independence?",
+      "Are you building personal wealth beyond the business — with tax efficiency and assets outside the company?",
     scoringGuide: {
       red: "All my wealth is tied up in the business",
       amber:
@@ -496,17 +496,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Revenue & Marketing",
     areaCode: "R",
     pillar: "Control Velocity",
-    playbook: "Ideal Customer",
+    playbook: "Lead Generation",
     page: 6,
     questionNumberOnPage: 1,
     question:
-      "Have you clearly defined your ideal customer, who they are, what they need, and what problem you solve for them?",
+      "Do you have a reliable, repeatable way to bring in new leads, customers, and/or clients — not just hope they find you?",
     scoringGuide: {
-      red: "I'll work with anyone who'll pay",
+      red: "I rely on word of mouth or hope",
       amber:
-        "I have a general idea but it's not researched or documented",
+        "I do some marketing but it's inconsistent and I don't know what works",
       green:
-        "I have a clear ideal customer profile based on real research and I know their pain in their own words",
+        "I have at least one proven channel that consistently brings in qualified interest",
     },
   },
   {
@@ -515,17 +515,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Revenue & Marketing",
     areaCode: "R",
     pillar: "Control Velocity",
-    playbook: "Lead Generation",
+    playbook: "Sales & Conversion",
     page: 6,
     questionNumberOnPage: 2,
     question:
-      "Do you have a reliable, consistent system for generating new leads and getting attention?",
+      "Do you have a repeatable system for acquiring and converting new leads, customers, and/or clients?",
     scoringGuide: {
-      red: "I rely on word of mouth or hope",
+      red: "Sales is ad hoc and depends entirely on me",
       amber:
-        "I do some marketing but it's inconsistent and I don't know what works",
+        "I have a process but conversion is inconsistent or not transferable",
       green:
-        "I have at least one proven lead generation channel that consistently brings in qualified leads",
+        "I have a structured, repeatable sales process that converts reliably",
     },
   },
   {
@@ -534,17 +534,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Revenue & Marketing",
     areaCode: "R",
     pillar: "Control Velocity",
-    playbook: "Lead Nurture",
+    playbook: "Positioning",
     page: 6,
     questionNumberOnPage: 3,
     question:
-      "Do you have systems to warm up leads who aren't ready to buy yet, email sequences, follow-ups, content?",
+      "Do customers choose you for a clear reason — not just price or convenience?",
     scoringGuide: {
-      red: "If they don't buy straight away, I lose them",
+      red: "We look like everyone else and compete on price",
       amber:
-        "I do some follow-up but it's manual and inconsistent",
+        "We have some differentiation but it's not consistent in the market",
       green:
-        "I have automated nurture sequences and a system for staying in touch with prospects",
+        "Customers know exactly why we're different and choose us deliberately",
     },
   },
   {
@@ -553,17 +553,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Revenue & Marketing",
     areaCode: "R",
     pillar: "Control Velocity",
-    playbook: "Sales & Conversion",
+    playbook: "Lead Nurture",
     page: 6,
     questionNumberOnPage: 4,
     question:
-      "Do you have a structured sales process that converts leads into customers, and does it work without you personally?",
+      "Do you stay in touch with prospects who aren't ready to buy — so interest turns into sales over time?",
     scoringGuide: {
-      red: "Sales is ad hoc and depends entirely on me",
+      red: "If they don't buy straight away, I lose them",
       amber:
-        "I have a process but it's not documented or transferable",
+        "I do some follow-up but it's manual and inconsistent",
       green:
-        "I have a structured, repeatable sales process that others can run",
+        "I have nurture systems that keep prospects warm until they're ready to buy",
     },
   },
   {
@@ -576,13 +576,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 5,
     question:
-      "Is your business becoming the recognised go-to brand in your market, where customers come to you?",
+      "Is your business visible and credible in your market — do the right people know who you are and what you stand for?",
     scoringGuide: {
-      red: "Nobody knows who we are",
+      red: "Hardly anyone knows who we are",
       amber:
-        "We have some reputation but we're not a clear authority",
+        "We have some presence but we're not consistently recognised",
       green:
-        "We're known as the go-to in our space, customers seek us out, and our brand is a real asset",
+        "We're known in our market, our message is clear, and prospects recognise us",
     },
   },
   // Page 7: Operations & Delivery (O), Control Velocity
@@ -596,13 +596,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 1,
     question:
-      "Do you have a reliable, repeatable process for delivering what you promise to customers?",
+      "Do you deliver what you promise consistently — with reliable outcomes for customers?",
     scoringGuide: {
       red: "Every job feels like reinventing the wheel",
       amber:
-        "I have a rough process but it's inconsistent or in my head",
+        "Delivery works sometimes but quality and timing vary",
       green:
-        "I have a clear, documented delivery process that produces consistent results",
+        "We deliver consistently with a reliable process and predictable results",
     },
   },
   {
@@ -615,13 +615,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 2,
     question:
-      "Have you deliberately designed the customer experience, every touchpoint from first contact to completion?",
+      "Does your customer experience produce the outcomes you intend — from first contact through to completion?",
     scoringGuide: {
-      red: "I've never thought about it as a designed experience",
+      red: "Customers get an inconsistent or accidental experience",
       amber:
-        "Some touchpoints are good but it's not designed end-to-end",
+        "Some touchpoints are good but the overall experience isn't reliable",
       green:
-        "I've mapped the customer journey and every touchpoint is intentional",
+        "Every touchpoint is intentional and customers get a consistent great experience",
     },
   },
   {
@@ -634,10 +634,10 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 3,
     question:
-      "Do you have systems in place to keep customers coming back and reduce churn?",
+      "Are you keeping customers coming back — do you know your retention rate and actively reduce churn?",
     scoringGuide: {
       red: "I don't track retention or have systems for it",
-      amber: "I do some things but it's not systematic",
+      amber: "I do some things but retention isn't systematically managed",
       green:
         "I track retention, I know why people leave, and I have active systems to keep customers",
     },
@@ -652,9 +652,9 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 4,
     question:
-      "Do you actively work to grow what each customer is worth, through upsells, cross-sells, and increased frequency?",
+      "Are you growing what each customer is worth — through upsells, cross-sells, and repeat business?",
     scoringGuide: {
-      red: "I focus on getting new customers, not growing existing ones",
+      red: "I focus on new customers, not growing existing ones",
       amber:
         "I do some upselling but it's not structured",
       green:
@@ -671,13 +671,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 5,
     question:
-      "Do you have a structured approach to evolving what you offer, new products, services, or innovations?",
+      "Are you evolving what you offer in response to customer needs — with new products or services that land?",
     scoringGuide: {
       red: "We've been selling the same thing for years with no evolution",
       amber:
-        "I develop new things but it's reactive not strategic",
+        "We develop new things but it's reactive not strategic",
       green:
-        "I have a structured R&D process and a roadmap for product/service evolution",
+        "We have a structured approach and a roadmap for product/service evolution",
     },
   },
   // Page 8: Financials & Metrics (F), Create Value
@@ -687,17 +687,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Financials & Metrics",
     areaCode: "F",
     pillar: "Create Value",
-    playbook: "Finance Fundamentals",
+    playbook: "Bookkeeping",
     page: 8,
     questionNumberOnPage: 1,
     question:
-      "Do you understand your basic financial statements, can you read a P&L and know what the numbers mean?",
+      "Are your books clean and up to date — reviewed weekly so you can trust the numbers?",
     scoringGuide: {
-      red: "I leave all finance to my accountant and don't really understand it",
+      red: "My books are a mess or months behind",
       amber:
-        "I understand some basics but I'm not confident reading my own numbers",
+        "They're mostly up to date but I don't review them weekly",
       green:
-        "I can read my P&L, understand my margins, and know what my numbers are telling me",
+        "My books are clean, current, and I review them weekly to stay on track",
     },
   },
   {
@@ -706,17 +706,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Financials & Metrics",
     areaCode: "F",
     pillar: "Create Value",
-    playbook: "Bookkeeping",
+    playbook: "Finance Fundamentals",
     page: 8,
     questionNumberOnPage: 2,
     question:
-      "Are your books clean, up to date, and managed by a competent bookkeeper or system?",
+      "Are you using your business numbers to make decisions — P&L, balance sheet, and monthly management accounts?",
     scoringGuide: {
-      red: "My books are a mess or months behind",
+      red: "I leave finance to my accountant and don't use numbers to decide",
       amber:
-        "They're mostly up to date but I don't fully trust the numbers",
+        "I look at some numbers but they don't consistently drive decisions",
       green:
-        "My books are clean, current, and I have a reliable bookkeeper/system",
+        "I review P&L, balance sheet, and management accounts monthly and act on what they show",
     },
   },
   {
@@ -729,11 +729,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 3,
     question:
-      "Do you track the right key performance indicators, and do you review them regularly to make decisions?",
+      "Do the KPIs you track actually drive decisions — are you reviewing the right numbers regularly?",
     scoringGuide: {
-      red: "I don't know what to measure or I don't measure anything",
+      red: "I don't measure what matters or I don't review metrics",
       amber:
-        "I track some numbers but I'm not sure they're the right ones",
+        "I track some numbers but they don't consistently change what we do",
       green:
         "I have clear lead and lag KPIs, I review them weekly/monthly, and they drive my decisions",
     },
@@ -748,11 +748,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 4,
     question:
-      "Do you have dashboards, scorecards, or management reports that give you a clear picture of business performance?",
+      "Do your dashboards and reports give you a clear picture of performance — and does your team act on them?",
     scoringGuide: {
-      red: "I have no reporting system",
+      red: "I have no reporting system or I don't use it",
       amber:
-        "I have some reports but they're incomplete or I don't review them consistently",
+        "I have some reports but they're incomplete or inconsistently reviewed",
       green:
         "I have visual dashboards/scorecards that I review regularly with my team",
     },
@@ -767,7 +767,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 5,
     question:
-      "Do you know what your business is worth, what drives its value, and are you actively building enterprise value?",
+      "Are you actively increasing what your business is worth — do you know the drivers and manage them?",
     scoringGuide: {
       red: "I have no idea what the business is worth",
       amber:
@@ -787,13 +787,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 1,
     question:
-      "Have you identified and listed all the key processes in your business, do you know what needs to happen and in what order?",
+      "Do your key processes run reliably — does work get done the same way with consistent outputs?",
     scoringGuide: {
-      red: "It's all in people's heads",
+      red: "Work depends on who's doing it and results vary",
       amber:
-        "I've listed some but not all, and they're not documented",
+        "Some processes work but they're inconsistent or only in people's heads",
       green:
-        "I've identified all key processes and I know the critical path from lead to cash",
+        "Key processes run reliably and produce consistent outputs every time",
     },
   },
   {
@@ -802,30 +802,11 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Infrastructure & Systems",
     areaCode: "I",
     pillar: "Create Value",
-    playbook: "AI & Automation",
+    playbook: "Systems",
     page: 9,
     questionNumberOnPage: 2,
     question:
-      "Are you using AI and automation tools to take repetitive, low-value work off your plate?",
-    scoringGuide: {
-      red: "I haven't explored AI or automation for my business",
-      amber:
-        "I use some tools but I know there's much more I could automate",
-      green:
-        "I've systematically identified and automated low-value tasks using AI and automation",
-    },
-  },
-  {
-    ref: "3.8",
-    level: 3,
-    area: "Infrastructure & Systems",
-    areaCode: "I",
-    pillar: "Create Value",
-    playbook: "Systems",
-    page: 9,
-    questionNumberOnPage: 3,
-    question:
-      "Do you have proper connected systems across your business, marketing, sales, delivery, and finance all joined up?",
+      "Are your business systems connected — marketing, sales, delivery, and finance working together without manual gaps?",
     scoringGuide: {
       red: "Everything is disconnected or manual",
       amber:
@@ -835,22 +816,41 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     },
   },
   {
-    ref: "4.8",
-    level: 4,
+    ref: "3.8",
+    level: 3,
     area: "Infrastructure & Systems",
     areaCode: "I",
     pillar: "Create Value",
     playbook: "Management",
     page: 9,
-    questionNumberOnPage: 4,
+    questionNumberOnPage: 3,
     question:
-      "Do you have a management system for running your people, with clear expectations, accountability, cadence, and recognition?",
+      "Does your management system produce accountability — clear expectations, cadence, and recognition?",
     scoringGuide: {
       red: "I manage people ad hoc with no structure",
       amber:
-        "I have some management practices but they're inconsistent",
+        "I have some management practices but outcomes are inconsistent",
       green:
         "I have a structured management system with clear practices that my managers follow",
+    },
+  },
+  {
+    ref: "4.8",
+    level: 4,
+    area: "Infrastructure & Systems",
+    areaCode: "I",
+    pillar: "Create Value",
+    playbook: "AI & Automation",
+    page: 9,
+    questionNumberOnPage: 4,
+    question:
+      "Are AI and automation removing repetitive work — freeing your team for higher-value output?",
+    scoringGuide: {
+      red: "We're still doing low-value work manually",
+      amber:
+        "We use some tools but there's much more we could automate",
+      green:
+        "We've systematically automated low-value tasks using AI and automation",
     },
   },
   {
@@ -863,13 +863,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 5,
     question:
-      "Do you have a continuous improvement process, regularly reviewing and refining your systems to make them better?",
+      "Do you have a continuous improvement process — mapping what's not working, innovating, and refining your systems?",
     scoringGuide: {
       red: "Once something is built, I rarely revisit it",
       amber:
         "I improve things when they break but I don't have a formal process",
       green:
-        "I have a structured approach to continuous improvement with feedback loops",
+        "I map gaps, innovate on systems, and run structured continuous improvement",
     },
   },
   // Page 10: Team & Leadership (T), Create Value
@@ -879,17 +879,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Team & Leadership",
     areaCode: "T",
     pillar: "Create Value",
-    playbook: "Team Foundations",
+    playbook: "Team Output",
     page: 10,
     questionNumberOnPage: 1,
     question:
-      "Does everyone in your business know their role, who they report to, and what's expected of them?",
+      "Is your team delivering the outputs you expect — performing at the level you need?",
     scoringGuide: {
-      red: "Roles are unclear and people overlap or drop things",
+      red: "People overlap, drop things, or underperform without clear consequences",
       amber:
-        "Most people know their role but it's not documented or crystal clear",
+        "Most people perform OK but outputs aren't consistently at the level I want",
       green:
-        "I have a clear org chart, defined roles, and everyone knows what's expected",
+        "Everyone delivers clear outputs and performs at the level the business needs",
     },
   },
   {
@@ -898,17 +898,16 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Team & Leadership",
     areaCode: "T",
     pillar: "Create Value",
-    playbook: "Recruitment",
+    playbook: "Team Performance",
     page: 10,
     questionNumberOnPage: 2,
     question:
-      "Do you have a structured process for finding, hiring, and onboarding the right people?",
+      "Are you getting the best from your team — with training, accountability, feedback, and reviews that change performance?",
     scoringGuide: {
-      red: "I hire reactively and hope for the best",
-      amber:
-        "I have some process but it's not consistent or thorough",
+      red: "I don't have formal performance management that improves results",
+      amber: "I do some of this but performance doesn't consistently improve",
       green:
-        "I have a repeatable recruitment process with clear criteria, interviews, and structured onboarding",
+        "Regular reviews, accountability, and feedback actively improve team performance",
     },
   },
   {
@@ -917,16 +916,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Team & Leadership",
     areaCode: "T",
     pillar: "Create Value",
-    playbook: "Team Performance",
+    playbook: "Recruitment",
     page: 10,
     questionNumberOnPage: 3,
     question:
-      "Do you have systems for getting the best out of your team, training, accountability, feedback, and performance reviews?",
+      "Are you hiring the right people reliably — with a process that produces good hires and onboarding?",
     scoringGuide: {
-      red: "I don't have formal performance management",
-      amber: "I do some of this but it's inconsistent",
+      red: "I hire reactively and often get the wrong fit",
+      amber:
+        "I have some process but hiring outcomes are inconsistent",
       green:
-        "I have regular reviews, clear accountability, training plans, and feedback systems",
+        "I have a repeatable recruitment process that consistently brings in the right people",
     },
   },
   {
@@ -939,13 +939,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 4,
     question:
-      "Are you developing people into leaders who can run parts of the business without you?",
+      "Are leaders in your business running parts of the operation without needing you?",
     scoringGuide: {
       red: "No one else can lead without me",
       amber:
-        "I have some capable people but I haven't invested in their leadership development",
+        "I have capable people but they still depend on me for key decisions",
       green:
-        "I'm actively coaching and developing leaders who make decisions and run things independently",
+        "I'm developing leaders who make decisions and run things independently",
     },
   },
   {
@@ -958,13 +958,13 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 5,
     question:
-      "Do you have culture built as a deliberate system, with clear values, behaviours, enforcement, and recognition?",
+      "Does your culture produce the behaviours you want — values lived daily, not just on the wall?",
     scoringGuide: {
-      red: "Culture is accidental, not designed",
+      red: "Culture is accidental and behaviours vary wildly",
       amber:
-        "We have values on the wall but they're not enforced or embedded in how we operate",
+        "We have values but they're not consistently enforced or embedded",
       green:
-        "Culture is a system with defined values, expected behaviours, enforcement, and recognition",
+        "Culture is a system with defined values, expected behaviours, and recognition",
     },
   },
 ];
@@ -990,4 +990,3 @@ export const QUESTIONS_BY_LEVEL: Record<number, AssessmentQuestion[]> =
 Object.values(QUESTIONS_BY_LEVEL).forEach((list) =>
   list.sort((a, b) => a.page - b.page)
 );
-

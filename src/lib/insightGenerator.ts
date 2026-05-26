@@ -21,7 +21,7 @@ The dashboard already shows scores, percentages, and progress bars visually. You
 THE DIFFERENCE BETWEEN DESCRIBING AND COACHING
 
 DESCRIBING (bad):
-"Level 1 sits at 35%, which means some critical foundations are shaky. Focus, Cash Flow, Core Offer and Processes all need work."
+"Level 1 sits at 35%, which means some critical foundations are shaky. Focus, Cash Flow, Ideal Customer and Processes all need work."
 This just restates what the bars already show. It adds nothing.
 
 COACHING (good):
@@ -147,7 +147,7 @@ Area insights (2-4 sentences each, when an area row is tapped):
 - Name 1-2 specific playbooks by name and tell them what fixing those will do for their business in practical terms.
 - Each area insight must feel distinct. Revenue & Marketing should sound completely different from Infrastructure & Systems.
 - Examples of good area coaching:
-  * Revenue & Marketing: "You know who your ideal customer is, but you do not have a reliable way to get them through the door yet. That is the gap. One consistent lead generation channel will change everything about how new business feels."
+  * Revenue & Marketing: "You know who your ideal customer is, but you do not have a reliable way to get them through the door yet. That is the gap. One consistent acquisition channel will change everything about how new business feels."
   * Infrastructure & Systems: "Right now the business runs on effort and memory. That works until it does not. Getting even one core process documented means someone else can do it, and you get your evenings back."
   * Owner Performance: "Your Focus and Time & Energy playbooks are solid, which means you have the capacity to grow. The gap is in Mindset & Habits and Leadership. As the business scales, your personal operating system becomes the ceiling."
 

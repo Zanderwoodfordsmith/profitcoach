@@ -5,6 +5,9 @@ import type { RefObject } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BookOpen, X } from "lucide-react";
+import {
+  BOSS_PRO_SCORE_LABELS,
+} from "@/lib/bossProScoringLabels";
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
@@ -225,19 +228,19 @@ const SCORE_OPTIONS: {
 }[] = [
   {
     value: 0,
-    title: "Not in place",
+    title: BOSS_PRO_SCORE_LABELS[0],
     ring: "border-red-300 focus-within:ring-red-400/40",
     dot: "bg-red-500",
   },
   {
     value: 1,
-    title: "Partially",
+    title: BOSS_PRO_SCORE_LABELS[1],
     ring: "border-amber-300 focus-within:ring-amber-400/40",
     dot: "bg-amber-500",
   },
   {
     value: 2,
-    title: "Fully in place",
+    title: BOSS_PRO_SCORE_LABELS[2],
     ring: "border-emerald-300 focus-within:ring-emerald-400/40",
     dot: "bg-emerald-500",
   },
