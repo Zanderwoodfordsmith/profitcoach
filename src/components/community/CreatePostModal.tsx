@@ -495,7 +495,11 @@ export function CreatePostModal({
       ) : null}
 
       {videoDialogOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => e.preventDefault()}
+        >
           <div
             className="w-full max-w-sm rounded-xl bg-white p-5 shadow-xl"
             role="dialog"
@@ -513,6 +517,19 @@ export function CreatePostModal({
               <div
                 className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50/70 px-4 py-8 text-center text-sm text-slate-500"
                 onClick={() => videoFileInputRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const files = Array.from(e.dataTransfer.files);
+                  if (files.length > 0) {
+                    addPendingFiles(files);
+                    setVideoDialogOpen(false);
+                  }
+                }}
               >
                 <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500">
                   <Video className="h-4 w-4" strokeWidth={1.75} />

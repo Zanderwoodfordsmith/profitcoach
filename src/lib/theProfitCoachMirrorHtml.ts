@@ -17,7 +17,7 @@ function normalizeFunnelBaseUrl(raw: string | undefined): string | null {
   return t.length ? t : null;
 }
 
-function funnelBaseUrlFromEnv(): string | null {
+export function profitCoachFunnelBaseUrl(): string | null {
   return normalizeFunnelBaseUrl(process.env.PROFIT_COACH_FUNNEL_BASE_URL);
 }
 
@@ -46,7 +46,7 @@ const mirrorFileMeta = {
 } as const;
 
 export async function theProfitCoachMirrorResponse(file: keyof typeof mirrorFileMeta) {
-  const base = funnelBaseUrlFromEnv();
+  const base = profitCoachFunnelBaseUrl();
   const iframe = funnelIframeMode();
 
   if (iframe) {

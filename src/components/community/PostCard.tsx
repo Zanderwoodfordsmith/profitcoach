@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarClock, Pin, Play, Vote } from "lucide-react";
+import { CalendarClock, Pin, Vote } from "lucide-react";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import { MentionBody } from "@/components/community/MentionBody";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import type { CommunityPostRow } from "@/components/community/CommunityFeed";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
+import {
+  CommunityPostMediaThumb,
+  communityPostMediaFeedWidthClass,
+} from "@/components/community/CommunityPostMediaGallery";
 import {
   formatCommunityPostTimestamp,
   formatCommunityRelativeActivityAgo,
@@ -183,7 +187,7 @@ export function PostCard({
       </div>
 
       <div className="mt-3 flex w-full min-w-0 gap-3">
-        <div className={`min-w-0 flex-1 ${post.media[0] ? "pr-2" : ""}`}>
+        <div className={`min-w-0 flex-1 ${post.media.length > 0 ? "pr-2" : ""}`}>
           <h2 className="line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900">
             {post.title}
           </h2>
@@ -214,40 +218,26 @@ export function PostCard({
             />
           </div>
         </div>
-        {post.media[0] ? (
-          <div className="relative shrink-0 self-start overflow-hidden rounded-xl ring-1 ring-slate-200">
-            {post.media[0].kind === "video" ? (
-              <>
-                <video
-                  src={post.media[0].url}
-                  muted
-                  playsInline
-                  preload="metadata"
-                  className="h-[92px] w-[92px] object-cover"
-                />
-                <span
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
-                  aria-hidden
+        {post.media.length > 0 ? (
+          <div className="flex shrink-0 items-stretch gap-1 self-start">
+            {post.media.slice(0, 3).map((item, index) => {
+              const visibleCount = Math.min(post.media.length, 3);
+              return (
+                <div
+                  key={`${item.url}-${index}`}
+                  className={`h-[80px] ${communityPostMediaFeedWidthClass(index, visibleCount)}`}
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/50 text-white shadow-sm">
-                    <Play className="h-4 w-4 fill-white" strokeWidth={0} />
-                  </span>
-                </span>
-              </>
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={post.media[0].url}
-                alt=""
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                decoding="async"
-                className="h-[92px] w-[92px] object-cover"
-              />
-            )}
-            {post.media.length > 1 ? (
-              <span className="absolute bottom-1 right-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                +{post.media.length - 1}
+                  <CommunityPostMediaThumb
+                    item={item}
+                    playIconSize="sm"
+                    className="h-full"
+                  />
+                </div>
+              );
+            })}
+            {post.media.length > 3 ? (
+              <span className="flex h-[80px] w-8 items-center justify-center self-center rounded-lg bg-slate-100 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                +{post.media.length - 3}
               </span>
             ) : null}
           </div>

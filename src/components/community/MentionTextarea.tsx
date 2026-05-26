@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { Bold, Heading1, Heading2, Heading3, Link2, List } from "lucide-react";
+import { COMMUNITY_EXTERNAL_LINK_CLASS } from "@/lib/communityAutolink";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { MENTION_MARKDOWN_REGEX } from "@/lib/communityMentions";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -177,7 +178,7 @@ function displayToMirrorHtml(display: string, ph?: string): string {
         break;
       }
       const label = display.slice(idx + LINK_ZWNJ.length, close);
-      out += `<span class="font-medium !text-blue-600 underline underline-offset-2 decoration-blue-600/40">${escapeHtml(label)}</span>`;
+      out += `<span class="${COMMUNITY_EXTERNAL_LINK_CLASS}">${escapeHtml(label)}</span>`;
       idx = close + LINK_ZWNJ.length;
     } else {
       const nextZ = display.indexOf(LINK_ZWNJ, idx);
@@ -290,10 +291,15 @@ export function MentionTextarea({
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mirrorInnerRef = useRef<HTMLDivElement>(null);
   const lastRawRef = useRef(value);
+  const linkPairsRef = useRef<LinkPair[]>(extractLinkPairsInOrder(value));
+  const selectionRef = useRef({ start: 0, end: 0, selectedText: "" });
   const [displayValue, setDisplayValue] = useState(() => rawToDisplayFromRaw(value));
   const [knownMentions, setKnownMentions] = useState<KnownMention[]>(() =>
     extractKnownMentionsFromRaw(value)
   );
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkUrlDraft, setLinkUrlDraft] = useState("https://");
+  const [linkLabelDraft, setLinkLabelDraft] = useState("");
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
@@ -307,21 +313,42 @@ export function MentionTextarea({
     setDisplayValue(rawToDisplayFromRaw(value));
     setKnownMentions(extractKnownMentionsFromRaw(value));
     lastRawRef.current = value;
+    linkPairsRef.current = extractLinkPairsInOrder(value);
   }, [value]);
 
   const commitFromDisplay = useCallback(
     (nextDisplay: string, nextMentions = knownMentions) => {
       const labels = extractZwnjLinkLabelsInOrder(nextDisplay);
-      const pool = extractLinkPairsInOrder(lastRawRef.current);
+      const pool =
+        linkPairsRef.current.length > 0
+          ? linkPairsRef.current
+          : extractLinkPairsInOrder(lastRawRef.current);
       const urls = resolveUrlsForLabels(labels, pool);
       const nextRaw = assembleRawFromDisplay(nextDisplay, nextMentions, urls);
       lastRawRef.current = nextRaw;
+      linkPairsRef.current = extractLinkPairsInOrder(nextRaw);
       setKnownMentions(extractKnownMentionsFromRaw(nextRaw));
       setDisplayValue(nextDisplay);
       onChange(nextRaw);
     },
     [knownMentions, onChange]
   );
+
+  const captureTextareaSelection = useCallback(() => {
+    const el = taRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? start;
+    let selected = displayValue.slice(start, end);
+    if (selected.trim().length > 0) {
+      selected = selected.replace(/\r\n/g, "\n").replace(/\n+/g, " ").trim();
+    }
+    selectionRef.current = { start, end, selectedText: selected };
+  }, [displayValue]);
+
+  const preventToolbarBlur = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+  }, []);
 
   const syncMirrorScroll = useCallback(() => {
     const ta = taRef.current;
@@ -496,38 +523,17 @@ export function MentionTextarea({
     [commitFromDisplay, displayValue]
   );
 
-  const insertMarkdownLink = useCallback(() => {
+  const applyMarkdownLink = useCallback(() => {
     const el = taRef.current;
     if (!el) return;
-    const start = el.selectionStart ?? 0;
-    const end = el.selectionEnd ?? start;
-    let selected = displayValue.slice(start, end);
-    const hadSelection = selected.trim().length > 0;
-    if (hadSelection) {
-      selected = selected.replace(/\r\n/g, "\n").replace(/\n+/g, " ").trim();
-    }
+    const normalized = normalizeCommunityPostLinkUrl(linkUrlDraft);
+    if (!normalized) return;
+    const defaultLabel = linkLabelFromUrl(normalized);
+    const label =
+      linkLabelDraft.trim().length > 0 ? linkLabelDraft.trim() : defaultLabel;
+    const { start, end } = selectionRef.current;
     const pairIdx = countCompleteZwnjLinksBefore(displayValue, start);
-    const pool = extractLinkPairsInOrder(lastRawRef.current);
-
-    let label: string;
-    let normalized: string;
-    if (!hadSelection) {
-      const urlRaw = window.prompt("Link URL:", "https://");
-      if (urlRaw === null) return;
-      normalized = normalizeCommunityPostLinkUrl(urlRaw);
-      if (!normalized) return;
-      const defaultLabel = linkLabelFromUrl(normalized);
-      const labelRaw = window.prompt("Text to show for this link:", defaultLabel);
-      if (labelRaw === null) return;
-      label = labelRaw.trim().length > 0 ? labelRaw.trim() : defaultLabel;
-    } else {
-      const urlRaw = window.prompt("Link URL:", "https://");
-      if (urlRaw === null) return;
-      normalized = normalizeCommunityPostLinkUrl(urlRaw);
-      if (!normalized) return;
-      label = selected;
-    }
-
+    const pool = [...linkPairsRef.current];
     pool.splice(pairIdx, 0, { label, url: normalized });
     const nextDisplay =
       displayValue.slice(0, start) +
@@ -539,16 +545,25 @@ export function MentionTextarea({
     const urls = resolveUrlsForLabels(labels, pool);
     const nextRaw = assembleRawFromDisplay(nextDisplay, knownMentions, urls);
     lastRawRef.current = nextRaw;
+    linkPairsRef.current = extractLinkPairsInOrder(nextRaw);
     setKnownMentions(extractKnownMentionsFromRaw(nextRaw));
     setDisplayValue(nextDisplay);
     onChange(nextRaw);
     setMentionOpen(false);
+    setLinkModalOpen(false);
     requestAnimationFrame(() => {
       el.focus();
       const caret = start + LINK_ZWNJ.length + label.length + LINK_ZWNJ.length;
       el.setSelectionRange(caret, caret);
     });
-  }, [displayValue, knownMentions, onChange]);
+  }, [displayValue, knownMentions, linkLabelDraft, linkUrlDraft, onChange]);
+
+  const openLinkModal = useCallback(() => {
+    const { selectedText } = selectionRef.current;
+    setLinkUrlDraft("https://");
+    setLinkLabelDraft(selectedText);
+    setLinkModalOpen(true);
+  }, []);
 
   const applyLinePrefix = useCallback(
     (prefix: string) => {
@@ -624,6 +639,7 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={preventToolbarBlur}
               onClick={() => applyWrappedSelection("**", "**")}
               aria-label="Bold"
               title="Bold"
@@ -633,6 +649,7 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={preventToolbarBlur}
               onClick={() => applyLinePrefix("# ")}
               aria-label="Heading 1"
               title="Heading 1"
@@ -643,6 +660,7 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={preventToolbarBlur}
               onClick={() => applyLinePrefix("## ")}
               aria-label="Heading 2"
               title="Heading 2"
@@ -653,6 +671,7 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-1.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={preventToolbarBlur}
               onClick={() => applyLinePrefix("### ")}
               aria-label="Heading 3"
               title="Heading 3"
@@ -663,6 +682,7 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-md border border-slate-200 px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={preventToolbarBlur}
               onClick={() => applyLinePrefix("- ")}
               aria-label="Bullet list"
               title="Bullet list"
@@ -672,13 +692,66 @@ export function MentionTextarea({
             <button
               type="button"
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-50"
-              onClick={() => insertMarkdownLink()}
+              onMouseDown={(e) => {
+                preventToolbarBlur(e);
+                captureTextareaSelection();
+              }}
+              onClick={openLinkModal}
               aria-label="Link"
               title="Link — select text, then add URL"
             >
               <Link2 className="h-4 w-4" strokeWidth={2.1} />
             </button>
           </div>
+          {linkModalOpen ? (
+            <div
+              className="relative z-20 mx-0.5 mb-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+              role="dialog"
+              aria-label="Add link"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-slate-600">
+                  URL
+                  <input
+                    type="url"
+                    value={linkUrlDraft}
+                    onChange={(e) => setLinkUrlDraft(e.target.value)}
+                    placeholder="https://example.com"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                    autoFocus
+                  />
+                </label>
+                <label className="block text-xs font-medium text-slate-600">
+                  Text to display
+                  <input
+                    type="text"
+                    value={linkLabelDraft}
+                    onChange={(e) => setLinkLabelDraft(e.target.value)}
+                    placeholder="Link label"
+                    className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+                  />
+                </label>
+              </div>
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                  onClick={() => setLinkModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                  disabled={!normalizeCommunityPostLinkUrl(linkUrlDraft)}
+                  onClick={() => applyMarkdownLink()}
+                >
+                  Add link
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <textarea

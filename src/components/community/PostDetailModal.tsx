@@ -40,7 +40,7 @@ import type {
 } from "@/components/community/CommunityFeed";
 import { MentionBody } from "@/components/community/MentionBody";
 import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
-import { CommunityPostDetailMedia } from "@/components/community/CommunityPostDetailMedia";
+import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
@@ -1749,15 +1749,7 @@ export function PostDetailModal({
               )}
             </div>
             {!editing && post.media.length > 0 ? (
-              <div className="space-y-3">
-                {post.media.map((m, i) => (
-                  <CommunityPostDetailMedia
-                    key={`${m.url}-${i}`}
-                    url={m.url}
-                    kind={m.kind}
-                  />
-                ))}
-              </div>
+              <CommunityPostMediaGallery items={post.media} />
             ) : null}
             {!editing ? (
               <div>

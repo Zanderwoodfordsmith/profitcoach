@@ -66,7 +66,7 @@ export const SCORECARD_QUESTIONS: ScorecardQuestion[] = [
     areaName: "Revenue & Marketing",
     pillar: "velocity",
     question:
-      "Do you have a reliable, repeatable system for generating new leads and converting them into clients?",
+      "Do you have a reliable, repeatable system for acquiring and converting new leads, customers, and/or clients?",
   },
   {
     id: "q7",

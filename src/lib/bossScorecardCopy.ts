@@ -153,7 +153,7 @@ const FOCUS_INSIGHT_AMBER: Record<string, string> = {
   q3: "Strategy is partly there — making it written, visible, and used weekly will stop the drift.",
   q4: "Planning happens sometimes; a disciplined 90-day cadence is what turns intent into results.",
   q5: "You track some numbers, but profit and cash need a clearer rhythm so you can decide with confidence.",
-  q6: "Lead flow is uneven — a repeatable marketing and sales system will stabilise revenue.",
+  q6: "New customer flow is uneven — a repeatable system for acquiring and converting will stabilise revenue.",
   q7: "Operations work for a while without you, but gaps still pull you back in when pressure hits.",
   q8: "KPIs exist, but reviews are not yet simple and regular enough to guide the team.",
   q9: "Improvements happen ad hoc — systemising innovation will lift quality without more heroics.",
