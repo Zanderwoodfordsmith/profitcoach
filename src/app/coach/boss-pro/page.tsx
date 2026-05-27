@@ -84,6 +84,18 @@ function mergeCoachWorkshopContacts(
   return [...byId.values()].sort((a, b) => a.full_name.localeCompare(b.full_name));
 }
 
+function coachOptionLabel(coach: {
+  full_name?: string | null;
+  coach_business_name?: string | null;
+  id: string;
+}): string {
+  return (
+    coach.full_name ??
+    coach.coach_business_name ??
+    `Coach ${coach.id.slice(0, 8)}`
+  );
+}
+
 function CoachWorkshopPageContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -121,6 +133,8 @@ function CoachWorkshopPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [adminUnscoped, setAdminUnscoped] = useState(false);
   const [draftCoachId, setDraftCoachId] = useState<string | null>(null);
+  const [coachOptions, setCoachOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [newPersonCoachId, setNewPersonCoachId] = useState("");
   const [hasScorecardForContact, setHasScorecardForContact] = useState(false);
   const [scorecardModalContactId, setScorecardModalContactId] = useState<
     string | null
@@ -263,6 +277,10 @@ function CoachWorkshopPageContent() {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
+        const coachesRes = await fetch("/api/admin/coaches", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           prospects?: Array<{
@@ -293,11 +311,29 @@ function CoachWorkshopPageContent() {
         }));
         mapped.sort((a, b) => a.full_name.localeCompare(b.full_name));
         setContacts(mapped);
+        if (coachesRes.ok) {
+          const coachesBody = (await coachesRes.json().catch(() => ({}))) as {
+            coaches?: Array<{
+              id: string;
+              full_name?: string | null;
+              coach_business_name?: string | null;
+            }>;
+          };
+          setCoachOptions(
+            (coachesBody.coaches ?? []).map((coach) => ({
+              id: coach.id,
+              label: coachOptionLabel(coach),
+            }))
+          );
+        } else {
+          setCoachOptions([]);
+        }
         setLoading(false);
         return;
       }
 
       setAdminUnscoped(false);
+      setCoachOptions([]);
       const effectiveCoachId =
         profile.role === "admin" && impersonatingCoachId
           ? impersonatingCoachId
@@ -501,6 +537,7 @@ function CoachWorkshopPageContent() {
     setNewPersonName("");
     setNewPersonTitle("");
     setNewPersonBusiness("");
+    setNewPersonCoachId("");
     setNewPersonConfirmError(null);
   }, []);
 
@@ -533,10 +570,6 @@ function CoachWorkshopPageContent() {
       setNewPersonConfirmError("Please enter a name.");
       return;
     }
-    if (!draftCoachId) {
-      setNewPersonConfirmError("Unable to create prospect for this account.");
-      return;
-    }
 
     setNewPersonConfirming(true);
     setNewPersonConfirmError(null);
@@ -548,6 +581,65 @@ function CoachWorkshopPageContent() {
       const token = session?.access_token;
       if (!token) {
         setNewPersonConfirmError("Not signed in.");
+        return;
+      }
+
+      if (adminUnscoped) {
+        const coachId = newPersonCoachId.trim();
+        if (!coachId) {
+          setNewPersonConfirmError("Please select a coach.");
+          return;
+        }
+
+        const res = await fetch("/api/admin/contacts", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            coachId,
+            fullName,
+            businessName: newPersonBusiness.trim() || undefined,
+            type: "prospect",
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          contactId?: string;
+        };
+
+        if (!res.ok || !json.contactId) {
+          throw new Error(json.error ?? "Could not create prospect.");
+        }
+
+        const businessName = newPersonBusiness.trim() || null;
+        const coachName =
+          coachOptions.find((coach) => coach.id === coachId)?.label ?? null;
+
+        setContacts((prev) => {
+          if (prev.some((c) => c.id === json.contactId)) return prev;
+          return [
+            {
+              id: json.contactId!,
+              full_name: fullName,
+              business_name: businessName,
+              job_title: null,
+              type: "prospect",
+              coach_name: coachName,
+              boss_score_premium: null,
+            },
+            ...prev,
+          ].sort((a, b) => a.full_name.localeCompare(b.full_name));
+        });
+        setSelectedId(json.contactId);
+        clearNewPersonDraft();
+        syncContactUrl(json.contactId);
+        return;
+      }
+
+      if (!draftCoachId) {
+        setNewPersonConfirmError("Unable to create prospect for this account.");
         return;
       }
 
@@ -605,9 +697,13 @@ function CoachWorkshopPageContent() {
     newPersonName,
     newPersonTitle,
     newPersonBusiness,
+    newPersonCoachId,
+    adminUnscoped,
+    coachOptions,
     draftCoachId,
     impersonatingCoachId,
     clearNewPersonDraft,
+    syncContactUrl,
   ]);
 
   const pickerSelectedId = activeContactId ?? selectedId;
@@ -624,7 +720,7 @@ function CoachWorkshopPageContent() {
 
   const clientsHref = adminUnscoped ? "/admin/clients" : "/coach/clients";
   const clientsLabel = adminUnscoped ? "Admin clients" : "Clients";
-  const showNewPersonOption = Boolean(draftCoachId);
+  const showNewPersonOption = Boolean(draftCoachId) || adminUnscoped;
 
   const setWorkshopTopRight = chrome?.setWorkshopTopRight;
   const registerMinimalSlot = chrome?.isMinimalWorkshopChrome;
@@ -668,6 +764,9 @@ function CoachWorkshopPageContent() {
           onNewPersonTitleChange={setNewPersonTitle}
           newPersonBusiness={newPersonBusiness}
           onNewPersonBusinessChange={setNewPersonBusiness}
+          newPersonCoachId={newPersonCoachId}
+          onNewPersonCoachIdChange={setNewPersonCoachId}
+          coachOptions={coachOptions}
           isEditingNewPerson={isEditingNewPerson}
           onConfirmNewPerson={handleConfirmNewPerson}
           onCancelNewPerson={handleCancelNewPerson}
@@ -698,6 +797,8 @@ function CoachWorkshopPageContent() {
     newPersonName,
     newPersonTitle,
     newPersonBusiness,
+    newPersonCoachId,
+    coachOptions,
     isEditingNewPerson,
     handleConfirmNewPerson,
     handleCancelNewPerson,
@@ -717,8 +818,18 @@ function CoachWorkshopPageContent() {
         title="Boss Pro"
         description={
           <span className="text-base leading-relaxed text-slate-700">
-            Choose someone from the list, or pick <strong>+ Add new person</strong>, enter their
-            details, and click <strong>Start session</strong> to begin scoring.
+            {adminUnscoped ? (
+              <>
+                Choose a contact from the <strong>Clients</strong> or <strong>Prospects</strong>{" "}
+                list, or pick <strong>+ Add new person</strong> to score someone who is not listed
+                yet.
+              </>
+            ) : (
+              <>
+                Choose someone from the list, or pick <strong>+ Add new person</strong>, enter their
+                details, and click <strong>Start session</strong> to begin scoring.
+              </>
+            )}
           </span>
         }
       />
@@ -743,6 +854,9 @@ function CoachWorkshopPageContent() {
             onNewPersonTitleChange={setNewPersonTitle}
             newPersonBusiness={newPersonBusiness}
             onNewPersonBusinessChange={setNewPersonBusiness}
+            newPersonCoachId={newPersonCoachId}
+            onNewPersonCoachIdChange={setNewPersonCoachId}
+            coachOptions={coachOptions}
             isEditingNewPerson={isEditingNewPerson}
             onConfirmNewPerson={handleConfirmNewPerson}
             onCancelNewPerson={handleCancelNewPerson}

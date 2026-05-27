@@ -22,6 +22,8 @@ type ContactOption = {
   boss_score_premium?: number | null;
 };
 
+type CoachOption = { id: string; label: string };
+
 type WorkshopSessionPickerProps = {
   idPrefix: string;
   contacts: ContactOption[];
@@ -35,6 +37,9 @@ type WorkshopSessionPickerProps = {
   onNewPersonTitleChange: (value: string) => void;
   newPersonBusiness: string;
   onNewPersonBusinessChange: (value: string) => void;
+  newPersonCoachId?: string;
+  onNewPersonCoachIdChange?: (value: string) => void;
+  coachOptions?: CoachOption[];
   isEditingNewPerson: boolean;
   onConfirmNewPerson: () => void;
   onCancelNewPerson: () => void;
@@ -576,6 +581,9 @@ export function WorkshopSessionPicker({
   onNewPersonTitleChange,
   newPersonBusiness,
   onNewPersonBusinessChange,
+  newPersonCoachId = "",
+  onNewPersonCoachIdChange,
+  coachOptions = [],
   isEditingNewPerson,
   onConfirmNewPerson,
   onCancelNewPerson,
@@ -594,7 +602,12 @@ export function WorkshopSessionPicker({
   const nameId = `${idPrefix}-new-name`;
   const titleId = `${idPrefix}-new-title`;
   const businessId = `${idPrefix}-new-business`;
+  const coachId = `${idPrefix}-new-coach`;
   const formId = `${idPrefix}-new-person-form`;
+  const showCoachSelector =
+    adminUnscoped && onNewPersonCoachIdChange !== undefined;
+  const canSubmitNewPerson =
+    Boolean(newPersonName.trim()) && (!showCoachSelector || Boolean(newPersonCoachId));
 
   const selectClassName = compact
     ? "mt-1.5 w-full min-w-[14rem] max-w-[min(100vw-2.5rem,22rem)] rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
@@ -647,7 +660,9 @@ export function WorkshopSessionPicker({
         {isEditingNewPerson
           ? "Enter their details, then start the session."
           : showNewPersonOption
-            ? "Pick someone or add a new person to score."
+            ? adminUnscoped
+              ? "Pick a contact to score, or add someone new."
+              : "Pick someone or add a new person to score."
             : "Pick a contact to score."}
       </p>
 
@@ -682,6 +697,27 @@ export function WorkshopSessionPicker({
             onConfirmNewPerson();
           }}
         >
+          {showCoachSelector ? (
+            <div className={compact ? undefined : "sm:col-span-2"}>
+              <label htmlFor={coachId} className={fieldLabelClassName}>
+                Coach <span className="text-rose-600">*</span>
+              </label>
+              <select
+                id={coachId}
+                required
+                value={newPersonCoachId}
+                onChange={(e) => onNewPersonCoachIdChange?.(e.target.value)}
+                className={inputClassName}
+              >
+                <option value="">Select a coach</option>
+                {coachOptions.map((coach) => (
+                  <option key={coach.id} value={coach.id}>
+                    {coach.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div className={compact ? undefined : "sm:col-span-2"}>
             <label htmlFor={nameId} className={fieldLabelClassName}>
               Name <span className="text-rose-600">*</span>
@@ -746,7 +782,7 @@ export function WorkshopSessionPicker({
           >
             <button
               type="submit"
-              disabled={confirming || !newPersonName.trim()}
+              disabled={confirming || !canSubmitNewPerson}
               className={
                 compact
                   ? "rounded-md bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -769,22 +805,6 @@ export function WorkshopSessionPicker({
             </button>
           </div>
         </form>
-      ) : null}
-
-      {adminUnscoped && !showNewPersonOption ? (
-        <p
-          className={
-            compact
-              ? "mt-2 max-w-[22rem] text-[11px] leading-snug text-slate-600"
-              : "mt-3 text-sm text-slate-600"
-          }
-        >
-          To score someone new, impersonate a coach or add them from{" "}
-          <a className="font-medium text-sky-700 hover:underline" href="/admin/prospects">
-            Prospects
-          </a>
-          .
-        </p>
       ) : null}
 
       {!contacts.length && !isEditingNewPerson && showNewPersonOption ? (
