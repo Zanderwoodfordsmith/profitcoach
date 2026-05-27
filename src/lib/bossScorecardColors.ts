@@ -16,6 +16,24 @@ export const BOSS_SCORE_SATURATED: Record<BossScoreHue, string> = {
   5: "#238BF7",
 };
 
+/** Darker companions for progress bar gradients and borders. */
+export const BOSS_SCORE_SATURATED_DARK: Record<BossScoreHue, string> = {
+  1: "#DC2626",
+  2: "#EA580C",
+  3: "#CA8A04",
+  4: "#16A34A",
+  5: "#2563EB",
+};
+
+/** Deep end of level progress bar gradients (left / darker side). */
+export const BOSS_SCORE_SATURATED_DEEP: Record<BossScoreHue, string> = {
+  1: "#991B1B",
+  2: "#9A3412",
+  3: "#854D0E",
+  4: "#15803D",
+  5: "#1D4ED8",
+};
+
 /** Muted companions — BOSS Compass petals and lens fills. */
 export const BOSS_SCORE_PASTEL: Record<BossScoreHue, string> = {
   1: "#F0A8AE",

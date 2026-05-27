@@ -14,9 +14,9 @@ import {
   ListTodo,
   Play,
   Search,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableCsvExportButton, type CsvExportScope } from "@/components/table/TableCsvExportButton";
@@ -443,8 +443,8 @@ export function ProspectsTable({
   const router = useRouter();
   const pathname = usePathname();
   const workshopBasePath = pathname.startsWith("/admin")
-    ? "/admin/workshop"
-    : "/coach/workshop";
+    ? "/admin/boss-pro"
+    : "/coach/boss-pro";
   const [scorecardModalContactId, setScorecardModalContactId] = useState<
     string | null
   >(null);
@@ -1690,10 +1690,7 @@ export function ProspectsTable({
                 setColumnsMenuOpen(false);
               }}
               icon={
-                <SlidersHorizontal
-                  className="h-5 w-5 text-slate-500"
-                  aria-hidden
-                />
+                <FilterSlidersIcon className="h-5 w-5 text-slate-500" />
               }
             />
             {filtersMenuOpen ? (

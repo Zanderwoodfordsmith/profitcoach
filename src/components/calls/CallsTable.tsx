@@ -6,8 +6,8 @@ import {
   Columns3,
   GripVertical,
   Search,
-  SlidersHorizontal,
 } from "lucide-react";
+import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import type { CallRow } from "@/lib/callRow";
 import {
@@ -518,10 +518,7 @@ export function CallsTable({
                 setColumnsMenuOpen(false);
               }}
               icon={
-                <SlidersHorizontal
-                  className="h-5 w-5 text-slate-500"
-                  aria-hidden
-                />
+                <FilterSlidersIcon className="h-5 w-5 text-slate-500" />
               }
             />
             {filtersMenuOpen ? (

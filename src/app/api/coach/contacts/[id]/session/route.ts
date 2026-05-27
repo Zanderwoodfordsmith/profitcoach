@@ -235,7 +235,24 @@ export async function GET(
     );
   }
 
-  const session = sessionFromAnswers(contact.session_answers);
+  let session = sessionFromAnswers(contact.session_answers);
+
+  if (!session) {
+    const { data: diagnosticRow } = await supabaseAdmin
+      .from("assessments")
+      .select("answers, total_score, completed_at")
+      .eq("contact_id", contactId)
+      .eq("assessment_type", "diagnostic_50")
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (diagnosticRow) {
+      session = sessionFromAnswers(
+        (diagnosticRow as { answers?: unknown }).answers
+      );
+    }
+  }
 
   return NextResponse.json({
     contact: {
@@ -246,6 +263,8 @@ export async function GET(
       coach_id: (contact.coach_id as string | null) ?? null,
       pillar_session_notes: contact.pillar_session_notes ?? null,
       playbook_session_notes: contact.playbook_session_notes ?? null,
+      session_insights: contact.session_insights ?? null,
+      session_insights_generated_at: contact.session_insights_generated_at ?? null,
     },
     session,
   });

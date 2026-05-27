@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCoachAccessTier } from "@/lib/coachAccess/tiers";
 import { isCoachRecurringPaymentStatus } from "@/lib/coachBilling";
 import { isValidLadderLevelId } from "@/lib/ladder";
 import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
@@ -69,6 +70,8 @@ type PatchBody = {
   has_sales_robot_account?: boolean;
   has_profit_coach_email_account?: boolean;
   recurring_payment_status?: string | null;
+  access_tier?: string | null;
+  access_tier_locked?: boolean;
   /** Coach profile fields editable by admin. */
   full_name?: string | null;
   coach_business_name?: string | null;
@@ -205,6 +208,24 @@ export async function PATCH(
         { status: 400 }
       );
     }
+  }
+  if (body.access_tier !== undefined) {
+    if (body.access_tier === null || body.access_tier === "") {
+      coachUpdates.access_tier = "pro";
+    } else if (
+      typeof body.access_tier === "string" &&
+      isCoachAccessTier(body.access_tier)
+    ) {
+      coachUpdates.access_tier = body.access_tier;
+    } else {
+      return NextResponse.json(
+        { error: "access_tier must be alumni, pro, premium, or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.access_tier_locked !== undefined) {
+    coachUpdates.access_tier_locked = !!body.access_tier_locked;
   }
 
   const profileUpdates: Record<string, unknown> = {};

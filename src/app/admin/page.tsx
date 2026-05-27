@@ -18,10 +18,15 @@ import {
   GripVertical,
   Loader2,
   Search,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 
+import {
+  COACH_ACCESS_TIER_LABELS,
+  COACH_ACCESS_TIERS,
+  type CoachAccessTier,
+} from "@/lib/coachAccess/tiers";
 import {
   COACH_RECURRING_PAYMENT_LABELS,
   COACH_RECURRING_PAYMENT_STATUSES,
@@ -151,6 +156,8 @@ type CoachRow = {
   sales_robot_paying_accounts: number | null;
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
+  access_tier: CoachAccessTier;
+  access_tier_locked: boolean;
   ladder_level: string | null;
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
@@ -181,6 +188,7 @@ type CoachTableColumnVisibility = {
   activeCampaigns: boolean;
   payingAccounts: boolean;
   profitCoachEmail: boolean;
+  accessTier: boolean;
   recurringPayment: boolean;
   calendarEmbed: boolean;
   leadWebhook: boolean;
@@ -219,6 +227,7 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   activeCampaigns: true,
   payingAccounts: true,
   profitCoachEmail: true,
+  accessTier: true,
   recurringPayment: true,
   calendarEmbed: true,
   leadWebhook: true,
@@ -278,6 +287,7 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "activeCampaigns", label: "Active campaigns", category: "billing" },
   { key: "payingAccounts", label: "Paying accounts", category: "billing" },
   { key: "profitCoachEmail", label: "PC email", category: "billing" },
+  { key: "accessTier", label: "Access tier", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
   { key: "landing", label: "Landing / preview", category: "actions" },
   { key: "viewAs", label: "View as coach", category: "actions" },
@@ -416,6 +426,12 @@ function conferenceStatusClasses(status: CoachRow["conference_status"]): string 
   if (status === "maybe") return "bg-amber-100 text-amber-800";
   if (status === "no") return "bg-rose-100 text-rose-800";
   return "bg-slate-100 text-slate-600";
+}
+
+function accessTierClasses(tier: CoachAccessTier): string {
+  if (tier === "alumni") return "bg-violet-100 text-violet-800";
+  if (tier === "premium") return "bg-amber-100 text-amber-900";
+  return "bg-emerald-100 text-emerald-800";
 }
 
 function recurringPaymentStatusClasses(
@@ -735,6 +751,8 @@ export default function AdminPage() {
       has_sales_robot_account?: boolean;
       has_profit_coach_email_account?: boolean;
       recurring_payment_status?: CoachRecurringPaymentStatus | null;
+      access_tier?: CoachAccessTier;
+      access_tier_locked?: boolean;
       full_name?: string | null;
       coach_business_name?: string | null;
       linkedin_url?: string | null;
@@ -814,6 +832,12 @@ export default function AdminPage() {
                 ...(body.recurring_payment_status !== undefined
                   ? { recurring_payment_status: body.recurring_payment_status }
                   : {}),
+                ...(body.access_tier !== undefined
+                  ? { access_tier: body.access_tier }
+                  : {}),
+                ...(body.access_tier_locked !== undefined
+                  ? { access_tier_locked: body.access_tier_locked }
+                  : {}),
                 ...(body.full_name !== undefined
                   ? { full_name: body.full_name }
                   : {}),
@@ -835,6 +859,40 @@ export default function AdminPage() {
       return { ok: false, error: msg };
     } finally {
       setDirectorySavingId(null);
+    }
+  }
+
+  async function applyBillingTierSuggestion(coachId: string): Promise<void> {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      setError("Not signed in.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/coaches/${coachId}/access-suggestion`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        suggestion?: { suggestedTier?: CoachAccessTier | null; reason?: string };
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Could not load billing suggestion.");
+      }
+      const suggested = body.suggestion?.suggestedTier;
+      if (!suggested) {
+        setError(body.suggestion?.reason ?? "No billing tier suggestion available.");
+        return;
+      }
+      const result = await patchCoachRow(coachId, { access_tier: suggested });
+      if (!result.ok) {
+        setError(result.error);
+      }
+    } catch (e) {
+      console.error(e);
+      setError((e as Error)?.message ?? "Could not apply billing suggestion.");
     }
   }
 
@@ -1212,6 +1270,13 @@ export default function AdminPage() {
       return (
         <th className="sticky top-0 z-10 min-w-[9rem] bg-slate-50 px-2 py-2">
           Billing
+        </th>
+      );
+    }
+    if (key === "accessTier") {
+      return (
+        <th className="sticky top-0 z-10 min-w-[11rem] bg-slate-50 px-2 py-2">
+          Access tier
         </th>
       );
     }
@@ -1601,6 +1666,57 @@ export default function AdminPage() {
         </td>
       );
     }
+    if (key === "accessTier") {
+      return (
+        <td className="px-2 py-2 align-middle">
+          <div className="flex min-w-[10rem] flex-col gap-1">
+            <select
+              title="Coach access tier"
+              value={coach.access_tier}
+              disabled={directorySavingId === coach.id}
+              onChange={(e) => {
+                void patchCoachRow(coach.id, {
+                  access_tier: e.target.value as CoachAccessTier,
+                });
+              }}
+              className={`max-w-full cursor-pointer rounded px-1 py-0.5 text-xs font-medium shadow-none ring-0 hover:opacity-90 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${accessTierClasses(
+                coach.access_tier
+              )}`}
+            >
+              {COACH_ACCESS_TIERS.map((tier) => (
+                <option key={tier} value={tier}>
+                  {COACH_ACCESS_TIER_LABELS[tier]}
+                </option>
+              ))}
+            </select>
+            <label className="inline-flex items-center gap-1 text-[10px] text-slate-600">
+              <input
+                type="checkbox"
+                checked={coach.access_tier_locked}
+                disabled={directorySavingId === coach.id}
+                onChange={(e) =>
+                  void patchCoachRow(coach.id, {
+                    access_tier_locked: e.target.checked,
+                  })
+                }
+                className="h-3 w-3 rounded border-slate-300 text-sky-600"
+              />
+              Lock tier
+            </label>
+            {!coach.access_tier_locked ? (
+              <button
+                type="button"
+                disabled={directorySavingId === coach.id}
+                onClick={() => void applyBillingTierSuggestion(coach.id)}
+                className="text-left text-[10px] font-medium text-sky-700 hover:text-sky-900 disabled:opacity-50"
+              >
+                Apply billing suggestion
+              </button>
+            ) : null}
+          </div>
+        </td>
+      );
+    }
     if (key === "calendarEmbed") {
       return (
         <td className="px-1 py-2 text-center align-middle">
@@ -1937,10 +2053,7 @@ export default function AdminPage() {
                   setColumnsMenuOpen(false);
                 }}
                 icon={
-                  <SlidersHorizontal
-                    className="h-5 w-5 text-slate-500"
-                    aria-hidden
-                  />
+                  <FilterSlidersIcon className="h-5 w-5 text-slate-500" />
                 }
               />
               {filtersMenuOpen ? (

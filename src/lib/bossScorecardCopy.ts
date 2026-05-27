@@ -135,49 +135,49 @@ export function insightTextForRag(rag: ScoreRag): string {
 }
 
 const FOCUS_INSIGHT_RED: Record<string, string> = {
-  q1: "Without a clear daily system, you stay reactive — and the business keeps running you instead of the other way around.",
+  q1: "Without a clear daily system, you stay reactive, and the business keeps running you instead of the other way around.",
   q2: "When vision is not aligned, the team pulls in different directions and hard work does not compound.",
   q3: "Without a defined strategy, every new opportunity feels urgent and focus keeps slipping away.",
   q4: "If 90-day planning is weak, you lose the rhythm that turns goals into predictable progress.",
-  q5: "Unclear profit and cash visibility makes every decision feel risky — and growth can feel like a gamble.",
+  q5: "Unclear profit and cash visibility makes every decision feel risky, and growth can feel like a gamble.",
   q6: "An unreliable revenue engine means feast-or-famine months and constant pressure on you to sell.",
-  q7: "When ops and delivery depend on you, stepping away stops the business — this caps freedom and scale.",
+  q7: "When ops and delivery depend on you, stepping away stops the business, which caps freedom and scale.",
   q8: "Without simple weekly numbers, problems show up late and you are always fixing instead of steering.",
   q9: "If the business is not improving how it works, margin and capacity get eaten by old habits.",
-  q10: "Weak team and leadership design keeps you as the bottleneck — and the business cannot grow past you.",
+  q10: "Weak team and leadership design keeps you as the bottleneck, and the business cannot grow past you.",
 };
 
 const FOCUS_INSIGHT_AMBER: Record<string, string> = {
-  q1: "You have pieces of a daily system, but consistency is missing — tighten this and your weeks get calmer fast.",
+  q1: "You have pieces of a daily system, but consistency is missing. Tighten this and your weeks get calmer fast.",
   q2: "Direction exists in places, but the team still needs sharper alignment so effort converts to momentum.",
-  q3: "Strategy is partly there — making it written, visible, and used weekly will stop the drift.",
+  q3: "Strategy is partly there. Making it written, visible, and used weekly will stop the drift.",
   q4: "Planning happens sometimes; a disciplined 90-day cadence is what turns intent into results.",
   q5: "You track some numbers, but profit and cash need a clearer rhythm so you can decide with confidence.",
-  q6: "New customer flow is uneven — a repeatable system for acquiring and converting will stabilise revenue.",
+  q6: "New customer flow is uneven. A repeatable system for acquiring and converting will stabilise revenue.",
   q7: "Operations work for a while without you, but gaps still pull you back in when pressure hits.",
   q8: "KPIs exist, but reviews are not yet simple and regular enough to guide the team.",
-  q9: "Improvements happen ad hoc — systemising innovation will lift quality without more heroics.",
+  q9: "Improvements happen ad hoc. Systemising innovation will lift quality without more heroics.",
   q10: "The team is forming, but roles and accountability need tightening so you are not the default answer.",
 };
 
 const FOCUS_INSIGHT_GREEN: Record<string, string> = {
-  q1: "Owner performance is a relative strength — protect this rhythm while you upgrade weaker areas.",
-  q2: "Vision alignment is working — keep it visible so new hires and projects stay on course.",
-  q3: "Strategy is clear enough to guide decisions — maintain it as the filter for what you say yes to.",
-  q4: "Your planning cadence is supporting progress — keep milestones visible and reviewed.",
-  q5: "Profit and cash visibility is solid — use it to fund the next priority, not spread thin.",
-  q6: "Revenue systems are a strength — optimise conversion and capacity rather than reinventing.",
-  q7: "Ops can run without you for stretches — document what works so it survives busy seasons.",
-  q8: "Weekly numbers are guiding the business — keep the dashboard simple as you grow.",
-  q9: "You are improving how the business runs — channel that into the areas still below par.",
-  q10: "Team and leadership are carrying load — strengthen managers before adding complexity.",
+  q1: "Owner performance is a relative strength. Protect this rhythm while you upgrade weaker areas.",
+  q2: "Vision alignment is working. Keep it visible so new hires and projects stay on course.",
+  q3: "Strategy is clear enough to guide decisions. Maintain it as the filter for what you say yes to.",
+  q4: "Your planning cadence is supporting progress. Keep milestones visible and reviewed.",
+  q5: "Profit and cash visibility is solid. Use it to fund the next priority, not spread thin.",
+  q6: "Revenue systems are a strength. Optimise conversion and capacity rather than reinventing.",
+  q7: "Ops can run without you for stretches. Document what works so it survives busy seasons.",
+  q8: "Weekly numbers are guiding the business. Keep the dashboard simple as you grow.",
+  q9: "You are improving how the business runs. Channel that into the areas still below par.",
+  q10: "Team and leadership are carrying load. Strengthen managers before adding complexity.",
 };
 
 /** Focus card list — topics within the priority area, not delivered playbooks on this page. */
 export const FOCUS_TOPICS_HEADING = "Areas to focus on";
 
 export const FOCUS_SECTION_INTRO =
-  "Your three priority areas from the scorecard. Each card lists the BOSS topics to work through—every topic has playbooks at all five levels.";
+  "Your three priority areas from the scorecard. Each card lists the BOSS topics to work through. Every topic has playbooks at all five levels.";
 
 export function insightTextForFocusArea(
   questionId: string,

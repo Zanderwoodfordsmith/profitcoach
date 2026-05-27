@@ -8,11 +8,14 @@ import {
   PhoneCall,
   Sparkles,
 } from "lucide-react";
+import type { CoachFeature } from "@/lib/coachAccess/tiers";
 
 export type DashboardNavItem = {
   href: string;
   label: string;
   icon: (props: { className?: string }) => React.ReactElement;
+  /** When set, item is hidden unless the coach has this feature. */
+  requiredFeature?: CoachFeature;
 };
 
 export type AdminSectionNavItem = DashboardNavItem & {
@@ -89,20 +92,49 @@ export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
     { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
   ];
   base.push(
-    { href: `${prefix}/signature`, label: "Compass", icon: IconCompass },
+    {
+      href: `${prefix}/signature`,
+      label: "Compass",
+      icon: IconCompass,
+      requiredFeature: "nav.compass",
+    },
     { href: `${prefix}/community/calendar`, label: "Calendar", icon: IconCalendar },
-    { href: `${prefix}/academy`, label: "Classroom", icon: IconAcademy }
+    {
+      href: `${prefix}/academy`,
+      label: "Classroom",
+      icon: IconAcademy,
+      requiredFeature: "nav.classroom",
+    }
   );
   return base;
+}
+
+export function filterNavItemsByFeatures(
+  items: DashboardNavItem[],
+  hasFeature: (feature: CoachFeature) => boolean
+): DashboardNavItem[] {
+  return items.filter(
+    (item) => !item.requiredFeature || hasFeature(item.requiredFeature)
+  );
 }
 
 /** Four primary tabs on mobile (BOSS score lives under More). */
 export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   return [
     { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
-    { href: `${prefix}/signature`, label: "Compass", icon: IconCompass },
+    {
+      href: `${prefix}/signature`,
+      label: "Compass",
+      icon: IconCompass,
+      requiredFeature: "nav.compass",
+    },
     { href: `${prefix}/community/calendar`, label: "Calendar", icon: IconCalendar },
-    { href: `${prefix}/academy`, label: "Classroom", icon: IconAcademy },
+    {
+      href: `${prefix}/academy`,
+      label: "Classroom",
+      icon: IconAcademy,
+      requiredFeature: "nav.classroom",
+    },
   ];
 }
 
@@ -111,7 +143,7 @@ export function mobileMoreNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
 }
 
 function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
-  return { href: `${prefix}/workshop`, label: "BOSS score", icon: IconWorkshop };
+  return { href: `${prefix}/boss-pro`, label: "BOSS score", icon: IconWorkshop };
 }
 
 function callsNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {

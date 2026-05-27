@@ -1,39 +1,44 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { Suspense, use, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { PlaybookBlogShell } from "@/components/playbooks/PlaybookBlogShell";
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
+import { safeAppReturnTo } from "@/lib/bossGridNavigation";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { PlaybookContent as PlaybookContentType } from "@/lib/playbookContentTypes";
 
-export default function CoachContactPlaybookDetailPage({
-  params,
+function playbookBackLabel(returnTo: string | null): string {
+  if (returnTo?.includes("/boss-pro")) return "BOSS score";
+  return "Contact playbooks";
+}
+
+function CoachContactPlaybookDetailContent({
+  contactId,
+  ref,
 }: {
-  params: Promise<{ id: string; ref: string }>;
+  contactId: string;
+  ref: string;
 }) {
-  const { id: contactId, ref } = use(params);
+  const searchParams = useSearchParams();
+  const returnTo = safeAppReturnTo(searchParams.get("returnTo"));
+  const defaultBackHref = `/coach/contacts/${contactId}/playbooks`;
+  const backHref = returnTo ?? defaultBackHref;
+  const backLabel = playbookBackLabel(returnTo);
+
   const [content, setContent] = useState<PlaybookContentType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const meta = getPlaybookMeta(ref);
-  if (!meta) {
-    return (
-      <div className="flex flex-col gap-4 px-4 py-8">
-        <p className="text-sm text-rose-600">Playbook not found.</p>
-        <Link
-          href={`/coach/contacts/${contactId}/playbooks`}
-          className="text-sm text-[#0c5290] underline"
-        >
-          Back to Playbooks
-        </Link>
-      </div>
-    );
-  }
 
   useEffect(() => {
+    if (!meta) {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     async function init() {
       setLoading(true);
@@ -48,7 +53,18 @@ export default function CoachContactPlaybookDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [ref]);
+  }, [meta, ref]);
+
+  if (!meta) {
+    return (
+      <div className="flex flex-col gap-4 px-4 py-8">
+        <p className="text-sm text-rose-600">Playbook not found.</p>
+        <Link href={backHref} className="text-sm text-[#0c5290] underline">
+          ← {backLabel}
+        </Link>
+      </div>
+    );
+  }
 
   if (loading || !content) {
     return (
@@ -62,31 +78,55 @@ export default function CoachContactPlaybookDetailPage({
     return (
       <div className="flex flex-col gap-4 px-4 py-8">
         <p className="text-sm text-rose-600">{error}</p>
-        <Link
-          href={`/coach/contacts/${contactId}/playbooks`}
-          className="text-sm text-[#0c5290] underline"
-        >
-          Back to Playbooks
+        <Link href={backHref} className="text-sm text-[#0c5290] underline">
+          ← {backLabel}
         </Link>
       </div>
     );
   }
 
+  const returnQuery = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : "";
+
   return (
     <PlaybookBlogShell
-      backHref={`/coach/contacts/${contactId}/playbooks`}
-      backLabel="Contact playbooks"
-      secondaryNav={{
-        href: `/coach/contacts/${contactId}`,
-        label: "Contact",
-      }}
+      backHref={backHref}
+      backLabel={backLabel}
+      secondaryNav={
+        returnTo
+          ? undefined
+          : {
+              href: `/coach/contacts/${contactId}`,
+              label: "Contact",
+            }
+      }
     >
       <PlaybookTabs
         content={content}
         showClientTab={true}
         showCoachesTab={true}
         basePath={`/coach/contacts/${contactId}/playbooks`}
+        linkQuery={returnQuery}
       />
     </PlaybookBlogShell>
+  );
+}
+
+export default function CoachContactPlaybookDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; ref: string }>;
+}) {
+  const { id: contactId, ref } = use(params);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-4 px-4 py-8">
+          <p className="text-sm text-slate-600">Loading…</p>
+        </div>
+      }
+    >
+      <CoachContactPlaybookDetailContent contactId={contactId} ref={ref} />
+    </Suspense>
   );
 }

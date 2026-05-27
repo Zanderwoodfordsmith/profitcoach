@@ -95,7 +95,7 @@ export async function GET(request: Request) {
     };
 
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, access_tier, access_tier_locked, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
     );
 
     let calendarEmbedMissing = false;
@@ -320,6 +320,10 @@ export async function GET(request: Request) {
         recurring_payment_status: accountBillingMissing
           ? null
           : (row.recurring_payment_status as string | null) ?? null,
+        access_tier: (row.access_tier as string | null) ?? "pro",
+        access_tier_locked: accountBillingMissing
+          ? false
+          : Boolean(row.access_tier_locked),
         ladder_level: currentLevel,
         ladder_goal_level: goalLevelMissing
           ? null

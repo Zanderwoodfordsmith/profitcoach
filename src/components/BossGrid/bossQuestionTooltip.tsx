@@ -137,6 +137,10 @@ export function useBossQuestionTooltip(
     [cancelHide]
   );
 
+  const navigateWorkshopSheet = useCallback((ref: string) => {
+    openWorkshopSheet(ref);
+  }, [openWorkshopSheet]);
+
   /** Opens the question panel immediately (legacy popover anchor). */
   const openTooltipPinned = useCallback(
     (ref: string, element: HTMLElement) => {
@@ -213,6 +217,7 @@ export function useBossQuestionTooltip(
     handleCellHover,
     openTooltipPinned,
     openWorkshopSheet,
+    navigateWorkshopSheet,
     dismissTooltip,
     cancelHide,
     scheduleHide,
@@ -479,6 +484,7 @@ export function BossQuestionTooltipPortal({
   playbookNotes,
   onPlaybookNotesChange,
   onDismiss,
+  onNavigate,
   anchorRef,
   coachName,
   clientName,
@@ -494,6 +500,7 @@ export function BossQuestionTooltipPortal({
   playbookNotes?: Record<string, string>;
   onPlaybookNotesChange?: (ref: string, notes: string) => void;
   onDismiss?: () => void;
+  onNavigate?: (ref: string) => void;
   anchorRef?: RefObject<HTMLElement | null>;
   coachName?: string;
   clientName?: string;
@@ -524,6 +531,7 @@ export function BossQuestionTooltipPortal({
         playbookNotes={playbookNotes}
         onPlaybookNotesChange={onPlaybookNotesChange}
         onDismiss={onDismiss}
+        onNavigate={onNavigate}
         coachName={coachName}
         clientName={clientName}
         allowClientComments={allowClientComments}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { AREAS, BOSS_FOUNDATION_COLOR, LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { playbookDetailUrl } from "@/lib/bossGridNavigation";
 import type { AnswersMap } from "@/lib/bossScores";
 
 const PILLARS: {
@@ -39,6 +40,7 @@ export type BossGridMobileStackedProps = {
   interactive?: boolean;
   onScoreChange?: (ref: string, score: 0 | 1 | 2) => void;
   playbookLinkBase?: string;
+  playbookReturnTo?: string;
   playbookNotes?: Record<string, string>;
   onPlaybookNotesChange?: (ref: string, notes: string) => void;
   /** Opens the full workshop scoring sheet (coach live session). */
@@ -50,6 +52,7 @@ export function BossGridMobileStacked({
   interactive = false,
   onScoreChange,
   playbookLinkBase,
+  playbookReturnTo,
   playbookNotes,
   onPlaybookNotesChange,
   onOpenPlaybook,
@@ -153,7 +156,11 @@ export function BossGridMobileStacked({
                           </button>
                         ) : canLink && playbookLinkBase ? (
                           <Link
-                            href={`${playbookLinkBase}/${playbook.ref}`}
+                            href={playbookDetailUrl(
+                              playbookLinkBase,
+                              playbook.ref,
+                              playbookReturnTo
+                            )}
                             className="flex min-w-0 flex-1 items-start gap-3 hover:opacity-90"
                           >
                             {inner}

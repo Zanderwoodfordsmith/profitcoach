@@ -85,3 +85,15 @@ export function communityCalendarCancelledTextClass(): string {
 export function communityCalendarCancelledBadgeClass(): string {
   return "inline-flex rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-rose-700";
 }
+
+export function communityCalendarHasRecording(
+  occurrence: Pick<
+    CommunityCalendarOccurrence,
+    "recording_link_url" | "recording_video_url"
+  >
+): boolean {
+  return (
+    Boolean(occurrence.recording_link_url?.trim()) ||
+    Boolean(occurrence.recording_video_url?.trim())
+  );
+}

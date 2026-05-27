@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
+
 const NEW_PERSON_VALUE = "__new__";
 
 export { NEW_PERSON_VALUE };
@@ -16,6 +19,7 @@ type ContactOption = {
   business_name: string | null;
   type: string;
   coach_name?: string | null;
+  boss_score_premium?: number | null;
 };
 
 type WorkshopSessionPickerProps = {
@@ -43,10 +47,440 @@ type WorkshopSessionPickerProps = {
   compact?: boolean;
   showScorecardLink?: boolean;
   onViewScorecard?: () => void;
+  onPickerOpen?: () => void;
 };
 
 function formatSessionSubtitle(summary: WorkshopSessionSummary): string {
   return [summary.jobTitle, summary.businessName].filter(Boolean).join(" · ");
+}
+
+function contactSearchText(c: ContactOption): string {
+  return [c.full_name, c.business_name, c.type, c.coach_name]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function formatContactLabel(c: ContactOption): string {
+  const base = `${c.full_name}${c.business_name ? ` — ${c.business_name}` : ""}`;
+  return c.coach_name ? `${base} · ${c.coach_name}` : base;
+}
+
+function isClientContact(c: ContactOption): boolean {
+  return c.type === "client";
+}
+
+function normalizeBossProScore(score: number | null | undefined): number | null {
+  if (typeof score === "number" && Number.isFinite(score)) return score;
+  return null;
+}
+
+function WorkshopContactScoreIndicator({
+  score,
+  compact,
+}: {
+  score: number | null | undefined;
+  compact: boolean;
+}) {
+  const normalized = normalizeBossProScore(score);
+
+  if (normalized == null) {
+    return (
+      <span
+        className={
+          compact
+            ? "shrink-0 whitespace-nowrap text-right text-[11px] font-medium text-sky-700 group-hover:underline"
+            : "shrink-0 whitespace-nowrap text-right text-xs font-medium text-sky-700 group-hover:underline"
+        }
+      >
+        Start
+      </span>
+    );
+  }
+
+  const pct = Math.min(100, Math.max(0, Math.round(normalized)));
+  const size = compact ? 28 : 32;
+  const strokeWidth = compact ? 3 : 3.5;
+  const radius = (size - strokeWidth) / 2 - 0.5;
+  const center = size / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (pct / 100) * circumference;
+  const textSize = compact ? "text-[9px]" : "text-[10px]";
+
+  return (
+    <span
+      className="relative inline-flex shrink-0 items-center justify-center"
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="absolute inset-0 -rotate-90"
+        aria-hidden
+      >
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="#e8ecf1"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="#0c5280"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference}`}
+        />
+      </svg>
+      <span className={`relative font-semibold tabular-nums leading-none text-slate-900 ${textSize}`}>
+        {pct}
+      </span>
+    </span>
+  );
+}
+
+function ContactSectionHeader({
+  label,
+  compact,
+  showTopDivider = false,
+}: {
+  label: string;
+  compact: boolean;
+  showTopDivider?: boolean;
+}) {
+  return (
+    <div
+      className={
+        showTopDivider
+          ? compact
+            ? "mt-3 -mx-1 border-t border-slate-200/90 px-1 pt-2.5"
+            : "mt-4 -mx-1 border-t border-slate-200/90 px-1 pt-3"
+          : compact
+            ? "pt-1.5"
+            : "pt-2"
+      }
+    >
+      <p
+        className={
+          compact
+            ? "px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400"
+            : "px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400"
+        }
+      >
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function ContactOptionButton({
+  contact,
+  active,
+  compact,
+  onSelect,
+  optionClassName,
+}: {
+  contact: ContactOption;
+  active: boolean;
+  compact: boolean;
+  onSelect: (id: string) => void;
+  optionClassName: (active: boolean) => string;
+}) {
+  const normalizedScore = normalizeBossProScore(contact.boss_score_premium);
+  const scoreLabel =
+    normalizedScore == null
+      ? "Start session"
+      : `Boss Pro score ${Math.round(normalizedScore)}`;
+
+  return (
+    <li className="w-full">
+      <button
+        type="button"
+        role="option"
+        aria-selected={active}
+        aria-label={`${contact.full_name}. ${scoreLabel}`}
+        onClick={() => onSelect(contact.id)}
+        className={`${optionClassName(active)} group flex w-full items-center gap-3`}
+      >
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block font-medium leading-tight">{contact.full_name}</span>
+          {contact.business_name ? (
+            <span
+              className={
+                compact
+                  ? "mt-0.5 block line-clamp-1 text-[10px] text-slate-500"
+                  : "mt-0.5 block line-clamp-1 text-xs text-slate-500"
+              }
+            >
+              {contact.business_name}
+            </span>
+          ) : null}
+          {contact.coach_name ? (
+            <span
+              className={
+                compact
+                  ? "mt-0.5 block line-clamp-1 text-[10px] text-slate-400"
+                  : "mt-0.5 block line-clamp-1 text-xs text-slate-400"
+              }
+            >
+              {contact.coach_name}
+            </span>
+          ) : null}
+        </span>
+        <span className="ml-auto shrink-0 self-center pl-2">
+          <WorkshopContactScoreIndicator
+            score={contact.boss_score_premium}
+            compact={compact}
+          />
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function ContactOptionList({
+  contacts: sectionContacts,
+  selectedId,
+  compact,
+  onSelect,
+  optionClassName,
+}: {
+  contacts: ContactOption[];
+  selectedId: string;
+  compact: boolean;
+  onSelect: (id: string) => void;
+  optionClassName: (active: boolean) => string;
+}) {
+  if (sectionContacts.length === 0) return null;
+  return (
+    <ul className="w-full space-y-0.5">
+      {sectionContacts.map((c) => (
+        <ContactOptionButton
+          key={c.id}
+          contact={c}
+          active={c.id === selectedId}
+          compact={compact}
+          onSelect={onSelect}
+          optionClassName={optionClassName}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function WorkshopContactCombobox({
+  id,
+  contacts,
+  selectedId,
+  onSelectedIdChange,
+  showNewPersonOption,
+  triggerClassName,
+  compact,
+  onOpen,
+}: {
+  id: string;
+  contacts: ContactOption[];
+  selectedId: string;
+  onSelectedIdChange: (value: string) => void;
+  showNewPersonOption: boolean;
+  triggerClassName: string;
+  compact: boolean;
+  onOpen?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter((c) => contactSearchText(c).includes(q));
+  }, [contacts, query]);
+
+  const hasClientsInList = contacts.some(isClientContact);
+  const hasProspectsInList = contacts.some((c) => !isClientContact(c));
+  const useSectionHeaders = hasClientsInList && hasProspectsInList;
+
+  const filteredClients = useMemo(
+    () => filtered.filter(isClientContact),
+    [filtered]
+  );
+  const filteredProspects = useMemo(
+    () => filtered.filter((c) => !isClientContact(c)),
+    [filtered]
+  );
+
+  const selectedContact = contacts.find((c) => c.id === selectedId);
+
+  function handleToggleOpen() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    onOpen?.();
+    setOpen(true);
+    setQuery("");
+  }
+
+  function handleSelect(value: string) {
+    onSelectedIdChange(value);
+    setOpen(false);
+    setQuery("");
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(t);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: MouseEvent) {
+      const el = rootRef.current;
+      if (!el) return;
+      if (e.target instanceof Node && !el.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const searchInputClassName = compact
+    ? "w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 [color-scheme:light]"
+    : "w-full rounded-md border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 [color-scheme:light]";
+
+  const optionClassName = (active: boolean) =>
+    compact
+      ? `rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
+          active ? "bg-sky-50 text-sky-900" : "text-slate-800 hover:bg-slate-100"
+        }`
+      : `rounded-md px-2.5 py-2 text-left text-sm transition-colors ${
+          active ? "bg-sky-50 text-sky-900" : "text-slate-800 hover:bg-slate-100"
+        }`;
+
+  return (
+    <div ref={rootRef} className={compact ? "relative min-w-0" : "relative w-full max-w-md"}>
+      <button
+        type="button"
+        id={id}
+        onClick={handleToggleOpen}
+        className={`${triggerClassName} flex items-center justify-between gap-2 text-left [color-scheme:light]`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <span
+          className={`min-w-0 truncate ${selectedContact ? "text-slate-900" : "text-slate-500"}`}
+        >
+          {selectedContact ? formatContactLabel(selectedContact) : "Select someone…"}
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`}
+          aria-hidden
+        />
+      </button>
+      {open ? (
+        <div
+          className={`absolute left-0 top-[calc(100%+4px)] z-[110] w-full min-w-[14rem] rounded-lg border border-slate-200 bg-white py-2 shadow-lg ring-1 ring-black/5 [color-scheme:light] ${
+            compact ? "max-w-[min(100vw-2.5rem,22rem)]" : ""
+          }`}
+          role="listbox"
+          aria-label="Contacts"
+        >
+          <div className="px-2 pb-2">
+            <input
+              ref={inputRef}
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name or business…"
+              className={searchInputClassName}
+              aria-label="Filter contacts"
+            />
+          </div>
+          <div className="max-h-[min(32rem,calc(100vh-10rem))] overflow-y-auto px-1">
+            {showNewPersonOption ? (
+              <button
+                type="button"
+                role="option"
+                aria-selected={selectedId === NEW_PERSON_VALUE}
+                onClick={() => handleSelect(NEW_PERSON_VALUE)}
+                className={`${optionClassName(selectedId === NEW_PERSON_VALUE)} font-medium text-sky-700`}
+              >
+                + Add new person
+              </button>
+            ) : null}
+            {filtered.length === 0 ? (
+              <p
+                className={
+                  compact
+                    ? "px-2 py-2 text-xs text-slate-500"
+                    : "px-2.5 py-2 text-sm text-slate-500"
+                }
+              >
+                {contacts.length === 0 ? "No contacts yet." : "No matches."}
+              </p>
+            ) : useSectionHeaders ? (
+              <>
+                {filteredClients.length > 0 ? (
+                  <div>
+                    <ContactSectionHeader label="Clients" compact={compact} />
+                    <ContactOptionList
+                      contacts={filteredClients}
+                      selectedId={selectedId}
+                      compact={compact}
+                      onSelect={handleSelect}
+                      optionClassName={optionClassName}
+                    />
+                  </div>
+                ) : null}
+                {filteredProspects.length > 0 ? (
+                  <div>
+                    <ContactSectionHeader
+                      label="Prospects"
+                      compact={compact}
+                      showTopDivider={filteredClients.length > 0}
+                    />
+                    <ContactOptionList
+                      contacts={filteredProspects}
+                      selectedId={selectedId}
+                      compact={compact}
+                      onSelect={handleSelect}
+                      optionClassName={optionClassName}
+                    />
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <ContactOptionList
+                contacts={filtered}
+                selectedId={selectedId}
+                compact={compact}
+                onSelect={handleSelect}
+                optionClassName={optionClassName}
+              />
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 function WorkshopSessionSummaryView({
@@ -154,6 +588,7 @@ export function WorkshopSessionPicker({
   compact = false,
   showScorecardLink = false,
   onViewScorecard,
+  onPickerOpen,
 }: WorkshopSessionPickerProps) {
   const selectId = `${idPrefix}-contact-select`;
   const nameId = `${idPrefix}-new-name`;
@@ -193,6 +628,18 @@ export function WorkshopSessionPicker({
     );
   }
 
+  const pendingContactId =
+    selectedId && selectedId !== NEW_PERSON_VALUE ? selectedId : "";
+
+  if (pendingContactId) {
+    return (
+      <div>
+        <p className={headingClassName}>Loading session…</p>
+        <p className={subheadingClassName}>Opening their Boss Pro grid.</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <p className={headingClassName}>Start session</p>
@@ -209,24 +656,16 @@ export function WorkshopSessionPicker({
           <label htmlFor={selectId} className="sr-only">
             Who are you working with?
           </label>
-          <select
+          <WorkshopContactCombobox
             id={selectId}
-            className={selectClassName}
-            value={selectedId}
-            onChange={(e) => onSelectedIdChange(e.target.value)}
-          >
-            {showNewPersonOption ? (
-              <option value={NEW_PERSON_VALUE}>+ Add new person</option>
-            ) : null}
-            <option value="">Select someone…</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.full_name}
-                {c.business_name ? ` — ${c.business_name}` : ""} ({c.type}
-                {c.coach_name ? ` · ${c.coach_name}` : ""})
-              </option>
-            ))}
-          </select>
+            contacts={contacts}
+            selectedId={selectedId}
+            onSelectedIdChange={onSelectedIdChange}
+            showNewPersonOption={showNewPersonOption}
+            triggerClassName={selectClassName}
+            compact={compact}
+            onOpen={onPickerOpen}
+          />
         </>
       ) : null}
 

@@ -7,7 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { DateTime } from "luxon";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -35,6 +36,8 @@ import {
   resolveSupabaseBrowserSession,
 } from "@/lib/supabaseAccessToken";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { useCoachAccess } from "@/hooks/useCoachAccess";
+import { FEEDBACK_REQUEST_CATEGORY_SLUG } from "@/lib/coachAccess/tiers";
 import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
 import {
   useCommunityFeedCardLocalState,
@@ -823,6 +826,9 @@ function isFutureScheduledPost(post: CommunityPostRow): boolean {
 
 export function CommunityFeed() {
   const { impersonatingCoachId } = useImpersonation();
+  const { hasFeature, loading: accessLoading } = useCoachAccess(
+    impersonatingCoachId
+  );
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -830,6 +836,13 @@ export function CommunityFeed() {
     searchParams.get("tab") === "map" ? "map" : "feed";
 
   const [categories, setCategories] = useState<CommunityCategory[]>([]);
+  const visibleCategories = useMemo(() => {
+    if (accessLoading || hasFeature("community.feedback_channel")) {
+      return categories;
+    }
+    return categories.filter((c) => c.slug !== FEEDBACK_REQUEST_CATEGORY_SLUG);
+  }, [accessLoading, categories, hasFeature]);
+
   const [posts, setPosts] = useState<CommunityPostRow[]>([]);
   const [feedMentionNameById, setFeedMentionNameById] = useState<
     Record<string, string>
@@ -847,6 +860,18 @@ export function CommunityFeed() {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [composeAvatarUrl, setComposeAvatarUrl] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    if (accessLoading) return;
+    if (
+      filterSlug === FEEDBACK_REQUEST_CATEGORY_SLUG &&
+      !hasFeature("community.feedback_channel")
+    ) {
+      setFilterSlug("all");
+      setPage(1);
+    }
+  }, [accessLoading, filterSlug, hasFeature]);
+
   const [totalCount, setTotalCount] = useState(0);
   const [fetchedDetailPost, setFetchedDetailPost] =
     useState<CommunityPostRow | null>(null);
@@ -911,7 +936,9 @@ export function CommunityFeed() {
           .order("starts_at", { ascending: true }),
         supabaseClient
           .from("community_calendar_event_exceptions")
-          .select("id, event_id, occurrence_start, cancellation_reason, created_at"),
+          .select(
+            "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, created_at"
+          ),
       ]);
       if (cancelled || eventsResult.error || exceptionsResult.error) return;
       const occurrences = expandCommunityCalendar(
@@ -1624,7 +1651,7 @@ export function CommunityFeed() {
             <CommunityMembersMap />
           </div>
         ) : (
-            <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6 pt-5 lg:mx-0 lg:pt-6">
+            <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6 pt-3 lg:mx-0 lg:pt-3.5">
               {loadError ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                   <p className="font-semibold text-rose-900">Community data could not be loaded</p>
@@ -1660,7 +1687,7 @@ export function CommunityFeed() {
               <div className={composeOpen ? "relative z-50" : undefined}>
                 {composeOpen ? (
                   <CreatePostModal
-                    categories={categories}
+                    categories={visibleCategories}
                     avatarUrl={composeAvatarUrl}
                     authorLabel="You"
                     onClose={() => setComposeOpen(false)}
@@ -1674,7 +1701,7 @@ export function CommunityFeed() {
                   <button
                     type="button"
                     onClick={() => setComposeOpen(true)}
-                    disabled={Boolean(loadError) || categories.length === 0}
+                    disabled={Boolean(loadError) || visibleCategories.length === 0}
                     className="mb-2 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {composeAvatarUrl ? (
@@ -1734,41 +1761,51 @@ export function CommunityFeed() {
                 </div>
               ) : null}
 
-              <div className="mb-2 flex items-start gap-2">
-                <div className="flex min-w-0 flex-1 flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFilterSlug("all");
-                      setPage(1);
-                    }}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                      filterSlug === "all"
-                        ? "bg-sky-700 text-white"
-                        : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-                    }`}
-                  >
-                    All
-                  </button>
-                  {categories.map((c) => (
+              <div className="relative mb-2 flex items-center">
+                <div
+                  className="min-w-0 flex-1 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  role="region"
+                  aria-label="Post categories"
+                >
+                  <div className="flex flex-nowrap items-center gap-2 pr-2">
                     <button
-                      key={c.id}
                       type="button"
                       onClick={() => {
-                        setFilterSlug(c.slug);
+                        setFilterSlug("all");
                         setPage(1);
                       }}
-                      className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-                        filterSlug === c.slug
+                      className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${
+                        filterSlug === "all"
                           ? "bg-sky-700 text-white"
                           : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
                       }`}
                     >
-                      {c.label}
+                      All
                     </button>
-                  ))}
+                    {visibleCategories.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setFilterSlug(c.slug);
+                          setPage(1);
+                        }}
+                        className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap ${
+                          filterSlug === c.slug
+                            ? "bg-sky-700 text-white"
+                            : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="relative shrink-0 pt-0.5" ref={readFilterMenuRef}>
+                <div
+                  className="pointer-events-none absolute inset-y-0 right-9 w-5 bg-gradient-to-l from-slate-100 via-slate-100/85 to-transparent"
+                  aria-hidden
+                />
+                <div className="relative z-10 shrink-0" ref={readFilterMenuRef}>
                   <button
                     type="button"
                     aria-expanded={readFilterMenuOpen}
@@ -1787,11 +1824,7 @@ export function CommunityFeed() {
                         : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 hover:text-slate-800"
                     }`}
                   >
-                    <ListFilter
-                      className="h-4 w-4 shrink-0"
-                      strokeWidth={2}
-                      aria-hidden
-                    />
+                    <FilterSlidersIcon className="h-4 w-4 shrink-0" />
                   </button>
                   {readFilterMenuOpen ? (
                     <div
@@ -2002,7 +2035,7 @@ export function CommunityFeed() {
               {communityTab === "feed" && selectedPost ? (
                 <PostDetailModal
                   post={selectedPost}
-                  categories={categories}
+                  categories={visibleCategories}
                   onClose={closeDetail}
                   onPostsChanged={() => loadPosts()}
                   feedStorageScopeId={feedStorageScopeId}
@@ -2022,7 +2055,7 @@ export function CommunityFeed() {
         {communityTab !== "map" ? (
           <CommunitySidebar
             className={
-              communityTab === "feed" ? "pt-5 lg:pt-6" : undefined
+              communityTab === "feed" ? "pt-3 lg:pt-3.5" : undefined
             }
           />
         ) : null}

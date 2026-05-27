@@ -1,14 +1,18 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
   Calendar,
+  CalendarPlus,
+  Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Clock,
-  Flag,
+  Hourglass,
   Plus,
   Trash2,
   X,
@@ -22,40 +26,54 @@ import {
   appendWorkshopActivity,
   computeProspectImportance,
   loadPlaybookProspectScores,
+  getChecklistDescendantProgress,
   parseAgreedActions,
+  parsePlaybookAssignees,
+  parsePlaybookDates,
   parseWorkshopActivity,
   parseWorkshopComments,
   playbookActionNotesKey,
   playbookActivityKey,
+  playbookAssigneesKey,
   playbookCommentsKey,
+  playbookDatesKey,
   playbookPriorityKey,
   playbookProspectScoresKey,
-  PROSPECT_EASE_LEVELS,
-  PROSPECT_IMPACT_LEVELS,
+  resolveWorkshopTeamMembers,
   SCORE_LABELS,
   serializeAgreedActions,
+  serializePlaybookAssignees,
+  serializePlaybookDates,
   serializePlaybookProspectScores,
   serializeWorkshopActivity,
   serializeWorkshopComments,
-  URGENCY_POINTS,
+  serializeWorkshopTeamMembers,
+  syncChecklistParentDone,
+  WORKSHOP_CHECKLIST_MAX_DEPTH,
+  WORKSHOP_TEAM_MEMBERS_KEY,
   type CustomWorkshopAction,
   type PlaybookActionMeta,
   type PlaybookAgreedActions,
+  type PlaybookDates,
   type PlaybookProspectScores,
-  type ProspectEaseLevel,
-  type ProspectImpactLevel,
-  type ProspectUrgencyLevel,
-  WORKSHOP_EASE_META,
-  WORKSHOP_IMPACT_META,
-  WORKSHOP_PRIORITIES,
-  WORKSHOP_PRIORITY_META,
   type WorkshopActionGroup,
   type WorkshopActivityEvent,
   type WorkshopComment,
+  type WorkshopTeamMember,
 } from "@/lib/playbookSessionNotes";
 import { BOSS_PRO_SCORE_LABELS } from "@/lib/bossProScoringLabels";
+import {
+  getBossGridNeighbors,
+  type BossGridDirection,
+  type BossGridNeighbor,
+} from "@/lib/bossGridNavigation";
 import type { BossQuestionTooltipAnchor } from "./bossQuestionTooltip";
 import { WorkshopActivityPanel } from "./WorkshopActivityPanel";
+import {
+  WorkshopAssigneesField,
+  WorkshopPlaybookMetaFields,
+  WORKSHOP_PLAYBOOK_TABLE_GRID,
+} from "./WorkshopPlaybookMetaFields";
 
 const SCORE_PILLS = [
   {
@@ -68,9 +86,9 @@ const SCORE_PILLS = [
   {
     value: 1 as const,
     label: BOSS_PRO_SCORE_LABELS[1],
-    dot: "bg-amber-500",
-    active: "border-amber-400 bg-amber-50 text-amber-950 ring-1 ring-amber-300/60",
-    idle: "border-slate-200 bg-white text-slate-600 hover:border-amber-200 hover:bg-amber-50/40",
+    dot: "bg-yellow-400",
+    active: "border-yellow-400 bg-yellow-50 text-yellow-950 ring-1 ring-yellow-300/60",
+    idle: "border-slate-200 bg-white text-slate-600 hover:border-yellow-200 hover:bg-yellow-50/40",
   },
   {
     value: 2 as const,
@@ -81,10 +99,298 @@ const SCORE_PILLS = [
   },
 ];
 
+function WorkshopScorePillDropdown({
+  value,
+  onPick,
+  onClear,
+  scoringGuide,
+}: {
+  value: 0 | 1 | 2 | undefined;
+  onPick: (score: 0 | 1 | 2) => void;
+  onClear: () => void;
+  scoringGuide: (typeof ASSESSMENT_QUESTIONS)[number]["scoringGuide"];
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selected = SCORE_PILLS.find((pill) => pill.value === value);
+  const guideByValue = {
+    0: scoringGuide.red,
+    1: scoringGuide.amber,
+    2: scoringGuide.green,
+  } as const;
+  const selectedGuide = value !== undefined ? guideByValue[value] : undefined;
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const triggerClass = selected
+    ? `inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition hover:opacity-90 ${selected.active}`
+    : "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-dashed border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700";
+
+  return (
+    <div ref={rootRef} className="relative shrink-0 self-start">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className={triggerClass}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={selected ? `Score: ${selected.label}` : "Set score"}
+        title={selectedGuide}
+      >
+        {selected ? (
+          <>
+            <span className={`h-2 w-2 shrink-0 rounded-full ${selected.dot}`} aria-hidden />
+            {selected.label}
+          </>
+        ) : (
+          "Set score"
+        )}
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
+      </button>
+      {open ? (
+        <div
+          className="absolute right-0 top-full z-20 mt-1.5 flex w-[min(22rem,calc(100vw-2rem))] flex-col gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+          role="listbox"
+          aria-label="Score options"
+        >
+          {SCORE_PILLS.map((pill) => {
+            const active = value === pill.value;
+            const guide = guideByValue[pill.value];
+            return (
+              <button
+                key={pill.value}
+                type="button"
+                role="option"
+                aria-selected={active}
+                aria-label={`${pill.label}. ${guide}`}
+                onClick={() => {
+                  onPick(pill.value);
+                  setOpen(false);
+                }}
+                className={`w-full rounded-lg border px-3 py-2.5 text-left transition ${
+                  active ? pill.active : pill.idle
+                }`}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${pill.dot}`} aria-hidden />
+                  {pill.label}
+                </span>
+                <span className="mt-1 block pl-4 text-xs leading-snug text-slate-600">{guide}</span>
+              </button>
+            );
+          })}
+          {value !== undefined ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClear();
+                setOpen(false);
+              }}
+              className="mt-0.5 w-full rounded-lg px-3 py-1.5 text-left text-xs font-medium text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+            >
+              Clear score
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 const CHECKLIST_LINE = /^-\s*\[([ xX])\]\s*(.+)$/;
 
 function WorkshopSectionDivider() {
   return <div className="border-t border-slate-200" role="presentation" />;
+}
+
+function isLongPlaybookNotes(text: string): boolean {
+  if (!text.trim()) return false;
+  return text.split("\n").length > 3 || text.length > 180;
+}
+
+const PLAYBOOK_NOTES_INPUT_CLASS =
+  "w-full resize-none overflow-hidden border-0 bg-transparent px-0 py-0 text-base leading-relaxed text-slate-900 outline-none placeholder:text-slate-400";
+
+function WorkshopPlaybookNotesField({
+  id,
+  value,
+  editable,
+  onChange,
+  onBlur,
+  placeholder = "Add notes…",
+}: {
+  id: string;
+  value: string;
+  editable: boolean;
+  onChange: (value: string) => void;
+  onBlur?: () => void;
+  placeholder?: string;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const long = isLongPlaybookNotes(value);
+  const [expanded, setExpanded] = useState(() => !long);
+
+  const adjustHeight = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useLayoutEffect(() => {
+    if (editable && expanded) adjustHeight();
+  }, [value, editable, expanded]);
+
+  const expandNotes = () => {
+    setExpanded(true);
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      adjustHeight();
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    });
+  };
+
+  if (!editable) {
+    if (!value.trim()) return null;
+    if (!long || expanded) {
+      return (
+        <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">{value}</p>
+      );
+    }
+    return (
+      <div>
+        <p className="line-clamp-3 whitespace-pre-wrap text-base leading-relaxed text-slate-600">
+          {value}
+        </p>
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-1 text-sm font-medium text-sky-700 transition hover:text-sky-800"
+        >
+          See more
+        </button>
+      </div>
+    );
+  }
+
+  if (long && !expanded) {
+    return (
+      <div>
+        <p className="line-clamp-3 whitespace-pre-wrap text-base leading-relaxed text-slate-900">
+          {value}
+        </p>
+        <button
+          type="button"
+          onClick={expandNotes}
+          className="mt-1 text-sm font-medium text-sky-700 transition hover:text-sky-800"
+        >
+          See more
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <textarea
+      ref={textareaRef}
+      id={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      rows={1}
+      className={PLAYBOOK_NOTES_INPUT_CLASS}
+      placeholder={placeholder}
+      style={{ minHeight: "1.625rem" }}
+    />
+  );
+}
+
+const GRID_NAV_POSITION: Record<BossGridDirection, string> = {
+  up: "left-1/2 -top-11 -translate-x-1/2",
+  down: "-bottom-11 left-1/2 -translate-x-1/2",
+  left: "-left-11 top-1/2 -translate-y-1/2",
+  right: "-right-11 top-1/2 -translate-y-1/2",
+};
+
+const GRID_NAV_BUTTON_CLASS =
+  "absolute z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-transparent bg-transparent text-white/55 shadow-none transition duration-200 hover:border-white/15 hover:bg-white/10 hover:text-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35";
+
+const GRID_NAV_ICON: Record<BossGridDirection, typeof ChevronUp> = {
+  up: ChevronUp,
+  down: ChevronDown,
+  left: ChevronLeft,
+  right: ChevronRight,
+};
+
+function WorkshopGridNavButton({
+  direction,
+  neighbor,
+  onNavigate,
+}: {
+  direction: BossGridDirection;
+  neighbor: BossGridNeighbor;
+  onNavigate: (ref: string) => void;
+}) {
+  const Icon = GRID_NAV_ICON[direction];
+
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(neighbor.ref)}
+      className={`${GRID_NAV_BUTTON_CLASS} ${GRID_NAV_POSITION[direction]}`}
+      aria-label={`Go to ${neighbor.name} (${neighbor.ref})`}
+      title={`${neighbor.name} (${neighbor.ref})`}
+    >
+      <Icon
+        className="h-5 w-5 shrink-0 drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+        strokeWidth={2}
+        aria-hidden
+      />
+    </button>
+  );
+}
+
+function WorkshopGridNavButtons({
+  refKey,
+  onNavigate,
+}: {
+  refKey: string;
+  onNavigate: (ref: string) => void;
+}) {
+  const neighbors = getBossGridNeighbors(refKey);
+  const directions = (["up", "down", "left", "right"] as const).filter(
+    (direction) => neighbors[direction]
+  );
+
+  if (directions.length === 0) return null;
+
+  return (
+    <>
+      {directions.map((direction) => {
+        const neighbor = neighbors[direction];
+        if (!neighbor) return null;
+        return (
+          <WorkshopGridNavButton
+            key={direction}
+            direction={direction}
+            neighbor={neighbor}
+            onNavigate={onNavigate}
+          />
+        );
+      })}
+    </>
+  );
 }
 
 function collectPlaybookActions(content: PlaybookContent): ActionItem[] {
@@ -224,246 +530,364 @@ function ScheduleFields({
   );
 }
 
-type ProspectPillOption = {
-  value: string;
-  label: string;
-  pill: string;
-  flag?: string;
-};
+const CHECKLIST_INDENT_REM = 1.25;
+const CHECKLIST_RING_RADIUS = 8;
+const CHECKLIST_RING_CIRCUMFERENCE = 2 * Math.PI * CHECKLIST_RING_RADIUS;
+const CHECKLIST_GRID_CLASS = WORKSHOP_PLAYBOOK_TABLE_GRID;
 
-function WorkshopProspectPillDropdown({
+const CHECKLIST_DONE_TEXT_CLASS =
+  "text-slate-400 line-through decoration-slate-300 decoration-1";
+
+function formatChecklistDate(value?: string): string {
+  if (!value) return "—";
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function formatChecklistEstimate(minutes?: number): string {
+  if (minutes == null || minutes <= 0) return "—";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+}
+
+function checklistItemHasMeta(item: CustomWorkshopAction): boolean {
+  return Boolean(
+    item.assigneeIds?.length ||
+      item.startDate ||
+      item.dueDate ||
+      (item.timeEstimateMinutes != null && item.timeEstimateMinutes > 0)
+  );
+}
+
+function WorkshopChecklistDateCell({
+  label,
   value,
-  options,
-  onChange,
   editable,
-  placeholder = "Set",
-  showFlag = false,
+  onChange,
 }: {
-  value: string | undefined;
-  options: ProspectPillOption[];
-  onChange: (value: string) => void;
+  label: string;
+  value?: string;
   editable: boolean;
-  placeholder?: string;
-  showFlag?: boolean;
+  onChange: (value: string | undefined) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const selected = options.find((option) => option.value === value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const display = value ? formatChecklistDate(value) : label;
 
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+  const openPicker = () => {
+    if (!editable) return;
+    const input = inputRef.current;
+    if (!input) return;
+    input.showPicker?.();
+    input.focus();
+  };
 
   if (!editable) {
-    if (!selected) return <span className="text-slate-400">—</span>;
+    if (!value) return <CalendarPlus className="h-4 w-4 text-slate-300" aria-hidden />;
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${selected.pill}`}
+        className="inline-flex h-7 w-7 items-center justify-center text-slate-500"
+        title={display}
       >
-        {showFlag && selected.flag ? (
-          <Flag className={`h-3 w-3 shrink-0 fill-current ${selected.flag}`} aria-hidden />
-        ) : null}
-        {selected.label}
+        <CalendarPlus className="h-4 w-4" aria-hidden />
       </span>
     );
   }
 
   return (
-    <div ref={rootRef} className="relative inline-flex">
+    <span className="relative inline-flex">
       <button
         type="button"
-        onClick={() => setOpen((current) => !current)}
-        className={
-          selected
-            ? `inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition hover:opacity-90 ${selected.pill}`
-            : "inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-0.5 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
-        }
-        aria-expanded={open}
-        aria-label={selected ? selected.label : placeholder}
+        onClick={openPicker}
+        className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-slate-50 ${
+          value ? "text-slate-600" : "text-slate-400 hover:text-slate-600"
+        }`}
+        title={value ? display : label}
+        aria-label={value ? `${label}: ${display}` : label}
       >
-        {selected && showFlag && selected.flag ? (
-          <Flag className={`h-3 w-3 shrink-0 fill-current ${selected.flag}`} aria-hidden />
-        ) : null}
-        {selected ? selected.label : placeholder}
-        <ChevronDown className="h-3 w-3 shrink-0 opacity-60" aria-hidden />
+        <CalendarPlus className="h-4 w-4 shrink-0" aria-hidden />
+      </button>
+      <input
+        ref={inputRef}
+        type="date"
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value || undefined)}
+        className="pointer-events-none absolute h-px w-px opacity-0"
+        tabIndex={-1}
+        aria-label={label}
+      />
+    </span>
+  );
+}
+
+function WorkshopChecklistEstimateCell({
+  value,
+  editable,
+  onChange,
+}: {
+  value?: number;
+  editable: boolean;
+  onChange: (value: number | undefined) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const display = formatChecklistEstimate(value);
+
+  if (!editable) {
+    if (value == null || value <= 0) {
+      return <Hourglass className="h-4 w-4 text-slate-300" aria-hidden />;
+    }
+    return (
+      <span
+        className="inline-flex h-7 w-7 items-center justify-center text-slate-600"
+        title={display}
+      >
+        <Hourglass className="h-4 w-4" aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true);
+          requestAnimationFrame(() => inputRef.current?.focus());
+        }}
+        className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition hover:bg-slate-50 ${
+          value != null && value > 0 ? "text-slate-600" : "text-slate-400 hover:text-slate-600"
+        }`}
+        title={value != null && value > 0 ? display : "Set time estimate"}
+        aria-label={value != null && value > 0 ? `Time estimate: ${display}` : "Set time estimate"}
+      >
+        <Hourglass className="h-4 w-4 shrink-0" aria-hidden />
       </button>
       {open ? (
-        <div className="absolute left-0 top-full z-20 mt-1.5 flex min-w-[7.5rem] flex-col gap-1 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-          {options.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-              className={`inline-flex w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-left text-xs font-semibold transition hover:opacity-90 ${option.pill} ${
-                value === option.value ? "ring-1 ring-slate-300/80" : ""
-              }`}
-            >
-              {showFlag && option.flag ? (
-                <Flag className={`h-3 w-3 shrink-0 fill-current ${option.flag}`} aria-hidden />
-              ) : null}
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <input
+          ref={inputRef}
+          type="number"
+          min={0}
+          step={15}
+          value={value ?? ""}
+          onChange={(event) =>
+            onChange(event.target.value ? Number(event.target.value) : undefined)
+          }
+          onBlur={() => setOpen(false)}
+          placeholder="min"
+          className="absolute right-0 top-full z-20 mt-1 w-14 rounded-md border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700 shadow-sm outline-none focus:border-sky-300"
+          aria-label="Time estimate in minutes"
+        />
       ) : null}
     </div>
   );
 }
 
-const URGENCY_PILL_OPTIONS: ProspectPillOption[] = WORKSHOP_PRIORITIES.map((priority) => ({
-  value: String(URGENCY_POINTS[priority]),
-  label: WORKSHOP_PRIORITY_META[priority].label,
-  pill: WORKSHOP_PRIORITY_META[priority].pill,
-  flag: WORKSHOP_PRIORITY_META[priority].flag,
-}));
-
-const IMPACT_PILL_OPTIONS: ProspectPillOption[] = PROSPECT_IMPACT_LEVELS.map((level) => ({
-  value: String(level),
-  label: WORKSHOP_IMPACT_META[level].label,
-  pill: WORKSHOP_IMPACT_META[level].pill,
-}));
-
-const EASE_PILL_OPTIONS: ProspectPillOption[] = PROSPECT_EASE_LEVELS.map((level) => ({
-  value: String(level),
-  label: WORKSHOP_EASE_META[level].label,
-  pill: WORKSHOP_EASE_META[level].pill,
-}));
-
-function WorkshopHeaderMetaBlock({
-  levelMeta,
-  areaMeta,
-  scores,
-  onScoresChange,
+function WorkshopChecklistToggle({
+  checked,
   editable,
+  onChange,
+  label,
+  progress,
 }: {
-  levelMeta: { id: number; name: string } | null;
-  areaMeta: { name: string } | null;
-  scores: PlaybookProspectScores;
-  onScoresChange: (patch: Partial<PlaybookProspectScores>) => void;
+  checked: boolean;
   editable: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  progress?: { completed: number; total: number };
 }) {
-  const composite = computeProspectImportance(scores);
-  const showScorers =
-    editable ||
-    scores.impact !== undefined ||
-    scores.urgency !== undefined ||
-    scores.ease !== undefined;
+  const hasChildren = progress != null && progress.total > 0;
+  const ratio = hasChildren ? progress.completed / progress.total : checked ? 1 : 0;
+  const allDone = hasChildren ? progress.completed === progress.total : checked;
+  const partial = hasChildren && ratio > 0 && ratio < 1;
 
-  if (!levelMeta && !areaMeta && !showScorers) return null;
+  const circleClass = `relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition ${
+    allDone
+      ? "border-emerald-500 bg-emerald-500 shadow-[0_1px_3px_rgba(16,185,129,0.35)]"
+      : partial
+        ? "border-emerald-200 bg-white"
+        : "border-slate-300 bg-white"
+  } ${editable && !allDone ? "hover:border-slate-400" : ""}`;
 
-  const metaRowClass =
-    "grid grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-x-5 text-sm";
+  const tick = allDone ? (
+    <Check className="relative z-[1] h-2.5 w-2.5 stroke-[2.75] text-white" aria-hidden />
+  ) : null;
 
-  const showRightColumn = Boolean(levelMeta || areaMeta || showScorers);
+  const progressRing =
+    hasChildren && !allDone ? (
+      <svg
+        className="pointer-events-none absolute inset-0 -rotate-90"
+        viewBox="0 0 20 20"
+        aria-hidden
+      >
+        <circle
+          cx="10"
+          cy="10"
+          r={CHECKLIST_RING_RADIUS}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="text-slate-200"
+        />
+        {ratio > 0 ? (
+          <circle
+            cx="10"
+            cy="10"
+            r={CHECKLIST_RING_RADIUS}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="text-emerald-500"
+            strokeDasharray={`${ratio * CHECKLIST_RING_CIRCUMFERENCE} ${CHECKLIST_RING_CIRCUMFERENCE}`}
+          />
+        ) : null}
+      </svg>
+    ) : null;
+
+  const ariaChecked = hasChildren
+    ? progress.completed === progress.total
+      ? true
+      : progress.completed > 0
+        ? "mixed"
+        : false
+    : checked;
+
+  if (!editable) {
+    return (
+      <span
+        role="checkbox"
+        aria-checked={ariaChecked === "mixed" ? "mixed" : ariaChecked}
+        aria-label={`Done: ${label || "item"}${hasChildren ? `, ${progress.completed} of ${progress.total}` : ""}`}
+        className={circleClass}
+      >
+        {progressRing}
+        {tick}
+      </span>
+    );
+  }
 
   return (
-    <div
-      className={`mt-4 grid grid-cols-1 gap-x-14 gap-y-3 ${
-        showScorers && showRightColumn ? "sm:grid-cols-2" : ""
-      }`}
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={ariaChecked === "mixed" ? "mixed" : ariaChecked}
+      aria-label={`Mark done: ${label || "item"}${hasChildren ? `, ${progress.completed} of ${progress.total}` : ""}`}
+      onClick={() => onChange(!allDone)}
+      className={`${circleClass} cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45 focus-visible:ring-offset-1`}
     >
-      {showScorers ? (
-        <div className="space-y-2.5">
-          <div className={metaRowClass}>
-            <span className="text-slate-400">Impact</span>
-            <WorkshopProspectPillDropdown
-              value={scores.impact !== undefined ? String(scores.impact) : undefined}
-              options={IMPACT_PILL_OPTIONS}
-              editable={editable}
-              onChange={(next) => onScoresChange({ impact: Number(next) as ProspectImpactLevel })}
-            />
-          </div>
-          <div className={metaRowClass}>
-            <span className="text-slate-400">Urgency</span>
-            <WorkshopProspectPillDropdown
-              value={scores.urgency !== undefined ? String(scores.urgency) : undefined}
-              options={URGENCY_PILL_OPTIONS}
-              editable={editable}
-              showFlag
-              onChange={(next) => onScoresChange({ urgency: Number(next) as ProspectUrgencyLevel })}
-            />
-          </div>
-          <div className={metaRowClass}>
-            <span className="text-slate-400">Ease</span>
-            <WorkshopProspectPillDropdown
-              value={scores.ease !== undefined ? String(scores.ease) : undefined}
-              options={EASE_PILL_OPTIONS}
-              editable={editable}
-              onChange={(next) => onScoresChange({ ease: Number(next) as ProspectEaseLevel })}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {showRightColumn ? (
-        <div className="space-y-2.5">
-          {levelMeta ? (
-            <div className={metaRowClass}>
-              <span className="text-slate-400">Level</span>
-              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                {levelMeta.id}. {levelMeta.name}
-              </span>
-            </div>
-          ) : null}
-          {areaMeta ? (
-            <div className={metaRowClass}>
-              <span className="text-slate-400">Area</span>
-              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
-                {areaMeta.name}
-              </span>
-            </div>
-          ) : null}
-          {showScorers ? (
-            <div className={metaRowClass}>
-              <span className="text-slate-400">Importance</span>
-              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold tabular-nums text-slate-900">
-                {composite !== null ? `${composite}/10` : "—/10"}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+      {progressRing}
+      {tick}
+    </button>
   );
 }
 
 function WorkshopChecklistCard({
   group,
   editable,
+  teamMembers,
+  onTeamMembersChange,
   onChange,
   onRemove,
 }: {
   group: WorkshopActionGroup;
   editable: boolean;
+  teamMembers: WorkshopTeamMember[];
+  onTeamMembersChange: (members: WorkshopTeamMember[]) => void;
   onChange: (next: WorkshopActionGroup) => void;
   onRemove: () => void;
 }) {
-  const updateItem = (id: string, patch: Partial<CustomWorkshopAction>) => {
-    onChange({
-      ...group,
-      items: group.items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
-    });
+  const [focusItemId, setFocusItemId] = useState<string | null>(null);
+  const itemInputRefs = useRef<Map<string, HTMLInputElement>>(new Map());
+
+  const descendantProgress = useMemo(
+    () => group.items.map((_, index) => getChecklistDescendantProgress(group.items, index)),
+    [group.items]
+  );
+
+  const showMetaColumns =
+    editable || group.items.some((item) => checklistItemHasMeta(item));
+
+  useEffect(() => {
+    if (!focusItemId) return;
+    const el = itemInputRefs.current.get(focusItemId);
+    if (el) {
+      el.focus();
+      setFocusItemId(null);
+    }
+  }, [group.items, focusItemId]);
+
+  const commitItems = (items: CustomWorkshopAction[]) => {
+    onChange({ ...group, items: syncChecklistParentDone(items) });
   };
 
-  const removeItem = (id: string) => {
-    onChange({ ...group, items: group.items.filter((item) => item.id !== id) });
+  const updateItem = (id: string, patch: Partial<CustomWorkshopAction>) => {
+    commitItems(
+      group.items.map((item) => (item.id === id ? { ...item, ...patch } : item))
+    );
+  };
+
+  const removeItem = (id: string, focusPreviousId?: string) => {
+    commitItems(group.items.filter((item) => item.id !== id));
+    if (focusPreviousId) setFocusItemId(focusPreviousId);
+  };
+
+  const insertItemAfter = (index: number) => {
+    const current = group.items[index];
+    if (!current) return;
+    const depth = current.depth ?? 0;
+    const newItem: CustomWorkshopAction = { id: crypto.randomUUID(), text: "", depth };
+    const items = [...group.items];
+    items.splice(index + 1, 0, newItem);
+    commitItems(items);
+    setFocusItemId(newItem.id);
+  };
+
+  const indentItem = (index: number, outdent: boolean) => {
+    const current = group.items[index];
+    if (!current) return;
+    const currentDepth = current.depth ?? 0;
+    if (outdent) {
+      if (currentDepth === 0) return;
+      updateItem(current.id, { depth: currentDepth - 1 });
+      return;
+    }
+    const previous = group.items[index - 1];
+    if (!previous) return;
+    const maxDepth = Math.min(WORKSHOP_CHECKLIST_MAX_DEPTH, (previous.depth ?? 0) + 1);
+    if (currentDepth >= maxDepth) return;
+    updateItem(current.id, { depth: currentDepth + 1 });
+  };
+
+  const toggleItemDone = (index: number) => {
+    const progress = descendantProgress[index];
+    const current = group.items[index];
+    if (!current) return;
+
+    if (progress.total > 0) {
+      const markDone = progress.completed !== progress.total;
+      const parentDepth = current.depth ?? 0;
+      commitItems(
+        group.items.map((item, itemIndex) => {
+          if (itemIndex === index) return { ...item, done: markDone };
+          if (itemIndex <= index) return item;
+          const depth = item.depth ?? 0;
+          if (depth <= parentDepth) return item;
+          return { ...item, done: markDone };
+        })
+      );
+      return;
+    }
+
+    updateItem(current.id, { done: !current.done });
   };
 
   const addItem = () => {
-    onChange({
-      ...group,
-      items: [...group.items, { id: crypto.randomUUID(), text: "" }],
-    });
+    const newItem: CustomWorkshopAction = { id: crypto.randomUUID(), text: "", depth: 0 };
+    commitItems([...group.items, newItem]);
+    setFocusItemId(newItem.id);
   };
 
   const canRemoveChecklist = editable && group.items.every((item) => !item.text.trim());
@@ -494,45 +918,180 @@ function WorkshopChecklistCard({
       </div>
 
       {group.items.length > 0 ? (
-        <ul className="mt-2 space-y-1">
-          {group.items.map((item) => (
-            <li key={item.id} className="group flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={item.done === true}
-                disabled={!editable}
-                onChange={(e) => updateItem(item.id, { done: e.target.checked })}
-                className="h-4 w-4 shrink-0 rounded border-slate-300 text-sky-600"
-                aria-label={`Mark done: ${item.text || "item"}`}
-              />
-              {editable ? (
-                <input
-                  type="text"
-                  value={item.text}
-                  onChange={(e) => updateItem(item.id, { text: e.target.value })}
-                  placeholder="Item name"
-                  className="min-w-0 flex-1 border-0 bg-transparent py-0.5 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                />
-              ) : (
-                <span
-                  className={`text-sm ${item.done ? "text-slate-400 line-through" : "text-slate-800"}`}
+        <div className="mt-2 overflow-visible">
+          {showMetaColumns ? (
+            <div
+              className={`${CHECKLIST_GRID_CLASS} border-b border-slate-100 pb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400`}
+            >
+              <span aria-hidden />
+              <span>Action</span>
+              <span className="text-center">Assignees</span>
+              <span className="text-center">Start</span>
+              <span className="text-center">Due</span>
+              <span className="text-center">Est.</span>
+              <span aria-hidden />
+            </div>
+          ) : null}
+
+          <ul className={`${showMetaColumns ? "mt-1.5" : ""} space-y-1`}>
+            {group.items.map((item, index) => {
+              const depth = item.depth ?? 0;
+              const progress = descendantProgress[index];
+              const showProgressLabel = progress.total >= 2;
+
+              const actionCell = (
+                <div
+                  className="flex min-w-0 flex-1 items-center gap-2"
+                  style={{ paddingLeft: `${depth * CHECKLIST_INDENT_REM}rem` }}
                 >
-                  {item.text}
-                </span>
-              )}
-              {editable ? (
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="rounded p-1 text-slate-400 opacity-0 transition hover:text-red-600 group-hover:opacity-100"
-                  aria-label="Remove item"
-                >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+                  {editable ? (
+                    <input
+                      ref={(el) => {
+                        if (el) itemInputRefs.current.set(item.id, el);
+                        else itemInputRefs.current.delete(item.id);
+                      }}
+                      type="text"
+                      value={item.text}
+                      onChange={(e) => updateItem(item.id, { text: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          insertItemAfter(index);
+                          return;
+                        }
+                        if (e.key === "Tab") {
+                          e.preventDefault();
+                          indentItem(index, e.shiftKey);
+                          return;
+                        }
+                        if (
+                          e.key === "Backspace" &&
+                          item.text.length === 0 &&
+                          group.items.length > 1
+                        ) {
+                          e.preventDefault();
+                          const prevId = index > 0 ? group.items[index - 1]?.id : undefined;
+                          removeItem(item.id, prevId);
+                        }
+                      }}
+                      placeholder="Item name"
+                      className={`min-w-0 flex-1 border-0 bg-transparent py-0.5 text-base outline-none placeholder:text-slate-400 ${
+                        item.done ? CHECKLIST_DONE_TEXT_CLASS : "text-slate-900"
+                      }`}
+                    />
+                  ) : (
+                    <span
+                      className={`min-w-0 flex-1 text-base ${
+                        item.done ? CHECKLIST_DONE_TEXT_CLASS : "text-slate-800"
+                      }`}
+                    >
+                      {item.text}
+                    </span>
+                  )}
+                  {showProgressLabel ? (
+                    <span className="shrink-0 text-xs tabular-nums text-slate-400">
+                      {progress.completed}/{progress.total}
+                    </span>
+                  ) : null}
+                </div>
+              );
+
+              if (!showMetaColumns) {
+                return (
+                  <li key={item.id} className="group flex items-center gap-2">
+                    <WorkshopChecklistToggle
+                      checked={item.done === true}
+                      editable={editable}
+                      progress={progress.total > 0 ? progress : undefined}
+                      onChange={() => toggleItemDone(index)}
+                      label={item.text}
+                    />
+                    {actionCell}
+                    {editable ? (
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="rounded p-1 text-slate-400 opacity-0 transition hover:text-red-600 group-hover:opacity-100"
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              }
+
+              return (
+                <li key={item.id} className={`${CHECKLIST_GRID_CLASS} group`}>
+                  <WorkshopChecklistToggle
+                    checked={item.done === true}
+                    editable={editable}
+                    progress={progress.total > 0 ? progress : undefined}
+                    onChange={() => toggleItemDone(index)}
+                    label={item.text}
+                  />
+
+                  {actionCell}
+                  <div className="flex min-w-0 justify-center">
+                    <WorkshopAssigneesField
+                      teamMembers={teamMembers}
+                      assigneeIds={item.assigneeIds ?? []}
+                      editable={editable}
+                      variant="compact"
+                      onAssigneeIdsChange={(ids) =>
+                        updateItem(item.id, {
+                          assigneeIds: ids.length > 0 ? ids : undefined,
+                        })
+                      }
+                      onTeamMembersChange={onTeamMembersChange}
+                    />
+                  </div>
+
+                  <div className="flex justify-center">
+                    <WorkshopChecklistDateCell
+                      label="Start date"
+                      value={item.startDate}
+                      editable={editable}
+                      onChange={(startDate) => updateItem(item.id, { startDate })}
+                    />
+                  </div>
+
+                  <div className="flex justify-center">
+                    <WorkshopChecklistDateCell
+                      label="Due date"
+                      value={item.dueDate}
+                      editable={editable}
+                      onChange={(dueDate) => updateItem(item.id, { dueDate })}
+                    />
+                  </div>
+
+                  <div className="flex justify-center">
+                    <WorkshopChecklistEstimateCell
+                      value={item.timeEstimateMinutes}
+                      editable={editable}
+                      onChange={(timeEstimateMinutes) =>
+                        updateItem(item.id, { timeEstimateMinutes })
+                      }
+                    />
+                  </div>
+
+                  {editable ? (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      className="rounded p-1 text-slate-400 opacity-0 transition hover:text-red-600 group-hover:opacity-100"
+                      aria-label="Remove item"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                    </button>
+                  ) : (
+                    <span aria-hidden />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       ) : null}
 
       {editable ? (
@@ -629,6 +1188,8 @@ function WorkshopMainPanel({
   onAgreedChange,
   editable,
   onActivityAppend,
+  teamMembers,
+  onTeamMembersChange,
 }: {
   refKey: string;
   playbookTitle: string;
@@ -636,6 +1197,8 @@ function WorkshopMainPanel({
   onAgreedChange: (next: PlaybookAgreedActions) => void;
   editable: boolean;
   onActivityAppend: (event: Omit<WorkshopActivityEvent, "id" | "createdAt">) => void;
+  teamMembers: WorkshopTeamMember[];
+  onTeamMembersChange: (members: WorkshopTeamMember[]) => void;
 }) {
   const [content, setContent] = useState<PlaybookContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -750,6 +1313,8 @@ function WorkshopMainPanel({
                   key={group.id}
                   group={group}
                   editable={editable}
+                  teamMembers={teamMembers}
+                  onTeamMembersChange={onTeamMembersChange}
                   onChange={(next) =>
                     updateGroups(agreed.groups.map((g) => (g.id === group.id ? next : g)))
                   }
@@ -772,7 +1337,7 @@ function WorkshopMainPanel({
         </section>
       ) : null}
 
-      <section className="pt-5">
+      <section className="pt-6">
         <button
           type="button"
           onClick={() => setPlaybookOpen((open) => !open)}
@@ -838,6 +1403,7 @@ export type WorkshopScoreSheetProps = {
   playbookNotes?: Record<string, string>;
   onPlaybookNotesChange?: (ref: string, notes: string) => void;
   onDismiss?: () => void;
+  onNavigate?: (ref: string) => void;
   coachName?: string;
   clientName?: string;
   allowClientComments?: boolean;
@@ -852,7 +1418,9 @@ export function WorkshopScoreSheet({
   playbookNotes,
   onPlaybookNotesChange,
   onDismiss,
+  onNavigate,
   coachName,
+  clientName,
   allowClientComments = false,
 }: WorkshopScoreSheetProps) {
   const groupId = useId();
@@ -864,6 +1432,9 @@ export function WorkshopScoreSheet({
   const savedActivityRaw = playbookNotes?.[playbookActivityKey(tooltip.ref)];
   const savedProspectScoresRaw = playbookNotes?.[playbookProspectScoresKey(tooltip.ref)];
   const savedLegacyPriorityRaw = playbookNotes?.[playbookPriorityKey(tooltip.ref)];
+  const savedTeamMembersRaw = playbookNotes?.[WORKSHOP_TEAM_MEMBERS_KEY];
+  const savedAssigneesRaw = playbookNotes?.[playbookAssigneesKey(tooltip.ref)];
+  const savedDatesRaw = playbookNotes?.[playbookDatesKey(tooltip.ref)];
 
   const [localDescription, setLocalDescription] = useState(savedDescription);
   const [localAgreed, setLocalAgreed] = useState<PlaybookAgreedActions>(() =>
@@ -877,6 +1448,15 @@ export function WorkshopScoreSheet({
   );
   const [localProspectScores, setLocalProspectScores] = useState<PlaybookProspectScores>(() =>
     loadPlaybookProspectScores(savedProspectScoresRaw, savedLegacyPriorityRaw)
+  );
+  const [localTeamMembers, setLocalTeamMembers] = useState<WorkshopTeamMember[]>(() =>
+    resolveWorkshopTeamMembers(savedTeamMembersRaw, clientName)
+  );
+  const [localAssigneeIds, setLocalAssigneeIds] = useState<string[]>(() =>
+    parsePlaybookAssignees(savedAssigneesRaw)
+  );
+  const [localDates, setLocalDates] = useState<PlaybookDates>(() =>
+    parsePlaybookDates(savedDatesRaw)
   );
 
   const [activityCollapsed, setActivityCollapsed] = useState(false);
@@ -910,6 +1490,18 @@ export function WorkshopScoreSheet({
   }, [savedProspectScoresRaw, savedLegacyPriorityRaw, tooltip.ref]);
 
   useEffect(() => {
+    setLocalTeamMembers(resolveWorkshopTeamMembers(savedTeamMembersRaw, clientName));
+  }, [savedTeamMembersRaw, clientName]);
+
+  useEffect(() => {
+    setLocalAssigneeIds(parsePlaybookAssignees(savedAssigneesRaw));
+  }, [savedAssigneesRaw, tooltip.ref]);
+
+  useEffect(() => {
+    setLocalDates(parsePlaybookDates(savedDatesRaw));
+  }, [savedDatesRaw, tooltip.ref]);
+
+  useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -919,11 +1511,38 @@ export function WorkshopScoreSheet({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onDismiss?.();
+      if (e.key === "Escape") {
+        onDismiss?.();
+        return;
+      }
+      if (!onNavigate) return;
+      const target = e.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const neighbors = getBossGridNeighbors(tooltip.ref);
+      const keyMap: Partial<Record<string, BossGridDirection>> = {
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        ArrowRight: "right",
+      };
+      const direction = keyMap[e.key];
+      const neighbor = direction ? neighbors[direction] : undefined;
+      if (neighbor) {
+        e.preventDefault();
+        onNavigate(neighbor.ref);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onDismiss]);
+  }, [onDismiss, onNavigate, tooltip.ref]);
 
   const playbookUrl = getPlaybookUrl?.(tooltip.ref) ?? null;
   const playbookMeta = getPlaybookMeta(tooltip.ref);
@@ -974,15 +1593,6 @@ export function WorkshopScoreSheet({
     prevScoreRef.current = undefined;
   };
 
-  const activeGuide =
-    local === 0
-      ? question.scoringGuide.red
-      : local === 1
-        ? question.scoringGuide.amber
-        : local === 2
-          ? question.scoringGuide.green
-          : null;
-
   const persistAgreed = (next: PlaybookAgreedActions) => {
     setLocalAgreed(next);
     persistKey(playbookActionNotesKey(tooltip.ref), serializeAgreedActions(next));
@@ -1006,6 +1616,11 @@ export function WorkshopScoreSheet({
 
   const handleProspectScoresChange = (patch: Partial<PlaybookProspectScores>) => {
     const next = { ...localProspectScores, ...patch };
+    for (const key of ["impact", "urgency", "ease"] as const) {
+      if (key in patch && patch[key] === undefined) {
+        delete next[key];
+      }
+    }
     setLocalProspectScores(next);
     persistKey(playbookProspectScoresKey(tooltip.ref), serializePlaybookProspectScores(next));
     const total = computeProspectImportance(next);
@@ -1020,6 +1635,29 @@ export function WorkshopScoreSheet({
     });
   };
 
+  const handleTeamMembersChange = (members: WorkshopTeamMember[]) => {
+    setLocalTeamMembers(members);
+    persistKey(WORKSHOP_TEAM_MEMBERS_KEY, serializeWorkshopTeamMembers(members));
+    setLocalAssigneeIds((current) => {
+      const next = current.filter((id) => members.some((member) => member.id === id));
+      if (next.length !== current.length) {
+        persistKey(playbookAssigneesKey(tooltip.ref), serializePlaybookAssignees(next));
+      }
+      return next;
+    });
+  };
+
+  const handleAssigneeIdsChange = (ids: string[]) => {
+    setLocalAssigneeIds(ids);
+    persistKey(playbookAssigneesKey(tooltip.ref), serializePlaybookAssignees(ids));
+  };
+
+  const handleDatesChange = (patch: Partial<PlaybookDates>) => {
+    const next = { ...localDates, ...patch };
+    setLocalDates(next);
+    persistKey(playbookDatesKey(tooltip.ref), serializePlaybookDates(next));
+  };
+
   return (
     <div className="fixed inset-0 z-[500]">
       <button
@@ -1029,7 +1667,7 @@ export function WorkshopScoreSheet({
         onClick={() => onDismiss?.()}
       />
       <div
-        className="fixed left-1/2 top-1/2 relative h-[min(77vh,748px)] w-[min(calc(100vw-1.5rem),67.76rem)] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 sm:w-[min(calc(100vw-2rem),67.76rem)]"
+        className="fixed left-1/2 top-1/2 relative h-[min(85vh,823px)] w-[min(calc(100vw-1.5rem),74.5rem)] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 -translate-y-1/2 sm:w-[min(calc(100vw-2rem),74.5rem)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${groupId}-playbook`}
@@ -1044,10 +1682,15 @@ export function WorkshopScoreSheet({
           <X className="h-4 w-4" aria-hidden />
         </button>
 
+        {onNavigate ? (
+          <WorkshopGridNavButtons refKey={tooltip.ref} onNavigate={onNavigate} />
+        ) : null}
+
         <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5">
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:items-stretch">
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            <header className="shrink-0 border-b border-slate-200 px-10 pt-7 pb-6 md:px-12 md:pt-8 md:pb-7">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className="px-10 pt-7 pb-6 md:px-12 md:pt-8 md:pb-8">
               <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Playbook {tooltip.ref}
                 {agreedCount > 0 ? (
@@ -1086,75 +1729,48 @@ export function WorkshopScoreSheet({
                   playbookTitle
                 )}
               </h2>
-              <WorkshopHeaderMetaBlock
+
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <p
+                  id={`${groupId}-question`}
+                  className="min-w-0 flex-1 text-base font-medium leading-relaxed text-slate-800 md:text-lg"
+                >
+                  {question.question}
+                </p>
+
+                <WorkshopScorePillDropdown
+                  value={local}
+                  onPick={pickScore}
+                  onClear={clearScore}
+                  scoringGuide={question.scoringGuide}
+                />
+              </div>
+
+              <WorkshopPlaybookMetaFields
                 levelMeta={levelMeta ?? null}
                 areaMeta={areaMeta ?? null}
                 scores={localProspectScores}
                 editable={showNotes}
                 onScoresChange={handleProspectScoresChange}
+                teamMembers={localTeamMembers}
+                onTeamMembersChange={handleTeamMembersChange}
+                assigneeIds={localAssigneeIds}
+                onAssigneeIdsChange={handleAssigneeIdsChange}
+                dates={localDates}
+                onDatesChange={handleDatesChange}
               />
-            </header>
 
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <div className="px-10 pt-6 pb-6 md:px-12 md:pt-7 md:pb-8">
-              <p
-                id={`${groupId}-question`}
-                className="text-base font-medium leading-relaxed text-slate-800 md:text-lg"
-              >
-                {question.question}
-              </p>
+              <div className="mt-6 border-t border-slate-200" role="presentation" />
 
-              <div className="mt-3 flex flex-wrap items-start gap-2">
-                {SCORE_PILLS.map((pill) => {
-                  const active = local === pill.value;
-                  return (
-                    <button
-                      key={pill.value}
-                      type="button"
-                      onClick={() => pickScore(pill.value)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-semibold transition ${
-                        active ? pill.active : pill.idle
-                      }`}
-                    >
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${pill.dot}`} aria-hidden />
-                      {pill.label}
-                    </button>
-                  );
-                })}
-                {local !== undefined ? (
-                  <button
-                    type="button"
-                    onClick={clearScore}
-                    className="self-center text-xs font-medium text-slate-500 underline-offset-2 hover:text-slate-700 hover:underline"
-                  >
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-              {activeGuide ? (
-                <p className="mt-2.5 text-sm leading-relaxed text-slate-600">{activeGuide}</p>
-              ) : null}
-
-              <div className="my-5">
-                <WorkshopSectionDivider />
-              </div>
-
-              <section>
-                {showNotes ? (
-                  <textarea
-                    id={`${groupId}-description`}
-                    value={localDescription}
-                    onChange={(e) => handleDescriptionChange(e.target.value)}
-                    onBlur={handleDescriptionBlur}
-                    rows={3}
-                    className="w-full resize-none border-0 bg-transparent px-0 py-0 text-sm leading-relaxed text-slate-900 outline-none placeholder:text-slate-400"
-                    placeholder="Add notes…"
-                  />
-                ) : localDescription ? (
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                    {localDescription}
-                  </p>
-                ) : null}
+              <section className="pt-3 md:pt-3.5">
+                <WorkshopPlaybookNotesField
+                  key={tooltip.ref}
+                  id={`${groupId}-description`}
+                  value={localDescription}
+                  editable={showNotes}
+                  onChange={handleDescriptionChange}
+                  onBlur={handleDescriptionBlur}
+                />
               </section>
 
               {(showNotes || localAgreed.groups.length > 0 || agreedCount > 0) && (
@@ -1169,6 +1785,8 @@ export function WorkshopScoreSheet({
                     onAgreedChange={persistAgreed}
                     editable={showNotes}
                     onActivityAppend={appendActivity}
+                    teamMembers={localTeamMembers}
+                    onTeamMembersChange={handleTeamMembersChange}
                   />
                 </>
               )}

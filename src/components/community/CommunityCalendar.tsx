@@ -18,6 +18,7 @@ import {
   MapPin,
   Link as LinkIcon,
   Video,
+  XCircle,
   Trash2,
 } from "lucide-react";
 import { DateTime } from "luxon";
@@ -37,6 +38,7 @@ import {
   communityCalendarCancellationHoverTitle,
   communityCalendarCancelledBadgeClass,
   communityCalendarCancelledTextClass,
+  communityCalendarHasRecording,
   communityCalendarWeekBlockClass,
   communityCalendarWeekBlockTimeClass,
 } from "@/lib/communityCalendarDisplay";
@@ -49,6 +51,7 @@ import {
   cancelCommunityCalendarOccurrence,
   deleteCommunityCalendarEventSeries,
   loadCommunityCalendarData,
+  mergeCommunityCalendarOccurrenceState,
 } from "@/lib/communityCalendarData";
 import {
   communityAccessHint,
@@ -104,6 +107,48 @@ function timeZoneCityLabel(iana: string): string {
   const parts = iana.split("/");
   const tail = parts[parts.length - 1] ?? iana;
   return tail.replace(/_/g, " ");
+}
+
+function CalendarStatusBar({
+  variant,
+  compact = false,
+}: {
+  variant: "recording" | "cancelled";
+  compact?: boolean;
+}) {
+  const isRecording = variant === "recording";
+  return (
+    <span
+      className={`mt-0.5 flex w-full items-center gap-1 rounded font-semibold no-underline ${
+        isRecording
+          ? "bg-emerald-100 text-emerald-800"
+          : "bg-rose-100 text-rose-800"
+      } ${
+        compact
+          ? "px-0.5 py-px text-[8px] leading-tight"
+          : "px-1 py-0.5 text-[9px] leading-tight"
+      }`}
+    >
+      {isRecording ? (
+        <Video
+          className={compact ? "h-2 w-2 shrink-0" : "h-2.5 w-2.5 shrink-0"}
+          aria-hidden
+        />
+      ) : (
+        <XCircle
+          className={compact ? "h-2 w-2 shrink-0" : "h-2.5 w-2.5 shrink-0"}
+          aria-hidden
+        />
+      )}
+      <span className="truncate">
+        {isRecording
+          ? compact
+            ? "Recording"
+            : "Recording available"
+          : "Cancelled"}
+      </span>
+    </span>
+  );
 }
 
 function layoutWeekSegments(
@@ -648,26 +693,18 @@ export function CommunityCalendar({
     if (!selectedOccurrence) return;
     const row = rows.find((r) => r.id === selectedOccurrence.eventId);
     if (!row) return;
+    const exception = exceptions.find(
+      (ex) =>
+        communityCalendarOccurrenceKey(ex.event_id, ex.occurrence_start) ===
+        communityCalendarOccurrenceKey(
+          selectedOccurrence.eventId,
+          selectedOccurrence.startsAtIso
+        )
+    );
     setSelectedOccurrence((prev) =>
       !prev || prev.eventId !== row.id
         ? prev
-        : {
-            ...prev,
-            recording_link_url: row.recording_link_url,
-            recording_video_url: row.recording_video_url,
-            cancellationReason:
-              exceptions.find(
-                (ex) =>
-                  communityCalendarOccurrenceKey(
-                    ex.event_id,
-                    ex.occurrence_start
-                  ) ===
-                  communityCalendarOccurrenceKey(
-                    prev.eventId,
-                    prev.startsAtIso
-                  )
-              )?.cancellation_reason ?? prev.cancellationReason ?? null,
-          }
+        : mergeCommunityCalendarOccurrenceState(prev, row, exception)
     );
   }, [rows, exceptions, selectedOccurrence?.eventId, selectedOccurrence?.startsAtIso]);
 
@@ -888,28 +925,52 @@ export function CommunityCalendar({
                           </span>
                         </div>
                         <ul className="mt-1 space-y-0.5">
-                          {dayEvents.slice(0, 3).map((ev) => (
-                            <li key={`${ev.eventId}-${ev.startsAtIso}`}>
-                              <button
-                                type="button"
-                                onClick={() => setSelectedOccurrence(ev)}
-                                title={communityCalendarCancellationHoverTitle(ev)}
-                                className={`line-clamp-2 text-left text-[11px] font-medium leading-snug hover:underline ${
-                                  ev.isCancelled
-                                    ? communityCalendarCancelledTextClass()
-                                    : "text-sky-700"
-                                }`}
-                              >
-                                {ev.isCancelled ? (
-                                  <span className="font-semibold uppercase tracking-wide text-[9px] not-italic no-underline text-rose-500">
-                                    Cancelled ·{" "}
+                          {dayEvents.slice(0, 3).map((ev) => {
+                            const end = DateTime.fromISO(ev.endsAtIso, {
+                              zone: "utc",
+                            });
+                            const showRecording =
+                              !ev.isCancelled &&
+                              end.isValid &&
+                              end <= DateTime.now().toUTC() &&
+                              communityCalendarHasRecording(ev);
+                            return (
+                              <li key={`${ev.eventId}-${ev.startsAtIso}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOccurrence(ev)}
+                                  title={communityCalendarCancellationHoverTitle(
+                                    ev
+                                  )}
+                                  className="w-full text-left hover:underline"
+                                >
+                                  <span
+                                    className={`text-xs font-medium leading-tight ${
+                                      ev.isCancelled
+                                        ? "text-rose-500"
+                                        : "text-sky-600"
+                                    }`}
+                                  >
+                                    {formatMonthEventStart(ev.startsAtIso, viewTz)}
                                   </span>
-                                ) : null}
-                                {formatMonthEventStart(ev.startsAtIso, viewTz)}{" "}
-                                {ev.title}
-                              </button>
-                            </li>
-                          ))}
+                                  <span
+                                    className={`line-clamp-2 block text-sm font-semibold leading-snug ${
+                                      ev.isCancelled
+                                        ? communityCalendarCancelledTextClass()
+                                        : "text-sky-800"
+                                    }`}
+                                  >
+                                    {ev.title}
+                                  </span>
+                                  {ev.isCancelled ? (
+                                    <CalendarStatusBar variant="cancelled" />
+                                  ) : showRecording ? (
+                                    <CalendarStatusBar variant="recording" />
+                                  ) : null}
+                                </button>
+                              </li>
+                            );
+                          })}
                           {dayEvents.length > 3 ? (
                             <li className="text-[10px] text-slate-500">
                               +{dayEvents.length - 3} more
@@ -1051,13 +1112,16 @@ export function CommunityCalendar({
                                   seg.end,
                                   viewTz
                                 );
+                                const eventEnd = DateTime.fromISO(ev.endsAtIso, {
+                                  zone: "utc",
+                                });
+                                const showRecording =
+                                  !ev.isCancelled &&
+                                  eventEnd.isValid &&
+                                  eventEnd <= DateTime.now().toUTC() &&
+                                  communityCalendarHasRecording(ev);
                                 const inner = (
                                   <>
-                                    {ev.isCancelled ? (
-                                      <p className="text-[9px] font-bold uppercase tracking-wide text-rose-500">
-                                        Cancelled
-                                      </p>
-                                    ) : null}
                                     <p
                                       className={`line-clamp-2 text-[11px] font-semibold leading-snug ${
                                         ev.isCancelled ? "line-through" : ""
@@ -1073,6 +1137,17 @@ export function CommunityCalendar({
                                     >
                                       {timeLine}
                                     </p>
+                                    {ev.isCancelled ? (
+                                      <CalendarStatusBar
+                                        variant="cancelled"
+                                        compact={hPx < 48}
+                                      />
+                                    ) : showRecording ? (
+                                      <CalendarStatusBar
+                                        variant="recording"
+                                        compact={hPx < 48}
+                                      />
+                                    ) : null}
                                   </>
                                 );
                                 return (
@@ -1089,7 +1164,13 @@ export function CommunityCalendar({
                                     <button
                                       type="button"
                                       onClick={() => setSelectedOccurrence(ev)}
-                                      title={communityCalendarCancellationHoverTitle(ev)}
+                                      title={
+                                        showRecording
+                                          ? "Recording available"
+                                          : communityCalendarCancellationHoverTitle(
+                                              ev
+                                            )
+                                      }
                                       className={`flex h-full w-full flex-col rounded-md px-1.5 py-1 text-left ${blockClass} hover:opacity-95`}
                                     >
                                       {inner}
@@ -1125,9 +1206,7 @@ export function CommunityCalendar({
                   );
                   const isPast =
                     e.isValid && e <= DateTime.now().toUTC();
-                  const hasRecording =
-                    Boolean(ev.recording_link_url?.trim()) ||
-                    Boolean(ev.recording_video_url?.trim());
+                  const hasRecording = communityCalendarHasRecording(ev);
                   return (
                     <div
                       key={`${ev.eventId}-${ev.startsAtIso}`}
@@ -1245,7 +1324,7 @@ export function CommunityCalendar({
                             </>
                           )}
                         </p>
-                        {isPast && hasRecording ? (
+                        {isPast && hasRecording && !ev.isCancelled ? (
                           <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-sky-600">
                             <Video className="h-4 w-4 shrink-0" />
                             Watch recording
@@ -1325,6 +1404,7 @@ export function CommunityCalendar({
       {selectedOccurrence ? (
         <CommunityCalendarEventModal
           occurrence={selectedOccurrence}
+          eventRow={selectedEventRow}
           canManage={canAddEvent && Boolean(selectedEventRow)}
           onEdit={() => {
             if (!selectedEventRow) return;

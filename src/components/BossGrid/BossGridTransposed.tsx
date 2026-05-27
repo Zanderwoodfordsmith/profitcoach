@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LayoutGrid, Layers } from "lucide-react";
 import { Outfit } from "next/font/google";
 import { AREAS, BOSS_FOUNDATION_COLOR, getLevelColor, getLevelIcon, LEVELS, PLAYBOOKS } from "@/lib/bossData";
+import { playbookDetailUrl } from "@/lib/bossGridNavigation";
 import { getTotalScore, type AnswersMap } from "@/lib/bossScores";
 import { BossGridMobileStacked } from "./BossGridMobileStacked";
 import { BossGridInfoIcon, type BossGridInfoPanelHeader } from "./BossGridInfoIcon";
@@ -22,6 +23,8 @@ export type BossGridTransposedProps = {
   interactive?: boolean;
   onScoreChange?: (ref: string, score: 0 | 1 | 2 | null) => void;
   playbookLinkBase?: string;
+  /** App path to return to from playbook detail (e.g. BOSS score hub with contact query). */
+  playbookReturnTo?: string;
   /** When true, uses glass design: simple cells (color + dots), flip on hover to show playbook name */
   glass?: boolean;
   /** When glass: 'dark' = dark chrome (default), 'light' = light background and headers; cells/statuses unchanged */
@@ -195,6 +198,7 @@ export function BossGridTransposed({
   interactive = false,
   onScoreChange,
   playbookLinkBase,
+  playbookReturnTo,
   glass = false,
   glassTheme = "dark",
   showNamesForScores = [],
@@ -221,6 +225,7 @@ export function BossGridTransposed({
     handleCellHover,
     openTooltipPinned,
     openWorkshopSheet,
+    navigateWorkshopSheet,
     dismissTooltip,
     cancelHide,
     scheduleHide,
@@ -262,7 +267,7 @@ export function BossGridTransposed({
     answerScores: glass ? answers : undefined,
     getPlaybookUrl:
       glass && playbookLinkBase
-        ? (ref: string) => `${playbookLinkBase}/${ref}`
+        ? (ref: string) => playbookDetailUrl(playbookLinkBase, ref, playbookReturnTo)
         : undefined,
     playbookNotes: glass ? playbookNotes : undefined,
     onPlaybookNotesChange: glass ? onPlaybookNotesChange : undefined,
@@ -270,6 +275,7 @@ export function BossGridTransposed({
     clientName: glass ? clientName : undefined,
     allowClientComments: glass ? allowClientComments : undefined,
     onDismiss: glass ? dismissTooltip : undefined,
+    onNavigate: glass && onScoreChange ? navigateWorkshopSheet : undefined,
     anchorRef: glass ? tooltipAnchorRef : undefined,
   };
 
@@ -312,9 +318,9 @@ export function BossGridTransposed({
   const navigateToPlaybook = useCallback(
     (ref: string) => {
       if (onScoreChange || !playbookLinkBase) return;
-      router.push(`${playbookLinkBase}/${ref}`);
+      router.push(playbookDetailUrl(playbookLinkBase, ref, playbookReturnTo));
     },
-    [onScoreChange, playbookLinkBase, router]
+    [onScoreChange, playbookLinkBase, playbookReturnTo, router]
   );
 
   const mobileStackedView = (
@@ -323,6 +329,7 @@ export function BossGridTransposed({
       interactive={interactive}
       onScoreChange={onScoreChange}
       playbookLinkBase={playbookLinkBase}
+      playbookReturnTo={playbookReturnTo}
       playbookNotes={playbookNotes}
       onPlaybookNotesChange={onPlaybookNotesChange}
       onOpenPlaybook={workshopSheetMode ? openWorkshopSheet : undefined}

@@ -5,14 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
+import { useCoachAccess } from "@/hooks/useCoachAccess";
+import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
@@ -120,17 +122,16 @@ export default function CoachLayout({
   const isImpersonatingCoach = Boolean(impersonatingCoachId);
   const isSignaturePage = pathname === "/coach/signature";
   const bossWorkshopPage = isBossWorkshopPath(pathname);
-  const [bossWorkshopNavOpen, setBossWorkshopNavOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (isBossWorkshopPath(pathname)) {
-      setBossWorkshopNavOpen(false);
+      setSidebarOpen(false);
     }
   }, [pathname]);
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
-  const sidebarVisible =
-    (!bossWorkshopPage || bossWorkshopNavOpen) && !playbooksReader;
+  const sidebarVisible = sidebarOpen && !playbooksReader;
   const shellPadClass = sidebarVisible ? "md:pl-64" : "pl-0";
   const topClusterMaxW = sidebarVisible
     ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-17rem)]"
@@ -140,6 +141,7 @@ export default function CoachLayout({
   const { allowed: coachClientHubAllowed } = useCoachClientHubAccess(
     impersonatingCoachId
   );
+  const { hasFeature } = useCoachAccess(impersonatingCoachId);
 
   useEffect(() => {
     if (!isMinimalWorkshopChrome) {
@@ -173,7 +175,7 @@ export default function CoachLayout({
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {playbooksReader ? (
           isImpersonatingCoach ? (
-            <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+            <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
               <div
                 className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
                 role="status"
@@ -194,7 +196,7 @@ export default function CoachLayout({
             </div>
           ) : null
         ) : isMinimalWorkshopChrome ? (
-          <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+          <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
             <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
             {isImpersonatingCoach ? (
               <div
@@ -232,7 +234,7 @@ export default function CoachLayout({
               }
             />
             <div
-              className={`fixed right-3 top-3 z-[100] hidden flex-col items-end gap-2 sm:right-5 md:flex ${topClusterMaxW}`}
+              className={`fixed right-3 top-1.5 z-[100] hidden flex-col items-end gap-2 sm:right-5 md:flex ${topClusterMaxW}`}
             >
               <DashboardTopActions
                 variant="coach"
@@ -270,22 +272,11 @@ export default function CoachLayout({
             </div>
           </>
         )}
-      {bossWorkshopPage ? (
-        <button
-          type="button"
-          onClick={() => setBossWorkshopNavOpen((o) => !o)}
-          className={`fixed z-[95] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-slate-50 ${
-            sidebarVisible ? "left-3 top-3 md:left-[calc(16rem+0.5rem)]" : "left-3 top-3"
-          }`}
-          aria-expanded={sidebarVisible}
-          aria-label={sidebarVisible ? "Hide main menu" : "Show main menu"}
-        >
-          {sidebarVisible ? (
-            <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
-          ) : (
-            <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
-          )}
-        </button>
+      {!playbooksReader ? (
+        <BossProNavToggle
+          sidebarVisible={sidebarVisible}
+          onToggle={() => setSidebarOpen((o) => !o)}
+        />
       ) : null}
       {sidebarVisible ? (
         <DashboardSidebar
@@ -293,6 +284,7 @@ export default function CoachLayout({
           signingOut={signingOut}
           onSignOut={handleSignOut}
           showCoachDeliveryNav={coachClientHubAllowed}
+          coachHasFeature={hasFeature}
           avatarOverride={
             isImpersonatingCoach
               ? {
@@ -321,7 +313,7 @@ export default function CoachLayout({
               isSignaturePage ? "max-w-none gap-0" : playbooksReader ? "w-full gap-0" : "gap-4"
             }`}
           >
-            {children}
+            <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>

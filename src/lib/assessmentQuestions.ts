@@ -82,10 +82,10 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 4,
     question:
-      "Is your leadership delivering results — clear communication, sound decisions, and a team that follows your direction?",
+      "Is your leadership delivering results, with clear communication, sound decisions, and a team that follows your direction?",
     scoringGuide: {
       red: "My team doesn't get clear direction and decisions stall",
-      amber: "I'm leading but inconsistently — some areas work, others don't",
+      amber: "I'm leading but inconsistently: some areas work, others don't",
       green:
         "My leadership is effective and the business responds to how I lead",
     },
@@ -100,7 +100,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 1,
     questionNumberOnPage: 5,
     question:
-      "Is your business giving you the lifestyle you designed — time, income, and freedom on your terms?",
+      "Is your business giving you the lifestyle you designed: time, income, and freedom on your terms?",
     scoringGuide: {
       red: "My business runs my life",
       amber: "I've made some progress but I'm not there yet",
@@ -119,7 +119,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 1,
     question:
-      "Do you know exactly what you need from this business — financially and personally — and does that drive your decisions?",
+      "Do you know exactly what you need from this business, financially and personally, and does that drive your decisions?",
     scoringGuide: {
       red: "I've never clearly defined this and I drift",
       amber:
@@ -138,7 +138,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 2,
     questionNumberOnPage: 2,
     question:
-      "Are you actively hitting clear, measurable business goals — not just setting them?",
+      "Are you actively hitting clear, measurable business goals, not just setting them?",
     scoringGuide: {
       red: "I don't have written goals or I ignore them",
       amber:
@@ -215,7 +215,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 1,
     question:
-      "Do you have a clearly defined ideal customer — and does your marketing and sales focus on winning them?",
+      "Do you have a clearly defined ideal customer, and does your marketing and sales focus on winning them?",
     scoringGuide: {
       red: "I'll work with anyone who'll pay",
       amber:
@@ -234,7 +234,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 2,
     question:
-      "Do you have one clear core offer for that customer that wins sales — not just a list of things you could do?",
+      "Do you have one clear core offer for that customer that wins sales, not just a list of things you could do?",
     scoringGuide: {
       red: "I offer too many things and buyers are confused about what they're getting",
       amber:
@@ -253,7 +253,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 3,
     question:
-      "Is your business model producing healthy profit — do you know how you make money on each sale?",
+      "Is your business model producing healthy profit, and do you know how you make money on each sale?",
     scoringGuide: {
       red: "I'm busy but I don't know if the model actually works",
       amber:
@@ -272,7 +272,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 4,
     question:
-      "Is your growth focused on the right opportunities — do you know where to invest and where to stop?",
+      "Is your growth focused on the right opportunities, and do you know where to invest and where to stop?",
     scoringGuide: {
       red: "I chase whatever comes and spread resources too thin",
       amber: "I have growth ideas but no clear priorities or allocation",
@@ -290,7 +290,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 3,
     questionNumberOnPage: 5,
     question:
-      "Are you actively building toward your exit — whether that's selling, succession, or stepping back?",
+      "Are you actively building toward your exit, whether that's selling, succession, or stepping back?",
     scoringGuide: {
       red: "I've never thought about it and the business depends on me",
       amber:
@@ -310,7 +310,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 1,
     question:
-      "Do you consistently finish what you commit to — does your planning actually turn into completed work?",
+      "Do you consistently finish what you commit to, and does your planning actually turn into completed work?",
     scoringGuide: {
       red: "I start lots of things and finish few",
       amber: "I plan sometimes but execution is inconsistent",
@@ -328,7 +328,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 2,
     question:
-      "Can you see how work flows through your business — from first contact to delivery to cash — and spot where it breaks?",
+      "Can you see how work flows through your business, from first contact to delivery to cash, and spot where it breaks?",
     scoringGuide: {
       red: "Work gets stuck and I can't see where or why",
       amber:
@@ -366,7 +366,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 4,
     question:
-      "Do your regular meetings and reviews actually move the business forward — with clear outcomes and accountability?",
+      "Do your regular meetings and reviews actually move the business forward, with clear outcomes and accountability?",
     scoringGuide: {
       red: "Meetings are ad hoc or a waste of time",
       amber:
@@ -385,7 +385,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 4,
     questionNumberOnPage: 5,
     question:
-      "Could your business continue and thrive without you — do you have people and structures in place?",
+      "Could your business continue and thrive without you, and do you have people and structures in place?",
     scoringGuide: {
       red: "The business depends entirely on me",
       amber:
@@ -405,7 +405,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 1,
     question:
-      "Do you know whether you can pay your bills over the coming months — and do you review cash often enough to catch problems early?",
+      "Do you know whether you can pay your bills over the coming months, and do you review cash often enough to catch problems early?",
     scoringGuide: {
       red: "I check my bank balance and hope for the best",
       amber:
@@ -424,7 +424,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 2,
     question:
-      "Are your costs under control — do you know where money goes and cut waste deliberately?",
+      "Are your costs under control, and do you know where money goes and cut waste deliberately?",
     scoringGuide: {
       red: "I don't really know where all my money goes",
       amber: "I've looked at it but not systematically or regularly",
@@ -442,7 +442,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 3,
     question:
-      "Are you making healthy profit on what you sell — are your prices and margins working?",
+      "Are you making healthy profit on what you sell, and are your prices and margins working?",
     scoringGuide: {
       red: "I guessed my prices or just matched competitors",
       amber:
@@ -461,7 +461,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 4,
     question:
-      "Do you deliberately allocate profit — owner pay, tax, reserves, and reinvestment — rather than taking whatever is left?",
+      "Do you deliberately allocate profit for owner pay, tax, reserves, and reinvestment, rather than taking whatever is left?",
     scoringGuide: {
       red: 'Whatever\'s left at the end is "profit"',
       amber:
@@ -480,7 +480,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 5,
     questionNumberOnPage: 5,
     question:
-      "Are you building personal wealth beyond the business — with tax efficiency and assets outside the company?",
+      "Are you building personal wealth beyond the business, with tax efficiency and assets outside the company?",
     scoringGuide: {
       red: "All my wealth is tied up in the business",
       amber:
@@ -500,7 +500,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 1,
     question:
-      "Do you have a reliable, repeatable way to bring in new leads, customers, and/or clients — not just hope they find you?",
+      "Do you have a reliable, repeatable way to bring in new leads, customers, and/or clients, not just hope they find you?",
     scoringGuide: {
       red: "I rely on word of mouth or hope",
       amber:
@@ -538,7 +538,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 3,
     question:
-      "Do customers choose you for a clear reason — not just price or convenience?",
+      "Do customers choose you for a clear reason, not just price or convenience?",
     scoringGuide: {
       red: "We look like everyone else and compete on price",
       amber:
@@ -557,7 +557,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 4,
     question:
-      "Do you stay in touch with prospects who aren't ready to buy — so interest turns into sales over time?",
+      "Do you stay in touch with prospects who aren't ready to buy, so interest turns into sales over time?",
     scoringGuide: {
       red: "If they don't buy straight away, I lose them",
       amber:
@@ -576,7 +576,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 5,
     question:
-      "Is your business visible and credible in your market — do the right people know who you are and what you stand for?",
+      "Is your business visible and credible in your market, and do the right people know who you are and what you stand for?",
     scoringGuide: {
       red: "Hardly anyone knows who we are",
       amber:
@@ -596,7 +596,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 1,
     question:
-      "Do you deliver what you promise consistently — with reliable outcomes for customers?",
+      "Do you deliver what you promise consistently, with reliable outcomes for customers?",
     scoringGuide: {
       red: "Every job feels like reinventing the wheel",
       amber:
@@ -615,7 +615,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 2,
     question:
-      "Does your customer experience produce the outcomes you intend — from first contact through to completion?",
+      "Does your customer experience produce the outcomes you intend, from first contact through to completion?",
     scoringGuide: {
       red: "Customers get an inconsistent or accidental experience",
       amber:
@@ -634,7 +634,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 3,
     question:
-      "Are you keeping customers coming back — do you know your retention rate and actively reduce churn?",
+      "Are you keeping customers coming back, and do you know your retention rate and actively reduce churn?",
     scoringGuide: {
       red: "I don't track retention or have systems for it",
       amber: "I do some things but retention isn't systematically managed",
@@ -652,7 +652,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 4,
     question:
-      "Are you growing what each customer is worth — through upsells, cross-sells, and repeat business?",
+      "Are you growing what each customer is worth through upsells, cross-sells, and repeat business?",
     scoringGuide: {
       red: "I focus on new customers, not growing existing ones",
       amber:
@@ -671,7 +671,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 7,
     questionNumberOnPage: 5,
     question:
-      "Are you evolving what you offer in response to customer needs — with new products or services that land?",
+      "Are you evolving what you offer in response to customer needs, with new products or services that land?",
     scoringGuide: {
       red: "We've been selling the same thing for years with no evolution",
       amber:
@@ -691,7 +691,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 1,
     question:
-      "Are your books clean and up to date — reviewed weekly so you can trust the numbers?",
+      "Are your books clean and up to date, reviewed weekly so you can trust the numbers?",
     scoringGuide: {
       red: "My books are a mess or months behind",
       amber:
@@ -710,7 +710,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 2,
     question:
-      "Are you using your business numbers to make decisions — P&L, balance sheet, and monthly management accounts?",
+      "Are you using your business numbers to make decisions: P&L, balance sheet, and monthly management accounts?",
     scoringGuide: {
       red: "I leave finance to my accountant and don't use numbers to decide",
       amber:
@@ -729,7 +729,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 3,
     question:
-      "Do the KPIs you track actually drive decisions — are you reviewing the right numbers regularly?",
+      "Do the KPIs you track actually drive decisions, and are you reviewing the right numbers regularly?",
     scoringGuide: {
       red: "I don't measure what matters or I don't review metrics",
       amber:
@@ -748,7 +748,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 4,
     question:
-      "Do your dashboards and reports give you a clear picture of performance — and does your team act on them?",
+      "Do your dashboards and reports give you a clear picture of performance, and does your team act on them?",
     scoringGuide: {
       red: "I have no reporting system or I don't use it",
       amber:
@@ -767,7 +767,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 8,
     questionNumberOnPage: 5,
     question:
-      "Are you actively increasing what your business is worth — do you know the drivers and manage them?",
+      "Are you actively increasing what your business is worth, and do you know the drivers and manage them?",
     scoringGuide: {
       red: "I have no idea what the business is worth",
       amber:
@@ -787,7 +787,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 1,
     question:
-      "Do your key processes run reliably — does work get done the same way with consistent outputs?",
+      "Do your key processes run reliably, so work gets done the same way with consistent outputs?",
     scoringGuide: {
       red: "Work depends on who's doing it and results vary",
       amber:
@@ -806,7 +806,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 2,
     question:
-      "Are your business systems connected — marketing, sales, delivery, and finance working together without manual gaps?",
+      "Are your business systems connected, with marketing, sales, delivery, and finance working together without manual gaps?",
     scoringGuide: {
       red: "Everything is disconnected or manual",
       amber:
@@ -825,7 +825,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 3,
     question:
-      "Does your management system produce accountability — clear expectations, cadence, and recognition?",
+      "Does your management system produce accountability, with clear expectations, cadence, and recognition?",
     scoringGuide: {
       red: "I manage people ad hoc with no structure",
       amber:
@@ -844,7 +844,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 4,
     question:
-      "Are AI and automation removing repetitive work — freeing your team for higher-value output?",
+      "Are AI and automation removing repetitive work and freeing your team for higher-value output?",
     scoringGuide: {
       red: "We're still doing low-value work manually",
       amber:
@@ -863,7 +863,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 9,
     questionNumberOnPage: 5,
     question:
-      "Do you have a continuous improvement process — mapping what's not working, innovating, and refining your systems?",
+      "Do you have a continuous improvement process that maps what's not working, innovates, and refines your systems?",
     scoringGuide: {
       red: "Once something is built, I rarely revisit it",
       amber:
@@ -883,7 +883,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 1,
     question:
-      "Is your team delivering the outputs you expect — performing at the level you need?",
+      "Is your team delivering the outputs you expect, performing at the level you need?",
     scoringGuide: {
       red: "People overlap, drop things, or underperform without clear consequences",
       amber:
@@ -902,7 +902,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 2,
     question:
-      "Are you getting the best from your team — with training, accountability, feedback, and reviews that change performance?",
+      "Are you getting the best from your team, with training, accountability, feedback, and reviews that change performance?",
     scoringGuide: {
       red: "I don't have formal performance management that improves results",
       amber: "I do some of this but performance doesn't consistently improve",
@@ -920,7 +920,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 3,
     question:
-      "Are you hiring the right people reliably — with a process that produces good hires and onboarding?",
+      "Are you hiring the right people reliably, with a process that produces good hires and onboarding?",
     scoringGuide: {
       red: "I hire reactively and often get the wrong fit",
       amber:
@@ -958,7 +958,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 10,
     questionNumberOnPage: 5,
     question:
-      "Does your culture produce the behaviours you want — values lived daily, not just on the wall?",
+      "Does your culture produce the behaviours you want, with values lived daily, not just on the wall?",
     scoringGuide: {
       red: "Culture is accidental and behaviours vary wildly",
       amber:

@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  coachHasFeature,
+  resolveCoachAccessForUserId,
+} from "@/lib/coachAccess/resolveCoachAccess";
 import { isCoachClientHubAllowedEmail } from "@/lib/coachClientHubAccess";
 import { coachClientHubEmailForUserId } from "@/lib/coachClientHubAccessServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -41,7 +45,10 @@ export async function GET(request: Request) {
     profile.role === "admin" && impersonateId ? impersonateId : user.id;
 
   const email = await emailForUserId(effectiveId);
-  const allowed = isCoachClientHubAllowedEmail(email);
+  const access = await resolveCoachAccessForUserId(effectiveId);
+  const allowed =
+    coachHasFeature(access, "nav.delivery") ||
+    isCoachClientHubAllowedEmail(email);
 
   return NextResponse.json({ allowed, email: email ?? null });
 }

@@ -1,5 +1,12 @@
 /** Workshop state captured per BOSS playbook ref during live scoring. */
 
+import { getPlaybookMeta, PLAYBOOKS } from "@/lib/bossData";
+import {
+  computeFocusAreas,
+  type AnswersMap,
+  type FocusItem,
+  type ProgressCategoryPlaybook,
+} from "@/lib/bossScores";
 import { BOSS_PRO_SCORE_LABELS } from "@/lib/bossProScoringLabels";
 
 export type WorkshopAuthorRole = "coach" | "client";
@@ -147,6 +154,103 @@ export function isProspectScoreComplete(scores: PlaybookProspectScores): boolean
   return computeProspectImportance(scores) !== null;
 }
 
+export type DimensionPlaybookLists<T extends number> = {
+  byLevel: Record<T, ProgressCategoryPlaybook[]>;
+  unset: ProgressCategoryPlaybook[];
+};
+
+export type ProspectDimensionBreakdown = {
+  impactSet: number;
+  urgencySet: number;
+  easeSet: number;
+  impactLevels: Record<ProspectImpactLevel, number>;
+  urgencyLevels: Record<ProspectUrgencyLevel, number>;
+  easeLevels: Record<ProspectEaseLevel, number>;
+  impactPlaybooks: DimensionPlaybookLists<ProspectImpactLevel>;
+  urgencyPlaybooks: DimensionPlaybookLists<ProspectUrgencyLevel>;
+  easePlaybooks: DimensionPlaybookLists<ProspectEaseLevel>;
+};
+
+function emptyImpactLevels(): Record<ProspectImpactLevel, number> {
+  return { 1: 0, 2: 0, 3: 0 };
+}
+
+function emptyUrgencyLevels(): Record<ProspectUrgencyLevel, number> {
+  return { 1: 0, 2: 0, 3: 0, 4: 0 };
+}
+
+function emptyEaseLevels(): Record<ProspectEaseLevel, number> {
+  return { 1: 0, 2: 0, 3: 0 };
+}
+
+function emptyImpactPlaybooks(): DimensionPlaybookLists<ProspectImpactLevel> {
+  return { byLevel: { 1: [], 2: [], 3: [] }, unset: [] };
+}
+
+function emptyUrgencyPlaybooks(): DimensionPlaybookLists<ProspectUrgencyLevel> {
+  return { byLevel: { 1: [], 2: [], 3: [], 4: [] }, unset: [] };
+}
+
+function emptyEasePlaybooks(): DimensionPlaybookLists<ProspectEaseLevel> {
+  return { byLevel: { 1: [], 2: [], 3: [] }, unset: [] };
+}
+
+/** Count playbooks with each prospect dimension set, broken down by level. */
+export function computeProspectDimensionBreakdown(
+  playbookNotes: Record<string, string>
+): ProspectDimensionBreakdown {
+  const impactLevels = emptyImpactLevels();
+  const urgencyLevels = emptyUrgencyLevels();
+  const easeLevels = emptyEaseLevels();
+  const impactPlaybooks = emptyImpactPlaybooks();
+  const urgencyPlaybooks = emptyUrgencyPlaybooks();
+  const easePlaybooks = emptyEasePlaybooks();
+  let impactSet = 0;
+  let urgencySet = 0;
+  let easeSet = 0;
+
+  for (const playbook of PLAYBOOKS) {
+    const entry: ProgressCategoryPlaybook = { ref: playbook.ref, name: playbook.name };
+    const scores = loadPlaybookProspectScores(
+      playbookNotes[playbookProspectScoresKey(playbook.ref)],
+      playbookNotes[playbookPriorityKey(playbook.ref)]
+    );
+    if (scores.impact !== undefined) {
+      impactSet++;
+      impactLevels[scores.impact]++;
+      impactPlaybooks.byLevel[scores.impact].push(entry);
+    } else {
+      impactPlaybooks.unset.push(entry);
+    }
+    if (scores.urgency !== undefined) {
+      urgencySet++;
+      urgencyLevels[scores.urgency]++;
+      urgencyPlaybooks.byLevel[scores.urgency].push(entry);
+    } else {
+      urgencyPlaybooks.unset.push(entry);
+    }
+    if (scores.ease !== undefined) {
+      easeSet++;
+      easeLevels[scores.ease]++;
+      easePlaybooks.byLevel[scores.ease].push(entry);
+    } else {
+      easePlaybooks.unset.push(entry);
+    }
+  }
+
+  return {
+    impactSet,
+    urgencySet,
+    easeSet,
+    impactLevels,
+    urgencyLevels,
+    easeLevels,
+    impactPlaybooks,
+    urgencyPlaybooks,
+    easePlaybooks,
+  };
+}
+
 export type WorkshopProspectPlotPoint = {
   ref: string;
   scores: PlaybookProspectScores;
@@ -217,6 +321,89 @@ export function getRankedProspectPriorities(
   };
 }
 
+export type TopPriorityPlaybook = FocusItem & {
+  importance: number | null;
+  description: string;
+};
+
+function topPriorityPlaybookDescription(
+  displayStatus: 0 | 1,
+  level: number,
+  prospect: WorkshopProspectPlotPoint | undefined
+): string {
+  if (prospect?.complete) {
+    const reason = buildProspectFocusReason(prospect.scores);
+    if (!reason.startsWith("Score impact")) return reason;
+  }
+  if (displayStatus === 0) {
+    return `This is the highest-leverage move at Level ${level}. Install the playbook to unlock real momentum.`;
+  }
+  return "Almost there \u2014 finish the playbook to lock this in and free up energy for the next priority.";
+}
+
+/**
+ * Top playbook priorities for overview/report cards.
+ * Uses workshop importance scores when complete; otherwise falls back to focus-area algorithm.
+ */
+export function getTopPriorityPlaybooks(
+  answers: AnswersMap,
+  playbookNotes: Record<string, string>,
+  limit = 3
+): TopPriorityPlaybook[] {
+  const focusItems = computeFocusAreas(answers);
+  const { complete: prospectComplete } = getRankedProspectPriorities(playbookNotes);
+  const focusByRef = new Map(focusItems.map((item) => [item.ref, item]));
+  const prospectByRef = new Map(prospectComplete.map((point) => [point.ref, point]));
+
+  const refs = new Set([
+    ...focusItems.map((item) => item.ref),
+    ...prospectComplete.map((point) => point.ref),
+  ]);
+
+  const candidates: TopPriorityPlaybook[] = [];
+
+  for (const ref of refs) {
+    const meta = getPlaybookMeta(ref);
+    if (!meta) continue;
+
+    const focus = focusByRef.get(ref);
+    const prospect = prospectByRef.get(ref);
+    const gridStatus = answers[ref];
+    const displayStatus: 0 | 1 =
+      gridStatus === 0 ? 0 : gridStatus === 1 ? 1 : (focus?.status ?? 1);
+
+    candidates.push({
+      ref,
+      name: meta.name,
+      level: meta.level,
+      area: meta.area,
+      status: displayStatus,
+      priority: focus?.priority ?? 0,
+      importance: prospect?.importance ?? null,
+      description: topPriorityPlaybookDescription(displayStatus, meta.level, prospect),
+    });
+  }
+
+  candidates.sort((a, b) => {
+    const aProspect = prospectByRef.get(a.ref);
+    const bProspect = prospectByRef.get(b.ref);
+    const aHasImportance = a.importance !== null && aProspect;
+    const bHasImportance = b.importance !== null && bProspect;
+
+    if (aHasImportance && bHasImportance) {
+      return compareProspectPlotPoints(aProspect!, bProspect!);
+    }
+    if (aHasImportance !== bHasImportance) {
+      return aHasImportance ? -1 : 1;
+    }
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    if (a.area !== b.area) return a.area - b.area;
+    return a.level - b.level;
+  });
+
+  return candidates.slice(0, limit);
+}
+
 function impactPhrase(level: ProspectImpactLevel | undefined): string | null {
   if (level === 3) return "high impact";
   if (level === 2) return "solid impact";
@@ -278,10 +465,52 @@ export function impactUrgencyQuadrantLabel(
   return null;
 }
 
+export const WORKSHOP_CHECKLIST_MAX_DEPTH = 2;
+
+export type ChecklistDescendantProgress = {
+  total: number;
+  completed: number;
+};
+
+/** Count nested checklist items directly under a parent row (by depth). */
+export function getChecklistDescendantProgress(
+  items: CustomWorkshopAction[],
+  parentIndex: number
+): ChecklistDescendantProgress {
+  const parent = items[parentIndex];
+  if (!parent) return { total: 0, completed: 0 };
+
+  const parentDepth = parent.depth ?? 0;
+  let total = 0;
+  let completed = 0;
+
+  for (let i = parentIndex + 1; i < items.length; i++) {
+    const item = items[i];
+    if (!item) continue;
+    const depth = item.depth ?? 0;
+    if (depth <= parentDepth) break;
+    total += 1;
+    if (item.done === true) completed += 1;
+  }
+
+  return { total, completed };
+}
+
+export function syncChecklistParentDone(items: CustomWorkshopAction[]): CustomWorkshopAction[] {
+  return items.map((item, index) => {
+    const { total, completed } = getChecklistDescendantProgress(items, index);
+    if (total === 0) return item;
+    return { ...item, done: completed === total };
+  });
+}
+
 export type CustomWorkshopAction = {
   id: string;
   text: string;
+  /** 0 = top-level; nested sub-actions up to {@link WORKSHOP_CHECKLIST_MAX_DEPTH}. */
+  depth?: number;
   done?: boolean;
+  assigneeIds?: string[];
   /** ISO date YYYY-MM-DD */
   startDate?: string;
   /** ISO date YYYY-MM-DD */
@@ -351,7 +580,24 @@ const WORKSHOP_SUFFIXES = [
   "__activity",
   "__priority",
   "__prospect_scores",
+  "__assignees",
+  "__dates",
 ] as const;
+
+export const WORKSHOP_TEAM_MEMBERS_KEY = "__team_members";
+
+const WORKSHOP_META_KEYS = [WORKSHOP_TEAM_MEMBERS_KEY] as const;
+
+export type WorkshopTeamMember = {
+  id: string;
+  name: string;
+  isClient?: boolean;
+};
+
+export type PlaybookDates = {
+  startDate?: string;
+  dueDate?: string;
+};
 
 export function playbookActionNotesKey(ref: string): string {
   return `${ref}__actions`;
@@ -375,6 +621,102 @@ export function parsePlaybookPriority(raw: string | undefined): WorkshopPriority
 
 export function playbookProspectScoresKey(ref: string): string {
   return `${ref}__prospect_scores`;
+}
+
+export function playbookAssigneesKey(ref: string): string {
+  return `${ref}__assignees`;
+}
+
+export function playbookDatesKey(ref: string): string {
+  return `${ref}__dates`;
+}
+
+export function defaultWorkshopTeamMembers(
+  clientName?: string | null
+): WorkshopTeamMember[] {
+  const name = clientName?.trim();
+  if (!name) return [];
+  return [{ id: "client", name, isClient: true }];
+}
+
+export function parseWorkshopTeamMembers(raw: string | undefined): WorkshopTeamMember[] {
+  if (!raw?.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    const members: WorkshopTeamMember[] = [];
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object") continue;
+      const record = entry as WorkshopTeamMember;
+      if (typeof record.id !== "string" || typeof record.name !== "string") continue;
+      const name = record.name.trim();
+      if (!name) continue;
+      members.push({
+        id: record.id,
+        name,
+        isClient: record.isClient === true,
+      });
+    }
+    return members;
+  } catch {
+    return [];
+  }
+}
+
+export function serializeWorkshopTeamMembers(members: WorkshopTeamMember[]): string {
+  const cleaned = members
+    .map((member) => ({
+      id: member.id,
+      name: member.name.trim(),
+      ...(member.isClient ? { isClient: true } : {}),
+    }))
+    .filter((member) => member.name.length > 0);
+  return cleaned.length > 0 ? JSON.stringify(cleaned) : "";
+}
+
+export function resolveWorkshopTeamMembers(
+  raw: string | undefined,
+  clientName?: string | null
+): WorkshopTeamMember[] {
+  const parsed = parseWorkshopTeamMembers(raw);
+  if (parsed.length > 0) return parsed;
+  return defaultWorkshopTeamMembers(clientName);
+}
+
+export function parsePlaybookAssignees(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+export function serializePlaybookAssignees(ids: string[]): string {
+  const cleaned = ids.filter(Boolean);
+  return cleaned.length > 0 ? JSON.stringify(cleaned) : "";
+}
+
+export function parsePlaybookDates(raw: string | undefined): PlaybookDates {
+  if (!raw?.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const record = parsed as PlaybookDates;
+    return {
+      startDate: typeof record.startDate === "string" ? record.startDate : undefined,
+      dueDate: typeof record.dueDate === "string" ? record.dueDate : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+export function serializePlaybookDates(dates: PlaybookDates): string {
+  if (!dates.startDate && !dates.dueDate) return "";
+  return JSON.stringify(dates);
 }
 
 export function parsePlaybookProspectScores(raw: string | undefined): PlaybookProspectScores {
@@ -424,6 +766,7 @@ export function playbookRefFromSessionKey(key: string): string | null {
 }
 
 export function isPlaybookSessionNotesKey(key: string, validRefs?: Set<string>): boolean {
+  if ((WORKSHOP_META_KEYS as readonly string[]).includes(key)) return true;
   const ref = playbookRefFromSessionKey(key);
   if (!ref) return false;
   if (validRefs && !validRefs.has(ref)) return false;
@@ -445,7 +788,14 @@ function normalizeActionItem(raw: unknown): CustomWorkshopAction | null {
   return {
     id: item.id,
     text: item.text,
+    depth:
+      typeof item.depth === "number" && Number.isFinite(item.depth)
+        ? Math.min(Math.max(0, Math.floor(item.depth)), WORKSHOP_CHECKLIST_MAX_DEPTH)
+        : 0,
     done: item.done === true,
+    assigneeIds: Array.isArray(item.assigneeIds)
+      ? item.assigneeIds.filter((id): id is string => typeof id === "string")
+      : undefined,
     startDate: typeof item.startDate === "string" ? item.startDate : undefined,
     dueDate: typeof item.dueDate === "string" ? item.dueDate : undefined,
     timeEstimateMinutes:
@@ -531,7 +881,7 @@ export function parseAgreedActions(raw: string | undefined): PlaybookAgreedActio
 
 export function serializeAgreedActions(data: PlaybookAgreedActions): string {
   const hasPlaybook = data.playbook.length > 0;
-  const hasGroups = data.groups.some((g) => g.items.some((i) => i.text.trim()));
+  const hasGroups = data.groups.length > 0;
   const hasMeta = data.playbookMeta && Object.keys(data.playbookMeta).length > 0;
   if (!hasPlaybook && !hasGroups && !hasMeta) return "";
   return JSON.stringify(data);

@@ -32,6 +32,7 @@ export type CommunityCalendarEventRow = {
   recording_video_url: string | null;
   is_recurring: boolean;
   recurrence: RecurrencePayload | null;
+  access_tags?: string[];
   created_at: string;
   updated_at: string;
 };
@@ -53,14 +54,23 @@ export type CommunityCalendarOccurrence = {
   cancellationReason?: string | null;
 };
 
-/** Cancelled/skipped instance of a recurring event. */
+/** Per-occurrence overrides (cancellation, recording) for recurring events. */
 export type CommunityCalendarEventExceptionRow = {
   id: string;
   event_id: string;
   occurrence_start: string;
+  cancelled_at: string | null;
   cancellation_reason: string | null;
+  recording_link_url: string | null;
+  recording_video_url: string | null;
   created_at: string;
 };
+
+export function isRecurringCommunityCalendarEvent(
+  row: Pick<CommunityCalendarEventRow, "is_recurring" | "recurrence">
+): boolean {
+  return Boolean(row.is_recurring && row.recurrence);
+}
 
 /** UTC epoch ms — avoids ISO string format mismatches from Postgres vs Luxon. */
 export function communityCalendarOccurrenceStartMs(iso: string): number {

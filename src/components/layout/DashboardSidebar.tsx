@@ -10,6 +10,7 @@ import {
   adminSectionNavItems,
   coachMarketingNavItems,
   deliveryNavItems,
+  filterNavItemsByFeatures,
   mainNavItems,
   marketingNavItems,
   mobileMoreNavItems,
@@ -17,6 +18,7 @@ import {
   mobilePrimaryNavItems,
   navLinkActive,
 } from "@/components/layout/dashboardNavItems";
+import type { CoachFeature } from "@/lib/coachAccess/tiers";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount } from "@/components/layout/useNewFeedbackCount";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -33,6 +35,8 @@ type DashboardSidebarProps = {
   } | null;
   /** Coach-only: show Clients / Playbooks under Delivery (limited rollout). */
   showCoachDeliveryNav?: boolean;
+  /** Coach-only: filter nav items by access tier features. */
+  coachHasFeature?: (feature: CoachFeature) => boolean;
 };
 
 function isCommunityCalendarActive(pathname: string | null, communityHref: string) {
@@ -45,23 +49,38 @@ export function DashboardSidebar({
   onSignOut,
   avatarOverride = null,
   showCoachDeliveryNav = false,
+  coachHasFeature,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
 
+  const featureCheck =
+    variant === "coach" && coachHasFeature
+      ? coachHasFeature
+      : () => true;
+
   const { profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
   const newFeedbackCount = useNewFeedbackCount(variant === "admin");
 
-  const mainItems = mainNavItems(prefix);
-  const mobilePrimary = mobilePrimaryNavItems(prefix);
+  const mainItems = filterNavItemsByFeatures(mainNavItems(prefix), featureCheck);
+  const mobilePrimary = filterNavItemsByFeatures(
+    mobilePrimaryNavItems(prefix),
+    featureCheck
+  );
   const mobileMore = mobileMoreNavItems(prefix);
   const sidebarMarketingItems =
     variant === "coach"
       ? coachMarketingNavItems(prefix)
       : marketingNavItems(prefix, { includeBossScore: true });
+  const showMarketingNav =
+    variant === "admin" || featureCheck("nav.marketing");
+  const showDeliveryNav =
+    variant === "admin" ||
+    (variant === "coach" &&
+      (showCoachDeliveryNav || featureCheck("nav.delivery")));
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
 
   const closeMobileSheets = () => {
@@ -135,7 +154,7 @@ export function DashboardSidebar({
   return (
     <>
       <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-64 border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white md:flex md:flex-col">
-        <div className="shrink-0 px-4 py-4">
+        <div className="shrink-0 px-4 pb-4 pt-1.5">
           <Link
             href={prefix}
             className="block rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
@@ -145,7 +164,7 @@ export function DashboardSidebar({
               alt="Profit Coach"
               width={352}
               height={99}
-              className="h-[3.6rem] w-auto max-w-full"
+              className="h-[3.42rem] w-auto max-w-full"
               priority
             />
           </Link>
@@ -178,6 +197,7 @@ export function DashboardSidebar({
               );
             })}
           </ul>
+          {showMarketingNav ? (
           <div className="mt-5 px-1">
             <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
               Marketing
@@ -204,7 +224,8 @@ export function DashboardSidebar({
               })}
             </ul>
           </div>
-          {variant === "admin" || (variant === "coach" && showCoachDeliveryNav) ? (
+          ) : null}
+          {showDeliveryNav ? (
             <>
               <div className="mt-5 px-1">
                 <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
@@ -362,6 +383,7 @@ export function DashboardSidebar({
                 <ul className="space-y-0.5">{renderMoreNavLinks(mobileMore)}</ul>
               </div>
             ) : null}
+            {showMarketingNav ? (
             <div className="px-4 pb-3 pt-3">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                 Marketing
@@ -392,7 +414,8 @@ export function DashboardSidebar({
                 })}
               </ul>
             </div>
-            {variant === "admin" || (variant === "coach" && showCoachDeliveryNav) ? (
+            ) : null}
+            {showDeliveryNav ? (
               <>
                 <div className="px-4 pb-3">
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">

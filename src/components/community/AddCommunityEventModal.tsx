@@ -18,6 +18,12 @@ import type {
   WeekdayMon0Sun6,
 } from "@/lib/communityCalendarTypes";
 import {
+  ALL_CALENDAR_ACCESS_TAGS,
+  COACH_ACCESS_TIER_LABELS,
+  COACH_ACCESS_TIERS,
+  type CoachAccessTier,
+} from "@/lib/coachAccess/tiers";
+import {
   COMMUNITY_CALENDAR_TIMEZONES,
   defaultCommunityCalendarTimezone,
 } from "@/lib/communityCalendarTimezones";
@@ -115,10 +121,14 @@ export function AddCommunityEventModal({
     DateTime.now().toISODate() ?? ""
   );
   const [endAfterCount, setEndAfterCount] = useState(10);
+  const [accessTags, setAccessTags] = useState<CoachAccessTier[]>([
+    ...ALL_CALENDAR_ACCESS_TAGS,
+  ]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canEditRecordings = useMemo(() => {
     if (!initialEvent) return false;
+    if (initialEvent.is_recurring && initialEvent.recurrence) return false;
     const endUtc = DateTime.fromISO(initialEvent.ends_at, { zone: "utc" });
     return endUtc.isValid && endUtc < DateTime.now().toUTC();
   }, [initialEvent]);
@@ -155,6 +165,10 @@ export function AddCommunityEventModal({
       initialEvent.recurrence?.endDate ?? (DateTime.now().toISODate() ?? "")
     );
     setEndAfterCount(Math.max(1, initialEvent.recurrence?.maxOccurrences ?? 10));
+    const tags = (initialEvent.access_tags ?? []).filter((tag): tag is CoachAccessTier =>
+      COACH_ACCESS_TIERS.includes(tag as CoachAccessTier)
+    );
+    setAccessTags(tags.length > 0 ? tags : [...ALL_CALENDAR_ACCESS_TAGS]);
   }, [initialDuration, initialEvent, initialStart]);
 
   useEffect(() => {
@@ -329,10 +343,17 @@ export function AddCommunityEventModal({
       recording_link_url:
         canEditRecordings && recordingLinkUrl.trim()
           ? recordingLinkUrl.trim()
-          : null,
-      recording_video_url: canEditRecordings ? recordingVideoUrl : null,
+          : recurring
+            ? null
+            : initialEvent?.recording_link_url ?? null,
+      recording_video_url: canEditRecordings
+        ? recordingVideoUrl
+        : recurring
+          ? null
+          : initialEvent?.recording_video_url ?? null,
       is_recurring: Boolean(recurring && rec),
       recurrence: recurring && rec ? rec : null,
+      access_tags: accessTags.length > 0 ? accessTags : [...ALL_CALENDAR_ACCESS_TAGS],
     };
 
     const query = initialEvent
@@ -375,6 +396,7 @@ export function AddCommunityEventModal({
     timeStr,
     timezone,
     title,
+    accessTags,
     onSaved,
   ]);
 
@@ -656,6 +678,44 @@ export function AddCommunityEventModal({
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">
+              Visible to access tiers
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {COACH_ACCESS_TIERS.map((tier) => {
+                const checked = accessTags.includes(tier);
+                return (
+                  <label
+                    key={tier}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ${
+                      checked
+                        ? "bg-sky-100 text-sky-900 ring-1 ring-sky-300"
+                        : "bg-slate-50 text-slate-600 ring-1 ring-slate-200"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setAccessTags((prev) =>
+                          checked
+                            ? prev.filter((t) => t !== tier)
+                            : [...prev, tier]
+                        );
+                      }}
+                      className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                    />
+                    {COACH_ACCESS_TIER_LABELS[tier]}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Alumni only see events tagged for Alumni (e.g. Monthly Momentum Call).
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
               Location
             </label>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -751,7 +811,9 @@ export function AddCommunityEventModal({
                 </>
               ) : (
                 <p className="text-sm text-slate-600">
-                  You can add a recording once this event has ended.
+                  {initialEvent?.is_recurring && initialEvent?.recurrence
+                    ? "Open a session on the calendar after it ends to add a recording for that date only."
+                    : "You can add a recording once this event has ended."}
                 </p>
               )}
             </div>

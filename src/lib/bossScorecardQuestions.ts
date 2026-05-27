@@ -265,7 +265,7 @@ export const QUALIFYING_SUPPORT_FIELDS: QualifyingFieldDef[] = [
       { value: "time_management", label: "Trying to manage my time better" },
       { value: "new_people", label: "Bringing in new people" },
       { value: "strategy_offer", label: "Changing my strategy or offer" },
-      { value: "nothing_yet", label: "Nothing yet — I have not known where to start" },
+      { value: "nothing_yet", label: "Nothing yet. I have not known where to start" },
     ],
   },
   {

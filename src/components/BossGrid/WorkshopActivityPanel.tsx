@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Activity, ChevronDown, ChevronRight, CornerDownRight, Send } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Activity, ChevronDown, ChevronRight, CornerDownRight, Send, X } from "lucide-react";
 import {
   formatActivityMessage,
   type WorkshopActivityEvent,
@@ -24,6 +24,30 @@ type FeedSegment =
 
 /** Activities within this window (ms) are grouped together. */
 const ACTIVITY_GROUP_WINDOW_MS = 3 * 60 * 1000;
+
+const COMMENT_MIN_HEIGHT_PX = 32;
+const COMMENT_MAX_HEIGHT_RATIO = 0.5;
+const COMMENT_MAX_HEIGHT_FALLBACK_PX = 280;
+
+function useAutoGrowTextarea(
+  value: string,
+  maxHeightPx: number,
+  minHeightPx = COMMENT_MIN_HEIGHT_PX
+) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "0px";
+    const cap = maxHeightPx > 0 ? maxHeightPx : COMMENT_MAX_HEIGHT_FALLBACK_PX;
+    const next = Math.min(Math.max(el.scrollHeight, minHeightPx), cap);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > cap ? "auto" : "hidden";
+  }, [value, maxHeightPx, minHeightPx]);
+
+  return ref;
+}
 
 function buildFeedSegments(feed: FeedEntry[]): FeedSegment[] {
   const segments: FeedSegment[] = [];
@@ -169,41 +193,85 @@ function displayAuthorName(
   return name ?? (author === "coach" ? "Coach" : "Client");
 }
 
+function authorInitials(author: WorkshopAuthorRole, name?: string): string {
+  const label = displayAuthorName(author, name);
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
+}
+
+function CommentAuthorAvatar({
+  author,
+  name,
+  size = "md",
+}: {
+  author: WorkshopAuthorRole;
+  name?: string;
+  size?: "sm" | "md";
+}) {
+  const initials = authorInitials(author, name);
+  const sizeClass = size === "sm" ? "h-5 w-5 text-[9px]" : "h-7 w-7 text-[10px]";
+  const colorClass = author === "coach" ? "bg-sky-600" : "bg-violet-500";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white ${sizeClass} ${colorClass}`}
+      aria-hidden
+    >
+      {initials}
+    </span>
+  );
+}
+
 function CommentCard({
   comment,
-  replyingTo,
-  onReply,
-  onSubmitReply,
-  onCancelReply,
+  activeThreadId,
+  onOpenThread,
   editable,
-  defaultAuthor,
-  defaultAuthorName,
 }: {
   comment: WorkshopComment;
-  replyingTo: string | null;
-  onReply: (commentId: string) => void;
-  onSubmitReply: (commentId: string, text: string) => void;
-  onCancelReply: () => void;
+  activeThreadId: string | null;
+  onOpenThread: (commentId: string) => void;
   editable: boolean;
-  defaultAuthor: WorkshopAuthorRole;
-  defaultAuthorName?: string;
 }) {
-  const [replyText, setReplyText] = useState("");
-  const isReplying = replyingTo === comment.id;
   const authorLabel = displayAuthorName(comment.author, comment.authorName);
+  const isThreadActive = activeThreadId === comment.id;
+  const replyCount = comment.replies.length;
+  const showReplies = isThreadActive && replyCount > 0;
+
+  const replyAuthorKeys = useMemo(() => {
+    const seen = new Set<string>();
+    const authors: Array<{ author: WorkshopAuthorRole; authorName?: string }> = [];
+    for (const reply of comment.replies) {
+      const key = `${reply.author}:${reply.authorName ?? ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      authors.push({ author: reply.author, authorName: reply.authorName });
+    }
+    return authors;
+  }, [comment.replies]);
 
   return (
-    <article className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="flex items-baseline gap-2">
-        <span className="text-sm font-semibold text-slate-900">{authorLabel}</span>
-        <time className="text-xs text-slate-400">{formatCommentWhen(comment.createdAt)}</time>
+    <article
+      className={`rounded-lg border bg-white p-3 shadow-sm ${
+        isThreadActive ? "border-sky-300 ring-1 ring-sky-200" : "border-slate-200"
+      }`}
+    >
+      <div className="flex items-start gap-2.5">
+        <CommentAuthorAvatar author={comment.author} name={comment.authorName} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-semibold text-slate-900">{authorLabel}</span>
+            <time className="text-xs text-slate-400">{formatCommentWhen(comment.createdAt)}</time>
+          </div>
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+            {comment.text}
+          </p>
+        </div>
       </div>
-      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
-        {comment.text}
-      </p>
 
-      {comment.replies.length > 0 ? (
-        <ul className="mt-3 space-y-2 border-l-2 border-slate-100 pl-3">
+      {showReplies ? (
+        <ul className="ml-9 mt-3 space-y-2 border-l-2 border-slate-100 pl-3">
           {comment.replies.map((reply) => (
             <li key={reply.id}>
               <ReplyLine reply={reply} />
@@ -212,55 +280,38 @@ function CommentCard({
         </ul>
       ) : null}
 
-      {editable ? (
-        <div className="mt-2.5 border-t border-slate-100 pt-2">
-          <button
-            type="button"
-            onClick={() => onReply(comment.id)}
-            className="text-xs font-medium text-slate-500 hover:text-slate-800"
-          >
-            Reply
-          </button>
-        </div>
-      ) : null}
-
-      {isReplying ? (
-        <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <CornerDownRight className="h-3.5 w-3.5" aria-hidden />
-            Replying as {defaultAuthorName ?? (defaultAuthor === "coach" ? "Coach" : "Client")}
-          </div>
-          <textarea
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            rows={2}
-            className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none ring-sky-500 focus:border-sky-300 focus:ring-2"
-            placeholder="Write a reply…"
-            autoFocus
-          />
-          <div className="flex justify-end gap-2">
+      {editable || replyCount > 0 ? (
+        <div className="mt-2.5 flex items-center justify-end border-t border-slate-100 pt-2">
+          {replyCount > 0 ? (
             <button
               type="button"
-              onClick={() => {
-                setReplyText("");
-                onCancelReply();
-              }}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100"
+              onClick={() => onOpenThread(comment.id)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition hover:text-slate-800"
+              aria-label={`${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
             >
-              Cancel
+              <span>
+                {replyCount} {replyCount === 1 ? "reply" : "replies"}
+              </span>
+              <span className="flex -space-x-1">
+                {replyAuthorKeys.slice(0, 3).map((author, index) => (
+                  <CommentAuthorAvatar
+                    key={`${author.author}-${author.authorName ?? index}`}
+                    author={author.author}
+                    name={author.authorName}
+                    size="sm"
+                  />
+                ))}
+              </span>
             </button>
+          ) : editable ? (
             <button
               type="button"
-              disabled={!replyText.trim()}
-              onClick={() => {
-                onSubmitReply(comment.id, replyText.trim());
-                setReplyText("");
-              }}
-              className="rounded-lg bg-sky-600 px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+              onClick={() => onOpenThread(comment.id)}
+              className="text-xs font-medium text-slate-500 transition hover:text-slate-800"
             >
               Reply
             </button>
-          </div>
+          ) : null}
         </div>
       ) : null}
     </article>
@@ -270,12 +321,15 @@ function CommentCard({
 function ReplyLine({ reply }: { reply: WorkshopCommentReply }) {
   const authorLabel = displayAuthorName(reply.author, reply.authorName);
   return (
-    <div className="py-1">
-      <div className="flex items-baseline gap-2">
-        <span className="text-xs font-semibold text-slate-800">{authorLabel}</span>
-        <time className="text-[11px] text-slate-400">{formatCommentWhen(reply.createdAt)}</time>
+    <div className="flex items-start gap-2 py-1">
+      <CommentAuthorAvatar author={reply.author} name={reply.authorName} size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <span className="text-xs font-semibold text-slate-800">{authorLabel}</span>
+          <time className="text-[11px] text-slate-400">{formatCommentWhen(reply.createdAt)}</time>
+        </div>
+        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{reply.text}</p>
       </div>
-      <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">{reply.text}</p>
     </div>
   );
 }
@@ -308,6 +362,54 @@ export function WorkshopActivityPanel({
   const [draft, setDraft] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set());
+  const [panelHeight, setPanelHeight] = useState(0);
+  const panelRef = useRef<HTMLElement>(null);
+  const composerTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const maxTextareaHeight =
+    panelHeight > 0
+      ? Math.floor(panelHeight * COMMENT_MAX_HEIGHT_RATIO)
+      : COMMENT_MAX_HEIGHT_FALLBACK_PX;
+  const draftTextareaRef = useAutoGrowTextarea(draft, maxTextareaHeight);
+
+  const threadTarget = useMemo(
+    () => (replyingTo ? comments.find((c) => c.id === replyingTo) ?? null : null),
+    [comments, replyingTo]
+  );
+
+  useEffect(() => {
+    if (!replyingTo) return;
+    composerTextareaRef.current?.focus();
+  }, [replyingTo]);
+
+  const openThread = (commentId: string) => {
+    if (replyingTo === commentId) {
+      closeThread();
+      return;
+    }
+    setReplyingTo(commentId);
+    requestAnimationFrame(() => composerTextareaRef.current?.focus());
+  };
+
+  const closeThread = () => {
+    setReplyingTo(null);
+    setDraft("");
+  };
+
+  const mergeTextareaRefs = (node: HTMLTextAreaElement | null) => {
+    draftTextareaRef.current = node;
+    composerTextareaRef.current = node;
+  };
+
+  useLayoutEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const syncHeight = () => setPanelHeight(el.clientHeight);
+    syncHeight();
+    const ro = new ResizeObserver(syncHeight);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [collapsed]);
 
   const feed = useMemo(() => {
     const entries: FeedEntry[] = [
@@ -340,9 +442,18 @@ export function WorkshopActivityPanel({
     });
   };
 
-  const submitComment = () => {
+  const submitDraft = () => {
     const text = draft.trim();
     if (!text || !editable) return;
+    if (replyingTo) {
+      submitReply(replyingTo, text);
+      setDraft("");
+      return;
+    }
+    submitComment(text);
+  };
+
+  const submitComment = (text: string) => {
     const comment: WorkshopComment = {
       id: crypto.randomUUID(),
       author: defaultAuthor,
@@ -381,7 +492,7 @@ export function WorkshopActivityPanel({
       authorName: defaultAuthorName,
       meta: { commentId, replyId: reply.id },
     });
-    setReplyingTo(null);
+    setDraft("");
   };
 
   if (collapsed) {
@@ -409,6 +520,7 @@ export function WorkshopActivityPanel({
 
   return (
     <aside
+      ref={panelRef}
       className={`flex h-full min-h-0 w-full shrink-0 flex-col self-stretch border-t border-slate-200 bg-slate-100/80 lg:border-l lg:border-t-0 ${widthClass}`}
     >
       <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-3 py-2.5">
@@ -447,13 +559,9 @@ export function WorkshopActivityPanel({
                 <li key={segment.entry.id}>
                   <CommentCard
                     comment={segment.entry.comment}
-                    replyingTo={replyingTo}
-                    onReply={setReplyingTo}
-                    onSubmitReply={submitReply}
-                    onCancelReply={() => setReplyingTo(null)}
+                    activeThreadId={replyingTo}
+                    onOpenThread={openThread}
                     editable={editable}
-                    defaultAuthor={defaultAuthor}
-                    defaultAuthorName={defaultAuthorName}
                   />
                 </li>
               )
@@ -464,33 +572,58 @@ export function WorkshopActivityPanel({
 
       {editable ? (
         <div className="shrink-0 border-t border-slate-200 p-3">
-          <div className="rounded-lg border border-slate-200 bg-white">
+          {threadTarget ? (
+            <div className="mb-2 flex items-center justify-between gap-2 rounded-md bg-sky-50 px-2.5 py-1.5">
+              <div className="flex min-w-0 items-center gap-1.5 text-xs text-sky-800">
+                <CornerDownRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">
+                  Replying to {displayAuthorName(threadTarget.author, threadTarget.authorName)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={closeThread}
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-sky-600 hover:bg-sky-100"
+                aria-label="Cancel reply"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
+          ) : null}
+          <div className="flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
             <textarea
+              ref={mergeTextareaRefs}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={1}
               className="min-h-[2rem] w-full resize-none rounded-t-lg border-0 px-2.5 py-1.5 text-sm outline-none"
               placeholder={
-                allowClientComments
-                  ? "Write a comment as coach or client…"
-                  : "Write a comment…"
+                threadTarget
+                  ? "Write a reply…"
+                  : allowClientComments
+                    ? "Write a comment as coach or client…"
+                    : "Write a comment…"
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault();
-                  submitComment();
+                  submitDraft();
+                }
+                if (e.key === "Escape" && threadTarget) {
+                  e.preventDefault();
+                  closeThread();
                 }
               }}
             />
-            <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-2.5 py-1">
+            <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-100 px-2.5 py-1">
               <button
                 type="button"
                 disabled={!draft.trim()}
-                onClick={submitComment}
+                onClick={submitDraft}
                 className="inline-flex items-center gap-1 rounded-md bg-sky-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-40"
               >
                 <Send className="h-3 w-3" aria-hidden />
-                Send
+                {threadTarget ? "Reply" : "Send"}
               </button>
             </div>
           </div>

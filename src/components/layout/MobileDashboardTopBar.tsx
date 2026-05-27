@@ -22,7 +22,7 @@ export function MobileDashboardTopBar({
 }: MobileDashboardTopBarProps) {
   return (
     <div className="md:hidden">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-end px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-end px-3 pt-[max(0.375rem,env(safe-area-inset-top))]">
         <DashboardTopActions
           variant={variant}
           signingOut={signingOut}

@@ -719,7 +719,7 @@ export function ReportV3({
                 status={item.status}
                 description={
                   item.status === 0
-                    ? `This is the highest-leverage move at Level ${item.level}. Install the playbook and you\u2019ll feel the gain within a fortnight.`
+                    ? `This is the highest-leverage move at Level ${item.level}. Install the playbook to unlock real momentum.`
                     : `Almost there — finish the playbook to lock this in and free up energy for the next priority.`
                 }
               />

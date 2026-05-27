@@ -546,7 +546,7 @@ export function WorkshopProspectMatrix({
 
   const activeTab = VIEW_TABS.find((entry) => entry.id === tab)!;
   const sectionTitle =
-    variant === "client" ? "What to focus on first" : "Prospect priority";
+    variant === "client" ? "What to focus on first" : "Priority";
   const sectionSubcopy =
     variant === "client"
       ? "Your clearest priorities from today’s workshop."

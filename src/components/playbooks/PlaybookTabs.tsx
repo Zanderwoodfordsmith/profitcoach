@@ -13,6 +13,8 @@ type Props = {
   showCoachesTab?: boolean;
   /** Base path for related playbook links (e.g. /client/playbooks) */
   basePath?: string;
+  /** Optional query suffix for related playbook links (e.g. ?returnTo=...) */
+  linkQuery?: string;
 };
 
 export function PlaybookTabs({
@@ -21,6 +23,7 @@ export function PlaybookTabs({
   showClientTab = true,
   showCoachesTab = false,
   basePath = "/playbooks",
+  linkQuery = "",
 }: Props) {
   const [internalTab, setInternalTab] = useState<TabId>("overview");
   const activeTab = controlledTab ?? internalTab;
@@ -55,7 +58,7 @@ export function PlaybookTabs({
       </div>
 
       {activeTab === "overview" && (
-        <PlaybookOverviewContent content={content} basePath={basePath} />
+        <PlaybookOverviewContent content={content} basePath={basePath} linkQuery={linkQuery} />
       )}
       {activeTab === "client" && (
         <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-sm">

@@ -8,10 +8,7 @@ import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import type { CommunityPostRow } from "@/components/community/CommunityFeed";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
-import {
-  CommunityPostMediaThumb,
-  communityPostMediaFeedWidthClass,
-} from "@/components/community/CommunityPostMediaGallery";
+import { CommunityPostMediaThumb } from "@/components/community/CommunityPostMediaGallery";
 import {
   formatCommunityPostTimestamp,
   formatCommunityRelativeActivityAgo,
@@ -219,27 +216,13 @@ export function PostCard({
           </div>
         </div>
         {post.media.length > 0 ? (
-          <div className="flex shrink-0 items-stretch gap-1 self-start">
-            {post.media.slice(0, 3).map((item, index) => {
-              const visibleCount = Math.min(post.media.length, 3);
-              return (
-                <div
-                  key={`${item.url}-${index}`}
-                  className={`h-[80px] ${communityPostMediaFeedWidthClass(index, visibleCount)}`}
-                >
-                  <CommunityPostMediaThumb
-                    item={item}
-                    playIconSize="sm"
-                    className="h-full"
-                  />
-                </div>
-              );
-            })}
-            {post.media.length > 3 ? (
-              <span className="flex h-[80px] w-8 items-center justify-center self-center rounded-lg bg-slate-100 text-[10px] font-semibold text-slate-600 ring-1 ring-slate-200">
-                +{post.media.length - 3}
-              </span>
-            ) : null}
+          <div className="h-[80px] w-[92px] shrink-0 self-start">
+            <CommunityPostMediaThumb
+              item={post.media[0]}
+              playIconSize="sm"
+              className="h-full"
+              extraCount={post.media.length > 1 ? post.media.length - 1 : 0}
+            />
           </div>
         ) : null}
       </div>

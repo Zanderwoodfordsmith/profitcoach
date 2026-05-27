@@ -3,11 +3,11 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
+import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
@@ -26,17 +26,16 @@ export default function AdminLayout({
   const { clearImpersonation, clearContactImpersonation } = useImpersonation();
   const [signingOut, setSigningOut] = useState(false);
   const bossWorkshopPage = isBossWorkshopPath(pathname);
-  const [bossWorkshopNavOpen, setBossWorkshopNavOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     if (isBossWorkshopPath(pathname)) {
-      setBossWorkshopNavOpen(false);
+      setSidebarOpen(false);
     }
   }, [pathname]);
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
-  const sidebarVisible =
-    (!bossWorkshopPage || bossWorkshopNavOpen) && !playbooksReader;
+  const sidebarVisible = sidebarOpen && !playbooksReader;
   const shellPadClass = sidebarVisible ? "md:pl-64" : "pl-0";
   const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
@@ -85,7 +84,7 @@ export default function AdminLayout({
       <UsageTracker />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {playbooksReader ? null : isMinimalWorkshopChrome ? (
-          <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+          <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
             <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
           </div>
         ) : (
@@ -95,7 +94,7 @@ export default function AdminLayout({
               signingOut={signingOut}
               onSignOut={handleSignOut}
             />
-            <div className="fixed right-5 top-3 z-[90] hidden md:block">
+            <div className="fixed right-5 top-1.5 z-[90] hidden md:block">
               <DashboardTopActions
                 variant="admin"
                 signingOut={signingOut}
@@ -105,22 +104,11 @@ export default function AdminLayout({
             </div>
           </>
         )}
-        {bossWorkshopPage ? (
-          <button
-            type="button"
-            onClick={() => setBossWorkshopNavOpen((o) => !o)}
-            className={`fixed z-[95] flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-slate-50 ${
-              sidebarVisible ? "left-3 top-3 md:left-[calc(16rem+0.5rem)]" : "left-3 top-3"
-            }`}
-            aria-expanded={sidebarVisible}
-            aria-label={sidebarVisible ? "Hide main menu" : "Show main menu"}
-          >
-            {sidebarVisible ? (
-              <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
-            ) : (
-              <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
-            )}
-          </button>
+        {!playbooksReader ? (
+          <BossProNavToggle
+            sidebarVisible={sidebarVisible}
+            onToggle={() => setSidebarOpen((o) => !o)}
+          />
         ) : null}
         {sidebarVisible ? (
           <DashboardSidebar

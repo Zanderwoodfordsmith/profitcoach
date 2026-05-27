@@ -5,12 +5,12 @@ import {
   ChevronDown,
   Columns3,
   GripVertical,
-  SlidersHorizontal,
   Loader2,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
+import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -1320,10 +1320,7 @@ export default function AdminPaymentsPage() {
                   setColumnsMenuOpen(false);
                 }}
                 icon={
-                  <SlidersHorizontal
-                    className="h-5 w-5 text-slate-500"
-                    aria-hidden
-                  />
+                  <FilterSlidersIcon className="h-5 w-5 text-slate-500" />
                 }
               />
               {filtersMenuOpen ? (

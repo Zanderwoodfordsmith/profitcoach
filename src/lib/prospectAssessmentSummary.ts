@@ -226,31 +226,12 @@ export async function loadPremiumSessionScoresByContactId(
 
   const { data, error } = await supabase
     .from("contacts")
-    .select("id, session_answers, updated_at")
+    .select("id, session_answers")
     .in("id", contactIds);
 
   if (error) {
     if (isMissingColumnError(error)) {
-      const { data: fallback, error: fallbackError } = await supabase
-        .from("contacts")
-        .select("id, session_answers")
-        .in("id", contactIds);
-
-      if (fallbackError) {
-        console.warn("loadPremiumSessionScoresByContactId:", fallbackError);
-        return {};
-      }
-
-      const byContact: Record<string, PremiumSessionSnapshot> = {};
-      for (const row of fallback ?? []) {
-        const contactId = (row as { id?: string }).id;
-        if (!contactId) continue;
-        const session = sessionScoreFromAnswers(
-          (row as { session_answers?: unknown }).session_answers
-        );
-        if (session) byContact[contactId] = session;
-      }
-      return byContact;
+      return {};
     }
 
     console.warn("loadPremiumSessionScoresByContactId:", error);
@@ -264,12 +245,7 @@ export async function loadPremiumSessionScoresByContactId(
     const session = sessionScoreFromAnswers(
       (row as { session_answers?: unknown }).session_answers
     );
-    if (!session) continue;
-    session.updated_at =
-      typeof (row as { updated_at?: string | null }).updated_at === "string"
-        ? (row as { updated_at: string }).updated_at
-        : null;
-    byContact[contactId] = session;
+    if (session) byContact[contactId] = session;
   }
 
   return byContact;

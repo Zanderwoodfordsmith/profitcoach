@@ -3,15 +3,25 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, RefreshCw } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
-import { BossGridTransposed } from "@/components/BossGrid";
+import { BossGridTransposed, WorkshopProspectMatrix } from "@/components/BossGrid";
 import { BossWheel, BossDoughnut, FocusAreas } from "@/components/BossCharts";
 import { ContactPillarNotes } from "@/components/coach/ContactPillarNotes";
 import { BossScoreDialStrip, BossAnswerMixBar } from "@/components/coach/BossScoreDialStrip";
-import { computeAreaScores, computeBossPillarDialStats, computeScoreBreakdown, getTotalScore } from "@/lib/bossScores";
+import { WorkshopOwnerLevelBars } from "@/components/coach/WorkshopOwnerLevelBars";
+import { WorkshopInsightReader } from "@/components/coach/WorkshopInsightReader";
+import type { StoredInsights } from "@/lib/insightGenerator";
+import {
+  computeAreaScores,
+  computeBossPillarDialStats,
+  computeScoreBreakdown,
+  computeWorkshopScoreMixCategories,
+  getTotalScore,
+} from "@/lib/bossScores";
+import { computeProspectDimensionBreakdown } from "@/lib/playbookSessionNotes";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
 
@@ -29,6 +39,21 @@ type WorkshopSessionScores = {
 
 const ANSWERS_DEBOUNCE_MS = 500;
 const NOTES_DEBOUNCE_MS = 800;
+const INSIGHTS_DEBOUNCE_MS = 3 * 60 * 1000;
+const INSIGHTS_STALE_MS = 2 * 60 * 60 * 1000;
+
+const WORKSHOP_CARD_SHELL =
+  "overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]";
+
+const WORKSHOP_CARD_HEADER =
+  "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";
+
+function readStoredInsights(value: unknown): StoredInsights | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (!record.overallShort || typeof record.overallShort !== "object") return null;
+  return value as StoredInsights;
+}
 
 function authHeaders(
   token: string,
@@ -111,6 +136,8 @@ export type ContactBossWorkshopBodyProps = {
   canAddNewPerson?: boolean;
   /** When true, gate copy prompts user to confirm new-person details in the picker. */
   editingNewPerson?: boolean;
+  /** App path for playbook detail back links (e.g. BOSS score hub). */
+  playbookReturnTo?: string;
 };
 
 export function ContactBossWorkshopBody({
@@ -126,9 +153,10 @@ export function ContactBossWorkshopBody({
   showLiveScoringCheckbox = true,
   canAddNewPerson = false,
   editingNewPerson = false,
+  playbookReturnTo,
 }: ContactBossWorkshopBodyProps) {
   const router = useRouter();
-  const { impersonatingCoachId } = useImpersonation();
+  const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
 
@@ -149,15 +177,28 @@ export function ContactBossWorkshopBody({
   >("idle");
   const [showSavedToast, setShowSavedToast] = useState(false);
   const [savedToastVisible, setSavedToastVisible] = useState(false);
+  const [sessionInsights, setSessionInsights] = useState<StoredInsights | null>(null);
+  const [insightsGenerating, setInsightsGenerating] = useState(false);
+  const [insightsGenerationReady, setInsightsGenerationReady] = useState(false);
+  const [insightsGenerationError, setInsightsGenerationError] = useState<string | null>(
+    null
+  );
 
   const draftContactIdRef = useRef<string | null>(null);
+  const insightsGenerationStartedAtRef = useRef<string | null>(null);
+  const insightsPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const insightsGenerationReadyRef = useRef(false);
 
   const answersDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playbookNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const insightsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswersRef = useRef<Record<string, 0 | 1 | 2> | null>(null);
   const pendingNotesRef = useRef<Partial<Record<string, string>> | null>(null);
   const pendingPlaybookNotesRef = useRef<Partial<Record<string, string>> | null>(null);
+  const openPlaybookSheetRef = useRef<((ref: string) => void) | null>(null);
+  const ownerLevelsCardRef = useRef<HTMLElement>(null);
+  const [ownerLevelsCardHeight, setOwnerLevelsCardHeight] = useState<number | null>(null);
 
   useEffect(() => {
     if (contactId) {
@@ -169,9 +210,175 @@ export function ContactBossWorkshopBody({
     setMatrixAnswers({});
     setPillarNotes({});
     setPlaybookNotes({});
+    setSessionInsights(null);
     setError(null);
     setLoading(false);
   }, [contactId]);
+
+  useEffect(() => {
+    insightsGenerationReadyRef.current = insightsGenerationReady;
+  }, [insightsGenerationReady]);
+
+  const stopInsightsPolling = useCallback(() => {
+    if (insightsPollIntervalRef.current) {
+      clearInterval(insightsPollIntervalRef.current);
+      insightsPollIntervalRef.current = null;
+    }
+  }, []);
+
+  const pollSessionForInsights = useCallback(
+    async (targetContactId: string, startedAtIso: string) => {
+      if (insightsGenerationReadyRef.current) return;
+
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) return;
+
+      try {
+        const res = await fetch(
+          `/api/coach/contacts/${encodeURIComponent(targetContactId)}/session`,
+          { headers: authHeaders(accessToken, impersonatingCoachId) }
+        );
+        const json = (await res.json().catch(() => ({}))) as {
+          contact?: {
+            session_insights?: unknown;
+            session_insights_generated_at?: string | null;
+          };
+        };
+        const generatedAt = json.contact?.session_insights_generated_at;
+        const polledInsights = readStoredInsights(json.contact?.session_insights);
+        if (
+          generatedAt &&
+          generatedAt > startedAtIso &&
+          polledInsights
+        ) {
+          setSessionInsights(polledInsights);
+          setInsightsGenerationReady(true);
+          stopInsightsPolling();
+        }
+      } catch {
+        // ignore poll errors — generate request is the primary path
+      }
+    },
+    [impersonatingCoachId, stopInsightsPolling]
+  );
+
+  const generateSessionInsights = useCallback(
+    async (
+      targetContactId: string,
+      answers: Record<string, 0 | 1 | 2>,
+      token?: string,
+      options?: { background?: boolean }
+    ) => {
+      if (Object.keys(answers).length === 0) return;
+
+      const foreground = !options?.background;
+
+      if (foreground) {
+        setInsightsGenerating(true);
+        setInsightsGenerationReady(false);
+        setInsightsGenerationError(null);
+      }
+
+      try {
+        const accessToken =
+          token ??
+          (await supabaseClient.auth.getSession()).data.session?.access_token;
+        if (!accessToken) {
+          if (foreground) {
+            setInsightsGenerationError("Not signed in.");
+            stopInsightsPolling();
+          }
+          return;
+        }
+
+        const res = await fetch(
+          `/api/coach/contacts/${encodeURIComponent(targetContactId)}/insights/generate`,
+          {
+            method: "POST",
+            headers: {
+              ...authHeaders(accessToken, impersonatingCoachId),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ answers }),
+          }
+        );
+        const json = (await res.json().catch(() => ({}))) as {
+          insights?: StoredInsights;
+          error?: string;
+        };
+        if (res.ok && json.insights) {
+          setSessionInsights(json.insights);
+          if (foreground) {
+            setInsightsGenerationReady(true);
+            stopInsightsPolling();
+          }
+        } else if (foreground) {
+          setInsightsGenerationError(json.error ?? "Failed to generate insights.");
+          stopInsightsPolling();
+        }
+      } catch {
+        if (foreground) {
+          setInsightsGenerationError("Something went wrong while generating insights.");
+          stopInsightsPolling();
+        }
+      }
+    },
+    [impersonatingCoachId, stopInsightsPolling]
+  );
+
+  const scheduleInsightsRegenerate = useCallback(
+    (answers: Record<string, 0 | 1 | 2>) => {
+      const targetId = contactId ?? draftContactIdRef.current;
+      if (!targetId || Object.keys(answers).length === 0) return;
+
+      if (insightsDebounceRef.current) {
+        clearTimeout(insightsDebounceRef.current);
+      }
+      insightsDebounceRef.current = setTimeout(() => {
+        insightsDebounceRef.current = null;
+        void generateSessionInsights(targetId, answers, undefined, { background: true });
+      }, INSIGHTS_DEBOUNCE_MS);
+    },
+    [contactId, generateSessionInsights]
+  );
+
+  const handleInsightsGenerationFinished = useCallback(() => {
+    stopInsightsPolling();
+    setInsightsGenerating(false);
+    setInsightsGenerationReady(false);
+    setInsightsGenerationError(null);
+    insightsGenerationStartedAtRef.current = null;
+  }, [stopInsightsPolling]);
+
+  const handleRefreshInsights = useCallback(() => {
+    const targetId = contactId ?? draftContactIdRef.current;
+    if (!targetId || Object.keys(matrixAnswers).length === 0) return;
+
+    const startedAt = new Date().toISOString();
+    insightsGenerationStartedAtRef.current = startedAt;
+    stopInsightsPolling();
+
+    insightsPollIntervalRef.current = setInterval(() => {
+      void pollSessionForInsights(targetId, startedAt);
+    }, 5000);
+
+    void generateSessionInsights(targetId, matrixAnswers);
+  }, [
+    contactId,
+    matrixAnswers,
+    generateSessionInsights,
+    pollSessionForInsights,
+    stopInsightsPolling,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      stopInsightsPolling();
+    };
+  }, [stopInsightsPolling]);
 
   useEffect(() => {
     if (!contactId) return;
@@ -202,6 +409,8 @@ export function ContactBossWorkshopBody({
           business_name: string | null;
           pillar_session_notes?: unknown;
           playbook_session_notes?: unknown;
+          session_insights?: unknown;
+          session_insights_generated_at?: string | null;
         };
         session?: WorkshopSessionScores | null;
       };
@@ -258,12 +467,29 @@ export function ContactBossWorkshopBody({
         }
       }
       setPlaybookNotes(playbookNotesLoaded);
+      setSessionInsights(readStoredInsights(json.contact.session_insights));
 
       const loadedSession = json.session;
+      const loadedAnswers = loadedSession?.answers
+        ? (loadedSession.answers as Record<string, 0 | 1 | 2>)
+        : {};
       if (loadedSession?.answers) {
-        setMatrixAnswers(loadedSession.answers as Record<string, 0 | 1 | 2>);
+        setMatrixAnswers(loadedAnswers);
       } else {
         setMatrixAnswers({});
+      }
+
+      const hasAnswers = Object.keys(loadedAnswers).length > 0;
+      const loadedInsights = readStoredInsights(json.contact.session_insights);
+      const generatedAt = json.contact.session_insights_generated_at
+        ? new Date(json.contact.session_insights_generated_at).getTime()
+        : 0;
+      const insightsStale = Date.now() - generatedAt > INSIGHTS_STALE_MS;
+
+      if (hasAnswers && contactId && (!loadedInsights || insightsStale)) {
+        void generateSessionInsights(contactId, loadedAnswers, session.access_token, {
+          background: true,
+        });
       }
 
       setLoading(false);
@@ -273,7 +499,7 @@ export function ContactBossWorkshopBody({
     return () => {
       cancelled = true;
     };
-  }, [contactId, router, impersonatingCoachId, showPillarNotes]);
+  }, [contactId, router, impersonatingCoachId, showPillarNotes, generateSessionInsights]);
 
   const persistSession = useCallback(
     async (body: {
@@ -392,6 +618,9 @@ export function ContactBossWorkshopBody({
       if (playbookNotesDebounceRef.current) {
         clearTimeout(playbookNotesDebounceRef.current);
       }
+      if (insightsDebounceRef.current) {
+        clearTimeout(insightsDebounceRef.current);
+      }
       flushPendingAnswers();
       flushPendingNotes();
       flushPendingPlaybookNotes();
@@ -421,6 +650,7 @@ export function ContactBossWorkshopBody({
           next[ref] = score;
         }
         pendingAnswersRef.current = next;
+        scheduleInsightsRegenerate(next);
         return next;
       });
       if (answersDebounceRef.current) clearTimeout(answersDebounceRef.current);
@@ -429,7 +659,7 @@ export function ContactBossWorkshopBody({
         flushPendingAnswers();
       }, ANSWERS_DEBOUNCE_MS);
     },
-    [flushPendingAnswers]
+    [flushPendingAnswers, scheduleInsightsRegenerate]
   );
 
   const handlePillarNotesChange = useCallback(
@@ -467,12 +697,24 @@ export function ContactBossWorkshopBody({
     [flushPendingPlaybookNotes]
   );
 
+  const handleProspectMatrixPlaybookClick = useCallback((ref: string) => {
+    openPlaybookSheetRef.current?.(ref);
+  }, []);
+
   const areaScores = computeAreaScores(matrixAnswers);
   const liveTotal = getTotalScore(matrixAnswers);
   const hasPremiumScores = Object.keys(matrixAnswers).length > 0;
   const displayPremiumTotal = hasPremiumScores ? liveTotal : null;
   const pillarDialStats = useMemo(() => computeBossPillarDialStats(matrixAnswers), [matrixAnswers]);
   const answerMix = useMemo(() => computeScoreBreakdown(matrixAnswers), [matrixAnswers]);
+  const scoreMixCategories = useMemo(
+    () => computeWorkshopScoreMixCategories(matrixAnswers),
+    [matrixAnswers]
+  );
+  const prospectBreakdown = useMemo(
+    () => computeProspectDimensionBreakdown(playbookNotes),
+    [playbookNotes]
+  );
   const showCharts = !workshopMode && hasPremiumScores;
 
   const playbookBase = contactId
@@ -482,6 +724,26 @@ export function ContactBossWorkshopBody({
   const scratchNoSave = !contactId && !pendingNewContact;
   const sessionGateActive = scratchNoSave;
   const canSavePlaybookNotes = Boolean(contactId || pendingNewContact);
+
+  useEffect(() => {
+    const el = ownerLevelsCardRef.current;
+    if (!el) return;
+
+    const syncWheelCardHeight = () => {
+      const isSideBySide = window.matchMedia("(min-width: 1024px)").matches;
+      setOwnerLevelsCardHeight(isSideBySide ? el.offsetHeight : null);
+    };
+
+    syncWheelCardHeight();
+    const observer = new ResizeObserver(syncWheelCardHeight);
+    observer.observe(el);
+    window.addEventListener("resize", syncWheelCardHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", syncWheelCardHeight);
+    };
+  }, [matrixAnswers, loading, error]);
 
   useEffect(() => {
     if (variant !== "page") return;
@@ -538,28 +800,6 @@ export function ContactBossWorkshopBody({
           {sessionError}
         </p>
       )}
-      {showCharts && (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="flex justify-center">
-              <BossWheel
-                areaScores={areaScores}
-                totalScore={displayPremiumTotal ?? liveTotal}
-                answers={matrixAnswers}
-                colorScheme={wheelColorScheme}
-                viewMode={wheelViewMode}
-              />
-            </div>
-            <div className="flex justify-center">
-              <BossDoughnut scores={matrixAnswers} />
-            </div>
-            <div>
-              <FocusAreas scores={matrixAnswers} variant="full" />
-            </div>
-          </div>
-        </section>
-      )}
 
       {!loading && !error && showPillarNotes && (
         <div id="boss-pillar-session-notes">
@@ -570,6 +810,21 @@ export function ContactBossWorkshopBody({
       {!loading && !error && (
         <>
           <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
+
+          {showCharts && (
+            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
+              <div className="grid gap-8 md:grid-cols-2">
+                <div className="flex justify-center">
+                  <BossDoughnut scores={matrixAnswers} />
+                </div>
+                <div>
+                  <FocusAreas scores={matrixAnswers} variant="full" />
+                </div>
+              </div>
+            </section>
+          )}
+
           {showLiveScoringCheckbox ? (
             <div className="flex justify-end">
               <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
@@ -623,6 +878,7 @@ export function ContactBossWorkshopBody({
                 interactive={workshopMode && !sessionGateActive}
                 onScoreChange={handleScoreChange}
                 playbookLinkBase={playbookBase}
+                playbookReturnTo={playbookReturnTo}
                 scoreBarLabels="neutral"
                 playbookNotes={canSavePlaybookNotes ? playbookNotes : undefined}
                 clientName={contact?.full_name}
@@ -631,17 +887,105 @@ export function ContactBossWorkshopBody({
                     ? handlePlaybookNotesChange
                     : undefined
                 }
+                onRegisterOpenPlaybookSheet={(open) => {
+                  openPlaybookSheetRef.current = open;
+                }}
               />
             </div>
           </section>
-          <div className="mt-4">
+
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+            <section
+              ref={ownerLevelsCardRef}
+              className={`${WORKSHOP_CARD_SHELL} flex flex-col`}
+            >
+              <div className={WORKSHOP_CARD_HEADER}>Owner levels</div>
+              <div className="px-6 py-8 sm:px-8 sm:py-9">
+                <WorkshopOwnerLevelBars answers={matrixAnswers} />
+              </div>
+            </section>
+
+            <section
+              className={`${WORKSHOP_CARD_SHELL} flex min-h-0 flex-col overflow-hidden max-lg:h-auto`}
+              style={
+                ownerLevelsCardHeight != null ? { height: ownerLevelsCardHeight } : undefined
+              }
+            >
+              <div className={WORKSHOP_CARD_HEADER}>BOSS wheel</div>
+              <div className="flex min-h-0 flex-1 items-center justify-center p-4 sm:p-5">
+                <div className="aspect-square h-auto max-h-full w-full max-w-full">
+                  <BossWheel
+                    size="workshop"
+                    areaScores={areaScores}
+                    totalScore={displayPremiumTotal ?? undefined}
+                    answers={matrixAnswers}
+                    colorScheme={wheelColorScheme}
+                    viewMode={wheelViewMode}
+                    showLegend={false}
+                    scorePlacement="wheel-lower-left"
+                    aria-label="BOSS area scores wheel"
+                  />
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <BossAnswerMixBar
+              className="mx-0 max-w-none w-full"
               onTrack={answerMix.green}
               building={answerMix.amber}
               needsAttention={answerMix.red}
               notAnswered={answerMix.unanswered}
+              scoreMixCategories={scoreMixCategories}
+              prospectBreakdown={prospectBreakdown}
             />
+
+            {contactId ? (
+              <section className={WORKSHOP_CARD_SHELL}>
+                <div className={`${WORKSHOP_CARD_HEADER} flex items-center justify-between gap-3`}>
+                  <span>Insights</span>
+                  <button
+                    type="button"
+                    onClick={handleRefreshInsights}
+                    disabled={insightsGenerating}
+                    aria-label={insightsGenerating ? "Refreshing insights" : "Refresh insights"}
+                    title={insightsGenerating ? "Refreshing…" : "Refresh insights"}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/75 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-50"
+                  >
+                    <RefreshCw
+                      className={`h-3.5 w-3.5 ${insightsGenerating ? "animate-spin" : ""}`}
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
+                  </button>
+                </div>
+                <div className="px-6 pb-8 pt-5 sm:px-8 sm:pb-9 sm:pt-[23px]">
+                  <WorkshopInsightReader
+                    answers={matrixAnswers}
+                    totalScore={displayPremiumTotal ?? liveTotal}
+                    insights={sessionInsights}
+                    insightsGenerating={insightsGenerating}
+                    insightsGenerationReady={insightsGenerationReady}
+                    insightsGenerationError={insightsGenerationError}
+                    onInsightsGenerationFinished={handleInsightsGenerationFinished}
+                    playbookNotes={playbookNotes}
+                    onPlaybookClick={
+                      !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
+                    }
+                  />
+                </div>
+              </section>
+            ) : null}
           </div>
+
+          <WorkshopProspectMatrix
+            playbookNotes={playbookNotes}
+            clientName={contact?.full_name}
+            onPlaybookClick={
+              workshopMode && !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
+            }
+          />
         </>
       )}
     </div>

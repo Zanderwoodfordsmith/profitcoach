@@ -93,8 +93,14 @@ export type InsightDashboardProps = {
   insights: StoredInsights | null;
   insightsGenerating?: boolean;
   onRefreshInsights?: () => void;
-  onGetCoaching?: (context: CoachingSectionContext) => void;
   playbookLinkBase?: string;
+  /** Hide the top score/ overview hero (e.g. Boss Pro embed). */
+  showHeroCard?: boolean;
+  /** Hide the level color scheme toggle. */
+  showLevelColorToggle?: boolean;
+  /** Stack insight panel below rows on smaller breakpoints (narrow embed). */
+  compactPanel?: boolean;
+  className?: string;
 };
 
 function describeArc(
@@ -366,21 +372,23 @@ function InsightPanel({
   isOverview,
   priorityPlaybooks,
   playbookLinkBase,
-  onGetCoaching,
-  sectionContext,
+  compactPanel = false,
 }: {
   insight: { title: string; body: string };
   accentColor: string;
   isOverview: boolean;
   priorityPlaybooks: InsightPriorityPlaybook[];
   playbookLinkBase?: string;
-  onGetCoaching?: (context: CoachingSectionContext) => void;
-  sectionContext?: CoachingSectionContext | null;
+  compactPanel?: boolean;
 }) {
   return (
     <div
-      className="flex flex-1 flex-col justify-center border-l border-slate-100 bg-slate-50/80 p-6 transition-colors"
-      style={{ flexBasis: "40%" }}
+      className={`flex flex-1 flex-col justify-center bg-slate-50/80 p-5 transition-colors sm:p-6 ${
+        compactPanel
+          ? "border-t border-slate-100 xl:border-t-0 xl:border-l"
+          : "border-l border-slate-100"
+      }`}
+      style={{ flexBasis: compactPanel ? undefined : "40%" }}
     >
       <div
         className="mb-3.5 flex h-8 w-8 items-center justify-center rounded-lg"
@@ -448,32 +456,6 @@ function InsightPanel({
           </div>
         </div>
       )}
-      {!isOverview && (
-        <button
-          type="button"
-          onClick={() => onGetCoaching?.(sectionContext!)}
-          disabled={!sectionContext || !onGetCoaching}
-          className="mt-4 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
-          style={{
-            background: `linear-gradient(135deg, ${accentColor}dd, ${accentColor}aa)`,
-            boxShadow: `0 2px 8px ${accentColor}25`,
-          }}
-        >
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-          Get AI coaching on this
-        </button>
-      )}
     </div>
   );
 }
@@ -508,8 +490,11 @@ export function InsightDashboard({
   insights,
   insightsGenerating = false,
   onRefreshInsights,
-  onGetCoaching,
   playbookLinkBase,
+  showHeroCard = true,
+  showLevelColorToggle = true,
+  compactPanel = false,
+  className = "",
 }: InsightDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabId>("levels");
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -591,80 +576,91 @@ export function InsightDashboard({
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Speed dial card */}
-      <section className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-7">
-          <SpeedDialGauge score={totalScore} />
-          <div className="min-w-0 flex-1">
-            <p
-              className="mb-1.5 text-xs font-bold uppercase tracking-widest"
-              style={{ color: levelColors[overall.level - 1]?.accent ?? "#0c5290" }}
-            >
-              Level {overall.level} — {overall.name}
-            </p>
-            <p className="text-base leading-relaxed text-slate-600">
-              {insightsGenerating
-                ? "Generating your insights…"
-                : shortInsight?.body ?? "Your personalised insight will appear here once generated."}
-            </p>
+    <div className={`flex flex-col gap-6 ${className}`.trim()}>
+      {showHeroCard ? (
+        <section className="rounded-[18px] border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-7">
+            <SpeedDialGauge score={totalScore} />
+            <div className="min-w-0 flex-1">
+              <p
+                className="mb-1.5 text-xs font-bold uppercase tracking-widest"
+                style={{ color: levelColors[overall.level - 1]?.accent ?? "#0c5290" }}
+              >
+                Level {overall.level} — {overall.name}
+              </p>
+              <p className="text-base leading-relaxed text-slate-600">
+                {insightsGenerating
+                  ? "Generating your insights…"
+                  : shortInsight?.body ?? "Your personalised insight will appear here once generated."}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={() => setOverviewExpanded((e) => !e)}
+              className="text-sm font-semibold text-sky-600 hover:text-sky-700"
+            >
+              {overviewExpanded ? "Hide full overview" : "See full overview"}
+            </button>
+            {onRefreshInsights && (
+              <button
+                type="button"
+                onClick={onRefreshInsights}
+                disabled={insightsGenerating}
+                className="text-sm font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-50"
+              >
+                {insightsGenerating ? "Refreshing…" : "Refresh insights"}
+              </button>
+            )}
+            {overviewExpanded && (
+              <div className="mt-3 whitespace-pre-line text-base leading-relaxed text-slate-600">
+                {longInsight?.body ?? "Expand after insights have been generated."}
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      <div className="flex flex-col items-center gap-3">
+        {showLevelColorToggle ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-slate-500">Level colors:</span>
+            <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setLevelColorScheme("original")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  levelColorScheme === "original"
+                    ? "bg-slate-100 text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Original
+              </button>
+              <button
+                type="button"
+                onClick={() => setLevelColorScheme("diagram")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  levelColorScheme === "diagram"
+                    ? "bg-slate-100 text-slate-900"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Diagram
+              </button>
+            </div>
+          </div>
+        ) : onRefreshInsights ? (
           <button
             type="button"
-            onClick={() => setOverviewExpanded((e) => !e)}
-            className="text-sm font-semibold text-sky-600 hover:text-sky-700"
+            onClick={onRefreshInsights}
+            disabled={insightsGenerating}
+            className="text-sm font-semibold text-sky-600 hover:text-sky-700 disabled:opacity-50"
           >
-            {overviewExpanded ? "Hide full overview" : "See full overview"}
+            {insightsGenerating ? "Generating insights…" : "Refresh insights"}
           </button>
-          {onRefreshInsights && (
-            <button
-              type="button"
-              onClick={onRefreshInsights}
-              disabled={insightsGenerating}
-              className="text-sm font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-50"
-            >
-              {insightsGenerating ? "Refreshing…" : "Refresh insights"}
-            </button>
-          )}
-          {overviewExpanded && (
-            <div className="mt-3 whitespace-pre-line text-base leading-relaxed text-slate-600">
-              {longInsight?.body ?? "Expand after insights have been generated."}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Level color scheme picker + Tabs */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-slate-500">Level colors:</span>
-          <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setLevelColorScheme("original")}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                levelColorScheme === "original"
-                  ? "bg-slate-100 text-slate-900"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Original
-            </button>
-            <button
-              type="button"
-              onClick={() => setLevelColorScheme("diagram")}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                levelColorScheme === "diagram"
-                  ? "bg-slate-100 text-slate-900"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Diagram
-            </button>
-          </div>
-        </div>
+        ) : null}
         <div className="flex items-center justify-center gap-2">
         <div className="flex rounded-xl bg-slate-100 p-1">
           {(["levels", "pillars", "areas"] as const).map((tab) => (
@@ -708,10 +704,14 @@ export function InsightDashboard({
       </div>
 
       {/* Two-panel card */}
-      <section className="flex min-h-[420px] overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-sm">
+      <section
+        className={`flex min-h-[420px] overflow-hidden rounded-[18px] border border-slate-200 bg-white shadow-sm ${
+          compactPanel ? "flex-col xl:flex-row" : ""
+        }`}
+      >
         <div
-          className="flex flex-col gap-3 p-5"
-          style={{ flex: "1 1 55%" }}
+          className={`flex flex-col gap-3 p-4 sm:p-5 ${compactPanel ? "min-w-0 flex-1" : ""}`}
+          style={compactPanel ? undefined : { flex: "1 1 55%" }}
         >
           {activeTab === "levels" &&
             levelScores.map((ls, i) => (
@@ -782,20 +782,7 @@ export function InsightDashboard({
           isOverview={isOverview}
           priorityPlaybooks={priorityPlaybooks}
           playbookLinkBase={playbookLinkBase}
-          onGetCoaching={onGetCoaching}
-          sectionContext={
-            !isOverview
-              ? {
-                  tab: activeTab,
-                  levelIdx: selectedLevel ?? undefined,
-                  pillarIdx: selectedPillar ?? undefined,
-                  areaIdx: selectedArea ?? undefined,
-                  insightTitle: currentInsight.title,
-                  insightBody: currentInsight.body,
-                  priorityPlaybooks,
-                }
-              : null
-          }
+          compactPanel={compactPanel}
         />
       </section>
     </div>

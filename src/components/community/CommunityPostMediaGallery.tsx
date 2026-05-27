@@ -19,25 +19,19 @@ export function communityPostMediaSlotClass(index: number, total: number): strin
   return "min-w-0 flex-1";
 }
 
-export function communityPostMediaFeedWidthClass(
-  index: number,
-  visibleCount: number
-): string {
-  if (visibleCount <= 1) return "w-[92px]";
-  if (visibleCount === 2) return index === 0 ? "w-[88px]" : "w-[64px]";
-  return "w-[60px]";
-}
-
 type ThumbProps = {
   item: CommunityPostMediaItem;
   className?: string;
   playIconSize?: "sm" | "md";
+  /** Feed preview: show "+N" when more items exist beyond this thumb. */
+  extraCount?: number;
 };
 
 export function CommunityPostMediaThumb({
   item,
   className = "",
   playIconSize = "md",
+  extraCount = 0,
 }: ThumbProps) {
   const video = isVideoItem(item);
   const playClass =
@@ -69,7 +63,7 @@ export function CommunityPostMediaThumb({
           className="h-full w-full object-cover"
         />
       )}
-      {video ? (
+      {video && extraCount <= 0 ? (
         <span
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
           aria-hidden
@@ -78,6 +72,16 @@ export function CommunityPostMediaThumb({
             className={`flex items-center justify-center bg-black/50 text-white shadow-sm ${playClass}`}
           >
             <Play className={`fill-white ${playIconClass}`} strokeWidth={0} />
+          </span>
+        </span>
+      ) : null}
+      {extraCount > 0 ? (
+        <span
+          className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-black/45"
+          aria-hidden
+        >
+          <span className="text-base font-semibold tabular-nums text-white">
+            +{extraCount}
           </span>
         </span>
       ) : null}

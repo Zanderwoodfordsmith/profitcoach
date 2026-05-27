@@ -18,6 +18,8 @@ export type AcademyCourse = {
   coverImageUrl?: string;
   /** When set, course card uses the same solid colour as that pillar on My Compass. */
   compassPillarId?: AcademyCompassPillarId;
+  /** When set, only coaches with one of these access tiers can see the course. */
+  accessTiers?: string[];
   lessons: AcademyLesson[];
 };
 

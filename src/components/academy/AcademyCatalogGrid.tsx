@@ -1,14 +1,25 @@
 import { AcademyCourseCard } from "@/components/academy/AcademyCourseCard";
 import { lessonCount, listCoursesFlat, loadAcademyCatalog } from "@/lib/academy/catalog";
+import { courseVisibleToAccessTier } from "@/lib/academy/accessTierFilter";
+import type { CoachAccessTier } from "@/lib/coachAccess/tiers";
 
 type Props = {
   /** Prefix for course card links (e.g. `/coach/academy/classroom`). */
   linkBasePath: string;
+  /** When set, filters courses by optional catalog `accessTiers`. */
+  viewerAccessTier?: CoachAccessTier | null;
 };
 
-export async function AcademyCatalogGrid({ linkBasePath }: Props) {
+export async function AcademyCatalogGrid({
+  linkBasePath,
+  viewerAccessTier = null,
+}: Props) {
   const catalog = await loadAcademyCatalog();
-  const rows = listCoursesFlat(catalog);
+  const rows = listCoursesFlat(catalog).filter(({ course }) =>
+    viewerAccessTier
+      ? courseVisibleToAccessTier(course, viewerAccessTier)
+      : true
+  );
 
   return (
     <div className="mx-auto w-[80%] max-w-6xl">

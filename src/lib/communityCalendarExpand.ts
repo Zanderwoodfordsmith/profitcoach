@@ -144,12 +144,51 @@ export function expandCommunityCalendar(
   rangeEnd: DateTime,
   exceptions: CommunityCalendarEventExceptionRow[] = []
 ): CommunityCalendarOccurrence[] {
-  const cancellationByKey = new Map<string, string | null>();
+  const exceptionByKey = new Map<
+    string,
+    {
+      isCancelled: boolean;
+      cancellationReason: string | null;
+      recordingLinkUrl: string | null;
+      recordingVideoUrl: string | null;
+    }
+  >();
   for (const ex of exceptions) {
-    cancellationByKey.set(
-      communityCalendarOccurrenceKey(ex.event_id, ex.occurrence_start),
-      ex.cancellation_reason?.trim() || null
-    );
+    exceptionByKey.set(communityCalendarOccurrenceKey(ex.event_id, ex.occurrence_start), {
+      isCancelled: Boolean(ex.cancelled_at),
+      cancellationReason: ex.cancellation_reason?.trim() || null,
+      recordingLinkUrl: ex.recording_link_url ?? null,
+      recordingVideoUrl: ex.recording_video_url ?? null,
+    });
+  }
+
+  function occurrenceFields(
+    row: CommunityCalendarEventRow,
+    occurrenceKey: string,
+    isRecurringSeries: boolean
+  ): Pick<
+    CommunityCalendarOccurrence,
+    | "recording_link_url"
+    | "recording_video_url"
+    | "isCancelled"
+    | "cancellationReason"
+  > {
+    const ex = exceptionByKey.get(occurrenceKey);
+    const isCancelled = ex?.isCancelled ?? false;
+    if (isRecurringSeries) {
+      return {
+        recording_link_url: ex?.recordingLinkUrl ?? null,
+        recording_video_url: ex?.recordingVideoUrl ?? null,
+        isCancelled,
+        cancellationReason: ex?.cancellationReason ?? null,
+      };
+    }
+    return {
+      recording_link_url: ex?.recordingLinkUrl ?? row.recording_link_url,
+      recording_video_url: ex?.recordingVideoUrl ?? row.recording_video_url,
+      isCancelled,
+      cancellationReason: ex?.cancellationReason ?? null,
+    };
   }
   const out: CommunityCalendarOccurrence[] = [];
   const rs = rangeStart.toUTC();
@@ -183,10 +222,7 @@ export function expandCommunityCalendar(
           display_timezone: row.display_timezone,
           location_kind: row.location_kind,
           location_url: row.location_url,
-          recording_link_url: row.recording_link_url,
-          recording_video_url: row.recording_video_url,
-          isCancelled: cancellationByKey.has(occurrenceKey),
-          cancellationReason: cancellationByKey.get(occurrenceKey) ?? null,
+          ...occurrenceFields(row, occurrenceKey, false),
         });
       }
       continue;
@@ -209,10 +245,7 @@ export function expandCommunityCalendar(
         display_timezone: row.display_timezone,
         location_kind: row.location_kind,
         location_url: row.location_url,
-        recording_link_url: row.recording_link_url,
-        recording_video_url: row.recording_video_url,
-        isCancelled: cancellationByKey.has(occurrenceKey),
-        cancellationReason: cancellationByKey.get(occurrenceKey) ?? null,
+        ...occurrenceFields(row, occurrenceKey, true),
       });
     }
   }

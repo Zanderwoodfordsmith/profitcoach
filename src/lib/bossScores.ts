@@ -4,11 +4,11 @@
  */
 
 import {
-  BOSS_FOUNDATION_COLOR,
   PLAYBOOKS,
   PLAYBOOK_COUNT,
   AREAS,
 } from "./bossData";
+import { BOSS_PILLAR_DIAL_GRADIENTS } from "./bossProDialGradients";
 
 export type AnswersMap = Record<string, 0 | 1 | 2>;
 
@@ -32,6 +32,38 @@ export type ScoreBreakdown = {
   red: number;
   unanswered: number;
 };
+
+export type ProgressCategoryPlaybook = { ref: string; name: string };
+
+export type WorkshopScoreMixCategories = {
+  onTrack: ProgressCategoryPlaybook[];
+  building: ProgressCategoryPlaybook[];
+  needsAttention: ProgressCategoryPlaybook[];
+  notAnswered: ProgressCategoryPlaybook[];
+};
+
+/** Playbooks grouped by BOSS score band for progress hover lists. */
+export function computeWorkshopScoreMixCategories(
+  answers: AnswersMap | null | undefined
+): WorkshopScoreMixCategories {
+  const categories: WorkshopScoreMixCategories = {
+    onTrack: [],
+    building: [],
+    needsAttention: [],
+    notAnswered: [],
+  };
+
+  for (const playbook of PLAYBOOKS) {
+    const entry: ProgressCategoryPlaybook = { ref: playbook.ref, name: playbook.name };
+    const score = answers?.[playbook.ref];
+    if (score === 2) categories.onTrack.push(entry);
+    else if (score === 1) categories.building.push(entry);
+    else if (score === 0) categories.needsAttention.push(entry);
+    else categories.notAnswered.push(entry);
+  }
+
+  return categories;
+}
 
 export type FocusItem = {
   ref: string;
@@ -124,10 +156,26 @@ export function computePillarScoresWithFoundation(
 
 /** One row of BOSS pillar dials (Foundation + 3 growth pillars). */
 export const BOSS_PILLAR_DIAL_ORDER = [
-  { key: "foundation" as const, label: "Foundation", color: BOSS_FOUNDATION_COLOR },
-  { key: "vision" as const, label: "Clarify Vision", color: "#3B82F6" },
-  { key: "velocity" as const, label: "Control Velocity", color: "#0EA5E9" },
-  { key: "value" as const, label: "Create Value", color: "#14B8A6" },
+  {
+    key: "foundation" as const,
+    label: "Foundation",
+    color: BOSS_PILLAR_DIAL_GRADIENTS.foundation.accent,
+  },
+  {
+    key: "vision" as const,
+    label: "Clarify Vision",
+    color: BOSS_PILLAR_DIAL_GRADIENTS.vision.accent,
+  },
+  {
+    key: "velocity" as const,
+    label: "Control Velocity",
+    color: BOSS_PILLAR_DIAL_GRADIENTS.velocity.accent,
+  },
+  {
+    key: "value" as const,
+    label: "Create Value",
+    color: BOSS_PILLAR_DIAL_GRADIENTS.value.accent,
+  },
 ];
 
 export type BossPillarDialStat = {

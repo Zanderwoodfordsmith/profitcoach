@@ -93,9 +93,15 @@ type Props = {
   content: PlaybookContent;
   /** Base path for related playbook links (e.g. /client/playbooks or /playbooks) */
   basePath?: string;
+  /** Optional query suffix for related playbook links (e.g. ?returnTo=...) */
+  linkQuery?: string;
 };
 
-export function PlaybookOverviewContent({ content, basePath = "/playbooks" }: Props) {
+export function PlaybookOverviewContent({
+  content,
+  basePath = "/playbooks",
+  linkQuery = "",
+}: Props) {
   const hasSectionedActions =
     content.actionSections?.length &&
     content.actionSections.some((s) => s.actions?.length);
@@ -288,7 +294,7 @@ export function PlaybookOverviewContent({ content, basePath = "/playbooks" }: Pr
               return (
                 <li key={item.ref}>
                   <Link
-                    href={`${basePath}/${item.ref}`}
+                    href={`${basePath}/${item.ref}${linkQuery}`}
                     className="font-semibold text-[#0c5290] underline decoration-[#0c5290]/35 underline-offset-2 transition hover:text-[#094271] hover:decoration-[#094271]"
                   >
                     {label}

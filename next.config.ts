@@ -11,6 +11,16 @@ const nextConfig: NextConfig = {
         destination: "/boss-exact/boss-assessment.html",
         permanent: true,
       },
+      {
+        source: "/coach/workshop",
+        destination: "/coach/boss-pro",
+        permanent: true,
+      },
+      {
+        source: "/admin/workshop",
+        destination: "/admin/boss-pro",
+        permanent: true,
+      },
     ];
   },
 };

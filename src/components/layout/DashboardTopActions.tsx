@@ -426,7 +426,7 @@ export function DashboardTopActions({
 
   return (
     <div
-      className={`fixed right-5 top-3 z-[90] flex items-center gap-3 ${className ?? ""}`}
+      className={`fixed right-5 top-1.5 z-[90] flex items-center gap-3 ${className ?? ""}`}
     >
       <div className="relative" ref={notificationsRef}>
         <button

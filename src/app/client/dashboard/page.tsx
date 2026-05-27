@@ -11,7 +11,7 @@ import { BossWheel, BossDoughnut, FocusAreas } from "@/components/BossCharts";
 import { CalendarEmbed } from "@/components/CalendarEmbed";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
-import { InsightDashboard, type CoachingSectionContext } from "@/components/InsightDashboard";
+import { InsightDashboard } from "@/components/InsightDashboard";
 import type { StoredInsights } from "@/lib/insightGenerator";
 import { computeAreaScores, getTotalScore } from "@/lib/bossScores";
 import type { AnswersMap } from "@/lib/bossScores";
@@ -337,14 +337,6 @@ export default function ClientDashboardPage() {
               insights={assessment?.insights ?? null}
               insightsGenerating={insightsGenerating}
               onRefreshInsights={handleRefreshInsights}
-              onGetCoaching={(context: CoachingSectionContext) => {
-                try {
-                  sessionStorage.setItem("coachSectionContext", JSON.stringify(context));
-                } catch {
-                  // ignore
-                }
-                router.push("/client/ai-coach?from=insight");
-              }}
             />
           )}
 

@@ -25,10 +25,16 @@ import {
   communityCalendarCoverUrl,
 } from "@/lib/communityCalendarDisplay";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
-import { updateCommunityCalendarCancellationReason } from "@/lib/communityCalendarData";
+import {
+  saveCommunityCalendarOccurrenceRecording,
+  updateCommunityCalendarCancellationReason,
+} from "@/lib/communityCalendarData";
+import { isRecurringCommunityCalendarEvent } from "@/lib/communityCalendarTypes";
+import type { CommunityCalendarEventRow } from "@/lib/communityCalendarTypes";
 
 type Props = {
   occurrence: CommunityCalendarOccurrence;
+  eventRow?: CommunityCalendarEventRow | null;
   onClose: () => void;
   canManage?: boolean;
   onEdit?: () => void;
@@ -73,6 +79,7 @@ function recordingWatchUrl(occurrence: CommunityCalendarOccurrence): string | nu
 
 export function CommunityCalendarEventModal({
   occurrence,
+  eventRow = null,
   onClose,
   canManage = false,
   onEdit,
@@ -113,6 +120,11 @@ export function CommunityCalendarEventModal({
   const watchUrl = useMemo(() => recordingWatchUrl(occurrence), [occurrence]);
   const coverUrl = useMemo(() => communityCalendarCoverUrl(occurrence), [occurrence]);
 
+  const isRecurringSeries = useMemo(
+    () => (eventRow ? isRecurringCommunityCalendarEvent(eventRow) : false),
+    [eventRow]
+  );
+
   const saveRecordingLink = useCallback(async () => {
     const trimmed = recordingLinkDraft.trim();
     if (trimmed) {
@@ -125,13 +137,21 @@ export function CommunityCalendarEventModal({
     setRecordingSaving(true);
     setRecordingError(null);
     try {
-      const { error } = await supabaseClient
-        .from("community_calendar_events")
-        .update({
-          recording_link_url: trimmed || null,
-        })
-        .eq("id", occurrence.eventId);
-      if (error) throw error;
+      if (isRecurringSeries) {
+        await saveCommunityCalendarOccurrenceRecording(
+          occurrence.eventId,
+          occurrence.startsAtIso,
+          { recording_link_url: trimmed || null }
+        );
+      } else {
+        const { error } = await supabaseClient
+          .from("community_calendar_events")
+          .update({
+            recording_link_url: trimmed || null,
+          })
+          .eq("id", occurrence.eventId);
+        if (error) throw error;
+      }
       onRecordingSaved?.();
     } catch (e) {
       const msg = supabaseErrorMessage(e);
@@ -143,7 +163,13 @@ export function CommunityCalendarEventModal({
     } finally {
       setRecordingSaving(false);
     }
-  }, [recordingLinkDraft, occurrence.eventId, onRecordingSaved]);
+  }, [
+    recordingLinkDraft,
+    occurrence.eventId,
+    occurrence.startsAtIso,
+    isRecurringSeries,
+    onRecordingSaved,
+  ]);
 
   const saveCancellationReason = useCallback(async () => {
     setCancellationReasonSaving(true);
@@ -380,8 +406,9 @@ export function CommunityCalendarEventModal({
                 {recordingSaving ? "Saving…" : "Save recording link"}
               </button>
               <p className="text-xs text-slate-500">
-                Applies to this event (including all dates in a recurring series).
-                Upload a video file via Edit if needed.
+                {isRecurringSeries
+                  ? "Applies only to this date in the series. Other sessions are unchanged."
+                  : "Applies to this event. Upload a video file via Edit if needed."}
               </p>
             </div>
           ) : null}

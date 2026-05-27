@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useBossWorkshopChrome } from "@/contexts/BossWorkshopChromeContext";
@@ -21,17 +21,8 @@ type PickRow = {
   job_title: string | null;
   type: string;
   coach_name?: string | null;
+  boss_score_premium?: number | null;
 };
-
-function syncContactUrl(selectedId: string) {
-  const url = new URL(window.location.href);
-  if (selectedId && selectedId !== NEW_PERSON_VALUE) {
-    url.searchParams.set("contact", selectedId);
-  } else {
-    url.searchParams.delete("contact");
-  }
-  window.history.replaceState({}, "", url.toString());
-}
 
 function authHeaders(
   token: string,
@@ -44,13 +35,81 @@ function authHeaders(
   return h;
 }
 
-export default function CoachWorkshopPage() {
+function readBossScorePremium(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function mergeCoachWorkshopContacts(
+  prospects: Array<{
+    id: string;
+    full_name: string;
+    business_name: string | null;
+    job_title: string | null;
+    type: string;
+    boss_score_premium?: unknown;
+  }>,
+  clients: Array<{
+    id: string;
+    full_name: string;
+    business_name: string | null;
+    job_title?: string | null;
+    type: string;
+    boss_score_premium?: unknown;
+  }>
+): PickRow[] {
+  const byId = new Map<string, PickRow>();
+  for (const row of prospects) {
+    byId.set(row.id, {
+      id: row.id,
+      full_name: row.full_name,
+      business_name: row.business_name ?? null,
+      job_title: row.job_title ?? null,
+      type: row.type,
+      coach_name: null,
+      boss_score_premium: readBossScorePremium(row.boss_score_premium),
+    });
+  }
+  for (const row of clients) {
+    if (byId.has(row.id)) continue;
+    byId.set(row.id, {
+      id: row.id,
+      full_name: row.full_name,
+      business_name: row.business_name ?? null,
+      job_title: row.job_title ?? null,
+      type: row.type,
+      coach_name: null,
+      boss_score_premium: readBossScorePremium(row.boss_score_premium),
+    });
+  }
+  return [...byId.values()].sort((a, b) => a.full_name.localeCompare(b.full_name));
+}
+
+function CoachWorkshopPageContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const contactFromUrl = searchParams.get("contact")?.trim() ?? "";
   const { impersonatingCoachId } = useImpersonation();
+
+  const syncContactUrl = useCallback(
+    (nextSelectedId: string) => {
+      if (nextSelectedId && nextSelectedId !== NEW_PERSON_VALUE) {
+        router.replace(
+          `${pathname}?contact=${encodeURIComponent(nextSelectedId)}`,
+          { scroll: false }
+        );
+        return;
+      }
+      router.replace(pathname, { scroll: false });
+    },
+    [pathname, router]
+  );
   const chrome = useBossWorkshopChrome();
   const isMinimalChrome = chrome?.isMinimalWorkshopChrome ?? false;
   const [contacts, setContacts] = useState<PickRow[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [selectedId, setSelectedId] = useState<string>(() => contactFromUrl);
+  const [deepLinkedContact, setDeepLinkedContact] =
+    useState<WorkshopSessionSummary | null>(null);
   const [newPersonName, setNewPersonName] = useState("");
   const [newPersonTitle, setNewPersonTitle] = useState("");
   const [newPersonBusiness, setNewPersonBusiness] = useState("");
@@ -67,10 +126,98 @@ export default function CoachWorkshopPage() {
     string | null
   >(null);
 
+  const refreshWorkshopContacts = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!profile) return;
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return;
+
+    const isAdminUnscopedView = profile.role === "admin" && !impersonatingCoachId;
+    if (isAdminUnscopedView) {
+      const res = await fetch("/api/admin/contacts", {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        prospects?: Array<{
+          id: string;
+          full_name: string;
+          business_name: string | null;
+          job_title: string | null;
+          type: string;
+          coach_name?: string | null;
+          boss_score_premium?: unknown;
+        }>;
+      };
+      if (!res.ok) return;
+      const mapped = (body.prospects ?? []).map((r) => ({
+        id: r.id,
+        full_name: r.full_name,
+        business_name: r.business_name ?? null,
+        job_title: r.job_title ?? null,
+        type: r.type,
+        coach_name: r.coach_name ?? null,
+        boss_score_premium: readBossScorePremium(r.boss_score_premium),
+      }));
+      mapped.sort((a, b) => a.full_name.localeCompare(b.full_name));
+      setContacts(mapped);
+      return;
+    }
+
+    const headers = authHeaders(token, impersonatingCoachId);
+    const [prospectsRes, clientsRes] = await Promise.all([
+      fetch("/api/coach/prospects", { headers, cache: "no-store" }),
+      fetch("/api/coach/clients", { headers, cache: "no-store" }),
+    ]);
+    if (!prospectsRes.ok) return;
+
+    const prospectsBody = (await prospectsRes.json().catch(() => ({}))) as {
+      prospects?: Array<{
+        id: string;
+        full_name: string;
+        business_name: string | null;
+        job_title: string | null;
+        type: string;
+        boss_score_premium?: unknown;
+      }>;
+    };
+    const clientsBody = (await clientsRes.json().catch(() => ({}))) as {
+      clients?: Array<{
+        id: string;
+        full_name: string;
+        business_name: string | null;
+        job_title?: string | null;
+        type: string;
+        boss_score_premium?: unknown;
+      }>;
+    };
+
+    setContacts(
+      mergeCoachWorkshopContacts(
+        prospectsBody.prospects ?? [],
+        clientsBody.clients ?? []
+      )
+    );
+  }, [impersonatingCoachId]);
+
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get("contact");
-    if (q) setSelectedId(q);
-  }, []);
+    if (contactFromUrl) {
+      setSelectedId(contactFromUrl);
+    }
+  }, [contactFromUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +261,7 @@ export default function CoachWorkshopPage() {
         }
         const res = await fetch("/api/admin/contacts", {
           headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
         });
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -124,6 +272,7 @@ export default function CoachWorkshopPage() {
             job_title: string | null;
             type: string;
             coach_name?: string | null;
+            boss_score_premium?: unknown;
           }>;
         };
         if (cancelled) return;
@@ -140,6 +289,7 @@ export default function CoachWorkshopPage() {
           job_title: r.job_title ?? null,
           type: r.type,
           coach_name: r.coach_name ?? null,
+          boss_score_premium: readBossScorePremium(r.boss_score_premium),
         }));
         mapped.sort((a, b) => a.full_name.localeCompare(b.full_name));
         setContacts(mapped);
@@ -154,21 +304,58 @@ export default function CoachWorkshopPage() {
           : user.id;
       setDraftCoachId(effectiveCoachId);
 
-      const { data: rows, error: listError } = await supabaseClient
-        .from("contacts")
-        .select("id, full_name, business_name, job_title, type")
-        .eq("coach_id", effectiveCoachId)
-        .order("full_name", { ascending: true });
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
+      const headers = authHeaders(token, impersonatingCoachId);
+      const [prospectsRes, clientsRes] = await Promise.all([
+        fetch("/api/coach/prospects", { headers, cache: "no-store" }),
+        fetch("/api/coach/clients", { headers, cache: "no-store" }),
+      ]);
 
       if (cancelled) return;
 
-      if (listError) {
-        setError("Unable to load contacts.");
+      const prospectsBody = (await prospectsRes.json().catch(() => ({}))) as {
+        error?: string;
+        prospects?: Array<{
+          id: string;
+          full_name: string;
+          business_name: string | null;
+          job_title: string | null;
+          type: string;
+          boss_score_premium?: unknown;
+        }>;
+      };
+      const clientsBody = (await clientsRes.json().catch(() => ({}))) as {
+        error?: string;
+        clients?: Array<{
+          id: string;
+          full_name: string;
+          business_name: string | null;
+          job_title?: string | null;
+          type: string;
+          boss_score_premium?: unknown;
+        }>;
+      };
+
+      if (!prospectsRes.ok) {
+        setError(prospectsBody.error ?? "Unable to load contacts.");
         setLoading(false);
         return;
       }
 
-      setContacts((rows ?? []) as PickRow[]);
+      setContacts(
+        mergeCoachWorkshopContacts(
+          prospectsBody.prospects ?? [],
+          clientsBody.clients ?? []
+        )
+      );
       setLoading(false);
     }
 
@@ -178,48 +365,122 @@ export default function CoachWorkshopPage() {
     };
   }, [router, impersonatingCoachId]);
 
+  const activeContactId = useMemo(() => {
+    const id = (contactFromUrl || selectedId).trim();
+    return id && id !== NEW_PERSON_VALUE ? id : null;
+  }, [contactFromUrl, selectedId]);
+
   useEffect(() => {
     if (loading) return;
-    if (!selectedId || selectedId === NEW_PERSON_VALUE) return;
-    if (!contacts.length) return;
-    if (!contacts.some((c) => c.id === selectedId)) {
-      setSelectedId("");
-      syncContactUrl("");
+
+    const contactId = activeContactId;
+    if (!contactId) {
+      setDeepLinkedContact(null);
+      return;
     }
-  }, [loading, contacts, selectedId]);
+    if (contacts.some((c) => c.id === contactId)) {
+      setDeepLinkedContact(null);
+      return;
+    }
+    const resolvedContactId = contactId;
+
+    let cancelled = false;
+    async function resolveDeepLinkedContact() {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+      if (!token || cancelled) return;
+
+      const res = await fetch(
+        `/api/coach/contacts/${encodeURIComponent(resolvedContactId)}/session`,
+        { headers: authHeaders(token, impersonatingCoachId) }
+      );
+      const json = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        contact?: {
+          id: string;
+          full_name: string;
+          business_name: string | null;
+        };
+      };
+
+      if (cancelled) return;
+
+      if (!res.ok || !json.contact?.id) {
+        setDeepLinkedContact(null);
+        if (res.status === 404) {
+          setSelectedId("");
+          syncContactUrl("");
+        }
+        return;
+      }
+
+      const summary: WorkshopSessionSummary = {
+        fullName: json.contact.full_name,
+        jobTitle: null,
+        businessName: json.contact.business_name,
+      };
+      setDeepLinkedContact(summary);
+      setContacts((prev) => {
+        if (prev.some((c) => c.id === json.contact!.id)) return prev;
+        return [
+          ...prev,
+          {
+            id: json.contact!.id,
+            full_name: json.contact!.full_name,
+            business_name: json.contact!.business_name ?? null,
+            job_title: null,
+            type: "prospect",
+            coach_name: null,
+            boss_score_premium: null,
+          },
+        ].sort((a, b) => a.full_name.localeCompare(b.full_name));
+      });
+    }
+
+    void resolveDeepLinkedContact();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, contacts, activeContactId, impersonatingCoachId, syncContactUrl]);
 
   const isEditingNewPerson = selectedId === NEW_PERSON_VALUE;
 
   const sessionSummary = useMemo((): WorkshopSessionSummary | null => {
-    if (!selectedId || selectedId === NEW_PERSON_VALUE) return null;
-    const contact = contacts.find((c) => c.id === selectedId);
-    if (!contact) return null;
-    return {
-      fullName: contact.full_name,
-      jobTitle: contact.job_title,
-      businessName: contact.business_name,
-    };
-  }, [contacts, selectedId]);
+    if (!activeContactId) return null;
+    const contact = contacts.find((c) => c.id === activeContactId);
+    if (contact) {
+      return {
+        fullName: contact.full_name,
+        jobTitle: contact.job_title,
+        businessName: contact.business_name,
+      };
+    }
+    if (deepLinkedContact) return deepLinkedContact;
+    if (loading) {
+      return { fullName: "Loading session…", jobTitle: null, businessName: null };
+    }
+    return null;
+  }, [contacts, activeContactId, deepLinkedContact, loading]);
 
   useEffect(() => {
-    if (!selectedId || selectedId === NEW_PERSON_VALUE) {
+    if (!activeContactId) {
       setHasScorecardForContact(false);
       return;
     }
 
+    const contactId = activeContactId;
     let cancelled = false;
     async function checkScorecard() {
       const {
         data: { session },
       } = await supabaseClient.auth.getSession();
       const token = session?.access_token;
-      if (!token) {
-        if (!cancelled) setHasScorecardForContact(false);
-        return;
-      }
+      if (!token || cancelled) return;
 
       const res = await fetch(
-        `/api/coach/contacts/${encodeURIComponent(selectedId)}/scorecard-report`,
+        `/api/coach/contacts/${encodeURIComponent(contactId)}/scorecard-report`,
         { headers: authHeaders(token, impersonatingCoachId) }
       );
       if (!cancelled) setHasScorecardForContact(res.ok);
@@ -229,12 +490,12 @@ export default function CoachWorkshopPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedId, impersonatingCoachId]);
+  }, [activeContactId, impersonatingCoachId]);
 
   const handleViewScorecard = useCallback(() => {
-    if (!selectedId || selectedId === NEW_PERSON_VALUE) return;
-    setScorecardModalContactId(selectedId);
-  }, [selectedId]);
+    if (!activeContactId) return;
+    setScorecardModalContactId(activeContactId);
+  }, [activeContactId]);
 
   const clearNewPersonDraft = useCallback(() => {
     setNewPersonName("");
@@ -252,14 +513,15 @@ export default function CoachWorkshopPage() {
       }
       syncContactUrl(value);
     },
-    [clearNewPersonDraft]
+    [clearNewPersonDraft, syncContactUrl]
   );
 
   const handleChangeSession = useCallback(() => {
     setSelectedId("");
+    setDeepLinkedContact(null);
     clearNewPersonDraft();
     syncContactUrl("");
-  }, [clearNewPersonDraft]);
+  }, [clearNewPersonDraft, syncContactUrl]);
 
   const handleCancelNewPerson = useCallback(() => {
     handleChangeSession();
@@ -324,6 +586,7 @@ export default function CoachWorkshopPage() {
             job_title: jobTitle,
             type: "prospect",
             coach_name: null,
+            boss_score_premium: null,
           },
           ...prev,
         ];
@@ -347,8 +610,7 @@ export default function CoachWorkshopPage() {
     clearNewPersonDraft,
   ]);
 
-  const activeContactId =
-    selectedId && selectedId !== NEW_PERSON_VALUE ? selectedId : null;
+  const pickerSelectedId = activeContactId ?? selectedId;
 
   useEffect(() => {
     const prev = document.title;
@@ -373,7 +635,7 @@ export default function CoachWorkshopPage() {
       setWorkshopTopRight(null);
       return;
     }
-    if (loading) {
+    if (loading && !activeContactId) {
       setWorkshopTopRight(
         <p className="text-xs text-slate-600">Loading contacts…</p>
       );
@@ -396,7 +658,7 @@ export default function CoachWorkshopPage() {
           idPrefix="workshop-top"
           compact
           contacts={contacts}
-          selectedId={selectedId}
+          selectedId={pickerSelectedId}
           onSelectedIdChange={handleSelectedIdChange}
           sessionSummary={sessionSummary}
           onChangeSession={handleChangeSession}
@@ -417,6 +679,7 @@ export default function CoachWorkshopPage() {
           clientsLabel={clientsLabel}
           showScorecardLink={hasScorecardForContact}
           onViewScorecard={handleViewScorecard}
+          onPickerOpen={refreshWorkshopContacts}
         />
       </div>
     );
@@ -426,9 +689,10 @@ export default function CoachWorkshopPage() {
     registerMinimalSlot,
     loading,
     error,
+    activeContactId,
     sessionSummary,
     contacts,
-    selectedId,
+    pickerSelectedId,
     handleSelectedIdChange,
     handleChangeSession,
     newPersonName,
@@ -444,6 +708,7 @@ export default function CoachWorkshopPage() {
     clientsHref,
     handleViewScorecard,
     hasScorecardForContact,
+    refreshWorkshopContacts,
   ]);
 
   return (
@@ -458,15 +723,17 @@ export default function CoachWorkshopPage() {
         }
       />
 
-      {!isMinimalChrome && loading && <p className="text-sm text-slate-600">Loading contacts…</p>}
+      {!isMinimalChrome && loading && !activeContactId && (
+        <p className="text-sm text-slate-600">Loading contacts…</p>
+      )}
       {!isMinimalChrome && error && <p className="text-sm text-rose-600">{error}</p>}
 
-      {!isMinimalChrome && !loading && !error && (
+      {!isMinimalChrome && (!loading || sessionSummary) && !error && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <WorkshopSessionPicker
             idPrefix="workshop-main"
             contacts={contacts}
-            selectedId={selectedId}
+            selectedId={pickerSelectedId}
             onSelectedIdChange={handleSelectedIdChange}
             sessionSummary={sessionSummary}
             onChangeSession={handleChangeSession}
@@ -487,11 +754,12 @@ export default function CoachWorkshopPage() {
             clientsLabel={clientsLabel}
             showScorecardLink={hasScorecardForContact}
             onViewScorecard={handleViewScorecard}
+            onPickerOpen={refreshWorkshopContacts}
           />
         </div>
       )}
 
-      {!loading && !error ? (
+      {activeContactId && !error ? (
         <ContactBossWorkshopBody
           contactId={activeContactId}
           draftCoachId={draftCoachId}
@@ -500,6 +768,11 @@ export default function CoachWorkshopPage() {
           showLiveScoringCheckbox={false}
           canAddNewPerson={showNewPersonOption}
           editingNewPerson={isEditingNewPerson}
+          playbookReturnTo={
+            searchParams.toString()
+              ? `${pathname}?${searchParams.toString()}`
+              : pathname
+          }
         />
       ) : null}
 
@@ -508,5 +781,19 @@ export default function CoachWorkshopPage() {
         onClose={() => setScorecardModalContactId(null)}
       />
     </div>
+  );
+}
+
+export default function CoachWorkshopPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-6">
+          <p className="text-sm text-slate-600">Loading Boss Pro…</p>
+        </div>
+      }
+    >
+      <CoachWorkshopPageContent />
+    </Suspense>
   );
 }

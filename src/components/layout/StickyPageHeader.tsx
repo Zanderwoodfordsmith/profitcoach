@@ -51,7 +51,7 @@ export function StickyPageHeader({
   rootRef,
 }: StickyPageHeaderProps) {
   const shell = [
-    "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-4 shadow-sm",
+    "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-2 shadow-sm",
     typeof bleedInset === "string" ? bleedInset : "",
     className,
   ]

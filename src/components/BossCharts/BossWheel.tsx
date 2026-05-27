@@ -92,11 +92,20 @@ type BossWheelProps = {
   viewMode?: "areas" | "pillars" | "levels";
   /** When false, hides the pillar/area legend column (e.g. marketing hero). Default true. */
   showLegend?: boolean;
+  /** Wheel diameter preset. `large` is used on Boss Pro workshop. `workshop` pairs with owner level bars. */
+  size?: "default" | "compact" | "large" | "workshop";
   /**
    * Where to show total BOSS score when `totalScore` is set.
    * `aside` = column left of wheel (default). `wheel-lower-left` = card inside the SVG, lower-left.
    */
   scorePlacement?: "aside" | "wheel-lower-left";
+};
+
+const WHEEL_SHELL_WIDTH: Record<"default" | "compact" | "large" | "workshop", string> = {
+  compact: "mx-auto w-[320px] sm:w-[360px] max-w-full",
+  default: "w-[320px] sm:w-[400px] md:w-[520px] lg:w-[600px]",
+  large: "mx-auto w-[560px] sm:w-[640px] md:w-[720px] max-w-full",
+  workshop: "h-full w-full min-h-0 min-w-0",
 };
 
 export function BossWheel({
@@ -107,6 +116,7 @@ export function BossWheel({
   colorScheme = "default",
   viewMode = "areas",
   showLegend = true,
+  size = "default",
   scorePlacement = "aside",
 }: BossWheelProps) {
   const colors = colorScheme === "alt" ? WHEEL_COLORS_ALT : WHEEL_COLORS;
@@ -130,10 +140,20 @@ export function BossWheel({
   const startAngle = -Math.PI / 2;
   const step = (2 * Math.PI) / segmentCount;
 
-  const showScoreAside = totalScore != null && scorePlacement === "aside";
+  const showScoreAside = totalScore != null && scorePlacement === "aside" && size === "default";
+  const showLegendColumn = showLegend && size === "default";
+  const isWorkshopSize = size === "workshop";
 
   return (
-    <div className="flex flex-wrap items-end justify-center gap-8 md:gap-12">
+    <div
+      className={
+        isWorkshopSize
+          ? "flex h-full w-full items-center justify-center"
+          : `flex flex-wrap items-end justify-center ${
+              size === "default" ? "gap-8 md:gap-12" : "gap-0"
+            }`
+      }
+    >
       {showScoreAside ? (
         <div className="flex flex-col items-center shrink-0 order-2 md:order-1 pb-2">
           <span className="block text-4xl font-bold text-slate-500">{totalScore}</span>
@@ -143,13 +163,14 @@ export function BossWheel({
         </div>
       ) : null}
       <div
-        className={`shrink-0 w-[320px] sm:w-[400px] md:w-[520px] lg:w-[600px] ${
+        className={`shrink-0 ${WHEEL_SHELL_WIDTH[size]} ${
           showScoreAside ? "order-1 md:order-2" : "order-1"
         }`}
       >
       <svg
         viewBox="0 0 965 965"
-        className="w-full h-auto"
+        className={isWorkshopSize ? "h-full w-full" : "h-auto w-full"}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={ariaLabel ?? "Area scores wheel"}
       >
@@ -382,7 +403,7 @@ export function BossWheel({
         ) : null}
       </svg>
       </div>
-      {showLegend ? (
+      {showLegendColumn ? (
       <div className="flex flex-col gap-4 shrink-0 order-3 text-sm pb-2">
         {isLevelView ? (
           LEVEL_NAMES.map((name, i) => {

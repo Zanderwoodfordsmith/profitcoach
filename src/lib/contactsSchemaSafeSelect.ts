@@ -33,6 +33,8 @@ type WorkshopSessionContact = {
   session_answers: unknown;
   pillar_session_notes: unknown;
   playbook_session_notes: unknown;
+  session_insights: unknown;
+  session_insights_generated_at: string | null;
 };
 
 /**
@@ -42,50 +44,45 @@ type WorkshopSessionContact = {
 export async function loadContactForWorkshopSession(
   contactId: string
 ): Promise<{ contact: WorkshopSessionContact | null; error: SupabaseLikeError }> {
+  const withInsights =
+    "id, full_name, email, business_name, coach_id, session_answers, pillar_session_notes, playbook_session_notes, session_insights, session_insights_generated_at";
   const withNotes =
     "id, full_name, email, business_name, coach_id, session_answers, pillar_session_notes, playbook_session_notes";
   const base = "id, full_name, email, business_name, coach_id";
 
-  const first = await supabaseAdmin
-    .from("contacts")
-    .select(withNotes)
-    .eq("id", contactId)
-    .maybeSingle();
+  for (const columns of [withInsights, withNotes, base]) {
+    const result = await supabaseAdmin
+      .from("contacts")
+      .select(columns)
+      .eq("id", contactId)
+      .maybeSingle();
 
-  if (!first.error && first.data) {
-    return { contact: first.data as WorkshopSessionContact, error: null };
+    if (!result.error && result.data) {
+      const row = result.data as Record<string, unknown>;
+      return {
+        contact: {
+          id: row.id as string,
+          full_name: row.full_name as string,
+          email: (row.email as string | null) ?? null,
+          business_name: (row.business_name as string | null) ?? null,
+          coach_id: (row.coach_id as string | null) ?? null,
+          session_answers: row.session_answers ?? {},
+          pillar_session_notes: row.pillar_session_notes ?? {},
+          playbook_session_notes: row.playbook_session_notes ?? {},
+          session_insights: row.session_insights ?? null,
+          session_insights_generated_at:
+            (row.session_insights_generated_at as string | null) ?? null,
+        },
+        error: null,
+      };
+    }
+
+    if (result.error && !isMissingColumnError(result.error)) {
+      return { contact: null, error: result.error };
+    }
   }
 
-  if (first.error && !isMissingColumnError(first.error)) {
-    return { contact: null, error: first.error };
-  }
-
-  const fallback = await supabaseAdmin
-    .from("contacts")
-    .select(base)
-    .eq("id", contactId)
-    .maybeSingle();
-
-  if (fallback.error) {
-    return { contact: null, error: fallback.error };
-  }
-
-  if (!fallback.data) {
-    return { contact: null, error: null };
-  }
-
-  return {
-    contact: {
-      ...(fallback.data as Omit<
-        WorkshopSessionContact,
-        "session_answers" | "pillar_session_notes" | "playbook_session_notes"
-      >),
-      session_answers: {},
-      pillar_session_notes: {},
-      playbook_session_notes: {},
-    },
-    error: null,
-  };
+  return { contact: null, error: null };
 }
 
 /**
