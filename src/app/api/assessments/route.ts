@@ -29,6 +29,9 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 type Body = {
   coachSlug?: string;
   from_landing?: "a" | "b" | "c" | "d";
+  /** Analytics only: explicit coach from landing URL; omit when brand /score. */
+  landing_coach_slug?: string | null;
+  landing_brand?: boolean;
   assessment_type?: AssessmentType;
   contact: {
     full_name?: string;
@@ -425,16 +428,20 @@ export async function POST(request: Request) {
       .eq("status", "running")
       .limit(1)
       .maybeSingle();
-    if (runningTest) {
-      await supabaseAdmin.from("landing_events").insert({
-        test_id: runningTest.id,
-        variant: fromLanding,
-        coach_slug: coachSlug,
-        event_type: "finish",
-        contact_id: contactId,
-        assessment_id: assessment.id,
-      });
-    }
+    const landingTrackCoachSlug = body.landing_brand
+      ? null
+      : typeof body.landing_coach_slug === "string"
+        ? body.landing_coach_slug.trim() || null
+        : coachSlug;
+    const finishRow: Record<string, unknown> = {
+      variant: fromLanding,
+      coach_slug: landingTrackCoachSlug,
+      event_type: "finish",
+      contact_id: contactId,
+      assessment_id: assessment.id,
+    };
+    if (runningTest?.id) finishRow.test_id = runningTest.id;
+    await supabaseAdmin.from("landing_events").insert(finishRow);
   }
 
   const reportToken =

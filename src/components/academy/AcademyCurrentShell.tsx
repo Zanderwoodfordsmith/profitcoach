@@ -46,11 +46,18 @@ export function AcademyCurrentShell({ children }: { children: React.ReactNode })
   const showNewTab = prefix === "/admin" || coachIsAdmin;
 
   const programsRoot = `${prefix}/academy/programs`;
+  const importStatusRoot = `${programsRoot}/import-status`;
+  const resourcesRoot = `${prefix}/academy/resources`;
   const newRoot = `${prefix}/academy/new`;
   const classroomPath = `${prefix}/academy/classroom`;
 
   const tabItems = useMemo(() => {
-    const isProg = pathname === programsRoot || pathname.startsWith(`${programsRoot}/`);
+    const isImport =
+      pathname === importStatusRoot || pathname.startsWith(`${importStatusRoot}/`);
+    const isResources =
+      pathname === resourcesRoot || pathname.startsWith(`${resourcesRoot}/`);
+    const isProg =
+      (pathname === programsRoot || pathname.startsWith(`${programsRoot}/`)) && !isImport;
     const isNew = pathname === newRoot || pathname.startsWith(`${newRoot}/`);
 
     const items: PageHeaderUnderlineTabItem[] = [
@@ -61,7 +68,24 @@ export function AcademyCurrentShell({ children }: { children: React.ReactNode })
         active: isProg,
         scroll: false,
       },
+      {
+        kind: "link",
+        href: resourcesRoot,
+        label: "Resources",
+        active: isResources,
+        scroll: false,
+      },
     ];
+
+    if (prefix === "/admin") {
+      items.push({
+        kind: "link",
+        href: importStatusRoot,
+        label: "Import",
+        active: isImport,
+        scroll: false,
+      });
+    }
 
     if (showNewTab) {
       items.push({
@@ -80,9 +104,24 @@ export function AcademyCurrentShell({ children }: { children: React.ReactNode })
     }
 
     return items;
-  }, [pathname, prefix, showNewTab, programsRoot, newRoot]);
+  }, [pathname, prefix, showNewTab, programsRoot, importStatusRoot, resourcesRoot, newRoot]);
 
   const description = useMemo(() => {
+    if (pathname.startsWith(importStatusRoot)) {
+      return (
+        <span className="text-lg leading-relaxed text-slate-600">
+          Track video and transcript import from Old Academy Drive against each programme lesson.
+        </span>
+      );
+    }
+    if (pathname.startsWith(resourcesRoot)) {
+      return (
+        <span className="text-lg leading-relaxed text-slate-600">
+          Worksheets, SOPs, templates, and reference links for coach delivery and the Profit
+          System — searchable and grouped by topic.
+        </span>
+      );
+    }
     if (pathname.startsWith(programsRoot)) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">
@@ -112,7 +151,7 @@ export function AcademyCurrentShell({ children }: { children: React.ReactNode })
         Deliver.
       </span>
     );
-  }, [pathname, programsRoot, newRoot, classroomPath]);
+  }, [pathname, programsRoot, importStatusRoot, resourcesRoot, newRoot, classroomPath]);
 
   return (
     <div className="flex flex-col gap-6">

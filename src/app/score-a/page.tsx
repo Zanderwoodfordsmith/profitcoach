@@ -46,18 +46,19 @@ function ScoreAContent() {
     if (viewTracked.current) return;
     viewTracked.current = true;
     let cancelled = false;
-    const coachSlug = searchParams.get("coach")?.trim() || getPrimaryCoachSlug();
+    const coachSlugFromUrl = searchParams.get("coach")?.trim() ?? "";
+    const trackCoachSlug = coachSlugFromUrl || null;
     const sessionId = getOrSetSessionId();
 
     async function go() {
       const [coachLabel] = await Promise.all([
-        coachLabelForBadge(coachSlug),
+        coachLabelForBadge(coachSlugFromUrl || getPrimaryCoachSlug()),
         fetch("/api/landing/track", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             variant: "a",
-            coach_slug: coachSlug || null,
+            coach_slug: trackCoachSlug,
             event_type: "view",
             session_id: sessionId,
           }),

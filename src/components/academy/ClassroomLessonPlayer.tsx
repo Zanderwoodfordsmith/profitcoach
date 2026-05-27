@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { AcademyCategory, AcademyCourse, AcademyLesson } from "@/lib/academy/types";
+import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
 import { getSignaturePillarTitleById } from "@/lib/signatureModelV2";
 import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 
@@ -17,6 +18,10 @@ type Props = {
 export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Props) {
   const lessons = course.lessons ?? [];
   const embedUrl = lesson.videoUrl ? toYouTubeEmbedUrl(lesson.videoUrl) : null;
+  const directVideoUrl =
+    lesson.videoUrl && !embedUrl && isDirectVideoFileUrl(lesson.videoUrl)
+      ? lesson.videoUrl
+      : null;
   const pillarEyebrow =
     getSignaturePillarTitleById(course.compassPillarId) ?? category.title;
 
@@ -81,9 +86,16 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
                     allowFullScreen
                   />
                 </div>
+              ) : directVideoUrl ? (
+                <video
+                  src={directVideoUrl}
+                  controls
+                  playsInline
+                  className="aspect-video w-full bg-black"
+                />
               ) : (
                 <div className="p-6 text-sm text-slate-300">
-                  <p>Video URL is set but is not a recognized YouTube or Vimeo link.</p>
+                  <p>Video URL is set but is not a recognized embed or video file.</p>
                   <a
                     href={lesson.videoUrl}
                     target="_blank"
@@ -97,7 +109,7 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
             </div>
           ) : (
             <div className="mb-8 flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-              No video for this lesson yet. Add a URL in the catalog when you are ready.
+              No video for this lesson yet.
             </div>
           )}
 

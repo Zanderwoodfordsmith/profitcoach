@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlayer";
-import { findCourse, loadAcademyCatalog } from "@/lib/academy/catalog";
+import { findCourse } from "@/lib/academy/catalog";
+import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 
 const BASE = "/coach/academy/classroom";
 
@@ -9,7 +10,7 @@ type Props = { params: Promise<{ courseId: string; lessonId: string }> };
 
 export default async function CoachAcademyClassroomLessonPage({ params }: Props) {
   const { courseId, lessonId } = await params;
-  const catalog = await loadAcademyCatalog();
+  const catalog = await loadAcademyCatalogWithDb();
   const found = findCourse(catalog, courseId);
   if (!found) notFound();
 

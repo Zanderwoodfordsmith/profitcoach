@@ -38,6 +38,7 @@ import {
   type ScorecardAnswers,
   type ScorecardScore,
 } from "@/lib/bossScorecardScores";
+import { resolveLandingTrackCoachSlug } from "@/lib/landingAnalytics";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import {
   assessmentContactToSessionPayload,
@@ -121,6 +122,16 @@ export default function ScorecardAssessmentPage({
     [searchParams]
   );
   const isFromLandingFunnel = landingVariant != null;
+  const trackCoachSlug = useMemo(
+    () =>
+      isFromLandingFunnel
+        ? resolveLandingTrackCoachSlug(searchParams, {
+            fromLanding: true,
+            fallbackCoachSlug: coachSlug,
+          })
+        : null,
+    [isFromLandingFunnel, searchParams, coachSlug]
+  );
   const landingSession = isFromLandingFunnel ? readLandingContactSession() : null;
   const initialContact = mergeAssessmentContactWithSession(
     urlContact,
@@ -199,11 +210,11 @@ export default function ScorecardAssessmentPage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         variant: landingVariant,
-        coach_slug: coachSlug?.trim() || null,
+        coach_slug: trackCoachSlug,
         event_type: "start",
       }),
     }).catch(() => {});
-  }, [isFromLandingFunnel, landingVariant, coachSlug]);
+  }, [isFromLandingFunnel, landingVariant, trackCoachSlug]);
 
   useEffect(() => {
     if (!isFromLandingFunnel) return;
@@ -311,6 +322,10 @@ export default function ScorecardAssessmentPage({
         body: JSON.stringify({
           coachSlug: assessmentCoachSlugForApi(coachSlug ?? ""),
           from_landing: landingVariant ?? undefined,
+          landing_brand: searchParams.get("landing_brand") === "1" ? true : undefined,
+          landing_coach_slug: searchParams.has("landing_coach_slug")
+            ? searchParams.get("landing_coach_slug")?.trim() || null
+            : undefined,
           assessment_type: "boss_scorecard",
           contact: {
             full_name: fullName,

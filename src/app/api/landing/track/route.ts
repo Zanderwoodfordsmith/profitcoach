@@ -37,23 +37,19 @@ export async function POST(request: Request) {
   const assessment_id = body.assessment_id ?? null;
 
   try {
-    const { data: runningTest, error: testError } = await supabaseAdmin
+    const { data: runningTest } = await supabaseAdmin
       .from("landing_tests")
       .select("id")
       .eq("status", "running")
       .limit(1)
       .maybeSingle();
 
-    if (testError || !runningTest) {
-      return NextResponse.json({ ok: false, skipped: true }, { status: 200 });
-    }
-
     const row: Record<string, unknown> = {
-      test_id: runningTest.id,
       variant,
       coach_slug,
       event_type,
     };
+    if (runningTest?.id) row.test_id = runningTest.id;
     if (session_id != null) row.session_id = session_id;
     if (contact_id != null) row.contact_id = contact_id;
     if (assessment_id != null) row.assessment_id = assessment_id;
@@ -61,17 +57,11 @@ export async function POST(request: Request) {
     const { error: insertError } = await supabaseAdmin.from("landing_events").insert(row);
 
     if (insertError) {
-      return NextResponse.json(
-        { error: insertError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true }, { status: 201 });
-  } catch (e) {
-    return NextResponse.json(
-      { error: "Unexpected error." },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ error: "Unexpected error." }, { status: 500 });
   }
 }

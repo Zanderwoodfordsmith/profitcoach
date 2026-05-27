@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, FileText, Video } from "lucide-react";
 
+import { AcademyMarkdown } from "@/components/academy/AcademyMarkdown";
+import { LessonResourcesPanel } from "@/components/academy/LessonResourcesPanel";
+import { LessonTranscriptPanel } from "@/components/academy/LessonTranscriptPanel";
+import { hasInAppLessonContent } from "@/lib/academy/lessonContentUtils";
 import type {
   LegacyHubCatalog,
   LegacyHubCourse,
   LegacyHubLesson,
 } from "@/lib/academy/legacyHubCatalog";
+import type { AcademyResourceRow } from "@/lib/academy/resources";
 import { lessonContextInCourse } from "@/lib/academy/legacyHubCatalog";
+import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
+import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 
 type Props = {
   data: LegacyHubCatalog;
@@ -17,6 +24,14 @@ type Props = {
   lesson: LegacyHubLesson;
   basePath: string;
   classroomHref: string;
+  videoUrl?: string | null;
+  bodyMarkdown?: string;
+  transcriptText?: string | null;
+  lessonResources?: AcademyResourceRow[];
+  /** Admin edit / save controls — shown top-right of the lesson panel */
+  headerActions?: ReactNode;
+  /** Replaces the main lesson panel (e.g. edit form) while keeping the sidebar */
+  mainPanelOverride?: ReactNode;
 };
 
 function durationLabel(raw: string): string | null {
@@ -45,9 +60,15 @@ export function LegacyAcademyLessonPlayer({
   lesson,
   basePath,
   classroomHref,
+  videoUrl = null,
+  bodyMarkdown = "",
+  transcriptText = null,
+  lessonResources = [],
+  headerActions,
+  mainPanelOverride,
 }: Props) {
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(() =>
-    initialOpenSectionIds(course, lesson.id),
+    initialOpenSectionIds(course, lesson.id)
   );
 
   useEffect(() => {
@@ -59,9 +80,13 @@ export function LegacyAcademyLessonPlayer({
 
   const ctx = useMemo(
     () => lessonContextInCourse(course, lesson.id),
-    [course, lesson.id],
+    [course, lesson.id]
   );
   const noticeText = lesson.notice ?? data.lessonPanelNotice;
+  const inApp = hasInAppLessonContent(videoUrl, bodyMarkdown, transcriptText);
+  const embedUrl = videoUrl ? toYouTubeEmbedUrl(videoUrl) : null;
+  const directVideoUrl =
+    videoUrl && !embedUrl && isDirectVideoFileUrl(videoUrl) ? videoUrl : null;
 
   function toggleSection(id: string) {
     setOpenSectionIds((prev) => {
@@ -157,34 +182,101 @@ export function LegacyAcademyLessonPlayer({
       </aside>
 
       <div className="min-w-0 flex-1">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-          <header className="mb-6 border-b border-slate-100 pb-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              {ctx ? `${course.title} · ${ctx.section.title}` : course.title}
-            </p>
-            <h1 className="mt-2 text-xl font-semibold text-slate-900 md:text-2xl">
-              {lesson.title}
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              {lesson.hasVideo ? "Includes video on Disco" : "Resource / non-video on Disco"}
-            </p>
-          </header>
+        {mainPanelOverride && headerActions ? (
+          <div className="mb-3 flex justify-end gap-2">{headerActions}</div>
+        ) : null}
+        {mainPanelOverride ?? (
+          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+            <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {ctx ? `${course.title} · ${ctx.section.title}` : course.title}
+                </p>
+                <h1 className="mt-2 text-xl font-semibold text-slate-900 md:text-2xl">
+                  {lesson.title}
+                </h1>
+                {!inApp ? (
+                  <p className="mt-2 text-sm text-slate-500">
+                    {lesson.hasVideo ? "Includes video on Disco" : "Resource / non-video on Disco"}
+                  </p>
+                ) : null}
+              </div>
+              {headerActions ? (
+                <div className="flex shrink-0 flex-wrap gap-2">{headerActions}</div>
+              ) : null}
+            </header>
 
-          <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
-            {noticeText}
-          </p>
+            {inApp ? (
+              <>
+                {videoUrl ? (
+                  <div className="mb-8 overflow-hidden rounded-xl border border-slate-200 bg-slate-950">
+                    {embedUrl ? (
+                      <div className="relative aspect-video w-full">
+                        <iframe
+                          title={lesson.title}
+                          src={embedUrl}
+                          className="absolute inset-0 h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : directVideoUrl ? (
+                      <video
+                        src={directVideoUrl}
+                        controls
+                        playsInline
+                        className="aspect-video w-full bg-black"
+                      />
+                    ) : (
+                      <div className="p-6 text-sm text-slate-300">
+                        <p>Video URL is set but is not a recognized embed or video file.</p>
+                        <a
+                          href={videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block text-sky-400 underline"
+                        >
+                          Open video
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
 
-          <div className="mt-8">
-            <a
-              href={lesson.academyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
-            >
-              {lesson.title}
-            </a>
-          </div>
-        </article>
+                {transcriptText?.trim() ? (
+                  <LessonTranscriptPanel transcriptText={transcriptText} />
+                ) : null}
+
+                {bodyMarkdown.trim() ? (
+                  <AcademyMarkdown markdown={bodyMarkdown} />
+                ) : transcriptText?.trim() ? null : (
+                  <p className="text-sm text-slate-500">No written content for this lesson yet.</p>
+                )}
+
+                <LessonResourcesPanel resources={lessonResources} />
+              </>
+            ) : (
+              <>
+                <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
+                  {noticeText}
+                </p>
+
+                <div className="mt-8">
+                  <a
+                    href={lesson.academyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+                  >
+                    {lesson.title}
+                  </a>
+                </div>
+
+                <LessonResourcesPanel resources={lessonResources} />
+              </>
+            )}
+          </article>
+        )}
       </div>
     </div>
   );

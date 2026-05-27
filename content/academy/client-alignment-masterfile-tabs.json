@@ -1,0 +1,26 @@
+{
+  "spreadsheetId": "1UN1pfF5N2soXAlItrFjznI0oJOwN9owc9ZvtFxiO9NY",
+  "label": "Profit Coach Client Masterfile",
+  "shortUrl": "https://businesscoachacademy.com/alignment",
+  "sectionId": "coach-delivery/onboarding-first-4-coaching-sessions",
+  "topic": "Client Alignment File",
+  "tabs": [
+    { "gid": "2041687849", "title": "The Profit-Fun Matrix", "sortOrder": 1 },
+    { "gid": "2142598464", "title": "The Profit System", "sortOrder": 2 },
+    { "gid": "1783977361", "title": "BOSS Dashboard", "sortOrder": 3 },
+    { "gid": "1601361427", "title": "3 Year Orbit", "sortOrder": 4 },
+    { "gid": "197154846", "title": "90 Day Plan", "sortOrder": 5 },
+    { "gid": "730482925", "title": "90 Day Plan | Timeline", "sortOrder": 6 },
+    { "gid": "1001588247", "title": "Critical Drivers & KPIs", "sortOrder": 7 },
+    { "gid": "1811330791", "title": "Coaching Sheet", "sortOrder": 8 },
+    { "gid": "953050451", "title": "Activity List & Allocation", "sortOrder": 9 },
+    { "gid": "1134957836", "title": "Quick 1 Page Growth Plan", "sortOrder": 10 },
+    { "gid": "604063914", "title": "Pairwise Prioritisation", "sortOrder": 11 },
+    { "gid": "1446990696", "title": "Business Goals", "sortOrder": 12 },
+    { "gid": "1866082267", "title": "Revenue by Month", "sortOrder": 13 },
+    { "gid": "507777842", "title": "Business Expenses", "sortOrder": 14 },
+    { "gid": "1557854972", "title": "Lifestyle Expenses", "sortOrder": 15 },
+    { "gid": "1803785362", "title": "Team Assessment", "sortOrder": 16 },
+    { "gid": "1035531126", "title": "Learning Log", "sortOrder": 17 }
+  ]
+}

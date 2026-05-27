@@ -79,6 +79,11 @@ const bossProgrammeLinks = [
     label: "Internal prospect dashboard",
     hint: "Open prospects, then select a prospect record.",
   },
+  {
+    href: "/admin/landing-analytics",
+    label: "Landing analytics",
+    hint: "Boss Score landing views, opt-ins, and per-coach breakdown.",
+  },
 ] as const;
 
 const ACCOUNT_TAB_IDS = [

@@ -19,6 +19,9 @@
 # testing
 /coverage
 
+# academy import dry-run outputs
+/reports/
+
 # next.js
 /.next/
 /out/

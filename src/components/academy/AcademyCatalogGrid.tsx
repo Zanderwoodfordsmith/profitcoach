@@ -1,5 +1,6 @@
 import { AcademyCourseCard } from "@/components/academy/AcademyCourseCard";
-import { lessonCount, listCoursesFlat, loadAcademyCatalog } from "@/lib/academy/catalog";
+import { lessonCount, listCoursesFlat } from "@/lib/academy/catalog";
+import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 import { courseVisibleToAccessTier } from "@/lib/academy/accessTierFilter";
 import type { CoachAccessTier } from "@/lib/coachAccess/tiers";
 
@@ -14,7 +15,7 @@ export async function AcademyCatalogGrid({
   linkBasePath,
   viewerAccessTier = null,
 }: Props) {
-  const catalog = await loadAcademyCatalog();
+  const catalog = await loadAcademyCatalogWithDb();
   const rows = listCoursesFlat(catalog).filter(({ course }) =>
     viewerAccessTier
       ? courseVisibleToAccessTier(course, viewerAccessTier)

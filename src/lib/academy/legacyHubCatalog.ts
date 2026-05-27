@@ -12,6 +12,11 @@ export type LegacyHubLesson = {
   academyUrl: string;
   /** Optional copy for this lesson only (shown above the CTA). */
   notice?: string;
+  /** Set when merged from `academy_lesson_content` (in-app lesson). */
+  videoUrl?: string | null;
+  bodyMarkdown?: string;
+  /** Plain-text transcript (collapsible panel, not lesson body). */
+  transcriptText?: string | null;
 };
 
 export type LegacyHubSection = {

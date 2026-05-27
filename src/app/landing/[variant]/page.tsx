@@ -95,7 +95,9 @@ export default function LandingVariantPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const variant = (params.variant as string)?.toLowerCase();
-  const coachSlug = searchParams.get("coach")?.trim() || getPrimaryCoachSlug();
+  const coachSlugFromUrl = searchParams.get("coach")?.trim() ?? "";
+  const trackCoachSlug = coachSlugFromUrl || null;
+  const coachSlug = coachSlugFromUrl || getPrimaryCoachSlug();
 
   const router = useRouter();
   const [coach, setCoach] = useState<CoachInfo | null>(null);
@@ -128,12 +130,12 @@ export default function LandingVariantPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         variant: trackVariant,
-        coach_slug: coachSlug || null,
+        coach_slug: trackCoachSlug,
         event_type: "view",
         session_id: sessionId,
       }),
     }).catch(() => {});
-  }, [validVariant, trackVariant, coachSlug]);
+  }, [validVariant, trackVariant, trackCoachSlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -244,7 +246,7 @@ export default function LandingVariantPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         variant: trackVariant,
-        coach_slug: coachSlug || null,
+        coach_slug: trackCoachSlug,
         event_type: "opt_in",
       }),
     }).catch(() => {});
@@ -280,6 +282,11 @@ export default function LandingVariantPage() {
     }
     const assessmentQ = new URLSearchParams();
     assessmentQ.set("from_landing", trackVariant);
+    if (trackCoachSlug) {
+      assessmentQ.set("landing_coach_slug", trackCoachSlug);
+    } else {
+      assessmentQ.set("landing_brand", "1");
+    }
     for (const key of LANDING_TO_ASSESSMENT_PARAMS) {
       const v = sanitizeProspectUrlParam(searchParams.get(key));
       if (v) assessmentQ.set(key, v);

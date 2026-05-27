@@ -1,5 +1,6 @@
 import type React from "react";
 import {
+  BarChart3,
   CalendarDays,
   Compass,
   Filter,
@@ -154,6 +155,10 @@ function IconPhoneCall({ className }: { className?: string }) {
   return <PhoneCall className={className} />;
 }
 
+function IconBarChart({ className }: { className?: string }) {
+  return <BarChart3 className={className} />;
+}
+
 export type MarketingNavOptions = {
   includeBossScore?: boolean;
   /** When false, omits the message-generator link (coach sidebar). Default true. */
@@ -196,6 +201,7 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
 
 export const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
+  { href: "/admin/landing-analytics", label: "Landing analytics", icon: IconBarChart },
   { href: "/admin/linkedin", label: "LinkedIn Scheduler", icon: IconSparkles },
   { href: "/admin/community/feedback", label: "Feedback inbox", icon: IconMessagesSquare },
 ];

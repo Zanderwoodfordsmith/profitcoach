@@ -3,7 +3,6 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { searchParamsWithoutVariant } from "@/lib/funnelVariant";
-import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 
 /** Share links: `/score?coach=slug` or cleaner `/score/slug` (slug = coaches.slug, not display name). */
 
@@ -13,9 +12,6 @@ function ScoreRedirect() {
 
   useEffect(() => {
     const sp = new URLSearchParams(searchParams.toString());
-    if (!sp.get("coach")?.trim()) {
-      sp.set("coach", getPrimaryCoachSlug());
-    }
     const suffix = searchParamsWithoutVariant(sp);
     router.replace(`/landing/d${suffix}`);
   }, [router, searchParams]);

@@ -9,6 +9,7 @@ export type AcademyLesson = {
   /** Supports common YouTube URLs; other URLs may show as a link or generic video element later. */
   videoUrl?: string | null;
   bodyMarkdown?: string;
+  transcriptText?: string | null;
 };
 
 export type AcademyCourse = {
@@ -33,3 +34,10 @@ export type AcademyCategory = {
 export type AcademyCatalog = {
   categories: AcademyCategory[];
 };
+
+export type { AcademyResourceArea, AcademyResourceKind } from "./parseResourcesMarkdown";
+export type {
+  AcademyResourceRow,
+  AcademyResourceSectionRow,
+  AcademyResourcesCatalog,
+} from "./resources";

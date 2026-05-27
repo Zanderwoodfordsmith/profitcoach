@@ -25,6 +25,11 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Optional ?coach= slug; picks variant A or B",
   },
   {
+    href: "/admin/landing-analytics",
+    label: "Landing analytics",
+    hint: "Boss Score landing views, opt-ins, and per-coach breakdown",
+  },
+  {
     href: "/assessment",
     label: "BOSS Scorecard",
     hint: "Default route redirects to /assessment/BCA (13-question funnel)",
