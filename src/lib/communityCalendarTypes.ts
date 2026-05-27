@@ -67,6 +67,8 @@ export type CommunityCalendarEventExceptionRow = {
   recording_video_url: string | null;
   rescheduled_starts_at: string | null;
   rescheduled_ends_at: string | null;
+  /** When true, this occurrence is skipped entirely (not shown as cancelled). */
+  omit_from_calendar?: boolean;
   created_at: string;
 };
 

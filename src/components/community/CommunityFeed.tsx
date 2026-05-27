@@ -937,7 +937,7 @@ export function CommunityFeed() {
         supabaseClient
           .from("community_calendar_event_exceptions")
           .select(
-            "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, rescheduled_starts_at, rescheduled_ends_at, created_at"
+            "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, rescheduled_starts_at, rescheduled_ends_at, omit_from_calendar, created_at"
           ),
       ]);
       if (cancelled || eventsResult.error || exceptionsResult.error) return;

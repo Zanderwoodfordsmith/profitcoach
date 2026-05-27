@@ -48,25 +48,7 @@ WHERE e.title = 'COACH Certification'
   )
 LIMIT 1;
 
--- May 2026 — no kick-off (BCA Conference month)
-INSERT INTO public.community_calendar_event_exceptions (
-  event_id,
-  occurrence_start,
-  cancelled_at,
-  cancellation_reason
-)
-VALUES (
-  'b0eef000-0000-4000-a000-000000000001'::uuid,
-  '2026-05-05T12:00:00+00'::timestamptz,
-  now(),
-  'BCA Conference month — no kick-off call'
-)
-ON CONFLICT (event_id, occurrence_start) DO UPDATE
-SET
-  cancelled_at = EXCLUDED.cancelled_at,
-  cancellation_reason = EXCLUDED.cancellation_reason,
-  rescheduled_starts_at = NULL,
-  rescheduled_ends_at = NULL;
+-- May 2026 — no kick-off (BCA Conference month); omitted in 20260730150000_community_calendar_exception_omit.sql
 
 -- June 2026 — 2nd Tuesday instead of 1st (onboarding 9 Jun)
 INSERT INTO public.community_calendar_event_exceptions (

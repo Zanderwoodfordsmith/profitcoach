@@ -15,7 +15,7 @@ export const COMMUNITY_CALENDAR_EVENT_SELECT =
   "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, access_tags, created_at, updated_at";
 
 export const COMMUNITY_CALENDAR_EXCEPTION_SELECT =
-  "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, rescheduled_starts_at, rescheduled_ends_at, created_at";
+  "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, rescheduled_starts_at, rescheduled_ends_at, omit_from_calendar, created_at";
 
 export type CommunityCalendarData = {
   events: CommunityCalendarEventRow[];

@@ -274,6 +274,7 @@ export function expandCommunityCalendar(
     string,
     {
       isCancelled: boolean;
+      omitFromCalendar: boolean;
       cancellationReason: string | null;
       recordingLinkUrl: string | null;
       recordingVideoUrl: string | null;
@@ -284,6 +285,7 @@ export function expandCommunityCalendar(
   for (const ex of exceptions) {
     exceptionByKey.set(communityCalendarOccurrenceKey(ex.event_id, ex.occurrence_start), {
       isCancelled: Boolean(ex.cancelled_at),
+      omitFromCalendar: Boolean(ex.omit_from_calendar),
       cancellationReason: ex.cancellation_reason?.trim() || null,
       recordingLinkUrl: ex.recording_link_url ?? null,
       recordingVideoUrl: ex.recording_video_url ?? null,
@@ -343,6 +345,8 @@ export function expandCommunityCalendar(
       const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
       const ex = exceptionByKey.get(occurrenceKey);
 
+      if (ex?.omitFromCalendar) continue;
+
       if (ex?.rescheduledStartsAt && ex?.rescheduledEndsAt) {
         const rS = DateTime.fromISO(ex.rescheduledStartsAt, { zone: "utc" });
         const rE = DateTime.fromISO(ex.rescheduledEndsAt, { zone: "utc" });
@@ -388,6 +392,8 @@ export function expandCommunityCalendar(
       const startsAtIso = sUtc.toISO()!;
       const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
       const ex = exceptionByKey.get(occurrenceKey);
+
+      if (ex?.omitFromCalendar) continue;
 
       if (ex?.rescheduledStartsAt && ex?.rescheduledEndsAt) {
         const rS = DateTime.fromISO(ex.rescheduledStartsAt, { zone: "utc" });
