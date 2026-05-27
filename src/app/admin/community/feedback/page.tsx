@@ -171,8 +171,17 @@ function scoreClassName(score: number | null): string {
   return "font-semibold text-slate-600";
 }
 
-function pillSelectClassName(base: string): string {
-  return `appearance-none rounded-full py-1 pl-3 pr-7 text-xs font-semibold ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-wait disabled:opacity-50 ${base}`;
+const COL_DATE = "w-[4.5rem]";
+const COL_TYPE = "w-24";
+const COL_TITLE = "w-[52%]";
+const COL_IMPACT = "w-14";
+const COL_EASE = "w-14";
+const COL_SCORE = "w-11";
+const COL_STATUS = "w-[6.75rem]";
+
+function pillSelectClassName(base: string, compact = false): string {
+  const sizing = compact ? "py-0.5 pl-2 pr-6" : "py-1 pl-3 pr-7";
+  return `w-full min-w-0 appearance-none rounded-full ${sizing} text-xs font-semibold ring-1 ring-inset focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:cursor-wait disabled:opacity-50 ${base}`;
 }
 
 type PillSelectProps<T extends string> = {
@@ -191,14 +200,15 @@ function PillSelect<T extends string>({
   labels,
   styles,
   onChange,
-}: PillSelectProps<T>) {
+  compact,
+}: PillSelectProps<T> & { compact?: boolean }) {
   return (
-    <div className="relative inline-flex">
+    <div className="relative inline-flex w-full max-w-full">
       <select
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value as T)}
-        className={pillSelectClassName(styles[value])}
+        className={pillSelectClassName(styles[value], compact)}
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -224,7 +234,7 @@ function ScoreSelect({ value, disabled, onChange }: ScoreSelectProps) {
   const styleKey = value == null ? "" : String(value);
 
   return (
-    <div className="relative inline-flex">
+    <div className="relative inline-flex w-full max-w-full">
       <select
         value={value ?? ""}
         disabled={disabled}
@@ -232,7 +242,8 @@ function ScoreSelect({ value, disabled, onChange }: ScoreSelectProps) {
           onChange(e.target.value ? Number(e.target.value) : null)
         }
         className={pillSelectClassName(
-          RATING_STYLES[styleKey as keyof typeof RATING_STYLES]
+          RATING_STYLES[styleKey as keyof typeof RATING_STYLES],
+          true
         )}
       >
         <option value="">—</option>
@@ -266,6 +277,8 @@ export default function AdminCommunityFeedbackPage() {
   const [sortOrder, setSortOrder] = useState<FeedbackSortOrder>("desc");
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [addFeedbackOpen, setAddFeedbackOpen] = useState(false);
+  const [editingTitleId, setEditingTitleId] = useState<string | null>(null);
+  const [editingTitleValue, setEditingTitleValue] = useState("");
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
 
   function toggleGroup(status: FeedbackStatus) {
@@ -366,9 +379,24 @@ export default function AdminCommunityFeedbackPage() {
     0
   );
 
+  function startTitleEdit(row: FeedbackRow) {
+    setEditingTitleId(row.id);
+    setEditingTitleValue(row.title?.trim() ?? "");
+  }
+
+  async function saveTitleEdit(id: string) {
+    const trimmed = editingTitleValue.trim();
+    const current = rows.find((r) => r.id === id);
+    setEditingTitleId(null);
+    if (!current || trimmed === (current.title?.trim() ?? "")) return;
+    await updateRow(id, { title: trimmed || null });
+  }
+
   async function updateRow(
     id: string,
-    patch: Partial<Pick<FeedbackRow, "status" | "importance" | "ease">>
+    patch: Partial<
+      Pick<FeedbackRow, "status" | "importance" | "ease" | "title">
+    >
   ) {
     setSavingId(id);
     setError(null);
@@ -532,13 +560,37 @@ export default function AdminCommunityFeedbackPage() {
               <table className="min-w-full table-fixed text-sm">
                 <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    <th className="w-24 whitespace-nowrap px-4 py-3">Date</th>
-                    <th className="w-28 whitespace-nowrap px-4 py-3">Type</th>
-                    <th className="w-[38%] px-4 py-3">Title</th>
-                    <th className="whitespace-nowrap px-4 py-3">Impact</th>
-                    <th className="whitespace-nowrap px-4 py-3">Ease</th>
-                    <th className="whitespace-nowrap px-4 py-3">Score</th>
-                    <th className="whitespace-nowrap px-4 py-3">Status</th>
+                    <th
+                      className={`${COL_DATE} whitespace-nowrap px-4 py-3`}
+                    >
+                      Date
+                    </th>
+                    <th
+                      className={`${COL_TYPE} whitespace-nowrap px-4 py-3`}
+                    >
+                      Type
+                    </th>
+                    <th className={`${COL_TITLE} px-4 py-3`}>Title</th>
+                    <th
+                      className={`${COL_IMPACT} whitespace-nowrap px-2 py-3`}
+                    >
+                      Impact
+                    </th>
+                    <th
+                      className={`${COL_EASE} whitespace-nowrap px-2 py-3`}
+                    >
+                      Ease
+                    </th>
+                    <th
+                      className={`${COL_SCORE} whitespace-nowrap px-2 py-3`}
+                    >
+                      Score
+                    </th>
+                    <th
+                      className={`${COL_STATUS} whitespace-nowrap px-2 py-3`}
+                    >
+                      Status
+                    </th>
                   </tr>
                 </thead>
               </table>
@@ -591,26 +643,59 @@ export default function AdminCommunityFeedbackPage() {
                                   : ""
                               }`}
                             >
-                              <td className="w-24 whitespace-nowrap px-4 py-3 text-slate-600">
+                              <td
+                                className={`${COL_DATE} whitespace-nowrap px-4 py-3 text-slate-600`}
+                              >
                                 {formatFeedbackDate(row.created_at)}
                               </td>
-                              <td className="w-28 whitespace-nowrap px-4 py-3">
+                              <td
+                                className={`${COL_TYPE} whitespace-nowrap px-4 py-3`}
+                              >
                                 <span
                                   className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${TYPE_STYLES[row.type]}`}
                                 >
                                   {TYPE_LABELS[row.type]}
                                 </span>
                               </td>
-                              <td className="w-[38%] px-4 py-3 align-top">
+                              <td className={`${COL_TITLE} px-4 py-3 align-top`}>
                                 <p className="text-xs text-slate-500">
                                   {authorName(row)}
                                 </p>
                                 <p className="mt-0.5 text-sm leading-snug">
-                                  <span className="font-medium text-slate-900">
-                                    {capitalizeFirstWord(
-                                      row.title?.trim() || "(No title)"
-                                    )}
-                                  </span>
+                                  {editingTitleId === row.id ? (
+                                    <input
+                                      type="text"
+                                      value={editingTitleValue}
+                                      disabled={saving}
+                                      autoFocus
+                                      onChange={(e) =>
+                                        setEditingTitleValue(e.target.value)
+                                      }
+                                      onBlur={() => void saveTitleEdit(row.id)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          void saveTitleEdit(row.id);
+                                        }
+                                        if (e.key === "Escape") {
+                                          setEditingTitleId(null);
+                                        }
+                                      }}
+                                      className="w-full rounded-md border border-sky-300 bg-white px-2 py-1 text-sm font-medium text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                                      aria-label="Edit title"
+                                    />
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      disabled={saving}
+                                      onClick={() => startTitleEdit(row)}
+                                      className="font-medium text-slate-900 text-left hover:text-sky-700 hover:underline disabled:cursor-wait disabled:opacity-50"
+                                    >
+                                      {capitalizeFirstWord(
+                                        row.title?.trim() || "(No title)"
+                                      )}
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     aria-expanded={expanded}
@@ -638,7 +723,9 @@ export default function AdminCommunityFeedbackPage() {
                                   </p>
                                 ) : null}
                               </td>
-                              <td className="whitespace-nowrap px-4 py-3">
+                              <td
+                                className={`${COL_IMPACT} whitespace-nowrap px-2 py-3`}
+                              >
                                 <ScoreSelect
                                   value={row.importance}
                                   disabled={saving}
@@ -647,7 +734,9 @@ export default function AdminCommunityFeedbackPage() {
                                   }
                                 />
                               </td>
-                              <td className="whitespace-nowrap px-4 py-3">
+                              <td
+                                className={`${COL_EASE} whitespace-nowrap px-2 py-3`}
+                              >
                                 <ScoreSelect
                                   value={row.ease}
                                   disabled={saving}
@@ -656,15 +745,20 @@ export default function AdminCommunityFeedbackPage() {
                                   }
                                 />
                               </td>
-                              <td className="whitespace-nowrap px-4 py-3">
+                              <td
+                                className={`${COL_SCORE} whitespace-nowrap px-2 py-3`}
+                              >
                                 <span className={scoreClassName(score)}>
                                   {score ?? "—"}
                                 </span>
                               </td>
-                              <td className="whitespace-nowrap px-4 py-3">
+                              <td
+                                className={`${COL_STATUS} whitespace-nowrap px-2 py-3`}
+                              >
                                 <PillSelect
                                   value={row.status}
                                   disabled={saving}
+                                  compact
                                   options={
                                     Object.keys(
                                       STATUS_LABELS

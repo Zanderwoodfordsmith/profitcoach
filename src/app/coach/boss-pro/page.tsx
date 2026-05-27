@@ -13,6 +13,7 @@ import {
   WorkshopSessionPicker,
   type WorkshopSessionSummary,
 } from "@/components/coach/WorkshopSessionPicker";
+import { isAdminUnscopedBossProView } from "@/lib/isBossWorkshopPath";
 
 type PickRow = {
   id: string;
@@ -37,6 +38,20 @@ function authHeaders(
 
 function readBossScorePremium(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+async function loadProfileRole(userId: string): Promise<string | null> {
+  const roleRes = await fetch("/api/profile-role", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId }),
+  });
+  const roleBody = (await roleRes.json().catch(() => ({}))) as {
+    role?: string;
+    error?: string;
+  };
+  if (!roleRes.ok || !roleBody.role) return null;
+  return roleBody.role;
 }
 
 function mergeCoachWorkshopContacts(
@@ -146,12 +161,8 @@ function CoachWorkshopPageContent() {
     } = await supabaseClient.auth.getUser();
     if (!user) return;
 
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (!profile) return;
+    const role = await loadProfileRole(user.id);
+    if (!role) return;
 
     const {
       data: { session },
@@ -159,7 +170,11 @@ function CoachWorkshopPageContent() {
     const token = session?.access_token;
     if (!token) return;
 
-    const isAdminUnscopedView = profile.role === "admin" && !impersonatingCoachId;
+    const isAdminUnscopedView = isAdminUnscopedBossProView(
+      role,
+      pathname,
+      impersonatingCoachId
+    );
     if (isAdminUnscopedView) {
       const res = await fetch("/api/admin/contacts", {
         headers: { Authorization: `Bearer ${token}` },
@@ -225,7 +240,7 @@ function CoachWorkshopPageContent() {
         clientsBody.clients ?? []
       )
     );
-  }, [impersonatingCoachId]);
+  }, [impersonatingCoachId, pathname]);
 
   useEffect(() => {
     if (contactFromUrl) {
@@ -248,20 +263,28 @@ function CoachWorkshopPageContent() {
         return;
       }
 
-      const { data: profile, error: profileError } = await supabaseClient
+      const { data: profile } = await supabaseClient
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!profile || profileError) {
+      const role =
+        (profile?.role as string | undefined) ??
+        (await loadProfileRole(user.id));
+
+      if (!role) {
         setError("Unable to load your profile.");
         setDraftCoachId(null);
         setLoading(false);
         return;
       }
 
-      const isAdminUnscoped = profile.role === "admin" && !impersonatingCoachId;
+      const isAdminUnscoped = isAdminUnscopedBossProView(
+        role,
+        pathname,
+        impersonatingCoachId
+      );
       if (isAdminUnscoped) {
         setAdminUnscoped(true);
         setDraftCoachId(null);
@@ -335,7 +358,7 @@ function CoachWorkshopPageContent() {
       setAdminUnscoped(false);
       setCoachOptions([]);
       const effectiveCoachId =
-        profile.role === "admin" && impersonatingCoachId
+        role === "admin" && impersonatingCoachId
           ? impersonatingCoachId
           : user.id;
       setDraftCoachId(effectiveCoachId);
@@ -399,7 +422,7 @@ function CoachWorkshopPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [router, impersonatingCoachId]);
+  }, [router, impersonatingCoachId, pathname]);
 
   const activeContactId = useMemo(() => {
     const id = (contactFromUrl || selectedId).trim();
