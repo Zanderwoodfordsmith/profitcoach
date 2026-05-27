@@ -1,15 +1,12 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, RefreshCw } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { StickyPageHeader } from "@/components/layout";
 import { BossGridTransposed, WorkshopProspectMatrix } from "@/components/BossGrid";
 import { BossWheel, BossDoughnut, FocusAreas } from "@/components/BossCharts";
-import { ContactPillarNotes } from "@/components/coach/ContactPillarNotes";
 import { BossScoreDialStrip, BossAnswerMixBar } from "@/components/coach/BossScoreDialStrip";
 import { WorkshopOwnerLevelBars } from "@/components/coach/WorkshopOwnerLevelBars";
 import { WorkshopInsightReader } from "@/components/coach/WorkshopInsightReader";
@@ -119,12 +116,6 @@ export type ContactBossWorkshopBodyProps = {
     jobTitle?: string | null;
     businessName?: string | null;
   }) => void;
-  /** Full contact header (name, back links). Omit when embedded in another page header. */
-  variant?: "page" | "embedded";
-  /** Shown in page variant only (e.g. back to clients + playbooks). */
-  headerLeading?: ReactNode;
-  /** When false, hides pillar session notes UI (e.g. BOSS workshop hub). Default true. */
-  showPillarNotes?: boolean;
   /**
    * Controlled matrix edit mode (live scoring). When both are set, internal toggle state is not used.
    */
@@ -138,6 +129,8 @@ export type ContactBossWorkshopBodyProps = {
   editingNewPerson?: boolean;
   /** App path for playbook detail back links (e.g. BOSS score hub). */
   playbookReturnTo?: string;
+  /** Admin-only WIP: prospect priority matrix at the bottom of Boss Pro. */
+  showProspectMatrix?: boolean;
 };
 
 export function ContactBossWorkshopBody({
@@ -145,15 +138,13 @@ export function ContactBossWorkshopBody({
   draftCoachId = null,
   pendingNewContact = null,
   onDraftContactCreated,
-  variant = "page",
-  headerLeading,
-  showPillarNotes = true,
   workshopMode: workshopModeProp,
   onWorkshopModeChange,
   showLiveScoringCheckbox = true,
   canAddNewPerson = false,
   editingNewPerson = false,
   playbookReturnTo,
+  showProspectMatrix = false,
 }: ContactBossWorkshopBodyProps) {
   const router = useRouter();
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
@@ -164,7 +155,6 @@ export function ContactBossWorkshopBody({
   const [loading, setLoading] = useState(Boolean(contactId));
   const [error, setError] = useState<string | null>(null);
   const [matrixAnswers, setMatrixAnswers] = useState<Record<string, 0 | 1 | 2>>({});
-  const [pillarNotes, setPillarNotes] = useState<Partial<Record<string, string>>>({});
   const [playbookNotes, setPlaybookNotes] = useState<Record<string, string>>({});
   const [internalWorkshopMode, setInternalWorkshopMode] = useState(true);
   const workshopModeControlled =
@@ -190,11 +180,9 @@ export function ContactBossWorkshopBody({
   const insightsGenerationReadyRef = useRef(false);
 
   const answersDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const notesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playbookNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insightsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswersRef = useRef<Record<string, 0 | 1 | 2> | null>(null);
-  const pendingNotesRef = useRef<Partial<Record<string, string>> | null>(null);
   const pendingPlaybookNotesRef = useRef<Partial<Record<string, string>> | null>(null);
   const openPlaybookSheetRef = useRef<((ref: string) => void) | null>(null);
   const ownerLevelsCardRef = useRef<HTMLElement>(null);
@@ -208,7 +196,6 @@ export function ContactBossWorkshopBody({
     draftContactIdRef.current = null;
     setContact(null);
     setMatrixAnswers({});
-    setPillarNotes({});
     setPlaybookNotes({});
     setSessionInsights(null);
     setError(null);
@@ -429,28 +416,12 @@ export function ContactBossWorkshopBody({
         return;
       }
 
-      const rawNotes = json.contact.pillar_session_notes as
-        | Record<string, unknown>
-        | null
-        | undefined;
-      const notes: Partial<Record<string, string>> = {};
-      if (rawNotes && typeof rawNotes === "object" && !Array.isArray(rawNotes)) {
-        for (const [k, v] of Object.entries(rawNotes)) {
-          if (typeof v === "string") notes[k] = v;
-        }
-      }
-
       setContact({
         id: json.contact.id,
         full_name: json.contact.full_name,
         email: json.contact.email ?? null,
         business_name: json.contact.business_name ?? null,
       });
-      if (showPillarNotes) {
-        setPillarNotes(notes);
-      } else {
-        setPillarNotes({});
-      }
 
       const rawPlaybookNotes = json.contact.playbook_session_notes as
         | Record<string, unknown>
@@ -499,12 +470,11 @@ export function ContactBossWorkshopBody({
     return () => {
       cancelled = true;
     };
-  }, [contactId, router, impersonatingCoachId, showPillarNotes, generateSessionInsights]);
+  }, [contactId, router, impersonatingCoachId, generateSessionInsights]);
 
   const persistSession = useCallback(
     async (body: {
       answers?: Record<string, 0 | 1 | 2>;
-      pillarNotes?: Partial<Record<string, string>>;
       playbookNotes?: Partial<Record<string, string>>;
     }) => {
       const savingScores = Boolean(body.answers);
@@ -594,15 +564,6 @@ export function ContactBossWorkshopBody({
     if (pending) void persistSession({ answers: pending });
   }, [persistSession]);
 
-  const flushPendingNotes = useCallback(() => {
-    if (!showPillarNotes) return;
-    const pending = pendingNotesRef.current;
-    pendingNotesRef.current = null;
-    if (pending && Object.keys(pending).length > 0) {
-      void persistSession({ pillarNotes: pending });
-    }
-  }, [persistSession, showPillarNotes]);
-
   const flushPendingPlaybookNotes = useCallback(() => {
     const pending = pendingPlaybookNotesRef.current;
     pendingPlaybookNotesRef.current = null;
@@ -614,7 +575,6 @@ export function ContactBossWorkshopBody({
   useEffect(() => {
     return () => {
       if (answersDebounceRef.current) clearTimeout(answersDebounceRef.current);
-      if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current);
       if (playbookNotesDebounceRef.current) {
         clearTimeout(playbookNotesDebounceRef.current);
       }
@@ -622,10 +582,9 @@ export function ContactBossWorkshopBody({
         clearTimeout(insightsDebounceRef.current);
       }
       flushPendingAnswers();
-      flushPendingNotes();
       flushPendingPlaybookNotes();
     };
-  }, [flushPendingAnswers, flushPendingNotes, flushPendingPlaybookNotes]);
+  }, [flushPendingAnswers, flushPendingPlaybookNotes]);
 
   useEffect(() => {
     function onVisibilityChange() {
@@ -660,23 +619,6 @@ export function ContactBossWorkshopBody({
       }, ANSWERS_DEBOUNCE_MS);
     },
     [flushPendingAnswers, scheduleInsightsRegenerate]
-  );
-
-  const handlePillarNotesChange = useCallback(
-    (patch: Partial<Record<string, string>>) => {
-      if (!showPillarNotes) return;
-      setPillarNotes((prev) => ({ ...prev, ...patch }));
-      pendingNotesRef.current = {
-        ...(pendingNotesRef.current ?? {}),
-        ...patch,
-      };
-      if (notesDebounceRef.current) clearTimeout(notesDebounceRef.current);
-      notesDebounceRef.current = setTimeout(() => {
-        notesDebounceRef.current = null;
-        flushPendingNotes();
-      }, NOTES_DEBOUNCE_MS);
-    },
-    [flushPendingNotes, showPillarNotes]
   );
 
   const handlePlaybookNotesChange = useCallback(
@@ -746,17 +688,6 @@ export function ContactBossWorkshopBody({
   }, [matrixAnswers, loading, error]);
 
   useEffect(() => {
-    if (variant !== "page") return;
-    const prev = document.title;
-    document.title = contact
-      ? `Boss Pro — ${contact.full_name}`
-      : "Boss Pro";
-    return () => {
-      document.title = prev;
-    };
-  }, [variant, contact?.full_name]);
-
-  useEffect(() => {
     if (scoresSaveState !== "saved") return;
 
     setShowSavedToast(true);
@@ -799,12 +730,6 @@ export function ContactBossWorkshopBody({
         <p className="text-sm text-rose-600" role="alert">
           {sessionError}
         </p>
-      )}
-
-      {!loading && !error && showPillarNotes && (
-        <div id="boss-pillar-session-notes">
-          <ContactPillarNotes pillarNotes={pillarNotes} onChange={handlePillarNotesChange} />
-        </div>
       )}
 
       {!loading && !error && (
@@ -899,7 +824,7 @@ export function ContactBossWorkshopBody({
               ref={ownerLevelsCardRef}
               className={`${WORKSHOP_CARD_SHELL} flex flex-col`}
             >
-              <div className={WORKSHOP_CARD_HEADER}>Owner levels</div>
+              <div className={WORKSHOP_CARD_HEADER}>Owner level completeness</div>
               <div className="px-6 py-8 sm:px-8 sm:py-9">
                 <WorkshopOwnerLevelBars answers={matrixAnswers} />
               </div>
@@ -939,6 +864,9 @@ export function ContactBossWorkshopBody({
               notAnswered={answerMix.unanswered}
               scoreMixCategories={scoreMixCategories}
               prospectBreakdown={prospectBreakdown}
+              onPlaybookClick={
+                !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
+              }
             />
 
             {contactId ? (
@@ -960,7 +888,7 @@ export function ContactBossWorkshopBody({
                     />
                   </button>
                 </div>
-                <div className="px-6 pb-8 pt-5 sm:px-8 sm:pb-9 sm:pt-[23px]">
+                <div className="px-6 pb-8 pt-3.5 sm:px-8 sm:pb-9 sm:pt-4">
                   <WorkshopInsightReader
                     answers={matrixAnswers}
                     totalScore={displayPremiumTotal ?? liveTotal}
@@ -979,13 +907,15 @@ export function ContactBossWorkshopBody({
             ) : null}
           </div>
 
-          <WorkshopProspectMatrix
-            playbookNotes={playbookNotes}
-            clientName={contact?.full_name}
-            onPlaybookClick={
-              workshopMode && !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
-            }
-          />
+          {showProspectMatrix ? (
+            <WorkshopProspectMatrix
+              playbookNotes={playbookNotes}
+              clientName={contact?.full_name}
+              onPlaybookClick={
+                workshopMode && !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
+              }
+            />
+          ) : null}
         </>
       )}
     </div>
@@ -1005,35 +935,10 @@ export function ContactBossWorkshopBody({
       </div>
     ) : null;
 
-  if (variant === "embedded") {
-    return (
-      <>
-        {inner}
-        {scoresSavedToast}
-      </>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-4">
-      <StickyPageHeader
-        leading={headerLeading}
-        title="Boss Pro"
-        descriptionPlacement="below"
-        description={
-          contact ? (
-            <div className="flex flex-col gap-0.5 text-slate-700">
-              <span className="text-base font-semibold text-slate-900">{contact.full_name}</span>
-              <span className="text-sm">
-                {contact.business_name ?? "No business name"}
-                {contact.email ? ` • ${contact.email}` : null}
-              </span>
-            </div>
-          ) : null
-        }
-      />
+    <>
       {inner}
       {scoresSavedToast}
-    </div>
+    </>
   );
 }

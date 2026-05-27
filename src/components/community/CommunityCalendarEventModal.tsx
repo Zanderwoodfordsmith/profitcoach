@@ -29,7 +29,10 @@ import {
   saveCommunityCalendarOccurrenceRecording,
   updateCommunityCalendarCancellationReason,
 } from "@/lib/communityCalendarData";
-import { isRecurringCommunityCalendarEvent } from "@/lib/communityCalendarTypes";
+import {
+  communityCalendarExceptionOccurrenceStart,
+  isRecurringCommunityCalendarEvent,
+} from "@/lib/communityCalendarTypes";
 import type { CommunityCalendarEventRow } from "@/lib/communityCalendarTypes";
 
 type Props = {
@@ -125,6 +128,11 @@ export function CommunityCalendarEventModal({
     [eventRow]
   );
 
+  const exceptionOccurrenceStart = useMemo(
+    () => communityCalendarExceptionOccurrenceStart(occurrence),
+    [occurrence]
+  );
+
   const saveRecordingLink = useCallback(async () => {
     const trimmed = recordingLinkDraft.trim();
     if (trimmed) {
@@ -140,7 +148,7 @@ export function CommunityCalendarEventModal({
       if (isRecurringSeries) {
         await saveCommunityCalendarOccurrenceRecording(
           occurrence.eventId,
-          occurrence.startsAtIso,
+          exceptionOccurrenceStart,
           { recording_link_url: trimmed || null }
         );
       } else {
@@ -166,7 +174,7 @@ export function CommunityCalendarEventModal({
   }, [
     recordingLinkDraft,
     occurrence.eventId,
-    occurrence.startsAtIso,
+    exceptionOccurrenceStart,
     isRecurringSeries,
     onRecordingSaved,
   ]);
@@ -177,7 +185,7 @@ export function CommunityCalendarEventModal({
     try {
       await updateCommunityCalendarCancellationReason(
         occurrence.eventId,
-        occurrence.startsAtIso,
+        exceptionOccurrenceStart,
         cancellationReasonDraft.trim() || null
       );
       onCancellationReasonSaved?.();
@@ -194,7 +202,7 @@ export function CommunityCalendarEventModal({
   }, [
     cancellationReasonDraft,
     occurrence.eventId,
-    occurrence.startsAtIso,
+    exceptionOccurrenceStart,
     onCancellationReasonSaved,
   ]);
 

@@ -1,6 +1,57 @@
 import type { CommunityCalendarOccurrence } from "@/lib/communityCalendarTypes";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
 
+export const NEW_MEMBER_KICKOFF_EVENT_ID =
+  "b0eef000-0000-4000-a000-000000000001";
+
+export function isNewMemberKickoffOccurrence(
+  occurrence: Pick<CommunityCalendarOccurrence, "eventId" | "title">
+): boolean {
+  return (
+    occurrence.eventId === NEW_MEMBER_KICKOFF_EVENT_ID ||
+    occurrence.title === "New Member Kick-off Call"
+  );
+}
+
+/** Month/list: green box wrapping time + title. */
+export function communityCalendarKickoffHighlightBoxClass(
+  cancelled: boolean
+): string {
+  if (cancelled) {
+    return "rounded-md bg-rose-50/90 px-1.5 pb-1 pt-0";
+  }
+  return "rounded-md bg-emerald-50 px-1.5 pb-1 pt-0";
+}
+
+export function communityCalendarKickoffMonthTimeClass(cancelled: boolean): string {
+  if (cancelled) return "text-rose-500";
+  return "text-emerald-700";
+}
+
+export function communityCalendarKickoffMonthTitleClass(
+  cancelled: boolean
+): string {
+  if (cancelled) return communityCalendarCancelledTextClass();
+  return "text-emerald-900";
+}
+
+/** Week grid block for kick-off calls. */
+export function communityCalendarKickoffWeekBlockClass(
+  cancelled: boolean
+): string {
+  if (cancelled) {
+    return "bg-rose-50 text-rose-700 shadow-sm";
+  }
+  return "bg-emerald-100 text-emerald-950 shadow-sm";
+}
+
+export function communityCalendarKickoffWeekBlockTimeClass(
+  cancelled: boolean
+): string {
+  if (cancelled) return "text-rose-500";
+  return "text-emerald-800";
+}
+
 /** Week-grid event block colors. */
 export function communityCalendarWeekBlockClass(
   cancelled: boolean,
@@ -96,4 +147,31 @@ export function communityCalendarHasRecording(
     Boolean(occurrence.recording_link_url?.trim()) ||
     Boolean(occurrence.recording_video_url?.trim())
   );
+}
+
+export function communityCalendarRecordingWatchUrl(
+  occurrence: Pick<
+    CommunityCalendarOccurrence,
+    "recording_link_url" | "recording_video_url"
+  >
+): string | null {
+  const video = occurrence.recording_video_url?.trim();
+  if (video && /^https?:\/\//i.test(video)) return video;
+  const link = occurrence.recording_link_url?.trim();
+  if (link && /^https?:\/\//i.test(link)) return link;
+  return null;
+}
+
+export function isLiveCommunityCalendarOccurrence(
+  occurrence: Pick<
+    CommunityCalendarOccurrence,
+    "startsAtIso" | "endsAtIso" | "isCancelled"
+  >,
+  nowMs = Date.now()
+): boolean {
+  if (occurrence.isCancelled) return false;
+  const startMs = Date.parse(occurrence.startsAtIso);
+  const endMs = Date.parse(occurrence.endsAtIso);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return false;
+  return nowMs >= startMs && nowMs < endMs;
 }

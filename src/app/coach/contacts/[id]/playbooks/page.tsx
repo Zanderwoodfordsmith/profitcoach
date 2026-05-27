@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -166,10 +167,10 @@ export default function CoachContactPlaybooksPage({
       <StickyPageHeader
         leading={
           <Link
-            href={`/coach/contacts/${contactId}`}
+            href={bossProHubPath(contactId)}
             className="text-xs text-slate-600 hover:text-slate-800"
           >
-            ← Back to contact
+            ← Back to BOSS score
           </Link>
         }
         title={`Playbooks — ${contactName ?? "Contact"}`}

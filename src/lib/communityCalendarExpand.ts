@@ -58,26 +58,59 @@ function matchesWeekRecurrence(
   return weeks % interval === 0;
 }
 
-function matchesMonthRecurrence(
+function weekdayOrdinalInMonth(dt: DateTime): number {
+  return Math.floor((dt.day - 1) / 7) + 1;
+}
+
+function matchesMonthWeekOrdinal(
   startInst: DateTime,
-  anchor: DateTime,
-  rec: RecurrencePayload
+  ordinal: MonthWeekOrdinal
 ): boolean {
-  const interval = Math.max(1, Math.floor(rec.interval));
-  const months = Math.round(
-    startInst.startOf("month").diff(anchor.startOf("month"), "months").months
-  );
-  if (months < 0) return false;
-  if (months % interval !== 0) return false;
-  if (rec.monthMode === "ordinal_weekday") {
-    const weekday =
-      rec.monthWeekday ?? (luxonToMon0Sun6(anchor.weekday) as 0 | 1 | 2 | 3 | 4 | 5 | 6);
-    const ordinal = rec.monthOrdinal ?? (monthWeekOrdinal(anchor) as MonthWeekOrdinal);
-    const startWeekday = luxonToMon0Sun6(startInst.weekday);
-    if (startWeekday !== weekday) return false;
-    return monthWeekOrdinal(startInst) === ordinal;
+  const ord = monthWeekOrdinal(startInst);
+  if (ordinal === -1) return ord === -1;
+  if (ord === ordinal) return true;
+  // e.g. 4th Wed when that week is the last in the month (monthWeekOrdinal → -1)
+  return ord === -1 && weekdayOrdinalInMonth(startInst) === ordinal;
+}
+
+/** Nth Tuesday (1-based) in the same calendar month as `dt`. Luxon weekday Tue = 2. */
+export function nthTuesdayOfMonth(
+  dt: DateTime,
+  ordinal: MonthWeekOrdinal
+): DateTime | null {
+  if (ordinal < 1) return null;
+  let count = 0;
+  let day = dt.startOf("month");
+  const last = dt.endOf("month").startOf("day");
+  while (day <= last) {
+    if (day.weekday === 2) {
+      count++;
+      if (count === ordinal) return day;
+    }
+    day = day.plus({ days: 1 });
   }
-  return startInst.day === anchor.day;
+  return null;
+}
+
+/** Wednesday immediately after the Nth Tuesday of the month, at anchor time. */
+export function dayAfterNthTuesdayOfMonth(
+  year: number,
+  month: number,
+  ordinal: MonthWeekOrdinal,
+  anchor: DateTime,
+  zone: string
+): DateTime | null {
+  const nthTue = nthTuesdayOfMonth(
+    DateTime.fromObject({ year, month, day: 1 }, { zone }),
+    ordinal
+  );
+  if (!nthTue) return null;
+  return nthTue.plus({ days: 1 }).set({
+    hour: anchor.hour,
+    minute: anchor.minute,
+    second: anchor.second,
+    millisecond: anchor.millisecond,
+  });
 }
 
 function monthWeekOrdinal(dt: DateTime): number {
@@ -86,53 +119,146 @@ function monthWeekOrdinal(dt: DateTime): number {
   return nth;
 }
 
-function collectRecurringStarts(
+function monthOccurrenceAt(
+  year: number,
+  month: number,
   anchor: DateTime,
   rec: RecurrencePayload,
   zone: string
+): DateTime | null {
+  if (rec.monthMode === "day_after_ordinal_tuesday") {
+    const ordinal =
+      rec.monthOrdinal ?? (monthWeekOrdinal(anchor) as MonthWeekOrdinal);
+    return dayAfterNthTuesdayOfMonth(year, month, ordinal, anchor, zone);
+  }
+  if (rec.monthMode === "ordinal_weekday") {
+    const weekday =
+      rec.monthWeekday ??
+      (luxonToMon0Sun6(anchor.weekday) as 0 | 1 | 2 | 3 | 4 | 5 | 6);
+    const ordinal =
+      rec.monthOrdinal ?? (monthWeekOrdinal(anchor) as MonthWeekOrdinal);
+    let day = DateTime.fromObject({ year, month, day: 1 }, { zone }).startOf(
+      "day"
+    );
+    const last = day.endOf("month").startOf("day");
+    while (day <= last) {
+      if (
+        luxonToMon0Sun6(day.weekday) === weekday &&
+        matchesMonthWeekOrdinal(day, ordinal)
+      ) {
+        return day.set({
+          hour: anchor.hour,
+          minute: anchor.minute,
+          second: anchor.second,
+          millisecond: anchor.millisecond,
+        });
+      }
+      day = day.plus({ days: 1 });
+    }
+    return null;
+  }
+  const candidate = DateTime.fromObject(
+    {
+      year,
+      month,
+      day: anchor.day,
+      hour: anchor.hour,
+      minute: anchor.minute,
+      second: anchor.second,
+      millisecond: anchor.millisecond,
+    },
+    { zone }
+  );
+  return candidate.isValid ? candidate : null;
+}
+
+/** Buffer so rescheduled occurrences just outside the visible range are still found. */
+const RECURRENCE_RESCHEDULE_BUFFER_DAYS = 45;
+
+function collectRecurringStarts(
+  anchor: DateTime,
+  rec: RecurrencePayload,
+  zone: string,
+  rangeStart: DateTime,
+  rangeEnd: DateTime
 ): DateTime[] {
-  const out: DateTime[] = [];
+  const scanStart = DateTime.max(
+    anchor.startOf("day"),
+    rangeStart.minus({ days: RECURRENCE_RESCHEDULE_BUFFER_DAYS }).startOf("day")
+  );
+  const scanEnd = rangeEnd
+    .plus({ days: RECURRENCE_RESCHEDULE_BUFFER_DAYS })
+    .endOf("day");
   const endDay = endOfRecurrenceDay(rec, zone);
+  const effectiveEnd = endDay ? DateTime.min(scanEnd, endDay) : scanEnd;
   const maxOcc =
     rec.end === "after" && rec.maxOccurrences
       ? Math.max(1, Math.floor(rec.maxOccurrences))
       : null;
+  const interval = Math.max(1, Math.floor(rec.interval));
 
-  let day = anchor.startOf("day");
-  const hardStop = anchor.plus({ years: 3 });
+  if (rec.unit === "month") {
+    const out: DateTime[] = [];
+    let cursor = scanStart.startOf("month");
+    while (cursor <= effectiveEnd) {
+      const startInst = monthOccurrenceAt(
+        cursor.year,
+        cursor.month,
+        anchor,
+        rec,
+        zone
+      );
+      if (startInst && startInst >= anchor && startInst <= effectiveEnd) {
+        const months = Math.round(
+          startInst
+            .startOf("month")
+            .diff(anchor.startOf("month"), "months").months
+        );
+        if (months >= 0 && months % interval === 0) {
+          out.push(startInst);
+          if (maxOcc && out.length >= maxOcc) break;
+        }
+      }
+      cursor = cursor.plus({ months: 1 });
+    }
+    return out;
+  }
 
-  while (day <= hardStop) {
-    if (endDay && day > endDay.endOf("day")) break;
-
+  const out: DateTime[] = [];
+  let day = scanStart.startOf("day");
+  while (day <= effectiveEnd) {
     const startInst = day.set({
       hour: anchor.hour,
       minute: anchor.minute,
       second: anchor.second,
       millisecond: anchor.millisecond,
     });
-    if (!startInst.isValid) {
-      day = day.plus({ days: 1 });
-      continue;
-    }
-    if (startInst < anchor) {
-      day = day.plus({ days: 1 });
-      continue;
-    }
-
-    const ok =
-      rec.unit === "month"
-        ? matchesMonthRecurrence(startInst, anchor, rec)
-        : matchesWeekRecurrence(startInst, anchor, rec);
-
-    if (ok) {
+    if (
+      startInst.isValid &&
+      startInst >= anchor &&
+      matchesWeekRecurrence(startInst, anchor, rec)
+    ) {
       out.push(startInst);
       if (maxOcc && out.length >= maxOcc) break;
     }
-
     day = day.plus({ days: 1 });
   }
-
   return out;
+}
+
+/** Occurrences overlapping [rangeStart, rangeEnd] (inclusive). */
+export function filterCommunityCalendarOccurrencesInRange(
+  occurrences: CommunityCalendarOccurrence[],
+  rangeStart: DateTime,
+  rangeEnd: DateTime
+): CommunityCalendarOccurrence[] {
+  const rs = rangeStart.toUTC().toMillis();
+  const re = rangeEnd.toUTC().toMillis();
+  return occurrences.filter((o) => {
+    const s = Date.parse(o.startsAtIso);
+    const e = Date.parse(o.endsAtIso);
+    return e >= rs && s <= re;
+  });
 }
 
 /**
@@ -151,6 +277,8 @@ export function expandCommunityCalendar(
       cancellationReason: string | null;
       recordingLinkUrl: string | null;
       recordingVideoUrl: string | null;
+      rescheduledStartsAt: string | null;
+      rescheduledEndsAt: string | null;
     }
   >();
   for (const ex of exceptions) {
@@ -159,6 +287,8 @@ export function expandCommunityCalendar(
       cancellationReason: ex.cancellation_reason?.trim() || null,
       recordingLinkUrl: ex.recording_link_url ?? null,
       recordingVideoUrl: ex.recording_video_url ?? null,
+      rescheduledStartsAt: ex.rescheduled_starts_at ?? null,
+      rescheduledEndsAt: ex.rescheduled_ends_at ?? null,
     });
   }
 
@@ -209,9 +339,32 @@ export function expandCommunityCalendar(
     if (!row.is_recurring || !rec) {
       const sUtc = anchor.toUTC();
       const eUtc = endAnchor.toUTC();
+      const startsAtIso = sUtc.toISO()!;
+      const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
+      const ex = exceptionByKey.get(occurrenceKey);
+
+      if (ex?.rescheduledStartsAt && ex?.rescheduledEndsAt) {
+        const rS = DateTime.fromISO(ex.rescheduledStartsAt, { zone: "utc" });
+        const rE = DateTime.fromISO(ex.rescheduledEndsAt, { zone: "utc" });
+        if (rE >= rs && rS <= re) {
+          out.push({
+            eventId: row.id,
+            title: row.title,
+            description: row.description,
+            cover_image_url: row.cover_image_url,
+            startsAtIso: ex.rescheduledStartsAt,
+            endsAtIso: ex.rescheduledEndsAt,
+            seriesOccurrenceStartIso: startsAtIso,
+            display_timezone: row.display_timezone,
+            location_kind: row.location_kind,
+            location_url: row.location_url,
+            ...occurrenceFields(row, occurrenceKey, false),
+          });
+        }
+        continue;
+      }
+
       if (eUtc >= rs && sUtc <= re) {
-        const startsAtIso = sUtc.toISO()!;
-        const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
         out.push({
           eventId: row.id,
           title: row.title,
@@ -228,13 +381,36 @@ export function expandCommunityCalendar(
       continue;
     }
 
-    const starts = collectRecurringStarts(anchor, rec, zone);
+    const starts = collectRecurringStarts(anchor, rec, zone, rangeStart, rangeEnd);
     for (const startInst of starts) {
       const sUtc = startInst.toUTC();
       const eUtc = startInst.plus(duration).toUTC();
-      if (eUtc < rs || sUtc > re) continue;
       const startsAtIso = sUtc.toISO()!;
       const occurrenceKey = communityCalendarOccurrenceKey(row.id, startsAtIso);
+      const ex = exceptionByKey.get(occurrenceKey);
+
+      if (ex?.rescheduledStartsAt && ex?.rescheduledEndsAt) {
+        const rS = DateTime.fromISO(ex.rescheduledStartsAt, { zone: "utc" });
+        const rE = DateTime.fromISO(ex.rescheduledEndsAt, { zone: "utc" });
+        if (rE >= rs && rS <= re) {
+          out.push({
+            eventId: row.id,
+            title: row.title,
+            description: row.description,
+            cover_image_url: row.cover_image_url,
+            startsAtIso: ex.rescheduledStartsAt,
+            endsAtIso: ex.rescheduledEndsAt,
+            seriesOccurrenceStartIso: startsAtIso,
+            display_timezone: row.display_timezone,
+            location_kind: row.location_kind,
+            location_url: row.location_url,
+            ...occurrenceFields(row, occurrenceKey, true),
+          });
+        }
+        continue;
+      }
+
+      if (eUtc < rs || sUtc > re) continue;
       out.push({
         eventId: row.id,
         title: row.title,
@@ -255,13 +431,44 @@ export function expandCommunityCalendar(
       new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime()
   );
 
-  const seen = new Set<string>();
-  return out.filter((o) => {
-    const k = communityCalendarOccurrenceKey(o.eventId, o.startsAtIso);
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+  const recurringEventIds = new Set(
+    rows
+      .filter((row) => row.is_recurring && row.recurrence)
+      .map((row) => row.id)
+  );
+
+  function localTitleDayKey(o: CommunityCalendarOccurrence): string {
+    const zone = o.display_timezone || "UTC";
+    const local = DateTime.fromISO(o.startsAtIso, { zone: "utc" }).setZone(zone);
+    return `${o.title}|${local.toISODate() ?? ""}`;
+  }
+
+  const seenExact = new Set<string>();
+  const bestByTitleDay = new Map<string, CommunityCalendarOccurrence>();
+
+  for (const o of out) {
+    const exactKey = communityCalendarOccurrenceKey(o.eventId, o.startsAtIso);
+    if (seenExact.has(exactKey)) continue;
+    seenExact.add(exactKey);
+
+    const titleDayKey = localTitleDayKey(o);
+    const existing = bestByTitleDay.get(titleDayKey);
+    if (!existing) {
+      bestByTitleDay.set(titleDayKey, o);
+      continue;
+    }
+
+    const oRecurring = recurringEventIds.has(o.eventId);
+    const existingRecurring = recurringEventIds.has(existing.eventId);
+    if (oRecurring && !existingRecurring) {
+      bestByTitleDay.set(titleDayKey, o);
+    }
+  }
+
+  return [...bestByTitleDay.values()].sort(
+    (a, b) =>
+      new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime()
+  );
 }
 
 /** Whether `date` falls in the Mon–Sun week starting at `weekMonday`. */

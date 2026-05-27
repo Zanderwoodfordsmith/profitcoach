@@ -10,6 +10,7 @@ import {
   ProspectsTable,
   type ProspectRow,
 } from "@/components/prospects/ProspectsTable";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 export default function CoachClientsPage() {
   const router = useRouter();
@@ -243,7 +244,7 @@ export default function CoachClientsPage() {
         onAddClick={() => setShowAddClient((open) => !open)}
         addActive={showAddClient}
         addLabel={showAddClient ? "Cancel" : "Add"}
-        onRowClick={(id) => router.push(`/coach/contacts/${id}`)}
+        onRowClick={(id) => router.push(bossProHubPath(id))}
         emptyMessage="No clients yet."
         renderRowActions={(row) => (
           <button

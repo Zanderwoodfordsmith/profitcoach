@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  startTransition,
 } from "react";
 import {
   CalendarDays,
@@ -26,21 +27,30 @@ import { DateTime } from "luxon";
 import {
   communityCalendarMondayStart,
   expandCommunityCalendar,
+  filterCommunityCalendarOccurrencesInRange,
 } from "@/lib/communityCalendarExpand";
 import type {
   CommunityCalendarEventExceptionRow,
   CommunityCalendarEventRow,
   CommunityCalendarOccurrence,
 } from "@/lib/communityCalendarTypes";
-import { communityCalendarOccurrenceKey } from "@/lib/communityCalendarTypes";
+import { communityCalendarOccurrenceKey, communityCalendarExceptionOccurrenceStart } from "@/lib/communityCalendarTypes";
 import {
   communityCalendarCoverUrl,
   communityCalendarCancellationHoverTitle,
   communityCalendarCancelledBadgeClass,
   communityCalendarCancelledTextClass,
   communityCalendarHasRecording,
+  communityCalendarKickoffHighlightBoxClass,
+  communityCalendarKickoffMonthTimeClass,
+  communityCalendarKickoffMonthTitleClass,
+  communityCalendarKickoffWeekBlockClass,
+  communityCalendarKickoffWeekBlockTimeClass,
+  communityCalendarRecordingWatchUrl,
   communityCalendarWeekBlockClass,
   communityCalendarWeekBlockTimeClass,
+  isLiveCommunityCalendarOccurrence,
+  isNewMemberKickoffOccurrence,
 } from "@/lib/communityCalendarDisplay";
 import { CommunityCalendarCoverImage } from "@/components/community/CommunityCalendarCoverImage";
 import {
@@ -55,6 +65,7 @@ import {
 } from "@/lib/communityCalendarData";
 import {
   communityAccessHint,
+  isSupabaseAbortError,
   supabaseErrorMessage,
 } from "@/lib/supabaseErrorMessage";
 import { AddCommunityEventModal } from "@/components/community/AddCommunityEventModal";
@@ -67,6 +78,75 @@ const LIST_PAGE_SIZE = 6;
 
 const WEEK_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
+const WEEKEND_CELL_BG_CLASS = "bg-slate-200/70";
+
+const BCA_CONFERENCE_YEAR = 2026;
+const BCA_CONFERENCE_MONTH = 5;
+const BCA_CONFERENCE_START_DAY = 12;
+const BCA_CONFERENCE_END_DAY = 13;
+const BCA_CONFERENCE_CELL_BG_CLASS = "bg-sky-100/80";
+
+type BcaConferenceMonthCell = {
+  isConferenceDay: true;
+  showBanner: boolean;
+  spanColumns: 1 | 2;
+};
+
+function getBcaConferenceMonthCell(
+  cell: DateTime,
+  cellIndex: number,
+  gridCells: DateTime[]
+): BcaConferenceMonthCell | null {
+  if (
+    cell.year !== BCA_CONFERENCE_YEAR ||
+    cell.month !== BCA_CONFERENCE_MONTH ||
+    cell.day < BCA_CONFERENCE_START_DAY ||
+    cell.day > BCA_CONFERENCE_END_DAY
+  ) {
+    return null;
+  }
+
+  const prev = gridCells[cellIndex - 1];
+  const next = gridCells[cellIndex + 1];
+  const coveredByPrevSpan =
+    cell.day === BCA_CONFERENCE_END_DAY &&
+    prev?.year === BCA_CONFERENCE_YEAR &&
+    prev?.month === BCA_CONFERENCE_MONTH &&
+    prev.day === BCA_CONFERENCE_START_DAY &&
+    cellIndex % 7 !== 0;
+  const canSpanTwo =
+    cell.day === BCA_CONFERENCE_START_DAY &&
+    next?.year === BCA_CONFERENCE_YEAR &&
+    next?.month === BCA_CONFERENCE_MONTH &&
+    next.day === BCA_CONFERENCE_END_DAY &&
+    cellIndex % 7 !== 6;
+
+  return {
+    isConferenceDay: true,
+    showBanner: !coveredByPrevSpan,
+    spanColumns: canSpanTwo ? 2 : 1,
+  };
+}
+
+function isWeekendDate(dt: DateTime): boolean {
+  return dt.weekday >= 6;
+}
+
+const WEEKDAY_COL = "minmax(5.25rem,1fr)";
+const WEEKEND_COL_NARROW = "minmax(2.25rem,0.35fr)";
+const WEEKEND_COL_WIDE = "minmax(5.25rem,1fr)";
+
+function calendarGridTemplateColumns(
+  satExpanded: boolean,
+  sunExpanded: boolean,
+  includeTimeGutter = false
+): string {
+  const sat = satExpanded ? WEEKEND_COL_WIDE : WEEKEND_COL_NARROW;
+  const sun = sunExpanded ? WEEKEND_COL_WIDE : WEEKEND_COL_NARROW;
+  const days = `repeat(5, ${WEEKDAY_COL}) ${sat} ${sun}`;
+  return includeTimeGutter ? `3.5rem ${days}` : `repeat(5, minmax(0,1fr)) ${sat} ${sun}`;
+}
+
 /** Week time-grid: pixels per hour (scrollable 24h). */
 const WEEK_PX_PER_HOUR = 52;
 const WEEK_TOTAL_MINUTES = 24 * 60;
@@ -76,11 +156,12 @@ const WEEK_DEFAULT_END_MINUTES = 20 * 60;
 const WEEK_EVENT_PADDING_MINUTES = 60;
 const WEEK_MIN_VISIBLE_SPAN_MINUTES = 6 * 60;
 
-/** Time gutter + seven equal day columns (header + body share this template). */
-const WEEK_GRID_CLASS =
-  "grid w-full min-w-[44rem] grid-cols-[3.5rem_repeat(7,minmax(5.25rem,1fr))]";
+/** Week time-grid: shared layout minus column template (set via inline style). */
+const WEEK_GRID_BASE_CLASS = "grid w-full min-w-[44rem]";
 
 type CalendarLayout = "month" | "week";
+
+type ListTab = "upcoming" | "previous";
 
 type WeekSegment = {
   occurrence: CommunityCalendarOccurrence;
@@ -109,6 +190,24 @@ function timeZoneCityLabel(iana: string): string {
   return tail.replace(/_/g, " ");
 }
 
+function CalendarLiveBadge({ compact = false }: { compact?: boolean }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-md bg-red-500 font-bold uppercase tracking-wide text-white ${
+        compact
+          ? "px-1 py-px text-[8px]"
+          : "px-1.5 py-0.5 text-[9px]"
+      }`}
+    >
+      <span
+        className={`rounded-full bg-white ${compact ? "h-1 w-1" : "h-1.5 w-1.5"}`}
+        aria-hidden
+      />
+      Live
+    </span>
+  );
+}
+
 function CalendarStatusBar({
   variant,
   compact = false,
@@ -119,7 +218,7 @@ function CalendarStatusBar({
   const isRecording = variant === "recording";
   return (
     <span
-      className={`mt-0.5 flex w-full items-center gap-1 rounded font-semibold no-underline ${
+      className={`mt-0.5 inline-flex w-auto max-w-full items-center gap-1 rounded font-semibold no-underline ${
         isRecording
           ? "bg-emerald-100 text-emerald-800"
           : "bg-rose-100 text-rose-800"
@@ -237,13 +336,19 @@ function formatWeekBlockRange(start: DateTime, end: DateTime, tz: string): strin
   return `${formatCompactTimePart(a, sameMeridiem)}-${formatCompactTimePart(b)}`;
 }
 
-function formatMonthEventStart(iso: string, tz: string): string {
-  return formatCompactTimePart(
-    DateTime.fromISO(iso, { zone: "utc" }).setZone(tz)
+function formatMonthEventTimeRange(
+  startsAtIso: string,
+  endsAtIso: string,
+  tz: string
+): string {
+  return formatWeekBlockRange(
+    DateTime.fromISO(startsAtIso, { zone: "utc" }),
+    DateTime.fromISO(endsAtIso, { zone: "utc" }),
+    tz
   );
 }
 
-function formatRangeLabel(
+function formatListEventLabel(
   start: DateTime,
   end: DateTime,
   tz: string
@@ -256,20 +361,11 @@ function formatRangeLabel(
     month: "short",
     day: "numeric",
   });
-  const timeFmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    hour: "numeric",
-    minute: "2-digit",
-  });
   const sameDay = a.toISODate() === b.toISODate();
   if (sameDay) {
-    return `${dayFmt.format(a.toJSDate())} @ ${timeFmt.format(
-      a.toJSDate()
-    )} – ${timeFmt.format(b.toJSDate())}`;
+    return `${dayFmt.format(a.toJSDate())}, ${formatWeekBlockRange(start, end, tz)}`;
   }
-  return `${dayFmt.format(a.toJSDate())}, ${timeFmt.format(
-    a.toJSDate()
-  )} – ${dayFmt.format(b.toJSDate())}, ${timeFmt.format(b.toJSDate())}`;
+  return `${dayFmt.format(a.toJSDate())}, ${formatCompactTimePart(a)} – ${dayFmt.format(b.toJSDate())}, ${formatCompactTimePart(b)}`;
 }
 
 export function CommunityCalendar({
@@ -298,6 +394,7 @@ export function CommunityCalendar({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [listPage, setListPage] = useState(1);
+  const [listTab, setListTab] = useState<ListTab>("upcoming");
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [nowTick, setNowTick] = useState(0);
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
@@ -312,6 +409,7 @@ export function CommunityCalendar({
   const [cancelSaving, setCancelSaving] = useState(false);
   const tzPickerRef = useRef<HTMLDivElement>(null);
   const eventMenuRef = useRef<HTMLDivElement>(null);
+  const loadGenerationRef = useRef(0);
 
   useEffect(() => {
     const id = window.setInterval(() => setNowTick((n) => n + 1), 60_000);
@@ -343,14 +441,19 @@ export function CommunityCalendar({
   }, [viewTz]);
 
   const loadEvents = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setLoadError(null);
     try {
       const { events, exceptions: loadedExceptions } =
         await loadCommunityCalendarData();
+      if (generation !== loadGenerationRef.current) return;
       setRows(events);
       setExceptions(loadedExceptions);
     } catch (e) {
+      if (generation !== loadGenerationRef.current || isSupabaseAbortError(e)) {
+        return;
+      }
       const msg = supabaseErrorMessage(e);
       const hint = communityAccessHint(msg);
       setLoadError(
@@ -360,20 +463,39 @@ export function CommunityCalendar({
       setRows([]);
       setExceptions([]);
     } finally {
-      setLoading(false);
+      if (generation === loadGenerationRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     void loadEvents();
+    return () => {
+      loadGenerationRef.current += 1;
+    };
   }, [loadEvents, refreshNonce]);
 
-  const monthRange = useMemo(() => {
-    const vm = focusDate.setZone(viewTz);
-    const start = vm.startOf("month");
-    const end = vm.endOf("month");
-    return { start, end };
-  }, [focusDate, viewTz]);
+  const effectiveViewMode =
+    isBelowMd && viewMode === "calendar" ? "list" : viewMode;
+
+  const calendarYearWindow = useMemo(() => {
+    const z = focusDate.setZone(viewTz);
+    return {
+      start: z.minus({ years: 1 }).startOf("year"),
+      end: z.plus({ years: 1 }).endOf("year"),
+    };
+  }, [focusDate.year, viewTz]);
+
+  const expandedCalendarWindow = useMemo(() => {
+    if (rows.length === 0) return [];
+    return expandCommunityCalendar(
+      rows,
+      calendarYearWindow.start,
+      calendarYearWindow.end,
+      exceptions
+    );
+  }, [rows, exceptions, calendarYearWindow.start, calendarYearWindow.end]);
 
   const gridStart = useMemo(() => {
     const first = focusDate.setZone(viewTz).startOf("month");
@@ -381,15 +503,33 @@ export function CommunityCalendar({
     return first.minus({ days: back });
   }, [focusDate, viewTz]);
 
+  const gridEnd = useMemo(() => {
+    const last = focusDate.setZone(viewTz).endOf("month").startOf("day");
+    const forward = 6 - luxonToMon0Sun6(last.weekday);
+    return last.plus({ days: forward });
+  }, [focusDate, viewTz]);
+
   const gridCells = useMemo(() => {
     const cells: DateTime[] = [];
-    let d = gridStart;
-    for (let i = 0; i < 42; i++) {
+    let d = gridStart.startOf("day");
+    const end = gridEnd.startOf("day");
+    while (d <= end) {
       cells.push(d);
       d = d.plus({ days: 1 });
     }
     return cells;
-  }, [gridStart]);
+  }, [gridStart, gridEnd]);
+
+  const gridRange = useMemo(() => {
+    if (gridCells.length === 0) {
+      const start = gridStart.startOf("day");
+      return { start, end: start.endOf("day") };
+    }
+    return {
+      start: gridCells[0].startOf("day"),
+      end: gridCells[gridCells.length - 1].endOf("day"),
+    };
+  }, [gridCells, gridStart]);
 
   /** Month (and year) the grid is centred on — used to dim leading/trailing cells. */
   const visibleMonth = useMemo(
@@ -398,16 +538,12 @@ export function CommunityCalendar({
   );
 
   const occurrencesInMonth = useMemo(() => {
-    return expandCommunityCalendar(
-      rows,
-      monthRange.start,
-      monthRange.end,
-      exceptions
+    return filterCommunityCalendarOccurrencesInRange(
+      expandedCalendarWindow,
+      gridRange.start,
+      gridRange.end
     );
-  }, [rows, monthRange.start, monthRange.end, exceptions]);
-
-  const effectiveViewMode =
-    isBelowMd && viewMode === "calendar" ? "list" : viewMode;
+  }, [expandedCalendarWindow, gridRange.start, gridRange.end]);
 
   const weekMonday = useMemo(() => {
     const d = focusDate.setZone(viewTz).startOf("day");
@@ -421,13 +557,21 @@ export function CommunityCalendar({
   }, [weekMonday]);
 
   const occurrencesInWeek = useMemo(() => {
-    return expandCommunityCalendar(
-      rows,
+    if (effectiveViewMode !== "calendar" || calendarLayout !== "week") {
+      return [];
+    }
+    return filterCommunityCalendarOccurrencesInRange(
+      expandedCalendarWindow,
       weekRangeUtc.startUtc,
-      weekRangeUtc.endUtc,
-      exceptions
+      weekRangeUtc.endUtc
     );
-  }, [rows, weekRangeUtc.startUtc, weekRangeUtc.endUtc, exceptions]);
+  }, [
+    expandedCalendarWindow,
+    weekRangeUtc.startUtc,
+    weekRangeUtc.endUtc,
+    effectiveViewMode,
+    calendarLayout,
+  ]);
 
   const weekSegments = useMemo(
     () => layoutWeekSegments(occurrencesInWeek, weekMonday, viewTz),
@@ -554,16 +698,71 @@ export function CommunityCalendar({
     return m;
   }, [occurrencesInMonth, viewTz]);
 
+  const monthWeekendColumnsExpanded = useMemo(() => {
+    let saturday = false;
+    let sunday = false;
+    for (const cell of gridCells) {
+      const weekday = cell.weekday;
+      if (weekday !== 6 && weekday !== 7) continue;
+      const key = cell.toISODate() ?? "";
+      if ((byDayKey.get(key)?.length ?? 0) > 0) {
+        if (weekday === 6) saturday = true;
+        if (weekday === 7) sunday = true;
+      }
+    }
+    return { saturday, sunday };
+  }, [gridCells, byDayKey]);
+
+  const monthGridTemplateColumns = useMemo(
+    () =>
+      calendarGridTemplateColumns(
+        monthWeekendColumnsExpanded.saturday,
+        monthWeekendColumnsExpanded.sunday
+      ),
+    [monthWeekendColumnsExpanded]
+  );
+
+  const weekWeekendColumnsExpanded = useMemo(
+    () => ({
+      saturday: (weekSegmentsByDay[5]?.length ?? 0) > 0,
+      sunday: (weekSegmentsByDay[6]?.length ?? 0) > 0,
+    }),
+    [weekSegmentsByDay]
+  );
+
+  const weekGridTemplateColumns = useMemo(
+    () =>
+      calendarGridTemplateColumns(
+        weekWeekendColumnsExpanded.saturday,
+        weekWeekendColumnsExpanded.sunday,
+        true
+      ),
+    [weekWeekendColumnsExpanded]
+  );
+
   const listOccurrences = useMemo(() => {
-    const vm = focusDate.setZone(viewTz);
-    const start = vm.startOf("month");
-    const end = vm.endOf("month");
-    const expanded = expandCommunityCalendar(rows, start, end, exceptions);
-    return expanded.sort(
-      (a, b) =>
-        new Date(a.startsAtIso).getTime() - new Date(b.startsAtIso).getTime()
+    if (effectiveViewMode !== "list") return [];
+    void nowTick;
+    const nowMs = DateTime.now().toUTC().toMillis();
+    const rangeStart = DateTime.now().minus({ years: 3 }).startOf("day");
+    const rangeEnd = DateTime.now().plus({ years: 3 }).endOf("day");
+    const expanded = expandCommunityCalendar(
+      rows,
+      rangeStart,
+      rangeEnd,
+      exceptions
     );
-  }, [rows, focusDate, viewTz, exceptions]);
+    return expanded
+      .filter((occurrence) => {
+        const endMs = new Date(occurrence.endsAtIso).getTime();
+        return listTab === "upcoming" ? endMs >= nowMs : endMs < nowMs;
+      })
+      .sort((a, b) => {
+        const startA = new Date(a.startsAtIso).getTime();
+        const startB = new Date(b.startsAtIso).getTime();
+        return listTab === "upcoming" ? startA - startB : startB - startA;
+      });
+  }, [rows, exceptions, listTab, nowTick, effectiveViewMode]);
 
   const listTotalPages = Math.max(
     1,
@@ -573,6 +772,10 @@ export function CommunityCalendar({
   useEffect(() => {
     if (listPage > listTotalPages) setListPage(listTotalPages);
   }, [listPage, listTotalPages]);
+
+  useEffect(() => {
+    setListPage(1);
+  }, [listTab]);
 
   const listSlice = useMemo(() => {
     const from = (listPage - 1) * LIST_PAGE_SIZE;
@@ -589,15 +792,19 @@ export function CommunityCalendar({
 
   const todayInView = useMemo(
     () => DateTime.now().setZone(viewTz).toISODate(),
-    [viewTz]
+    [viewTz, nowTick]
   );
 
   const goToday = () => {
-    setFocusDate(DateTime.now().setZone(viewTz).startOf("day"));
-    setListPage(1);
+    startTransition(() => {
+      setFocusDate(DateTime.now().setZone(viewTz).startOf("day"));
+      setListPage(1);
+      setListTab("upcoming");
+    });
   };
 
   const monthTitle = focusDate.setZone(viewTz).toFormat("MMMM yyyy");
+  const listViewTitle = listTab === "upcoming" ? "Upcoming" : "Previous calls";
 
   const tzOffsetLabel = useMemo(() => {
     const ref = weekMonday.setZone(viewTz);
@@ -610,25 +817,29 @@ export function CommunityCalendar({
   }, [weekMonday, viewTz]);
 
   const goPrevPeriod = () => {
-    setFocusDate((d) => {
-      const z = d.setZone(viewTz);
-      if (viewMode === "list" || calendarLayout === "month") {
-        return z.minus({ months: 1 }).startOf("month");
-      }
-      return communityCalendarMondayStart(z).minus({ days: 7 });
+    startTransition(() => {
+      setFocusDate((d) => {
+        const z = d.setZone(viewTz);
+        if (viewMode === "list" || calendarLayout === "month") {
+          return z.minus({ months: 1 }).startOf("month");
+        }
+        return communityCalendarMondayStart(z).minus({ days: 7 });
+      });
+      if (viewMode === "list") setListPage(1);
     });
-    if (viewMode === "list") setListPage(1);
   };
 
   const goNextPeriod = () => {
-    setFocusDate((d) => {
-      const z = d.setZone(viewTz);
-      if (viewMode === "list" || calendarLayout === "month") {
-        return z.plus({ months: 1 }).startOf("month");
-      }
-      return communityCalendarMondayStart(z).plus({ days: 7 });
+    startTransition(() => {
+      setFocusDate((d) => {
+        const z = d.setZone(viewTz);
+        if (viewMode === "list" || calendarLayout === "month") {
+          return z.plus({ months: 1 }).startOf("month");
+        }
+        return communityCalendarMondayStart(z).plus({ days: 7 });
+      });
+      if (viewMode === "list") setListPage(1);
     });
-    if (viewMode === "list") setListPage(1);
   };
 
   const periodNavLabel =
@@ -650,7 +861,7 @@ export function CommunityCalendar({
         if (scope === "occurrence") {
           await cancelCommunityCalendarOccurrence(
             cancelTarget.eventId,
-            cancelTarget.startsAtIso,
+            communityCalendarExceptionOccurrenceStart(cancelTarget),
             cancellationReason
           );
         } else {
@@ -698,7 +909,7 @@ export function CommunityCalendar({
         communityCalendarOccurrenceKey(ex.event_id, ex.occurrence_start) ===
         communityCalendarOccurrenceKey(
           selectedOccurrence.eventId,
-          selectedOccurrence.startsAtIso
+          communityCalendarExceptionOccurrenceStart(selectedOccurrence)
         )
     );
     setSelectedOccurrence((prev) =>
@@ -710,7 +921,7 @@ export function CommunityCalendar({
 
   return (
     <>
-      <div className="flex min-h-0 w-full min-w-0 flex-col gap-5 pt-5 lg:pt-6">
+      <div className="flex min-h-0 w-full min-w-0 flex-col gap-5 pt-3 lg:pt-3.5">
         {loadError ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             <p className="font-semibold text-rose-900">
@@ -733,27 +944,33 @@ export function CommunityCalendar({
             </button>
 
             <div className="order-1 flex flex-1 flex-col items-center sm:order-2">
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <button
-                  type="button"
-                  aria-label={`Previous ${periodNavLabel}`}
-                  onClick={goPrevPeriod}
-                  className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </button>
+              {effectiveViewMode === "list" ? (
                 <h2 className="min-w-[10rem] text-center text-lg font-bold text-slate-900 sm:text-xl">
-                  {monthTitle}
+                  {listViewTitle}
                 </h2>
-                <button
-                  type="button"
-                  aria-label={`Next ${periodNavLabel}`}
-                  onClick={goNextPeriod}
-                  className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    aria-label={`Previous ${periodNavLabel}`}
+                    onClick={goPrevPeriod}
+                    className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <h2 className="min-w-[10rem] text-center text-lg font-bold text-slate-900 sm:text-xl">
+                    {monthTitle}
+                  </h2>
+                  <button
+                    type="button"
+                    aria-label={`Next ${periodNavLabel}`}
+                    onClick={goNextPeriod}
+                    className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
               <div
                 ref={tzPickerRef}
                 className="relative mt-1 flex justify-center px-2"
@@ -808,6 +1025,15 @@ export function CommunityCalendar({
             </div>
 
             <div className="order-3 flex flex-wrap items-center justify-end gap-2 self-end sm:self-start">
+              {canAddEvent ? (
+                <button
+                  type="button"
+                  onClick={() => onAddModalOpenChange(true)}
+                  className="h-10 shrink-0 rounded-full bg-sky-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
+                >
+                  Add event
+                </button>
+              ) : null}
               {viewMode === "calendar" ? (
                 <div className="relative">
                   <label htmlFor="community-calendar-layout" className="sr-only">
@@ -859,6 +1085,7 @@ export function CommunityCalendar({
                   onClick={() => {
                     setViewMode("list");
                     setListPage(1);
+                    setListTab("upcoming");
                   }}
                   className={`flex items-center justify-center px-3 transition ${
                     viewMode === "list"
@@ -869,15 +1096,6 @@ export function CommunityCalendar({
                   <ListChecks className="h-5 w-5" strokeWidth={1.75} />
                 </button>
               </div>
-              {canAddEvent ? (
-                <button
-                  type="button"
-                  onClick={() => onAddModalOpenChange(true)}
-                  className="mt-2 w-full rounded-lg bg-sky-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700"
-                >
-                  Add event
-                </button>
-              ) : null}
             </div>
           </div>
 
@@ -886,26 +1104,49 @@ export function CommunityCalendar({
           ) : effectiveViewMode === "calendar" ? (
             calendarLayout === "month" ? (
               <div className="mt-6 max-md:hidden overflow-x-auto lg:overflow-visible">
-                <div className="grid min-w-[640px] grid-cols-7 border border-slate-200 lg:min-w-0 lg:w-full">
-                  {WEEK_HEADERS.map((h) => (
-                    <div
-                      key={h}
-                      className="border-b border-slate-200 bg-slate-50 px-2 py-2 text-center text-xs font-bold text-slate-900"
-                    >
-                      {h}
-                    </div>
-                  ))}
-                  {gridCells.map((cell) => {
+                <div
+                  className="grid min-w-[640px] border border-slate-200 lg:min-w-0 lg:w-full"
+                  style={{ gridTemplateColumns: monthGridTemplateColumns }}
+                >
+                  {WEEK_HEADERS.map((h, i) => {
+                    const isWeekendHeader = i >= 5;
+                    return (
+                      <div
+                        key={h}
+                        className={`border-b border-slate-200 bg-slate-50 px-1 py-2 text-center text-xs font-bold text-slate-900 ${
+                          isWeekendHeader ? WEEKEND_CELL_BG_CLASS : ""
+                        }`}
+                      >
+                        {h}
+                      </div>
+                    );
+                  })}
+                  {gridCells.map((cell, cellIndex) => {
                     const key = cell.toISODate() ?? "";
                     const inMonth =
                       cell.month === visibleMonth.month &&
                       cell.year === visibleMonth.year;
                     const isToday = key === todayInView;
+                    const isWeekend = isWeekendDate(cell);
                     const dayEvents = byDayKey.get(key) ?? [];
+                    const showFullWeekendCell = !isWeekend || dayEvents.length > 0;
+                    const conferenceCell = getBcaConferenceMonthCell(
+                      cell,
+                      cellIndex,
+                      gridCells
+                    );
+                    const hasDayEvents = dayEvents.length > 0;
+                    const cellBgClass = conferenceCell
+                      ? BCA_CONFERENCE_CELL_BG_CLASS
+                      : isWeekend
+                        ? WEEKEND_CELL_BG_CLASS
+                        : "bg-white";
                     return (
                       <div
                         key={key}
-                        className="min-h-[6.5rem] border-b border-r border-slate-200 p-1.5 align-top last:border-r-0"
+                        className={`relative border-b border-r border-slate-200 px-1.5 pt-1.5 align-top last:border-r-0 ${cellBgClass} ${
+                          hasDayEvents ? "pb-4" : "pb-1.5"
+                        } ${showFullWeekendCell ? "min-h-[6.5rem]" : "min-h-[3rem]"}`}
                       >
                         <div className="flex items-start justify-between gap-1">
                           <span
@@ -924,7 +1165,29 @@ export function CommunityCalendar({
                             )}
                           </span>
                         </div>
-                        <ul className="mt-1 space-y-0.5">
+                        {conferenceCell?.showBanner ? (
+                          <div
+                            className="pointer-events-none absolute bottom-1.5 left-1.5 z-[1] flex items-center justify-center rounded-md bg-sky-600 px-2 py-2.5 shadow-sm"
+                            style={{
+                              top: "1.75rem",
+                              width:
+                                conferenceCell.spanColumns === 2
+                                  ? "calc(200% + 1px - 0.75rem)"
+                                  : "calc(100% - 0.75rem)",
+                            }}
+                          >
+                            <span className="text-center text-sm font-bold leading-snug text-white">
+                              <span className="block">Business Coach Academy</span>
+                              <span className="block">Conference</span>
+                            </span>
+                          </div>
+                        ) : null}
+                        {showFullWeekendCell ? (
+                        <ul
+                          className={`mt-1 space-y-0.5 ${
+                            conferenceCell ? "relative z-[2] pt-16" : ""
+                          }`}
+                        >
                           {dayEvents.slice(0, 3).map((ev) => {
                             const end = DateTime.fromISO(ev.endsAtIso, {
                               zone: "utc",
@@ -934,6 +1197,57 @@ export function CommunityCalendar({
                               end.isValid &&
                               end <= DateTime.now().toUTC() &&
                               communityCalendarHasRecording(ev);
+                            const isLive = isLiveCommunityCalendarOccurrence(ev);
+                            const isKickoff = isNewMemberKickoffOccurrence(ev);
+                            const kickoffBox = isKickoff
+                              ? communityCalendarKickoffHighlightBoxClass(
+                                  Boolean(ev.isCancelled)
+                                )
+                              : null;
+                            const eventBody = (
+                              <>
+                                <span
+                                  className={`text-xs font-medium leading-tight ${
+                                    ev.isCancelled
+                                      ? "text-rose-500"
+                                      : isKickoff
+                                        ? communityCalendarKickoffMonthTimeClass(
+                                            Boolean(ev.isCancelled)
+                                          )
+                                        : "text-sky-600"
+                                  }`}
+                                >
+                                  {formatMonthEventTimeRange(
+                                    ev.startsAtIso,
+                                    ev.endsAtIso,
+                                    viewTz
+                                  )}
+                                </span>
+                                <span
+                                  className={`line-clamp-2 block text-sm font-semibold leading-snug ${
+                                    ev.isCancelled
+                                      ? communityCalendarCancelledTextClass()
+                                      : isKickoff
+                                        ? communityCalendarKickoffMonthTitleClass(
+                                            Boolean(ev.isCancelled)
+                                          )
+                                        : "text-sky-800"
+                                  }`}
+                                >
+                                  {ev.title}
+                                </span>
+                                {isLive ? (
+                                  <span className="-mt-1 block">
+                                    <CalendarLiveBadge compact />
+                                  </span>
+                                ) : null}
+                                {ev.isCancelled ? (
+                                  <CalendarStatusBar variant="cancelled" />
+                                ) : showRecording ? (
+                                  <CalendarStatusBar variant="recording" />
+                                ) : null}
+                              </>
+                            );
                             return (
                               <li key={`${ev.eventId}-${ev.startsAtIso}`}>
                                 <button
@@ -944,29 +1258,11 @@ export function CommunityCalendar({
                                   )}
                                   className="w-full text-left hover:underline"
                                 >
-                                  <span
-                                    className={`text-xs font-medium leading-tight ${
-                                      ev.isCancelled
-                                        ? "text-rose-500"
-                                        : "text-sky-600"
-                                    }`}
-                                  >
-                                    {formatMonthEventStart(ev.startsAtIso, viewTz)}
-                                  </span>
-                                  <span
-                                    className={`line-clamp-2 block text-sm font-semibold leading-snug ${
-                                      ev.isCancelled
-                                        ? communityCalendarCancelledTextClass()
-                                        : "text-sky-800"
-                                    }`}
-                                  >
-                                    {ev.title}
-                                  </span>
-                                  {ev.isCancelled ? (
-                                    <CalendarStatusBar variant="cancelled" />
-                                  ) : showRecording ? (
-                                    <CalendarStatusBar variant="recording" />
-                                  ) : null}
+                                  {kickoffBox ? (
+                                    <div className={kickoffBox}>{eventBody}</div>
+                                  ) : (
+                                    eventBody
+                                  )}
                                 </button>
                               </li>
                             );
@@ -977,6 +1273,7 @@ export function CommunityCalendar({
                             </li>
                           ) : null}
                         </ul>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -986,8 +1283,11 @@ export function CommunityCalendar({
               <div className="mt-6 max-lg:overflow-x-auto rounded-xl border border-slate-200 bg-white max-md:hidden">
                 <div className="min-w-[44rem] lg:min-w-0">
                   <div
-                    className={`${WEEK_GRID_CLASS} items-end border-b border-slate-200 bg-white`}
-                    style={{ minHeight: WEEK_HEADER_ROW_PX }}
+                    className={`${WEEK_GRID_BASE_CLASS} items-end border-b border-slate-200 bg-white`}
+                    style={{
+                      minHeight: WEEK_HEADER_ROW_PX,
+                      gridTemplateColumns: weekGridTemplateColumns,
+                    }}
                   >
                     <div className="flex flex-col justify-end border-r border-slate-200 px-1 pb-2 pt-2">
                       <span className="text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -998,13 +1298,14 @@ export function CommunityCalendar({
                       const day = weekMonday.plus({ days: i });
                       const key = day.toISODate() ?? "";
                       const isToday = key === todayInView;
+                      const isWeekend = i >= 5;
                       const isLast = i === 6;
                       return (
                         <div
                           key={key}
                           className={`border-r border-slate-200 py-2 text-center ${
                             isLast ? "border-r-0" : ""
-                          }`}
+                          } ${isWeekend ? WEEKEND_CELL_BG_CLASS : "bg-white"}`}
                           aria-label={`${h} ${day.toFormat("MMMM d")}`}
                         >
                           <div
@@ -1041,9 +1342,10 @@ export function CommunityCalendar({
                       </div>
                     ) : null}
                     <div
-                      className={WEEK_GRID_CLASS}
+                      className={WEEK_GRID_BASE_CLASS}
                       style={{
                         gridTemplateRows: `${weekBodyHeightPx}px`,
+                        gridTemplateColumns: weekGridTemplateColumns,
                       }}
                       role="grid"
                       aria-label={weekGridAriaLabel}
@@ -1067,13 +1369,14 @@ export function CommunityCalendar({
                       {WEEK_HEADERS.map((h, col) => {
                         const day = weekMonday.plus({ days: col });
                         const dayKey = day.toISODate() ?? `${col}`;
+                        const isWeekend = col >= 5;
                         const isLast = col === 6;
                         return (
                           <div
                             key={`body-${dayKey}`}
                             className={`relative min-h-0 overflow-hidden border-r border-slate-200 ${
                               isLast ? "border-r-0" : ""
-                            } ${col % 2 === 0 ? "bg-slate-50/70" : "bg-white"}`}
+                            } ${isWeekend ? WEEKEND_CELL_BG_CLASS : "bg-white"}`}
                             role="gridcell"
                             aria-label={`${h} ${day.toFormat("MMMM d")}`}
                           >
@@ -1103,10 +1406,15 @@ export function CommunityCalendar({
                                 const leftPct = seg.lane * laneW;
                                 const alt =
                                   ev.eventId.charCodeAt(0) % 2 === 0;
-                                const blockClass = communityCalendarWeekBlockClass(
-                                  Boolean(ev.isCancelled),
-                                  alt
-                                );
+                                const isKickoff = isNewMemberKickoffOccurrence(ev);
+                                const blockClass = isKickoff
+                                  ? communityCalendarKickoffWeekBlockClass(
+                                      Boolean(ev.isCancelled)
+                                    )
+                                  : communityCalendarWeekBlockClass(
+                                      Boolean(ev.isCancelled),
+                                      alt
+                                    );
                                 const timeLine = formatWeekBlockRange(
                                   seg.start,
                                   seg.end,
@@ -1130,10 +1438,16 @@ export function CommunityCalendar({
                                       {ev.title}
                                     </p>
                                     <p
-                                      className={`mt-0.5 text-[10px] font-medium leading-tight ${communityCalendarWeekBlockTimeClass(
-                                        Boolean(ev.isCancelled),
-                                        alt
-                                      )}`}
+                                      className={`mt-0.5 text-[10px] font-medium leading-tight ${
+                                        isKickoff
+                                          ? communityCalendarKickoffWeekBlockTimeClass(
+                                              Boolean(ev.isCancelled)
+                                            )
+                                          : communityCalendarWeekBlockTimeClass(
+                                              Boolean(ev.isCancelled),
+                                              alt
+                                            )
+                                      }`}
                                     >
                                       {timeLine}
                                     </p>
@@ -1189,15 +1503,50 @@ export function CommunityCalendar({
             )
           ) : (
             <div className="mt-6 space-y-3">
+              <div
+                className="inline-flex h-10 overflow-hidden rounded-full border border-slate-300 bg-white shadow-sm"
+                role="tablist"
+                aria-label="Event list"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={listTab === "upcoming"}
+                  onClick={() => setListTab("upcoming")}
+                  className={`px-4 text-sm font-medium transition ${
+                    listTab === "upcoming"
+                      ? "bg-sky-100 text-slate-900"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Upcoming
+                </button>
+                <span className="w-px shrink-0 self-stretch bg-slate-300" aria-hidden />
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={listTab === "previous"}
+                  onClick={() => setListTab("previous")}
+                  className={`px-4 text-sm font-medium transition ${
+                    listTab === "previous"
+                      ? "bg-sky-100 text-slate-900"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Previous calls
+                </button>
+              </div>
               {listOccurrences.length === 0 ? (
                 <p className="text-center text-sm text-slate-500">
-                  No events this month.
+                  {listTab === "upcoming"
+                    ? "No upcoming events."
+                    : "No previous calls."}
                 </p>
               ) : (
                 listSlice.map((ev) => {
                   const s = DateTime.fromISO(ev.startsAtIso, { zone: "utc" });
                   const e = DateTime.fromISO(ev.endsAtIso, { zone: "utc" });
-                  const label = formatRangeLabel(s, e, viewTz);
+                  const label = formatListEventLabel(s, e, viewTz);
                   const sourceEventRow =
                     rows.find((row) => row.id === ev.eventId) ?? null;
                   const occurrenceKey = communityCalendarOccurrenceKey(
@@ -1207,6 +1556,9 @@ export function CommunityCalendar({
                   const isPast =
                     e.isValid && e <= DateTime.now().toUTC();
                   const hasRecording = communityCalendarHasRecording(ev);
+                  const watchUrl = communityCalendarRecordingWatchUrl(ev);
+                  const isLive = isLiveCommunityCalendarOccurrence(ev);
+                  const isKickoff = isNewMemberKickoffOccurrence(ev);
                   return (
                     <div
                       key={`${ev.eventId}-${ev.startsAtIso}`}
@@ -1268,70 +1620,110 @@ export function CommunityCalendar({
                           ) : null}
                         </div>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedOccurrence(ev)}
-                        title={communityCalendarCancellationHoverTitle(ev)}
-                        className="flex w-full flex-col gap-3 pr-8 text-left sm:flex-row sm:gap-4"
-                      >
-                      <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-56">
-                        {communityCalendarCoverUrl(ev) ? (
-                          <CommunityCalendarCoverImage
-                            occurrence={ev}
-                            variant="thumbnail"
-                            className="h-full w-full object-contain object-center"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
-                            No cover
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        {ev.isCancelled ? (
-                          <p className={communityCalendarCancelledBadgeClass()}>
-                            Cancelled
-                          </p>
-                        ) : null}
-                        <p className="text-sm text-slate-600">{label}</p>
-                        <h3
-                          className={`mt-1 text-lg font-bold ${
-                            ev.isCancelled
-                              ? communityCalendarCancelledTextClass()
-                              : "text-slate-900"
-                          }`}
+                      <div className="flex w-full flex-col gap-3 pr-8 sm:flex-row sm:gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedOccurrence(ev)}
+                          title={communityCalendarCancellationHoverTitle(ev)}
+                          className="relative h-40 w-full shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:h-28 sm:w-56"
                         >
-                          {ev.title}
-                        </h3>
-                        <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-600">
-                          {ev.location_kind === "link" &&
-                          ev.location_url?.startsWith("http") ? (
-                            <>
-                              <LinkIcon className="h-3.5 w-3.5 shrink-0" />
-                              <a
-                                href={ev.location_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="truncate text-sky-600 hover:underline"
-                              >
-                                {ev.location_url.replace(/^https?:\/\//, "")}
-                              </a>
-                            </>
+                          {communityCalendarCoverUrl(ev) ? (
+                            <CommunityCalendarCoverImage
+                              occurrence={ev}
+                              variant="thumbnail"
+                              className="h-full w-full object-contain object-center"
+                            />
                           ) : (
-                            <>
-                              <MapPin className="h-3.5 w-3.5 shrink-0" />
-                              <span>In person</span>
-                            </>
+                            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                              No cover
+                            </div>
                           )}
-                        </p>
-                        {isPast && hasRecording && !ev.isCancelled ? (
-                          <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-sky-600">
-                            <Video className="h-4 w-4 shrink-0" />
-                            Watch recording
-                          </p>
-                        ) : null}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOccurrence(ev)}
+                            title={communityCalendarCancellationHoverTitle(ev)}
+                            className="w-full text-left"
+                          >
+                            <div
+                              className={
+                                isKickoff
+                                  ? communityCalendarKickoffHighlightBoxClass(
+                                      Boolean(ev.isCancelled)
+                                    )
+                                  : undefined
+                              }
+                            >
+                              <p className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                                <span
+                                  className={
+                                    isKickoff && !ev.isCancelled
+                                      ? communityCalendarKickoffMonthTimeClass(false)
+                                      : ev.isCancelled
+                                        ? "text-rose-500"
+                                        : undefined
+                                  }
+                                >
+                                  {label}
+                                </span>
+                                {isLive ? <CalendarLiveBadge /> : null}
+                              </p>
+                              <h3
+                                className={`mt-1 text-lg font-bold ${
+                                  ev.isCancelled
+                                    ? communityCalendarCancelledTextClass()
+                                    : isKickoff
+                                      ? communityCalendarKickoffMonthTitleClass(
+                                          Boolean(ev.isCancelled)
+                                        )
+                                      : "text-slate-900"
+                                }`}
+                              >
+                                {ev.title}
+                              </h3>
+                            </div>
+                            <p className="mt-[0.2rem] flex items-center gap-1.5 text-xs text-slate-600">
+                              {ev.location_kind === "link" &&
+                              ev.location_url?.startsWith("http") ? (
+                                <>
+                                  <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                                  <a
+                                    href={ev.location_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(evt) => evt.stopPropagation()}
+                                    className="truncate text-sky-600 hover:underline"
+                                  >
+                                    {ev.location_url.replace(/^https?:\/\//, "")}
+                                  </a>
+                                </>
+                              ) : (
+                                <>
+                                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                  <span>In person</span>
+                                </>
+                              )}
+                            </p>
+                            {ev.isCancelled ? (
+                              <p className={`mt-2 ${communityCalendarCancelledBadgeClass()}`}>
+                                Cancelled
+                              </p>
+                            ) : null}
+                          </button>
+                          {isPast && hasRecording && watchUrl && !ev.isCancelled ? (
+                            <a
+                              href={watchUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-[0.3rem] inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                            >
+                              <Video className="h-4 w-4 shrink-0" />
+                              Watch recording
+                            </a>
+                          ) : null}
+                        </div>
                       </div>
-                      </button>
                     </div>
                   );
                 })

@@ -763,9 +763,8 @@ function CoachWorkshopPageContent() {
         <ContactBossWorkshopBody
           contactId={activeContactId}
           draftCoachId={draftCoachId}
-          variant="embedded"
-          showPillarNotes={false}
           showLiveScoringCheckbox={false}
+          showProspectMatrix={adminUnscoped}
           canAddNewPerson={showNewPersonOption}
           editingNewPerson={isEditingNewPerson}
           playbookReturnTo={

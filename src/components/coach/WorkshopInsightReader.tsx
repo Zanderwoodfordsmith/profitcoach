@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { X } from "lucide-react";
 import { AREAS, BOSS_FOUNDATION_COLOR, WHEEL_COLORS } from "@/lib/bossData";
 import {
   getOverallLevel,
@@ -161,6 +161,136 @@ function topicSelectLabel(value: string): string {
   return TOPIC_SELECT_OPTIONS.find((o) => o.value === value)?.label ?? "Overview — full score";
 }
 
+function topicTabFromValue(value: string): "overview" | "levels" | "pillars" | "areas" {
+  const parsed = parseTopic(value);
+  if (parsed.kind === "overview") return "overview";
+  return parsed.kind;
+}
+
+const INSIGHT_TOPIC_TABS = [
+  { id: "overview" as const, label: "Overview" },
+  { id: "levels" as const, label: "Levels" },
+  { id: "pillars" as const, label: "Pillars" },
+  { id: "areas" as const, label: "Areas" },
+];
+
+const LEVEL_SUB_OPTIONS: { value: string; label: string }[] = [
+  { value: "levels:overview", label: "All levels" },
+  ...([0, 1, 2, 3, 4] as const).map((i) => ({
+    value: `levels:${i}`,
+    label: `${i + 1}. ${LEVEL_NAMES[i + 1]}`,
+  })),
+];
+
+const PILLAR_SUB_OPTIONS: { value: string; label: string }[] = [
+  { value: "pillars:overview", label: "All pillars" },
+  ...PILLAR_KEYS.map((key, i) => ({
+    value: `pillars:${i}`,
+    label: PILLAR_LABELS[key],
+  })),
+];
+
+const AREA_SUB_OPTIONS: { value: string; label: string }[] = [
+  { value: "areas:overview", label: "All areas" },
+  ...AREAS.map((area, i) => ({
+    value: `areas:${i}`,
+    label: area.name,
+  })),
+];
+
+const TAB_DEFAULT_VALUE: Record<
+  Exclude<(typeof INSIGHT_TOPIC_TABS)[number]["id"], "overview">,
+  string
+> = {
+  levels: "levels:overview",
+  pillars: "pillars:overview",
+  areas: "areas:overview",
+};
+
+function subOptionsForTab(tab: (typeof INSIGHT_TOPIC_TABS)[number]["id"]) {
+  if (tab === "levels") return LEVEL_SUB_OPTIONS;
+  if (tab === "pillars") return PILLAR_SUB_OPTIONS;
+  if (tab === "areas") return AREA_SUB_OPTIONS;
+  return [];
+}
+
+function InsightTopicTabs({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const activeTab = topicTabFromValue(value);
+  const subOptions = subOptionsForTab(activeTab);
+
+  const handleTabChange = (tab: (typeof INSIGHT_TOPIC_TABS)[number]["id"]) => {
+    if (tab === "overview") {
+      onChange("overview");
+      return;
+    }
+    if (topicTabFromValue(value) === tab) return;
+    onChange(TAB_DEFAULT_VALUE[tab]);
+  };
+
+  return (
+    <div>
+      <div
+        role="tablist"
+        aria-label="Insight categories"
+        className="grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1"
+      >
+        {INSIGHT_TOPIC_TABS.map((tab) => {
+          const selected = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => handleTabChange(tab.id)}
+              className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition-all sm:px-3 sm:py-2 sm:text-sm ${
+                selected
+                  ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {subOptions.length > 0 ? (
+        <div
+          role="tabpanel"
+          aria-label={`${activeTab} insight topics`}
+          className="mt-2.5 flex flex-wrap gap-x-2.5 gap-y-2"
+        >
+          {subOptions.map((option) => {
+            const selected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => onChange(option.value)}
+                aria-pressed={selected}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors sm:text-sm ${
+                  selected
+                    ? "bg-sky-100 text-sky-900 ring-1 ring-sky-200/80"
+                    : "bg-slate-50 text-slate-600 ring-1 ring-slate-200/60 hover:bg-slate-100 hover:text-slate-800"
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function FullOverviewModal({
   open,
   onClose,
@@ -314,7 +444,6 @@ export function WorkshopInsightReader({
   const parsed = parseTopic(topicValue);
 
   const resolved = useMemo(() => {
-    let eyebrow = "Overview";
     let accent = overallLevelColor;
     let insight = FALLBACK_INSIGHT;
     let isGlobalOverview = false;
@@ -323,16 +452,13 @@ export function WorkshopInsightReader({
 
     if (parsed.kind === "overview") {
       isGlobalOverview = true;
-      eyebrow = overallLevelLabel;
       insight = insights?.overallShort ?? FALLBACK_INSIGHT;
     } else if (parsed.kind === "levels") {
       if (parsed.specific == null) {
         isCategoryOverview = true;
-        eyebrow = "Levels";
         insight = insights?.levelsDefault ?? FALLBACK_INSIGHT;
       } else {
         const levelIdx = parsed.specific;
-        eyebrow = `Level ${levelIdx + 1} — ${LEVEL_NAMES[levelIdx + 1]}`;
         accent = levelAccent(levelIdx);
         insight = insights?.levels?.[String(levelIdx)] ?? FALLBACK_INSIGHT;
         playbooks = getPriorityPlaybooksForContext(answers, { levelIdx }, 3);
@@ -340,37 +466,32 @@ export function WorkshopInsightReader({
     } else if (parsed.kind === "pillars") {
       if (parsed.specific == null) {
         isCategoryOverview = true;
-        eyebrow = "Pillars";
         insight = insights?.pillarsDefault ?? FALLBACK_INSIGHT;
       } else {
         const pillarIdx = parsed.specific as 0 | 1 | 2 | 3;
         const key = PILLAR_KEYS[pillarIdx];
-        eyebrow = PILLAR_LABELS[key];
         accent = PILLAR_META[key].accent;
         insight = insights?.pillars?.[key] ?? FALLBACK_INSIGHT;
         playbooks = getPriorityPlaybooksForContext(answers, { pillarIdx }, 3);
       }
     } else if (parsed.specific == null) {
       isCategoryOverview = true;
-      eyebrow = "Areas";
       insight = insights?.areasDefault ?? FALLBACK_INSIGHT;
     } else {
       const areaIdx = parsed.specific;
-      eyebrow = AREAS[areaIdx]?.name ?? "Area";
       accent = WHEEL_COLORS[areaIdx];
       insight = insights?.areas?.[String(areaIdx)] ?? FALLBACK_INSIGHT;
       playbooks = getPriorityPlaybooksForContext(answers, { areaIdx }, 3);
     }
 
     return {
-      eyebrow,
       accentColor: accent,
       insight,
       isGlobalOverview,
       isCategoryOverview,
       priorityPlaybooks: playbooks,
     };
-  }, [answers, insights, overallLevelColor, overallLevelLabel, parsed]);
+  }, [answers, insights, overallLevelColor, parsed]);
 
   const longOverviewBody =
     insights?.overallLong?.body ?? "Full overview will appear once insights have been generated.";
@@ -391,56 +512,9 @@ export function WorkshopInsightReader({
 
   return (
     <>
-      <div>
-        <p
-          className="text-[11px] font-bold uppercase tracking-wider"
-          style={{ color: resolved.accentColor }}
-        >
-          {resolved.eyebrow}
-        </p>
+      <InsightTopicTabs value={topicValue} onChange={setTopicValue} />
 
-        <div className="relative mt-1.5 max-w-full border-b border-slate-200/80 pb-1 transition-colors hover:border-slate-300 focus-within:border-sky-400/70">
-          <select
-            value={topicValue}
-            onChange={(e) => setTopicValue(e.target.value)}
-            aria-label="Insight topic"
-            className="w-full cursor-pointer appearance-none bg-transparent py-0.5 pl-0 pr-7 text-base font-bold leading-snug text-slate-900 focus:outline-none sm:text-lg"
-          >
-            <option value="overview">Overview — full score</option>
-            <optgroup label="Levels">
-              <option value="levels:overview">All levels — overview</option>
-              {([0, 1, 2, 3, 4] as const).map((i) => (
-                <option key={i} value={`levels:${i}`}>
-                  {LEVEL_NAMES[i + 1]}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Pillars">
-              <option value="pillars:overview">All pillars — overview</option>
-              {PILLAR_KEYS.map((key, i) => (
-                <option key={key} value={`pillars:${i}`}>
-                  {PILLAR_LABELS[key]}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Areas">
-              <option value="areas:overview">All areas — overview</option>
-              {AREAS.map((area, i) => (
-                <option key={area.id} value={`areas:${i}`}>
-                  {area.name}
-                </option>
-              ))}
-            </optgroup>
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
-            strokeWidth={2.5}
-            aria-hidden
-          />
-        </div>
-      </div>
-
-      <div className="mt-4">
+      <div className="mt-6">
         {insightsGenerating ? (
           <InsightsGeneratingProgress
             ready={insightsGenerationReady}

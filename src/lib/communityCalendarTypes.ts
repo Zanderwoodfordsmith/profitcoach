@@ -8,7 +8,7 @@ export type RecurrencePayload = {
   interval: number;
   unit: "week" | "month";
   weekdays: WeekdayMon0Sun6[];
-  monthMode?: "day_of_month" | "ordinal_weekday";
+  monthMode?: "day_of_month" | "ordinal_weekday" | "day_after_ordinal_tuesday";
   monthWeekday?: WeekdayMon0Sun6;
   monthOrdinal?: MonthWeekOrdinal;
   end: "never" | "on" | "after";
@@ -49,6 +49,8 @@ export type CommunityCalendarOccurrence = {
   location_url: string | null;
   recording_link_url: string | null;
   recording_video_url: string | null;
+  /** For rescheduled recurring occurrences, the original series slot (exception key). */
+  seriesOccurrenceStartIso?: string;
   /** True when this occurrence was cancelled but kept visible on the calendar. */
   isCancelled?: boolean;
   cancellationReason?: string | null;
@@ -63,8 +65,19 @@ export type CommunityCalendarEventExceptionRow = {
   cancellation_reason: string | null;
   recording_link_url: string | null;
   recording_video_url: string | null;
+  rescheduled_starts_at: string | null;
+  rescheduled_ends_at: string | null;
   created_at: string;
 };
+
+export function communityCalendarExceptionOccurrenceStart(
+  occurrence: Pick<
+    CommunityCalendarOccurrence,
+    "startsAtIso" | "seriesOccurrenceStartIso"
+  >
+): string {
+  return occurrence.seriesOccurrenceStartIso ?? occurrence.startsAtIso;
+}
 
 export function isRecurringCommunityCalendarEvent(
   row: Pick<CommunityCalendarEventRow, "is_recurring" | "recurrence">

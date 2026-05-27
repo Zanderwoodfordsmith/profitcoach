@@ -8,6 +8,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 export default function AdminCallsPage() {
   const router = useRouter();
@@ -152,7 +153,7 @@ export default function AdminCallsPage() {
       flushSync(() => {
         if (row.coach_id) setImpersonatingCoachId(row.coach_id);
       });
-      router.push(`/coach/contacts/${row.contact_id}`);
+      router.push(bossProHubPath(row.contact_id, { admin: true }));
     },
     [router, setImpersonatingCoachId]
   );

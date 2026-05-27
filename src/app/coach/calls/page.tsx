@@ -8,6 +8,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
 import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 export default function CoachCallsPage() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function CoachCallsPage() {
           showCoachColumn={false}
           onRowClick={(row) => {
             if (row.contact_id && clientHubAllowed) {
-              router.push(`/coach/contacts/${row.contact_id}`);
+              router.push(bossProHubPath(row.contact_id));
             }
           }}
           emptyMessage="No calls yet. When prospects book through your calendar, they will appear here."

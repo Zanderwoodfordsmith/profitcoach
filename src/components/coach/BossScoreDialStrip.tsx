@@ -306,6 +306,8 @@ type AnswerMixBarProps = BossAnswerMixCounts & {
   scoreMixCategories?: WorkshopScoreMixCategories;
   prospectBreakdown?: ProspectDimensionBreakdown;
   totalPlaybooks?: number;
+  /** Opens the in-session playbook sheet when a popover playbook is clicked. */
+  onPlaybookClick?: (ref: string) => void;
 };
 
 const POPOVER_CLOSE_MS = 120;
@@ -373,6 +375,7 @@ function DimensionProgressRow({
   defs,
   levelCounts,
   playbooks,
+  onPlaybookClick,
 }: {
   title: string;
   setCount: number;
@@ -381,17 +384,19 @@ function DimensionProgressRow({
   defs: LevelLegendDef[];
   levelCounts: Record<number, number>;
   playbooks: DimensionPlaybookLists<number>;
+  onPlaybookClick?: (ref: string) => void;
 }) {
   const segments = dimensionLegendItems(prefix, defs, levelCounts, playbooks);
   return (
     <ProgressMetricRow
       title={title}
-      trailing={<ProgressLegend items={segments} />}
+      trailing={<ProgressLegend items={segments} onPlaybookClick={onPlaybookClick} />}
       bar={
         <SegmentedProgressBar
           segments={segments}
           total={total}
           ariaLabel={`${title}: ${setCount} of ${total} playbooks rated`}
+          onPlaybookClick={onPlaybookClick}
         />
       }
     />
@@ -410,12 +415,14 @@ function ProgressCategoryPopover({
   label,
   playbooks,
   accentColor,
+  onPlaybookClick,
   children,
   className = "",
 }: {
   label: string;
   playbooks: ProgressCategoryPlaybook[];
   accentColor?: string;
+  onPlaybookClick?: (ref: string) => void;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -521,11 +528,23 @@ function ProgressCategoryPopover({
           </p>
           <ul className="mt-2 max-h-[220px] space-y-0.5 overflow-y-auto">
             {playbooks.map((playbook) => (
-              <li
-                key={playbook.ref}
-                className="px-0.5 py-0.5 text-sm leading-snug text-slate-700"
-              >
-                {playbook.name}
+              <li key={playbook.ref}>
+                {onPlaybookClick ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPlaybookClick(playbook.ref);
+                      setOpen(false);
+                    }}
+                    className="w-full rounded-md px-1.5 py-1 text-left text-sm leading-snug text-slate-700 transition-colors hover:bg-slate-100 hover:text-sky-700"
+                  >
+                    {playbook.name}
+                  </button>
+                ) : (
+                  <span className="block px-1.5 py-1 text-sm leading-snug text-slate-700">
+                    {playbook.name}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -574,7 +593,13 @@ function ProgressMetricRow({
   );
 }
 
-function ProgressLegend({ items }: { items: LegendItem[] }) {
+function ProgressLegend({
+  items,
+  onPlaybookClick,
+}: {
+  items: LegendItem[];
+  onPlaybookClick?: (ref: string) => void;
+}) {
   const visible = items.filter((item) => item.count > 0);
   if (visible.length === 0) return null;
 
@@ -586,6 +611,7 @@ function ProgressLegend({ items }: { items: LegendItem[] }) {
           label={item.label}
           playbooks={item.playbooks}
           accentColor={item.color}
+          onPlaybookClick={onPlaybookClick}
         >
           <span className="inline-flex items-center gap-1 text-[11px] leading-tight text-slate-600">
             <span
@@ -605,9 +631,11 @@ function ProgressLegend({ items }: { items: LegendItem[] }) {
 function MixLegend({
   counts,
   categories,
+  onPlaybookClick,
 }: {
   counts: Record<(typeof MIX_SEGMENTS)[number]["key"], number>;
   categories: WorkshopScoreMixCategories;
+  onPlaybookClick?: (ref: string) => void;
 }) {
   const items: LegendItem[] = MIX_SEGMENTS.filter(
     ({ key }) => counts[key] > 0 || key !== "notAnswered"
@@ -618,17 +646,19 @@ function MixLegend({
     count: counts[key],
     playbooks: categories[key],
   }));
-  return <ProgressLegend items={items} />;
+  return <ProgressLegend items={items} onPlaybookClick={onPlaybookClick} />;
 }
 
 function SegmentedProgressBar({
   segments,
   total,
   ariaLabel,
+  onPlaybookClick,
 }: {
   segments: LegendItem[];
   total: number;
   ariaLabel: string;
+  onPlaybookClick?: (ref: string) => void;
 }) {
   const w = (n: number) => (total > 0 ? `${(n / total) * 100}%` : "0%");
   const hasSegments = segments.some((s) => s.count > 0);
@@ -652,6 +682,7 @@ function SegmentedProgressBar({
                     label={seg.label}
                     playbooks={seg.playbooks}
                     accentColor={seg.color}
+                    onPlaybookClick={onPlaybookClick}
                     className="block h-full w-full"
                   >
                     <div
@@ -674,10 +705,11 @@ export function BossAnswerMixBar({
   needsAttention,
   notAnswered = 0,
   className = "",
-  title = "Coverage",
+  title = "Completeness",
   scoreMixCategories,
   prospectBreakdown,
   totalPlaybooks = PLAYBOOK_COUNT,
+  onPlaybookClick,
 }: AnswerMixBarProps) {
   const counts = {
     onTrack,
@@ -697,7 +729,13 @@ export function BossAnswerMixBar({
       <ProgressMetricRow
         title="Playbooks scored"
         trailing={
-          scoreMixCategories ? <MixLegend counts={counts} categories={scoreMixCategories} /> : null
+          scoreMixCategories ? (
+            <MixLegend
+              counts={counts}
+              categories={scoreMixCategories}
+              onPlaybookClick={onPlaybookClick}
+            />
+          ) : null
         }
         bar={
           mixTotal <= 0 ? (
@@ -710,6 +748,7 @@ export function BossAnswerMixBar({
             <SegmentedProgressBar
               total={mixTotal}
               ariaLabel={`Playbooks scored: ${scoredTotal} of ${totalPlaybooks}`}
+              onPlaybookClick={onPlaybookClick}
               segments={
                 scoreMixCategories
                   ? (MIX_SEGMENTS.map(({ key, label, color }) => ({
@@ -736,6 +775,7 @@ export function BossAnswerMixBar({
             defs={IMPACT_LEGEND}
             levelCounts={prospectBreakdown.impactLevels}
             playbooks={prospectBreakdown.impactPlaybooks}
+            onPlaybookClick={onPlaybookClick}
           />
           <DimensionProgressRow
             title="Urgency"
@@ -745,6 +785,7 @@ export function BossAnswerMixBar({
             defs={URGENCY_LEGEND}
             levelCounts={prospectBreakdown.urgencyLevels}
             playbooks={prospectBreakdown.urgencyPlaybooks}
+            onPlaybookClick={onPlaybookClick}
           />
           <DimensionProgressRow
             title="Ease"
@@ -754,6 +795,7 @@ export function BossAnswerMixBar({
             defs={EASE_LEGEND}
             levelCounts={prospectBreakdown.easeLevels}
             playbooks={prospectBreakdown.easePlaybooks}
+            onPlaybookClick={onPlaybookClick}
           />
         </>
       ) : null}

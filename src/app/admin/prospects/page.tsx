@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import { useRouter } from "next/navigation";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -172,7 +173,7 @@ export default function AdminProspectsPage() {
       flushSync(() => {
         if (row.coach_id) setImpersonatingCoachId(row.coach_id);
       });
-      router.push(`/coach/contacts/${row.id}`);
+      router.push(bossProHubPath(row.id, { admin: true }));
     },
     [router, setImpersonatingCoachId]
   );

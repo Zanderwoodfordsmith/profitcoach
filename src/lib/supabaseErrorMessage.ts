@@ -1,4 +1,16 @@
 /** PostgREST errors are plain objects (`message`, `details`, `hint`, `code`), not always `instanceof Error`. */
+export function isSupabaseAbortError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error instanceof Error && error.name === "AbortError") return true;
+  if (error && typeof error === "object") {
+    const name = (error as { name?: unknown }).name;
+    if (name === "AbortError") return true;
+  }
+  const msg = supabaseErrorMessage(error).toLowerCase();
+  return msg.includes("aborterror") || msg.includes("signal is aborted");
+}
+
+/** PostgREST errors are plain objects (`message`, `details`, `hint`, `code`), not always `instanceof Error`. */
 export function supabaseErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (error && typeof error === "object") {
@@ -79,6 +91,13 @@ export function communityAccessHint(errorMessage: string): string | null {
         m.includes("cancelled_at"))
     ) {
       return "Add per-session calendar recordings: run supabase/migrations/20260727130000_community_calendar_exception_recordings.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
+    if (
+      m.includes("community_calendar_event_exceptions") &&
+      (m.includes("rescheduled_starts_at") ||
+        m.includes("rescheduled_ends_at"))
+    ) {
+      return "Add calendar occurrence reschedule support: run supabase/migrations/20260729120000_community_calendar_exception_reschedule.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
     }
     return "A database migration may be missing. From the repo root run `supabase db push`, or in Supabase Dashboard → SQL Editor run the migration file that matches the missing object in the error above. For the original community tables, see supabase/migrations/20260502120000_community_feed.sql.";
   }

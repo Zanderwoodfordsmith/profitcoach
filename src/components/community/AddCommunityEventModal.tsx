@@ -112,7 +112,7 @@ export function AddCommunityEventModal({
   const [repeatUnit, setRepeatUnit] = useState<"week" | "month">("week");
   const [repeatWeekdays, setRepeatWeekdays] = useState<WeekdayMon0Sun6[]>([]);
   const [repeatMonthMode, setRepeatMonthMode] = useState<
-    "day_of_month" | "ordinal_weekday"
+    "day_of_month" | "ordinal_weekday" | "day_after_ordinal_tuesday"
   >("day_of_month");
   const [repeatMonthWeekday, setRepeatMonthWeekday] = useState<WeekdayMon0Sun6>(0);
   const [repeatMonthOrdinal, setRepeatMonthOrdinal] = useState<MonthWeekOrdinal>(1);
@@ -201,8 +201,16 @@ export function AddCommunityEventModal({
       unit: repeatUnit,
       weekdays: repeatUnit === "week" ? [...repeatWeekdays] : [],
       monthMode: repeatUnit === "month" ? repeatMonthMode : undefined,
-      monthWeekday: repeatUnit === "month" ? repeatMonthWeekday : undefined,
-      monthOrdinal: repeatUnit === "month" ? repeatMonthOrdinal : undefined,
+      monthWeekday:
+        repeatUnit === "month" && repeatMonthMode === "ordinal_weekday"
+          ? repeatMonthWeekday
+          : undefined,
+      monthOrdinal:
+        repeatUnit === "month" &&
+        (repeatMonthMode === "ordinal_weekday" ||
+          repeatMonthMode === "day_after_ordinal_tuesday")
+          ? repeatMonthOrdinal
+          : undefined,
       end: endMode,
     };
     if (endMode === "on") payload.endDate = endDateStr;
@@ -616,6 +624,35 @@ export function AddCommunityEventModal({
                         </option>
                       ))}
                     </select>
+                  </label>
+                  <label className="flex flex-wrap items-center gap-2 text-sm text-slate-800">
+                    <input
+                      type="radio"
+                      name="monthMode"
+                      checked={repeatMonthMode === "day_after_ordinal_tuesday"}
+                      onChange={() =>
+                        setRepeatMonthMode("day_after_ordinal_tuesday")
+                      }
+                      className="text-sky-600"
+                    />
+                    <span>Day after the</span>
+                    <select
+                      value={repeatMonthOrdinal}
+                      onChange={(e) =>
+                        setRepeatMonthOrdinal(Number(e.target.value) as MonthWeekOrdinal)
+                      }
+                      disabled={repeatMonthMode !== "day_after_ordinal_tuesday"}
+                      className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm disabled:opacity-50"
+                    >
+                      {MONTH_ORDINAL_OPTIONS.filter((opt) => opt.id >= 1 && opt.id <= 4).map(
+                        (opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </option>
+                        )
+                      )}
+                    </select>
+                    <span>Tuesday of each month</span>
                   </label>
                 </div>
               )}

@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { PlaybookBlogShell } from "@/components/playbooks/PlaybookBlogShell";
 import { PlaybookTabs } from "@/components/playbooks/PlaybookTabs";
 import { safeAppReturnTo } from "@/lib/bossGridNavigation";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { PlaybookContent as PlaybookContentType } from "@/lib/playbookContentTypes";
 
@@ -95,8 +96,8 @@ function CoachContactPlaybookDetailContent({
         returnTo
           ? undefined
           : {
-              href: `/coach/contacts/${contactId}`,
-              label: "Contact",
+              href: bossProHubPath(contactId),
+              label: "BOSS score",
             }
       }
     >

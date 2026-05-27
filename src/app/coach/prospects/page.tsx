@@ -13,6 +13,7 @@ import {
 } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
+import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import type { UpdatedProspectFields } from "@/lib/prospects/updateProspectFields";
 
 export default function CoachProspectsPage() {
@@ -371,7 +372,7 @@ export default function CoachProspectsPage() {
         }}
         onRowClick={
           clientHubAllowed
-            ? (id) => router.push(`/coach/contacts/${id}`)
+            ? (id) => router.push(bossProHubPath(id))
             : undefined
         }
         editable
