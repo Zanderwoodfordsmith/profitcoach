@@ -58,7 +58,7 @@ export async function loadContactForWorkshopSession(
       .maybeSingle();
 
     if (!result.error && result.data) {
-      const row = result.data as Record<string, unknown>;
+      const row = result.data as unknown as Record<string, unknown>;
       return {
         contact: {
           id: row.id as string,
@@ -94,7 +94,7 @@ function withDefaultOptionalContactFields<T extends Record<string, unknown>>(
   fields: Array<keyof T & string>
 ): T[] {
   return rows.map((row) => {
-    const next = { ...(row as Record<string, unknown>) };
+    const next = { ...(row as unknown as Record<string, unknown>) };
     for (const field of fields) {
       if (next[field] === undefined) next[field] = null;
     }
