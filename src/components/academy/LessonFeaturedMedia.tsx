@@ -178,7 +178,7 @@ export function LessonFeaturedMedia({
           <span className="text-sm font-medium text-slate-700">
             {uploading ? "Uploading…" : "Click or drag to upload"}
           </span>
-          <span className="text-xs text-slate-500">MP4, WebM, or MOV · max 50MB</span>
+          <span className="text-xs text-slate-500">MP4, WebM, or MOV · max 2GB</span>
         </button>
 
         <button

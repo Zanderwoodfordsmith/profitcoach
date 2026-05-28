@@ -17,10 +17,10 @@ WHERE id IN (
   '0750f06a-3ce8-4c77-af88-e82ffd7e5e80', -- duplicate Coaching Delivery 26 Aug 2026
   'f74b2463-ce66-48c6-8244-014c74f2c75d', -- duplicate Coaching Delivery 28 Oct 2026
   'b7f0082e-c034-4392-93c0-8ab960e10df7', -- duplicate Coaching Delivery 25 Nov 2026
-  'ed3a5920-fabd-495d-8211-752f4263ced6'  -- stray one-off Lead Engine
+  -- May 2026 Lead Engine conference make-up restored in 20260731200000_restore_may_2026_lead_engine.sql
 );
 
--- Catch any other stray one-offs for the four coach call series.
+-- Catch any other stray one-offs for the four coach call series (not conference make-up).
 DELETE FROM community_calendar_events
 WHERE is_recurring = false
   AND title IN (
@@ -28,7 +28,8 @@ WHERE is_recurring = false
     'Lead Engine',
     'Signing Clients',
     'Coaching Delivery'
-  );
+  )
+  AND id <> 'ed3a5920-fabd-495d-8211-752f4263ced6'::uuid;
 
 -- Remove all reschedule exceptions except June 2026 onboarding (+7 day shift).
 DELETE FROM community_calendar_event_exceptions ex

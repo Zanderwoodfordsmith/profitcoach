@@ -52,12 +52,16 @@ const COACH_CALL_TITLES = [
   "Coaching Delivery",
 ] as const;
 
+/** May 2026 conference make-up — not a duplicate of the recurring series. */
+const PRESERVED_COACH_CALL_ONE_OFF_IDS = [
+  "ed3a5920-fabd-495d-8211-752f4263ced6",
+] as const;
+
 const KNOWN_DUPLICATE_ONE_OFF_IDS = [
   "5d8048d7-c747-49ae-9db2-20cc353db296",
   "0750f06a-3ce8-4c77-af88-e82ffd7e5e80",
   "f74b2463-ce66-48c6-8244-014c74f2c75d",
   "b7f0082e-c034-4392-93c0-8ab960e10df7",
-  "ed3a5920-fabd-495d-8211-752f4263ced6",
 ] as const;
 
 /** June 2026 onboarding shift — occurrence_start keys at 13:00 Europe/London. */
@@ -162,8 +166,10 @@ async function main() {
     seriesDayKeys.add(`${occ.title}|${d.toISODate()}`);
   }
 
+  const preserved = new Set<string>(PRESERVED_COACH_CALL_ONE_OFF_IDS);
   const oneOffIdsToDelete = new Set<string>(KNOWN_DUPLICATE_ONE_OFF_IDS);
   for (const row of oneOffRows ?? []) {
+    if (preserved.has(row.id)) continue;
     const d = DateTime.fromISO(row.starts_at, { zone: "utc" }).setZone(TZ);
     const key = `${row.title}|${d.toISODate()}`;
     if (seriesDayKeys.has(key)) oneOffIdsToDelete.add(row.id);

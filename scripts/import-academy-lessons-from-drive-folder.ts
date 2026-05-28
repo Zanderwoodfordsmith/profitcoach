@@ -21,7 +21,6 @@ import path from "node:path";
 import { loadEnvConfig } from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 
-import { saveAcademyImportSnapshot } from "../src/lib/academy/academyImportSnapshot";
 import { stripTranscriptSpeakerLabels } from "../src/lib/academy/stripTranscriptSpeakerLabels";
 import {
   buildLegacyLessonIndex,
@@ -162,6 +161,8 @@ type Report = {
     courseId: string | null;
     bestScore: number;
     bestLessonTitle: string | null;
+    bestLessonId: string | null;
+    bestLessonCourseId: string | null;
   }>;
   skipped: Array<{ relativePath: string; reason: string }>;
   pendingVideos: Array<{
@@ -193,12 +194,54 @@ function loadCatalog(): LegacyHubCatalog {
   return JSON.parse(raw) as LegacyHubCatalog;
 }
 
-function loadOverrides(): Map<string, FileOverride> {
+function loadOverridesFromFile(): Map<string, FileOverride> {
   const map = new Map<string, FileOverride>();
   if (!fs.existsSync(overridesPath)) return map;
   const data = JSON.parse(fs.readFileSync(overridesPath, "utf8")) as OverridesFile;
   for (const [rel, o] of Object.entries(data.files ?? {})) {
     if (o?.courseId && o?.lessonId) map.set(rel.replace(/\\/g, "/"), o);
+  }
+  return map;
+}
+
+async function loadOverridesFromDb(): Promise<Map<string, FileOverride>> {
+  const map = new Map<string, FileOverride>();
+  if (!SUPABASE_URL || !SERVICE_KEY) return map;
+  const client = createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await client.from("academy_import_overrides").select("*");
+  if (error) {
+    console.warn(
+      "[academy-import] could not load DB overrides (run migration 20260731220000?):",
+      error.message
+    );
+    return map;
+  }
+  for (const row of data ?? []) {
+    const r = row as {
+      relative_path: string;
+      course_id: string;
+      lesson_id: string;
+    };
+    if (r.relative_path && r.course_id && r.lesson_id) {
+      map.set(r.relative_path.replace(/\\/g, "/"), {
+        courseId: r.course_id,
+        lessonId: r.lesson_id,
+      });
+    }
+  }
+  return map;
+}
+
+async function loadAllOverrides(): Promise<Map<string, FileOverride>> {
+  const map = loadOverridesFromFile();
+  const fromDb = await loadOverridesFromDb();
+  for (const [rel, o] of fromDb) {
+    map.set(rel, o);
+  }
+  if (fromDb.size > 0) {
+    console.log(`[academy-import] loaded ${fromDb.size} override(s) from academy_import_overrides`);
   }
   return map;
 }
@@ -300,6 +343,10 @@ async function uploadLessonVideo(
   const safeCourse = courseId.replace(/[^a-zA-Z0-9_-]/g, "_");
   const safeLesson = lessonId.replace(/[^a-zA-Z0-9_-]/g, "_");
   const storagePath = `${safeCourse}/${safeLesson}/source.${ext}`;
+  const sizeMb = Math.round((size / (1024 * 1024)) * 10) / 10;
+  console.log(
+    `[academy-import] uploading video ${courseId}/${lessonId} (${sizeMb} MB) → ${storagePath}`
+  );
   const buf = fs.readFileSync(filePath);
   const mime =
     ext === "webm"
@@ -313,6 +360,7 @@ async function uploadLessonVideo(
     upsert: true,
   });
   if (error) throw new Error(error.message);
+  console.log(`[academy-import] uploaded ${courseId}/${lessonId}`);
   return academyLessonVideoPublicUrl(storagePath);
 }
 
@@ -373,7 +421,7 @@ async function upsertLessonFields(
 
 const catalog = loadCatalog();
 const lessonIndex = buildLegacyLessonIndex(catalog);
-const overrides = loadOverrides();
+let overrides = new Map<string, FileOverride>();
 
 function resolveMatch(
   file: ScannedFile
@@ -418,6 +466,8 @@ function resolveMatch(
 }
 
 async function main() {
+  overrides = await loadAllOverrides();
+
   const scanned: ScannedFile[] = [];
   collectMediaFiles(importRoot, importRoot, scanned);
 
@@ -471,6 +521,8 @@ async function main() {
         courseId: file.courseId,
         bestScore: resolved.bestScore,
         bestLessonTitle: resolved.best?.lessonTitle ?? null,
+        bestLessonId: resolved.best?.lessonId ?? null,
+        bestLessonCourseId: resolved.best?.courseId ?? null,
       });
       continue;
     }
@@ -573,6 +625,9 @@ async function main() {
 
       if (bundle.videoPath && !skipVideos) {
         if (skipExisting && existing?.hasVideo) {
+          console.log(
+            `[academy-import] skip existing video ${bundle.courseId}/${bundle.lessonId} (${bundle.lessonTitle})`
+          );
           report.skippedExisting.push({
             courseId: bundle.courseId,
             lessonId: bundle.lessonId,
@@ -640,7 +695,7 @@ async function main() {
 
   const csvPath = reportOut.replace(/\.json$/i, "") + "-unmatched.csv";
   const csvLines = [
-    "relativePath,kind,stem,courseId,bestScore,bestLessonTitle",
+    "relativePath,kind,stem,courseId,bestScore,bestLessonTitle,bestLessonCourseId,bestLessonId",
     ...report.unmatched.map((u) =>
       [
         JSON.stringify(u.relativePath),
@@ -649,12 +704,17 @@ async function main() {
         u.courseId ?? "",
         u.bestScore.toFixed(3),
         JSON.stringify(u.bestLessonTitle ?? ""),
+        u.bestLessonCourseId ?? "",
+        u.bestLessonId ?? "",
       ].join(",")
     ),
   ];
   fs.writeFileSync(csvPath, csvLines.join("\n"));
 
   try {
+    const { saveAcademyImportSnapshot } = await import(
+      "../src/lib/academy/academyImportSnapshot"
+    );
     await saveAcademyImportSnapshot(report);
     console.log("[academy-import] snapshot saved for admin Import tab");
   } catch (snapErr) {

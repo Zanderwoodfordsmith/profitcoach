@@ -6,9 +6,9 @@ export const LANDING_VARIANTS: LandingVariant[] = ["a", "b", "c", "d"];
 
 export const LANDING_VARIANT_LABELS: Record<LandingVariant, string> = {
   a: "A — Static opt-in",
-  b: "B — Legacy landing",
-  c: "C — Dashboard hero",
-  d: "D — Default (/score)",
+  b: "B — Alt headline (same layout as D)",
+  c: "C — Dashboard hero (stacked)",
+  d: "D — Main landing (/score)",
 };
 
 export const LANDING_VARIANT_PATHS: Record<LandingVariant, string> = {

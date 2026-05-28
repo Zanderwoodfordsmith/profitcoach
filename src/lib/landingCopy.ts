@@ -38,12 +38,12 @@ export function getDefaultLandingContent(kind: LandingKind): LandingContent {
     return {
       eyebrow: "For Business Owners £500K to £5M",
       heading:
-        "Know Exactly What to Fix First in Your £500K-£5M Business in 12 Minutes",
+        "Know Exactly What to Fix First in Your £500K-£5M Business in 3 Minutes",
       subheading:
         "The BOSS Dashboard scores your business across 5 levels and 10 areas using 50 red, yellow, green questions to give you one score out of 100, one focus area, and one clear next move.",
-      cta: "Get My Free BOSS Score (12 Minutes, No Call Required)",
+      cta: "Get My Free BOSS Score (3 Minutes, No Call Required)",
       heroStats: [
-        { k: "12 mins", v: "to complete" },
+        { k: "3 mins", v: "to complete" },
         { k: "50 Qs", v: "across 10 areas" },
         { k: "£0", v: "no credit card" },
         { k: "1 score", v: "actionable focus" },
@@ -66,11 +66,11 @@ export function getDefaultLandingContent(kind: LandingKind): LandingContent {
         { title: "50 Red, Yellow, Green Questions", text: "Spot what is bleeding, what works, and what is nearly there." },
         { title: "Built on 25+ Business Thinkers", text: "Use one mapped diagnostic instead of disconnected frameworks." },
         { title: "Owner Performance First", text: "Fix root causes in the owner layer before treating symptoms." },
-        { title: "Free and No Call Required", text: "Take the full diagnostic in 12 minutes and get your score immediately." },
+        { title: "Free and No Call Required", text: "Take the full diagnostic in 3 minutes and get your score immediately." },
       ],
       closeHeading: "Are You The BOSS Of Your Business, Or Is It The BOSS Of You?",
       closeSubheading:
-        "Find out in 12 minutes. 50 questions. 10 areas. 5 levels. One score out of 100. One clear focus area.",
+        "Find out in 3 minutes. 50 questions. 10 areas. 5 levels. One score out of 100. One clear focus area.",
     };
   }
 
@@ -78,10 +78,10 @@ export function getDefaultLandingContent(kind: LandingKind): LandingContent {
     eyebrow: "Business Operating System Diagnostic",
     heading: "Are You The BOSS, Or Is Your Business The BOSS Of You?",
     subheading:
-      "Take a fast strategic assessment inspired by the BOSS design and get a clear score, a clear priority, and a clear next step in under 12 minutes.",
+      "Take a fast strategic assessment inspired by the BOSS design and get a clear score, a clear priority, and a clear next step in under 3 minutes.",
     cta: "Take The Free BOSS Assessment",
     heroStats: [
-      { k: "12 mins", v: "to complete" },
+      { k: "3 mins", v: "to complete" },
       { k: "50 Qs", v: "across 10 areas" },
       { k: "£0", v: "no credit card" },
       { k: "1 page", v: "action plan" },

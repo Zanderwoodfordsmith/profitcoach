@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 
 import type { AcademyImportSnapshotReport } from "@/lib/academy/academyImportSnapshot";
+import type { AcademyImportOverride } from "@/lib/academy/academyImportOverrides";
+import { AdminAcademyImportUnmatchedTable } from "@/components/academy/AdminAcademyImportUnmatchedTable";
 import {
   buildOrderedCourseGroups,
   type LessonImportFilter,
@@ -17,6 +19,7 @@ type Props = {
   status: LessonImportStatusReport;
   snapshot: AcademyImportSnapshotReport | null;
   snapshotUpdatedAt: string | null;
+  importOverrides: AcademyImportOverride[];
 };
 
 const VIDEO_STATUS_META: Record<
@@ -46,11 +49,11 @@ function LessonStatusBadge({ row }: { row: LessonImportStatusRow }) {
       >
         {meta.label}
       </span>
-      {row.videoStatus === "video_ready" && !row.hasTranscript ? (
-        <span className="text-[10px] text-slate-500">No transcript</span>
+      {row.missingContent ? (
+        <span className="text-[10px] text-amber-700">Content missing</span>
       ) : null}
-      {row.hasTranscript && row.videoStatus !== "no_video" ? (
-        <span className="text-[10px] text-slate-500">Transcript</span>
+      {row.missingTranscript ? (
+        <span className="text-[10px] text-amber-700">Transcript missing</span>
       ) : null}
     </div>
   );
@@ -60,8 +63,9 @@ export function AdminAcademyImportStatus({
   status,
   snapshot,
   snapshotUpdatedAt,
+  importOverrides,
 }: Props) {
-  const [filter, setFilter] = useState<LessonImportFilter>("gaps");
+  const [filter, setFilter] = useState<LessonImportFilter>("all");
   const [courseFilter, setCourseFilter] = useState<string>("all");
   const [openCourses, setOpenCourses] = useState<Set<string>>(() => new Set());
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
@@ -82,6 +86,14 @@ export function AdminAcademyImportStatus({
     () => courseGroups.reduce((n, c) => n + c.lessonCount, 0),
     [courseGroups]
   );
+
+  const lessonTitles = useMemo(() => {
+    const titles: Record<string, string> = {};
+    for (const row of status.lessons) {
+      titles[`${row.courseId}:${row.lessonId}`] = row.lessonTitle;
+    }
+    return titles;
+  }, [status.lessons]);
 
   const { summary } = status;
   const unmatched = snapshot?.unmatched ?? [];
@@ -115,13 +127,14 @@ export function AdminAcademyImportStatus({
   }
 
   return (
-    <div className="w-full max-w-2xl space-y-8 pb-12">
+    <div className="w-full max-w-[110rem] space-y-8 pb-12">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Import progress (programmes)</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Legacy <code className="text-xs">hasVideo</code> vs in-app video on each lesson.
+          Legacy <code className="text-xs">hasVideo</code> vs in-app video, lesson content, and
+          transcripts on each lesson.
         </p>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className="text-xs text-slate-500">Lessons</dt>
             <dd className="text-lg font-semibold text-slate-900">{summary.lessonCount}</dd>
@@ -135,8 +148,14 @@ export function AdminAcademyImportStatus({
             <dd className="text-lg font-semibold text-rose-700">{summary.missingVideoCount}</dd>
           </div>
           <div>
-            <dt className="text-xs text-slate-500">Transcripts</dt>
-            <dd className="text-lg font-semibold text-slate-900">{summary.transcriptCount}</dd>
+            <dt className="text-xs text-slate-500">Missing content</dt>
+            <dd className="text-lg font-semibold text-amber-700">{summary.missingContentCount}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-slate-500">Missing transcript</dt>
+            <dd className="text-lg font-semibold text-amber-700">
+              {summary.missingTranscriptCount}
+            </dd>
           </div>
         </dl>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -163,10 +182,11 @@ export function AdminAcademyImportStatus({
               onChange={(e) => setFilter(e.target.value as LessonImportFilter)}
               className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
             >
+              <option value="all">All lessons</option>
               <option value="gaps">Gaps only</option>
               <option value="missingVideo">Missing video only</option>
+              <option value="missingContent">Missing content only</option>
               <option value="missingTranscript">Missing transcript only</option>
-              <option value="all">All lessons</option>
             </select>
           </div>
           <div>
@@ -249,7 +269,12 @@ export function AdminAcademyImportStatus({
                               </span>
                             </span>
                             <span className="text-xs text-slate-500">
-                              {section.lessons.length}
+                              {section.lessons.length} lessons
+                              {section.gapCount > 0 ? (
+                                <span className="ml-2 font-medium text-rose-600">
+                                  {section.gapCount} gaps
+                                </span>
+                              ) : null}
                             </span>
                           </button>
 
@@ -288,14 +313,6 @@ export function AdminAcademyImportStatus({
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Drive files not matched to a lesson</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          From the last import script run
-          {snapshotUpdatedAt
-            ? ` (${new Date(snapshotUpdatedAt).toLocaleString()})`
-            : " — run the import script with --apply to refresh"}
-          .
-        </p>
-
         {!snapshot ? (
           <p className="mt-4 text-sm text-slate-500">
             No snapshot yet. After{" "}
@@ -303,89 +320,63 @@ export function AdminAcademyImportStatus({
             files appear here.
           </p>
         ) : (
-          <div className="mt-4 space-y-6">
-            {unmatched.length > 0 ? (
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Unmatched ({unmatched.length})
-                </h3>
-                <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto text-sm">
-                  {unmatched.map((u) => (
-                    <li
-                      key={u.relativePath}
-                      className="rounded-lg border border-rose-100 bg-rose-50/50 px-3 py-2"
-                    >
-                      <span className="font-mono text-xs text-slate-800">{u.relativePath}</span>
-                      {u.bestLessonTitle ? (
-                        <span className="mt-1 block text-xs text-slate-500">
-                          Closest: {u.bestLessonTitle} (score {(u.bestScore * 100).toFixed(0)}%)
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <p className="text-sm text-emerald-700">No unmatched files in last run.</p>
-            )}
+          <>
+            <AdminAcademyImportUnmatchedTable
+              unmatched={unmatched}
+              initialOverrides={importOverrides}
+              catalogOrder={status.catalogOrder}
+              lessons={status.lessons}
+              lessonTitles={lessonTitles}
+              snapshotUpdatedAt={snapshotUpdatedAt}
+            />
 
-            {ambiguous.length > 0 ? (
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Ambiguous ({ambiguous.length})
-                </h3>
-                <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm">
-                  {ambiguous.slice(0, 30).map((a) => (
-                    <li
-                      key={a.relativePath}
-                      className="rounded-lg border border-amber-100 bg-amber-50/50 px-3 py-2"
-                    >
-                      <span className="font-mono text-xs">{a.relativePath}</span>
-                      {a.candidates?.[0] ? (
-                        <span className="mt-1 block text-xs text-slate-500">
-                          Top: {a.candidates[0].lessonTitle}
-                        </span>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-                {ambiguous.length > 30 ? (
-                  <p className="mt-1 text-xs text-slate-500">+ {ambiguous.length - 30} more in report JSON</p>
+            {(ambiguous.length > 0 || oversized.length > 0 || importErrors.length > 0) && (
+              <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
+                {ambiguous.length > 0 ? (
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Ambiguous ({ambiguous.length})
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Re-run import with <code className="text-xs">--include-ambiguous</code> or confirm
+                      links above.
+                    </p>
+                  </div>
+                ) : null}
+
+                {oversized.length > 0 ? (
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Too large ({oversized.length})
+                    </h3>
+                    <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                      {oversized.map((o) => (
+                        <li key={o.videoPath}>
+                          {o.lessonTitle}: {o.sizeMb}MB (max {o.maxMb}MB) — {o.videoPath}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {importErrors.length > 0 ? (
+                  <div>
+                    <h3 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <X className="h-3.5 w-3.5 text-rose-600" aria-hidden />
+                      Errors ({importErrors.length})
+                    </h3>
+                    <ul className="mt-2 space-y-1 text-sm text-rose-800">
+                      {importErrors.map((e) => (
+                        <li key={`${e.relativePath}:${e.message}`}>
+                          {e.relativePath}: {e.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : null}
               </div>
-            ) : null}
-
-            {oversized.length > 0 ? (
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Too large ({oversized.length})
-                </h3>
-                <ul className="mt-2 space-y-1 text-sm text-slate-700">
-                  {oversized.map((o) => (
-                    <li key={o.videoPath}>
-                      {o.lessonTitle}: {o.sizeMb}MB (max {o.maxMb}MB) — {o.videoPath}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-
-            {importErrors.length > 0 ? (
-              <div>
-                <h3 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <X className="h-3.5 w-3.5 text-rose-600" aria-hidden />
-                  Errors ({importErrors.length})
-                </h3>
-                <ul className="mt-2 space-y-1 text-sm text-rose-800">
-                  {importErrors.map((e) => (
-                    <li key={`${e.relativePath}:${e.message}`}>
-                      {e.relativePath}: {e.message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

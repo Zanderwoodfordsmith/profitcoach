@@ -18,6 +18,8 @@ export type AcademyImportSnapshotReport = {
     courseId: string | null;
     bestScore: number;
     bestLessonTitle: string | null;
+    bestLessonId?: string | null;
+    bestLessonCourseId?: string | null;
   }>;
   oversizedVideos?: Array<{
     courseId: string;

@@ -77,7 +77,7 @@ function Hero() {
               display: "flex", flexWrap: "wrap", gap: 20, marginTop: 32,
               fontSize: 13, fontWeight: 500, color: "#64748b",
             }}>
-              <span>· Free · 10 minutes · Personalised report</span>
+              <span>· Free · 3 minutes · Personalised report</span>
             </div>
           </div>
 

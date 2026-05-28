@@ -1,57 +1,13 @@
 "use client";
 
-import { LEVEL_NAMES, LEVEL_SUBTITLES } from "@/lib/insightEngine";
-
-/** Figma “Desktop - 2” level row tokens (node 233:1524 schedule rows). */
-const FIGMA_LEVEL_STYLE: {
-  iconBg: string;
-  labelColor: string;
-  percentColor: string;
-  barGradient: string;
-  track: string;
-  status: string;
-}[] = [
-  {
-    iconBg: "#f92e42",
-    labelColor: "#f92e87",
-    percentColor: "#f92e87",
-    barGradient: "linear-gradient(90deg, #e6757b, #ef525d, #f92e3f)",
-    track: "#dde3e9",
-    status: "Strong",
-  },
-  {
-    iconBg: "#f96a02",
-    labelColor: "#f96a02",
-    percentColor: "#f96a02",
-    barGradient: "linear-gradient(90deg, #fea462, #fd954a, #f96a02)",
-    track: "#dae1e6",
-    status: "Strong",
-  },
-  {
-    iconBg: "#c342e6",
-    labelColor: "#c342e6",
-    percentColor: "#ad47f9",
-    barGradient: "linear-gradient(90deg, #d65ec6, #ac44fa)",
-    track: "#dae1e6",
-    status: "Making progress",
-  },
-  {
-    iconBg: "#07bc94",
-    labelColor: "#07bc94",
-    percentColor: "#06b87c",
-    barGradient: "linear-gradient(90deg, #4dd1b2, #15c18a, #02bb7d)",
-    track: "#dae1e6",
-    status: "Strong",
-  },
-  {
-    iconBg: "#2881e9",
-    labelColor: "#2881e9",
-    percentColor: "#2881e9",
-    barGradient: "linear-gradient(90deg, #5193e1, #2881e9)",
-    track: "#dae1e6",
-    status: "Strong",
-  },
-];
+import { LEVEL_NAMES } from "@/lib/insightEngine";
+import { BOSS_PRO_RING_TRACK } from "@/lib/bossProDialGradients";
+import {
+  BOSS_SCORE_PASTEL,
+  BOSS_SCORE_SATURATED,
+  BOSS_SCORE_SATURATED_DEEP,
+  type BossScoreHue,
+} from "@/lib/bossScorecardColors";
 
 const LEVEL_ICONS = [
   "/levels/overwhelm.png",
@@ -60,6 +16,17 @@ const LEVEL_ICONS = [
   "/levels/overseer.png",
   "/levels/owner.png",
 ] as const;
+
+function levelHue(level: number): BossScoreHue {
+  return Math.min(5, Math.max(1, level)) as BossScoreHue;
+}
+
+function levelBarGradient(hue: BossScoreHue): string {
+  const deep = BOSS_SCORE_SATURATED_DEEP[hue];
+  const mid = BOSS_SCORE_SATURATED[hue];
+  const light = BOSS_SCORE_PASTEL[hue];
+  return `linear-gradient(90deg, ${deep} 0%, ${mid} 52%, ${light} 100%)`;
+}
 
 function ProgressBarFigma({
   percent,
@@ -86,70 +53,80 @@ export type DashboardLevelDemo = {
   score: number;
 };
 
-export function DashboardStyleLevelBarCard({
+export function DashboardStyleLevelBarRow({
   level,
   score,
   className = "",
 }: DashboardLevelDemo & { className?: string }) {
   const idx = level - 1;
-  const fig = FIGMA_LEVEL_STYLE[idx] ?? FIGMA_LEVEL_STYLE[0];
+  const hue = levelHue(level);
+  const accent = BOSS_SCORE_SATURATED[hue];
+  const barGradient = levelBarGradient(hue);
   const iconSrc = LEVEL_ICONS[idx] ?? LEVEL_ICONS[0];
   const name = LEVEL_NAMES[level] ?? `Level ${level}`;
-  const subtitle = LEVEL_SUBTITLES[level] ?? "";
 
   return (
+    <div className={`flex w-full flex-col gap-3 ${className}`}>
+      <div className="flex w-full items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div
+            className="flex size-[56px] shrink-0 items-center justify-center rounded-[10px]"
+            style={{ backgroundColor: accent }}
+          >
+            <div
+              className="size-7 shrink-0"
+              style={{
+                maskImage: `url(${iconSrc})`,
+                maskSize: "contain",
+                maskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskImage: `url(${iconSrc})`,
+                WebkitMaskSize: "contain",
+                WebkitMaskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                backgroundColor: "white",
+              }}
+              aria-hidden
+            />
+          </div>
+          <div className="min-w-0">
+            <p
+              className="mt-1 text-[12px] font-medium uppercase leading-none tracking-[0.1em]"
+              style={{ color: accent }}
+            >
+              Level {level}
+            </p>
+            <p className="mt-2 text-[20px] font-medium leading-none text-[#17181a]">{name}</p>
+          </div>
+        </div>
+        <p
+          className="shrink-0 text-[26px] font-medium tabular-nums leading-none"
+          style={{ color: accent }}
+        >
+          {score}%
+        </p>
+      </div>
+      <ProgressBarFigma percent={score} fill={barGradient} track={BOSS_PRO_RING_TRACK} />
+    </div>
+  );
+}
+
+export function DashboardStyleLevelBarsCard({
+  levels = LANDING_C_LEVEL_DEMO,
+  className = "",
+}: {
+  levels?: DashboardLevelDemo[];
+  className?: string;
+}) {
+  return (
     <div
-      className={`flex min-h-[160px] w-full flex-col justify-center border-[0.75px] border-solid border-white/[0.56] bg-white/40 px-[22px] py-[26px] shadow-[0_15px_18.75px_rgba(10,82,145,0.08)] backdrop-blur-sm ${className}`}
+      className={`border-[0.75px] border-solid border-white/[0.56] bg-white/40 px-[22px] py-[22px] shadow-[0_15px_18.75px_rgba(10,82,145,0.08)] backdrop-blur-sm ${className}`}
       style={{ borderRadius: "20px" }}
     >
-      <div className="flex w-full flex-col gap-[18px]">
-        <div className="flex w-full items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <div
-              className="flex size-[50px] shrink-0 items-center justify-center rounded-[10px]"
-              style={{ backgroundColor: fig.iconBg }}
-            >
-              <div
-                className="size-5 shrink-0"
-                style={{
-                  maskImage: `url(${iconSrc})`,
-                  maskSize: "contain",
-                  maskRepeat: "no-repeat",
-                  maskPosition: "center",
-                  WebkitMaskImage: `url(${iconSrc})`,
-                  WebkitMaskSize: "contain",
-                  WebkitMaskRepeat: "no-repeat",
-                  WebkitMaskPosition: "center",
-                  backgroundColor: "white",
-                }}
-                aria-hidden
-              />
-            </div>
-            <div className="min-w-0">
-              <p
-                className="text-[14px] font-medium uppercase leading-none tracking-[0.1em]"
-                style={{ color: fig.labelColor }}
-              >
-                Level {level}
-              </p>
-              <p className="mt-3 text-[20px] font-medium leading-none text-[#17181a]">{name}</p>
-            </div>
-          </div>
-          <p
-            className="shrink-0 text-[26px] font-medium tabular-nums leading-none"
-            style={{ color: fig.percentColor }}
-          >
-            {score}%
-          </p>
-        </div>
-        <ProgressBarFigma percent={score} fill={fig.barGradient} track={fig.track} />
-        <div className="flex flex-wrap items-start gap-x-2 gap-y-1 text-[17px] leading-snug">
-          <span className="inline-flex shrink-0 items-center gap-1.5 font-medium text-[#2d2f46]">
-            <span className="size-[5px] shrink-0 rounded-full bg-[#2d2f46]" aria-hidden />
-            {fig.status}
-          </span>
-          <span className="min-w-0 flex-1 text-[#17181a]/40">{subtitle}</span>
-        </div>
+      <div className="flex flex-col gap-7">
+        {levels.map((row) => (
+          <DashboardStyleLevelBarRow key={row.level} {...row} />
+        ))}
       </div>
     </div>
   );

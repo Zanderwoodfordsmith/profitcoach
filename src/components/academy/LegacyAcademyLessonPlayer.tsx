@@ -5,6 +5,10 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, FileText, Video } from "lucide-react";
 
 import { AcademyMarkdown } from "@/components/academy/AcademyMarkdown";
+import {
+  LessonProgressHeaderControl,
+  LessonProgressSidebarControl,
+} from "@/components/academy/LessonProgressControls";
 import { LessonResourcesPanel } from "@/components/academy/LessonResourcesPanel";
 import { LessonTranscriptPanel } from "@/components/academy/LessonTranscriptPanel";
 import { hasInAppLessonContent } from "@/lib/academy/lessonContentUtils";
@@ -146,7 +150,7 @@ export function LegacyAcademyLessonPlayer({
                           <li key={l.id}>
                             <Link
                               href={`${basePath}/${course.id}/${l.id}`}
-                              className={`flex items-start gap-2 rounded-lg px-2 py-2.5 text-sm transition ${
+                              className={`flex items-center gap-2 rounded-lg px-2 py-2.5 text-sm transition ${
                                 active
                                   ? "bg-amber-100 font-medium text-slate-900"
                                   : "font-normal text-slate-700 hover:bg-white"
@@ -168,6 +172,7 @@ export function LegacyAcademyLessonPlayer({
                                   {dur}
                                 </span>
                               ) : null}
+                              <LessonProgressSidebarControl lessonId={l.id} align="right" />
                             </Link>
                           </li>
                         );
@@ -201,9 +206,10 @@ export function LegacyAcademyLessonPlayer({
                   </p>
                 ) : null}
               </div>
-              {headerActions ? (
-                <div className="flex shrink-0 flex-wrap gap-2">{headerActions}</div>
-              ) : null}
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
+                <LessonProgressHeaderControl lessonId={lesson.id} />
+                {headerActions ? headerActions : null}
+              </div>
             </header>
 
             {inApp ? (

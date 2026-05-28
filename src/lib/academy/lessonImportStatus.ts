@@ -31,6 +31,7 @@ type ContentRow = {
   course_id: string;
   lesson_id: string;
   video_url: string | null;
+  body_markdown: string | null;
   transcript_text: string | null;
 };
 
@@ -60,10 +61,14 @@ function rowFromLesson(
   adminBasePath: string
 ): LessonImportStatusRow {
   const hasInAppVideo = Boolean(content?.video_url?.trim());
+  const hasContent = Boolean(content?.body_markdown?.trim());
   const hasTranscript = Boolean(content?.transcript_text?.trim());
   const legacyExpectsVideo = lesson.hasVideo;
   const missingVideo = legacyExpectsVideo && !hasInAppVideo;
-  const missingTranscript = !hasTranscript;
+  const missingContent = !hasContent;
+  /** Video lessons (in app or expected from legacy) need a transcript. */
+  const missingTranscript =
+    (hasInAppVideo || legacyExpectsVideo) && !hasTranscript;
   const videoStatus = lessonVideoImportStatus({ legacyExpectsVideo, hasInAppVideo });
 
   return {
@@ -74,9 +79,11 @@ function rowFromLesson(
     lessonTitle: lesson.title,
     legacyExpectsVideo,
     hasInAppVideo,
+    hasContent,
     hasTranscript,
     videoStatus,
     missingVideo,
+    missingContent,
     missingTranscript,
     adminLessonHref: `${adminBasePath}/${course.id}/${lesson.id}`,
   };
@@ -88,9 +95,13 @@ export async function loadLessonImportStatusReport(
   const hub = loadLegacyHub();
   const catalogOrder = catalogOrderFromHub(hub);
 
-  const { data: contentRows } = await supabaseAdmin
+  const { data: contentRows, error: contentError } = await supabaseAdmin
     .from("academy_lesson_content")
-    .select("course_id, lesson_id, video_url, transcript_text");
+    .select("course_id, lesson_id, video_url, body_markdown, transcript_text");
+
+  if (contentError) {
+    console.error("[lessonImportStatus] academy_lesson_content:", contentError.message);
+  }
 
   const byKey = new Map<string, ContentRow>();
   for (const row of contentRows ?? []) {
@@ -119,13 +130,14 @@ export async function loadLessonImportStatusReport(
     lessonCount: lessons.length,
     legacyVideoCount: lessons.filter((l) => l.legacyExpectsVideo).length,
     inAppVideoCount: lessons.filter((l) => l.hasInAppVideo).length,
-    transcriptCount: lessons.filter((l) => l.hasTranscript).length,
     missingVideoCount: lessons.filter((l) => l.missingVideo).length,
+    missingContentCount: lessons.filter((l) => l.missingContent).length,
     missingTranscriptCount: lessons.filter((l) => l.missingTranscript).length,
     readyCount: lessons.filter(
       (l) =>
         (!l.legacyExpectsVideo || l.hasInAppVideo) &&
-        (l.hasTranscript || !l.legacyExpectsVideo)
+        !l.missingContent &&
+        !l.missingTranscript
     ).length,
   };
 

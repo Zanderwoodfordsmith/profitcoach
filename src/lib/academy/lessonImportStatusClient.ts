@@ -18,9 +18,11 @@ export type LessonImportStatusRow = {
   lessonTitle: string;
   legacyExpectsVideo: boolean;
   hasInAppVideo: boolean;
+  hasContent: boolean;
   hasTranscript: boolean;
   videoStatus: LessonVideoImportStatus;
   missingVideo: boolean;
+  missingContent: boolean;
   missingTranscript: boolean;
   adminLessonHref: string;
 };
@@ -29,18 +31,25 @@ export type LessonImportStatusSummary = {
   lessonCount: number;
   legacyVideoCount: number;
   inAppVideoCount: number;
-  transcriptCount: number;
   missingVideoCount: number;
+  missingContentCount: number;
   missingTranscriptCount: number;
   readyCount: number;
 };
 
-export type LessonImportFilter = "all" | "gaps" | "missingVideo" | "missingTranscript";
+export type LessonImportFilter =
+  | "all"
+  | "gaps"
+  | "missingVideo"
+  | "missingContent"
+  | "missingTranscript";
 
 export type LessonImportSectionGroup = {
   sectionTitle: string;
   sectionKey: string;
   lessons: LessonImportStatusRow[];
+  /** Gaps in this module (missing video and/or transcript), regardless of list filter. */
+  gapCount: number;
 };
 
 export type LessonImportCourseGroup = {
@@ -75,10 +84,12 @@ export function lessonMatchesImportFilter(
   switch (filter) {
     case "missingVideo":
       return row.videoStatus === "video_missing";
+    case "missingContent":
+      return row.missingContent;
     case "missingTranscript":
       return row.missingTranscript;
     case "gaps":
-      return row.missingVideo || row.missingTranscript;
+      return row.missingVideo || row.missingContent || row.missingTranscript;
     default:
       return true;
   }
@@ -86,6 +97,10 @@ export function lessonMatchesImportFilter(
 
 function lessonKey(courseId: string, lessonId: string): string {
   return `${courseId}:${lessonId}`;
+}
+
+function lessonHasGap(row: LessonImportStatusRow): boolean {
+  return row.missingVideo || row.missingContent || row.missingTranscript;
 }
 
 /** Build programme → section → lessons tree in legacy-hub catalogue order. */
@@ -103,12 +118,19 @@ export function buildOrderedCourseGroups(
 
   for (const hubCourse of catalogOrder.courses) {
     const sections: LessonImportSectionGroup[] = [];
+    let courseGapCount = 0;
 
     for (const section of hubCourse.sections) {
       const sectionLessons: LessonImportStatusRow[] = [];
+      let sectionGapCount = 0;
       for (const lessonId of section.lessonIds) {
         const row = byKey.get(lessonKey(hubCourse.id, lessonId));
-        if (row && lessonMatchesImportFilter(row, filter)) {
+        if (!row) continue;
+        if (lessonHasGap(row)) {
+          sectionGapCount++;
+          courseGapCount++;
+        }
+        if (lessonMatchesImportFilter(row, filter)) {
           sectionLessons.push(row);
         }
       }
@@ -117,6 +139,7 @@ export function buildOrderedCourseGroups(
           sectionTitle: section.title,
           sectionKey: `${hubCourse.id}:${section.id}`,
           lessons: sectionLessons,
+          gapCount: sectionGapCount,
         });
       }
     }
@@ -124,19 +147,65 @@ export function buildOrderedCourseGroups(
     if (sections.length === 0) continue;
 
     const lessonCount = sections.reduce((n, s) => n + s.lessons.length, 0);
-    const gapCount = sections.reduce(
-      (n, s) => n + s.lessons.filter((l) => l.missingVideo || l.missingTranscript).length,
-      0
-    );
 
     result.push({
       courseId: hubCourse.id,
       courseTitle: hubCourse.title,
       sections,
       lessonCount,
-      gapCount,
+      gapCount: courseGapCount,
     });
   }
 
   return result;
+}
+
+export type ImportLinkLessonPickGroup = {
+  label: string;
+  keys: string[];
+};
+
+/** Gap-prioritised lesson lists for linking Drive video/transcript files in the admin import UI. */
+export function buildImportLinkLessonPickGroups(
+  fileKind: "video" | "transcript",
+  catalogOrder: LessonImportCatalogOrder,
+  lessonsByKey: ReadonlyMap<string, LessonImportStatusRow>,
+  excludeKeys?: ReadonlySet<string>
+): ImportLinkLessonPickGroup[] {
+  const missingVideoKeys: string[] = [];
+  const missingTranscriptKeys: string[] = [];
+  const exclude = excludeKeys ?? new Set<string>();
+
+  for (const course of catalogOrder.courses) {
+    for (const section of course.sections) {
+      for (const lessonId of section.lessonIds) {
+        const key = lessonKey(course.id, lessonId);
+        if (exclude.has(key)) continue;
+        const row = lessonsByKey.get(key);
+        if (!row) continue;
+        if (row.missingVideo) missingVideoKeys.push(key);
+        else if (row.missingTranscript) missingTranscriptKeys.push(key);
+      }
+    }
+  }
+
+  if (fileKind === "video") {
+    return [
+      missingVideoKeys.length > 0
+        ? { label: "Missing video (expected)", keys: missingVideoKeys }
+        : null,
+      missingTranscriptKeys.length > 0
+        ? { label: "Missing transcript", keys: missingTranscriptKeys }
+        : null,
+    ].filter((g): g is ImportLinkLessonPickGroup => g !== null);
+  }
+
+  return [
+    missingTranscriptKeys.length > 0
+      ? { label: "Missing transcript", keys: missingTranscriptKeys }
+      : null,
+    missingVideoKeys.length > 0
+      ? { label: "Missing video (expected)", keys: missingVideoKeys }
+      : null,
+  ].filter((g): g is ImportLinkLessonPickGroup => g !== null);
 }

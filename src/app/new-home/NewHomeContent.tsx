@@ -103,7 +103,7 @@ const faqs = [
   },
   {
     q: "What if I don't have time for this right now?",
-    a: "The owners who say this are usually the ones who need it most. The diagnostic takes 10 minutes. If you're in a busy season, your coach builds the plan around your timeline — not the other way around.",
+    a: "The owners who say this are usually the ones who need it most. The diagnostic takes 3 minutes. If you're in a busy season, your coach builds the plan around your timeline — not the other way around.",
   },
   {
     q: "My business is small. Is this for me?",
@@ -119,7 +119,7 @@ const faqs = [
   },
   {
     q: "Can I just take the diagnostic without coaching?",
-    a: "Yes. The BOSS Diagnostic is free and takes 10 minutes. You'll see your full score across all 10 areas of your business and a calculation of the revenue gap your current score represents. You don't have to speak to a coach. But most owners do — because seeing the gap is the easy part. Closing it is what takes a coach.",
+    a: "Yes. The BOSS Diagnostic is free and takes 3 minutes. You'll see your full score across all 10 areas of your business and a calculation of the revenue gap your current score represents. You don't have to speak to a coach. But most owners do — because seeing the gap is the easy part. Closing it is what takes a coach.",
   },
   {
     q: "How do I find the right coach?",

@@ -6,6 +6,10 @@ import { getSignaturePillarTitleById } from "@/lib/signatureModelV2";
 import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 
 import { AcademyMarkdown } from "./AcademyMarkdown";
+import {
+  LessonProgressHeaderControl,
+  LessonProgressSidebarControl,
+} from "./LessonProgressControls";
 
 type Props = {
   category: AcademyCategory;
@@ -47,7 +51,7 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
                 <li key={l.id}>
                   <Link
                     href={`${basePath}/${course.id}/${l.id}`}
-                    className={`flex items-start gap-2 rounded-lg px-3 py-2.5 text-sm transition ${
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm transition ${
                       active
                         ? "bg-amber-100 font-medium text-slate-900"
                         : "text-slate-700 hover:bg-slate-50"
@@ -56,7 +60,8 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
                     <span className="shrink-0" aria-hidden>
                       {l.emoji ?? "▸"}
                     </span>
-                    <span className="min-w-0 leading-snug">{l.title}</span>
+                    <span className="min-w-0 flex-1 leading-snug">{l.title}</span>
+                    <LessonProgressSidebarControl lessonId={l.id} align="right" />
                   </Link>
                 </li>
               );
@@ -67,11 +72,12 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
 
       <div className="min-w-0 flex-1">
         <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
-          <header className="mb-6 border-b border-slate-100 pb-4">
-            <h1 className="text-xl font-semibold text-slate-900 md:text-2xl">
+          <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+            <h1 className="min-w-0 text-xl font-semibold text-slate-900 md:text-2xl">
               {lesson.emoji ? `${lesson.emoji} ` : ""}
               {lesson.title}
             </h1>
+            <LessonProgressHeaderControl lessonId={lesson.id} />
           </header>
 
           {lesson.videoUrl ? (

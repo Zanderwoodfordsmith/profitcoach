@@ -86,7 +86,7 @@ function ProfitSystem() {
                   fontSize: 11, fontWeight: 600, padding: "5px 10px",
                   borderRadius: 9999, background: "rgba(16,185,129,0.18)",
                   color: "#34d399", letterSpacing: "0.06em", height: "fit-content",
-                }}>10 MIN</div>
+                }}>3 MIN</div>
               </div>
               <div style={{ filter: "drop-shadow(0 0 24px rgba(66,161,238,0.25))" }}>
                 <BossWheelDark size={460} />

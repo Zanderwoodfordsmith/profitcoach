@@ -31,7 +31,7 @@ function BossHero() {
               backdropFilter: "blur(12px)", fontSize: 12, fontWeight: 600, color: "#cfdef3", letterSpacing: "0.04em",
               whiteSpace: "nowrap",
             }}>
-              <span style={{ background: "#10b981", color: "#fff", padding: "3px 10px", borderRadius: 9999, fontSize: 10, letterSpacing: "0.2em", fontWeight: 700 }}>FREE · 10 MIN</span>
+              <span style={{ background: "#10b981", color: "#fff", padding: "3px 10px", borderRadius: 9999, fontSize: 10, letterSpacing: "0.2em", fontWeight: 700 }}>FREE · 3 MIN</span>
               The BOSS Diagnostic
             </div>
 
@@ -40,7 +40,7 @@ function BossHero() {
               fontSize: "clamp(40px, 5.6vw, 80px)", lineHeight: 1.0, fontWeight: 300,
               letterSpacing: "-0.04em", color: "#fff",
             }}>
-              In 10 minutes,<br />
+              In 3 minutes,<br />
               you'll know{" "}
               <em style={{
                 fontStyle: "normal", fontWeight: 700,
@@ -65,7 +65,7 @@ function BossHero() {
             {/* trust strip */}
             <div style={{ display: "flex", gap: 28, flexWrap: "wrap", paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.10)" }}>
               {[
-                ["10 mins", "to complete"],
+                ["3 mins", "to complete"],
                 ["50 Qs", "across 10 areas"],
                 ["£0", "no credit card"],
                 ["1 page", "actionable plan"],

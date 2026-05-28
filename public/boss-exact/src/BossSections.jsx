@@ -55,7 +55,7 @@ function WhatsInside() {
 // ============================================================
 function HowToReport() {
   const steps = [
-    { n: "01", t: "Answer 50 questions", body: "Across 10 areas of business. Each scored 0/1/2. No long-form. No 'rate yourself out of 10' fluff.", time: "10 minutes" },
+    { n: "01", t: "Answer 50 questions", body: "Across 10 areas of business. Each scored 0/1/2. No long-form. No 'rate yourself out of 10' fluff.", time: "3 minutes" },
     { n: "02", t: "Get your BOSS Report", body: "Score, level, heatmap, priorities, and funnel-multiplier delivered to your inbox the moment you finish.", time: "Instantly" },
     { n: "03", t: "Decide your next move", body: "Act on it yourself, share it with your team, or book a 20-min review with a Profit Coach. Up to you.", time: "On your terms" },
   ];
@@ -189,7 +189,7 @@ function MidCTA() {
               Ready to stop guessing?
             </h2>
             <p style={{ margin: "8px 0 0", fontSize: 19, color: "#cfdef3" }}>
-              10 minutes. Free. No credit card. No call required.
+              3 minutes. Free. No credit card. No call required.
             </p>
           </div>
           <a href="#start" className="boss-cta-primary" onClick={(e) => window.bossSmoothScrollTo("start", e)}>
@@ -238,7 +238,7 @@ function FounderNote() {
 function BossFAQs() {
   const [open, setOpen] = useStateBS(0);
   const items = [
-    { q: "How long does it really take?", a: "Most people finish in 8–12 minutes. The questions are deliberate — short enough to keep moving, sharp enough to capture real signal. You can pause and resume." },
+    { q: "How long does it really take?", a: "Most people finish in about 3 minutes. The questions are deliberate — short enough to keep moving, sharp enough to capture real signal. You can pause and resume." },
     { q: "What's the catch? Why is it free?", a: "There isn't one. The diagnostic is the front door to our work — owners who like their report come back when they're ready to do the work. Owners who don't, don't. We've made peace with that." },
     { q: "Will I be put on a call list?", a: "No. You'll get the report by email. There's an optional 20-min review with a coach if you want one — initiated by you, never auto-booked. Unsubscribe with one click." },
     { q: "What if my numbers are bad?", a: "Then the diagnostic will tell you that, clearly. That's the point. A bad score with a clear top-3 is infinitely more useful than a vague 'how was the year' conversation." },
@@ -415,7 +415,7 @@ function FinalStartCTA() {
       <div className="pc-container" style={{ position: "relative", textAlign: "center" }}>
         <div className="reveal" style={{ maxWidth: 720, margin: "0 auto" }}>
           <h2 style={{ margin: "0 0 20px", fontSize: "clamp(36px, 5vw, 64px)", fontWeight: 300, letterSpacing: "-0.04em", lineHeight: 1.04, color: "#fff" }}>
-            Get your <em style={{ fontStyle: "normal", fontWeight: 700, background: "linear-gradient(135deg,#42a1ee,#34d399)", WebkitBackgroundClip: "text", color: "transparent" }}>BOSS Score</em> in 10 minutes.
+            Get your <em style={{ fontStyle: "normal", fontWeight: 700, background: "linear-gradient(135deg,#42a1ee,#34d399)", WebkitBackgroundClip: "text", color: "transparent" }}>BOSS Score</em> in 3 minutes.
           </h2>
           <p style={{ fontSize: 22, lineHeight: 1.6, color: "#cfdef3", margin: "0 auto 36px", maxWidth: 540 }}>
             Drop your email. We'll send the diagnostic link straight away. Your report lands in your inbox the moment you finish.
@@ -532,7 +532,7 @@ function FinalStartCTA() {
 
           <div style={{ marginTop: 56, display: "flex", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
             {[
-              ["10 min", "to complete"],
+              ["3 min", "to complete"],
               ["1-page", "personalised report"],
               ["£0", "to start"],
             ].map((t, i) => (

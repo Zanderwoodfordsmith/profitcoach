@@ -44,7 +44,7 @@ function HowItWorksHero() {
 // Section: Diagnostic walkthrough — three steps
 function DiagnosticWalkthrough() {
   const steps = [
-    { n: "01", title: "Diagnose", body: "50 questions across 10 areas of business. Scored 0/1/2. The result is your BOSS Score, your Level, and a heat-map showing exactly where the business leaks.", time: "10 minutes" },
+    { n: "01", title: "Diagnose", body: "50 questions across 10 areas of business. Scored 0/1/2. The result is your BOSS Score, your Level, and a heat-map showing exactly where the business leaks.", time: "3 minutes" },
     { n: "02", title: "Sequence", body: "Your coach takes the diagnostic and builds a 90-day plan — three priorities, ordered by impact and ease. Not 30 things. Not a 'wish list'. Three.", time: "Week 1" },
     { n: "03", title: "Install", body: "Each priority maps to a Profit System playbook. Your coach walks it in with you, week by week, on your numbers, with your team.", time: "Weeks 2–12" },
     { n: "04", title: "Re-score", body: "Re-take the diagnostic at 90 days. See the deltas — by area, by level, on the wheel and the grid. Then the next 90 days.", time: "Day 90" },

@@ -152,7 +152,7 @@ function PageCTA({ title, sub }) {
       <div className="pc-container">
         <div className="reveal" style={{ maxWidth: 680, margin: "0 auto" }}>
           <h2 style={{ margin: "0 0 22px", fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 300, letterSpacing: "-0.035em", lineHeight: 1.08, color: "#0f172a" }}>
-            {title || (<>Find out where you stand. <em style={{ fontStyle: "normal", fontWeight: 700, background: "linear-gradient(135deg,#0c5290,#1ca0c2)", WebkitBackgroundClip: "text", color: "transparent" }}>In 10 minutes.</em></>)}
+            {title || (<>Find out where you stand. <em style={{ fontStyle: "normal", fontWeight: 700, background: "linear-gradient(135deg,#0c5290,#1ca0c2)", WebkitBackgroundClip: "text", color: "transparent" }}>In 3 minutes.</em></>)}
           </h2>
           <p style={{ fontSize: 18, lineHeight: 1.6, color: "#475569", margin: "0 0 32px" }}>
             {sub || "The BOSS Diagnostic gives you your full score across all 10 areas, your level, and the three highest-leverage moves for the next 90 days. Free. No call required."}

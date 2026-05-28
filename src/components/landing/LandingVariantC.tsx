@@ -4,10 +4,13 @@ import { useId } from "react";
 import { Outfit } from "next/font/google";
 import { ArrowUpRight, Sparkles, TrendingUp } from "lucide-react";
 import {
-  DashboardStyleLevelBarCard,
+  DashboardStyleLevelBarsCard,
   LANDING_C_LEVEL_DEMO,
 } from "@/components/landing/DashboardStyleLevelBars";
+import { LandingHeroHeadline } from "@/components/landing/LandingHeroHeadline";
+import { BossScoreWordmark } from "@/components/scorecard/BossScoreWordmark";
 import type { LandingContent } from "@/lib/landingCopy";
+import type { LandingHeroHeadlineVariant } from "@/lib/landingHeroHeadline";
 
 const landingOutfit = Outfit({
   subsets: ["latin"],
@@ -45,13 +48,14 @@ function BossScoreArcGauge({ percent, size = 236 }: { percent: number; size?: nu
   const totalArc = 270;
   const strokeW = 14;
   const fillAngle = startAngle - (Math.min(100, Math.max(0, percent)) / 100) * totalArc;
+  const svgHeight = size * 0.72;
 
   return (
-    <div className="relative mx-auto flex h-[200px] w-[236px] shrink-0 items-center justify-center">
+    <div className="relative mx-auto shrink-0" style={{ width: size, height: svgHeight }}>
       <svg
         width={size}
-        height={size * 0.72}
-        viewBox={`0 0 ${size} ${size * 0.72}`}
+        height={svgHeight}
+        viewBox={`0 0 ${size} ${svgHeight}`}
         className="shrink-0"
         aria-hidden
       >
@@ -77,15 +81,25 @@ function BossScoreArcGauge({ percent, size = 236 }: { percent: number; size?: nu
           strokeLinecap="round"
           className="transition-all duration-700 ease-out"
         />
-      </svg>
-      <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pt-4">
-        <span className="text-[47px] font-semibold leading-none tracking-tight text-[#050708]">
+        <text
+          x={cx}
+          y={cy - 14}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-[#050708] text-[47px] font-semibold tracking-tight"
+        >
           {percent}%
-        </span>
-        <span className="mt-1 text-[19px] font-light uppercase tracking-wide text-[#809fb8]">
+        </text>
+        <text
+          x={cx}
+          y={cy + 20}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          className="fill-[#809fb8] text-[19px] font-light uppercase tracking-wide"
+        >
           Total
-        </span>
-      </div>
+        </text>
+      </svg>
     </div>
   );
 }
@@ -184,6 +198,8 @@ export type LandingVariantCProps = {
   form: React.ReactNode;
   /** Default: centered headline + description above hero. `split`: headline + copy left, dashboard visual right (lg+). */
   heroLayout?: "stack" | "split";
+  /** Hero headline A/B: `d` = main, `b` = alt headline (same layout). */
+  headlineVariant?: LandingHeroHeadlineVariant;
 };
 
 export function LandingVariantC({
@@ -193,6 +209,7 @@ export function LandingVariantC({
   scrollToForm,
   form,
   heroLayout = "stack",
+  headlineVariant = "d",
 }: LandingVariantCProps) {
   const bottomCtaLabel = "Get My BOSS Score";
   const splitHero = heroLayout === "split";
@@ -233,18 +250,10 @@ export function LandingVariantC({
               <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center lg:gap-12 xl:gap-16">
                 <div className="flex min-w-0 flex-col items-start text-left">
                   <EyebrowDark>{landingContent.eyebrow}</EyebrowDark>
-                  <h1 className="mt-5 text-balance text-[clamp(40px,6.2vw,62px)] font-light leading-[1.08] tracking-[-0.08em] text-white [text-shadow:0_2px_28px_rgba(0,0,0,0.35)] lg:text-[clamp(42px,5.4vw,68px)] xl:text-[clamp(44px,4.8vw,76px)]">
-                    Are You Running Your Business{" "}
-                    <span
-                      className="bg-clip-text font-semibold text-transparent"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(81deg, rgb(0, 112, 178) 0.6%, rgb(54, 173, 244) 54%, rgb(188, 126, 250) 91%)",
-                      }}
-                    >
-                      Or Is It Running You?
-                    </span>
-                  </h1>
+                  <LandingHeroHeadline
+                    variant={headlineVariant}
+                    className="mt-5 text-[clamp(40px,6.2vw,62px)] leading-[1.08] lg:text-[clamp(42px,5.4vw,68px)] xl:text-[clamp(44px,4.8vw,76px)]"
+                  />
                   {prospectCompany || prospectName ? (
                     <p className="mt-6 max-w-xl text-lg leading-relaxed text-[#d9e1e7] sm:text-xl">
                       {prospectCompany ? (
@@ -287,18 +296,10 @@ export function LandingVariantC({
               </div>
             ) : (
               <>
-                <h1 className="text-balance text-[clamp(36px,7vw,64px)] font-light leading-[1.1] tracking-[-0.08em] text-white [text-shadow:0_2px_28px_rgba(0,0,0,0.35)]">
-                  Are You Running Your Business{" "}
-                  <span
-                    className="bg-clip-text font-semibold text-transparent"
-                    style={{
-                      backgroundImage:
-                        "linear-gradient(81deg, rgb(0, 112, 178) 0.6%, rgb(54, 173, 244) 54%, rgb(188, 126, 250) 91%)",
-                    }}
-                  >
-                    Or Is It Running You?
-                  </span>
-                </h1>
+                <LandingHeroHeadline
+                  variant={headlineVariant}
+                  className="text-[clamp(36px,7vw,64px)] leading-[1.1]"
+                />
                 {prospectCompany || prospectName ? (
                   <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#d9e1e7] sm:text-xl">
                     {prospectCompany ? (
@@ -364,7 +365,7 @@ export function LandingVariantC({
                     className="bg-clip-text text-transparent [font-weight:400]"
                     style={{
                       backgroundImage:
-                        "linear-gradient(92deg, #0a5291 0%, #36adf4 45%, #7c5cdb 100%)",
+                        "linear-gradient(92deg, #1a7ab8 0%, #52c4ff 45%, #9b7ee8 100%)",
                     }}
                   >
                     holding your business back
@@ -374,11 +375,9 @@ export function LandingVariantC({
               subtitle="You will be scored across all 5 business owner levels."
             />
 
-            <div className="mt-14 grid gap-8 lg:mt-16 lg:grid-cols-[minmax(0,518px)_minmax(0,518px)] lg:items-start lg:justify-center lg:gap-10">
-              <div className="mx-auto flex w-full max-w-[518px] flex-col gap-5 lg:mx-0">
-                {LANDING_C_LEVEL_DEMO.map((row) => (
-                  <DashboardStyleLevelBarCard key={row.level} {...row} />
-                ))}
+            <div className="mt-14 grid gap-8 lg:mt-16 lg:grid-cols-[minmax(0,548px)_minmax(0,488px)] lg:items-start lg:justify-center lg:gap-10">
+              <div className="mx-auto w-full max-w-[548px] lg:mx-0">
+                <DashboardStyleLevelBarsCard levels={LANDING_C_LEVEL_DEMO} />
               </div>
 
               <div className="mx-auto w-full max-w-[518px] lg:sticky lg:top-8 lg:mx-0">
@@ -386,29 +385,46 @@ export function LandingVariantC({
                   className="flex flex-col items-stretch justify-between border-[1.266px] border-solid border-white/[0.56] bg-white/80 p-[25px] shadow-[0_25.3px_33.29px_rgba(10,82,145,0.26)] backdrop-blur-sm sm:p-[26px]"
                   style={{ borderRadius: "22.786px" }}
                 >
-                  <div className="flex flex-col gap-5">
-                    <div
-                      className="flex size-[42px] items-center justify-center rounded-xl"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(239deg, rgb(83, 197, 222) 5.6%, rgb(18, 175, 240) 38%, rgb(10, 69, 125) 108%)",
-                      }}
-                    >
-                      <TrendingUp className="size-6 text-white" strokeWidth={2} aria-hidden />
-                    </div>
-                    <div>
-                      <p className="text-[32px] font-medium tracking-[0.015em] text-[#364153]">BOSS Score</p>
-                      <p className="mt-3 text-[20px] font-normal leading-snug tracking-[0.015em] text-[#17181a]/52">
-                        Find the key areas to focus on.
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex size-[42px] shrink-0 items-center justify-center rounded-xl"
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(239deg, rgb(83, 197, 222) 5.6%, rgb(18, 175, 240) 38%, rgb(10, 69, 125) 108%)",
+                        }}
+                      >
+                        <TrendingUp className="size-6 text-white" strokeWidth={2} aria-hidden />
+                      </div>
+                      <p className="text-[28px] font-semibold tracking-tight sm:text-[32px]">
+                        <BossScoreWordmark />
                       </p>
                     </div>
+                    <p className="text-[20px] font-normal leading-snug tracking-[0.015em] text-[#17181a]/52">
+                      Find the key areas to focus on.
+                    </p>
                   </div>
-                  <div className="flex flex-1 flex-col items-center justify-center py-6">
+                  <div className="flex flex-1 flex-col items-center justify-center py-4">
                     <BossScoreArcGauge percent={DEMO_TOTAL} />
                   </div>
-                  <p className="text-center text-base leading-relaxed text-[#17181a]/48">
-                    Complete the steps above — your live score replaces this preview.
-                  </p>
+                  <div className="flex flex-col gap-4">
+                    <p className="text-center text-base leading-relaxed text-[#17181a]/48">
+                      Complete the steps above to finish the assessment — your live scores across all
+                      levels will replace this preview.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={scrollToForm}
+                      className="mt-3 flex h-[58px] w-full items-center justify-center gap-3 rounded-[20px] px-6 text-[18px] font-medium text-white shadow-[0_8px_24px_rgba(10,82,145,0.35)] transition hover:brightness-110 active:scale-[0.99]"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(92deg, #052745 0%, #0a5291 48%, #36adf4 100%)",
+                      }}
+                    >
+                      {bottomCtaLabel}
+                      <ArrowUpRight className="size-4 shrink-0 opacity-95" strokeWidth={2.25} aria-hidden />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -427,7 +443,7 @@ export function LandingVariantC({
                 step="Step 1"
                 imageSrc="/landing/v2/how-1.png"
                 title="Answer a few questions about how your business is doing"
-                description="No prep, no spreadsheets, no calculators. Just honest answers about what is working and what is not — about 10 minutes."
+                description="No prep, no spreadsheets, no calculators. Just honest answers about what is working and what is not — about 3 minutes."
               />
               <HowRow
                 step="Step 2"
@@ -489,7 +505,7 @@ export function LandingVariantC({
                   </button>
                 </div>
                 <p className="mt-6 text-center text-[20px] font-normal leading-[1.5] tracking-normal text-[#d9e1e7]/75">
-                  It only takes 10 minutes
+                  It only takes 3 minutes
                 </p>
               </div>
             </div>

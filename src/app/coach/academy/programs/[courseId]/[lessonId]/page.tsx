@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LegacyAcademyLessonPlayer } from "@/components/academy/LegacyAcademyLessonPlayer";
+import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
 import { findLegacyCourse, findLessonInCourse } from "@/lib/academy/legacyHubCatalog";
 import { loadLegacyHub } from "@/lib/academy/legacyHubLoad";
 import { loadLegacyCourseWithContent } from "@/lib/academy/lessonContent";
@@ -28,17 +29,19 @@ export default async function CoachAcademyProgramsLessonPage({ params }: Props) 
 
   return (
     <div className="pt-6">
-      <LegacyAcademyLessonPlayer
-        data={data}
-        course={course}
-        lesson={lesson}
-        basePath={BASE}
-        classroomHref={CLASSROOM}
-        videoUrl={videoUrl}
-        bodyMarkdown={bodyMarkdown}
-        transcriptText={transcriptText}
-        lessonResources={lessonResources}
-      />
+      <LessonProgressProvider courseId={courseId}>
+        <LegacyAcademyLessonPlayer
+          data={data}
+          course={course}
+          lesson={lesson}
+          basePath={BASE}
+          classroomHref={CLASSROOM}
+          videoUrl={videoUrl}
+          bodyMarkdown={bodyMarkdown}
+          transcriptText={transcriptText}
+          lessonResources={lessonResources}
+        />
+      </LessonProgressProvider>
     </div>
   );
 }

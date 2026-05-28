@@ -24,7 +24,7 @@ export const PILLAR_NAMES: Record<(typeof PILLAR_KEYS)[number], string> = {
 export const LEVEL_SUBTITLES: Record<number, string> = {
   1: "Survival mode. Doing everything yourself.",
   2: "Busy but inefficient. Working in the business.",
-  3: "Systems emerging. Gaining clarity and control.",
+  3: "Systems emerging. Gaining clarity & control.",
   4: "Leading the team. Working on the business.",
   5: "True ownership. Business runs without you.",
 };

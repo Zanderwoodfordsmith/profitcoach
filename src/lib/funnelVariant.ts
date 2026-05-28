@@ -9,3 +9,17 @@ export function searchParamsWithoutVariant(
   const s = sp.toString();
   return s ? `?${s}` : "";
 }
+
+/** `/score` → landing D (main) or B when `?variant=b`. */
+export function resolveScoreLandingPath(
+  searchParams: URLSearchParams,
+  coachSlug?: string
+): string {
+  const variant = searchParams.get("variant")?.trim().toLowerCase();
+  const landingVariant = variant === "b" ? "b" : "d";
+  const sp = new URLSearchParams(searchParams.toString());
+  if (coachSlug?.trim()) sp.set("coach", coachSlug.trim());
+  sp.delete("variant");
+  const q = sp.toString();
+  return q ? `/landing/${landingVariant}?${q}` : `/landing/${landingVariant}`;
+}

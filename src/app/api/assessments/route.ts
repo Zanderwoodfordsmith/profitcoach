@@ -23,6 +23,7 @@ import {
   primaryCoachSetupErrorMessage,
   resolvePrimaryCoachSlug,
 } from "@/lib/primaryCoach";
+import { resolveLandingEventTestId } from "@/lib/landingEvergreenTest";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -422,12 +423,7 @@ export async function POST(request: Request) {
       : null;
 
   if (fromLanding) {
-    const { data: runningTest } = await supabaseAdmin
-      .from("landing_tests")
-      .select("id")
-      .eq("status", "running")
-      .limit(1)
-      .maybeSingle();
+    const testId = await resolveLandingEventTestId();
     const landingTrackCoachSlug = body.landing_brand
       ? null
       : typeof body.landing_coach_slug === "string"
@@ -440,8 +436,16 @@ export async function POST(request: Request) {
       contact_id: contactId,
       assessment_id: assessment.id,
     };
-    if (runningTest?.id) finishRow.test_id = runningTest.id;
-    await supabaseAdmin.from("landing_events").insert(finishRow);
+    if (testId) finishRow.test_id = testId;
+    const { error: finishError } = await supabaseAdmin
+      .from("landing_events")
+      .insert(finishRow);
+    if (finishError) {
+      console.error("landing finish insert failed:", finishError.message, {
+        variant: fromLanding,
+        code: finishError.code,
+      });
+    }
   }
 
   const reportToken =

@@ -303,6 +303,9 @@ export default function LandingVariantPage() {
 
   function scrollToForm() {
     document.getElementById("landing-form")?.scrollIntoView({ behavior: "smooth" });
+    window.setTimeout(() => {
+      document.getElementById("landingA-firstName")?.focus({ preventScroll: true });
+    }, 450);
   }
 
   if (!validVariant) {
@@ -313,7 +316,8 @@ export default function LandingVariantPage() {
     );
   }
 
-  const landingKind = isVariantA || isVariantC || isVariantD ? "newCopy" : "legacy";
+  const landingKind =
+    isVariantA || isVariantB || isVariantC || isVariantD ? "newCopy" : "legacy";
   const landingContent = mergeLandingContent(
     getDefaultLandingContent(landingKind),
     landingOverrides
@@ -347,6 +351,27 @@ export default function LandingVariantPage() {
     goBack,
     scrollToForm,
   };
+
+  if (isVariantB) {
+    return (
+      <LandingVariantD
+        headlineVariant="b"
+        landingContent={landingContent}
+        prospectCompany={prospectCompany}
+        prospectName={prospectName}
+        scrollToForm={scrollToForm}
+        form={
+          <LandingOptInForm
+            {...legacyProps}
+            variant="light"
+            cta={landingContent.cta}
+            embedded
+            figmaLandingC
+          />
+        }
+      />
+    );
+  }
 
   if (isVariantC) {
     return (
@@ -413,7 +438,7 @@ function BossInspiredLanding(props: LandingVariantLegacyProps) {
           <div className="relative mx-auto grid max-w-6xl gap-14 lg:grid-cols-[1.05fr_1fr] lg:items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1">
-                <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold tracking-[0.2em] text-white">FREE 12 MIN</span>
+                <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold tracking-[0.2em] text-white">FREE 3 MIN</span>
                 <span className="text-xs font-semibold tracking-[0.04em] text-sky-100">{content.eyebrow}</span>
               </div>
               <h1 className="mt-6 text-balance text-[clamp(40px,5.6vw,80px)] font-light leading-[1.0] tracking-[-0.04em]">{content.heading}</h1>
@@ -690,7 +715,7 @@ function LandingOptInForm(
   function FigmaCtaSubline() {
     return (
       <p className="text-center text-[13px] font-normal leading-snug tracking-normal text-[#17181a]/50">
-        It only takes 10 minutes
+        It only takes 3 minutes
       </p>
     );
   }

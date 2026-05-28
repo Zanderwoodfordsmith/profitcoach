@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveLandingEventTestId } from "@/lib/landingEvergreenTest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -31,25 +32,25 @@ export async function POST(request: Request) {
     );
   }
 
-  const coach_slug = typeof body.coach_slug === "string" ? body.coach_slug.trim() || null : null;
+  const coach_slug =
+    body.coach_slug === null || body.coach_slug === undefined
+      ? null
+      : typeof body.coach_slug === "string"
+        ? body.coach_slug.trim() || null
+        : null;
   const session_id = typeof body.session_id === "string" ? body.session_id.trim() || null : null;
   const contact_id = body.contact_id ?? null;
   const assessment_id = body.assessment_id ?? null;
 
   try {
-    const { data: runningTest } = await supabaseAdmin
-      .from("landing_tests")
-      .select("id")
-      .eq("status", "running")
-      .limit(1)
-      .maybeSingle();
+    const testId = await resolveLandingEventTestId();
 
     const row: Record<string, unknown> = {
       variant,
       coach_slug,
       event_type,
     };
-    if (runningTest?.id) row.test_id = runningTest.id;
+    if (testId) row.test_id = testId;
     if (session_id != null) row.session_id = session_id;
     if (contact_id != null) row.contact_id = contact_id;
     if (assessment_id != null) row.assessment_id = assessment_id;
@@ -57,11 +58,17 @@ export async function POST(request: Request) {
     const { error: insertError } = await supabaseAdmin.from("landing_events").insert(row);
 
     if (insertError) {
+      console.error("landing/track insert failed:", insertError.message, {
+        variant,
+        event_type,
+        code: insertError.code,
+      });
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("landing/track unexpected error:", err);
     return NextResponse.json({ error: "Unexpected error." }, { status: 500 });
   }
 }

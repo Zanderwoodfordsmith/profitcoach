@@ -1,8 +1,39 @@
 import TurndownService from "turndown";
 
+import { serializeAccordionElement, LESSON_ACCORDION_CLASS } from "./lessonAccordion";
+import { readElementTextColor, coloredTextHtml } from "./lessonTextColor";
 import { normalizeImportedLessonMarkdown } from "./importLessonMarkdown";
 
 let turndown: TurndownService | null = null;
+
+function configureLessonTurndown(service: TurndownService): void {
+  service.keep(["a"]);
+  service.remove(["style", "script", "meta", "head"]);
+
+  service.addRule("lessonTextColor", {
+    filter(node) {
+      if (node.nodeName !== "SPAN" && node.nodeName !== "FONT") return false;
+      return Boolean(readElementTextColor(node as HTMLElement));
+    },
+    replacement(content, node) {
+      const color = readElementTextColor(node as HTMLElement);
+      if (!color) return content;
+      return coloredTextHtml(content, color);
+    },
+  });
+
+  service.addRule("lessonAccordion", {
+    filter(node) {
+      return (
+        node.nodeName === "DETAILS" &&
+        (node as HTMLElement).classList.contains(LESSON_ACCORDION_CLASS)
+      );
+    },
+    replacement(_content, node) {
+      return serializeAccordionElement(node as HTMLDetailsElement);
+    },
+  });
+}
 
 function getTurndown(): TurndownService {
   if (!turndown) {
@@ -12,8 +43,7 @@ function getTurndown(): TurndownService {
       emDelimiter: "*",
       codeBlockStyle: "fenced",
     });
-    turndown.keep(["a"]);
-    turndown.remove(["style", "script", "meta", "head"]);
+    configureLessonTurndown(turndown);
   }
   return turndown;
 }

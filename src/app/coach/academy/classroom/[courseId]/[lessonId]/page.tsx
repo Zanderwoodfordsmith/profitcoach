@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlayer";
+import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
 import { findCourse } from "@/lib/academy/catalog";
 import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 
@@ -19,12 +20,14 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
 
   return (
     <div className="pt-6">
-      <ClassroomLessonPlayer
-        category={found.category}
-        course={found.course}
-        lesson={lesson}
-        basePath={BASE}
-      />
+      <LessonProgressProvider courseId={courseId}>
+        <ClassroomLessonPlayer
+          category={found.category}
+          course={found.course}
+          lesson={lesson}
+          basePath={BASE}
+        />
+      </LessonProgressProvider>
     </div>
   );
 }
