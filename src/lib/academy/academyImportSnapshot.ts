@@ -1,19 +1,22 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+/** Drive import file kinds stored on snapshot unmatched/ambiguous rows. */
+export type AcademyImportMediaKind = "video" | "transcript";
+
 export type AcademyImportSnapshotReport = {
   mode?: string;
   root?: string;
   matched?: unknown[];
   ambiguous?: Array<{
     relativePath: string;
-    kind: string;
+    kind: AcademyImportMediaKind;
     stem: string;
     courseId: string | null;
     candidates?: Array<{ lessonTitle: string; score: number }>;
   }>;
   unmatched?: Array<{
     relativePath: string;
-    kind: string;
+    kind: AcademyImportMediaKind;
     stem: string;
     courseId: string | null;
     bestScore: number;
