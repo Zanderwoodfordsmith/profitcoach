@@ -12,6 +12,9 @@
  *   npx tsx scripts/import-academy-lessons-from-drive-folder.ts --apply --skip-videos --root "<path>"
  *   npx tsx scripts/import-academy-lessons-from-drive-folder.ts --apply --course kickstart --root "<path>"
  *   npx tsx scripts/import-academy-lessons-from-drive-folder.ts --apply --skip-existing --root "<path>"
+ *   npx tsx scripts/import-academy-lessons-from-drive-folder.ts --apply --accept-suggested 0.36 --include-ambiguous --write-suggested-overrides --root "<path>"
+ *   npm run import-academy-suggested -- --root "<path>"
+ *   npm run import-academy-suggested:dry-run -- --root "<path>"
  */
 
 import { execFileSync } from "node:child_process";
@@ -52,6 +55,16 @@ const skipVideos =
   argv.includes("--skip-videos") || argv.includes("--transcripts-only");
 const continueOnError = argv.includes("--continue-on-error");
 const includeAmbiguous = argv.includes("--include-ambiguous");
+/** Accept best-scoring lesson when score >= threshold (default 0.36). Use for validated fuzzy matches. */
+const acceptSuggestedIdx = argv.indexOf("--accept-suggested");
+const acceptSuggestedMin = argv.includes("--accept-suggested")
+  ? acceptSuggestedIdx >= 0 &&
+    argv[acceptSuggestedIdx + 1] &&
+    !argv[acceptSuggestedIdx + 1]!.startsWith("-")
+    ? Number.parseFloat(argv[acceptSuggestedIdx + 1]!)
+    : 0.36
+  : null;
+const writeSuggestedOverrides = argv.includes("--write-suggested-overrides");
 /** Skip upload/upsert when lesson already has video_url or transcript_text (saves bandwidth). */
 const skipExisting = argv.includes("--skip-existing");
 
@@ -185,6 +198,14 @@ type Report = {
     lessonTitle: string;
     skippedVideo: boolean;
     skippedTranscript: boolean;
+  }>;
+  suggestedAccepted: Array<{
+    relativePath: string;
+    kind: MediaFileKind;
+    score: number;
+    courseId: string;
+    lessonId: string;
+    lessonTitle: string;
   }>;
   errors: Array<{ relativePath: string; message: string }>;
 };
@@ -419,13 +440,37 @@ async function upsertLessonFields(
   if (error) throw new Error(error.message);
 }
 
+async function upsertSuggestedOverride(
+  relativePath: string,
+  courseId: string,
+  lessonId: string,
+  lessonTitle: string
+): Promise<void> {
+  const normalized = relativePath.replace(/\\/g, "/").trim();
+  const { error } = await supabase.from("academy_import_overrides").upsert(
+    {
+      relative_path: normalized,
+      course_id: courseId,
+      lesson_id: lessonId,
+      lesson_title: lessonTitle.trim() || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "relative_path" }
+  );
+  if (error) throw new Error(error.message);
+}
+
 const catalog = loadCatalog();
 const lessonIndex = buildLegacyLessonIndex(catalog);
 let overrides = new Map<string, FileOverride>();
 
 function resolveMatch(
   file: ScannedFile
-): { status: "matched"; match: LessonMatchCandidate } | { status: "ambiguous"; candidates: LessonMatchCandidate[] } | { status: "unmatched"; bestScore: number; best: LessonMatchCandidate | null } | { status: "skip"; reason: string } {
+):
+  | { status: "matched"; match: LessonMatchCandidate; acceptedAsSuggested?: boolean }
+  | { status: "ambiguous"; candidates: LessonMatchCandidate[] }
+  | { status: "unmatched"; bestScore: number; best: LessonMatchCandidate | null }
+  | { status: "skip"; reason: string } {
   const override = overrides.get(file.relativePath);
   if (override) {
     const lesson = lessonIndex.find(
@@ -454,10 +499,36 @@ function resolveMatch(
   const result = matchStemToLesson(file.stem, courseLessons, { minScore });
 
   if (result.status === "matched") return result;
-  if (result.status === "ambiguous" && includeAmbiguous && result.candidates[0]) {
-    return { status: "matched", match: result.candidates[0]! };
+
+  if (result.status === "ambiguous") {
+    const top = result.candidates[0];
+    if (top && includeAmbiguous) {
+      return { status: "matched", match: top };
+    }
+    if (
+      top &&
+      acceptSuggestedMin != null &&
+      !Number.isNaN(acceptSuggestedMin) &&
+      top.score >= acceptSuggestedMin
+    ) {
+      return { status: "matched", match: top, acceptedAsSuggested: true };
+    }
+    return result;
   }
-  if (result.status === "ambiguous") return result;
+
+  if (
+    acceptSuggestedMin != null &&
+    !Number.isNaN(acceptSuggestedMin) &&
+    result.bestCandidate &&
+    result.bestScore >= acceptSuggestedMin
+  ) {
+    return {
+      status: "matched",
+      match: result.bestCandidate,
+      acceptedAsSuggested: true,
+    };
+  }
+
   return {
     status: "unmatched",
     bestScore: result.bestScore,
@@ -484,13 +555,21 @@ async function main() {
     pendingVideos: [],
     oversizedVideos: [],
     skippedExisting: [],
+    suggestedAccepted: [],
     errors: [],
   };
+
+  const suggestedOverrideWrites: Array<{
+    relativePath: string;
+    courseId: string;
+    lessonId: string;
+    lessonTitle: string;
+  }> = [];
 
   const existingContent = apply && skipExisting ? await loadExistingContentMap() : null;
 
   console.log(
-    `[academy-import] root=${importRoot} files=${scanned.length} mode=${report.mode} skipVideos=${skipVideos} course=${courseFilter ?? "all"}`
+    `[academy-import] root=${importRoot} files=${scanned.length} mode=${report.mode} skipVideos=${skipVideos} course=${courseFilter ?? "all"} acceptSuggested=${acceptSuggestedMin ?? "off"}`
   );
 
   for (const file of scanned) {
@@ -528,6 +607,25 @@ async function main() {
     }
 
     const { match } = resolved;
+    if (resolved.acceptedAsSuggested) {
+      report.suggestedAccepted.push({
+        relativePath: file.relativePath,
+        kind: file.kind,
+        score: match.score,
+        courseId: match.courseId,
+        lessonId: match.lessonId,
+        lessonTitle: match.lessonTitle,
+      });
+      if (writeSuggestedOverrides && apply) {
+        suggestedOverrideWrites.push({
+          relativePath: file.relativePath,
+          courseId: match.courseId,
+          lessonId: match.lessonId,
+          lessonTitle: match.lessonTitle,
+        });
+      }
+    }
+
     const key = `${match.courseId}:${match.lessonId}`;
     let bundle = bundles.get(key);
     if (!bundle) {
@@ -690,6 +788,20 @@ async function main() {
     }
   }
 
+  if (writeSuggestedOverrides && apply && suggestedOverrideWrites.length > 0) {
+    console.log(
+      `[academy-import] writing ${suggestedOverrideWrites.length} suggested link(s) to academy_import_overrides`
+    );
+    for (const row of suggestedOverrideWrites) {
+      await upsertSuggestedOverride(
+        row.relativePath,
+        row.courseId,
+        row.lessonId,
+        row.lessonTitle
+      );
+    }
+  }
+
   fs.mkdirSync(path.dirname(reportOut), { recursive: true });
   fs.writeFileSync(reportOut, JSON.stringify(report, null, 2));
 
@@ -726,7 +838,7 @@ async function main() {
 
   console.log(`[academy-import] report=${reportOut}`);
   console.log(
-    `[academy-import] matched=${report.matched.length} ambiguous=${report.ambiguous.length} unmatched=${report.unmatched.length} skipped=${report.skipped.length} pendingVideos=${report.pendingVideos.length} oversizedVideos=${report.oversizedVideos.length} skippedExisting=${report.skippedExisting.length} errors=${report.errors.length}`
+    `[academy-import] matched=${report.matched.length} suggestedAccepted=${report.suggestedAccepted.length} ambiguous=${report.ambiguous.length} unmatched=${report.unmatched.length} skipped=${report.skipped.length} pendingVideos=${report.pendingVideos.length} oversizedVideos=${report.oversizedVideos.length} skippedExisting=${report.skippedExisting.length} errors=${report.errors.length}`
   );
 }
 

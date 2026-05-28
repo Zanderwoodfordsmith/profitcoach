@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, Minus, X } from "lucide-react";
 
 import type { AcademyImportSnapshotReport } from "@/lib/academy/academyImportSnapshot";
 import type { AcademyImportOverride } from "@/lib/academy/academyImportOverrides";
@@ -12,7 +12,6 @@ import {
   type LessonImportFilter,
   type LessonImportStatusReport,
   type LessonImportStatusRow,
-  type LessonVideoImportStatus,
 } from "@/lib/academy/lessonImportStatusClient";
 
 type Props = {
@@ -22,39 +21,73 @@ type Props = {
   importOverrides: AcademyImportOverride[];
 };
 
-const VIDEO_STATUS_META: Record<
-  LessonVideoImportStatus,
-  { label: string; className: string }
-> = {
-  video_ready: {
-    label: "Video in app",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  },
-  video_missing: {
-    label: "Video missing",
-    className: "border-rose-200 bg-rose-50 text-rose-800",
-  },
-  no_video: {
-    label: "No video",
-    className: "border-amber-200 bg-amber-50 text-amber-900",
-  },
-};
+type ImportCellState = "ok" | "missing" | "na";
 
-function LessonStatusBadge({ row }: { row: LessonImportStatusRow }) {
-  const meta = VIDEO_STATUS_META[row.videoStatus];
-  return (
-    <div className="flex min-w-0 flex-col items-end gap-0.5 sm:items-start">
-      <span
-        className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.className}`}
-      >
-        {meta.label}
+const STATUS_COL_WIDTH = "w-[9.5rem]";
+
+function ImportStatusCell({
+  state,
+  label,
+}: {
+  state: ImportCellState;
+  label: string;
+}) {
+  if (state === "na") {
+    return (
+      <span className="inline-flex justify-center text-slate-300" title={`${label} not applicable`}>
+        <Minus className="h-4 w-4" aria-hidden />
+        <span className="sr-only">{label} not applicable</span>
       </span>
-      {row.missingContent ? (
-        <span className="text-[10px] text-amber-700">Content missing</span>
-      ) : null}
-      {row.missingTranscript ? (
-        <span className="text-[10px] text-amber-700">Transcript missing</span>
-      ) : null}
+    );
+  }
+  if (state === "ok") {
+    return (
+      <span className="inline-flex justify-center text-emerald-600" title={`${label} ready`}>
+        <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+        <span className="sr-only">{label} ready</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex justify-center text-rose-600" title={`${label} missing`}>
+      <X className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+      <span className="sr-only">{label} missing</span>
+    </span>
+  );
+}
+
+function LessonImportStatusColumns({ row }: { row: LessonImportStatusRow }) {
+  const videoState: ImportCellState =
+    row.videoStatus === "video_ready"
+      ? "ok"
+      : row.videoStatus === "video_missing"
+        ? "missing"
+        : "na";
+
+  const transcriptState: ImportCellState =
+    row.legacyExpectsVideo || row.hasInAppVideo
+      ? row.hasTranscript
+        ? "ok"
+        : "missing"
+      : "na";
+
+  return (
+    <div className={`grid shrink-0 ${STATUS_COL_WIDTH} grid-cols-3 gap-1`}>
+      <ImportStatusCell state={row.hasContent ? "ok" : "missing"} label="Content" />
+      <ImportStatusCell state={videoState} label="Video" />
+      <ImportStatusCell state={transcriptState} label="Transcript" />
+    </div>
+  );
+}
+
+function LessonImportStatusHeader() {
+  return (
+    <div
+      className={`grid shrink-0 ${STATUS_COL_WIDTH} grid-cols-3 gap-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400`}
+    >
+      <span>Content</span>
+      <span>Video</span>
+      <span>Transcript</span>
     </div>
   );
 }
@@ -158,16 +191,14 @@ export function AdminAcademyImportStatus({
             </dd>
           </div>
         </dl>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {(Object.keys(VIDEO_STATUS_META) as LessonVideoImportStatus[]).map((key) => (
-            <span
-              key={key}
-              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${VIDEO_STATUS_META[key].className}`}
-            >
-              {VIDEO_STATUS_META[key].label}
-            </span>
-          ))}
-        </div>
+        <p className="mt-4 text-xs text-slate-500">
+          <Check className="mr-1 inline h-3.5 w-3.5 text-emerald-600" aria-hidden />
+          ready ·
+          <X className="mx-1 inline h-3.5 w-3.5 text-rose-600" aria-hidden />
+          missing ·
+          <Minus className="mx-1 inline h-3.5 w-3.5 text-slate-300" aria-hidden />
+          not applicable
+        </p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -215,6 +246,13 @@ export function AdminAcademyImportStatus({
             Expand all
           </button>
           <p className="ml-auto text-sm text-slate-500">{filteredLessonCount} lessons</p>
+        </div>
+
+        <div className="hidden border-b border-slate-100 bg-slate-50/80 px-4 py-2 sm:grid sm:grid-cols-[1fr_auto] sm:items-center sm:gap-3">
+          <span className="pl-12 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Lesson
+          </span>
+          <LessonImportStatusHeader />
         </div>
 
         <div className="divide-y divide-slate-100">
@@ -283,15 +321,15 @@ export function AdminAcademyImportStatus({
                               {section.lessons.map((row) => (
                                 <li
                                   key={row.lessonId}
-                                  className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-50 py-2.5 pl-16 pr-4 hover:bg-slate-50/50"
+                                  className="grid grid-cols-1 items-center gap-2 border-t border-slate-50 py-2.5 pl-16 pr-4 hover:bg-slate-50/50 sm:grid-cols-[1fr_auto] sm:gap-3"
                                 >
                                   <Link
                                     href={row.adminLessonHref}
-                                    className="min-w-0 flex-1 text-sm font-normal text-slate-700 hover:text-sky-800"
+                                    className="min-w-0 text-sm font-normal text-slate-700 hover:text-sky-800"
                                   >
                                     {row.lessonTitle}
                                   </Link>
-                                  <LessonStatusBadge row={row} />
+                                  <LessonImportStatusColumns row={row} />
                                 </li>
                               ))}
                             </ul>

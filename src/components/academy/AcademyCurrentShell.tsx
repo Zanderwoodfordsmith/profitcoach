@@ -153,12 +153,27 @@ export function AcademyCurrentShell({ children }: { children: React.ReactNode })
     );
   }, [pathname, programsRoot, importStatusRoot, resourcesRoot, newRoot, classroomPath]);
 
+  const showContentImportNotice =
+    (pathname === programsRoot || pathname.startsWith(`${programsRoot}/`)) &&
+    !pathname.startsWith(importStatusRoot);
+
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
         title="Classroom"
         tabs={<PageHeaderUnderlineTabs items={tabItems} ariaLabel="Classroom area" />}
         description={description}
+        below={
+          showContentImportNotice ? (
+            <p
+              className="-mx-4 -mb-1 border-t border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-950 md:-mx-[60px] md:px-[60px]"
+              role="status"
+            >
+              We&apos;re importing all academy content here. Some links may still need fixing as
+              we go.
+            </p>
+          ) : undefined
+        }
       />
       {children}
     </div>

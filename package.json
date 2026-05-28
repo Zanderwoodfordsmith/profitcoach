@@ -20,6 +20,8 @@
     "import-sales-robot-customers": "npx tsx scripts/import-sales-robot-customers-from-csv.ts",
     "import-member-avatars": "npx tsx scripts/import-member-avatars-from-folder.ts",
     "import-academy-lessons": "npx tsx scripts/import-academy-lessons-from-drive-folder.ts",
+    "import-academy-suggested": "npx tsx scripts/import-academy-lessons-from-drive-folder.ts --apply --accept-suggested 0.36 --include-ambiguous --skip-existing --continue-on-error --write-suggested-overrides",
+    "import-academy-suggested:dry-run": "npx tsx scripts/import-academy-lessons-from-drive-folder.ts --dry-run --accept-suggested 0.36 --include-ambiguous --write-suggested-overrides",
     "import-academy-resources": "npx tsx scripts/import-academy-resources-from-markdown.ts",
     "dedupe-academy-resources": "npx tsx scripts/dedupe-academy-resources.ts",
     "clean-academy-transcripts": "npx tsx scripts/clean-academy-transcript-speakers.ts",
