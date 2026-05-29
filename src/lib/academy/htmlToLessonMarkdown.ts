@@ -1,6 +1,11 @@
 import TurndownService from "turndown";
 
 import { serializeAccordionElement, LESSON_ACCORDION_CLASS } from "./lessonAccordion";
+import {
+  LESSON_EMBED_ATTR,
+  LESSON_EMBED_BLOCK_CLASS,
+  embedFenceFromHtml,
+} from "./lessonHtmlEmbed";
 import { readElementTextColor, coloredTextHtml } from "./lessonTextColor";
 import { normalizeImportedLessonMarkdown } from "./importLessonMarkdown";
 
@@ -19,6 +24,20 @@ function configureLessonTurndown(service: TurndownService): void {
       const color = readElementTextColor(node as HTMLElement);
       if (!color) return content;
       return coloredTextHtml(content, color);
+    },
+  });
+
+  service.addRule("lessonHtmlEmbed", {
+    filter(node) {
+      return (
+        node.nodeName === "DIV" &&
+        (node as HTMLElement).classList.contains(LESSON_EMBED_BLOCK_CLASS)
+      );
+    },
+    replacement(_content, node) {
+      const html = (node as HTMLElement).getAttribute(LESSON_EMBED_ATTR) ?? "";
+      if (!html.trim()) return "";
+      return `\n\n${embedFenceFromHtml(html)}\n\n`;
     },
   });
 

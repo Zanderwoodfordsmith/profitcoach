@@ -19,6 +19,7 @@ import {
   normalizeCrmLocationId,
   type CalendarSyncStatus,
 } from "@/lib/ghlCalendarSync";
+import { buildEmbedSnippet } from "@/lib/embedMode";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -137,6 +138,43 @@ function FunnelProductPanel({
         <p className="mt-1 text-sm text-slate-600">{description}</p>
       </div>
       {children}
+    </div>
+  );
+}
+
+function EmbedSnippetBlock({
+  label,
+  hint,
+  code,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  hint: string;
+  code: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+            {label}
+          </p>
+          <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onCopy}
+          className="shrink-0 font-medium text-sky-700 hover:text-sky-900 hover:underline"
+        >
+          {copied ? "Copied!" : "Copy code"}
+        </button>
+      </div>
+      <pre className="mt-2 max-h-40 overflow-auto rounded-md bg-slate-900 p-3 text-[11px] leading-relaxed text-slate-100">
+        <code>{code}</code>
+      </pre>
     </div>
   );
 }
@@ -488,6 +526,18 @@ export function FunnelSettingsTab({
   const assessmentProPath = slugReady
     ? `/assessment-pro/${slug}`
     : "/assessment-pro/your-slug";
+  const optInEmbedCode = buildEmbedSnippet(
+    `${shareCopyUrl(scorePath, appOrigin)}?embed=1`,
+    "Boss Score",
+    "boss-score-optin",
+    1400
+  );
+  const assessmentEmbedCode = buildEmbedSnippet(
+    `${shareCopyUrl(assessmentPath, appOrigin)}?embed=1`,
+    "Boss Score assessment",
+    "boss-score-assessment",
+    900
+  );
   const [copiedLinkKey, setCopiedLinkKey] = useState<string | null>(null);
   const [personaliseProduct, setPersonaliseProduct] =
     useState<PersonalisedLinkProduct | null>(null);
@@ -605,6 +655,39 @@ export function FunnelSettingsTab({
                     )
                   }
                   onPersonalise={() => openPersonaliseModal("boss-score")}
+                />
+              </div>
+              <div className="space-y-2 border-t border-slate-200/70 pt-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-800">
+                    Embed on your own site
+                  </p>
+                  <FieldHint>
+                    Paste a snippet into your website to host the Boss Score in
+                    an iframe. It auto-resizes to fit — no scrollbars. Leads and
+                    bookings still flow through your funnel as normal.
+                  </FieldHint>
+                </div>
+                <EmbedSnippetBlock
+                  label="Full funnel (opt-in → assessment)"
+                  hint="Starts with the opt-in landing page."
+                  code={optInEmbedCode}
+                  copied={copiedLinkKey === "boss-score-embed-optin"}
+                  onCopy={() =>
+                    void copyShareLink("boss-score-embed-optin", optInEmbedCode)
+                  }
+                />
+                <EmbedSnippetBlock
+                  label="Assessment only"
+                  hint="Skips the opt-in and goes straight to the scorecard."
+                  code={assessmentEmbedCode}
+                  copied={copiedLinkKey === "boss-score-embed-assessment"}
+                  onCopy={() =>
+                    void copyShareLink(
+                      "boss-score-embed-assessment",
+                      assessmentEmbedCode
+                    )
+                  }
                 />
               </div>
             </FunnelProductPanel>

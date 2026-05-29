@@ -108,10 +108,6 @@ export default function LoginPage() {
       subtitle="Sign in to Profit Coach to continue coaching with clarity."
       footer={
         <div className="space-y-2 text-center text-sm text-slate-600">
-          <p className="text-base text-slate-600">
-            Use your Academy email login and password{" "}
-            <span className="font-bold text-emerald-600">bcalogin</span>.
-          </p>
           <p>
             New coach?{" "}
             <Link
@@ -164,6 +160,17 @@ export default function LoginPage() {
             >
               {showPassword ? "Hide" : "Show"}
             </button>
+          </div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Default password
+            </p>
+            <p className="mt-1 text-sm">
+              Use your Academy email login and the password{" "}
+              <span className="rounded-md bg-emerald-100 px-2 py-0.5 font-mono text-sm font-bold text-emerald-800">
+                bcalogin
+              </span>
+            </p>
           </div>
           <div className="flex justify-end pt-0.5">
             <Link

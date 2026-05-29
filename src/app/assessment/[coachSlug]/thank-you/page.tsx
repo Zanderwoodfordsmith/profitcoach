@@ -10,6 +10,7 @@ import {
   type ScorecardResultPayload,
 } from "@/lib/bossScorecardScores";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
+import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const STORAGE_KEY = "boss_scorecard_result";
@@ -18,6 +19,7 @@ export default function ScorecardThankYouPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const coachSlug = (params?.coachSlug as string) ?? getPrimaryCoachSlug();
+  useEmbedAutoResize(searchParams ? isEmbeddedRequest(searchParams) : false);
 
   const [result, setResult] = useState<ScorecardResultPayload | null>(null);
   const [coachName, setCoachName] = useState<string | null>(null);

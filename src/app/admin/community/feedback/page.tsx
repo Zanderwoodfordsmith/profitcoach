@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown, ChevronDown, Plus, X } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -178,6 +178,7 @@ const COL_IMPACT = "w-14";
 const COL_EASE = "w-14";
 const COL_SCORE = "w-11";
 const COL_STATUS = "w-[6.75rem]";
+const COL_ACTIONS = "w-12";
 
 function pillSelectClassName(base: string, compact = false): string {
   const sizing = compact ? "py-0.5 pl-2 pr-6" : "py-1 pl-3 pr-7";
@@ -415,6 +416,32 @@ export default function AdminCommunityFeedbackPage() {
     notifyFeedbackCountsChanged();
   }
 
+  async function deleteRow(row: FeedbackRow) {
+    const label = row.title?.trim() || "this feedback";
+    if (
+      !window.confirm(
+        `Delete "${capitalizeFirstWord(label)}"? This can't be undone.`
+      )
+    ) {
+      return;
+    }
+    setSavingId(row.id);
+    setError(null);
+    const { error: deleteError } = await supabaseClient
+      .from("community_feedback_reports")
+      .delete()
+      .eq("id", row.id);
+    setSavingId(null);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    if (editingTitleId === row.id) setEditingTitleId(null);
+    if (expandedId === row.id) setExpandedId(null);
+    notifyFeedbackCountsChanged();
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl pt-1">
       <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
@@ -590,6 +617,9 @@ export default function AdminCommunityFeedbackPage() {
                       className={`${COL_STATUS} whitespace-nowrap px-2 py-3`}
                     >
                       Status
+                    </th>
+                    <th className={`${COL_ACTIONS} px-2 py-3`}>
+                      <span className="sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>
@@ -770,6 +800,20 @@ export default function AdminCommunityFeedbackPage() {
                                     void updateRow(row.id, { status })
                                   }
                                 />
+                              </td>
+                              <td
+                                className={`${COL_ACTIONS} whitespace-nowrap px-2 py-3 text-right`}
+                              >
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  onClick={() => void deleteRow(row)}
+                                  className="inline-flex rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-wait disabled:opacity-50"
+                                  aria-label="Delete feedback"
+                                  title="Delete feedback"
+                                >
+                                  <Trash2 className="h-4 w-4" aria-hidden />
+                                </button>
                               </td>
                             </tr>
                           );

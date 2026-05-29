@@ -39,6 +39,7 @@ import {
   type ScorecardScore,
 } from "@/lib/bossScorecardScores";
 import { resolveLandingTrackCoachSlug } from "@/lib/landingAnalytics";
+import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import {
   assessmentContactToSessionPayload,
@@ -101,6 +102,8 @@ export default function ScorecardAssessmentPage({
   const { coachSlug } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isEmbedded = isEmbeddedRequest(searchParams);
+  useEmbedAutoResize(isEmbedded);
   const isPreview = searchParams.get("preview") === "1";
   const fromLanding = searchParams.get("from_landing");
   const landingVariant =
@@ -360,7 +363,9 @@ export default function ScorecardAssessmentPage({
       } catch {
         // ignore
       }
-      router.push(`/assessment/${coachSlug}/thank-you`);
+      router.push(
+        `/assessment/${coachSlug}/thank-you${isEmbedded ? "?embed=1" : ""}`
+      );
     } catch (err: unknown) {
       setIsGeneratingReport(false);
       setSubmitError(
@@ -405,12 +410,18 @@ export default function ScorecardAssessmentPage({
 
   return (
     <div
-      className={`flex min-h-[100dvh] flex-col text-slate-900 ${outfit.className}`}
+      className={`flex flex-col text-slate-900 ${outfit.className} ${
+        isEmbedded ? "" : "min-h-[100dvh]"
+      }`}
       style={{ background: SCORECARD_PAGE_BG }}
     >
       <div
-        className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col overflow-y-auto overflow-x-hidden px-4 pt-6 md:px-10 md:pt-8 ${
-          currentScreen.kind === "intro" ? "pb-10 md:pb-12" : "pb-48 md:pb-52"
+        className={`mx-auto flex w-full max-w-4xl flex-col overflow-x-hidden px-4 pt-6 md:px-10 md:pt-8 ${
+          isEmbedded ? "" : "min-h-0 flex-1 overflow-y-auto"
+        } ${
+          currentScreen.kind === "intro" || isEmbedded
+            ? "pb-10 md:pb-12"
+            : "pb-48 md:pb-52"
         }`}
       >
         <div
@@ -630,7 +641,11 @@ export default function ScorecardAssessmentPage({
       </div>
 
       {!isGeneratingReport && currentScreen.kind !== "intro" ? (
-        <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 shadow-[0_-10px_40px_-16px_rgba(15,23,42,0.14)] backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
+        <footer
+          className={`z-30 border-t border-slate-200/80 bg-white/95 shadow-[0_-10px_40px_-16px_rgba(15,23,42,0.14)] backdrop-blur-md pb-[env(safe-area-inset-bottom)] ${
+            isEmbedded ? "relative mt-auto" : "fixed inset-x-0 bottom-0"
+          }`}
+        >
           <div className="mx-auto w-[min(100%,56rem)] px-5 py-5 md:px-10 md:py-6">
             <ScorecardProgressBar
               currentStep={progress.currentStep}

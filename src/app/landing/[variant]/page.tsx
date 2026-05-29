@@ -14,6 +14,7 @@ import { LandingVariantC } from "@/components/landing/LandingVariantC";
 import { LandingVariantD } from "@/components/landing/LandingVariantD";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import { LANDING_CONTACT_SESSION_KEY } from "@/lib/assessmentContactParams";
+import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 
 const SESSION_COOKIE = "landing_session_id";
 
@@ -98,6 +99,8 @@ export default function LandingVariantPage() {
   const coachSlugFromUrl = searchParams.get("coach")?.trim() ?? "";
   const trackCoachSlug = coachSlugFromUrl || null;
   const coachSlug = coachSlugFromUrl || getPrimaryCoachSlug();
+  const isEmbedded = isEmbeddedRequest(searchParams);
+  useEmbedAutoResize(isEmbedded);
 
   const router = useRouter();
   const [coach, setCoach] = useState<CoachInfo | null>(null);
@@ -287,6 +290,7 @@ export default function LandingVariantPage() {
     } else {
       assessmentQ.set("landing_brand", "1");
     }
+    if (isEmbedded) assessmentQ.set("embed", "1");
     for (const key of LANDING_TO_ASSESSMENT_PARAMS) {
       const v = sanitizeProspectUrlParam(searchParams.get(key));
       if (v) assessmentQ.set(key, v);
