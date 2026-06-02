@@ -11,7 +11,11 @@ import {
   communityPostMarkdownUrlTransform,
   prepareCommunityPostMarkdownSource,
 } from "@/lib/communityPostMarkdown";
-import { COMMUNITY_MENTION_LINK_CLASS } from "@/lib/communityMentions";
+import {
+  COMMUNITY_MENTION_LINK_CLASS,
+  mentionTargetHref,
+  parseMentionTarget,
+} from "@/lib/communityMentions";
 
 type Props = {
   body: string;
@@ -58,8 +62,31 @@ function buildComponents(
   return {
     a: ({ href, children }) => {
       if (href?.startsWith("mention:")) {
-        const uid = href.slice("mention:".length);
-        const fromLink = reactNodeToPlainText(children).replace(/^@/, "");
+        const target = href.slice("mention:".length);
+        const parsed = parseMentionTarget(target);
+        const fromLink = reactNodeToPlainText(children).replace(/^@+/, "");
+
+        if (parsed && parsed.type !== "user") {
+          const contentHref = mentionTargetHref(parsed);
+          const label = fromLink || (parsed.type === "lesson" ? "lesson" : "course");
+          const mentionLabel = `@${label}`;
+          if (contentHref) {
+            return (
+              <Link
+                href={contentHref}
+                className={COMMUNITY_MENTION_LINK_CLASS}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {mentionLabel}
+              </Link>
+            );
+          }
+          return (
+            <span className={COMMUNITY_MENTION_LINK_CLASS}>{mentionLabel}</span>
+          );
+        }
+
+        const uid = parsed?.type === "user" ? parsed.userId : target;
         const label = nameById[uid] || fromLink || "member";
         const mentionLabel = `@${label}`;
         const profileHref = profileHrefByUserId?.[uid];

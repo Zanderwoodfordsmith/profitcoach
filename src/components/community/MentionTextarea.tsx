@@ -8,11 +8,28 @@ import {
   useRef,
   useState,
 } from "react";
-import { Bold, Heading1, Heading2, Heading3, Link2, List } from "lucide-react";
+import {
+  BookOpen,
+  Bold,
+  GraduationCap,
+  Heading1,
+  Heading2,
+  Heading3,
+  Link2,
+  List,
+} from "lucide-react";
 import { COMMUNITY_EXTERNAL_LINK_CLASS } from "@/lib/communityAutolink";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { MENTION_MARKDOWN_REGEX } from "@/lib/communityMentions";
+import {
+  MENTION_TOKEN_REGEX,
+  atPrefixForMentionType,
+  buildMentionTarget,
+} from "@/lib/communityMentions";
 import { profileInitialsFromName } from "@/lib/communityProfile";
+import {
+  AcademyMentionPicker,
+  type AcademyMentionPick,
+} from "@/components/community/AcademyMentionPicker";
 
 export type MentionUser = {
   id: string;
@@ -36,8 +53,11 @@ type Props = {
 };
 
 type KnownMention = {
-  id: string;
+  /** Leading `@`(s) shown in the composer: "@", "@@" or "@@@". */
+  prefix: string;
   label: string;
+  /** `mention:` target string (uuid, `lesson:…`, or `course:…`). */
+  target: string;
 };
 
 function normalizeMentionLabel(label: string): string {
@@ -74,10 +94,13 @@ function extractLinkPairsInOrder(raw: string): LinkPair[] {
 }
 
 function rawToDisplayFromRaw(raw: string): string {
-  let s = raw.replace(new RegExp(MENTION_MARKDOWN_REGEX.source, "gi"), (_m, label) => {
-    const clean = normalizeMentionLabel(String(label ?? ""));
-    return clean ? `@${clean}` : "@member";
-  });
+  let s = raw.replace(
+    new RegExp(MENTION_TOKEN_REGEX.source, "gi"),
+    (_m, prefix: string, label: string) => {
+      const clean = normalizeMentionLabel(String(label ?? ""));
+      return `${prefix}${clean || "member"}`;
+    }
+  );
   s = s.replace(new RegExp(NON_MENTION_LINK_MD_RE.source, "gi"), (_full, label: string) => {
     return `${LINK_ZWNJ}${label}${LINK_ZWNJ}`;
   });
@@ -217,17 +240,18 @@ function linkLabelFromUrl(url: string): string {
 
 function extractKnownMentionsFromRaw(raw: string): KnownMention[] {
   const out: KnownMention[] = [];
-  const re = new RegExp(MENTION_MARKDOWN_REGEX.source, "gi");
+  const re = new RegExp(MENTION_TOKEN_REGEX.source, "gi");
   const seen = new Set<string>();
   let m: RegExpExecArray | null;
   while ((m = re.exec(raw)) !== null) {
-    const label = normalizeMentionLabel(m[1] ?? "");
-    const id = (m[2] ?? "").trim();
-    if (!label || !id) continue;
-    const key = `${id}::${label.toLowerCase()}`;
+    const prefix = (m[1] ?? "").trim();
+    const label = normalizeMentionLabel(m[2] ?? "");
+    const target = (m[3] ?? "").trim();
+    if (!prefix || !label || !target) continue;
+    const key = `${prefix}::${target}::${label.toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ id, label });
+    out.push({ prefix, label, target });
   }
   return out;
 }
@@ -235,16 +259,25 @@ function extractKnownMentionsFromRaw(raw: string): KnownMention[] {
 function displayToRawText(display: string, knownMentions: KnownMention[]): string {
   if (knownMentions.length === 0) return display;
   let out = display;
-  const sorted = [...knownMentions].sort((a, b) => b.label.length - a.label.length);
+  // Longest tokens first so `@@Lesson` is replaced before a `@Lesson` member
+  // could match its inner substring.
+  const sorted = [...knownMentions].sort(
+    (a, b) => b.prefix.length + b.label.length - (a.prefix.length + a.label.length)
+  );
   for (const mention of sorted) {
-    const needle = `@${mention.label}`;
-    const replacement = `[@${mention.label}](mention:${mention.id})`;
-    out = out.replace(new RegExp(escapeRegExp(needle), "g"), replacement);
+    const needle = `${mention.prefix}${mention.label}`;
+    const replacement = `[${mention.prefix}${mention.label}](mention:${mention.target})`;
+    // `(?<![@[])` keeps us from matching inside an already-built token or a
+    // longer `@`-run (e.g. avoid `@Foo` matching within `@@Foo`).
+    out = out.replace(
+      new RegExp(`(?<![@\\[])${escapeRegExp(needle)}`, "g"),
+      replacement
+    );
   }
   return out;
 }
 
-/** Parses @mention cursor: contiguous non-whitespace after last `@` before caret. */
+/** Parses a member @mention at the caret: contiguous non-whitespace after the last `@`. */
 export function getActiveMentionQuery(
   text: string,
   selectionStart: number
@@ -252,7 +285,7 @@ export function getActiveMentionQuery(
   const before = text.slice(0, selectionStart);
   const lastAt = before.lastIndexOf("@");
   if (lastAt === -1) return null;
-  // Avoid treating `@` inside `[@Name](mention:…)` as a new mention query
+  // Avoid treating `@` inside `[@Name](mention:…)` as a new mention query.
   if (lastAt >= 1 && before[lastAt - 1] === "[") return null;
   const fragment = before.slice(lastAt + 1);
   if (/\s/.test(fragment)) return null;
@@ -270,7 +303,6 @@ async function fetchMentionUsers(query: string): Promise<MentionUser[]> {
   const res = await fetch(`/api/community/mention-users?${qs.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-
   if (!res.ok) return [];
   const json = (await res.json()) as { users?: MentionUser[] };
   return json.users ?? [];
@@ -304,6 +336,8 @@ export function MentionTextarea({
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"lesson" | "course">("lesson");
   const fetchSeq = useRef(0);
 
   useEffect(() => {
@@ -366,6 +400,24 @@ export function MentionTextarea({
     [highlightIdx, mentionUsers]
   );
 
+  const runMentionFetch = useCallback((query: string) => {
+    setMentionOpen(true);
+    setHighlightIdx(0);
+    const seq = ++fetchSeq.current;
+    setMentionLoading(true);
+    fetchMentionUsers(query)
+      .then((users) => {
+        if (fetchSeq.current !== seq) return;
+        setMentionUsers(users);
+        setMentionLoading(false);
+      })
+      .catch(() => {
+        if (fetchSeq.current !== seq) return;
+        setMentionUsers([]);
+        setMentionLoading(false);
+      });
+  }, []);
+
   const syncMentionFromDom = useCallback(() => {
     const el = taRef.current;
     if (!el) return;
@@ -374,16 +426,8 @@ export function MentionTextarea({
       setMentionOpen(false);
       return;
     }
-    setMentionOpen(true);
-    setHighlightIdx(0);
-    const seq = ++fetchSeq.current;
-    setMentionLoading(true);
-    void fetchMentionUsers(q.query).then((users) => {
-      if (fetchSeq.current !== seq) return;
-      setMentionUsers(users);
-      setMentionLoading(false);
-    });
-  }, [displayValue]);
+    runMentionFetch(q.query);
+  }, [displayValue, runMentionFetch]);
 
   const insertMention = useCallback(
     (user: MentionUser) => {
@@ -393,21 +437,62 @@ export function MentionTextarea({
       const ctx = getActiveMentionQuery(displayValue, sel);
       if (!ctx) return;
 
-      const safeName = user.display_name
-        .replace(/\]/g, "")
-        .replace(/\[/g, "")
-        .replace(/\(/g, "")
-        .replace(/\)/g, "")
-        .trim();
-      const mentionText = `@${safeName || "member"}`;
+      const safeName =
+        user.display_name.replace(/[[\]()]/g, "").replace(/\s+/g, " ").trim() ||
+        "member";
+      const prefix = atPrefixForMentionType("user");
+      const target = buildMentionTarget({ type: "user", userId: user.id });
+      const mentionText = `${prefix}${safeName}`;
       const nextDisplay =
         displayValue.slice(0, ctx.start) + mentionText + " " + displayValue.slice(sel);
-      const nextKnown = [...knownMentions, { id: user.id, label: safeName || "member" }];
+      const nextKnown = [...knownMentions, { prefix, label: safeName, target }];
       commitFromDisplay(nextDisplay, nextKnown);
       setMentionOpen(false);
 
       requestAnimationFrame(() => {
         const pos = ctx.start + mentionText.length + 1;
+        el.focus();
+        el.setSelectionRange(pos, pos);
+      });
+    },
+    [commitFromDisplay, displayValue, knownMentions]
+  );
+
+  /** Inserts a lesson/course mention (from the Academy picker) at the saved caret. */
+  const insertEntityMention = useCallback(
+    (pick: AcademyMentionPick) => {
+      setPickerOpen(false);
+      const el = taRef.current;
+      if (!el) return;
+      const { start, end } = selectionRef.current;
+      const prefix = atPrefixForMentionType(pick.type);
+      const safeLabel =
+        pick.title.replace(/[[\]()]/g, "").replace(/\s+/g, " ").trim() || pick.type;
+      const target =
+        pick.type === "lesson"
+          ? buildMentionTarget({
+              type: "lesson",
+              area: pick.area,
+              courseId: pick.courseId,
+              lessonId: pick.lessonId,
+            })
+          : buildMentionTarget({
+              type: "course",
+              area: pick.area,
+              courseId: pick.courseId,
+            });
+
+      const mentionText = `${prefix}${safeLabel}`;
+      const prevChar = displayValue[start - 1] ?? "";
+      const lead = start > 0 && !/\s/.test(prevChar) ? " " : "";
+      const insertText = `${lead}${mentionText} `;
+      const nextDisplay =
+        displayValue.slice(0, start) + insertText + displayValue.slice(end);
+      const nextKnown = [...knownMentions, { prefix, label: safeLabel, target }];
+      commitFromDisplay(nextDisplay, nextKnown);
+
+      requestAnimationFrame(() => {
+        const pos = start + insertText.length;
         el.focus();
         el.setSelectionRange(pos, pos);
       });
@@ -426,9 +511,7 @@ export function MentionTextarea({
         setHighlightIdx((i) => (i + 1) % mentionUsers.length);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setHighlightIdx(
-          (i) => (i - 1 + mentionUsers.length) % mentionUsers.length
-        );
+        setHighlightIdx((i) => (i - 1 + mentionUsers.length) % mentionUsers.length);
       } else if (e.key === "Enter") {
         e.preventDefault();
         insertMention(mentionUsers[safeHighlightIdx]!);
@@ -472,18 +555,16 @@ export function MentionTextarea({
         setMentionOpen(false);
         return;
       }
-      setMentionOpen(true);
-      setHighlightIdx(0);
-      const seq = ++fetchSeq.current;
-      setMentionLoading(true);
-      void fetchMentionUsers(ctx.query).then((users) => {
-        if (fetchSeq.current !== seq) return;
-        setMentionUsers(users);
-        setMentionLoading(false);
-      });
+      runMentionFetch(ctx.query);
     },
-    [commitFromDisplay]
+    [commitFromDisplay, runMentionFetch]
   );
+
+  const openEntityPicker = useCallback((mode: "lesson" | "course") => {
+    setPickerMode(mode);
+    setPickerOpen(true);
+    setMentionOpen(false);
+  }, []);
 
   const applyWrappedSelection = useCallback(
     (before: string, after: string) => {
@@ -702,6 +783,35 @@ export function MentionTextarea({
             >
               <Link2 className="h-4 w-4" strokeWidth={2.1} />
             </button>
+            <span className="mx-0.5 h-5 w-px bg-slate-200" aria-hidden />
+            <button
+              type="button"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-slate-200 px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={(e) => {
+                preventToolbarBlur(e);
+                captureTextareaSelection();
+              }}
+              onClick={() => openEntityPicker("lesson")}
+              aria-label="Insert lesson"
+              title="Insert a lesson link"
+            >
+              <BookOpen className="h-4 w-4" strokeWidth={2.1} />
+              <span className="leading-none">Lesson</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-slate-200 px-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              onMouseDown={(e) => {
+                preventToolbarBlur(e);
+                captureTextareaSelection();
+              }}
+              onClick={() => openEntityPicker("course")}
+              aria-label="Insert course"
+              title="Insert a course link"
+            >
+              <GraduationCap className="h-4 w-4" strokeWidth={2.1} />
+              <span className="leading-none">Course</span>
+            </button>
           </div>
           {linkModalOpen ? (
             <div
@@ -811,6 +921,13 @@ export function MentionTextarea({
           )}
         </ul>
       ) : null}
+
+      <AcademyMentionPicker
+        open={pickerOpen}
+        mode={pickerMode}
+        onClose={() => setPickerOpen(false)}
+        onPick={insertEntityMention}
+      />
     </div>
   );
 }

@@ -25,6 +25,8 @@
     "import-academy-resources": "npx tsx scripts/import-academy-resources-from-markdown.ts",
     "dedupe-academy-resources": "npx tsx scripts/dedupe-academy-resources.ts",
     "clean-academy-transcripts": "npx tsx scripts/clean-academy-transcript-speakers.ts",
+    "normalize-academy-lessons:dry-run": "npx tsx scripts/normalize-academy-lesson-markdown.ts --dry-run",
+    "normalize-academy-lessons": "npx tsx scripts/normalize-academy-lesson-markdown.ts --apply",
     "import-community-posts": "npx tsx scripts/import-community-posts-from-csv.ts",
     "export-boss-questions-csv": "npx tsx scripts/export-boss-methodology-questions-csv.ts",
     "find-duplicate-coaches": "npx tsx scripts/find-duplicate-coaches.ts",

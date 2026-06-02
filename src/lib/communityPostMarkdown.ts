@@ -134,8 +134,11 @@ export function communityPostCardPreview(
   return splitMentionSegments(body)
     .map((seg) => {
       if (seg.kind === "mention") {
+        const fallback = seg.mentionType === "user" ? "member" : seg.mentionType;
         const raw =
-          seg.labelFromToken ?? nameById[seg.userId] ?? "member";
+          seg.labelFromToken ??
+          (seg.mentionType === "user" ? nameById[seg.userId ?? ""] : undefined) ??
+          fallback;
         return `@${raw.replace(/[[\]]/g, "")}`;
       }
       return stripInlineMarkdownForCommunityPreviewFragment(seg.text);

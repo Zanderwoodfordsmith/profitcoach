@@ -155,6 +155,16 @@ type Props = {
   categories: CommunityCategory[];
   onClose: () => void;
   onPostsChanged: () => void | Promise<void>;
+  /**
+   * Optimistically patch the post in the parent feed's local state instead of
+   * reloading the whole feed. When provided, likes and comments update the feed
+   * in place and reconcile on the next feed load. When omitted, those actions
+   * fall back to `onPostsChanged`.
+   */
+  onPostLocalUpdate?: (
+    postId: string,
+    patch: (post: CommunityPostRow) => Partial<CommunityPostRow>
+  ) => void;
   /** Effective profile id for community feed localStorage (auth user or impersonated coach). */
   feedStorageScopeId: string | null;
   onMarkPostRead: (postId: string) => void;
@@ -422,6 +432,7 @@ export function PostDetailModal({
   categories,
   onClose,
   onPostsChanged,
+  onPostLocalUpdate,
   feedStorageScopeId,
   onMarkPostRead,
   onMarkPostUnread,
@@ -1148,12 +1159,20 @@ export function PostDetailModal({
       setNewComment("");
       markWinCelebratedIfAdmin();
       await loadComments();
-      await onPostsChanged();
+      if (onPostLocalUpdate) {
+        onPostLocalUpdate(post.id, (p) => ({
+          comment_count: p.comment_count + 1,
+          commented_by_me: true,
+        }));
+      } else {
+        await onPostsChanged();
+      }
     }
   }, [
     coachPersona,
     markWinCelebratedIfAdmin,
     newComment,
+    onPostLocalUpdate,
     onPostsChanged,
     post.id,
     submitting,
@@ -1162,14 +1181,28 @@ export function PostDetailModal({
 
   const handleToggleLike = useCallback(async () => {
     if (likeBusy) return;
+    const wasLiked = post.liked_by_me;
     setLikeBusy(true);
+    if (onPostLocalUpdate) {
+      onPostLocalUpdate(post.id, (p) => ({
+        liked_by_me: !wasLiked,
+        like_count: Math.max(0, p.like_count + (wasLiked ? -1 : 1)),
+      }));
+    }
     try {
-      await toggleCommunityPostLike(post.id, post.liked_by_me);
-      await onPostsChanged();
+      await toggleCommunityPostLike(post.id, wasLiked);
+      if (!onPostLocalUpdate) await onPostsChanged();
+    } catch {
+      if (onPostLocalUpdate) {
+        onPostLocalUpdate(post.id, (p) => ({
+          liked_by_me: wasLiked,
+          like_count: Math.max(0, p.like_count + (wasLiked ? 1 : -1)),
+        }));
+      }
     } finally {
       setLikeBusy(false);
     }
-  }, [likeBusy, onPostsChanged, post.id, post.liked_by_me]);
+  }, [likeBusy, onPostLocalUpdate, onPostsChanged, post.id, post.liked_by_me]);
 
   const handleToggleCommentLike = useCallback(
     async (commentId: string, currentlyLiked: boolean) => {
@@ -1249,7 +1282,14 @@ export function PostDetailModal({
         setReplyOpenFor(null);
         markWinCelebratedIfAdmin();
         await loadComments();
-        await onPostsChanged();
+        if (onPostLocalUpdate) {
+          onPostLocalUpdate(post.id, (p) => ({
+            comment_count: p.comment_count + 1,
+            commented_by_me: true,
+          }));
+        } else {
+          await onPostsChanged();
+        }
       }
     },
     [
@@ -1259,6 +1299,7 @@ export function PostDetailModal({
       submitting,
       post.id,
       loadComments,
+      onPostLocalUpdate,
       onPostsChanged,
     ]
   );
@@ -1309,7 +1350,9 @@ export function PostDetailModal({
       setCommentMenuOpenId(null);
       cancelEditingComment(comment.id);
       await loadComments();
-      await onPostsChanged();
+      // Editing a comment body does not change any post-level counter, so a
+      // full feed reload is only needed when we cannot patch locally.
+      if (!onPostLocalUpdate) await onPostsChanged();
     },
     [
       canManageComment,
@@ -1317,6 +1360,7 @@ export function PostDetailModal({
       commentActionBusyId,
       commentEditDrafts,
       loadComments,
+      onPostLocalUpdate,
       onPostsChanged,
       post.id,
     ]
@@ -1343,13 +1387,22 @@ export function PostDetailModal({
       setCommentMenuOpenId(null);
       cancelEditingComment(comment.id);
       await loadComments();
-      await onPostsChanged();
+      if (onPostLocalUpdate) {
+        // Approximate the new count locally; the exact value (accounting for
+        // any cascaded reply deletes) is reconciled on the next feed load.
+        onPostLocalUpdate(post.id, (p) => ({
+          comment_count: Math.max(0, p.comment_count - 1),
+        }));
+      } else {
+        await onPostsChanged();
+      }
     },
     [
       canManageComment,
       cancelEditingComment,
       commentActionBusyId,
       loadComments,
+      onPostLocalUpdate,
       onPostsChanged,
       post.id,
     ]

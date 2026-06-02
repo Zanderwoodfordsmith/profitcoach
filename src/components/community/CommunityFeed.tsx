@@ -832,6 +832,13 @@ export function CommunityFeed() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  /**
+   * Always-current snapshot of searchParams for effects that should read the
+   * latest query string without re-running every time it changes (e.g. opening
+   * or closing a post via ?post= must not trigger a full feed reload).
+   */
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
   const communityTab =
     searchParams.get("tab") === "map" ? "map" : "feed";
 
@@ -897,23 +904,33 @@ export function CommunityFeed() {
   const [selectedCalendarOccurrence, setSelectedCalendarOccurrence] =
     useState<CommunityCalendarOccurrence | null>(null);
   const [calendarTick, setCalendarTick] = useState(0);
+  // Open/close the post modal by updating the `?post=` query with the History
+  // API rather than the Next.js router. `CommunityFeed` reads `useSearchParams`
+  // inside a Suspense boundary, so a `router.replace` here is treated as a
+  // navigation that flashes the Suspense fallback — unmounting and remounting
+  // the whole feed. That remount is what made the modal flicker open/closed and
+  // the feed visibly reload on close (worse on slow connections). History
+  // updates keep the URL shareable/back-navigable and stay in sync with
+  // `useSearchParams` without triggering a navigation.
   const closeDetail = useCallback(() => {
     setSelectedPostId(null);
     setFetchedDetailPost(null);
-    const sp = new URLSearchParams(searchParams.toString());
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
     sp.delete("post");
     const q = sp.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
-  }, [pathname, router, searchParams]);
+    window.history.replaceState(null, "", q ? `${pathname}?${q}` : pathname);
+  }, [pathname]);
 
   const openDetail = useCallback(
     (id: string) => {
       setSelectedPostId(id);
-      const sp = new URLSearchParams(searchParams.toString());
+      if (typeof window === "undefined") return;
+      const sp = new URLSearchParams(window.location.search);
       sp.set("post", id);
-      router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+      window.history.replaceState(null, "", `${pathname}?${sp.toString()}`);
     },
-    [pathname, router, searchParams]
+    [pathname]
   );
 
   useEffect(() => {
@@ -1457,7 +1474,7 @@ export function CommunityFeed() {
             if (!isAdmin) {
               const coachPath = coachCommunityPathFromAdminPath(pathname);
               if (coachPath) {
-                const query = searchParams.toString();
+                const query = searchParamsRef.current.toString();
                 router.replace(
                   query ? `${coachPath}?${query}` : coachPath
                 );
@@ -1516,7 +1533,10 @@ export function CommunityFeed() {
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId, loadCategories, pathname, router, searchParams]);
+    // `searchParams` is intentionally read via `searchParamsRef` so opening or
+    // closing a post (which only changes ?post=) does not re-run bootstrap and
+    // trigger a full feed reload.
+  }, [impersonatingCoachId, loadCategories, pathname, router]);
 
   useEffect(() => {
     if (!feedBootstrapOk) return;
@@ -1586,6 +1606,27 @@ export function CommunityFeed() {
     if (fetchedDetailPost?.id === selectedPostId) return fetchedDetailPost;
     return null;
   }, [posts, selectedPostId, fetchedDetailPost]);
+
+  /**
+   * Optimistically patches a single post already in local state (and the
+   * deep-linked detail post) without refetching the whole feed. Used for likes
+   * and comments so the UI updates instantly; the authoritative counts are
+   * reconciled the next time the feed is loaded.
+   */
+  const patchPostInState = useCallback(
+    (
+      postId: string,
+      patch: (post: CommunityPostRow) => Partial<CommunityPostRow>
+    ) => {
+      setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, ...patch(p) } : p))
+      );
+      setFetchedDetailPost((prev) =>
+        prev && prev.id === postId ? { ...prev, ...patch(prev) } : prev
+      );
+    },
+    []
+  );
 
   const feedStorageScopeId =
     coachPersonaForCommunity(pathname, impersonatingCoachId) ??
@@ -2038,6 +2079,7 @@ export function CommunityFeed() {
                   categories={visibleCategories}
                   onClose={closeDetail}
                   onPostsChanged={() => loadPosts()}
+                  onPostLocalUpdate={patchPostInState}
                   feedStorageScopeId={feedStorageScopeId}
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}

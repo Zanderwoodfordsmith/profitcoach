@@ -1,20 +1,11 @@
+import { normalizeLessonMarkdown } from "./normalizeLessonMarkdown";
+
 /**
  * Normalizes markdown pasted or imported from Google Docs / Disco exports
  * so headings, lists, and links render correctly in AcademyMarkdown.
  */
 export function normalizeImportedLessonMarkdown(raw: string): string {
-  let text = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-
-  // Google Docs often escapes punctuation: \! \- \> etc.
-  text = text.replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/g, "$1");
-
-  // Normalize bold markers with spaces: ** text ** → **text**
-  text = text.replace(/\*\*\s+([^*]+?)\s+\*\*/g, "**$1**");
-
-  // Collapse 3+ blank lines to 2
-  text = text.replace(/\n{4,}/g, "\n\n\n");
-
-  return text.trim();
+  return normalizeLessonMarkdown(raw);
 }
 
 /** If the doc starts with a single # heading, use it as the lesson title and drop it from the body. */

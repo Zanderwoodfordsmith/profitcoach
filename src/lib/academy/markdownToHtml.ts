@@ -1,6 +1,7 @@
 import { Marked } from "marked";
 
 import { LESSON_EMBED_LANG, embedPlaceholderHtml } from "./lessonHtmlEmbed";
+import { normalizeLessonMarkdown } from "./normalizeLessonMarkdown";
 
 /**
  * Editor renderer: matches AcademyMarkdown output, except `html-embed` code
@@ -22,6 +23,6 @@ editorMarked.use({
 /** Render lesson markdown to HTML for the visual editor (matches AcademyMarkdown output). */
 export function markdownToHtml(markdown: string): string {
   if (!markdown.trim()) return "";
-  const html = editorMarked.parse(markdown) as string;
+  const html = editorMarked.parse(normalizeLessonMarkdown(markdown)) as string;
   return html.trim();
 }

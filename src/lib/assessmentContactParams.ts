@@ -1,5 +1,6 @@
 import { sanitizeProspectUrlParam } from "@/lib/landingCopy";
 import { splitFullName } from "@/lib/splitFullName";
+import { formatPersonName } from "@/lib/formatPersonName";
 
 export type AssessmentContactFromUrl = {
   firstName: string | null;
@@ -103,9 +104,9 @@ export function getAssessmentProspectFirstName(
   contact: AssessmentContactFromUrl
 ): string | null {
   const fromParam = contact.firstName?.trim();
-  if (fromParam) return fromParam;
+  if (fromParam) return formatPersonName(fromParam) || null;
   const fromFull = contact.fullName?.trim();
-  if (fromFull) return splitFullName(fromFull).first_name;
+  if (fromFull) return formatPersonName(splitFullName(fromFull).first_name) || null;
   return null;
 }
 
@@ -129,7 +130,7 @@ export function resolveAssessmentProspectFirstName(
   }
 
   const typedFull = options?.fullName?.trim();
-  if (typedFull) return splitFullName(typedFull).first_name;
+  if (typedFull) return formatPersonName(splitFullName(typedFull).first_name) || null;
 
   return null;
 }

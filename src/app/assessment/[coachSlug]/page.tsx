@@ -25,6 +25,7 @@ import {
   QUALIFYING_SUPPORT_HEADING,
   getScorecardProgress,
   SCORECARD_PAGE_BG,
+  SCORED_QUESTION_IDS,
   type QualifyingData,
 } from "@/lib/bossScorecardQuestions";
 import {
@@ -118,6 +119,7 @@ export default function ScorecardAssessmentPage({
   const startTracked = useRef(false);
   const directLeadCaptured = useRef(false);
   const progressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReportedScreen = useRef(0);
 
   const urlContact = useMemo(
@@ -169,6 +171,25 @@ export default function ScorecardAssessmentPage({
 
   const currentScreen = SCREENS[screenIndex] ?? SCREENS[0];
   const progress = getScorecardProgress(currentScreen.step);
+
+  /**
+   * Fill the progress bar from questions actually answered, not just the screen
+   * position. This guarantees it can never read 100% while a scored question is
+   * still unanswered (e.g. one skipped by a fast tap), so users notice the gap
+   * before they reach the submit step.
+   */
+  const completedSteps = useMemo(() => {
+    const scoredAnswered = SCORED_QUESTION_IDS.filter((id) => {
+      const v = answers[id];
+      return v != null && v >= 1 && v <= 5;
+    }).length;
+    const journeyDone = isJourneyQualifyingComplete(qualifying) ? 1 : 0;
+    const supportDone = isSupportQualifyingComplete(qualifying) ? 1 : 0;
+    return Math.min(
+      progress.completedSteps,
+      scoredAnswered + journeyDone + supportDone
+    );
+  }, [answers, qualifying, progress.completedSteps]);
 
   useEffect(() => {
     setGateChecked(true);
@@ -273,26 +294,72 @@ export default function ScorecardAssessmentPage({
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [currentScreen.step, reportProgress]);
 
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    };
+  }, []);
+
+  function clearAdvanceTimer() {
+    if (advanceTimer.current) {
+      clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+    }
+  }
+
   function advanceScreen() {
+    clearAdvanceTimer();
     setScreenIndex((i) => Math.min(i + 1, SCREENS.length - 1));
   }
 
   function goBack() {
+    clearAdvanceTimer();
     setQualifyingError(null);
     setScreenIndex((i) => Math.max(0, i - 1));
+  }
+
+  /**
+   * Auto-advance one screen after a smiley pick, but only from the screen the
+   * pick was made on. Resetting the timer on every tap prevents fast/double
+   * taps from queueing multiple advances and skipping (unanswering) a question.
+   */
+  function scheduleAutoAdvance(fromIndex: number) {
+    clearAdvanceTimer();
+    advanceTimer.current = setTimeout(() => {
+      advanceTimer.current = null;
+      setScreenIndex((i) =>
+        i === fromIndex ? Math.min(i + 1, SCREENS.length - 1) : i
+      );
+    }, 280);
   }
 
   const canGoBack = screenIndex > 0;
 
   function handleScoreSelect(questionId: string, score: ScorecardScore) {
-    const next = { ...answers, [questionId]: score };
-    setAnswers(next);
-    window.setTimeout(() => advanceScreen(), 280);
+    setAnswers((prev) => ({ ...prev, [questionId]: score }));
+    scheduleAutoAdvance(screenIndex);
   }
 
   async function handleSubmit() {
     if (!isScorecardComplete(answers)) {
-      setSubmitError("Please complete all scored questions.");
+      const firstUnansweredId = SCORED_QUESTION_IDS.find((id) => {
+        const v = answers[id];
+        return !(v != null && v >= 1 && v <= 5);
+      });
+      const targetIndex = firstUnansweredId
+        ? SCREENS.findIndex(
+            (s) =>
+              (s.kind === "question" || s.kind === "outcome") &&
+              s.questionId === firstUnansweredId
+          )
+        : -1;
+      if (targetIndex >= 0) {
+        clearAdvanceTimer();
+        setScreenIndex(targetIndex);
+      }
+      setSubmitError(
+        "Looks like a question was skipped. We've taken you back to it — please answer it to continue."
+      );
       return;
     }
     if (!isQualifyingComplete(qualifying)) {
@@ -525,10 +592,7 @@ export default function ScorecardAssessmentPage({
               <div className="mt-6 md:mt-8">
                 <SmileyRatingScale
                   value={answers[question.id]}
-                  onSelect={(score) => {
-                    setAnswers((prev) => ({ ...prev, [question.id]: score }));
-                    window.setTimeout(() => advanceScreen(), 280);
-                  }}
+                  onSelect={(score) => handleScoreSelect(question.id, score)}
                   disabled={submitting}
                   layout="horizontal"
                 />
@@ -649,7 +713,7 @@ export default function ScorecardAssessmentPage({
           <div className="mx-auto w-[min(100%,56rem)] px-5 py-5 md:px-10 md:py-6">
             <ScorecardProgressBar
               currentStep={progress.currentStep}
-              completedSteps={progress.completedSteps}
+              completedSteps={completedSteps}
             />
           </div>
         </footer>

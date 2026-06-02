@@ -12,6 +12,7 @@ import {
   type ProspectRow,
 } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
+import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingStats";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import type { UpdatedProspectFields } from "@/lib/prospects/updateProspectFields";
@@ -330,6 +331,13 @@ export default function CoachProspectsPage() {
         <p className="text-sm text-slate-600">Loading…</p>
       )}
       {error && <p className="text-sm text-rose-600">{error}</p>}
+
+      {!loading && !error && (
+        <ProspectsLandingStats
+          coachSlug={coachSlug}
+          impersonatingCoachId={impersonatingCoachId}
+        />
+      )}
 
       {showAddProspect && effectiveCoachId && (
         <AddProspectForm

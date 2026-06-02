@@ -36,12 +36,12 @@ export default async function DirectoryCoachPage({ params }: Props) {
       </p>
 
       <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="relative aspect-[21/9] w-full bg-slate-100 sm:aspect-[3/1]">
+        <div className="relative aspect-[4/3] w-full bg-slate-100 sm:aspect-[16/9]">
           {coach.avatar_url ? (
             <img
               src={coach.avatar_url}
               alt=""
-              className="h-full w-full object-cover object-top"
+              className="h-full w-full object-contain"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-slate-400">

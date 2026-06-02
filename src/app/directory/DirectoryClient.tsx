@@ -41,7 +41,7 @@ export default function DirectoryClient() {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  const pageSize = 12;
+  const pageSize = 30;
 
   useEffect(() => {
     setSearchDraft(sp.get("search") ?? "");

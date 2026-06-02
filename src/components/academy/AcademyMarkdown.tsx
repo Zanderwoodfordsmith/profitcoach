@@ -11,6 +11,7 @@ import { academyProseClassName } from "@/components/academy/academyProseClassNam
 import { LessonHtmlEmbed } from "@/components/academy/LessonHtmlEmbed";
 import { LESSON_EMBED_LANG } from "@/lib/academy/lessonHtmlEmbed";
 import { lessonMarkdownSanitizeSchema } from "@/lib/academy/lessonMarkdownSanitizeSchema";
+import { normalizeLessonMarkdown } from "@/lib/academy/normalizeLessonMarkdown";
 
 const EMBED_CODE_CLASS = `language-${LESSON_EMBED_LANG}`;
 
@@ -47,6 +48,7 @@ type PreProps = ComponentPropsWithoutRef<"pre"> & { node?: Element };
 
 export function AcademyMarkdown({ markdown }: { markdown: string }) {
   if (!markdown.trim()) return null;
+  const normalized = normalizeLessonMarkdown(markdown);
   return (
     <div className={academyProseClassName}>
       <ReactMarkdown
@@ -62,7 +64,7 @@ export function AcademyMarkdown({ markdown }: { markdown: string }) {
           },
         }}
       >
-        {markdown}
+        {normalized}
       </ReactMarkdown>
     </div>
   );

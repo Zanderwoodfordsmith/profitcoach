@@ -7,7 +7,7 @@ const STORAGE_KEY = "boss-wheel-color-scheme";
 export type WheelColorScheme = "default" | "alt";
 
 export function useWheelColorScheme() {
-  const [scheme, setSchemeState] = useState<WheelColorScheme>("alt");
+  const [scheme, setSchemeState] = useState<WheelColorScheme>("default");
 
   useEffect(() => {
     try {
@@ -33,11 +33,11 @@ export function useWheelColorScheme() {
 }
 
 export function getWheelColorScheme(): WheelColorScheme {
-  if (typeof window === "undefined") return "alt";
+  if (typeof window === "undefined") return "default";
   try {
     const stored = localStorage.getItem(STORAGE_KEY) as WheelColorScheme | null;
-    return stored === "default" || stored === "alt" ? stored : "alt";
+    return stored === "default" || stored === "alt" ? stored : "default";
   } catch {
-    return "alt";
+    return "default";
   }
 }

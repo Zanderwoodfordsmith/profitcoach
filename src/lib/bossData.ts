@@ -109,18 +109,25 @@ export const BOSS_FOUNDATION_COLOR = "#4C667A";
 export const BOSS_FOUNDATION_SOFT = "#EEF2F6";
 export const BOSS_FOUNDATION_GRADIENT = `linear-gradient(90deg, ${BOSS_FOUNDATION_COLOR}, #64748b)`;
 
-/** Wheel chart colors for each area (index 0-9) */
+/**
+ * Wheel chart colors for each area (index 0-9), grouped by pillar.
+ * Owner Performance uses the slate foundation colour; each pillar then uses a
+ * slightly-varied brand progression (darker → main → lighter).
+ */
 export const WHEEL_COLORS = [
-  BOSS_FOUNDATION_COLOR,
-  "#093a6d",
-  "#0c5290",
-  "#3d7ab8",
-  "#3183d9",
-  "#42a1ee",
-  "#7fc8f5",
-  "#5dcce3",
-  "#1ca0c2",
-  "#157a96",
+  BOSS_FOUNDATION_COLOR, // Owner Performance — slate
+  // Vision — brand blue
+  "#093a6d", // darker
+  "#0c5290", // main
+  "#3d7ab8", // lighter
+  // Velocity — light blue
+  "#2e8ad8", // darker
+  "#42a1ee", // main
+  "#7fc8f5", // lighter
+  // Value — teal
+  "#157a96", // darker
+  "#1ca0c2", // main
+  "#5dcce3", // lighter
 ];
 
 /** Level colors for diagram/wheel (Overwhelm→Owner) */

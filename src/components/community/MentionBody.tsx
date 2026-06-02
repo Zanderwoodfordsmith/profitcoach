@@ -4,6 +4,8 @@ import Link from "next/link";
 import { COMMUNITY_EXTERNAL_LINK_CLASS, splitTextWithHttpUrls } from "@/lib/communityAutolink";
 import {
   COMMUNITY_MENTION_LINK_CLASS,
+  courseMentionHref,
+  lessonMentionHref,
   splitMentionSegments,
 } from "@/lib/communityMentions";
 import { stripInlineMarkdownForCommunityPreviewFragment } from "@/lib/communityPostMarkdown";
@@ -58,16 +60,40 @@ export function MentionBody({
             </span>
           );
         }
-        const label =
-          nameById[seg.userId] ?? seg.labelFromToken ?? "member";
-        const href = profileHrefByUserId?.[seg.userId];
+        if (seg.mentionType === "lesson" && seg.area && seg.courseId && seg.lessonId) {
+          return (
+            <Link
+              key={i}
+              href={lessonMentionHref(seg.area, seg.courseId, seg.lessonId)}
+              className={COMMUNITY_MENTION_LINK_CLASS}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {`@${seg.labelFromToken ?? "lesson"}`}
+            </Link>
+          );
+        }
+        if (seg.mentionType === "course" && seg.area && seg.courseId) {
+          return (
+            <Link
+              key={i}
+              href={courseMentionHref(seg.area, seg.courseId)}
+              className={COMMUNITY_MENTION_LINK_CLASS}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {`@${seg.labelFromToken ?? "course"}`}
+            </Link>
+          );
+        }
+        const userId = seg.userId ?? "";
+        const label = nameById[userId] ?? seg.labelFromToken ?? "member";
+        const href = profileHrefByUserId?.[userId];
         const mentionLabel = `@${label}`;
         if (href) {
           return (
             <CommunityProfileHoverCard
               key={i}
-              userId={seg.userId}
-              profile={{ id: seg.userId, full_name: label }}
+              userId={userId}
+              profile={{ id: userId, full_name: label }}
             >
               <Link
                 href={href}
@@ -82,8 +108,8 @@ export function MentionBody({
         return (
           <CommunityProfileHoverCard
             key={i}
-            userId={seg.userId}
-            profile={{ id: seg.userId, full_name: label }}
+            userId={userId}
+            profile={{ id: userId, full_name: label }}
           >
             <span className={COMMUNITY_MENTION_LINK_CLASS}>{mentionLabel}</span>
           </CommunityProfileHoverCard>

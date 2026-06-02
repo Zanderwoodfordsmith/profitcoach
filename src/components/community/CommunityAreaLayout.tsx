@@ -80,9 +80,7 @@ export function CommunityAreaLayout({
         description={description}
         tabs={tabs}
       />
-      <CommunityMemberDirectoryProvider>
-        <div className="pl-4 sm:pl-5 md:pl-6">{children}</div>
-      </CommunityMemberDirectoryProvider>
+      <CommunityMemberDirectoryProvider>{children}</CommunityMemberDirectoryProvider>
     </>
   );
 }
