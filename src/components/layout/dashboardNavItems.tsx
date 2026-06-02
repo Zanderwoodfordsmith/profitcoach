@@ -2,6 +2,7 @@ import type React from "react";
 import {
   BarChart3,
   CalendarDays,
+  Clock,
   Compass,
   Filter,
   LayoutGrid,
@@ -159,6 +160,10 @@ function IconBarChart({ className }: { className?: string }) {
   return <BarChart3 className={className} />;
 }
 
+function IconClock({ className }: { className?: string }) {
+  return <Clock className={className} />;
+}
+
 export type MarketingNavOptions = {
   includeBossScore?: boolean;
   /** When false, omits the message-generator link (coach sidebar). Default true. */
@@ -202,6 +207,7 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
 export const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/landing-analytics", label: "Landing analytics", icon: IconBarChart },
+  { href: "/admin/time-tracker", label: "Time Tracker", icon: IconClock },
   { href: "/admin/linkedin", label: "LinkedIn Scheduler", icon: IconSparkles },
   { href: "/admin/community/feedback", label: "Feedback inbox", icon: IconMessagesSquare },
 ];
