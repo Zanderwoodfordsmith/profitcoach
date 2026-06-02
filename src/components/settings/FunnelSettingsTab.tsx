@@ -75,13 +75,16 @@ function LinkPreviewRow({
   copied,
   onCopy,
   onPersonalise,
+  showShareUrl = true,
 }: {
   label: string;
   href: string;
-  displayUrl: string;
-  copied: boolean;
-  onCopy: () => void;
+  displayUrl?: string;
+  copied?: boolean;
+  onCopy?: () => void;
   onPersonalise?: () => void;
+  /** When false, only Open (and Personalise if provided) — no public URL or Copy. */
+  showShareUrl?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -89,9 +92,11 @@ function LinkPreviewRow({
         <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
           {label}
         </p>
-        <code className="mt-1 block truncate text-sm text-slate-800">
-          {displayUrl}
-        </code>
+        {showShareUrl && displayUrl ? (
+          <code className="mt-1 block truncate text-sm text-slate-800">
+            {displayUrl}
+          </code>
+        ) : null}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
         {onPersonalise ? (
@@ -103,20 +108,22 @@ function LinkPreviewRow({
             Personalise
           </button>
         ) : null}
-        <button
-          type="button"
-          onClick={onCopy}
-          className="font-medium text-slate-600 hover:text-slate-900 hover:underline"
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
+        {showShareUrl && onCopy ? (
+          <button
+            type="button"
+            onClick={onCopy}
+            className="font-medium text-slate-600 hover:text-slate-900 hover:underline"
+          >
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        ) : null}
         <Link
           href={href}
           target="_blank"
           rel="noreferrer"
           className="font-medium text-slate-600 hover:text-slate-900 hover:underline"
         >
-          Open
+          Preview
         </Link>
       </div>
     </div>
@@ -650,16 +657,9 @@ export function FunnelSettingsTab({
                   }
                 />
                 <LinkPreviewRow
-                  label="Direct to scorecard"
-                  displayUrl={shareDisplayUrl(assessmentPath, appOrigin)}
+                  label="Scorecard"
                   href={assessmentPath}
-                  copied={copiedLinkKey === "boss-assessment"}
-                  onCopy={() =>
-                    void copyShareLink(
-                      "boss-assessment",
-                      shareCopyUrl(assessmentPath, appOrigin)
-                    )
-                  }
+                  showShareUrl={false}
                   onPersonalise={() => openPersonaliseModal("boss-score")}
                 />
               </div>
@@ -703,16 +703,9 @@ export function FunnelSettingsTab({
               description="Full diagnostic — 50 questions across all playbooks."
             >
               <LinkPreviewRow
-                label="Assessment link"
-                displayUrl={shareDisplayUrl(assessmentProPath, appOrigin)}
+                label="Assessment"
                 href={assessmentProPath}
-                copied={copiedLinkKey === "boss-pro-assessment"}
-                onCopy={() =>
-                  void copyShareLink(
-                    "boss-pro-assessment",
-                    shareCopyUrl(assessmentProPath, appOrigin)
-                  )
-                }
+                showShareUrl={false}
                 onPersonalise={() => openPersonaliseModal("boss-pro")}
               />
             </FunnelProductPanel>
