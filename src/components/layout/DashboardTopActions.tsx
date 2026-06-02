@@ -40,7 +40,7 @@ type DashboardTopActionsProps = {
   notificationsOnly?: boolean;
 };
 
-type NotificationFilter = "all" | "replies" | "announcements" | "wins";
+type NotificationFilter = "all" | "mentions" | "replies" | "announcements" | "wins";
 
 type NotificationItem = {
   id: string;
@@ -145,6 +145,49 @@ export function DashboardTopActions({
         .order("created_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
 
+      const nowIso = new Date().toISOString();
+
+      const postMentionsPromise = supabaseClient
+        .from("community_posts")
+        .select(
+          `
+            id,
+            title,
+            body,
+            created_at,
+            published_at,
+            author_id,
+            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+          `
+        )
+        .ilike("body", `%${uid}%`)
+        .neq("author_id", uid)
+        .lte("published_at", nowIso)
+        .order("published_at", { ascending: false })
+        .limit(NOTIFICATION_ITEMS_MAX);
+
+      const commentMentionsPromise = supabaseClient
+        .from("community_post_comments")
+        .select(
+          `
+            id,
+            post_id,
+            body,
+            created_at,
+            author_id,
+            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url ),
+            post:community_posts!post_id (
+              id,
+              title,
+              author_id
+            )
+          `
+        )
+        .ilike("body", `%${uid}%`)
+        .neq("author_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(NOTIFICATION_ITEMS_MAX);
+
       const announcementsPromise = announcementsCategoryId
         ? supabaseClient
             .from("community_posts")
@@ -189,10 +232,18 @@ export function DashboardTopActions({
               .limit(NOTIFICATION_ITEMS_MAX)
           : Promise.resolve({ data: [], error: null });
 
-      const [repliesRes, announcementsRes, winsRes] = await Promise.all([
+      const [
+        repliesRes,
+        announcementsRes,
+        winsRes,
+        postMentionsRes,
+        commentMentionsRes,
+      ] = await Promise.all([
         repliesPromise,
         announcementsPromise,
         winsPromise,
+        postMentionsPromise,
+        commentMentionsPromise,
       ]);
 
       type AuthorRow = {
@@ -205,26 +256,30 @@ export function DashboardTopActions({
       };
       const next: NotificationItem[] = [];
 
+      type CommentRow = {
+        id: string;
+        post_id: string;
+        body: string;
+        created_at: string;
+        author_id?: string;
+        author: AuthorRow | AuthorRow[] | null;
+        post:
+          | {
+              id: string;
+              title: string | null;
+              author_id: string;
+            }
+          | Array<{
+              id: string;
+              title: string | null;
+              author_id: string;
+            }>
+          | null;
+      };
+
+      const repliedCommentIds = new Set<string>();
       if (!repliesRes.error) {
-        const rows = (repliesRes.data ?? []) as Array<{
-          id: string;
-          post_id: string;
-          body: string;
-          created_at: string;
-          author: AuthorRow | AuthorRow[] | null;
-          post:
-            | {
-                id: string;
-                title: string | null;
-                author_id: string;
-              }
-            | Array<{
-                id: string;
-                title: string | null;
-                author_id: string;
-              }>
-            | null;
-        }>;
+        const rows = (repliesRes.data ?? []) as CommentRow[];
         for (const row of rows) {
           const author = Array.isArray(row.author)
             ? (row.author[0] ?? null)
@@ -234,6 +289,7 @@ export function DashboardTopActions({
             : (row.post ?? null);
           if (!author || !post) continue;
           const actor = displayNameFromProfile(author);
+          repliedCommentIds.add(row.id);
           next.push({
             id: `reply:${row.id}`,
             type: "replies",
@@ -247,9 +303,64 @@ export function DashboardTopActions({
         }
       }
 
+      if (!postMentionsRes.error) {
+        const rows = (postMentionsRes.data ?? []) as Array<{
+          id: string;
+          title: string | null;
+          body: string;
+          created_at: string;
+          published_at?: string | null;
+          author: AuthorRow | AuthorRow[] | null;
+        }>;
+        for (const row of rows) {
+          if (!extractMentionUserIds(row.body).includes(uid)) continue;
+          const author = Array.isArray(row.author)
+            ? (row.author[0] ?? null)
+            : (row.author ?? null);
+          if (!author) continue;
+          const actor = displayNameFromProfile(author);
+          next.push({
+            id: `mention-post:${row.id}`,
+            type: "mentions",
+            created_at: row.published_at ?? row.created_at,
+            actor_name: actor,
+            actor_avatar_url: author.avatar_url ?? null,
+            title: `${actor} mentioned you in a post`,
+            body: row.body.trim() || row.title?.trim() || "Community post",
+            href: `${communityHref}?post=${row.id}`,
+          });
+        }
+      }
+
+      if (!commentMentionsRes.error) {
+        const rows = (commentMentionsRes.data ?? []) as CommentRow[];
+        for (const row of rows) {
+          if (repliedCommentIds.has(row.id)) continue;
+          if (!extractMentionUserIds(row.body).includes(uid)) continue;
+          const author = Array.isArray(row.author)
+            ? (row.author[0] ?? null)
+            : (row.author ?? null);
+          const post = Array.isArray(row.post)
+            ? (row.post[0] ?? null)
+            : (row.post ?? null);
+          if (!author || !post) continue;
+          const actor = displayNameFromProfile(author);
+          next.push({
+            id: `mention-comment:${row.id}`,
+            type: "mentions",
+            created_at: row.created_at,
+            actor_name: actor,
+            actor_avatar_url: author.avatar_url ?? null,
+            title: `${actor} mentioned you in a comment`,
+            body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
+            href: `${communityHref}?post=${post.id}`,
+          });
+        }
+      }
+
       const mentionIds = new Set<string>();
       for (const item of next) {
-        if (item.type !== "replies") continue;
+        if (item.type !== "replies" && item.type !== "mentions") continue;
         for (const id of extractMentionUserIds(item.body)) mentionIds.add(id);
       }
       const mentionNameById =
@@ -257,7 +368,7 @@ export function DashboardTopActions({
           ? await fetchCommunityMentionNameMap([...mentionIds])
           : {};
       for (const item of next) {
-        if (item.type !== "replies") continue;
+        if (item.type !== "replies" && item.type !== "mentions") continue;
         item.body = communityPostCardPreview(item.body, mentionNameById);
       }
 
@@ -465,11 +576,13 @@ export function DashboardTopActions({
                   >
                     {filter === "all"
                       ? "All"
-                      : filter === "replies"
-                        ? "Replies"
-                        : filter === "announcements"
-                          ? "Announcements"
-                          : "Wins"}
+                      : filter === "mentions"
+                        ? "Mentions"
+                        : filter === "replies"
+                          ? "Replies"
+                          : filter === "announcements"
+                            ? "Announcements"
+                            : "Wins"}
                     <ChevronDown className="h-4 w-4" />
                   </button>
                   {filterMenuOpen ? (
@@ -477,6 +590,7 @@ export function DashboardTopActions({
                       {(
                         [
                           ["all", "All"],
+                          ["mentions", "Mentions"],
                           ["replies", "Replies"],
                           ["announcements", "Announcements"],
                           ...(variant === "admin"

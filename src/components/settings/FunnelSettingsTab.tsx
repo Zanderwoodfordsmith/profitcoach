@@ -20,6 +20,7 @@ import {
   type CalendarSyncStatus,
 } from "@/lib/ghlCalendarSync";
 import { buildEmbedSnippet } from "@/lib/embedMode";
+import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingStats";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -562,6 +563,11 @@ export function FunnelSettingsTab({
 
   return (
     <form onSubmit={onSubmit} className="flex w-full flex-col gap-6">
+      <ProspectsLandingStats
+        coachSlug={slug || null}
+        impersonatingCoachId={impersonatingCoachId ?? null}
+      />
+
       <CollapsibleCrmSection status={calendarSyncStatus}>
         <CrmLeadCaptureFields
           crmProfileName={crmProfileName}

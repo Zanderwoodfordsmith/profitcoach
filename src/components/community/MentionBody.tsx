@@ -4,6 +4,7 @@ import Link from "next/link";
 import { COMMUNITY_EXTERNAL_LINK_CLASS, splitTextWithHttpUrls } from "@/lib/communityAutolink";
 import {
   COMMUNITY_MENTION_LINK_CLASS,
+  COMMUNITY_USER_MENTION_LINK_CLASS,
   courseMentionHref,
   lessonMentionHref,
   splitMentionSegments,
@@ -97,7 +98,7 @@ export function MentionBody({
             >
               <Link
                 href={href}
-                className={COMMUNITY_MENTION_LINK_CLASS}
+                className={COMMUNITY_USER_MENTION_LINK_CLASS}
                 onClick={(e) => e.stopPropagation()}
               >
                 {mentionLabel}
@@ -111,7 +112,7 @@ export function MentionBody({
             userId={userId}
             profile={{ id: userId, full_name: label }}
           >
-            <span className={COMMUNITY_MENTION_LINK_CLASS}>{mentionLabel}</span>
+            <span className={COMMUNITY_USER_MENTION_LINK_CLASS}>{mentionLabel}</span>
           </CommunityProfileHoverCard>
         );
       })}

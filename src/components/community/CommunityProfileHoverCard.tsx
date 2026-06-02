@@ -31,19 +31,38 @@ const BIO_LINE_CLAMP = 6;
 /** Matches text-lg + leading-relaxed line height for reliable clamp fallback. */
 const BIO_CLAMP_MAX_HEIGHT = "11.25rem";
 const CLOSE_DELAY_MS = 250;
+/** Distance the card is kept from the viewport edges. */
+const VIEWPORT_MARGIN_PX = 12;
+/**
+ * Vertical gap between the trigger icon and the card. Kept smaller than the
+ * "Recently active" row gutter (gap-2 = 8px) so the card's bottom edge lands in
+ * the empty space between rows rather than on top of an avatar in the row above.
+ * That removes the stray hover trigger that otherwise sits in the path when you
+ * move up from a lower-row icon into its card.
+ */
+const TRIGGER_OFFSET_PX = 4;
 
-let activeProfileCardId: string | null = null;
+/**
+ * Tracks the single open card across all instances. Storing the active card's
+ * close handler (rather than just an id) lets a newly hovered trigger instantly
+ * "steal" focus: it closes the previous card immediately instead of waiting for
+ * its close-delay timer to fire. This keeps the close delay (so you can move
+ * from an icon up into its card) while making side-to-side hovering across
+ * icons feel instant.
+ */
+let activeProfileCard: { id: string; close: () => void } | null = null;
 
-function canOpenProfileCard(id: string) {
-  return !activeProfileCardId || activeProfileCardId === id;
-}
-
-function claimProfileCard(id: string) {
-  activeProfileCardId = id;
+function activateProfileCard(id: string, close: () => void) {
+  if (activeProfileCard && activeProfileCard.id !== id) {
+    const previous = activeProfileCard;
+    activeProfileCard = null;
+    previous.close();
+  }
+  activeProfileCard = { id, close };
 }
 
 function releaseProfileCard(id: string) {
-  if (activeProfileCardId === id) activeProfileCardId = null;
+  if (activeProfileCard?.id === id) activeProfileCard = null;
 }
 
 function LinkedInIcon({ className }: { className?: string }) {
@@ -186,9 +205,9 @@ export function CommunityProfileHoverCard({
   };
 
   const openCard = () => {
-    if (!profileId || !canOpenProfileCard(profileId)) return;
+    if (!profileId) return;
     cancelScheduledClose();
-    claimProfileCard(profileId);
+    activateProfileCard(profileId, closeCard);
     setOpen(true);
   };
 
@@ -241,7 +260,7 @@ export function CommunityProfileHoverCard({
 
   useLayoutEffect(() => {
     if (!open) return;
-    const margin = 12;
+    const margin = VIEWPORT_MARGIN_PX;
 
     const update = () => {
       const trigger = triggerRef.current;
@@ -260,7 +279,7 @@ export function CommunityProfileHoverCard({
       );
 
       const cardHeight = Math.min(cardEl?.offsetHeight ?? 0, viewportMaxHeight);
-      let bottomEdge = rect.top - margin;
+      let bottomEdge = rect.top - TRIGGER_OFFSET_PX;
       let topEdge = bottomEdge - cardHeight;
       if (topEdge < margin) {
         topEdge = margin;
@@ -422,7 +441,7 @@ export function CommunityProfileHoverCard({
                             event.preventDefault();
                             interactingRef.current = true;
                             cancelScheduledClose();
-                            if (profileId) claimProfileCard(profileId);
+                            if (profileId) activateProfileCard(profileId, closeCard);
                             setBioExpanded(true);
                           }}
                           onClick={() => setBioExpanded(true)}

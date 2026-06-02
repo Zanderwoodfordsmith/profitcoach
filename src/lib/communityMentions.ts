@@ -5,6 +5,10 @@ import { displayNameFromProfile } from "@/lib/communityProfile";
 export const COMMUNITY_MENTION_LINK_CLASS =
   "font-medium !text-blue-600 underline underline-offset-2 decoration-blue-600/40 hover:!text-blue-500 hover:decoration-blue-500";
 
+/** Member @mention chips: blue is enough to signal a link, so no underline. */
+export const COMMUNITY_USER_MENTION_LINK_CLASS =
+  "font-medium !text-blue-600 hover:!text-blue-500";
+
 /** Academy areas a lesson/course mention can point at. */
 export type AcademyArea = "classroom" | "programs";
 

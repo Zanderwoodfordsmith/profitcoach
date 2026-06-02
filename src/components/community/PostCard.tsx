@@ -13,6 +13,7 @@ import {
   formatCommunityPostTimestamp,
   formatCommunityRelativeActivityAgo,
 } from "@/lib/communityRelativeTime";
+import { stripInlineMarkdownForCommunityPreviewFragment } from "@/lib/communityPostMarkdown";
 
 type Props = {
   post: CommunityPostRow;
@@ -55,7 +56,10 @@ export function PostCard({
   }, [post.last_comment_at, commentsSeenWatermarkIso]);
 
   const previewBody = useMemo(
-    () => post.body.replace(/\s+/g, " ").trim(),
+    () =>
+      stripInlineMarkdownForCommunityPreviewFragment(post.body)
+        .replace(/\s+/g, " ")
+        .trim(),
     [post.body]
   );
   const displayedPostedAtIso = post.published_at ?? post.created_at;
@@ -118,8 +122,8 @@ export function PostCard({
       className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${pinnedChromeClass} ${
         feedCardHasBeenRead
           ? post.is_pinned
-            ? "opacity-50 shadow-[0_1px_2px_rgb(2_132_199/0.18)]"
-            : "opacity-50 shadow-sm"
+            ? "opacity-[0.55] shadow-[0_1px_2px_rgb(2_132_199/0.18)]"
+            : "opacity-[0.55] shadow-sm"
           : post.is_pinned
             ? "opacity-100 shadow-[0_0_0_1px_rgb(186_230_253/0.7),0_8px_20px_-12px_rgb(2_132_199/0.45)]"
             : "opacity-100 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]"

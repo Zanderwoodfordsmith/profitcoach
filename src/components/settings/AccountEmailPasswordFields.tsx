@@ -19,7 +19,7 @@ export function AccountEmailPasswordFields({
   impersonatingCoachId,
   className = "",
 }: AccountEmailPasswordFieldsProps) {
-  const securityDisabled = Boolean(impersonatingCoachId);
+  const isImpersonating = Boolean(impersonatingCoachId);
 
   const [email, setEmail] = useState<string | null>(null);
 
@@ -65,6 +65,33 @@ export function AccountEmailPasswordFields({
     };
   }, [impersonatingCoachId]);
 
+  async function updateCoachCredentials(
+    payload: { email?: string; password?: string }
+  ): Promise<string | null> {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      return "Your session expired. Please sign in again.";
+    }
+    const res = await fetch(
+      `/api/admin/coaches/${impersonatingCoachId}/credentials`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      return data.error ?? "Unable to update credentials.";
+    }
+    return null;
+  }
+
   async function submitEmailChange() {
     setEmailError(null);
     const trimmed = newEmail.trim();
@@ -73,6 +100,18 @@ export function AccountEmailPasswordFields({
       return;
     }
     setEmailBusy(true);
+    if (isImpersonating) {
+      const errMsg = await updateCoachCredentials({ email: trimmed });
+      setEmailBusy(false);
+      if (errMsg) {
+        setEmailError(errMsg);
+        return;
+      }
+      setEmailOpen(false);
+      setNewEmail("");
+      setEmail(trimmed);
+      return;
+    }
     const { error } = await supabaseClient.auth.updateUser({ email: trimmed });
     setEmailBusy(false);
     if (error) {
@@ -95,6 +134,18 @@ export function AccountEmailPasswordFields({
       return;
     }
     setPwdBusy(true);
+    if (isImpersonating) {
+      const errMsg = await updateCoachCredentials({ password: newPassword });
+      setPwdBusy(false);
+      if (errMsg) {
+        setPwdError(errMsg);
+        return;
+      }
+      setPwdOpen(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      return;
+    }
     const { error } = await supabaseClient.auth.updateUser({
       password: newPassword,
     });
@@ -117,13 +168,12 @@ export function AccountEmailPasswordFields({
         </div>
         <button
           type="button"
-          disabled={securityDisabled}
           onClick={() => {
             setEmailError(null);
             setNewEmail(email ?? "");
             setEmailOpen(true);
           }}
-          className={outlineButtonClass(securityDisabled)}
+          className={outlineButtonClass(false)}
         >
           Change email
         </button>
@@ -136,12 +186,11 @@ export function AccountEmailPasswordFields({
         </div>
         <button
           type="button"
-          disabled={securityDisabled}
           onClick={() => {
             setPwdError(null);
             setPwdOpen(true);
           }}
-          className={outlineButtonClass(securityDisabled)}
+          className={outlineButtonClass(false)}
         >
           Change password
         </button>
@@ -151,11 +200,12 @@ export function AccountEmailPasswordFields({
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-slate-900">
-              Change email
+              {isImpersonating ? "Change coach email" : "Change email"}
             </h3>
             <p className="mt-1 text-sm text-slate-600">
-              You may need to confirm the new address from your inbox (depends on
-              your project&apos;s auth settings).
+              {isImpersonating
+                ? "Updates the login email for this coach's account. The new address is set as confirmed, so the coach can log in with it right away."
+                : "You may need to confirm the new address from your inbox (depends on your project's auth settings)."}
             </p>
             <div className="mt-4">
               <OutlinedTextField
@@ -196,8 +246,14 @@ export function AccountEmailPasswordFields({
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-slate-900">
-              Change password
+              {isImpersonating ? "Change coach password" : "Change password"}
             </h3>
+            {isImpersonating ? (
+              <p className="mt-1 text-sm text-slate-600">
+                Sets a new password for this coach&apos;s account. Share it with
+                them securely.
+              </p>
+            ) : null}
             <div className="mt-4 space-y-4">
               <OutlinedTextField
                 id="account_modal_new_password"

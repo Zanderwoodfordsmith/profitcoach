@@ -13,6 +13,7 @@ import {
 } from "@/lib/communityPostMarkdown";
 import {
   COMMUNITY_MENTION_LINK_CLASS,
+  COMMUNITY_USER_MENTION_LINK_CLASS,
   mentionTargetHref,
   parseMentionTarget,
 } from "@/lib/communityMentions";
@@ -94,7 +95,7 @@ function buildComponents(
           return (
             <Link
               href={profileHref}
-              className={COMMUNITY_MENTION_LINK_CLASS}
+              className={COMMUNITY_USER_MENTION_LINK_CLASS}
               title={uid}
               onClick={(e) => e.stopPropagation()}
             >
@@ -103,7 +104,7 @@ function buildComponents(
           );
         }
         return (
-          <span className={COMMUNITY_MENTION_LINK_CLASS} title={uid}>
+          <span className={COMMUNITY_USER_MENTION_LINK_CLASS} title={uid}>
             {mentionLabel}
           </span>
         );
