@@ -5,6 +5,14 @@ const UUID_SUFFIX =
 
 const DURATION_SUFFIX = /\s*\(?\d+(\.\d+)?\s*m(in(ute)?s?)?\)?\s*$/i;
 
+/**
+ * Trailing parenthesised duration in hours/minutes, e.g. `(1h 5m)`, `(1h 45m)`,
+ * `(2m)`, `(19m)`. These come from the Google Docs tab titles in the source docs
+ * and must be stripped before matching against legacy-hub lesson titles.
+ */
+const DURATION_PAREN_SUFFIX =
+  /\s*\(\s*(?:\d+\s*h(?:r|rs|our|ours)?\s*)?(?:\d+(?:\.\d+)?\s*m(?:in(?:ute)?s?)?\s*)?\)\s*$/i;
+
 /** Course folder name → legacy-hub `course_id`. */
 export const COURSE_FOLDER_ALIASES: Record<string, string> = {
   kickstart: "kickstart",
@@ -51,6 +59,7 @@ export function normalizeMatchText(input: string): string {
     .trim();
 
   s = s.replace(UUID_SUFFIX, "").trim();
+  s = s.replace(DURATION_PAREN_SUFFIX, "").trim();
   s = s.replace(DURATION_SUFFIX, "").trim();
   s = s.replace(/\b20\d{2}\b/g, "").replace(/\s+/g, " ").trim();
   s = s.replace(/\biii\b/g, "3").replace(/\bii\b/g, "2").replace(/\biv\b/g, "4");
@@ -119,6 +128,26 @@ export function lessonTitleMatchScore(stem: string, lessonTitle: string): number
   );
   const coverage = stemCoverageInTitle(stem, lessonTitle);
   return Math.max(dice, coverage);
+}
+
+/**
+ * Score how well one title is a (truncated) prefix of the other (0–1).
+ *
+ * The source docs come from Google Docs tabs whose labels are capped at ~50
+ * characters, so a long lesson title like "Refining Your Ideal Profile" can
+ * arrive as "Refining Your Ideal Pro". When the shorter normalized title is a
+ * prefix of the longer one we treat it as a strong match.
+ */
+export function lessonTitlePrefixScore(a: string, b: string): number {
+  const na = normalizeMatchText(a);
+  const nb = normalizeMatchText(b);
+  if (!na || !nb) return 0;
+  const [shorter, longer] = na.length <= nb.length ? [na, nb] : [nb, na];
+  if (!longer.startsWith(shorter)) return 0;
+  // Require a meaningful prefix so short generic titles don't over-match.
+  if (shorter.length < 12) return shorter === longer ? 1 : 0;
+  // Truncated prefix of a longer title: near-certain match.
+  return shorter === longer ? 1 : 0.95;
 }
 
 /** Resolve a course folder name to `course_id`, or null. */

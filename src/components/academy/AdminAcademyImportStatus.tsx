@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, Minus, X } from "lucide-react";
 
 import type { AcademyImportSnapshotReport } from "@/lib/academy/academyImportSnapshot";
 import type { AcademyImportOverride } from "@/lib/academy/academyImportOverrides";
+import type { AcademyBodyImportReportRow } from "@/lib/academy/bodyImportReport";
 import { AdminAcademyImportUnmatchedTable } from "@/components/academy/AdminAcademyImportUnmatchedTable";
 import {
   buildOrderedCourseGroups,
@@ -19,11 +20,18 @@ type Props = {
   snapshot: AcademyImportSnapshotReport | null;
   snapshotUpdatedAt: string | null;
   importOverrides: AcademyImportOverride[];
+  bodyImportUnresolved: AcademyBodyImportReportRow[];
+  bodyImportReportFile: string | null;
+  bodyImportTotalRows: number;
 };
 
 type ImportCellState = "ok" | "missing" | "na";
 
 const STATUS_COL_WIDTH = "w-[9.5rem]";
+
+function bodyRowKey(row: AcademyBodyImportReportRow): string {
+  return `${row.sourceFile}:${row.sourceLine}:${row.title}`;
+}
 
 function ImportStatusCell({
   state,
@@ -97,6 +105,9 @@ export function AdminAcademyImportStatus({
   snapshot,
   snapshotUpdatedAt,
   importOverrides,
+  bodyImportUnresolved,
+  bodyImportReportFile,
+  bodyImportTotalRows,
 }: Props) {
   const [filter, setFilter] = useState<LessonImportFilter>("all");
   const [courseFilter, setCourseFilter] = useState<string>("all");
@@ -127,12 +138,108 @@ export function AdminAcademyImportStatus({
     }
     return titles;
   }, [status.lessons]);
+  const lessonKeyByLessonId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const row of status.lessons) {
+      const key = `${row.courseId}:${row.lessonId}`;
+      if (!map.has(row.lessonId)) map.set(row.lessonId, key);
+    }
+    return map;
+  }, [status.lessons]);
+  const lessonOptionGroups = useMemo(() => {
+    const byCourse = new Map<string, { label: string; options: Array<{ key: string; title: string }> }>();
+    for (const course of status.catalogOrder.courses) {
+      byCourse.set(course.id, { label: course.title, options: [] });
+    }
+    for (const row of status.lessons) {
+      const group = byCourse.get(row.courseId);
+      if (!group) continue;
+      group.options.push({
+        key: `${row.courseId}:${row.lessonId}`,
+        title: row.lessonTitle,
+      });
+    }
+    return Array.from(byCourse.values()).filter((g) => g.options.length > 0);
+  }, [status.catalogOrder.courses, status.lessons]);
+  const bodyReviewStorageKey = useMemo(
+    () => `academy-body-import-review:${bodyImportReportFile ?? "latest"}`,
+    [bodyImportReportFile]
+  );
+  const defaultBodySelections = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const row of bodyImportUnresolved) {
+      const key = bodyRowKey(row);
+      if (row.target?.courseId && row.target?.lessonId) {
+        out[key] = `${row.target.courseId}:${row.target.lessonId}`;
+        continue;
+      }
+      const firstCandidateLessonId = row.candidates?.[0]?.lessonId;
+      if (!firstCandidateLessonId) continue;
+      const found = lessonKeyByLessonId.get(firstCandidateLessonId);
+      if (found) out[key] = found;
+    }
+    return out;
+  }, [bodyImportUnresolved, lessonKeyByLessonId]);
+  const [bodySelections, setBodySelections] = useState<
+    Record<string, { lessonKey: string; confirmed: boolean }>
+  >(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem(bodyReviewStorageKey);
+        if (raw) {
+          return JSON.parse(raw) as Record<string, { lessonKey: string; confirmed: boolean }>;
+        }
+      } catch {
+        // Ignore malformed/blocked localStorage and fall back to defaults.
+      }
+    }
+    const seeded: Record<string, { lessonKey: string; confirmed: boolean }> = {};
+    for (const [rowKey, lessonKey] of Object.entries(defaultBodySelections)) {
+      seeded[rowKey] = { lessonKey, confirmed: false };
+    }
+    return seeded;
+  });
+  const [copiedOverrides, setCopiedOverrides] = useState(false);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(bodyReviewStorageKey, JSON.stringify(bodySelections));
+    } catch {
+      // Ignore localStorage write errors.
+    }
+  }, [bodyReviewStorageKey, bodySelections]);
 
   const { summary } = status;
   const unmatched = snapshot?.unmatched ?? [];
   const ambiguous = snapshot?.ambiguous ?? [];
   const oversized = snapshot?.oversizedVideos ?? [];
   const importErrors = snapshot?.errors ?? [];
+  const confirmedBodyCount = useMemo(
+    () => Object.values(bodySelections).filter((s) => s.confirmed && s.lessonKey).length,
+    [bodySelections]
+  );
+
+  async function copyConfirmedBodyOverrides() {
+    const titles: Record<string, { courseId: string; lessonId: string }> = {};
+    for (const row of bodyImportUnresolved) {
+      const rowKey = bodyRowKey(row);
+      const state = bodySelections[rowKey];
+      if (!state?.confirmed || !state.lessonKey) continue;
+      const [courseId, ...rest] = state.lessonKey.split(":");
+      const lessonId = rest.join(":");
+      if (!courseId || !lessonId) continue;
+      titles[row.title] = { courseId, lessonId };
+    }
+
+    const payload = {
+      _README:
+        "Paste into scripts/academy-lesson-body-overrides.json under `titles` (merge keys).",
+      titles,
+    };
+    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+    setCopiedOverrides(true);
+    window.setTimeout(() => setCopiedOverrides(false), 1800);
+  }
 
   function toggleCourse(courseId: string) {
     setOpenCourses((prev) => {
@@ -415,6 +522,142 @@ export function AdminAcademyImportStatus({
               </div>
             )}
           </>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-900">Lesson body docs needing manual mapping</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Ambiguous/unmatched lesson titles from the doc-body import run.
+        </p>
+        {bodyImportReportFile ? (
+          <p className="mt-2 text-xs text-slate-500">
+            Source report: <code className="text-xs">{`reports/${bodyImportReportFile}`}</code> (
+            {bodyImportTotalRows} rows)
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">No body import report found in reports/ yet.</p>
+        )}
+
+        <p className="mt-2 text-xs text-slate-500">
+          Pick a lesson, then tick confirm. Confirmed selections are tracked locally and can be copied
+          as overrides JSON.
+        </p>
+
+        {bodyImportUnresolved.length === 0 ? (
+          <p className="mt-4 text-sm text-emerald-700">No unresolved body-import rows.</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs text-slate-600">
+                {confirmedBodyCount} of {bodyImportUnresolved.length} confirmed
+              </p>
+              <button
+                type="button"
+                onClick={() => void copyConfirmedBodyOverrides()}
+                disabled={confirmedBodyCount === 0}
+                className="rounded-md bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {copiedOverrides ? "Copied" : "Copy confirmed overrides JSON"}
+              </button>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-3 py-2.5">Confirm</th>
+                  <th className="px-3 py-2.5">Kind</th>
+                  <th className="px-3 py-2.5">Score</th>
+                  <th className="px-3 py-2.5">Doc title</th>
+                  <th className="px-3 py-2.5">Lesson selection</th>
+                  <th className="px-3 py-2.5">Candidates</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {bodyImportUnresolved.map((row) => (
+                  <tr key={`${row.sourceFile}:${row.sourceLine}:${row.title}`} className="align-top">
+                    <td className="whitespace-nowrap px-3 py-2.5">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300 text-sky-600"
+                        checked={Boolean(bodySelections[bodyRowKey(row)]?.confirmed)}
+                        onChange={(e) => {
+                          const rowKey = bodyRowKey(row);
+                          setBodySelections((prev) => ({
+                            ...prev,
+                            [rowKey]: {
+                              lessonKey: prev[rowKey]?.lessonKey ?? defaultBodySelections[rowKey] ?? "",
+                              confirmed: e.target.checked,
+                            },
+                          }));
+                        }}
+                      />
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          row.kind === "ambiguous"
+                            ? "bg-amber-50 text-amber-900"
+                            : "bg-rose-50 text-rose-800"
+                        }`}
+                      >
+                        {row.kind}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                      {Math.round(row.score * 100)}%
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <p className="font-medium text-slate-900">{row.title}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {row.sourceFile}:{row.sourceLine}
+                      </p>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <select
+                        value={bodySelections[bodyRowKey(row)]?.lessonKey ?? defaultBodySelections[bodyRowKey(row)] ?? ""}
+                        onChange={(e) => {
+                          const rowKey = bodyRowKey(row);
+                          setBodySelections((prev) => ({
+                            ...prev,
+                            [rowKey]: {
+                              lessonKey: e.target.value,
+                              confirmed: false,
+                            },
+                          }));
+                        }}
+                        className="w-full min-w-[18rem] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                      >
+                        <option value="">Select lesson…</option>
+                        {lessonOptionGroups.map((group) => (
+                          <optgroup key={group.label} label={group.label}>
+                            {group.options.map((option) => (
+                              <option key={option.key} value={option.key}>
+                                {option.title}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-slate-700">
+                      {row.candidates?.length ? (
+                        row.candidates.map((c) => (
+                          <p key={`${row.title}:${c.lessonId}`}>
+                            {Math.round(c.score * 100)}% · <code>{c.lessonId}</code>
+                          </p>
+                        ))
+                      ) : (
+                        <span className="text-slate-400">No candidate</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          </div>
         )}
       </div>
     </div>

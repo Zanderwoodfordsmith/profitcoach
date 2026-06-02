@@ -1,0 +1,81 @@
+{
+  "_README": "Manual title -> lesson mappings for import-academy-lesson-bodies-from-docs.ts. Keys are the source-doc lesson H1 (the Google Docs tab label, possibly 50-char truncated). Values pin the legacy-hub course_id + lesson_id when fuzzy matching is ambiguous or wrong. Match by exact title first, then by normalized title.",
+  "titles": {
+    "Management (1h 45m)": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-innovation-management-management"
+    },
+    "LinkedIn Profile: Checklist To Optimise Your Pro": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-linkedin-optimization-linkedin-profile-checklist-to-optimise-your-profile"
+    },
+    "LinkedIn Profile: Create a Compelling Headline": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-linkedin-optimization-linkedin-profile-checklist-to-optimise-your-profile-2"
+    },
+    "Write A LinkedIn Connection Message": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-lead-generation-ai-automation-write-a-linkedin-connection-message"
+    },
+    "Connector Campaign: Overview": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-lead-generation-ai-automation-connector-campaign-overview"
+    },
+    "Sales Call: The Pitch (34m)": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-sales-pitch-sales-call-the-pitch"
+    },
+    "Price Pitch (35m)": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-sales-pitch-price-pitch"
+    },
+    "Session 3: Align 3-Year Plan (23m)": {
+      "courseId": "client-delivery",
+      "lessonId": "client-delivery-client-onboarding-session-3-align-3-year-plan"
+    },
+    "How To Use The Coaching Sheet In Sessions (9m)": {
+      "courseId": "profit-coach-certification",
+      "lessonId": "profit-coach-certification-create-lasting-transformation-how-to-use-the-coaching-sheet-in-sessions"
+    },
+    "How To End A Coaching Session": {
+      "courseId": "client-delivery",
+      "lessonId": "client-delivery-coachiing-session-structure-how-eo-end-a-coaching-session"
+    },
+    "Profit First Philosophy & Implementation": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-profit-cash-proft-first-philosophy-implmentation"
+    },
+    "Marketing G.O.A.L. & Strategy": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-marketing-g-o-a-l-strategy"
+    },
+    "Price": {
+      "courseId": "client-acquisition",
+      "lessonId": "client-acquisition-sales-pitch-price-pitch"
+    },
+    "Product & Value Proposition": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-priduct-value-proposition"
+    },
+    "Customers (8m)": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-customers"
+    },
+    "Offer (10m)": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-offer"
+    },
+    "Marketing Strategy (20m)": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-marketing-strategy"
+    },
+    "Sales Strategies Part 1 (44m)": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-sales-strategies-part-1"
+    },
+    "Sales Strategies Part 2 (52m)": {
+      "courseId": "profit-brand-framework",
+      "lessonId": "profit-brand-framework-revenue-marketing-sales-strategies-part-2"
+    }
+  }
+}

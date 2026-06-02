@@ -14,6 +14,9 @@ import { ratingTileClasses, ratingDotClasses } from "@/lib/timeTracker/rating";
 
 const SLOT_PX = 20;
 const TIME_COL_PX = 64;
+// Pointer must move at least this many pixels before a block press counts as a
+// drag; anything smaller is treated as a click and opens the editor.
+const DRAG_THRESHOLD_PX = 5;
 
 type CreateDragState = {
   dayKey: string;
@@ -31,6 +34,7 @@ type BlockDragState = {
   columnEl: HTMLElement;
   mode: BlockDragMode;
   pointerAnchorIdx: number;
+  startClientY: number;
   origLo: number;
   origHi: number; // exclusive
   lo: number;
@@ -244,6 +248,7 @@ export function TimeTrackerGrid({
         columnEl,
         mode,
         pointerAnchorIdx,
+        startClientY: e.clientY,
         origLo: lo,
         origHi: hi,
         lo,
@@ -256,8 +261,12 @@ export function TimeTrackerGrid({
       const onMove = (ev: PointerEvent) => {
         const c = blockDragRef.current;
         if (!c) return;
+        // Treat tiny movements as a click (so editing a block is reliable).
+        const pointerMoved =
+          c.pointerMoved ||
+          Math.abs(ev.clientY - c.startClientY) > DRAG_THRESHOLD_PX;
+        if (!pointerMoved) return;
         const target = idxFromPointer(c.columnEl, ev.clientY);
-        const pointerMoved = c.pointerMoved || target !== c.pointerAnchorIdx;
         let nextLo = c.lo;
         let nextHi = c.hi;
 

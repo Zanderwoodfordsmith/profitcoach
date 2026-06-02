@@ -23,6 +23,8 @@
     "import-academy-suggested": "npx tsx scripts/import-academy-lessons-from-drive-folder.ts --apply --accept-suggested 0.36 --include-ambiguous --skip-existing --continue-on-error --write-suggested-overrides",
     "import-academy-suggested:dry-run": "npx tsx scripts/import-academy-lessons-from-drive-folder.ts --dry-run --accept-suggested 0.36 --include-ambiguous --write-suggested-overrides",
     "import-academy-resources": "npx tsx scripts/import-academy-resources-from-markdown.ts",
+    "import-academy-bodies:dry-run": "npx tsx scripts/import-academy-lesson-bodies-from-docs.ts --dry-run",
+    "import-academy-bodies": "npx tsx scripts/import-academy-lesson-bodies-from-docs.ts --apply",
     "dedupe-academy-resources": "npx tsx scripts/dedupe-academy-resources.ts",
     "clean-academy-transcripts": "npx tsx scripts/clean-academy-transcript-speakers.ts",
     "normalize-academy-lessons:dry-run": "npx tsx scripts/normalize-academy-lesson-markdown.ts --dry-run",

@@ -1,6 +1,7 @@
 import type { LegacyHubCatalog, LegacyHubCourse } from "./legacyHubCatalog";
 import {
   lessonTitleMatchScore,
+  lessonTitlePrefixScore,
   normalizeMatchText,
   resolveCourseIdFromFolderName,
   tokenSimilarity,
@@ -98,6 +99,53 @@ export function matchStemToLesson(
   }
 
   const ambiguousCandidates = scored.filter((c) => c.score >= 0.65).slice(0, 3);
+  return { status: "ambiguous", candidates: ambiguousCandidates };
+}
+
+/**
+ * Match a source-doc lesson title (a Google Docs tab label) to a legacy-hub
+ * lesson, searching across every course. Combines token similarity with a
+ * prefix score so 50-char-truncated titles still resolve.
+ */
+export function matchDocTitleToLesson(
+  title: string,
+  index: LegacyLessonIndexEntry[],
+  options: { minScore?: number; minMargin?: number } = {}
+): LessonMatchResult {
+  const minScore = options.minScore ?? 0.72;
+  const minMargin = options.minMargin ?? 0.05;
+
+  const scored: LessonMatchCandidate[] = index.map((l) => {
+    const score = Math.max(
+      lessonTitleMatchScore(title, l.lessonTitle),
+      lessonTitlePrefixScore(title, l.lessonTitle)
+    );
+    return {
+      courseId: l.courseId,
+      lessonId: l.lessonId,
+      lessonTitle: l.lessonTitle,
+      score: Math.min(score, 1),
+    };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored[0];
+  const second = scored[1];
+
+  if (!top || top.score < 0.6) {
+    return {
+      status: "unmatched",
+      bestScore: top?.score ?? 0,
+      bestCandidate: top ?? null,
+    };
+  }
+
+  const margin = top.score - (second?.score ?? 0);
+  if (top.score >= minScore && margin >= minMargin) {
+    return { status: "matched", match: top };
+  }
+
+  const ambiguousCandidates = scored.filter((c) => c.score >= 0.6).slice(0, 4);
   return { status: "ambiguous", candidates: ambiguousCandidates };
 }
 
