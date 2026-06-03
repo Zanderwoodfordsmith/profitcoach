@@ -453,7 +453,12 @@ function CoachWorkshopPageContent() {
 
       const res = await fetch(
         `/api/coach/contacts/${encodeURIComponent(resolvedContactId)}/session`,
-        { headers: authHeaders(token, impersonatingCoachId) }
+        {
+          headers: authHeaders(
+            token,
+            adminUnscoped ? null : impersonatingCoachId
+          ),
+        }
       );
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -502,7 +507,7 @@ function CoachWorkshopPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [loading, contacts, activeContactId, impersonatingCoachId, syncContactUrl]);
+  }, [loading, contacts, activeContactId, adminUnscoped, impersonatingCoachId, syncContactUrl]);
 
   const isEditingNewPerson = selectedId === NEW_PERSON_VALUE;
 
@@ -540,7 +545,12 @@ function CoachWorkshopPageContent() {
 
       const res = await fetch(
         `/api/coach/contacts/${encodeURIComponent(contactId)}/scorecard-report`,
-        { headers: authHeaders(token, impersonatingCoachId) }
+        {
+          headers: authHeaders(
+            token,
+            adminUnscoped ? null : impersonatingCoachId
+          ),
+        }
       );
       if (!cancelled) setHasScorecardForContact(res.ok);
     }
@@ -549,7 +559,7 @@ function CoachWorkshopPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [activeContactId, impersonatingCoachId]);
+  }, [activeContactId, adminUnscoped, impersonatingCoachId]);
 
   const handleViewScorecard = useCallback(() => {
     if (!activeContactId) return;
@@ -900,6 +910,7 @@ function CoachWorkshopPageContent() {
         <ContactBossWorkshopBody
           contactId={activeContactId}
           draftCoachId={draftCoachId}
+          adminUnscoped={adminUnscoped}
           showLiveScoringCheckbox={false}
           showProspectMatrix={adminUnscoped}
           canAddNewPerson={showNewPersonOption}

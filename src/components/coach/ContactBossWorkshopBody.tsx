@@ -131,6 +131,11 @@ export type ContactBossWorkshopBodyProps = {
   playbookReturnTo?: string;
   /** Admin-only WIP: prospect priority matrix at the bottom of Boss Pro. */
   showProspectMatrix?: boolean;
+  /**
+   * When true (admin org-wide Boss Pro), workshop API calls omit x-impersonate-coach-id
+   * so admins can open any contact shown in the picker.
+   */
+  adminUnscoped?: boolean;
 };
 
 export function ContactBossWorkshopBody({
@@ -145,9 +150,11 @@ export function ContactBossWorkshopBody({
   editingNewPerson = false,
   playbookReturnTo,
   showProspectMatrix = false,
+  adminUnscoped = false,
 }: ContactBossWorkshopBodyProps) {
   const router = useRouter();
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
+  const workshopImpersonateCoachId = adminUnscoped ? null : impersonatingCoachId;
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
 
@@ -226,7 +233,7 @@ export function ContactBossWorkshopBody({
       try {
         const res = await fetch(
           `/api/coach/contacts/${encodeURIComponent(targetContactId)}/session`,
-          { headers: authHeaders(accessToken, impersonatingCoachId) }
+          { headers: authHeaders(accessToken, workshopImpersonateCoachId) }
         );
         const json = (await res.json().catch(() => ({}))) as {
           contact?: {
@@ -249,7 +256,7 @@ export function ContactBossWorkshopBody({
         // ignore poll errors — generate request is the primary path
       }
     },
-    [impersonatingCoachId, stopInsightsPolling]
+    [workshopImpersonateCoachId, stopInsightsPolling]
   );
 
   const generateSessionInsights = useCallback(
@@ -286,7 +293,7 @@ export function ContactBossWorkshopBody({
           {
             method: "POST",
             headers: {
-              ...authHeaders(accessToken, impersonatingCoachId),
+              ...authHeaders(accessToken, workshopImpersonateCoachId),
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ answers }),
@@ -313,7 +320,7 @@ export function ContactBossWorkshopBody({
         }
       }
     },
-    [impersonatingCoachId, stopInsightsPolling]
+    [workshopImpersonateCoachId, stopInsightsPolling]
   );
 
   const scheduleInsightsRegenerate = useCallback(
@@ -385,7 +392,7 @@ export function ContactBossWorkshopBody({
       }
 
       const res = await fetch(`/api/coach/contacts/${contactId}/session`, {
-        headers: authHeaders(session.access_token, impersonatingCoachId),
+        headers: authHeaders(session.access_token, workshopImpersonateCoachId),
       });
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -470,7 +477,7 @@ export function ContactBossWorkshopBody({
     return () => {
       cancelled = true;
     };
-  }, [contactId, router, impersonatingCoachId, generateSessionInsights]);
+  }, [contactId, router, workshopImpersonateCoachId, generateSessionInsights]);
 
   const persistSession = useCallback(
     async (body: {
@@ -508,7 +515,7 @@ export function ContactBossWorkshopBody({
         try {
           const created = await createWorkshopDraftContact(
             token,
-            impersonatingCoachId,
+            workshopImpersonateCoachId,
             { fullName, jobTitle, businessName }
           );
           draftContactIdRef.current = created;
@@ -527,7 +534,7 @@ export function ContactBossWorkshopBody({
       }
 
       const headers: Record<string, string> = {
-        ...authHeaders(token, impersonatingCoachId),
+        ...authHeaders(token, workshopImpersonateCoachId),
         "Content-Type": "application/json",
       };
 
@@ -555,7 +562,7 @@ export function ContactBossWorkshopBody({
         setSessionError("Scores could not be saved. Please try again.");
       }
     },
-    [contactId, draftCoachId, impersonatingCoachId, onDraftContactCreated, pendingNewContact]
+    [contactId, draftCoachId, workshopImpersonateCoachId, onDraftContactCreated, pendingNewContact]
   );
 
   const flushPendingAnswers = useCallback(() => {
