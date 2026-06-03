@@ -38,7 +38,10 @@ import {
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { FEEDBACK_REQUEST_CATEGORY_SLUG } from "@/lib/coachAccess/tiers";
-import { coachPersonaForCommunity } from "@/lib/communityEffectiveAuthorId";
+import {
+  coachPersonaForCommunity,
+  communityFeedStorageScopeId,
+} from "@/lib/communityEffectiveAuthorId";
 import {
   useCommunityFeedCardLocalState,
   type CommunityFeedLocalState,
@@ -806,15 +809,7 @@ function isCommunityPostUnreadOnFeed(
   post: CommunityPostRow,
   snapshot: CommunityFeedLocalState
 ): boolean {
-  if (!snapshot.readPostIds[post.id]) return true;
-  const last = post.last_comment_at;
-  if (!last) return false;
-  const seen = snapshot.commentsSeenUpTo[post.id];
-  // Opened the thread but no watermark yet (legacy, or modal closed before
-  // comments finished): treat as read for this filter so it matches a dimmed
-  // card. New comments after that still flip to unread via last > seen.
-  if (!seen) return false;
-  return new Date(last).getTime() > new Date(seen).getTime();
+  return !snapshot.readPostIds[post.id];
 }
 
 function isFutureScheduledPost(post: CommunityPostRow): boolean {
@@ -886,11 +881,23 @@ export function CommunityFeed() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [feedCountersAvailable, setFeedCountersAvailable] = useState(true);
   const [publishedAtAvailable, setPublishedAtAvailable] = useState(true);
-  const [viewerIsAdmin, setViewerIsAdmin] = useState(false);
+  const [viewerIsAdmin, setViewerIsAdmin] = useState<boolean | null>(null);
   const [communityAuthUserId, setCommunityAuthUserId] = useState<
     string | null
   >(null);
-  const canPreviewScheduledPosts = viewerIsAdmin || pathname.startsWith("/admin");
+  const feedStorageScopeId = communityFeedStorageScopeId(
+    pathname,
+    impersonatingCoachId,
+    communityAuthUserId,
+    viewerIsAdmin
+  );
+  const {
+    snapshot: feedLocalSnapshot,
+    markPostRead,
+    markPostUnread,
+  } = useCommunityFeedCardLocalState(feedStorageScopeId);
+  const canPreviewScheduledPosts =
+    viewerIsAdmin === true || pathname.startsWith("/admin");
   /** Bumps when the feed should reload while staying on the same page (e.g. new post). */
   const [postsRefreshNonce, setPostsRefreshNonce] = useState(0);
   /** Cancels in-flight split-page loads when filters or nonce change. */
@@ -904,6 +911,19 @@ export function CommunityFeed() {
   const [selectedCalendarOccurrence, setSelectedCalendarOccurrence] =
     useState<CommunityCalendarOccurrence | null>(null);
   const [calendarTick, setCalendarTick] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void resolveSupabaseBrowserSession().then((session) => {
+      if (!cancelled && session?.user) {
+        setCommunityAuthUserId(session.user.id);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Open/close the post modal by updating the `?post=` query with the History
   // API rather than the Next.js router. `CommunityFeed` reads `useSearchParams`
   // inside a Suspense boundary, so a `router.replace` here is treated as a
@@ -925,12 +945,13 @@ export function CommunityFeed() {
   const openDetail = useCallback(
     (id: string) => {
       setSelectedPostId(id);
+      markPostRead(id);
       if (typeof window === "undefined") return;
       const sp = new URLSearchParams(window.location.search);
       sp.set("post", id);
       window.history.replaceState(null, "", `${pathname}?${sp.toString()}`);
     },
-    [pathname]
+    [markPostRead, pathname]
   );
 
   useEffect(() => {
@@ -1628,17 +1649,6 @@ export function CommunityFeed() {
     []
   );
 
-  const feedStorageScopeId =
-    coachPersonaForCommunity(pathname, impersonatingCoachId) ??
-    communityAuthUserId;
-
-  const {
-    snapshot: feedLocalSnapshot,
-    markPostRead,
-    markPostUnread,
-    markCommentsSeenUpTo,
-  } = useCommunityFeedCardLocalState(feedStorageScopeId);
-
   const displayedPosts = useMemo(() => {
     if (readFilter === "all" || readFilter === "favourites") return posts;
     return posts.filter((p) =>
@@ -1732,6 +1742,7 @@ export function CommunityFeed() {
                     avatarUrl={composeAvatarUrl}
                     authorLabel="You"
                     onClose={() => setComposeOpen(false)}
+                    onMarkPostRead={markPostRead}
                     onCreated={() => {
                       setComposeOpen(false);
                       setPage(1);
@@ -1944,9 +1955,6 @@ export function CommunityFeed() {
                                 feedCardHasBeenRead={Boolean(
                                   feedLocalSnapshot.readPostIds[post.id]
                                 )}
-                                commentsSeenWatermarkIso={
-                                  feedLocalSnapshot.commentsSeenUpTo[post.id] ?? null
-                                }
                                 onOpen={() => openDetail(post.id)}
                               />
                             </li>
@@ -1964,9 +1972,6 @@ export function CommunityFeed() {
                           feedCardHasBeenRead={Boolean(
                             feedLocalSnapshot.readPostIds[post.id]
                           )}
-                          commentsSeenWatermarkIso={
-                            feedLocalSnapshot.commentsSeenUpTo[post.id] ?? null
-                          }
                           onOpen={() => openDetail(post.id)}
                         />
                       </li>
@@ -2083,7 +2088,6 @@ export function CommunityFeed() {
                   feedStorageScopeId={feedStorageScopeId}
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}
-                  onMarkCommentsSeenUpTo={markCommentsSeenUpTo}
                 />
               ) : null}
               {selectedCalendarOccurrence ? (

@@ -268,7 +268,6 @@ export function AdminWinsReplyQueue() {
             onMarkPostUnread={(postId) => {
               markCommunityPostUnreadInStorage(adminUserId, postId);
             }}
-            onMarkCommentsSeenUpTo={() => {}}
           />
         </div>
 

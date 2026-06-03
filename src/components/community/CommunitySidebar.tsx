@@ -9,7 +9,10 @@ import { isCommunityOnline } from "@/lib/communityPresence";
 import { useCommunityMemberDirectory } from "@/components/community/useCommunityMemberDirectory";
 import { LadderLevelUpsCard } from "@/components/community/LadderLevelUpsCard";
 import { profileInitialsFromName } from "@/lib/communityProfile";
-import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
+import {
+  CommunityMemberProfileHoverTrigger,
+  communityMemberStatusLabel,
+} from "@/components/community/communityMemberProfileHover";
 
 const BANNER_SRC = "/brand/profit-coach-logo-colour-white-bg.png";
 
@@ -27,18 +30,6 @@ function displayNameShort(m: {
     [m.first_name, m.last_name].filter(Boolean).join(" ").trim() ||
     m.coach_business_name?.trim();
   return n || "Member";
-}
-
-function formatLastSeenBrief(lastSeenAt: string | undefined, nowMs: number): string {
-  if (!lastSeenAt) return "Recently active";
-  const diffMs = Math.max(0, nowMs - new Date(lastSeenAt).getTime());
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return "Active now";
-  if (mins < 60) return `Seen ${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Seen ${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `Seen ${days}d ago`;
 }
 
 export type CommunitySidebarCalendarAdd = {
@@ -179,15 +170,14 @@ export function CommunitySidebar({
                     m.coach_business_name.trim() !== name
                       ? m.coach_business_name.trim()
                       : null;
-                  const statusLabel = online
-                    ? "Online now"
-                    : formatLastSeenBrief(lastSeenByUserId[m.id], clock);
+                  const statusLabel = communityMemberStatusLabel(
+                    lastSeenByUserId[m.id],
+                    clock
+                  );
                   return (
-                    <CommunityProfileHoverCard
+                    <CommunityMemberProfileHoverTrigger
                       key={m.id}
-                      userId={m.id}
-                      statusLabel={statusLabel}
-                      profile={{
+                      member={{
                         id: m.id,
                         full_name: m.full_name,
                         first_name: m.first_name,
@@ -199,6 +189,7 @@ export function CommunitySidebar({
                         coach_business_name: m.coach_business_name,
                         slug: m.slug,
                       }}
+                      statusLabel={statusLabel}
                     >
                       <div className="relative h-9 w-9 shrink-0">
                         {m.avatar_url ? (
@@ -221,7 +212,7 @@ export function CommunitySidebar({
                           />
                         ) : null}
                       </div>
-                    </CommunityProfileHoverCard>
+                    </CommunityMemberProfileHoverTrigger>
                   );
                 })}
               </div>

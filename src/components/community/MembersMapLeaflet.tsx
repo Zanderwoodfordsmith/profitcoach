@@ -6,35 +6,72 @@ import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 import { useMemo } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
 
+import { MapMemberPinHoverOverlay } from "@/components/community/MapMemberPinHoverOverlay";
+
 import type { MapMember } from "./CommunityMembersMap";
-import { MemberInfoCard } from "./MemberInfoCard";
 
-const PIN_HTML = `
-<svg viewBox="0 0 32 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <path d="M16 0a14 14 0 0 0-14 14c0 9.9 13.1 24.6 13.7 25.2a.7.7 0 0 0 .6 0C16.9 38.6 30 23.9 30 14A14 14 0 0 0 16 0z" fill="#0c5290"/>
-  <circle cx="16" cy="14" r="6" fill="#fff"/>
-</svg>
-`;
+const SOLO_PIN_WIDTH = 140;
+const SOLO_PIN_HEIGHT = 58;
+const SOLO_PIN_TIP_Y = 40;
 
-const pinIcon = L.divIcon({
-  className: "pc-map-pin",
-  html: PIN_HTML,
-  iconSize: [32, 40],
-  iconAnchor: [16, 40],
-  popupAnchor: [0, -34],
-});
+const memberByLeafletMarker = new WeakMap<L.Marker, MapMember>();
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function createSoloMemberMountIcon(memberId: string): L.DivIcon {
+  return L.divIcon({
+    className: "pc-map-pin pc-map-pin-solo-wrap",
+    html: `<div data-pc-map-member-id="${escapeHtml(memberId)}" class="pc-map-pin-solo-root"></div>`,
+    iconSize: [SOLO_PIN_WIDTH, SOLO_PIN_HEIGHT],
+    iconAnchor: [SOLO_PIN_WIDTH / 2, SOLO_PIN_TIP_Y],
+  });
+}
 
 function clusterIconCreate(cluster: L.MarkerCluster): L.DivIcon {
   const count = cluster.getChildCount();
+  if (count === 1) {
+    const child = cluster.getAllChildMarkers()[0];
+    const member = child ? memberByLeafletMarker.get(child) : undefined;
+    if (member) return createSoloMemberMountIcon(member.id);
+  }
+
   const size = count < 10 ? 36 : count < 50 ? 44 : count < 200 ? 52 : 60;
   return L.divIcon({
     className: "pc-map-cluster",
     html: `<div class="pc-map-cluster__bubble" style="width:${size}px;height:${size}px;line-height:${size}px;">${count}</div>`,
     iconSize: [size, size],
   });
+}
+
+function MemberMapMarker({ member }: { member: MapMember }) {
+  const icon = useMemo(
+    () => createSoloMemberMountIcon(member.id),
+    [member.id]
+  );
+
+  return (
+    <Marker
+      position={[member.lat, member.lng]}
+      icon={icon}
+      eventHandlers={{
+        add: (event) => {
+          memberByLeafletMarker.set(event.target, member);
+        },
+        remove: (event) => {
+          memberByLeafletMarker.delete(event.target);
+        },
+      }}
+    />
+  );
 }
 
 export type MembersMapLeafletProps = {
@@ -66,6 +103,7 @@ export function MembersMapLeaflet({ members }: MembersMapLeafletProps) {
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         subdomains={["a", "b", "c", "d"]}
       />
+      <MapMemberPinHoverOverlay members={members} />
       <MarkerClusterGroup
         chunkedLoading
         showCoverageOnHover={false}
@@ -74,16 +112,7 @@ export function MembersMapLeaflet({ members }: MembersMapLeafletProps) {
         iconCreateFunction={clusterIconCreate}
       >
         {members.map((m) => (
-          <Marker key={m.id} position={[m.lat, m.lng]} icon={pinIcon}>
-            <Popup
-              minWidth={260}
-              maxWidth={320}
-              closeButton={false}
-              className="pc-map-popup"
-            >
-              <MemberInfoCard member={m} />
-            </Popup>
-          </Marker>
+          <MemberMapMarker key={m.id} member={m} />
         ))}
       </MarkerClusterGroup>
     </MapContainer>

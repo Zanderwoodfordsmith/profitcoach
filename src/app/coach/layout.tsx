@@ -37,6 +37,30 @@ export default function CoachLayout({
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
+    if (!impersonatingCoachId) return;
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (cancelled || !user) return;
+      const res = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { role?: string };
+      if (cancelled) return;
+      if (body.role !== "admin") {
+        clearImpersonation();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clearImpersonation, impersonatingCoachId]);
+
+  useEffect(() => {
     if (!impersonatingCoachId) {
       setCoachName(null);
       setCoachAvatarUrl(null);

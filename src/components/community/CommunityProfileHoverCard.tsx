@@ -31,6 +31,8 @@ const BIO_LINE_CLAMP = 6;
 /** Matches text-lg + leading-relaxed line height for reliable clamp fallback. */
 const BIO_CLAMP_MAX_HEIGHT = "11.25rem";
 const CLOSE_DELAY_MS = 250;
+/** Brief pause before opening so passing over avatars does not flash bios. */
+const OPEN_DELAY_MS = 350;
 /** Distance the card is kept from the viewport edges. */
 const VIEWPORT_MARGIN_PX = 12;
 /**
@@ -84,6 +86,7 @@ export function CommunityProfileHoverCard({
   const bioPreviewRef = useRef<HTMLDivElement>(null);
   const interactingRef = useRef(false);
   const closeTimerRef = useRef<number | null>(null);
+  const openTimerRef = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   const [loaded, setLoaded] = useState<HoverProfile | null>(profile ?? null);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(
@@ -187,6 +190,13 @@ export function CommunityProfileHoverCard({
     }
   };
 
+  const cancelScheduledOpen = () => {
+    if (openTimerRef.current !== null) {
+      window.clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+  };
+
   const closeCard = () => {
     cancelScheduledClose();
     interactingRef.current = false;
@@ -206,9 +216,38 @@ export function CommunityProfileHoverCard({
 
   const openCard = () => {
     if (!profileId) return;
+    cancelScheduledOpen();
     cancelScheduledClose();
     activateProfileCard(profileId, closeCard);
     setOpen(true);
+  };
+
+  const scheduleOpen = () => {
+    cancelScheduledOpen();
+    openTimerRef.current = window.setTimeout(() => {
+      openTimerRef.current = null;
+      openCard();
+    }, OPEN_DELAY_MS);
+  };
+
+  const handleTriggerMouseEnter = () => {
+    cancelScheduledClose();
+    if (open) {
+      cancelScheduledOpen();
+      openCard();
+      return;
+    }
+    if (activeProfileCard && activeProfileCard.id !== profileId) {
+      const previous = activeProfileCard;
+      activeProfileCard = null;
+      previous.close();
+    }
+    scheduleOpen();
+  };
+
+  const handleTriggerMouseLeave = () => {
+    cancelScheduledOpen();
+    if (open) scheduleClose();
   };
 
   const focusMovedToCard = (next: EventTarget | null) => {
@@ -218,6 +257,7 @@ export function CommunityProfileHoverCard({
 
   useEffect(() => {
     return () => {
+      cancelScheduledOpen();
       cancelScheduledClose();
       if (profileId) releaseProfileCard(profileId);
     };
@@ -317,9 +357,9 @@ export function CommunityProfileHoverCard({
   return (
     <span
       ref={triggerRef}
-      className="inline-flex"
-      onMouseEnter={openCard}
-      onMouseLeave={scheduleClose}
+      className="inline-flex self-start"
+      onMouseEnter={handleTriggerMouseEnter}
+      onMouseLeave={handleTriggerMouseLeave}
       onFocus={openCard}
       onBlur={(event) => {
         if (focusMovedToCard(event.relatedTarget)) return;
@@ -331,7 +371,7 @@ export function CommunityProfileHoverCard({
         ? createPortal(
             <span
               ref={cardRef}
-              className="fixed z-[220] flex w-[45rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-2xl"
+              className="fixed z-[1000] flex w-[45rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-2xl"
               style={{
                 left: `${position.left}px`,
                 top: `${position.top}px`,

@@ -21,8 +21,6 @@ type Props = {
   feedMentionNameById: Record<string, string>;
   /** From local feed state: user opened this post before. */
   feedCardHasBeenRead: boolean;
-  /** Max comment `created_at` the user has seen in the thread (local). */
-  commentsSeenWatermarkIso: string | null;
   onOpen: () => void;
 };
 
@@ -30,7 +28,6 @@ export function PostCard({
   post,
   feedMentionNameById,
   feedCardHasBeenRead,
-  commentsSeenWatermarkIso,
   onOpen,
 }: Props) {
   const authorName = post.author
@@ -43,17 +40,10 @@ export function PostCard({
   const commentActivity = useMemo(() => {
     const lastIso = post.last_comment_at;
     if (!lastIso) return null;
-    const last = new Date(lastIso).getTime();
-    const hasUnseen =
-      !commentsSeenWatermarkIso ||
-      last > new Date(commentsSeenWatermarkIso).getTime();
     const ago = formatCommunityRelativeActivityAgo(lastIso);
     if (!ago) return null;
-    if (hasUnseen) {
-      return { variant: "new" as const, label: `New comment ${ago}` };
-    }
     return { variant: "last" as const, label: `Last comment ${ago}` };
-  }, [post.last_comment_at, commentsSeenWatermarkIso]);
+  }, [post.last_comment_at]);
 
   const previewBody = useMemo(
     () =>

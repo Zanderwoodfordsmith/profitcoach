@@ -5,7 +5,11 @@ import {
   compareAdminMentionOrder,
   compareMentionSearchResults,
   mentionMatchScore,
+  type MentionProfileRow,
 } from "@/lib/communityMentionUsers";
+
+const PROFILE_SELECT =
+  "id, full_name, first_name, last_name, avatar_url, role" as const;
 
 async function requireStaff(request: Request): Promise<
   | { ok: true; userId: string }
@@ -43,24 +47,84 @@ async function requireStaff(request: Request): Promise<
   return { ok: true, userId: user.id };
 }
 
-async function loadLastSignInByUserId(
-  userIds: string[]
-): Promise<Record<string, string | null>> {
-  if (userIds.length === 0) return {};
+function escapeIlikePattern(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
 
-  const authUsersRes = await supabaseAdmin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
-  });
-  if (authUsersRes.error) return {};
+function profileNameSearchFilter(needle: string): string {
+  const p = escapeIlikePattern(needle);
+  return `first_name.ilike.${p}%,last_name.ilike.${p}%,full_name.ilike.%${p}%`;
+}
 
-  const wanted = new Set(userIds);
-  const out: Record<string, string | null> = {};
-  for (const user of authUsersRes.data.users ?? []) {
-    if (!wanted.has(user.id)) continue;
-    out[user.id] = user.last_sign_in_at ?? null;
+type ProfileRow = MentionProfileRow & {
+  avatar_url: string | null;
+};
+
+async function loadSlugByCoachId(coachIds: string[]): Promise<Record<string, string>> {
+  if (coachIds.length === 0) return {};
+  const { data: coaches } = await supabaseAdmin
+    .from("coaches")
+    .select("id, slug")
+    .in("id", coachIds);
+  return Object.fromEntries(
+    (coaches ?? []).map((coach) => [coach.id as string, coach.slug as string])
+  );
+}
+
+async function searchMentionProfiles(
+  needle: string
+): Promise<{ rows: ProfileRow[]; slugByCoach: Record<string, string> }> {
+  const pattern = needle.toLowerCase();
+
+  const [byNameRes, bySlugRes] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select(PROFILE_SELECT)
+      .in("role", ["coach", "admin"])
+      .or(profileNameSearchFilter(pattern))
+      .limit(80),
+    supabaseAdmin
+      .from("coaches")
+      .select("id, slug")
+      .ilike("slug", `${escapeIlikePattern(pattern)}%`)
+      .limit(25),
+  ]);
+
+  const byId = new Map<string, ProfileRow>();
+  for (const row of (byNameRes.data ?? []) as ProfileRow[]) {
+    byId.set(row.id, row);
   }
-  return out;
+
+  const slugHits = bySlugRes.data ?? [];
+  const slugByCoachFromHits = Object.fromEntries(
+    slugHits.map((c) => [c.id as string, c.slug as string])
+  );
+
+  const missingCoachIds = slugHits
+    .map((c) => c.id as string)
+    .filter((id) => !byId.has(id));
+
+  if (missingCoachIds.length > 0) {
+    const { data: slugProfiles } = await supabaseAdmin
+      .from("profiles")
+      .select(PROFILE_SELECT)
+      .in("id", missingCoachIds)
+      .in("role", ["coach", "admin"]);
+    for (const row of (slugProfiles ?? []) as ProfileRow[]) {
+      byId.set(row.id, row);
+    }
+  }
+
+  const rows = [...byId.values()];
+  const coachIds = rows
+    .filter((row) => row.role === "coach")
+    .map((row) => row.id);
+  const slugByCoach = {
+    ...(await loadSlugByCoachId(coachIds)),
+    ...slugByCoachFromHits,
+  };
+
+  return { rows, slugByCoach };
 }
 
 export async function GET(request: Request) {
@@ -75,88 +139,72 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const qRaw = searchParams.get("q") ?? "";
   const q = qRaw.trim();
+  const prioritizeUserId = searchParams.get("prioritize")?.trim() || null;
+
+  const toMentionUser = (row: ProfileRow) => ({
+    id: row.id as string,
+    display_name: displayNameFromProfile(row),
+    avatar_url: row.avatar_url ?? null,
+    role: row.role as string,
+  });
 
   if (q.length === 0) {
-    const { data, error } = await supabaseAdmin
-      .from("profiles")
-      .select("id, full_name, first_name, last_name, avatar_url, role")
-      .eq("role", "admin")
-      .limit(30);
+    const [priorityRes, adminsRes] = await Promise.all([
+      prioritizeUserId
+        ? supabaseAdmin
+            .from("profiles")
+            .select(PROFILE_SELECT)
+            .eq("id", prioritizeUserId)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+      supabaseAdmin
+        .from("profiles")
+        .select(PROFILE_SELECT)
+        .eq("role", "admin")
+        .limit(30),
+    ]);
 
-    if (error) {
+    if (adminsRes.error) {
       return NextResponse.json(
         { error: "Could not load users." },
         { status: 500 }
       );
     }
 
-    const sorted = [...(data ?? [])].sort(compareAdminMentionOrder);
+    const users: ReturnType<typeof toMentionUser>[] = [];
+    if (priorityRes.data) {
+      users.push(toMentionUser(priorityRes.data as ProfileRow));
+    }
 
-    const users = sorted.map((row) => ({
-      id: row.id as string,
-      display_name: displayNameFromProfile(row),
-      avatar_url: row.avatar_url ?? null,
-      role: row.role as string,
-    }));
+    const sorted = [...(adminsRes.data ?? [])]
+      .filter((row) => row.id !== prioritizeUserId)
+      .sort(compareAdminMentionOrder);
 
-    return NextResponse.json({ users });
-  }
+    users.push(...sorted.map((row) => toMentionUser(row as ProfileRow)));
 
-  const { data: rows, error } = await supabaseAdmin
-    .from("profiles")
-    .select("id, full_name, first_name, last_name, avatar_url, role")
-    .in("role", ["coach", "admin"])
-    .limit(400);
-
-  if (error) {
     return NextResponse.json(
-      { error: "Could not load users." },
-      { status: 500 }
+      { users: users.slice(0, 30) },
+      { headers: { "Cache-Control": "private, max-age=60" } }
     );
   }
 
-  const coachIds = (rows ?? [])
-    .filter((row) => row.role === "coach")
-    .map((row) => row.id as string);
-
-  let slugByCoach: Record<string, string> = {};
-  if (coachIds.length > 0) {
-    const { data: coaches } = await supabaseAdmin
-      .from("coaches")
-      .select("id, slug")
-      .in("id", coachIds);
-    slugByCoach = Object.fromEntries(
-      (coaches ?? []).map((coach) => [coach.id as string, coach.slug as string])
-    );
-  }
+  const { rows, slugByCoach } = await searchMentionProfiles(q);
 
   const needle = q.toLowerCase();
-  const matched = (rows ?? []).filter(
-    (row) => mentionMatchScore(row, slugByCoach[row.id as string], needle) > 0
-  );
-
-  const lastSignInByUserId = await loadLastSignInByUserId(
-    matched.map((row) => row.id as string)
+  const matched = rows.filter(
+    (row) => mentionMatchScore(row, slugByCoach[row.id], needle) > 0
   );
 
   const data = matched
     .sort((a, b) =>
-      compareMentionSearchResults(
-        a,
-        b,
-        slugByCoach,
-        needle,
-        lastSignInByUserId
-      )
+      compareMentionSearchResults(a, b, slugByCoach, needle, prioritizeUserId)
     )
     .slice(0, 30);
 
-  const users = data.map((row) => ({
-    id: row.id as string,
-    display_name: displayNameFromProfile(row),
-    avatar_url: row.avatar_url ?? null,
-    role: row.role as string,
-  }));
+  const users = data.map(toMentionUser);
 
-  return NextResponse.json({ users });
+  return NextResponse.json(
+    { users },
+    { headers: { "Cache-Control": "private, max-age=30" } }
+  );
 }

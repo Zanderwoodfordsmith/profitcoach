@@ -6,11 +6,30 @@ import { supabaseClient } from "@/lib/supabaseClient";
  */
 export function coachPersonaForCommunity(
   pathname: string | null,
-  impersonatingCoachId: string | null
+  impersonatingCoachId: string | null,
+  /** When false, ignore stale sessionStorage impersonation (real coaches). */
+  viewerIsAdmin: boolean | null = null
 ): string | null {
   if (!impersonatingCoachId) return null;
   if (!pathname?.startsWith("/coach/")) return null;
+  if (viewerIsAdmin === false) return null;
   return impersonatingCoachId;
+}
+
+/** localStorage key for feed read/dimmed state — never key off impersonation for coaches. */
+export function communityFeedStorageScopeId(
+  pathname: string | null,
+  impersonatingCoachId: string | null,
+  authUserId: string | null,
+  viewerIsAdmin: boolean | null
+): string | null {
+  return (
+    coachPersonaForCommunity(
+      pathname,
+      impersonatingCoachId,
+      viewerIsAdmin
+    ) ?? authUserId
+  );
 }
 
 /** Community author id: coach persona when impersonating on coach routes, else auth user. */

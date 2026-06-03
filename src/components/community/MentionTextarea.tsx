@@ -50,6 +50,8 @@ type Props = {
   maxAutoHeightPx?: number;
   minAutoHeightPx?: number;
   showFormattingToolbar?: boolean;
+  /** Post author (or similar) surfaced first in the @-mention picker. */
+  prioritizeUserId?: string;
 };
 
 type KnownMention = {
@@ -292,20 +294,89 @@ export function getActiveMentionQuery(
   return { start: lastAt, query: fragment };
 }
 
-async function fetchMentionUsers(query: string): Promise<MentionUser[]> {
+const MENTION_CACHE_TTL_MS = 60_000;
+const MENTION_SEARCH_DEBOUNCE_MS = 120;
+
+const mentionUsersCache = new Map<
+  string,
+  { users: MentionUser[]; fetchedAt: number }
+>();
+
+let mentionAccessToken: string | null = null;
+let mentionAccessTokenAt = 0;
+
+function mentionCacheKey(query: string, prioritizeUserId?: string): string {
+  return `${prioritizeUserId ?? ""}|${query}`;
+}
+
+function readMentionCache(
+  query: string,
+  prioritizeUserId?: string
+): MentionUser[] | null {
+  const hit = mentionUsersCache.get(mentionCacheKey(query, prioritizeUserId));
+  if (!hit) return null;
+  if (Date.now() - hit.fetchedAt > MENTION_CACHE_TTL_MS) {
+    mentionUsersCache.delete(mentionCacheKey(query, prioritizeUserId));
+    return null;
+  }
+  return hit.users;
+}
+
+function writeMentionCache(
+  query: string,
+  prioritizeUserId: string | undefined,
+  users: MentionUser[]
+): void {
+  mentionUsersCache.set(mentionCacheKey(query, prioritizeUserId), {
+    users,
+    fetchedAt: Date.now(),
+  });
+}
+
+async function getMentionAccessToken(): Promise<string | null> {
+  if (
+    mentionAccessToken &&
+    Date.now() - mentionAccessTokenAt < MENTION_CACHE_TTL_MS
+  ) {
+    return mentionAccessToken;
+  }
   const { data: sessionData } = await supabaseClient.auth.getSession();
-  const token = sessionData.session?.access_token;
+  const token = sessionData.session?.access_token ?? null;
+  mentionAccessToken = token;
+  mentionAccessTokenAt = Date.now();
+  return token;
+}
+
+async function fetchMentionUsers(
+  query: string,
+  prioritizeUserId?: string
+): Promise<MentionUser[]> {
+  const cached = readMentionCache(query, prioritizeUserId);
+  if (cached) return cached;
+
+  const token = await getMentionAccessToken();
   if (!token) return [];
 
   const qs = new URLSearchParams();
   if (query.length > 0) qs.set("q", query);
+  if (prioritizeUserId) qs.set("prioritize", prioritizeUserId);
 
   const res = await fetch(`/api/community/mention-users?${qs.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) return [];
   const json = (await res.json()) as { users?: MentionUser[] };
-  return json.users ?? [];
+  const users = json.users ?? [];
+  writeMentionCache(query, prioritizeUserId, users);
+  return users;
+}
+
+/** Warm the default @ picker (post author + admins) before the user types. */
+export function prefetchMentionUsers(prioritizeUserId?: string): void {
+  const key = mentionCacheKey("", prioritizeUserId);
+  const hit = mentionUsersCache.get(key);
+  if (hit && Date.now() - hit.fetchedAt < MENTION_CACHE_TTL_MS) return;
+  void fetchMentionUsers("", prioritizeUserId);
 }
 
 export function MentionTextarea({
@@ -319,6 +390,7 @@ export function MentionTextarea({
   maxAutoHeightPx = 280,
   minAutoHeightPx = 0,
   showFormattingToolbar = false,
+  prioritizeUserId,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mirrorInnerRef = useRef<HTMLDivElement>(null);
@@ -339,6 +411,17 @@ export function MentionTextarea({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerMode, setPickerMode] = useState<"lesson" | "course">("lesson");
   const fetchSeq = useRef(0);
+  const mentionDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (mentionDebounceRef.current) clearTimeout(mentionDebounceRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    prefetchMentionUsers(prioritizeUserId);
+  }, [prioritizeUserId]);
 
   useEffect(() => {
     // Ignore parent echoes of our own onChange while typing; rehydrating here
@@ -400,23 +483,48 @@ export function MentionTextarea({
     [highlightIdx, mentionUsers]
   );
 
-  const runMentionFetch = useCallback((query: string) => {
-    setMentionOpen(true);
-    setHighlightIdx(0);
-    const seq = ++fetchSeq.current;
-    setMentionLoading(true);
-    fetchMentionUsers(query)
-      .then((users) => {
-        if (fetchSeq.current !== seq) return;
-        setMentionUsers(users);
+  const runMentionFetch = useCallback(
+    (query: string) => {
+      setMentionOpen(true);
+      setHighlightIdx(0);
+
+      const cached = readMentionCache(query, prioritizeUserId);
+      if (cached) {
+        setMentionUsers(cached);
         setMentionLoading(false);
-      })
-      .catch(() => {
-        if (fetchSeq.current !== seq) return;
-        setMentionUsers([]);
-        setMentionLoading(false);
-      });
-  }, []);
+      } else {
+        setMentionLoading(true);
+      }
+
+      const doFetch = () => {
+        const seq = ++fetchSeq.current;
+        fetchMentionUsers(query, prioritizeUserId)
+          .then((users) => {
+            if (fetchSeq.current !== seq) return;
+            setMentionUsers(users);
+            setMentionLoading(false);
+          })
+          .catch(() => {
+            if (fetchSeq.current !== seq) return;
+            setMentionUsers([]);
+            setMentionLoading(false);
+          });
+      };
+
+      if (mentionDebounceRef.current) {
+        clearTimeout(mentionDebounceRef.current);
+        mentionDebounceRef.current = null;
+      }
+
+      if (query.length === 0) {
+        doFetch();
+        return;
+      }
+
+      mentionDebounceRef.current = setTimeout(doFetch, MENTION_SEARCH_DEBOUNCE_MS);
+    },
+    [prioritizeUserId]
+  );
 
   const syncMentionFromDom = useCallback(() => {
     const el = taRef.current;

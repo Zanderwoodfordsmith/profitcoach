@@ -41,18 +41,22 @@ import type {
 import { MentionBody } from "@/components/community/MentionBody";
 import { CommunityPostMarkdownBody } from "@/components/community/CommunityPostMarkdownBody";
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
-import { MentionTextarea } from "@/components/community/MentionTextarea";
+import {
+  MentionTextarea,
+  prefetchMentionUsers,
+} from "@/components/community/MentionTextarea";
 import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
 import { PostEngagementBar } from "@/components/community/PostEngagementBar";
 import { toggleCommunityCommentLike } from "@/lib/communityCommentLike";
 import { toggleCommunityPostFavourite } from "@/lib/communityPostFavourite";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import { setCommunityPostPinned } from "@/lib/communityPostPin";
-import { isUndefinedRelationError } from "@/lib/communitySupabaseErrors";
 import {
-  fetchStaffAvatarMap,
-  mergeAuthorAvatar,
-} from "@/lib/communityStaffAvatars";
+  fetchCommunityPostComments,
+  getCachedCommunityPostComments,
+  invalidateCommunityPostCommentsCache,
+  prefetchCommunityPostComments,
+} from "@/lib/fetchCommunityPostComments";
 import {
   COMMUNITY_POST_MEDIA_MAX,
   communityPostMediaFingerprint,
@@ -91,6 +95,45 @@ type CommentRow = {
 function mentionTokenForAuthor(authorId: string, displayName: string): string {
   const name = displayName.replace(/[[\]]/g, "").trim() || "member";
   return `[@${name}](mention:${authorId}) `;
+}
+
+const COMMENT_INSERT_SELECT = `
+  id,
+  post_id,
+  author_id,
+  body,
+  created_at,
+  parent_comment_id,
+  author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
+`;
+
+function mapCommentInsertRow(
+  row: Omit<CommentRow, "like_count" | "liked_by_me" | "author"> & {
+    author: ProfileRow | ProfileRow[] | null;
+  }
+): CommentRow {
+  const author = Array.isArray(row.author)
+    ? row.author[0] ?? null
+    : row.author ?? null;
+  return {
+    id: row.id,
+    post_id: row.post_id,
+    author_id: row.author_id,
+    body: row.body,
+    created_at: row.created_at,
+    parent_comment_id: row.parent_comment_id,
+    author,
+    like_count: 0,
+    liked_by_me: false,
+  };
+}
+
+function appendComment(prev: CommentRow[], next: CommentRow): CommentRow[] {
+  if (prev.some((c) => c.id === next.id)) return prev;
+  return [...prev, next].sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
 }
 
 /** Top-level comment id for a reply (never nests deeper than one reply level). */
@@ -169,7 +212,6 @@ type Props = {
   feedStorageScopeId: string | null;
   onMarkPostRead: (postId: string) => void;
   onMarkPostUnread: (postId: string) => void;
-  onMarkCommentsSeenUpTo: (postId: string, latestCommentIso: string) => void;
   /** Embedded inside a parent shell (e.g. admin wins queue) — no full-screen backdrop. */
   presentation?: "overlay" | "embedded";
 };
@@ -436,7 +478,6 @@ export function PostDetailModal({
   feedStorageScopeId,
   onMarkPostRead,
   onMarkPostUnread,
-  onMarkCommentsSeenUpTo,
   presentation = "overlay",
 }: Props) {
   const pathname = usePathname();
@@ -465,16 +506,12 @@ export function PostDetailModal({
   const [submitting, setSubmitting] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const commentsAnchorRef = useRef<HTMLDivElement>(null);
-  const composerShellRef = useRef<HTMLDivElement>(null);
-  const [composerMultiline, setComposerMultiline] = useState(false);
   const [composerProfile, setComposerProfile] = useState<ProfileRow | null>(
     null
   );
   const [postAuthorDisplay, setPostAuthorDisplay] = useState<ProfileRow | null>(
     null
   );
-  const postRef = useRef(post);
-  postRef.current = post;
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentAuthorId, setCurrentAuthorId] = useState<string | null>(null);
@@ -482,7 +519,10 @@ export function PostDetailModal({
   const menuRef = useRef<HTMLDivElement>(null);
   /** After "Mark as unread", skip auto read until switching posts (mark unread bumps parent state). */
   const skipAutoMarkPostReadRef = useRef(false);
+  /** Ignore in-flight comment loads superseded by a newer request or post switch. */
+  const commentsLoadGenRef = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const [bodyExpanded, setBodyExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -555,6 +595,11 @@ export function PostDetailModal({
   ]);
 
   useEffect(() => {
+    prefetchMentionUsers(post.author?.id);
+    prefetchCommunityPostComments(post.id);
+  }, [post.author?.id, post.id]);
+
+  useEffect(() => {
     void supabaseClient.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
     });
@@ -573,17 +618,6 @@ export function PostDetailModal({
       cancelled = true;
     };
   }, [currentUserId]);
-
-  useEffect(() => {
-    const shell = composerShellRef.current;
-    if (!shell) return;
-    const ro = new ResizeObserver(() => {
-      const ta = shell.querySelector("textarea");
-      if (ta) setComposerMultiline(ta.scrollHeight > 44);
-    });
-    ro.observe(shell);
-    return () => ro.disconnect();
-  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -685,120 +719,43 @@ export function PostDetailModal({
     };
   }, [coachPersona]);
 
-  const loadComments = useCallback(async () => {
-    setCommentsLoading(true);
-    const { data, error } = await supabaseClient
-      .from("community_post_comments")
-      .select(
-        `
-        id,
-        post_id,
-        author_id,
-        body,
-        created_at,
-        parent_comment_id,
-        author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
-      `
-      )
-      .eq("post_id", post.id)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      setComments([]);
+  const loadComments = useCallback(async (options?: { skipCache?: boolean }) => {
+    const gen = ++commentsLoadGenRef.current;
+    const cached =
+      !options?.skipCache ? getCachedCommunityPostComments(post.id) : null;
+    if (cached) {
+      setComments(cached.comments);
+      if (cached.post_author) setPostAuthorDisplay(cached.post_author);
       setCommentsLoading(false);
-      return;
-    }
-    const rows = (data ?? []) as Array<
-      Omit<CommentRow, "author" | "like_count" | "liked_by_me"> & {
-        author: ProfileRow | ProfileRow[] | null;
-      }
-    >;
-    const mapped = rows.map((row) => ({
-      id: row.id,
-      post_id: row.post_id,
-      author_id: row.author_id,
-      body: row.body,
-      created_at: row.created_at,
-      parent_comment_id: row.parent_comment_id,
-      author: Array.isArray(row.author)
-        ? row.author[0] ?? null
-        : row.author ?? null,
-    }));
-
-    const commentIds = mapped.map((r) => r.id);
-    const likeCountByComment = new Map<string, number>();
-    let myLikedCommentIds = new Set<string>();
-    if (commentIds.length > 0) {
-      const likesRes = await supabaseClient
-        .from("community_comment_likes")
-        .select("comment_id, user_id")
-        .in("comment_id", commentIds);
-
-      if (likesRes.error && !isUndefinedRelationError(likesRes.error)) {
-        console.error(likesRes.error);
-      } else {
-        const likesTableMissing = Boolean(
-          likesRes.error && isUndefinedRelationError(likesRes.error)
-        );
-        if (likesTableMissing && process.env.NODE_ENV === "development") {
-          console.warn(
-            "[Community] community_comment_likes query failed (table missing?). Run migration 20260515120000_community_comment_likes.sql."
-          );
-        }
-        const likeRows = (likesTableMissing ? [] : likesRes.data ?? []) as {
-          comment_id: string;
-          user_id: string;
-        }[];
-        const {
-          data: { user },
-        } = await supabaseClient.auth.getUser();
-        const uid = user?.id;
-        for (const r of likeRows) {
-          likeCountByComment.set(
-            r.comment_id,
-            (likeCountByComment.get(r.comment_id) ?? 0) + 1
-          );
-          if (uid && r.user_id === uid) {
-            myLikedCommentIds.add(r.comment_id);
-          }
-        }
-      }
+    } else {
+      setCommentsLoading(true);
     }
 
-    const currentPost = postRef.current;
-    const avatarIds = [
-      ...new Set([
-        ...mapped.map((r) => r.author_id),
-        ...(currentPost.author?.id ? [currentPost.author.id] : []),
-      ]),
-    ];
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    const avatarMap = await fetchStaffAvatarMap(
-      avatarIds,
-      session?.access_token
-    );
-
-    setComments(
-      mapped.map((r) => ({
-        ...r,
-        like_count: likeCountByComment.get(r.id) ?? 0,
-        liked_by_me: myLikedCommentIds.has(r.id),
-        author: mergeAuthorAvatar(r.author_id, r.author, avatarMap),
-      }))
-    );
-    if (currentPost.author?.id) {
-      setPostAuthorDisplay(
-        mergeAuthorAvatar(
-          currentPost.author.id,
-          currentPost.author,
-          avatarMap
-        )
+    try {
+      // Prefetch cache is for instant first paint only — always revalidate from API.
+      const { comments, post_author } = await fetchCommunityPostComments(
+        post.id,
+        { skipCache: true }
       );
+      if (gen !== commentsLoadGenRef.current) return;
+      setComments(comments);
+      if (post_author) {
+        setPostAuthorDisplay(post_author);
+      }
+    } catch {
+      if (gen !== commentsLoadGenRef.current) return;
+      if (!cached) setComments([]);
+    } finally {
+      if (gen === commentsLoadGenRef.current) {
+        setCommentsLoading(false);
+      }
     }
-    setCommentsLoading(false);
   }, [post.id]);
+
+  const reloadComments = useCallback(async () => {
+    invalidateCommunityPostCommentsCache(post.id);
+    await loadComments({ skipCache: true });
+  }, [loadComments, post.id]);
 
   useEffect(() => {
     void loadComments();
@@ -852,28 +809,6 @@ export function PostDetailModal({
       setPinBusy(false);
     }
   }, [canPin, onPostsChanged, pinBusy, post.id, post.is_pinned]);
-
-  useEffect(() => {
-    if (!feedStorageScopeId) return;
-    if (commentsLoading) return;
-    if (comments.length === 0) {
-      onMarkCommentsSeenUpTo(post.id, post.created_at);
-      return;
-    }
-    let latest = comments[0].created_at;
-    for (let i = 1; i < comments.length; i++) {
-      const t = comments[i].created_at;
-      if (new Date(t) > new Date(latest)) latest = t;
-    }
-    onMarkCommentsSeenUpTo(post.id, latest);
-  }, [
-    feedStorageScopeId,
-    commentsLoading,
-    comments,
-    post.id,
-    post.created_at,
-    onMarkCommentsSeenUpTo,
-  ]);
 
   const allBodiesText = useMemo(() => {
     const parts = [post.body, ...comments.map((c) => c.body)];
@@ -931,6 +866,45 @@ export function PostDetailModal({
   }, [allBodiesText, comments, post.author]);
 
   useEffect(() => {
+    if (presentation !== "overlay") return;
+    const prevBody = document.body.style.overflow;
+    const prevHtml = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBody;
+      document.documentElement.style.overflow = prevHtml;
+    };
+  }, [presentation]);
+
+  useEffect(() => {
+    if (presentation !== "overlay") return;
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const trapWheel = (e: WheelEvent) => {
+      const scrollEl = scrollContainerRef.current;
+      if (!scrollEl || !scrollEl.contains(e.target as Node)) {
+        e.preventDefault();
+        return;
+      }
+      const { scrollTop, scrollHeight, clientHeight } = scrollEl;
+      if (scrollHeight <= clientHeight + 1) {
+        e.preventDefault();
+        return;
+      }
+      const dy = e.deltaY;
+      if (dy < 0 && scrollTop <= 0) e.preventDefault();
+      else if (dy > 0 && scrollTop + clientHeight >= scrollHeight - 1) {
+        e.preventDefault();
+      }
+    };
+
+    overlay.addEventListener("wheel", trapWheel, { passive: false });
+    return () => overlay.removeEventListener("wheel", trapWheel);
+  }, [presentation, commentsLoading, comments.length, post.id, editing]);
+
+  useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
       if (menuOpen) {
@@ -945,6 +919,7 @@ export function PostDetailModal({
   }, [menuOpen, onClose]);
 
   const headerAuthor = postAuthorDisplay ?? post.author;
+  const mentionPrioritizeUserId = post.author?.id;
   const authorName = headerAuthor
     ? displayNameFromProfile(headerAuthor)
     : "Unknown";
@@ -1146,19 +1121,28 @@ export function PostDetailModal({
       setSubmitting(false);
       return;
     }
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from("community_post_comments")
       .insert({
         post_id: post.id,
         author_id: authorId,
         body: text,
         parent_comment_id: null,
-      });
+      })
+      .select(COMMENT_INSERT_SELECT)
+      .single();
     setSubmitting(false);
-    if (!error) {
+    if (error) {
+      setActionError(supabaseErrorMessage(error));
+      return;
+    }
+    if (data) {
       setNewComment("");
+      setComments((prev) =>
+        appendComment(prev, mapCommentInsertRow(data as Parameters<typeof mapCommentInsertRow>[0]))
+      );
       markWinCelebratedIfAdmin();
-      await loadComments();
+      void reloadComments();
       if (onPostLocalUpdate) {
         onPostLocalUpdate(post.id, (p) => ({
           comment_count: p.comment_count + 1,
@@ -1176,7 +1160,7 @@ export function PostDetailModal({
     onPostsChanged,
     post.id,
     submitting,
-    loadComments,
+    reloadComments,
   ]);
 
   const handleToggleLike = useCallback(async () => {
@@ -1225,12 +1209,12 @@ export function PostDetailModal({
       try {
         await toggleCommunityCommentLike(commentId, currentlyLiked);
       } catch {
-        await loadComments();
+        await reloadComments();
       } finally {
         setCommentLikeBusyId(null);
       }
     },
-    [commentLikeBusyId, loadComments]
+    [commentLikeBusyId, reloadComments]
   );
 
   const scrollToComments = useCallback(() => {
@@ -1268,20 +1252,29 @@ export function PostDetailModal({
         setSubmitting(false);
         return;
       }
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from("community_post_comments")
         .insert({
           post_id: post.id,
           author_id: authorId,
           body: text,
           parent_comment_id: threadParentId,
-        });
+        })
+        .select(COMMENT_INSERT_SELECT)
+        .single();
       setSubmitting(false);
-      if (!error) {
+      if (error) {
+        setActionError(supabaseErrorMessage(error));
+        return;
+      }
+      if (data) {
         setReplyDrafts((d) => ({ ...d, [draftKey]: "" }));
         setReplyOpenFor(null);
+        setComments((prev) =>
+          appendComment(prev, mapCommentInsertRow(data as Parameters<typeof mapCommentInsertRow>[0]))
+        );
         markWinCelebratedIfAdmin();
-        await loadComments();
+        void reloadComments();
         if (onPostLocalUpdate) {
           onPostLocalUpdate(post.id, (p) => ({
             comment_count: p.comment_count + 1,
@@ -1298,7 +1291,7 @@ export function PostDetailModal({
       replyDrafts,
       submitting,
       post.id,
-      loadComments,
+      reloadComments,
       onPostLocalUpdate,
       onPostsChanged,
     ]
@@ -1349,7 +1342,7 @@ export function PostDetailModal({
       }
       setCommentMenuOpenId(null);
       cancelEditingComment(comment.id);
-      await loadComments();
+      await reloadComments();
       // Editing a comment body does not change any post-level counter, so a
       // full feed reload is only needed when we cannot patch locally.
       if (!onPostLocalUpdate) await onPostsChanged();
@@ -1359,7 +1352,7 @@ export function PostDetailModal({
       cancelEditingComment,
       commentActionBusyId,
       commentEditDrafts,
-      loadComments,
+      reloadComments,
       onPostLocalUpdate,
       onPostsChanged,
       post.id,
@@ -1386,7 +1379,7 @@ export function PostDetailModal({
       }
       setCommentMenuOpenId(null);
       cancelEditingComment(comment.id);
-      await loadComments();
+      await reloadComments();
       if (onPostLocalUpdate) {
         // Approximate the new count locally; the exact value (accounting for
         // any cascaded reply deletes) is reconciled on the next feed load.
@@ -1401,7 +1394,7 @@ export function PostDetailModal({
       canManageComment,
       cancelEditingComment,
       commentActionBusyId,
-      loadComments,
+      reloadComments,
       onPostLocalUpdate,
       onPostsChanged,
       post.id,
@@ -1436,7 +1429,7 @@ export function PostDetailModal({
         >
         <div
           ref={scrollContainerRef}
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sm:px-8"
+          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-5 sm:px-8"
         >
           <div className="flex items-start gap-3">
             <CommunityAuthorAvatar profile={headerAuthor} size="md" />
@@ -1938,6 +1931,7 @@ export function PostDetailModal({
                                     [c.id]: v,
                                   }))
                                 }
+                                prioritizeUserId={mentionPrioritizeUserId}
                                 rows={3}
                                 className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
@@ -2001,6 +1995,7 @@ export function PostDetailModal({
                                     [c.id]: v,
                                   }))
                                 }
+                                prioritizeUserId={mentionPrioritizeUserId}
                                 placeholder="Write a reply…"
                                 rows={3}
                                 className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
@@ -2142,6 +2137,7 @@ export function PostDetailModal({
                                                   [r.id]: v,
                                                 }))
                                               }
+                                              prioritizeUserId={mentionPrioritizeUserId}
                                               rows={3}
                                               className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
@@ -2215,6 +2211,7 @@ export function PostDetailModal({
                                                   [r.id]: v,
                                                 }))
                                               }
+                                              prioritizeUserId={mentionPrioritizeUserId}
                                               placeholder="Write a reply…"
                                               rows={3}
                                               className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
@@ -2261,40 +2258,28 @@ export function PostDetailModal({
                 })}
               </ul>
             ) : null}
-
-            <div className="mt-4 border-t border-slate-100 pt-3">
-              <div className="flex items-start gap-3">
-                {composerProfile?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={composerProfile.avatar_url}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
-                  />
-                ) : (
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
-                    {profileInitialsFromName(composerDisplayName)}
-                  </span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div
-                    ref={composerShellRef}
-                    className={`relative border border-slate-300 bg-slate-50 transition-[border-radius] ${
-                      composerMultiline ? "rounded-2xl" : "rounded-[9999px]"
-                    }`}
-                  >
-                    <MentionTextarea
-                      value={newComment}
-                      onChange={setNewComment}
-                      placeholder="Your comment"
-                      autoResize
-                      maxAutoHeightPx={220}
-                      className="w-full border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
-                    />
-                  </div>
+          </div>
+        </div>
+        {!editing ? (
+          <div className="shrink-0 border-t border-slate-200 bg-white px-4 py-3 sm:px-8">
+            <div className="flex items-end gap-3">
+              {composerProfile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={composerProfile.avatar_url}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="mb-0.5 h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-slate-100"
+                />
+              ) : (
+                <span className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-sm font-medium text-slate-600">
+                  {profileInitialsFromName(composerDisplayName)}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col-reverse overflow-hidden rounded-2xl border border-slate-300 bg-slate-50">
                   {showCommentComposerActions ? (
-                    <div className="mt-2 flex justify-end gap-3">
+                    <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-3 py-2">
                       <button
                         type="button"
                         onClick={() => setNewComment("")}
@@ -2312,11 +2297,20 @@ export function PostDetailModal({
                       </button>
                     </div>
                   ) : null}
+                  <MentionTextarea
+                    value={newComment}
+                    onChange={setNewComment}
+                    prioritizeUserId={mentionPrioritizeUserId}
+                    placeholder="Your comment"
+                    autoResize
+                    maxAutoHeightPx={220}
+                    className="min-h-[2.5rem] w-full border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                  />
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : null}
         </div>
       </div>
   );
@@ -2327,7 +2321,8 @@ export function PostDetailModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overscroll-none bg-black/45 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"

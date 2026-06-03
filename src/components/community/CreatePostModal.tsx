@@ -29,6 +29,8 @@ type Props = {
   authorLabel?: string;
   onClose: () => void;
   onCreated: () => void | Promise<void>;
+  /** Mark the new post read for the author (including scheduled posts). */
+  onMarkPostRead?: (postId: string) => void;
 };
 
 type PendingMedia = { key: string; file: File; previewUrl: string };
@@ -48,6 +50,7 @@ export function CreatePostModal({
   authorLabel = "You",
   onClose,
   onCreated,
+  onMarkPostRead,
 }: Props) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
@@ -216,7 +219,9 @@ export function CreatePostModal({
       const mediaPayload = uploaded.length > 0 ? uploaded : null;
       const imageUrl = uploaded.length > 0 ? firstCommunityPostImageUrl(uploaded) : null;
 
-      const { error: insErr } = await supabaseClient.from("community_posts").insert({
+      const { data: created, error: insErr } = await supabaseClient
+        .from("community_posts")
+        .insert({
         author_id: authorId,
         category_id: categoryId,
         title: capitalizeFirstUnicodeLetter(trimmedTitle),
@@ -225,13 +230,19 @@ export function CreatePostModal({
         media: mediaPayload,
         published_at:
           isAuthorAdmin && scheduledAtIso ? scheduledAtIso : new Date().toISOString(),
-      });
+      })
+        .select("id")
+        .single();
 
       if (insErr) {
         const msg = supabaseErrorMessage(insErr);
         const hint = communityAccessHint(msg);
         setError(hint ? `${msg}\n\n${hint}` : msg);
         return;
+      }
+
+      if (created?.id) {
+        onMarkPostRead?.(created.id);
       }
 
       revokeAllPending(pendingMedia);
@@ -249,6 +260,7 @@ export function CreatePostModal({
     categoryId,
     impersonatingCoachId,
     onCreated,
+    onMarkPostRead,
     pathname,
     pendingMedia,
     revokeAllPending,

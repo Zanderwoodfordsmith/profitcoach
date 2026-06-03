@@ -22,6 +22,20 @@ export function compareAdminMentionOrder(a: ProfileNames, b: ProfileNames): numb
   return displayNameFromProfile(a).localeCompare(displayNameFromProfile(b));
 }
 
+/** Put the post (or thread) author first in @-mention pickers when provided. */
+export function comparePrioritizedMentionUser(
+  a: { id: string },
+  b: { id: string },
+  prioritizeUserId: string | null | undefined
+): number {
+  if (!prioritizeUserId) return 0;
+  const aPri = a.id === prioritizeUserId;
+  const bPri = b.id === prioritizeUserId;
+  if (aPri && !bPri) return -1;
+  if (!aPri && bPri) return 1;
+  return 0;
+}
+
 /**
  * Higher scores rank earlier. Slug and first-name prefix matches beat substring
  * matches inside a last name (e.g. "will" → Will Walsh before Charles Williams).
@@ -59,20 +73,15 @@ export function compareMentionSearchResults(
   b: MentionProfileRow,
   slugByCoach: Record<string, string>,
   needle: string,
-  lastSignInByUserId: Record<string, string | null | undefined>
+  prioritizeUserId?: string | null
 ): number {
+  const prioritized = comparePrioritizedMentionUser(a, b, prioritizeUserId);
+  if (prioritized !== 0) return prioritized;
+
   const scoreDiff =
     mentionMatchScore(b, slugByCoach[b.id], needle) -
     mentionMatchScore(a, slugByCoach[a.id], needle);
   if (scoreDiff !== 0) return scoreDiff;
-
-  const aLogin = lastSignInByUserId[a.id] ?? null;
-  const bLogin = lastSignInByUserId[b.id] ?? null;
-  if (aLogin && bLogin && aLogin !== bLogin) {
-    return bLogin.localeCompare(aLogin);
-  }
-  if (aLogin && !bLogin) return -1;
-  if (!aLogin && bLogin) return 1;
 
   return displayNameFromProfile(a).localeCompare(displayNameFromProfile(b));
 }

@@ -11,6 +11,7 @@ import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
+  ArrowRight,
   ArrowUpDown,
   ChevronDown,
   Columns3,
@@ -196,7 +197,6 @@ type CoachTableColumnVisibility = {
   directorySummary: boolean;
   directoryBio: boolean;
   landing: boolean;
-  viewAs: boolean;
 };
 
 type PersistedCoachTableSettings = {
@@ -235,7 +235,6 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   directorySummary: true,
   directoryBio: true,
   landing: true,
-  viewAs: true,
 };
 
 type CoachColumnCategory =
@@ -290,7 +289,6 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "accessTier", label: "Access tier", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
   { key: "landing", label: "Landing / preview", category: "actions" },
-  { key: "viewAs", label: "View as coach", category: "actions" },
 ];
 
 function coachColumnsForCategory(
@@ -1338,9 +1336,7 @@ export default function AdminPage() {
         />
       );
     }
-    return (
-      <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2 text-center">View as</th>
-    );
+    return null;
   }
 
   function renderColumnCell(
@@ -1797,20 +1793,7 @@ export default function AdminPage() {
         </td>
       );
     }
-    return (
-      <td className="px-2 py-2 text-center align-middle">
-        <button
-          type="button"
-          onClick={() => {
-            setImpersonatingCoachId(coach.id);
-            router.push("/coach");
-          }}
-          className="rounded px-2 py-1 text-xs text-slate-500 underline-offset-2 hover:bg-slate-100 hover:text-slate-800 hover:underline"
-        >
-          View as coach
-        </button>
-      </td>
-    );
+    return null;
   }
 
   return (
@@ -2315,7 +2298,21 @@ export default function AdminPage() {
                     )}
                   </td>
                   <td className="w-max whitespace-nowrap px-4 py-2 font-medium text-slate-900">
-                    {coach.full_name ?? "—"}
+                    <span className="inline-flex items-center gap-1.5">
+                      {coach.full_name ?? "—"}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImpersonatingCoachId(coach.id);
+                          router.push("/coach");
+                        }}
+                        className="inline-flex rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-sky-700"
+                        title="View as coach"
+                        aria-label={`View as coach ${coach.full_name ?? coach.slug}`}
+                      >
+                        <ArrowRight className="h-4 w-4" aria-hidden />
+                      </button>
+                    </span>
                   </td>
                   {orderedColumnOptions
                     .filter(({ key }) => columnVisibility[key])
