@@ -1137,16 +1137,18 @@ export function PostDetailModal({
       return;
     }
     if (data) {
-      setNewComment("");
-      setComments((prev) =>
-        appendComment(prev, mapCommentInsertRow(data as Parameters<typeof mapCommentInsertRow>[0]))
+      const inserted = mapCommentInsertRow(
+        data as Parameters<typeof mapCommentInsertRow>[0]
       );
+      setNewComment("");
+      setComments((prev) => appendComment(prev, inserted));
       markWinCelebratedIfAdmin();
       void reloadComments();
       if (onPostLocalUpdate) {
         onPostLocalUpdate(post.id, (p) => ({
           comment_count: p.comment_count + 1,
           commented_by_me: true,
+          last_comment_at: inserted.created_at,
         }));
       } else {
         await onPostsChanged();
@@ -1268,17 +1270,19 @@ export function PostDetailModal({
         return;
       }
       if (data) {
+        const inserted = mapCommentInsertRow(
+          data as Parameters<typeof mapCommentInsertRow>[0]
+        );
         setReplyDrafts((d) => ({ ...d, [draftKey]: "" }));
         setReplyOpenFor(null);
-        setComments((prev) =>
-          appendComment(prev, mapCommentInsertRow(data as Parameters<typeof mapCommentInsertRow>[0]))
-        );
+        setComments((prev) => appendComment(prev, inserted));
         markWinCelebratedIfAdmin();
         void reloadComments();
         if (onPostLocalUpdate) {
           onPostLocalUpdate(post.id, (p) => ({
             comment_count: p.comment_count + 1,
             commented_by_me: true,
+            last_comment_at: inserted.created_at,
           }));
         } else {
           await onPostsChanged();

@@ -819,6 +819,57 @@ function isFutureScheduledPost(post: CommunityPostRow): boolean {
   return at > Date.now();
 }
 
+/** Fields synced from the post modal (or card) without reloading the feed. */
+type FeedEngagementOverride = Pick<
+  CommunityPostRow,
+  | "liked_by_me"
+  | "like_count"
+  | "comment_count"
+  | "commented_by_me"
+  | "last_comment_at"
+>;
+
+function pickFeedEngagementOverride(
+  patch: Partial<CommunityPostRow>
+): Partial<FeedEngagementOverride> {
+  const out: Partial<FeedEngagementOverride> = {};
+  if (patch.liked_by_me !== undefined) out.liked_by_me = patch.liked_by_me;
+  if (patch.like_count !== undefined) out.like_count = patch.like_count;
+  if (patch.comment_count !== undefined) out.comment_count = patch.comment_count;
+  if (patch.commented_by_me !== undefined) {
+    out.commented_by_me = patch.commented_by_me;
+  }
+  if (patch.last_comment_at !== undefined) {
+    out.last_comment_at = patch.last_comment_at;
+  }
+  return out;
+}
+
+function applyFeedEngagementOverrides(
+  rows: CommunityPostRow[],
+  overrides: Record<string, Partial<FeedEngagementOverride>>
+): CommunityPostRow[] {
+  if (Object.keys(overrides).length === 0) return rows;
+  return rows.map((p) => {
+    const o = overrides[p.id];
+    return o ? { ...p, ...o } : p;
+  });
+}
+
+function mergeFeedEngagementOverride(
+  overrides: Record<string, Partial<FeedEngagementOverride>>,
+  postId: string,
+  patch: Partial<FeedEngagementOverride>
+): void {
+  const prev = overrides[postId] ?? {};
+  const next = { ...prev, ...patch };
+  if (Object.keys(next).length === 0) {
+    delete overrides[postId];
+  } else {
+    overrides[postId] = next;
+  }
+}
+
 export function CommunityFeed() {
   const { impersonatingCoachId } = useImpersonation();
   const { hasFeature, loading: accessLoading } = useCoachAccess(
@@ -895,6 +946,7 @@ export function CommunityFeed() {
     snapshot: feedLocalSnapshot,
     markPostRead,
     markPostUnread,
+    markCommentsSeenUpTo,
   } = useCommunityFeedCardLocalState(feedStorageScopeId);
   const canPreviewScheduledPosts =
     viewerIsAdmin === true || pathname.startsWith("/admin");
@@ -902,6 +954,12 @@ export function CommunityFeed() {
   const [postsRefreshNonce, setPostsRefreshNonce] = useState(0);
   /** Cancels in-flight split-page loads when filters or nonce change. */
   const feedFetchGeneration = useRef(0);
+  /** Keeps modal/card engagement patches when split-page enrich replaces `posts`. */
+  const feedEngagementOverridesRef = useRef<
+    Record<string, Partial<FeedEngagementOverride>>
+  >({});
+  /** Latest detail post for flushing engagement when the modal closes. */
+  const selectedPostEngagementRef = useRef<CommunityPostRow | null>(null);
   /** Page 1: after the first few posts, loading the rest of the page. */
   const [feedLoadingMore, setFeedLoadingMore] = useState(false);
   const [calendarLiveOccurrence, setCalendarLiveOccurrence] =
@@ -932,16 +990,6 @@ export function CommunityFeed() {
   // the feed visibly reload on close (worse on slow connections). History
   // updates keep the URL shareable/back-navigable and stay in sync with
   // `useSearchParams` without triggering a navigation.
-  const closeDetail = useCallback(() => {
-    setSelectedPostId(null);
-    setFetchedDetailPost(null);
-    if (typeof window === "undefined") return;
-    const sp = new URLSearchParams(window.location.search);
-    sp.delete("post");
-    const q = sp.toString();
-    window.history.replaceState(null, "", q ? `${pathname}?${q}` : pathname);
-  }, [pathname]);
-
   const openDetail = useCallback(
     (id: string) => {
       setSelectedPostId(id);
@@ -1116,6 +1164,14 @@ export function CommunityFeed() {
     setCategories((data ?? []) as CommunityCategory[]);
   }, []);
 
+  const commitPostsToState = useCallback((rows: CommunityPostRow[]) => {
+    setPosts(
+      dedupePostsById(
+        applyFeedEngagementOverrides(rows, feedEngagementOverridesRef.current)
+      )
+    );
+  }, []);
+
   const loadPosts = useCallback(
     async (pageOverride?: number) => {
       feedFetchGeneration.current += 1;
@@ -1245,7 +1301,7 @@ export function CommunityFeed() {
             if (gen !== feedFetchGeneration.current) return;
             const total = first.count ?? 0;
             setTotalCount(total);
-            setPosts(dedupePostsById(firstScreenPosts));
+            commitPostsToState(firstScreenPosts);
             devPerfEnd("communityFeed:page1:first3", pageFirstPerfMark);
             setPostsLoading(false);
             if (total <= FEED_FIRST_SCREEN_COUNT) {
@@ -1290,10 +1346,8 @@ export function CommunityFeed() {
               setFeedLoadingMore(false);
               return;
             }
-            setPosts(
-              dedupePostsById(
-                enrichedAll.map((p) => ({ ...p, favourited_by_me: true as const }))
-              )
+            commitPostsToState(
+              enrichedAll.map((p) => ({ ...p, favourited_by_me: true as const }))
             );
             devPerfEnd("communityFeed:page1:full", pageFirstPerfMark);
             setFeedLoadingMore(false);
@@ -1331,13 +1385,11 @@ export function CommunityFeed() {
             normalizeRawPostRows(rawPosts)
           );
           setTotalCount(count ?? 0);
-          setPosts(
-            dedupePostsById(
-              enriched.map((p) => ({
-                ...p,
-                favourited_by_me: true,
-              }))
-            )
+          commitPostsToState(
+            enriched.map((p) => ({
+              ...p,
+              favourited_by_me: true,
+            }))
           );
           return;
         }
@@ -1375,7 +1427,7 @@ export function CommunityFeed() {
           if (gen !== feedFetchGeneration.current) return;
           const total = first.count ?? 0;
           setTotalCount(total);
-          setPosts(dedupePostsById(firstScreenPosts));
+          commitPostsToState(firstScreenPosts);
           devPerfEnd("communityFeed:page1:first3", pageFirstPerfMark);
           setPostsLoading(false);
           if (total <= FEED_FIRST_SCREEN_COUNT) {
@@ -1420,7 +1472,7 @@ export function CommunityFeed() {
             setFeedLoadingMore(false);
             return;
           }
-          setPosts(dedupePostsById(enrichedAll));
+          commitPostsToState(enrichedAll);
           devPerfEnd("communityFeed:page1:full", pageFirstPerfMark);
           setFeedLoadingMore(false);
           return;
@@ -1446,7 +1498,7 @@ export function CommunityFeed() {
         const rows = (data ?? []) as unknown as RawCommunityPostRow[];
         const normalized = normalizeRawPostRows(rows);
         const enriched = await enrichNormalizedCommunityPosts(normalized);
-        setPosts(dedupePostsById(enriched));
+        commitPostsToState(enriched);
         if (pageFetchPerfMark) {
           devPerfEnd("communityFeed:pageN:load", pageFetchPerfMark);
         }
@@ -1462,6 +1514,7 @@ export function CommunityFeed() {
       feedCountersAvailable,
       publishedAtAvailable,
       canPreviewScheduledPosts,
+      commitPostsToState,
     ]
   );
 
@@ -1639,15 +1692,59 @@ export function CommunityFeed() {
       postId: string,
       patch: (post: CommunityPostRow) => Partial<CommunityPostRow>
     ) => {
-      setPosts((prev) =>
-        prev.map((p) => (p.id === postId ? { ...p, ...patch(p) } : p))
-      );
-      setFetchedDetailPost((prev) =>
-        prev && prev.id === postId ? { ...prev, ...patch(prev) } : prev
-      );
+      setPosts((prev) => {
+        const next = prev.map((p) => {
+          if (p.id !== postId) return p;
+          const updated = { ...p, ...patch(p) };
+          mergeFeedEngagementOverride(
+            feedEngagementOverridesRef.current,
+            postId,
+            pickFeedEngagementOverride(updated)
+          );
+          return updated;
+        });
+        return applyFeedEngagementOverrides(
+          next,
+          feedEngagementOverridesRef.current
+        );
+      });
+      setFetchedDetailPost((prev) => {
+        if (!prev || prev.id !== postId) return prev;
+        const updated = { ...prev, ...patch(prev) };
+        selectedPostEngagementRef.current = updated;
+        return updated;
+      });
     },
     []
   );
+
+  useEffect(() => {
+    selectedPostEngagementRef.current = selectedPost;
+  }, [selectedPost]);
+
+  const closeDetail = useCallback(() => {
+    const snap = selectedPostEngagementRef.current;
+    if (snap) {
+      mergeFeedEngagementOverride(
+        feedEngagementOverridesRef.current,
+        snap.id,
+        pickFeedEngagementOverride(snap)
+      );
+      patchPostInState(snap.id, () => pickFeedEngagementOverride(snap));
+      markPostRead(snap.id);
+      if (snap.last_comment_at) {
+        markCommentsSeenUpTo(snap.id, snap.last_comment_at);
+      }
+    }
+    setSelectedPostId(null);
+    setFetchedDetailPost(null);
+    selectedPostEngagementRef.current = null;
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    sp.delete("post");
+    const q = sp.toString();
+    window.history.replaceState(null, "", q ? `${pathname}?${q}` : pathname);
+  }, [markCommentsSeenUpTo, markPostRead, patchPostInState, pathname]);
 
   const displayedPosts = useMemo(() => {
     if (readFilter === "all" || readFilter === "favourites") return posts;
@@ -1956,6 +2053,7 @@ export function CommunityFeed() {
                                   feedLocalSnapshot.readPostIds[post.id]
                                 )}
                                 onOpen={() => openDetail(post.id)}
+                                onPostLocalUpdate={patchPostInState}
                               />
                             </li>
                           ))}
@@ -1973,6 +2071,7 @@ export function CommunityFeed() {
                             feedLocalSnapshot.readPostIds[post.id]
                           )}
                           onOpen={() => openDetail(post.id)}
+                          onPostLocalUpdate={patchPostInState}
                         />
                       </li>
                     ))}

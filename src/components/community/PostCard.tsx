@@ -22,6 +22,11 @@ type Props = {
   /** From local feed state: user opened this post before. */
   feedCardHasBeenRead: boolean;
   onOpen: () => void;
+  /** Sync likes into the parent feed without reloading. */
+  onPostLocalUpdate?: (
+    postId: string,
+    patch: (post: CommunityPostRow) => Partial<CommunityPostRow>
+  ) => void;
 };
 
 export function PostCard({
@@ -29,6 +34,7 @@ export function PostCard({
   feedMentionNameById,
   feedCardHasBeenRead,
   onOpen,
+  onPostLocalUpdate,
 }: Props) {
   const authorName = post.author
     ? displayNameFromProfile(post.author)
@@ -61,19 +67,30 @@ export function PostCard({
 
   const handleToggleLike = async () => {
     if (likeBusy) return;
-    const nextLiked = !optimisticLikedByMe;
-    const nextCount = Math.max(
-      0,
-      optimisticLikeCount + (optimisticLikedByMe ? -1 : 1)
-    );
+    const wasLiked = optimisticLikedByMe;
+    const prevCount = optimisticLikeCount;
+    const nextLiked = !wasLiked;
+    const nextCount = Math.max(0, prevCount + (wasLiked ? -1 : 1));
     setOptimisticLikedByMe(nextLiked);
     setOptimisticLikeCount(nextCount);
+    if (onPostLocalUpdate) {
+      onPostLocalUpdate(post.id, () => ({
+        liked_by_me: nextLiked,
+        like_count: nextCount,
+      }));
+    }
     setLikeBusy(true);
     try {
-      await toggleCommunityPostLike(post.id, optimisticLikedByMe);
+      await toggleCommunityPostLike(post.id, wasLiked);
     } catch {
-      setOptimisticLikedByMe(optimisticLikedByMe);
-      setOptimisticLikeCount(optimisticLikeCount);
+      setOptimisticLikedByMe(wasLiked);
+      setOptimisticLikeCount(prevCount);
+      if (onPostLocalUpdate) {
+        onPostLocalUpdate(post.id, () => ({
+          liked_by_me: wasLiked,
+          like_count: prevCount,
+        }));
+      }
     } finally {
       setLikeBusy(false);
     }
