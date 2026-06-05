@@ -1,8 +1,10 @@
 /**
  * Import Sales Robot customer metrics into coaches:
- *   - has_sales_robot_account: every row in the export
+ *   - has_sales_robot_account: payingAccounts >= 1
  *   - sales_robot_active_campaigns: activeCampaignCount
- *   - sales_robot_paying_accounts: activeLinkedinaccountCount
+ *   - sales_robot_paying_accounts: payingAccounts
+ *
+ * Resets all coaches' Sales Robot fields before applying the export.
  *
  * Matching: coach auth email first, exact name, then fuzzy surname (Goldberg/Goldberger).
  *
@@ -58,8 +60,8 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 type CsvRow = {
   adminEmail?: string;
   adminFullName?: string;
-  activeLinkedinaccountCount?: string;
   activeCampaignCount?: string;
+  payingAccounts?: string;
 };
 
 const HONORIFIC_PREFIX_RE =
@@ -208,6 +210,21 @@ function resolveCoachId(
   return { coachId: null, reason: `no coach match for "${name}"` };
 }
 
+async function resetAllSalesRobotMetrics(): Promise<void> {
+  const { error } = await supabase
+    .from("coaches")
+    .update({
+      has_sales_robot_account: false,
+      sales_robot_active_campaigns: null,
+      sales_robot_paying_accounts: null,
+    })
+    .not("id", "is", null);
+
+  if (error) {
+    throw new Error(`Failed to reset Sales Robot metrics: ${error.message}`);
+  }
+}
+
 async function main() {
   const csvText = fs.readFileSync(resolvedCsv, "utf8");
   const rows = parse(csvText, {
@@ -225,6 +242,17 @@ async function main() {
     `[sales-robot import] loaded ${namesById.size} coaches (${byEmail.size} with email)`
   );
 
+  if (dryRun) {
+    console.log(
+      "[sales-robot import] would reset all coaches: has_sales_robot_account=false, metrics=null"
+    );
+  } else {
+    await resetAllSalesRobotMetrics();
+    console.log(
+      "[sales-robot import] reset all coaches: has_sales_robot_account=false, metrics=null"
+    );
+  }
+
   let updated = 0;
   let skipped = 0;
   const unmatched: string[] = [];
@@ -239,16 +267,17 @@ async function main() {
       continue;
     }
 
+    const payingAccounts = parseCount(row.payingAccounts);
     const payload = {
-      has_sales_robot_account: true,
+      has_sales_robot_account: payingAccounts >= 1,
       sales_robot_active_campaigns: parseCount(row.activeCampaignCount),
-      sales_robot_paying_accounts: parseCount(row.activeLinkedinaccountCount),
+      sales_robot_paying_accounts: payingAccounts,
     };
 
     const label = namesById.get(coachId) ?? coachId;
     if (dryRun) {
       console.log(
-        `[dry-run] ${label}: campaigns=${payload.sales_robot_active_campaigns}, paying=${payload.sales_robot_paying_accounts}, sales_robot=true`
+        `[dry-run] ${label}: campaigns=${payload.sales_robot_active_campaigns}, paying=${payload.sales_robot_paying_accounts}, sales_robot=${payload.has_sales_robot_account}`
       );
       updated += 1;
       continue;

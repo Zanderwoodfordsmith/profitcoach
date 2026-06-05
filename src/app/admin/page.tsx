@@ -307,7 +307,8 @@ type SalesRobotFilter =
   | "all"
   | "has_sales_robot"
   | "no_sales_robot"
-  | "active_paying"
+  | "paying"
+  | "not_paying"
   | "active_campaigns";
 type RecurringBillingFilter = "all" | "active" | "inactive";
 type CoachSortField = "last_login" | "join_date" | "active_campaigns";
@@ -432,7 +433,7 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "leadWebhook", label: "Lead webhook", category: "integrations" },
   { key: "salesRobot", label: "Sales Robot", category: "billing" },
   { key: "activeCampaigns", label: "Active campaigns", category: "billing" },
-  { key: "payingAccounts", label: "Active LinkedIn", category: "billing" },
+  { key: "payingAccounts", label: "Sales robot account #", category: "billing" },
   { key: "profitCoachEmail", label: "PC email", category: "billing" },
   { key: "accessTier", label: "Access tier", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
@@ -486,9 +487,14 @@ function isSalesRobotFilter(value: unknown): value is SalesRobotFilter {
     value === "all" ||
     value === "has_sales_robot" ||
     value === "no_sales_robot" ||
-    value === "active_paying" ||
+    value === "paying" ||
+    value === "not_paying" ||
     value === "active_campaigns"
   );
+}
+
+function coachPayingAccountCount(coach: CoachRow): number {
+  return coach.sales_robot_paying_accounts ?? 0;
 }
 
 function matchesSalesRobotFilter(
@@ -498,9 +504,8 @@ function matchesSalesRobotFilter(
   if (filter === "all") return true;
   if (filter === "has_sales_robot") return coach.has_sales_robot_account;
   if (filter === "no_sales_robot") return !coach.has_sales_robot_account;
-  if (filter === "active_paying") {
-    return (coach.sales_robot_paying_accounts ?? 0) > 0;
-  }
+  if (filter === "paying") return coachPayingAccountCount(coach) >= 1;
+  if (filter === "not_paying") return coachPayingAccountCount(coach) < 1;
   return (coach.sales_robot_active_campaigns ?? 0) > 0;
 }
 
@@ -510,6 +515,7 @@ function parseSalesRobotFilter(
   }
 ): SalesRobotFilter {
   const raw = parsed.salesRobotFilter ?? parsed.connectorSubsidyFilter;
+  if (raw === "active_paying") return "paying";
   if (isSalesRobotFilter(raw)) return raw;
   if (raw === "connector_subsidy") return "has_sales_robot";
   return "all";
@@ -1511,7 +1517,7 @@ export default function AdminPage() {
       return (
         <th
           className="sticky top-0 z-10 w-24 bg-slate-50 px-2 py-2 text-center"
-          title="Sales Robot account"
+          title="Paying Sales Robot account (payingAccounts ≥ 1)"
         >
           Sales Robot
         </th>
@@ -1531,9 +1537,9 @@ export default function AdminPage() {
       return (
         <th
           className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2 text-center"
-          title="Active LinkedIn accounts (Sales Robot export)"
+          title="Sales Robot paying account count (payingAccounts from export)"
         >
-          LinkedIn
+          Sales robot account #
         </th>
       );
     }
@@ -1879,7 +1885,7 @@ export default function AdminPage() {
         <td className="px-2 py-2 text-center">
           <input
             type="checkbox"
-            title="Has Sales Robot account"
+            title="Paying Sales Robot account (payingAccounts ≥ 1)"
             checked={coach.has_sales_robot_account}
             disabled={directorySavingId === coach.id}
             onChange={(e) =>
@@ -2430,7 +2436,8 @@ export default function AdminPage() {
                         <option value="all">All</option>
                         <option value="has_sales_robot">Has account</option>
                         <option value="no_sales_robot">No account</option>
-                        <option value="active_paying">Active LinkedIn</option>
+                        <option value="paying">Paying (1+)</option>
+                        <option value="not_paying">Not paying</option>
                         <option value="active_campaigns">Active campaigns</option>
                       </select>
                     </div>
