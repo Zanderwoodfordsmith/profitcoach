@@ -1,6 +1,10 @@
 /**
- * Import Sales Robot customer metrics into coaches (active campaigns, paying accounts,
- * and has_sales_robot_account for every row in the export).
+ * Import Sales Robot customer metrics into coaches:
+ *   - has_sales_robot_account: every row in the export
+ *   - sales_robot_active_campaigns: activeCampaignCount
+ *   - sales_robot_paying_accounts: activeLinkedinaccountCount
+ *
+ * Matching: coach auth email first, exact name, then fuzzy surname (Goldberg/Goldberger).
  *
  * Prerequisites:
  *   - Apply migration `20260622120000_coach_sales_robot_metrics.sql`
@@ -54,12 +58,20 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
 type CsvRow = {
   adminEmail?: string;
   adminFullName?: string;
+  activeLinkedinaccountCount?: string;
   activeCampaignCount?: string;
-  payingAccounts?: string;
 };
 
-function normalizeName(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+const HONORIFIC_PREFIX_RE =
+  /^(mr|mrs|ms|miss|dr|prof|sir|dame|lord|lady)\.?\s+/i;
+
+/** Lowercase name for matching; strips common honorifics (Mr, Dr, etc.). */
+function normalizePersonName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(HONORIFIC_PREFIX_RE, "");
 }
 
 function normalizeEmail(value: string): string {
@@ -69,6 +81,45 @@ function normalizeEmail(value: string): string {
 function parseCount(raw: string | undefined): number {
   const n = Number.parseInt(String(raw ?? "").trim(), 10);
   return Number.isFinite(n) ? n : 0;
+}
+
+function parseNameParts(
+  value: string
+): { first: string; last: string } | null {
+  const parts = normalizePersonName(value).split(" ").filter(Boolean);
+  if (parts.length < 2) return null;
+  return { first: parts[0]!, last: parts[parts.length - 1]! };
+}
+
+/** Handles minor surname spelling differences, e.g. Goldberg vs Goldberger. */
+function lastNamesLikelySame(a: string, b: string): boolean {
+  if (a === b) return true;
+  const shorter = a.length <= b.length ? a : b;
+  const longer = a.length <= b.length ? b : a;
+  return longer.startsWith(shorter) && longer.length - shorter.length <= 2;
+}
+
+function findFuzzyNameMatch(
+  csvName: string,
+  namesById: Map<string, string>
+): string | null {
+  const csvParts = parseNameParts(csvName);
+  if (!csvParts) return null;
+
+  const matches: string[] = [];
+  for (const [id, fullName] of namesById) {
+    const coachParts = parseNameParts(fullName);
+    if (!coachParts) continue;
+    if (
+      csvParts.first === coachParts.first &&
+      lastNamesLikelySame(csvParts.last, coachParts.last)
+    ) {
+      matches.push(id);
+    }
+  }
+
+  if (matches.length === 1) return matches[0]!;
+  return null;
 }
 
 async function loadCoachDirectory(): Promise<{
@@ -97,9 +148,9 @@ async function loadCoachDirectory(): Promise<{
     const fullName = (prof?.full_name ?? "").trim();
     if (!fullName) continue;
     namesById.set(id, fullName);
-    const key = normalizeName(fullName);
+    const key = normalizePersonName(fullName);
     const list = byName.get(key) ?? [];
-    list.push(id);
+    if (!list.includes(id)) list.push(id);
     byName.set(key, list);
   }
 
@@ -142,7 +193,7 @@ function resolveCoachId(
     return { coachId: null, reason: "missing name and email" };
   }
 
-  const matches = byName.get(normalizeName(name)) ?? [];
+  const matches = byName.get(normalizePersonName(name)) ?? [];
   if (matches.length === 1) return { coachId: matches[0]! };
   if (matches.length > 1) {
     return {
@@ -150,6 +201,9 @@ function resolveCoachId(
       reason: `ambiguous name (${matches.map((id) => namesById.get(id)).join(", ")})`,
     };
   }
+
+  const fuzzyMatch = findFuzzyNameMatch(name, namesById);
+  if (fuzzyMatch) return { coachId: fuzzyMatch };
 
   return { coachId: null, reason: `no coach match for "${name}"` };
 }
@@ -188,7 +242,7 @@ async function main() {
     const payload = {
       has_sales_robot_account: true,
       sales_robot_active_campaigns: parseCount(row.activeCampaignCount),
-      sales_robot_paying_accounts: parseCount(row.payingAccounts),
+      sales_robot_paying_accounts: parseCount(row.activeLinkedinaccountCount),
     };
 
     const label = namesById.get(coachId) ?? coachId;

@@ -29,6 +29,8 @@ type Props = {
   authorLabel?: string;
   onClose: () => void;
   onCreated: () => void | Promise<void>;
+  /** When false, ignore stale sessionStorage impersonation (real coaches). */
+  viewerIsAdmin?: boolean | null;
   /** Mark the new post read for the author (including scheduled posts). */
   onMarkPostRead?: (postId: string) => void;
 };
@@ -50,6 +52,7 @@ export function CreatePostModal({
   authorLabel = "You",
   onClose,
   onCreated,
+  viewerIsAdmin = null,
   onMarkPostRead,
 }: Props) {
   const pathname = usePathname();
@@ -89,7 +92,11 @@ export function CreatePostModal({
     let cancelled = false;
     void (async () => {
       const authorId = await getCommunityAuthorId(
-        coachPersonaForCommunity(pathname, impersonatingCoachId)
+        coachPersonaForCommunity(
+          pathname,
+          impersonatingCoachId,
+          viewerIsAdmin
+        )
       );
       if (!authorId) {
         if (!cancelled) setAuthorRole(null);
@@ -105,7 +112,7 @@ export function CreatePostModal({
     return () => {
       cancelled = true;
     };
-  }, [impersonatingCoachId, pathname]);
+  }, [impersonatingCoachId, pathname, viewerIsAdmin]);
 
   const revokeAllPending = useCallback((items: PendingMedia[]) => {
     for (const p of items) {
@@ -193,7 +200,11 @@ export function CreatePostModal({
     setError(null);
     try {
       const authorId = await getCommunityAuthorId(
-        coachPersonaForCommunity(pathname, impersonatingCoachId)
+        coachPersonaForCommunity(
+          pathname,
+          impersonatingCoachId,
+          viewerIsAdmin
+        )
       );
       if (!authorId) {
         setError("Not signed in.");
@@ -262,6 +273,7 @@ export function CreatePostModal({
     onCreated,
     onMarkPostRead,
     pathname,
+    viewerIsAdmin,
     pendingMedia,
     revokeAllPending,
     scheduledAtIso,

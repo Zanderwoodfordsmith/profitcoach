@@ -210,6 +210,8 @@ type Props = {
   ) => void;
   /** Effective profile id for community feed localStorage (auth user or impersonated coach). */
   feedStorageScopeId: string | null;
+  /** When false, ignore stale sessionStorage impersonation (real coaches). */
+  viewerIsAdmin?: boolean | null;
   onMarkPostRead: (postId: string) => void;
   onMarkPostUnread: (postId: string) => void;
   /** Embedded inside a parent shell (e.g. admin wins queue) — no full-screen backdrop. */
@@ -476,6 +478,7 @@ export function PostDetailModal({
   onPostsChanged,
   onPostLocalUpdate,
   feedStorageScopeId,
+  viewerIsAdmin = null,
   onMarkPostRead,
   onMarkPostUnread,
   presentation = "overlay",
@@ -646,7 +649,8 @@ export function PostDetailModal({
 
   const coachPersona = coachPersonaForCommunity(
     pathname,
-    impersonatingCoachId
+    impersonatingCoachId,
+    viewerIsAdmin
   );
   const isAuthor = Boolean(
     post.author?.id &&
@@ -1144,6 +1148,7 @@ export function PostDetailModal({
       setComments((prev) => appendComment(prev, inserted));
       markWinCelebratedIfAdmin();
       void reloadComments();
+      onMarkPostRead(post.id);
       if (onPostLocalUpdate) {
         onPostLocalUpdate(post.id, (p) => ({
           comment_count: p.comment_count + 1,
@@ -1158,6 +1163,7 @@ export function PostDetailModal({
     coachPersona,
     markWinCelebratedIfAdmin,
     newComment,
+    onMarkPostRead,
     onPostLocalUpdate,
     onPostsChanged,
     post.id,
@@ -1177,6 +1183,7 @@ export function PostDetailModal({
     }
     try {
       await toggleCommunityPostLike(post.id, wasLiked);
+      if (!wasLiked) onMarkPostRead(post.id);
       if (!onPostLocalUpdate) await onPostsChanged();
     } catch {
       if (onPostLocalUpdate) {
@@ -1188,7 +1195,14 @@ export function PostDetailModal({
     } finally {
       setLikeBusy(false);
     }
-  }, [likeBusy, onPostLocalUpdate, onPostsChanged, post.id, post.liked_by_me]);
+  }, [
+    likeBusy,
+    onMarkPostRead,
+    onPostLocalUpdate,
+    onPostsChanged,
+    post.id,
+    post.liked_by_me,
+  ]);
 
   const handleToggleCommentLike = useCallback(
     async (commentId: string, currentlyLiked: boolean) => {
@@ -1278,6 +1292,7 @@ export function PostDetailModal({
         setComments((prev) => appendComment(prev, inserted));
         markWinCelebratedIfAdmin();
         void reloadComments();
+        onMarkPostRead(post.id);
         if (onPostLocalUpdate) {
           onPostLocalUpdate(post.id, (p) => ({
             comment_count: p.comment_count + 1,
@@ -1296,6 +1311,7 @@ export function PostDetailModal({
       submitting,
       post.id,
       reloadComments,
+      onMarkPostRead,
       onPostLocalUpdate,
       onPostsChanged,
     ]

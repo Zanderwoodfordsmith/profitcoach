@@ -358,6 +358,11 @@ function resolveCoachMatch(
   email: string,
   companyName: string | null
 ): { coachId: string | null; method: string } {
+  const learnedEmailMatch = directory.uniqueCoachByPaymentEmail.get(email);
+  if (learnedEmailMatch) {
+    return { coachId: learnedEmailMatch.id, method: "email_auto" };
+  }
+
   const emailMatch = directory.uniqueCoachByEmail.get(email);
   if (emailMatch) {
     return { coachId: emailMatch.id, method: "email_auto" };

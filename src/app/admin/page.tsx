@@ -8,6 +8,7 @@ import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote"
 import { StickyPageHeader } from "@/components/layout";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { isSystemCoachSlug } from "@/lib/primaryCoach";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -57,6 +58,139 @@ function formatGoalDateDisplay(iso: string): string {
   const t = Date.parse(`${iso}T12:00:00`);
   if (Number.isNaN(t)) return iso;
   return formatDateDisplay(new Date(t));
+}
+
+const ISO_DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function toDateInputValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const dateOnly = iso.slice(0, 10);
+  return ISO_DATE_ONLY_RE.test(dateOnly) ? dateOnly : "";
+}
+
+function parseJoinDateMs(iso: string | null | undefined): number {
+  if (!iso) return Number.NaN;
+  const dateOnly = iso.slice(0, 10);
+  if (!ISO_DATE_ONLY_RE.test(dateOnly)) return Number.NaN;
+  return Date.parse(`${dateOnly}T12:00:00`);
+}
+
+function matchesJoinDateFilter(
+  joinedAt: string | null | undefined,
+  after: string,
+  before: string
+): boolean {
+  const afterActive = after !== "";
+  const beforeActive = before !== "";
+  if (!afterActive && !beforeActive) return true;
+
+  const joinedMs = parseJoinDateMs(joinedAt);
+  if (Number.isNaN(joinedMs)) return false;
+
+  if (afterActive) {
+    const afterMs = Date.parse(`${after}T12:00:00`);
+    if (joinedMs < afterMs) return false;
+  }
+  if (beforeActive) {
+    const beforeMs = Date.parse(`${before}T12:00:00`);
+    if (joinedMs > beforeMs) return false;
+  }
+  return true;
+}
+
+function isOptionalIsoDate(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (value === "" || ISO_DATE_ONLY_RE.test(value))
+  );
+}
+
+function formatIsoDateDisplay(iso: string | null | undefined): string | null {
+  const ms = parseJoinDateMs(iso);
+  if (Number.isNaN(ms)) return null;
+  return formatDateDisplay(new Date(ms));
+}
+
+function openDatePicker(input: HTMLInputElement | null) {
+  if (!input || input.disabled) return;
+  try {
+    input.showPicker();
+  } catch {
+    input.focus();
+    input.click();
+  }
+}
+
+function CoachDatePickerField({
+  id,
+  value,
+  onChange,
+  placeholder = "Not set",
+  disabled = false,
+  clearable = false,
+  variant = "table",
+}: {
+  id?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  clearable?: boolean;
+  variant?: "table" | "filter";
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const display = value ? formatIsoDateDisplay(value) : null;
+
+  return (
+    <div
+      className={`relative flex items-center gap-1 ${variant === "filter" ? "w-full" : ""}`}
+    >
+      <input
+        ref={inputRef}
+        id={id}
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        tabIndex={-1}
+        aria-hidden
+        className="sr-only"
+      />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => openDatePicker(inputRef.current)}
+        className={
+          variant === "table"
+            ? "rounded px-0.5 py-0.5 text-left text-xs font-medium tabular-nums text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/35 disabled:cursor-not-allowed disabled:opacity-50"
+            : "min-h-[2.25rem] flex-1 rounded-md border border-slate-200 bg-slate-50/50 px-2.5 py-1.5 text-left text-sm font-medium tabular-nums text-slate-800 hover:border-slate-300 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/35"
+        }
+        aria-label={
+          display
+            ? `${placeholder}: ${display}. Open calendar.`
+            : `${placeholder}. Open calendar.`
+        }
+      >
+        {display ?? (
+          <span
+            className={`font-normal text-slate-400 ${variant === "table" ? "text-xs" : "text-sm"}`}
+          >
+            {placeholder}
+          </span>
+        )}
+      </button>
+      {clearable && value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="shrink-0 rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          aria-label="Clear date"
+        >
+          Clear
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 function SetupCompleteCell({
@@ -157,6 +291,7 @@ type CoachRow = {
   sales_robot_paying_accounts: number | null;
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
+  recurring_billing_active: boolean;
   access_tier: CoachAccessTier;
   access_tier_locked: boolean;
   ladder_level: string | null;
@@ -168,7 +303,14 @@ type CoachRow = {
 type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
 type CrmNameFilter = "all" | "has_name" | "no_name";
 type LastLoginFilter = "all" | "has_login" | "never" | "last_30_days" | "over_90_days";
-type CoachSortField = "last_login" | "join_date";
+type SalesRobotFilter =
+  | "all"
+  | "has_sales_robot"
+  | "no_sales_robot"
+  | "active_paying"
+  | "active_campaigns";
+type RecurringBillingFilter = "all" | "active" | "inactive";
+type CoachSortField = "last_login" | "join_date" | "active_campaigns";
 type CoachSortOrder = "recent_first" | "oldest_first" | "missing_first";
 
 type CoachTableColumnVisibility = {
@@ -191,6 +333,7 @@ type CoachTableColumnVisibility = {
   profitCoachEmail: boolean;
   accessTier: boolean;
   recurringPayment: boolean;
+  recurringActive: boolean;
   calendarEmbed: boolean;
   leadWebhook: boolean;
   communityBio: boolean;
@@ -203,6 +346,10 @@ type PersistedCoachTableSettings = {
   conferenceFilter: ConferenceFilter;
   crmNameFilter: CrmNameFilter;
   lastLoginFilter: LastLoginFilter;
+  salesRobotFilter: SalesRobotFilter;
+  recurringBillingFilter: RecurringBillingFilter;
+  joinDateAfter: string;
+  joinDateBefore: string;
   sortField: CoachSortField;
   sortOrder: CoachSortOrder;
   columnVisibility: CoachTableColumnVisibility;
@@ -229,6 +376,7 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   profitCoachEmail: true,
   accessTier: true,
   recurringPayment: true,
+  recurringActive: true,
   calendarEmbed: true,
   leadWebhook: true,
   communityBio: true,
@@ -284,10 +432,11 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "leadWebhook", label: "Lead webhook", category: "integrations" },
   { key: "salesRobot", label: "Sales Robot", category: "billing" },
   { key: "activeCampaigns", label: "Active campaigns", category: "billing" },
-  { key: "payingAccounts", label: "Paying accounts", category: "billing" },
+  { key: "payingAccounts", label: "Active LinkedIn", category: "billing" },
   { key: "profitCoachEmail", label: "PC email", category: "billing" },
   { key: "accessTier", label: "Access tier", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
+  { key: "recurringActive", label: "Recurring active", category: "billing" },
   { key: "landing", label: "Landing / preview", category: "actions" },
 ];
 
@@ -332,8 +481,60 @@ function isLastLoginFilter(value: unknown): value is LastLoginFilter {
   );
 }
 
+function isSalesRobotFilter(value: unknown): value is SalesRobotFilter {
+  return (
+    value === "all" ||
+    value === "has_sales_robot" ||
+    value === "no_sales_robot" ||
+    value === "active_paying" ||
+    value === "active_campaigns"
+  );
+}
+
+function matchesSalesRobotFilter(
+  coach: CoachRow,
+  filter: SalesRobotFilter
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "has_sales_robot") return coach.has_sales_robot_account;
+  if (filter === "no_sales_robot") return !coach.has_sales_robot_account;
+  if (filter === "active_paying") {
+    return (coach.sales_robot_paying_accounts ?? 0) > 0;
+  }
+  return (coach.sales_robot_active_campaigns ?? 0) > 0;
+}
+
+function parseSalesRobotFilter(
+  parsed: Partial<PersistedCoachTableSettings> & {
+    connectorSubsidyFilter?: unknown;
+  }
+): SalesRobotFilter {
+  const raw = parsed.salesRobotFilter ?? parsed.connectorSubsidyFilter;
+  if (isSalesRobotFilter(raw)) return raw;
+  if (raw === "connector_subsidy") return "has_sales_robot";
+  return "all";
+}
+
+function isRecurringBillingFilter(
+  value: unknown
+): value is RecurringBillingFilter {
+  return value === "all" || value === "active" || value === "inactive";
+}
+
+function parseRecurringBillingFilter(
+  parsed: Partial<PersistedCoachTableSettings>
+): RecurringBillingFilter {
+  return isRecurringBillingFilter(parsed.recurringBillingFilter)
+    ? parsed.recurringBillingFilter
+    : "all";
+}
+
 function isCoachSortField(value: unknown): value is CoachSortField {
-  return value === "last_login" || value === "join_date";
+  return (
+    value === "last_login" ||
+    value === "join_date" ||
+    value === "active_campaigns"
+  );
 }
 
 function isCoachSortOrder(value: unknown): value is CoachSortOrder {
@@ -409,6 +610,14 @@ function parsePersistedCoachTableSettings(
       conferenceFilter: parsed.conferenceFilter,
       crmNameFilter: parsed.crmNameFilter,
       lastLoginFilter: parsed.lastLoginFilter,
+      salesRobotFilter: parseSalesRobotFilter(parsed),
+      recurringBillingFilter: parseRecurringBillingFilter(parsed),
+      joinDateAfter: isOptionalIsoDate(parsed.joinDateAfter)
+        ? parsed.joinDateAfter
+        : "",
+      joinDateBefore: isOptionalIsoDate(parsed.joinDateBefore)
+        ? parsed.joinDateBefore
+        : "",
       sortField: sort.sortField,
       sortOrder: sort.sortOrder,
       columnVisibility: visibility,
@@ -536,6 +745,12 @@ export default function AdminPage() {
   const [crmNameFilter, setCrmNameFilter] = useState<CrmNameFilter>("all");
   const [lastLoginFilter, setLastLoginFilter] =
     useState<LastLoginFilter>("all");
+  const [salesRobotFilter, setSalesRobotFilter] =
+    useState<SalesRobotFilter>("all");
+  const [recurringBillingFilter, setRecurringBillingFilter] =
+    useState<RecurringBillingFilter>("all");
+  const [joinDateAfter, setJoinDateAfter] = useState("");
+  const [joinDateBefore, setJoinDateBefore] = useState("");
   const [sortField, setSortField] = useState<CoachSortField>("last_login");
   const [sortOrder, setSortOrder] = useState<CoachSortOrder>("recent_first");
   const [columnVisibility, setColumnVisibility] =
@@ -625,6 +840,10 @@ export default function AdminPage() {
         setConferenceFilter(parsed.conferenceFilter);
         setCrmNameFilter(parsed.crmNameFilter);
         setLastLoginFilter(parsed.lastLoginFilter);
+        setSalesRobotFilter(parsed.salesRobotFilter);
+        setRecurringBillingFilter(parsed.recurringBillingFilter);
+        setJoinDateAfter(parsed.joinDateAfter);
+        setJoinDateBefore(parsed.joinDateBefore);
         setSortField(parsed.sortField);
         setSortOrder(parsed.sortOrder);
         setColumnVisibility(parsed.columnVisibility);
@@ -634,31 +853,42 @@ export default function AdminPage() {
     setHasLoadedPersistedSettings(true);
   }, []);
 
-  useEffect(() => {
-    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
-    const payload: PersistedCoachTableSettings = {
+  const persistedTableSettings = useMemo(
+    (): PersistedCoachTableSettings => ({
       conferenceFilter,
       crmNameFilter,
       lastLoginFilter,
+      salesRobotFilter,
+      recurringBillingFilter,
+      joinDateAfter,
+      joinDateBefore,
       sortField,
       sortOrder,
       columnVisibility,
       columnOrder,
-    };
+    }),
+    [
+      conferenceFilter,
+      crmNameFilter,
+      lastLoginFilter,
+      salesRobotFilter,
+      recurringBillingFilter,
+      joinDateAfter,
+      joinDateBefore,
+      sortField,
+      sortOrder,
+      columnVisibility,
+      columnOrder,
+    ]
+  );
+
+  useEffect(() => {
+    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
     window.localStorage.setItem(
       COACH_TABLE_SETTINGS_STORAGE_KEY,
-      JSON.stringify(payload)
+      JSON.stringify(persistedTableSettings)
     );
-  }, [
-    hasLoadedPersistedSettings,
-    conferenceFilter,
-    crmNameFilter,
-    lastLoginFilter,
-    sortField,
-    sortOrder,
-    columnVisibility,
-    columnOrder,
-  ]);
+  }, [hasLoadedPersistedSettings, persistedTableSettings]);
 
   useEffect(() => {
     let cancelled = false;
@@ -754,6 +984,7 @@ export default function AdminPage() {
       full_name?: string | null;
       coach_business_name?: string | null;
       linkedin_url?: string | null;
+      disco_community_joined_on?: string | null;
     }
   ): Promise<{ ok: true } | { ok: false; error: string }> {
     const {
@@ -845,6 +1076,9 @@ export default function AdminPage() {
                 ...(body.linkedin_url !== undefined
                   ? { linkedin_url: body.linkedin_url }
                   : {}),
+                ...(body.disco_community_joined_on !== undefined
+                  ? { joined_at: body.disco_community_joined_on }
+                  : {}),
               }
             : c
         )
@@ -909,7 +1143,11 @@ export default function AdminPage() {
   const activeFilterCount =
     (conferenceFilter !== "all" ? 1 : 0) +
     (lastLoginFilter !== "all" ? 1 : 0) +
-    (crmNameFilter !== "all" ? 1 : 0);
+    (crmNameFilter !== "all" ? 1 : 0) +
+    (joinDateAfter !== "" ? 1 : 0) +
+    (joinDateBefore !== "" ? 1 : 0) +
+    (salesRobotFilter !== "all" ? 1 : 0) +
+    (recurringBillingFilter !== "all" ? 1 : 0);
   const hasActiveSort =
     sortField !== "last_login" || sortOrder !== "recent_first";
   const visibleColumnCount =
@@ -1026,9 +1264,54 @@ export default function AdminPage() {
               : lastLoginFilter === "last_30_days"
                 ? hasValidLastLogin && lastLoginMs >= thirtyDaysAgoMs
                 : hasValidLastLogin && lastLoginMs <= ninetyDaysAgoMs;
-      return matchesName && matchesConference && matchesCrmName && matchesLastLogin;
+      const matchesJoinDate = matchesJoinDateFilter(
+        coach.joined_at,
+        joinDateAfter,
+        joinDateBefore
+      );
+      const matchesSalesRobot = matchesSalesRobotFilter(
+        coach,
+        salesRobotFilter
+      );
+      const matchesRecurringBilling =
+        recurringBillingFilter === "all"
+          ? true
+          : recurringBillingFilter === "active"
+            ? coach.recurring_billing_active
+            : !coach.recurring_billing_active;
+      return (
+        matchesName &&
+        matchesConference &&
+        matchesCrmName &&
+        matchesLastLogin &&
+        matchesJoinDate &&
+        matchesSalesRobot &&
+        matchesRecurringBilling
+      );
     })
     .sort((a, b) => {
+      if (sortField === "active_campaigns") {
+        const aCount = a.sales_robot_active_campaigns;
+        const bCount = b.sales_robot_active_campaigns;
+        const aHas = aCount != null;
+        const bHas = bCount != null;
+        if (sortOrder === "missing_first") {
+          if (aHas !== bHas) return aHas ? 1 : -1;
+          if (!aHas && !bHas) {
+            return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+          }
+        } else if (aHas !== bHas) {
+          return aHas ? -1 : 1;
+        }
+        if (!aHas && !bHas) {
+          return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+        }
+        const aVal = aCount ?? 0;
+        const bVal = bCount ?? 0;
+        if (sortOrder === "oldest_first") return aVal - bVal;
+        return bVal - aVal;
+      }
+
       const aIso =
         sortField === "join_date" ? a.joined_at : a.last_login_at;
       const bIso =
@@ -1248,9 +1531,9 @@ export default function AdminPage() {
       return (
         <th
           className="sticky top-0 z-10 w-20 bg-slate-50 px-2 py-2 text-center"
-          title="Paying Sales Robot accounts"
+          title="Active LinkedIn accounts (Sales Robot export)"
         >
-          Paying
+          LinkedIn
         </th>
       );
     }
@@ -1268,6 +1551,16 @@ export default function AdminPage() {
       return (
         <th className="sticky top-0 z-10 min-w-[9rem] bg-slate-50 px-2 py-2">
           Billing
+        </th>
+      );
+    }
+    if (key === "recurringActive") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-24 bg-slate-50 px-2 py-2 text-center"
+          title="Active recurring billing (£495/£399 monthly or prepaid annual)"
+        >
+          Recurring
         </th>
       );
     }
@@ -1352,11 +1645,16 @@ export default function AdminPage() {
     if (key === "joinDate") {
       return (
         <td className="px-2 py-2 align-middle text-xs text-slate-700">
-          {coach.joined_at ? (
-            formatDateDisplay(new Date(coach.joined_at))
-          ) : (
-            <span className="text-slate-400">—</span>
-          )}
+          <CoachDatePickerField
+            value={toDateInputValue(coach.joined_at)}
+            disabled={directorySavingId === coach.id}
+            placeholder="Not set"
+            onChange={(v) => {
+              void patchCoachRow(coach.id, {
+                disco_community_joined_on: v || null,
+              });
+            }}
+          />
         </td>
       );
     }
@@ -1368,7 +1666,7 @@ export default function AdminPage() {
               const memberFor = formatMemberFor(coach.joined_at);
               return (
                 <span
-                  title={`Joined ${formatDateDisplay(new Date(coach.joined_at))} (${memberFor.totalDays} days)`}
+                  title={`Joined ${formatIsoDateDisplay(coach.joined_at) ?? coach.joined_at} (${memberFor.totalDays} days)`}
                 >
                   {memberFor.label}
                 </span>
@@ -1662,6 +1960,23 @@ export default function AdminPage() {
         </td>
       );
     }
+    if (key === "recurringActive") {
+      return (
+        <td className="px-2 py-2 text-center align-middle">
+          <SetupCompleteCell
+            complete={coach.recurring_billing_active}
+            label="Recurring billing"
+            detail={
+              coach.recurring_billing_active
+                ? coach.recurring_payment_status
+                  ? `Status: ${COACH_RECURRING_PAYMENT_LABELS[coach.recurring_payment_status]}`
+                  : "Active from payments"
+                : undefined
+            }
+          />
+        </td>
+      );
+    }
     if (key === "accessTier") {
       return (
         <td className="px-2 py-2 align-middle">
@@ -1820,7 +2135,7 @@ export default function AdminPage() {
       ) : null}
 
       <CoachesMonthlyBarChart
-        coaches={coaches}
+        coaches={coaches.filter((coach) => !isSystemCoachSlug(coach.slug))}
         loading={loading || checkingRole}
       />
 
@@ -2095,6 +2410,91 @@ export default function AdminPage() {
                         <option value="no_name">No CRM name</option>
                       </select>
                     </div>
+                    <div>
+                      <label
+                        htmlFor="sales-robot-filter"
+                        className="mb-1 block text-xs font-medium text-slate-600"
+                      >
+                        Sales Robot
+                      </label>
+                      <select
+                        id="sales-robot-filter"
+                        value={salesRobotFilter}
+                        onChange={(e) =>
+                          setSalesRobotFilter(
+                            e.target.value as SalesRobotFilter
+                          )
+                        }
+                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="all">All</option>
+                        <option value="has_sales_robot">Has account</option>
+                        <option value="no_sales_robot">No account</option>
+                        <option value="active_paying">Active LinkedIn</option>
+                        <option value="active_campaigns">Active campaigns</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="recurring-billing-filter"
+                        className="mb-1 block text-xs font-medium text-slate-600"
+                      >
+                        Recurring billing
+                      </label>
+                      <select
+                        id="recurring-billing-filter"
+                        value={recurringBillingFilter}
+                        onChange={(e) =>
+                          setRecurringBillingFilter(
+                            e.target.value as RecurringBillingFilter
+                          )
+                        }
+                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Not active</option>
+                      </select>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-medium text-slate-600">
+                        Join date
+                      </p>
+                      <div className="space-y-2">
+                        <div>
+                          <label
+                            htmlFor="join-date-after-filter"
+                            className="mb-1 block text-xs text-slate-500"
+                          >
+                            On or after
+                          </label>
+                          <CoachDatePickerField
+                            id="join-date-after-filter"
+                            variant="filter"
+                            value={joinDateAfter}
+                            placeholder="Any"
+                            clearable
+                            onChange={setJoinDateAfter}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="join-date-before-filter"
+                            className="mb-1 block text-xs text-slate-500"
+                          >
+                            On or before
+                          </label>
+                          <CoachDatePickerField
+                            id="join-date-before-filter"
+                            variant="filter"
+                            value={joinDateBefore}
+                            placeholder="Any"
+                            clearable
+                            onChange={setJoinDateBefore}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -2142,6 +2542,7 @@ export default function AdminPage() {
                       >
                         <option value="last_login">Last login</option>
                         <option value="join_date">Join date</option>
+                        <option value="active_campaigns">Active campaigns</option>
                       </select>
                     </div>
                     <div>
@@ -2162,13 +2563,21 @@ export default function AdminPage() {
                         <option value="recent_first">
                           {sortField === "join_date"
                             ? "Newest first"
-                            : "Most recent first"}
+                            : sortField === "active_campaigns"
+                              ? "Most first"
+                              : "Most recent first"}
                         </option>
-                        <option value="oldest_first">Oldest first</option>
+                        <option value="oldest_first">
+                          {sortField === "active_campaigns"
+                            ? "Least first"
+                            : "Oldest first"}
+                        </option>
                         <option value="missing_first">
                           {sortField === "join_date"
                             ? "No join date first"
-                            : "Never logged in first"}
+                            : sortField === "active_campaigns"
+                              ? "Not set first"
+                              : "Never logged in first"}
                         </option>
                       </select>
                     </div>

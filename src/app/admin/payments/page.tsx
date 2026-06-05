@@ -3,8 +3,10 @@
 import {
   ArrowUpDown,
   ChevronDown,
+  ChevronRight,
   Columns3,
   GripVertical,
+  Layers,
   Loader2,
   Trash2,
   Upload,
@@ -22,6 +24,8 @@ import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { formatPersonName } from "@/lib/formatPersonName";
 import {
   buildPaymentBillingKindIndex,
+  establishedCustomerPriorTotalCents,
+  isProgrammeUpfrontAmount,
   paymentBillingKindBadgeClass,
   paymentBillingKindLabel,
   PAYMENT_BILLING_KINDS,
@@ -31,6 +35,10 @@ import {
   isRevolutTransferPlaceholderEmail,
   revolutTransferCustomerDisplayLabel,
 } from "@/lib/revolutDirectPaymentsCsvImport";
+import {
+  inferInstallmentCount,
+  ongoingPlanInstallmentCents,
+} from "@/lib/cashFlowForecast/paymentPlanInference";
 import { paymentSourceLabel } from "@/lib/paymentSource";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -74,6 +82,35 @@ type SourceFilter =
   | "revolut_merchant"
   | "revolut_direct";
 type PaymentSort = "recent_first" | "oldest_first" | "customer_az";
+type PaymentGroupBy = "none" | "coach";
+
+type PaymentGroupUpfrontSummary = {
+  succeededCentsByCurrency: Record<string, number>;
+  expectedCentsByCurrency: Record<string, number>;
+};
+
+type PaymentGroupRecurringSummary = {
+  succeededCentsByCurrency: Record<string, number>;
+  paymentCountByCurrency: Record<string, number>;
+};
+
+type PaymentGroupSummary = {
+  upfront: PaymentGroupUpfrontSummary;
+  recurring: PaymentGroupRecurringSummary;
+};
+
+/** Known 6-month / programme upfront totals (minor units). */
+const KNOWN_UPFRONT_PROGRAMME_TOTALS_CENTS: Record<string, number[]> = {
+  gbp: [780_000, 960_000],
+  usd: [780_000, 960_000],
+};
+
+type PaymentGroup = {
+  key: string;
+  label: string;
+  payments: PaymentRowWithBilling[];
+  summary: PaymentGroupSummary;
+};
 
 type PaymentRowWithBilling = PaymentRow & {
   billing_kind: PaymentBillingKind;
@@ -99,6 +136,7 @@ type PersistedPaymentTableSettings = {
   coachAssignmentFilter: CoachAssignmentFilter;
   needsActionOnly: boolean;
   dateSort: PaymentSort;
+  groupBy: PaymentGroupBy;
   columnVisibility: PaymentTableColumnVisibility;
   columnOrder: Array<keyof PaymentTableColumnVisibility>;
 };
@@ -182,6 +220,437 @@ function isPaymentSort(value: unknown): value is PaymentSort {
   );
 }
 
+function isPaymentGroupBy(value: unknown): value is PaymentGroupBy {
+  return value === "none" || value === "coach";
+}
+
+function addCentsToCurrencyMap(
+  map: Record<string, number>,
+  currency: string,
+  cents: number
+): void {
+  const key = currency.trim().toLowerCase() || "gbp";
+  map[key] = (map[key] ?? 0) + cents;
+}
+
+function isRecurringGroupPayment(payment: PaymentRowWithBilling): boolean {
+  return payment.billing_kind === "recurring";
+}
+
+function formatGroupPaymentCount(payments: PaymentRowWithBilling[]): string {
+  let upfrontCount = 0;
+  let recurringCount = 0;
+
+  for (const payment of payments) {
+    if (isRecurringGroupPayment(payment)) {
+      recurringCount += 1;
+    } else {
+      upfrontCount += 1;
+    }
+  }
+
+  const parts: string[] = [];
+  if (upfrontCount > 0) {
+    parts.push(
+      `${upfrontCount} payment${upfrontCount === 1 ? "" : "s"}`
+    );
+  }
+  if (recurringCount > 0) {
+    parts.push(`${recurringCount} recurring`);
+  }
+
+  return parts.join(", ") || "0 payments";
+}
+
+function applyProgrammePlanExpected(
+  upfrontPayments: PaymentRowWithBilling[],
+  expectedCentsByCurrency: Record<string, number>
+): void {
+  const currencies = new Set(
+    upfrontPayments.map(
+      (payment) => payment.currency.trim().toLowerCase() || "gbp"
+    )
+  );
+
+  for (const currency of currencies) {
+    const currencyPayments = upfrontPayments.filter(
+      (payment) =>
+        (payment.currency.trim().toLowerCase() || "gbp") === currency
+    );
+    const programmeTotalCents = establishedCustomerPriorTotalCents(currency);
+    const hasElevateInstallment = currencyPayments.some((payment) =>
+      isProgrammeUpfrontAmount(payment.amount_cents, payment.currency)
+    );
+    const allPaymentsTotalCents = currencyPayments.reduce(
+      (sum, payment) => sum + payment.amount_cents,
+      0
+    );
+    const succeededTotalCents = currencyPayments
+      .filter((payment) => payment.status === "succeeded")
+      .reduce((sum, payment) => sum + payment.amount_cents, 0);
+
+    if (
+      hasElevateInstallment ||
+      allPaymentsTotalCents === programmeTotalCents ||
+      succeededTotalCents === programmeTotalCents
+    ) {
+      expectedCentsByCurrency[currency] = programmeTotalCents;
+    }
+  }
+}
+
+function applyKnownUpfrontProgrammeTotals(
+  upfrontPayments: PaymentRowWithBilling[],
+  expectedCentsByCurrency: Record<string, number>
+): void {
+  const currencies = new Set(
+    upfrontPayments.map(
+      (payment) => payment.currency.trim().toLowerCase() || "gbp"
+    )
+  );
+
+  for (const currency of currencies) {
+    const currencyPayments = upfrontPayments.filter(
+      (payment) =>
+        (payment.currency.trim().toLowerCase() || "gbp") === currency
+    );
+    const knownTotals = KNOWN_UPFRONT_PROGRAMME_TOTALS_CENTS[currency] ?? [];
+
+    for (const totalCents of knownTotals) {
+      const hasMatchingPayment = currencyPayments.some(
+        (payment) =>
+          payment.status === "succeeded" && payment.amount_cents === totalCents
+      );
+      if (hasMatchingPayment) {
+        expectedCentsByCurrency[currency] = totalCents;
+        break;
+      }
+    }
+  }
+}
+
+function computeUpfrontSummary(
+  upfrontPayments: PaymentRowWithBilling[]
+): PaymentGroupUpfrontSummary {
+  const succeededCentsByCurrency: Record<string, number> = {};
+  const expectedCentsByCurrency: Record<string, number> = {};
+
+  for (const payment of upfrontPayments) {
+    if (payment.status === "succeeded") {
+      addCentsToCurrencyMap(
+        succeededCentsByCurrency,
+        payment.currency,
+        payment.amount_cents
+      );
+    }
+  }
+
+  const succeededInstallments = upfrontPayments.filter(
+    (payment) =>
+      payment.status === "succeeded" && payment.billing_kind === "installment"
+  );
+
+  if (succeededInstallments.length > 0) {
+    const installmentAmountsByCurrency = new Map<string, number[]>();
+    for (const payment of succeededInstallments) {
+      const currency = payment.currency.trim().toLowerCase() || "gbp";
+      const amounts = installmentAmountsByCurrency.get(currency) ?? [];
+      amounts.push(payment.amount_cents);
+      installmentAmountsByCurrency.set(currency, amounts);
+    }
+
+    for (const [currency, amounts] of installmentAmountsByCurrency) {
+      const ongoing = ongoingPlanInstallmentCents(amounts);
+      if (ongoing > 0) {
+        const installmentCount = inferInstallmentCount(ongoing, amounts.length);
+        addCentsToCurrencyMap(
+          expectedCentsByCurrency,
+          currency,
+          ongoing * installmentCount
+        );
+      }
+    }
+  }
+
+  applyKnownUpfrontProgrammeTotals(upfrontPayments, expectedCentsByCurrency);
+  applyProgrammePlanExpected(upfrontPayments, expectedCentsByCurrency);
+
+  if (Object.keys(expectedCentsByCurrency).length === 0) {
+    for (const payment of upfrontPayments) {
+      addCentsToCurrencyMap(
+        expectedCentsByCurrency,
+        payment.currency,
+        payment.amount_cents
+      );
+    }
+  }
+
+  for (const [currency, paid] of Object.entries(succeededCentsByCurrency)) {
+    const expected = expectedCentsByCurrency[currency] ?? 0;
+    if (expected > 0 && paid > expected) {
+      expectedCentsByCurrency[currency] = paid;
+    }
+  }
+
+  return { succeededCentsByCurrency, expectedCentsByCurrency };
+}
+
+function computeRecurringSummary(
+  recurringPayments: PaymentRowWithBilling[]
+): PaymentGroupRecurringSummary {
+  const succeededCentsByCurrency: Record<string, number> = {};
+  const paymentCountByCurrency: Record<string, number> = {};
+
+  for (const payment of recurringPayments) {
+    if (payment.status !== "succeeded") continue;
+    const currency = payment.currency.trim().toLowerCase() || "gbp";
+    addCentsToCurrencyMap(
+      succeededCentsByCurrency,
+      payment.currency,
+      payment.amount_cents
+    );
+    paymentCountByCurrency[currency] =
+      (paymentCountByCurrency[currency] ?? 0) + 1;
+  }
+
+  return { succeededCentsByCurrency, paymentCountByCurrency };
+}
+
+function computeGroupPaymentSummary(
+  payments: PaymentRowWithBilling[]
+): PaymentGroupSummary {
+  const upfrontPayments = payments.filter(
+    (payment) => !isRecurringGroupPayment(payment)
+  );
+  const recurringPayments = payments.filter(isRecurringGroupPayment);
+
+  return {
+    upfront: computeUpfrontSummary(upfrontPayments),
+    recurring: computeRecurringSummary(recurringPayments),
+  };
+}
+
+type PaymentGroupUpfrontProgressRow = {
+  kind: "upfront";
+  currency: string;
+  paidCents: number;
+  expectedCents: number;
+  percent: number;
+};
+
+type PaymentGroupRecurringProgressRow = {
+  kind: "recurring";
+  currency: string;
+  paidCents: number;
+  paymentCount: number;
+};
+
+type PaymentGroupCurrencyProgress = {
+  currency: string;
+  upfront: PaymentGroupUpfrontProgressRow | null;
+  recurring: PaymentGroupRecurringProgressRow | null;
+};
+
+function getGroupCurrencyProgress(
+  summary: PaymentGroupSummary
+): PaymentGroupCurrencyProgress[] {
+  const currencies = [
+    ...new Set([
+      ...Object.keys(summary.upfront.succeededCentsByCurrency),
+      ...Object.keys(summary.upfront.expectedCentsByCurrency),
+      ...Object.keys(summary.recurring.succeededCentsByCurrency),
+    ]),
+  ].sort();
+
+  return currencies
+    .map((currency) => {
+      const paidCents = summary.upfront.succeededCentsByCurrency[currency] ?? 0;
+      const expectedCents =
+        summary.upfront.expectedCentsByCurrency[currency] ?? 0;
+      const recurringPaid =
+        summary.recurring.succeededCentsByCurrency[currency] ?? 0;
+      const recurringCount =
+        summary.recurring.paymentCountByCurrency[currency] ?? 0;
+
+      let upfront: PaymentGroupUpfrontProgressRow | null = null;
+      if (paidCents > 0 || expectedCents > 0) {
+        const targetCents = Math.max(expectedCents, paidCents, 1);
+        upfront = {
+          kind: "upfront",
+          currency,
+          paidCents,
+          expectedCents: Math.max(expectedCents, paidCents),
+          percent: Math.min(100, (paidCents / targetCents) * 100),
+        };
+      }
+
+      const recurring =
+        recurringPaid > 0
+          ? {
+              kind: "recurring" as const,
+              currency,
+              paidCents: recurringPaid,
+              paymentCount: recurringCount,
+            }
+          : null;
+
+      if (!upfront && !recurring) return null;
+
+      return { currency, upfront, recurring };
+    })
+    .filter((row): row is PaymentGroupCurrencyProgress => row !== null);
+}
+
+const PAYMENT_GROUP_UPFRONT_COLUMN_CLASS = "w-[6.75rem] shrink-0 sm:w-[7.25rem]";
+const PAYMENT_GROUP_RECURRING_COLUMN_CLASS = "w-[6.75rem] shrink-0 sm:w-[7.25rem]";
+
+function PaymentGroupUpfrontColumn({
+  currency,
+  upfront,
+}: {
+  currency: string;
+  upfront: PaymentGroupUpfrontProgressRow;
+}) {
+  return (
+    <div className={PAYMENT_GROUP_UPFRONT_COLUMN_CLASS}>
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200/90 ring-1 ring-slate-200/80"
+        role="progressbar"
+        aria-valuenow={Math.round(upfront.percent)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${formatMoney(upfront.paidCents, currency)} paid of ${formatMoney(upfront.expectedCents, currency)}`}
+      >
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-[width] duration-300"
+          style={{ width: `${upfront.percent}%` }}
+        />
+      </div>
+      <p className="mt-0.5 truncate text-right text-[10px] font-medium normal-case tracking-normal text-slate-600">
+        {formatMoney(upfront.paidCents, currency)}
+        <span className="text-slate-400">
+          {" "}
+          of {formatMoney(upfront.expectedCents, currency)}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function PaymentGroupRecurringColumn({
+  currency,
+  recurring,
+}: {
+  currency: string;
+  recurring: PaymentGroupRecurringProgressRow;
+}) {
+  return (
+    <div className={PAYMENT_GROUP_RECURRING_COLUMN_CLASS}>
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-sky-100 ring-1 ring-sky-200/90"
+        role="img"
+        aria-label={`${formatMoney(recurring.paidCents, currency)} recurring across ${recurring.paymentCount} payments`}
+      >
+        <div className="h-full w-full rounded-full bg-sky-400/90" />
+      </div>
+      <p className="mt-0.5 truncate text-right text-[10px] font-medium normal-case tracking-normal text-sky-700">
+        {formatMoney(recurring.paidCents, currency)}
+        <span className="text-sky-500/80">
+          {" "}
+          recurring · {recurring.paymentCount}
+        </span>
+      </p>
+    </div>
+  );
+}
+
+function PaymentGroupProgress({ summary }: { summary: PaymentGroupSummary }) {
+  const currencyProgress = getGroupCurrencyProgress(summary);
+  if (currencyProgress.length === 0) return null;
+
+  return (
+    <div className="ml-auto flex shrink-0 flex-col gap-1.5">
+      {currencyProgress.map(({ currency, upfront, recurring }) => (
+        <div
+          key={currency}
+          className="grid grid-cols-[6.75rem_6.75rem] items-start gap-x-3 sm:grid-cols-[7.25rem_7.25rem]"
+        >
+          <div className={PAYMENT_GROUP_UPFRONT_COLUMN_CLASS}>
+            {upfront ? (
+              <PaymentGroupUpfrontColumn currency={currency} upfront={upfront} />
+            ) : null}
+          </div>
+          <div className={PAYMENT_GROUP_RECURRING_COLUMN_CLASS}>
+            {recurring ? (
+              <PaymentGroupRecurringColumn
+                currency={currency}
+                recurring={recurring}
+              />
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function buildPaymentGroups(
+  payments: PaymentRowWithBilling[],
+  groupBy: PaymentGroupBy
+): PaymentGroup[] {
+  if (groupBy === "none") {
+    return [
+      {
+        key: "__all__",
+        label: "",
+        payments,
+        summary: computeGroupPaymentSummary(payments),
+      },
+    ];
+  }
+
+  const byCoach = new Map<string, PaymentRowWithBilling[]>();
+  for (const payment of payments) {
+    const key = payment.assigned_coach?.id ?? "__unassigned__";
+    const list = byCoach.get(key) ?? [];
+    list.push(payment);
+    byCoach.set(key, list);
+  }
+
+  const groups: PaymentGroup[] = [];
+  const coachIds = [...byCoach.keys()].filter((k) => k !== "__unassigned__");
+  coachIds.sort((a, b) => {
+    const coachA = byCoach.get(a)?.[0]?.assigned_coach;
+    const coachB = byCoach.get(b)?.[0]?.assigned_coach;
+    const labelA = coachA ? coachLabel(coachA) : a;
+    const labelB = coachB ? coachLabel(coachB) : b;
+    return labelA.localeCompare(labelB, undefined, { sensitivity: "base" });
+  });
+
+  for (const coachId of coachIds) {
+    const groupPayments = byCoach.get(coachId) ?? [];
+    const coach = groupPayments[0]?.assigned_coach;
+    groups.push({
+      key: coachId,
+      label: coach ? coachLabel(coach) : coachId,
+      payments: groupPayments,
+      summary: computeGroupPaymentSummary(groupPayments),
+    });
+  }
+
+  const unassigned = byCoach.get("__unassigned__");
+  if (unassigned?.length) {
+    groups.push({
+      key: "__unassigned__",
+      label: "Unassigned",
+      payments: unassigned,
+      summary: computeGroupPaymentSummary(unassigned),
+    });
+  }
+
+  return groups;
+}
+
 function parsePersistedPaymentTableSettings(
   raw: string
 ): PersistedPaymentTableSettings | null {
@@ -238,6 +707,7 @@ function parsePersistedPaymentTableSettings(
       coachAssignmentFilter,
       needsActionOnly: parsed.needsActionOnly,
       dateSort: parsed.dateSort,
+      groupBy: isPaymentGroupBy(parsed.groupBy) ? parsed.groupBy : "none",
       columnVisibility: visibility,
       columnOrder: orderedKeys,
     };
@@ -332,6 +802,7 @@ export default function AdminPaymentsPage() {
   const csvInputRef = useRef<HTMLInputElement>(null);
   const filtersMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
+  const groupMenuRef = useRef<HTMLDivElement | null>(null);
   const columnsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [checkingRole, setCheckingRole] = useState(true);
@@ -365,9 +836,14 @@ export default function AdminPaymentsPage() {
   );
   const [needsActionOnly, setNeedsActionOnly] = useState(false);
   const [paymentSort, setPaymentSort] = useState<PaymentSort>("recent_first");
+  const [paymentGroupBy, setPaymentGroupBy] = useState<PaymentGroupBy>("none");
+  const [expandedPaymentGroups, setExpandedPaymentGroups] = useState<
+    Set<string>
+  >(() => new Set());
 
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [groupMenuOpen, setGroupMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
   const [draggingColumnKey, setDraggingColumnKey] =
     useState<keyof PaymentTableColumnVisibility | null>(null);
@@ -428,11 +904,17 @@ export default function AdminPaymentsPage() {
   const chartPayments = useMemo(
     () =>
       paymentsWithBilling.map((payment) => ({
+        id: payment.id,
         status: payment.status,
         amount_cents: payment.amount_cents,
         currency: payment.currency,
         paid_at: payment.paid_at,
         billing_kind: payment.billing_kind,
+        coach_name: payment.assigned_coach
+          ? coachLabel(payment.assigned_coach)
+          : payment.suggested_coach
+            ? `${coachLabel(payment.suggested_coach)} (suggested)`
+            : "Unassigned",
       })),
     [paymentsWithBilling]
   );
@@ -484,6 +966,26 @@ export default function AdminPaymentsPage() {
     paymentSort,
   ]);
 
+  const groupedPayments = useMemo(
+    () => buildPaymentGroups(filteredPayments, paymentGroupBy),
+    [filteredPayments, paymentGroupBy]
+  );
+
+  function togglePaymentGroup(groupKey: string) {
+    setExpandedPaymentGroups((current) => {
+      const next = new Set(current);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (paymentGroupBy === "coach") {
+      setExpandedPaymentGroups(new Set());
+    }
+  }, [paymentGroupBy]);
+
   const stats = useMemo(() => {
     const failed = payments.filter((p) => p.status === "failed").length;
     const unassigned = payments.filter((p) => !p.assigned_coach).length;
@@ -520,7 +1022,9 @@ export default function AdminPaymentsPage() {
   const tableColSpan = visibleDataColumnCount + 1;
 
   useEffect(() => {
-    if (!columnsMenuOpen && !filtersMenuOpen && !sortMenuOpen) return;
+    if (!columnsMenuOpen && !filtersMenuOpen && !sortMenuOpen && !groupMenuOpen) {
+      return;
+    }
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as Node;
       if (
@@ -538,13 +1042,17 @@ export default function AdminPaymentsPage() {
       if (sortMenuRef.current && sortMenuRef.current.contains(target)) {
         return;
       }
+      if (groupMenuRef.current && groupMenuRef.current.contains(target)) {
+        return;
+      }
       setColumnsMenuOpen(false);
       setFiltersMenuOpen(false);
       setSortMenuOpen(false);
+      setGroupMenuOpen(false);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [columnsMenuOpen, filtersMenuOpen, sortMenuOpen]);
+  }, [columnsMenuOpen, filtersMenuOpen, sortMenuOpen, groupMenuOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -557,6 +1065,7 @@ export default function AdminPaymentsPage() {
         setCoachAssignmentFilter(parsed.coachAssignmentFilter);
         setNeedsActionOnly(parsed.needsActionOnly);
         setPaymentSort(parsed.dateSort);
+        setPaymentGroupBy(parsed.groupBy);
         setColumnVisibility(parsed.columnVisibility);
         setColumnOrder(parsed.columnOrder);
       }
@@ -572,6 +1081,7 @@ export default function AdminPaymentsPage() {
       coachAssignmentFilter,
       needsActionOnly,
       dateSort: paymentSort,
+      groupBy: paymentGroupBy,
       columnVisibility,
       columnOrder,
     };
@@ -586,6 +1096,7 @@ export default function AdminPaymentsPage() {
     coachAssignmentFilter,
     needsActionOnly,
     paymentSort,
+    paymentGroupBy,
     columnVisibility,
     columnOrder,
   ]);
@@ -1269,9 +1780,10 @@ export default function AdminPaymentsPage() {
         className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
         style={{ maxHeight: "calc(100dvh - 11rem)" }}
       >
-        <div className="shrink-0 border-b border-slate-100 px-4 py-3">
+        <div className="shrink-0 border-b border-slate-100 px-4 py-2">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="mr-auto text-xs text-slate-500">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+            <p className="text-xs text-slate-500">
               {filteredPayments.length} of {stats.total}
               {stats.needsAction > 0 ? ` · ${stats.needsAction} need action` : ""}
             </p>
@@ -1317,6 +1829,7 @@ export default function AdminPaymentsPage() {
                 onClick={() => {
                   setFiltersMenuOpen((open) => !open);
                   setSortMenuOpen(false);
+                  setGroupMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
                 icon={
@@ -1420,6 +1933,7 @@ export default function AdminPaymentsPage() {
                 onClick={() => {
                   setSortMenuOpen((open) => !open);
                   setFiltersMenuOpen(false);
+                  setGroupMenuOpen(false);
                   setColumnsMenuOpen(false);
                 }}
                 icon={
@@ -1454,6 +1968,49 @@ export default function AdminPaymentsPage() {
               ) : null}
             </div>
 
+            <div ref={groupMenuRef} className="relative">
+              <TableToolbarButton
+                label="Group"
+                aria-haspopup="true"
+                aria-expanded={groupMenuOpen}
+                aria-controls="payments-group-menu"
+                active={groupMenuOpen}
+                badge={paymentGroupBy !== "none" ? 1 : null}
+                onClick={() => {
+                  setGroupMenuOpen((open) => !open);
+                  setFiltersMenuOpen(false);
+                  setSortMenuOpen(false);
+                  setColumnsMenuOpen(false);
+                }}
+                icon={<Layers className="h-5 w-5 text-slate-500" aria-hidden />}
+              />
+              {groupMenuOpen ? (
+                <div
+                  id="payments-group-menu"
+                  role="menu"
+                  className="absolute right-0 z-[90] mt-1 w-[min(92vw,16rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                >
+                  <label
+                    htmlFor="payment-group-by"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
+                    Group by
+                  </label>
+                  <select
+                    id="payment-group-by"
+                    value={paymentGroupBy}
+                    onChange={(e) =>
+                      setPaymentGroupBy(e.target.value as PaymentGroupBy)
+                    }
+                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  >
+                    <option value="none">None</option>
+                    <option value="coach">Coach</option>
+                  </select>
+                </div>
+              ) : null}
+            </div>
+
             <div ref={columnsMenuRef} className="relative">
               <TableToolbarButton
                 label="Columns"
@@ -1466,6 +2023,7 @@ export default function AdminPaymentsPage() {
                   setColumnsMenuOpen((open) => !open);
                   setFiltersMenuOpen(false);
                   setSortMenuOpen(false);
+                  setGroupMenuOpen(false);
                 }}
                 icon={
                   <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
@@ -1582,6 +2140,7 @@ export default function AdminPaymentsPage() {
                 </div>
               ) : null}
             </div>
+            </div>
           </div>
         </div>
 
@@ -1601,40 +2160,91 @@ export default function AdminPaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredPayments.map((payment) => (
-                <tr
-                  key={payment.id}
-                  className="border-t border-slate-100 hover:bg-slate-50"
-                >
-                  {orderedColumnOptions
-                    .filter(({ key }) => columnVisibility[key])
-                    .map(({ key }) => renderColumnCell(key, payment))}
-                  <td className="px-2 py-2 text-center align-middle">
-                    <button
-                      type="button"
-                      onClick={() => void handleDeletePayment(payment)}
-                      disabled={deletingId === payment.id || savingId === payment.id}
-                      title={
-                        deletingId === payment.id
-                          ? "Deleting payment…"
-                          : `Delete payment for ${payment.customer_email}`
-                      }
-                      aria-label={
-                        deletingId === payment.id
-                          ? "Deleting payment"
-                          : `Delete payment for ${payment.customer_email}`
-                      }
-                      className="inline-flex rounded p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+              {groupedPayments.map((group) => {
+                const isExpanded =
+                  paymentGroupBy === "none" ||
+                  expandedPaymentGroups.has(group.key);
+                return (
+                <Fragment key={group.key}>
+                  {paymentGroupBy !== "none" ? (
+                    <>
+                      <tr className="bg-slate-50/80">
+                        <td
+                          colSpan={tableColSpan}
+                          className="border-b border-slate-100 p-0"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => togglePaymentGroup(group.key)}
+                            aria-expanded={isExpanded}
+                            className="flex w-full items-center gap-3 px-3 py-1.5 text-left text-xs text-slate-500 transition hover:bg-slate-100/80"
+                          >
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown
+                                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                                  aria-hidden
+                                />
+                              ) : (
+                                <ChevronRight
+                                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                                  aria-hidden
+                                />
+                              )}
+                              <span className="min-w-0 truncate font-semibold text-slate-700">
+                                {group.label}
+                              </span>
+                              <span className="shrink-0 font-normal normal-case tracking-normal text-slate-400">
+                                {formatGroupPaymentCount(group.payments)}
+                              </span>
+                            </div>
+                            <PaymentGroupProgress summary={group.summary} />
+                          </button>
+                        </td>
+                      </tr>
+                    </>
+                  ) : null}
+                  {isExpanded
+                    ? group.payments.map((payment) => (
+                    <tr
+                      key={payment.id}
+                      className="border-t border-slate-100 hover:bg-slate-50"
                     >
-                      {deletingId === payment.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      )}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                      {orderedColumnOptions
+                        .filter(({ key }) => columnVisibility[key])
+                        .map(({ key }) => renderColumnCell(key, payment))}
+                      <td className="px-2 py-2 text-center align-middle">
+                        <button
+                          type="button"
+                          onClick={() => void handleDeletePayment(payment)}
+                          disabled={
+                            deletingId === payment.id || savingId === payment.id
+                          }
+                          title={
+                            deletingId === payment.id
+                              ? "Deleting payment…"
+                              : `Delete payment for ${payment.customer_email}`
+                          }
+                          aria-label={
+                            deletingId === payment.id
+                              ? "Deleting payment"
+                              : `Delete payment for ${payment.customer_email}`
+                          }
+                          className="inline-flex rounded p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingId === payment.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          ) : (
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                    : null}
+                </Fragment>
+              );
+              })}
               {loading ? (
                 <tr>
                   <td colSpan={tableColSpan} className="px-3 py-4 text-slate-600">

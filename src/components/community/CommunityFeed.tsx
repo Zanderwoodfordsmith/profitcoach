@@ -43,6 +43,8 @@ import {
   communityFeedStorageScopeId,
 } from "@/lib/communityEffectiveAuthorId";
 import {
+  communityPostHasViewerEngagement,
+  isCommunityPostReadOnFeed,
   useCommunityFeedCardLocalState,
   type CommunityFeedLocalState,
 } from "@/lib/communityPostFeedLocalState";
@@ -277,6 +279,8 @@ export type RawCommunityPostRow = Omit<
 type EnrichCommunityPostsOptions = {
   /** Optional optimization for page-1 first paint. */
   includeLadderLevel?: boolean;
+  /** Auth user or impersonated coach — drives liked/commented-by-me flags. */
+  viewerProfileId?: string | null;
 };
 
 function isMissingPublishedAtColumnError(error: unknown): boolean {
@@ -428,7 +432,7 @@ async function enrichNormalizedCommunityPosts(
   const {
     data: { user },
   } = await supabaseClient.auth.getUser();
-  const uid = user?.id;
+  const uid = options?.viewerProfileId ?? user?.id;
 
   const favPromise =
     uid && postIds.length > 0
@@ -809,7 +813,7 @@ function isCommunityPostUnreadOnFeed(
   post: CommunityPostRow,
   snapshot: CommunityFeedLocalState
 ): boolean {
-  return !snapshot.readPostIds[post.id];
+  return !isCommunityPostReadOnFeed(post, snapshot);
 }
 
 function isFutureScheduledPost(post: CommunityPostRow): boolean {
@@ -947,7 +951,28 @@ export function CommunityFeed() {
     markPostRead,
     markPostUnread,
     markCommentsSeenUpTo,
+    markOwnPostsRead,
+    markEngagedPostsRead,
   } = useCommunityFeedCardLocalState(feedStorageScopeId);
+  const feedViewerProfileIdRef = useRef<string | null>(feedStorageScopeId);
+  feedViewerProfileIdRef.current = feedStorageScopeId;
+  const prevFeedStorageScopeIdRef = useRef<string | null>(null);
+  const pendingReadPostIdsRef = useRef<string[]>([]);
+  /** Own-post read sync per scope; avoids undoing a deliberate "mark unread". */
+  const ownPostsReadSyncedRef = useRef<{
+    scopeId: string | null;
+    postIds: Set<string>;
+  }>({ scopeId: null, postIds: new Set() });
+  const markPostReadWithRetry = useCallback(
+    (postId: string) => {
+      if (feedStorageScopeId) {
+        markPostRead(postId);
+        return;
+      }
+      pendingReadPostIdsRef.current.push(postId);
+    },
+    [feedStorageScopeId, markPostRead]
+  );
   const canPreviewScheduledPosts =
     viewerIsAdmin === true || pathname.startsWith("/admin");
   /** Bumps when the feed should reload while staying on the same page (e.g. new post). */
@@ -981,6 +1006,57 @@ export function CommunityFeed() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!feedBootstrapOk || !feedStorageScopeId) return;
+    const prev = prevFeedStorageScopeIdRef.current;
+    prevFeedStorageScopeIdRef.current = feedStorageScopeId;
+    if (prev !== null && prev !== feedStorageScopeId) {
+      setPostsRefreshNonce((n) => n + 1);
+    }
+  }, [feedBootstrapOk, feedStorageScopeId]);
+
+  useEffect(() => {
+    if (!feedStorageScopeId || pendingReadPostIdsRef.current.length === 0) {
+      return;
+    }
+    const pending = pendingReadPostIdsRef.current;
+    pendingReadPostIdsRef.current = [];
+    for (const id of pending) markPostRead(id);
+  }, [feedStorageScopeId, markPostRead]);
+
+  useEffect(() => {
+    if (!feedStorageScopeId) return;
+    if (ownPostsReadSyncedRef.current.scopeId !== feedStorageScopeId) {
+      ownPostsReadSyncedRef.current = {
+        scopeId: feedStorageScopeId,
+        postIds: new Set(),
+      };
+    }
+    const synced = ownPostsReadSyncedRef.current.postIds;
+    const ownToSync = posts.filter(
+      (p) =>
+        p.author?.id === feedStorageScopeId &&
+        !synced.has(p.id) &&
+        !feedLocalSnapshot.readPostIds[p.id]
+    );
+    const engagedToSync = posts.filter(
+      (p) =>
+        !synced.has(p.id) &&
+        !feedLocalSnapshot.readPostIds[p.id] &&
+        communityPostHasViewerEngagement(p)
+    );
+    if (ownToSync.length === 0 && engagedToSync.length === 0) return;
+    for (const p of [...ownToSync, ...engagedToSync]) synced.add(p.id);
+    if (ownToSync.length > 0) markOwnPostsRead(ownToSync);
+    if (engagedToSync.length > 0) markEngagedPostsRead(engagedToSync);
+  }, [
+    feedLocalSnapshot.readPostIds,
+    feedStorageScopeId,
+    markEngagedPostsRead,
+    markOwnPostsRead,
+    posts,
+  ]);
 
   // Open/close the post modal by updating the `?post=` query with the History
   // API rather than the Next.js router. `CommunityFeed` reads `useSearchParams`
@@ -1142,7 +1218,9 @@ export function CommunityFeed() {
         const normalized = normalizeRawPostRows([
           data as unknown as RawCommunityPostRow,
         ]);
-        const enriched = await enrichNormalizedCommunityPosts(normalized);
+        const enriched = await enrichNormalizedCommunityPosts(normalized, {
+          viewerProfileId: feedViewerProfileIdRef.current,
+        });
         if (!cancelled && enriched[0]?.id === id) {
           setFetchedDetailPost(enriched[0]);
         }
@@ -1177,6 +1255,9 @@ export function CommunityFeed() {
       feedFetchGeneration.current += 1;
       const gen = feedFetchGeneration.current;
       const perfMark = devPerfStart();
+      const enrichOptions: EnrichCommunityPostsOptions = {
+        viewerProfileId: feedViewerProfileIdRef.current,
+      };
       setFeedLoadingMore(false);
       try {
         const effectivePage = pageOverride ?? page;
@@ -1341,7 +1422,10 @@ export function CommunityFeed() {
             }
             const raw2 = mapFavRows(second.data);
             const mergedNormalized = normalizeRawPostRows([...raw1, ...raw2]);
-            const enrichedAll = await enrichNormalizedCommunityPosts(mergedNormalized);
+            const enrichedAll = await enrichNormalizedCommunityPosts(
+              mergedNormalized,
+              enrichOptions
+            );
             if (gen !== feedFetchGeneration.current) {
               setFeedLoadingMore(false);
               return;
@@ -1382,7 +1466,8 @@ export function CommunityFeed() {
 
           const rawPosts = mapFavRows(data);
           const enriched = await enrichNormalizedCommunityPosts(
-            normalizeRawPostRows(rawPosts)
+            normalizeRawPostRows(rawPosts),
+            enrichOptions
           );
           setTotalCount(count ?? 0);
           commitPostsToState(
@@ -1467,7 +1552,10 @@ export function CommunityFeed() {
           }
           const raw2 = (second.data ?? []) as unknown as RawCommunityPostRow[];
           const mergedNormalized = normalizeRawPostRows([...raw1, ...raw2]);
-          const enrichedAll = await enrichNormalizedCommunityPosts(mergedNormalized);
+          const enrichedAll = await enrichNormalizedCommunityPosts(
+            mergedNormalized,
+            enrichOptions
+          );
           if (gen !== feedFetchGeneration.current) {
             setFeedLoadingMore(false);
             return;
@@ -1497,7 +1585,10 @@ export function CommunityFeed() {
 
         const rows = (data ?? []) as unknown as RawCommunityPostRow[];
         const normalized = normalizeRawPostRows(rows);
-        const enriched = await enrichNormalizedCommunityPosts(normalized);
+        const enriched = await enrichNormalizedCommunityPosts(
+          normalized,
+          enrichOptions
+        );
         commitPostsToState(enriched);
         if (pageFetchPerfMark) {
           devPerfEnd("communityFeed:pageN:load", pageFetchPerfMark);
@@ -1536,6 +1627,7 @@ export function CommunityFeed() {
         }
 
         if (!cancelled) setCommunityAuthUserId(session.user.id);
+        let resolvedViewerIsAdmin: boolean | null = null;
         try {
           const { data: me } = await supabaseClient
             .from("profiles")
@@ -1544,6 +1636,7 @@ export function CommunityFeed() {
             .maybeSingle();
           if (!cancelled) {
             const isAdmin = (me?.role as string | null) === "admin";
+            resolvedViewerIsAdmin = isAdmin;
             setViewerIsAdmin(isAdmin);
             if (!isAdmin) {
               const coachPath = coachCommunityPathFromAdminPath(pathname);
@@ -1557,13 +1650,19 @@ export function CommunityFeed() {
             }
           }
         } catch {
-          if (!cancelled) setViewerIsAdmin(pathname.startsWith("/admin"));
+          if (!cancelled) {
+            resolvedViewerIsAdmin = pathname.startsWith("/admin");
+            setViewerIsAdmin(resolvedViewerIsAdmin);
+          }
         }
 
         try {
           const uid =
-            coachPersonaForCommunity(pathname, impersonatingCoachId) ??
-            session.user.id;
+            coachPersonaForCommunity(
+              pathname,
+              impersonatingCoachId,
+              resolvedViewerIsAdmin
+            ) ?? session.user.id;
           const map = await fetchStaffAvatarMap([uid], session.access_token);
           let url: string | null = map[uid] ?? null;
           if (!url) {
@@ -1839,7 +1938,8 @@ export function CommunityFeed() {
                     avatarUrl={composeAvatarUrl}
                     authorLabel="You"
                     onClose={() => setComposeOpen(false)}
-                    onMarkPostRead={markPostRead}
+                    viewerIsAdmin={viewerIsAdmin}
+                    onMarkPostRead={markPostReadWithRetry}
                     onCreated={() => {
                       setComposeOpen(false);
                       setPage(1);
@@ -2049,8 +2149,9 @@ export function CommunityFeed() {
                               <PostCard
                                 post={post}
                                 feedMentionNameById={feedMentionNameById}
-                                feedCardHasBeenRead={Boolean(
-                                  feedLocalSnapshot.readPostIds[post.id]
+                                feedCardHasBeenRead={isCommunityPostReadOnFeed(
+                                  post,
+                                  feedLocalSnapshot
                                 )}
                                 onOpen={() => openDetail(post.id)}
                                 onPostLocalUpdate={patchPostInState}
@@ -2067,8 +2168,9 @@ export function CommunityFeed() {
                         <PostCard
                           post={post}
                           feedMentionNameById={feedMentionNameById}
-                          feedCardHasBeenRead={Boolean(
-                            feedLocalSnapshot.readPostIds[post.id]
+                          feedCardHasBeenRead={isCommunityPostReadOnFeed(
+                            post,
+                            feedLocalSnapshot
                           )}
                           onOpen={() => openDetail(post.id)}
                           onPostLocalUpdate={patchPostInState}
@@ -2185,6 +2287,7 @@ export function CommunityFeed() {
                   onPostsChanged={() => loadPosts()}
                   onPostLocalUpdate={patchPostInState}
                   feedStorageScopeId={feedStorageScopeId}
+                  viewerIsAdmin={viewerIsAdmin}
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}
                 />

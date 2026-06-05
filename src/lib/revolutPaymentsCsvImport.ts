@@ -257,7 +257,9 @@ export async function importRevolutMerchantPaymentsCsv(
 
 function resolveMatch(directory: CoachDirectory, email: string): boolean {
   return Boolean(
-    directory.uniqueCoachByEmail.get(email) ?? directory.uniqueCoachByCompany.get(email)
+    directory.uniqueCoachByPaymentEmail.get(email) ??
+      directory.uniqueCoachByEmail.get(email) ??
+      directory.uniqueCoachByCompany.get(email)
   );
 }
 

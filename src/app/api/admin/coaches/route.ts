@@ -11,6 +11,13 @@ import {
   resolveDirectoryBio,
   resolveDirectorySummary,
 } from "@/lib/profileBioFields";
+import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
+import {
+  isCoachRecurringPaymentStatus,
+  type CoachRecurringPaymentStatus,
+} from "@/lib/coachBilling";
+import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
+import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -94,37 +101,59 @@ export async function GET(request: Request) {
       };
     };
 
+    const profileFull =
+      "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)";
+    const billingCols =
+      "has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status";
+    const coachCore =
+      "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code";
+
     let res = await runSelect(
-      "id, slug, directory_listed, directory_level, conference_status, has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, access_tier, access_tier_locked, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+      `${coachCore}, access_tier, access_tier_locked, ghl_calendar_id, ${billingCols}, ${profileFull}`
     );
 
     let calendarEmbedMissing = false;
-
     let webhookMissing = false;
     let crmMissing = false;
     let conferenceStatusMissing = false;
     let accountBillingMissing = false;
+    let accessTierMissing = false;
+    let ghlCalendarMissing = false;
+
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        `${coachCore}, ${billingCols}, ${profileFull}`
+      );
+      accessTierMissing = true;
+      ghlCalendarMissing = true;
+    }
+    if (res.error?.code === "42703") {
+      res = await runSelect(
+        `id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, ${billingCols}, ${profileFull}`
       );
       calendarEmbedMissing = true;
-      accountBillingMissing = true;
+      accessTierMissing = true;
+      ghlCalendarMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        `id, slug, directory_listed, directory_level, lead_webhook_url, crm_profile_name, crm_location_id, ${billingCols}, ${profileFull}`
       );
+      calendarEmbedMissing = true;
       conferenceStatusMissing = true;
-      accountBillingMissing = true;
+      accessTierMissing = true;
+      ghlCalendarMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
-        "id, slug, directory_listed, directory_level, profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)"
+        `id, slug, directory_listed, directory_level, ${profileFull}`
       );
       webhookMissing = true;
       crmMissing = true;
       conferenceStatusMissing = true;
+      calendarEmbedMissing = true;
+      accessTierMissing = true;
+      ghlCalendarMissing = true;
       accountBillingMissing = true;
     }
 
@@ -216,6 +245,26 @@ export async function GET(request: Request) {
       }
     }
 
+    const paymentsByCoachId = new Map<string, PaymentForBillingKind[]>();
+    if (ids.length > 0) {
+      const paymentsRes = await supabaseAdmin
+        .from("coach_payments")
+        .select(
+          "id, customer_email, coach_id, amount_cents, currency, status, description, paid_at, billing_kind_override"
+        )
+        .in("coach_id", ids)
+        .eq("status", "succeeded");
+      if (paymentsRes.error?.code !== "42P01" && !paymentsRes.error) {
+        for (const payment of paymentsRes.data ?? []) {
+          const coachId = payment.coach_id as string | null;
+          if (!coachId) continue;
+          const list = paymentsByCoachId.get(coachId) ?? [];
+          list.push(payment as PaymentForBillingKind);
+          paymentsByCoachId.set(coachId, list);
+        }
+      }
+    }
+
     const coaches = rows.map((row) => {
       const profRaw = row.profiles as
         | Record<string, unknown>
@@ -256,10 +305,11 @@ export async function GET(request: Request) {
           typeof prof?.ladder_goal_level === "string"
             ? defaultMonthlyIncomeForLevelId(prof.ladder_goal_level)
             : null,
-        joined_at:
-          (prof?.disco_community_joined_on as string | null) ??
-          (prof?.created_at as string | null) ??
-          null,
+        joined_at: resolveCoachJoinedAt(row.slug as string, {
+          discoCommunityJoinedOn:
+            (prof?.disco_community_joined_on as string | null) ?? null,
+          profileCreatedAt: (prof?.created_at as string | null) ?? null,
+        }),
         client_count: clientCountByCoachId.get(id) ?? 0,
         directory_listed: directoryMissing ? false : !!row.directory_listed,
         directory_level: directoryMissing
@@ -281,14 +331,18 @@ export async function GET(request: Request) {
           ? false
           : hasCalendarEmbed(
               row.calendar_embed_code as string | null,
-              row.ghl_calendar_id as string | null
+              ghlCalendarMissing
+                ? null
+                : (row.ghl_calendar_id as string | null)
             ),
         calendar_sync_ready: calendarEmbedMissing
           ? false
           : isCalendarSyncReady({
               crmLocationId: row.crm_location_id as string | null,
               calendarEmbedCode: row.calendar_embed_code as string | null,
-              ghlCalendarId: row.ghl_calendar_id as string | null,
+              ghlCalendarId: ghlCalendarMissing
+                ? null
+                : (row.ghl_calendar_id as string | null),
               leadWebhookUrl: row.lead_webhook_url as string | null,
             }),
         has_lead_webhook: webhookMissing
@@ -320,8 +374,20 @@ export async function GET(request: Request) {
         recurring_payment_status: accountBillingMissing
           ? null
           : (row.recurring_payment_status as string | null) ?? null,
-        access_tier: (row.access_tier as string | null) ?? "pro",
-        access_tier_locked: accountBillingMissing
+        recurring_billing_active: accountBillingMissing
+          ? false
+          : coachHasActiveRecurringBilling({
+              recurringPaymentStatus: isCoachRecurringPaymentStatus(
+                (row.recurring_payment_status as string | null) ?? ""
+              )
+                ? ((row.recurring_payment_status as string) as CoachRecurringPaymentStatus)
+                : null,
+              payments: paymentsByCoachId.get(id) ?? [],
+            }),
+        access_tier: accessTierMissing
+          ? "pro"
+          : ((row.access_tier as string | null) ?? "pro"),
+        access_tier_locked: accessTierMissing
           ? false
           : Boolean(row.access_tier_locked),
         ladder_level: currentLevel,

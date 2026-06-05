@@ -82,6 +82,10 @@ async function main() {
     const prof = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
     const coachId = row.id as string;
     const slug = row.slug as string;
+    if (slug === "profit-coach-snapshot") {
+      unchanged++;
+      continue;
+    }
     const fullName = (prof?.full_name as string | null) ?? slug;
     const current = (prof?.disco_community_joined_on as string | null)?.slice(0, 10) ?? null;
     const firstPaid = firstPaymentByCoach.get(coachId) ?? null;

@@ -21,6 +21,7 @@ import {
 } from "@/lib/ghlCalendarSync";
 import { buildEmbedSnippet } from "@/lib/embedMode";
 import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingStats";
+import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
 
 const CRM_APP_BASE_URL = "https://app.procoachplatform.com/";
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
@@ -75,6 +76,7 @@ function LinkPreviewRow({
   copied,
   onCopy,
   onPersonalise,
+  onQrCode,
   showShareUrl = true,
 }: {
   label: string;
@@ -83,6 +85,7 @@ function LinkPreviewRow({
   copied?: boolean;
   onCopy?: () => void;
   onPersonalise?: () => void;
+  onQrCode?: () => void;
   /** When false, only Open (and Personalise if provided) — no public URL or Copy. */
   showShareUrl?: boolean;
 }) {
@@ -115,6 +118,15 @@ function LinkPreviewRow({
             className="font-medium text-slate-600 hover:text-slate-900 hover:underline"
           >
             {copied ? "Copied!" : "Copy"}
+          </button>
+        ) : null}
+        {showShareUrl && onQrCode ? (
+          <button
+            type="button"
+            onClick={onQrCode}
+            className="font-medium text-slate-600 hover:text-slate-900 hover:underline"
+          >
+            QR code
           </button>
         ) : null}
         <Link
@@ -549,6 +561,7 @@ export function FunnelSettingsTab({
   const [copiedLinkKey, setCopiedLinkKey] = useState<string | null>(null);
   const [personaliseProduct, setPersonaliseProduct] =
     useState<PersonalisedLinkProduct | null>(null);
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
 
   async function copyShareLink(key: string, url: string) {
     try {
@@ -590,7 +603,7 @@ export function FunnelSettingsTab({
 
       <SectionCard
         title="Your links"
-        description="Set your public slug, then copy your Boss Score or Boss Pro share links."
+        description="Set your public slug, then copy or share your Boss Score or Boss Pro links."
       >
         <LinksSetupTutorial />
         <div>
@@ -655,6 +668,7 @@ export function FunnelSettingsTab({
                       shareCopyUrl(scorePath, appOrigin)
                     )
                   }
+                  onQrCode={() => setQrCodeOpen(true)}
                 />
                 <LinkPreviewRow
                   label="Scorecard"
@@ -720,6 +734,16 @@ export function FunnelSettingsTab({
         appOrigin={appOrigin}
         impersonatingCoachId={impersonatingCoachId}
         onClose={closePersonaliseModal}
+      />
+
+      <ShareQrCodeModal
+        open={qrCodeOpen}
+        title="Boss Score QR code"
+        description="Scan to open your opt-in landing page. Download to print on slides, business cards, or event materials."
+        url={shareCopyUrl(scorePath, appOrigin)}
+        displayUrl={shareDisplayUrl(scorePath, appOrigin)}
+        filenameStem={`boss-score-qr-${slug}`}
+        onClose={() => setQrCodeOpen(false)}
       />
 
       <div className="flex items-center gap-4">

@@ -10,6 +10,31 @@ export type CommunityFeedLocalState = {
   commentsSeenUpTo: Record<string, string>;
 };
 
+export type CommunityPostViewerEngagement = {
+  commented_by_me?: boolean;
+  liked_by_me?: boolean;
+  poll_voted_option_id?: string | null;
+};
+
+/** Server-side signals that the viewer already engaged with this post. */
+export function communityPostHasViewerEngagement(
+  post: CommunityPostViewerEngagement
+): boolean {
+  return Boolean(
+    post.commented_by_me || post.liked_by_me || post.poll_voted_option_id
+  );
+}
+
+export function isCommunityPostReadOnFeed(
+  post: CommunityPostViewerEngagement & { id: string },
+  snapshot: CommunityFeedLocalState
+): boolean {
+  return (
+    Boolean(snapshot.readPostIds[post.id]) ||
+    communityPostHasViewerEngagement(post)
+  );
+}
+
 function emptyState(): CommunityFeedLocalState {
   return { readPostIds: {}, commentsSeenUpTo: {} };
 }
@@ -71,7 +96,48 @@ export function markCommunityPostReadInStorage(
   return true;
 }
 
-/** Clears read + comment-seen watermarks so the post shows as unread in the feed. */
+/** Marks feed posts authored by `scopeId` as read (author's own posts). */
+export function markOwnCommunityPostsReadInStorage(
+  scopeId: string,
+  posts: { id: string; author?: { id?: string | null } | null }[]
+): boolean {
+  const prev = loadCommunityFeedLocalState(scopeId);
+  let changed = false;
+  const readPostIds = { ...prev.readPostIds };
+  for (const post of posts) {
+    if (post.author?.id !== scopeId || readPostIds[post.id]) continue;
+    readPostIds[post.id] = true;
+    changed = true;
+  }
+  if (!changed) return false;
+  persistCommunityFeedLocalState(scopeId, {
+    ...prev,
+    readPostIds,
+  });
+  return true;
+}
+
+/** Marks posts the viewer engaged with (comment, like, poll vote) as read in localStorage. */
+export function markEngagedCommunityPostsReadInStorage(
+  scopeId: string,
+  posts: (CommunityPostViewerEngagement & { id: string })[]
+): boolean {
+  const prev = loadCommunityFeedLocalState(scopeId);
+  let changed = false;
+  const readPostIds = { ...prev.readPostIds };
+  for (const post of posts) {
+    if (readPostIds[post.id] || !communityPostHasViewerEngagement(post)) continue;
+    readPostIds[post.id] = true;
+    changed = true;
+  }
+  if (!changed) return false;
+  persistCommunityFeedLocalState(scopeId, {
+    ...prev,
+    readPostIds,
+  });
+  return true;
+}
+
 export function markCommunityPostUnreadInStorage(
   scopeId: string,
   postId: string
@@ -151,5 +217,28 @@ export function useCommunityFeedCardLocalState(scopeId: string | null) {
     [scopeId, bump]
   );
 
-  return { snapshot, markPostRead, markPostUnread, markCommentsSeenUpTo };
+  const markOwnPostsRead = useCallback(
+    (posts: { id: string; author?: { id?: string | null } | null }[]) => {
+      if (!scopeId) return;
+      if (markOwnCommunityPostsReadInStorage(scopeId, posts)) bump();
+    },
+    [scopeId, bump]
+  );
+
+  const markEngagedPostsRead = useCallback(
+    (posts: (CommunityPostViewerEngagement & { id: string })[]) => {
+      if (!scopeId) return;
+      if (markEngagedCommunityPostsReadInStorage(scopeId, posts)) bump();
+    },
+    [scopeId, bump]
+  );
+
+  return {
+    snapshot,
+    markPostRead,
+    markPostUnread,
+    markCommentsSeenUpTo,
+    markOwnPostsRead,
+    markEngagedPostsRead,
+  };
 }

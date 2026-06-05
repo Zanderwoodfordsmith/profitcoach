@@ -25,6 +25,29 @@ export const PRIMARY_COACH_LEAD_WEBHOOK_URL =
 export const PRIMARY_COACH_GHL_LOCATION_ID = "nkMdG4ieburQlR9ypQYd";
 export const PRIMARY_COACH_GHL_CALENDAR_ID = "8jyZoTDwjgn8kTDZlv7y";
 
+/** Internal marketing / GHL test accounts — not real member join dates. */
+const SYSTEM_COACH_SLUGS = new Set([PRIMARY_COACH_SLUG_FALLBACK]);
+
+export function isSystemCoachSlug(slug: string | null | undefined): boolean {
+  if (!slug) return false;
+  return SYSTEM_COACH_SLUGS.has(slug.trim().toLowerCase());
+}
+
+/** Join date for admin charts; explicit dates win; system accounts skip created_at fallback. */
+export function resolveCoachJoinedAt(
+  slug: string | null | undefined,
+  options: {
+    discoCommunityJoinedOn?: string | null;
+    profileCreatedAt?: string | null;
+  }
+): string | null {
+  if (options.discoCommunityJoinedOn) {
+    return options.discoCommunityJoinedOn;
+  }
+  if (isSystemCoachSlug(slug)) return null;
+  return (options.profileCreatedAt as string | null | undefined) ?? null;
+}
+
 let cachedPrimaryCoachSlug: string | null = null;
 
 export function getPrimaryCoachSlug(): string {
@@ -131,7 +154,7 @@ async function upsertPrimaryCoachRowForUser(userId: string): Promise<void> {
   const coachRow: Record<string, unknown> = {
     id: userId,
     slug,
-    record_kind: "member",
+    record_kind: isSystemCoachSlug(slug) ? "system" : "member",
     calendar_embed_code: PRIMARY_COACH_CALENDAR_EMBED_CODE,
   };
 

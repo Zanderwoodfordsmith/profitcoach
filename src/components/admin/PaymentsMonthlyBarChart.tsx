@@ -1,7 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useCallback,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 
+import {
+  convertAmountCents,
+  GBP_TO_USD_RATE,
+  normalizeCurrencyCode,
+} from "@/lib/currencyConversion";
 import {
   PAYMENT_BILLING_CHART_STACK_ORDER,
   paymentBillingKindChartClass,
@@ -10,11 +24,22 @@ import {
 } from "@/lib/paymentBillingKind";
 
 type PaymentForChart = {
+  id: string;
   status: string;
   amount_cents: number;
   currency: string;
   paid_at: string;
   billing_kind: PaymentBillingKind;
+  coach_name: string;
+};
+
+type ChartPaymentEntry = PaymentForChart & {
+  displayAmountCents: number;
+};
+
+type ChartHover = {
+  monthKey: string;
+  kind?: PaymentBillingKind;
 };
 
 type MonthBucket = {
@@ -28,6 +53,16 @@ type MonthBucket = {
 type ChartRange = "6" | "12" | "all";
 
 const CHART_HEIGHT_PX = 160;
+const POPOVER_CLOSE_MS = 120;
+const POPOVER_WIDTH_PX = 308;
+const POPOVER_MAX_HEIGHT = 380;
+
+const BILLING_KIND_ACCENT: Record<PaymentBillingKind, string> = {
+  recurring: "#0ea5e9",
+  initial: "#8b5cf6",
+  installment: "#f59e0b",
+  other: "#94a3b8",
+};
 
 function emptyKindTotals(): Record<
   PaymentBillingKind,
@@ -100,14 +135,20 @@ function buildYearAxisGroupsFromMonths(buckets: MonthBucket[]): YearAxisGroup[] 
 
 export function buildSucceededMonthlyBuckets(
   payments: PaymentForChart[],
-  currency: string
+  displayCurrency: string
 ): MonthBucket[] {
   const map = new Map<string, MonthBucket>();
-  const normalizedCurrency = currency.trim().toLowerCase();
+  const normalizedDisplayCurrency = normalizeCurrencyCode(displayCurrency);
 
   for (const payment of payments) {
     if (payment.status !== "succeeded") continue;
-    if (payment.currency.trim().toLowerCase() !== normalizedCurrency) continue;
+
+    const convertedCents = convertAmountCents(
+      payment.amount_cents,
+      payment.currency,
+      normalizedDisplayCurrency
+    );
+    if (convertedCents === null) continue;
 
     const key = monthKeyFromIso(payment.paid_at);
     if (!key) continue;
@@ -115,20 +156,20 @@ export function buildSucceededMonthlyBuckets(
     const kind = payment.billing_kind;
     const existing = map.get(key);
     if (existing) {
-      existing.totalCents += payment.amount_cents;
+      existing.totalCents += convertedCents;
       existing.count += 1;
-      existing.byKind[kind].cents += payment.amount_cents;
+      existing.byKind[kind].cents += convertedCents;
       existing.byKind[kind].count += 1;
     } else {
       const byKind = emptyKindTotals();
       byKind[kind] = {
-        cents: payment.amount_cents,
+        cents: convertedCents,
         count: 1,
       };
       map.set(key, {
         key,
         label: monthLabelFromKey(key),
-        totalCents: payment.amount_cents,
+        totalCents: convertedCents,
         count: 1,
         byKind,
       });
@@ -136,6 +177,53 @@ export function buildSucceededMonthlyBuckets(
   }
 
   return [...map.values()].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function buildPaymentsByMonthAndKind(
+  payments: PaymentForChart[],
+  displayCurrency: string
+): Map<string, ChartPaymentEntry[]> {
+  const map = new Map<string, ChartPaymentEntry[]>();
+  const normalizedDisplayCurrency = normalizeCurrencyCode(displayCurrency);
+
+  for (const payment of payments) {
+    if (payment.status !== "succeeded") continue;
+
+    const displayAmountCents = convertAmountCents(
+      payment.amount_cents,
+      payment.currency,
+      normalizedDisplayCurrency
+    );
+    if (displayAmountCents === null) continue;
+
+    const monthKey = monthKeyFromIso(payment.paid_at);
+    if (!monthKey) continue;
+
+    const key = `${monthKey}:${payment.billing_kind}`;
+    const entry: ChartPaymentEntry = { ...payment, displayAmountCents };
+    const existing = map.get(key);
+    if (existing) existing.push(entry);
+    else map.set(key, [entry]);
+  }
+
+  for (const entries of map.values()) {
+    entries.sort((a, b) => Date.parse(b.paid_at) - Date.parse(a.paid_at));
+  }
+
+  return map;
+}
+
+function formatPaymentDateShort(iso: string): string {
+  const parsed = Date.parse(iso);
+  if (Number.isNaN(parsed)) return iso;
+  const date = new Date(parsed);
+  const now = new Date();
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    ...(sameYear ? {} : { year: "2-digit" }),
+  }).format(date);
 }
 
 function formatMoney(amountCents: number, currency: string): string {
@@ -186,15 +274,216 @@ function buildYAxisTicks(axisMaxCents: number, tickCount = 4): number[] {
   return Array.from({ length: tickCount + 1 }, (_, i) => Math.round(i * step));
 }
 
+function legendLabel(kind: PaymentBillingKind): string {
+  return kind === "other" ? "Other" : paymentBillingKindLabel(kind);
+}
+
+function visibleBucketTotalCents(
+  bucket: MonthBucket,
+  hiddenKinds: Set<PaymentBillingKind>
+): number {
+  return PAYMENT_BILLING_CHART_STACK_ORDER.reduce(
+    (sum, kind) =>
+      hiddenKinds.has(kind) ? sum : sum + bucket.byKind[kind].cents,
+    0
+  );
+}
+
+function visibleBucketPaymentCount(
+  bucket: MonthBucket,
+  hiddenKinds: Set<PaymentBillingKind>
+): number {
+  return PAYMENT_BILLING_CHART_STACK_ORDER.reduce(
+    (sum, kind) =>
+      hiddenKinds.has(kind) ? sum : sum + bucket.byKind[kind].count,
+    0
+  );
+}
+
 function billingBreakdownLines(
   bucket: MonthBucket,
-  currency: string
+  currency: string,
+  hiddenKinds: Set<PaymentBillingKind>
 ): string[] {
   return PAYMENT_BILLING_CHART_STACK_ORDER.filter(
-    (kind) => bucket.byKind[kind].cents > 0
+    (kind) => !hiddenKinds.has(kind) && bucket.byKind[kind].cents > 0
   ).map(
     (kind) =>
-      `${paymentBillingKindLabel(kind)}: ${formatMoney(bucket.byKind[kind].cents, currency)} (${bucket.byKind[kind].count})`
+      `${legendLabel(kind)}: ${formatMoney(bucket.byKind[kind].cents, currency)} (${bucket.byKind[kind].count})`
+  );
+}
+
+function PaymentSegmentPopover({
+  label,
+  monthLabel,
+  accentColor,
+  payments,
+  displayCurrency,
+  isActive,
+  onOpenChange,
+  children,
+  className = "",
+}: {
+  label: string;
+  monthLabel: string;
+  accentColor: string;
+  payments: ChartPaymentEntry[];
+  displayCurrency: string;
+  isActive: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const panelId = useId();
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(
+    null
+  );
+  const closeTimerRef = useRef<number | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const show = useCallback(() => {
+    if (payments.length === 0) return;
+    clearCloseTimer();
+    setOpen(true);
+    onOpenChange(true);
+  }, [clearCloseTimer, onOpenChange, payments.length]);
+
+  const scheduleHide = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      onOpenChange(false);
+    }, POPOVER_CLOSE_MS);
+  }, [clearCloseTimer, onOpenChange]);
+
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+
+    function updatePosition() {
+      const el = triggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const panelWidth = Math.min(POPOVER_WIDTH_PX, window.innerWidth - 24);
+      let left = rect.left + rect.width / 2 - panelWidth / 2;
+      left = Math.max(12, Math.min(left, window.innerWidth - panelWidth - 12));
+
+      const estimatedHeight = Math.min(
+        POPOVER_MAX_HEIGHT + 56,
+        56 + payments.length * 26
+      );
+      let top = rect.bottom + 8;
+      if (top + estimatedHeight > window.innerHeight - 12) {
+        top = Math.max(12, rect.top - estimatedHeight - 8);
+      }
+
+      setPosition({ left, top });
+    }
+
+    updatePosition();
+    const scrollOpts = { capture: true } as const;
+    window.addEventListener("scroll", updatePosition, scrollOpts);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, scrollOpts);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [open, payments.length]);
+
+  const triggerActive =
+    open && isActive
+      ? {
+          filter: "brightness(1.14) saturate(1.15)",
+          boxShadow:
+            "inset 0 3px 0 rgba(255,255,255,0.6), inset 0 -2px 0 rgba(0,0,0,0.12)",
+        }
+      : undefined;
+
+  const panel =
+    open && position && payments.length > 0 ? (
+      <div
+        id={panelId}
+        role="tooltip"
+        className="fixed z-[220] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/5"
+        style={{
+          left: position.left,
+          top: position.top,
+          width: Math.min(POPOVER_WIDTH_PX, window.innerWidth - 24),
+        }}
+        onMouseEnter={show}
+        onMouseLeave={scheduleHide}
+      >
+        <div
+          className="h-2.5 w-full"
+          style={{ backgroundColor: accentColor }}
+          aria-hidden
+        />
+        <div className="px-3 py-2.5">
+          <p
+            className="text-base font-semibold leading-tight"
+            style={{ color: accentColor }}
+          >
+            {label}
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-500">
+            {monthLabel} · {payments.length} payment
+            {payments.length === 1 ? "" : "s"}
+          </p>
+          <ul
+            className="mt-2 space-y-0.5 overflow-y-auto"
+            style={{ maxHeight: POPOVER_MAX_HEIGHT }}
+          >
+            {payments.map((payment) => (
+              <li key={payment.id}>
+                <div className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-baseline gap-x-2 px-1.5 py-0.5 text-sm leading-snug">
+                  <span className="shrink-0 tabular-nums text-xs text-slate-400">
+                    {formatPaymentDateShort(payment.paid_at)}
+                  </span>
+                  <span
+                    className={`min-w-0 truncate ${
+                      payment.coach_name === "Unassigned"
+                        ? "text-slate-400"
+                        : "text-slate-800"
+                    }`}
+                  >
+                    {payment.coach_name}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-slate-700">
+                    {formatMoney(payment.displayAmountCents, displayCurrency)}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    ) : null;
+
+  return (
+    <>
+      <span
+        ref={triggerRef}
+        className={`block h-full w-full cursor-pointer ${className}`.trim()}
+        style={triggerActive}
+        onMouseEnter={show}
+        onMouseLeave={scheduleHide}
+        onFocus={show}
+        onBlur={scheduleHide}
+        aria-describedby={open ? panelId : undefined}
+      >
+        {children}
+      </span>
+      {typeof document !== "undefined" && panel
+        ? createPortal(panel, document.body)
+        : null}
+    </>
   );
 }
 
@@ -205,16 +494,31 @@ type Props = {
 
 export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
   const [range, setRange] = useState<ChartRange>("12");
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [hover, setHover] = useState<ChartHover | null>(null);
+  const [hiddenKinds, setHiddenKinds] = useState<Set<PaymentBillingKind>>(
+    () => new Set()
+  );
+
+  const toggleKindVisibility = (kind: PaymentBillingKind) => {
+    setHiddenKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
+  };
 
   const currencies = useMemo(() => {
     const set = new Set<string>();
     for (const payment of payments) {
       if (payment.status !== "succeeded") continue;
-      set.add(payment.currency.trim().toLowerCase() || "gbp");
+      set.add(normalizeCurrencyCode(payment.currency));
     }
     return [...set].sort();
   }, [payments]);
+
+  const showCurrencyConversionNote =
+    currencies.includes("gbp") && currencies.includes("usd");
 
   const [currency, setCurrency] = useState("gbp");
 
@@ -227,6 +531,11 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
     [payments, activeCurrency]
   );
 
+  const paymentsByMonthAndKind = useMemo(
+    () => buildPaymentsByMonthAndKind(payments, activeCurrency),
+    [payments, activeCurrency]
+  );
+
   const buckets = useMemo(() => {
     if (range === "all") return allBuckets;
     const count = range === "6" ? 6 : 12;
@@ -234,8 +543,12 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
   }, [allBuckets, range]);
 
   const maxTotal = useMemo(
-    () => Math.max(...buckets.map((b) => b.totalCents), 0),
-    [buckets]
+    () =>
+      Math.max(
+        ...buckets.map((b) => visibleBucketTotalCents(b, hiddenKinds)),
+        0
+      ),
+    [buckets, hiddenKinds]
   );
 
   const axisMaxCents = useMemo(() => niceAxisMaxCents(maxTotal), [maxTotal]);
@@ -243,8 +556,12 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
   const yTicks = useMemo(() => buildYAxisTicks(axisMaxCents, 4), [axisMaxCents]);
 
   const periodTotal = useMemo(
-    () => buckets.reduce((sum, b) => sum + b.totalCents, 0),
-    [buckets]
+    () =>
+      buckets.reduce(
+        (sum, b) => sum + visibleBucketTotalCents(b, hiddenKinds),
+        0
+      ),
+    [buckets, hiddenKinds]
   );
 
   const useYearGroupedAxis = range === "all";
@@ -268,17 +585,23 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
   /** Vertical rule in the flex gap before Jan; does not remove inter-month spacing. */
   const yearBoundaryDividerClass = "shadow-[-2px_0_0_0_#cbd5e1]";
 
-  const hovered = buckets.find((b) => b.key === hoveredKey) ?? null;
+  const hovered = hover ? buckets.find((b) => b.key === hover.monthKey) ?? null : null;
 
   const renderBarColumn = (bucket: MonthBucket, isYearBoundary = false) => {
+    const visibleTotalCents = visibleBucketTotalCents(bucket, hiddenKinds);
     const barHeightPx = Math.max(
       2,
       axisMaxCents > 0
-        ? (bucket.totalCents / axisMaxCents) * CHART_HEIGHT_PX
+        ? (visibleTotalCents / axisMaxCents) * CHART_HEIGHT_PX
         : 0
     );
-    const isHovered = hoveredKey === bucket.key;
-    const amountLabel = formatMoneyCompact(bucket.totalCents, activeCurrency);
+    const isMonthHovered = hover?.monthKey === bucket.key;
+    const amountLabel = formatMoneyCompact(visibleTotalCents, activeCurrency);
+    const breakdownTitle = billingBreakdownLines(
+      bucket,
+      activeCurrency,
+      hiddenKinds
+    ).join("\n");
 
     return (
       <div
@@ -286,23 +609,24 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
         className={`flex min-w-0 flex-1 flex-col items-center justify-end ${
           isYearBoundary ? yearBoundaryDividerClass : ""
         }`}
-        onMouseEnter={() => setHoveredKey(bucket.key)}
-        onMouseLeave={() => setHoveredKey(null)}
+        onMouseLeave={() => setHover(null)}
       >
         <span
           className={`mb-0.5 max-w-full truncate px-0.5 text-center text-[9px] font-semibold leading-tight sm:text-[10px] ${
-            isHovered ? "text-slate-900" : "text-slate-700"
+            isMonthHovered ? "text-slate-900" : "text-slate-700"
           }`}
-          title={formatMoney(bucket.totalCents, activeCurrency)}
+          title={formatMoney(visibleTotalCents, activeCurrency)}
+          onMouseEnter={() => setHover({ monthKey: bucket.key })}
         >
-          {amountLabel}
+          {visibleTotalCents > 0 ? amountLabel : ""}
         </span>
         <div
           className="flex w-full max-w-[2.75rem] flex-col justify-end overflow-hidden rounded-t-sm"
           style={{ height: barHeightPx }}
-          title={billingBreakdownLines(bucket, activeCurrency).join("\n")}
+          title={breakdownTitle || undefined}
         >
           {PAYMENT_BILLING_CHART_STACK_ORDER.map((kind) => {
+            if (hiddenKinds.has(kind)) return null;
             const segment = bucket.byKind[kind];
             if (segment.cents <= 0) return null;
             const segmentHeightPx = Math.max(
@@ -311,14 +635,41 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
                 ? (segment.cents / axisMaxCents) * CHART_HEIGHT_PX
                 : 0
             );
+            const segmentPayments =
+              paymentsByMonthAndKind.get(`${bucket.key}:${kind}`) ?? [];
+            const isSegmentHovered =
+              hover?.monthKey === bucket.key && hover.kind === kind;
+
             return (
-              <div
-                key={kind}
-                className={`w-full ${paymentBillingKindChartClass(kind)} ${
-                  isHovered ? "opacity-100" : "opacity-90"
-                }`}
-                style={{ height: segmentHeightPx }}
-              />
+              <div key={kind} className="w-full" style={{ height: segmentHeightPx }}>
+                <PaymentSegmentPopover
+                  label={legendLabel(kind)}
+                  monthLabel={bucket.label}
+                  accentColor={BILLING_KIND_ACCENT[kind]}
+                  payments={segmentPayments}
+                  displayCurrency={activeCurrency}
+                  isActive={isSegmentHovered}
+                  onOpenChange={(open) => {
+                    if (open) setHover({ monthKey: bucket.key, kind });
+                    else if (
+                      hover?.monthKey === bucket.key &&
+                      hover.kind === kind
+                    ) {
+                      setHover(null);
+                    }
+                  }}
+                >
+                  <div
+                    className={`h-full w-full ${paymentBillingKindChartClass(kind)} ${
+                      isSegmentHovered
+                        ? "opacity-100"
+                        : isMonthHovered
+                          ? "opacity-100"
+                          : "opacity-90"
+                    }`}
+                  />
+                </PaymentSegmentPopover>
+              </div>
             );
           })}
         </div>
@@ -333,68 +684,96 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
           <h2 className="text-sm font-semibold text-slate-900">Succeeded payments by month</h2>
           <p className="mt-1 text-xs text-slate-600">
             Stacked by billing type (Recurring, New, Plan).
-            {hovered ? (
+            {showCurrencyConversionNote ? (
+              <span className="ml-1">
+                Totals combine GBP and USD at 1 GBP = $
+                {GBP_TO_USD_RATE.toFixed(2)}.
+              </span>
+            ) : null}
+            {hovered && !hover?.kind ? (
               <span className="ml-1 font-medium text-slate-800">
-                {hovered.label}: {formatMoney(hovered.totalCents, activeCurrency)} (
-                {hovered.count} payment{hovered.count === 1 ? "" : "s"})
+                {hovered.label}:{" "}
+                {formatMoney(
+                  visibleBucketTotalCents(hovered, hiddenKinds),
+                  activeCurrency
+                )}{" "}
+                (
+                {visibleBucketPaymentCount(hovered, hiddenKinds)} payment
+                {visibleBucketPaymentCount(hovered, hiddenKinds) === 1
+                  ? ""
+                  : "s"}
+                )
               </span>
             ) : null}
           </p>
-          {hovered ? (
+          {hovered && !hover?.kind ? (
             <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
-              {billingBreakdownLines(hovered, activeCurrency).map((line) => (
-                <li key={line}>{line}</li>
-              ))}
+              {billingBreakdownLines(hovered, activeCurrency, hiddenKinds).map(
+                (line) => (
+                  <li key={line}>{line}</li>
+                )
+              )}
             </ul>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {currencies.length > 1 ? (
-            <select
-              value={activeCurrency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
-              aria-label="Currency"
-            >
-              {currencies.map((c) => (
-                <option key={c} value={c}>
-                  {c.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value as ChartRange)}
-            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
-            aria-label="Month range"
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <div
+            className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600"
+            role="group"
+            aria-label="Billing type legend"
           >
-            <option value="6">Last 6 months</option>
-            <option value="12">Last 12 months</option>
-            <option value="all">All months</option>
-          </select>
+            {PAYMENT_BILLING_CHART_STACK_ORDER.map((kind) => {
+              const isHidden = hiddenKinds.has(kind);
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => toggleKindVisibility(kind)}
+                  aria-pressed={!isHidden}
+                  className={`inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors hover:bg-slate-100 ${
+                    isHidden
+                      ? "text-slate-400 line-through"
+                      : "text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-2.5 w-2.5 rounded-sm ${paymentBillingKindChartClass(kind)} ${
+                      isHidden ? "opacity-30" : ""
+                    }`}
+                    aria-hidden
+                  />
+                  {legendLabel(kind)}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {currencies.length > 1 ? (
+              <select
+                value={activeCurrency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+                aria-label="Display currency"
+              >
+                {currencies.map((c) => (
+                  <option key={c} value={c}>
+                    {c.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <select
+              value={range}
+              onChange={(e) => setRange(e.target.value as ChartRange)}
+              className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+              aria-label="Month range"
+            >
+              <option value="6">Last 6 months</option>
+              <option value="12">Last 12 months</option>
+              <option value="all">All months</option>
+            </select>
+          </div>
         </div>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-        {PAYMENT_BILLING_CHART_STACK_ORDER.filter((k) => k !== "other").map(
-          (kind) => (
-            <span key={kind} className="inline-flex items-center gap-1.5">
-              <span
-                className={`inline-block h-2.5 w-2.5 rounded-sm ${paymentBillingKindChartClass(kind)}`}
-                aria-hidden
-              />
-              {paymentBillingKindLabel(kind)}
-            </span>
-          )
-        )}
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className={`inline-block h-2.5 w-2.5 rounded-sm ${paymentBillingKindChartClass("other")}`}
-            aria-hidden
-          />
-          Other
-        </span>
       </div>
 
       {loading ? (
@@ -467,7 +846,7 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
                 <div className="mt-1 px-1 sm:px-2">
                   <div className="flex gap-1 sm:gap-2">
                     {buckets.map((bucket) => {
-                      const isHovered = hoveredKey === bucket.key;
+                      const isHovered = hover?.monthKey === bucket.key;
                       const isYearBoundary = yearBoundaryKeys.has(bucket.key);
                       return (
                         <div
@@ -510,7 +889,7 @@ export function PaymentsMonthlyBarChart({ payments, loading }: Props) {
               ) : (
                 <div className="mt-1 flex gap-1 px-1 sm:gap-2 sm:px-2">
                   {buckets.map((bucket) => {
-                    const isHovered = hoveredKey === bucket.key;
+                    const isHovered = hover?.monthKey === bucket.key;
                     return (
                       <div
                         key={bucket.key}

@@ -404,7 +404,12 @@ function resolveMatch(
   email: string,
   companyName: string
 ): boolean {
-  if (directory.uniqueCoachByEmail.get(email)) return true;
+  if (
+    directory.uniqueCoachByPaymentEmail.get(email) ??
+    directory.uniqueCoachByEmail.get(email)
+  ) {
+    return true;
+  }
   const companyKey = companyName.trim().toLowerCase().replace(/\s+/g, " ");
   if (companyKey && directory.uniqueCoachByCompany.get(companyKey)) return true;
   return false;

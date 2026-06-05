@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { matchCsvNameToCoach, normalizeCoachName } from "@/lib/clickupCoachNameMatch";
 import { paymentImportSkipReason } from "@/lib/paymentImportFilters";
+import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 
 type CoachInfo = {
   id: string;
@@ -30,6 +31,7 @@ export type CoachDirectory = {
   coaches: CoachInfo[];
   coachById: Map<string, CoachInfo>;
   uniqueCoachByEmail: Map<string, CoachInfo>;
+  uniqueCoachByPaymentEmail: Map<string, CoachInfo>;
   uniqueCoachByCompany: Map<string, CoachInfo>;
   uniqueCoachByNormalizedName: Map<string, CoachInfo>;
   uniqueCoachByEmailLocal: Map<string, CoachInfo>;
@@ -138,6 +140,100 @@ function addCompanyKey(
   }
 }
 
+function assignmentMethodPriority(method: AssignmentMethod): number {
+  switch (method) {
+    case "manual":
+      return 4;
+    case "metadata":
+      return 3;
+    case "email_auto":
+      return 2;
+    case "company_auto":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+type PaymentEmailCandidate = {
+  coach: CoachInfo;
+  priority: number;
+  paidAt: string;
+};
+
+async function loadPaymentEmailMappings(
+  supabase: SupabaseClient,
+  coachById: Map<string, CoachInfo>
+): Promise<Map<string, CoachInfo>> {
+  const candidates = new Map<string, PaymentEmailCandidate>();
+  const ambiguous = new Set<string>();
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("coach_payments")
+      .select("customer_email, coach_id, assignment_method, paid_at")
+      .not("coach_id", "is", null)
+      .neq("assignment_method", "unassigned")
+      .order("paid_at", { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      throw new Error("Unable to load payment email mappings.");
+    }
+
+    const rows = data ?? [];
+    for (const row of rows) {
+      const email = normalizeEmail(row.customer_email as string | null);
+      const coachId = (row.coach_id as string | null)?.trim() || null;
+      if (!email || !coachId || isSyntheticImportEmail(email)) continue;
+
+      const coach = coachById.get(coachId);
+      if (!coach) continue;
+
+      if (ambiguous.has(email)) continue;
+
+      const priority = assignmentMethodPriority(
+        row.assignment_method as AssignmentMethod
+      );
+      const paidAt = String(row.paid_at ?? "");
+      const existing = candidates.get(email);
+
+      if (!existing) {
+        candidates.set(email, { coach, priority, paidAt });
+        continue;
+      }
+
+      if (existing.coach.id === coach.id) continue;
+
+      if (priority > existing.priority) {
+        candidates.set(email, { coach, priority, paidAt });
+        continue;
+      }
+
+      if (priority < existing.priority) continue;
+
+      if (paidAt > existing.paidAt) {
+        candidates.set(email, { coach, priority, paidAt });
+        continue;
+      }
+
+      if (paidAt < existing.paidAt) continue;
+
+      ambiguous.add(email);
+      candidates.delete(email);
+    }
+
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return new Map(
+    [...candidates.entries()].map(([email, candidate]) => [email, candidate.coach])
+  );
+}
+
 export async function loadCoachDirectory(
   supabase: SupabaseClient
 ): Promise<CoachDirectory> {
@@ -161,10 +257,11 @@ export async function loadCoachDirectory(
         full_name: (profile?.full_name as string | null) ?? null,
         coach_business_name: (profile?.coach_business_name as string | null) ?? null,
         email: null,
-        joined_at:
-          (profile?.disco_community_joined_on as string | null) ??
-          (profile?.created_at as string | null) ??
-          null,
+        joined_at: resolveCoachJoinedAt(row.slug as string, {
+          discoCommunityJoinedOn:
+            (profile?.disco_community_joined_on as string | null) ?? null,
+          profileCreatedAt: (profile?.created_at as string | null) ?? null,
+        }),
       };
     }) ?? [];
 
@@ -238,10 +335,16 @@ export async function loadCoachDirectory(
     );
   }
 
+  const uniqueCoachByPaymentEmail = await loadPaymentEmailMappings(
+    supabase,
+    coachById
+  );
+
   return {
     coaches,
     coachById,
     uniqueCoachByEmail,
+    uniqueCoachByPaymentEmail,
     uniqueCoachByCompany,
     uniqueCoachByNormalizedName,
     uniqueCoachByEmailLocal,
@@ -361,36 +464,42 @@ function resolveCoachAssignment(
       coachId = metadataCoachExists;
       assignmentMethod = "metadata";
     } else if (!coachId) {
-      const emailMatch = directory.uniqueCoachByEmail.get(input.email);
-      if (emailMatch) {
-        coachId = emailMatch.id;
+      const learnedEmailMatch = directory.uniqueCoachByPaymentEmail.get(input.email);
+      if (learnedEmailMatch) {
+        coachId = learnedEmailMatch.id;
         assignmentMethod = "email_auto";
       } else {
-        const companyKey = normalizeCompany(input.companyName);
-        const companyMatch = companyKey
-          ? directory.uniqueCoachByCompany.get(companyKey)
-          : undefined;
-        if (companyMatch) {
-          coachId = companyMatch.id;
-          assignmentMethod = "company_auto";
+        const emailMatch = directory.uniqueCoachByEmail.get(input.email);
+        if (emailMatch) {
+          coachId = emailMatch.id;
+          assignmentMethod = "email_auto";
         } else {
-          const nameMatch = suggestCoachByPayerLabel(
-            directory,
-            input.companyName
-          );
-          if (nameMatch) {
-            coachId = nameMatch.id;
+          const companyKey = normalizeCompany(input.companyName);
+          const companyMatch = companyKey
+            ? directory.uniqueCoachByCompany.get(companyKey)
+            : undefined;
+          if (companyMatch) {
+            coachId = companyMatch.id;
             assignmentMethod = "company_auto";
           } else {
-            const localKey = emailLocalCompactKey(input.email);
-            const localMatch = localKey
-              ? directory.uniqueCoachByEmailLocal.get(localKey)
-              : undefined;
-            if (localMatch) {
-              coachId = localMatch.id;
-              assignmentMethod = "email_auto";
+            const nameMatch = suggestCoachByPayerLabel(
+              directory,
+              input.companyName
+            );
+            if (nameMatch) {
+              coachId = nameMatch.id;
+              assignmentMethod = "company_auto";
             } else {
-              assignmentMethod = "unassigned";
+              const localKey = emailLocalCompactKey(input.email);
+              const localMatch = localKey
+                ? directory.uniqueCoachByEmailLocal.get(localKey)
+                : undefined;
+              if (localMatch) {
+                coachId = localMatch.id;
+                assignmentMethod = "email_auto";
+              } else {
+                assignmentMethod = "unassigned";
+              }
             }
           }
         }
@@ -568,6 +677,9 @@ export function suggestCoachForPayment(
 ): CoachInfo | null {
   const email = normalizeEmail(customerEmail);
   if (!email) return null;
+
+  const learnedEmailMatch = directory.uniqueCoachByPaymentEmail.get(email);
+  if (learnedEmailMatch) return learnedEmailMatch;
 
   const emailMatch = directory.uniqueCoachByEmail.get(email);
   if (emailMatch) return emailMatch;

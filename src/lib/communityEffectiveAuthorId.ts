@@ -12,7 +12,10 @@ export function coachPersonaForCommunity(
 ): string | null {
   if (!impersonatingCoachId) return null;
   if (!pathname?.startsWith("/coach/")) return null;
-  if (viewerIsAdmin === false) return null;
+  // Only apply impersonation once we know the viewer is an admin. While role is
+  // still loading (`null`), stale sessionStorage coach ids would otherwise key
+  // read state and author ids to the wrong user for real coaches.
+  if (viewerIsAdmin !== true) return null;
   return impersonatingCoachId;
 }
 

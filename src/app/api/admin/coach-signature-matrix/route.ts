@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { normalizeScores } from "@/lib/signatureModelV2";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
+import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireAdmin } from "@/lib/requireAdmin";
 
@@ -42,10 +43,11 @@ export async function GET(request: Request) {
         slug: row.slug as string,
         full_name: row.profiles?.full_name ?? null,
         coach_business_name: row.profiles?.coach_business_name ?? null,
-        joined_at:
-          (row.profiles?.disco_community_joined_on as string | null) ??
-          (row.profiles?.created_at as string | null) ??
-          null,
+        joined_at: resolveCoachJoinedAt(row.slug as string, {
+          discoCommunityJoinedOn:
+            (row.profiles?.disco_community_joined_on as string | null) ?? null,
+          profileCreatedAt: (row.profiles?.created_at as string | null) ?? null,
+        }),
         current_monthly_income: (() => {
           const raw = row.profiles?.coaching_income_reported_2024;
           if (typeof raw !== "string") return null;

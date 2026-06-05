@@ -76,6 +76,8 @@ type PatchBody = {
   full_name?: string | null;
   coach_business_name?: string | null;
   linkedin_url?: string | null;
+  /** Community member join date (profiles.disco_community_joined_on). */
+  disco_community_joined_on?: string | null;
 };
 
 export async function PATCH(
@@ -301,6 +303,24 @@ export async function PATCH(
     } else {
       return NextResponse.json(
         { error: "ladder_goal_target_date must be YYYY-MM-DD or null." },
+        { status: 400 }
+      );
+    }
+  }
+  if (body.disco_community_joined_on !== undefined) {
+    if (
+      body.disco_community_joined_on === null ||
+      body.disco_community_joined_on === ""
+    ) {
+      profileUpdates.disco_community_joined_on = null;
+    } else if (
+      typeof body.disco_community_joined_on === "string" &&
+      ISO_DATE_RE.test(body.disco_community_joined_on)
+    ) {
+      profileUpdates.disco_community_joined_on = body.disco_community_joined_on;
+    } else {
+      return NextResponse.json(
+        { error: "disco_community_joined_on must be YYYY-MM-DD or null." },
         { status: 400 }
       );
     }
