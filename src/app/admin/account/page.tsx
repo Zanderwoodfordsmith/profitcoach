@@ -37,6 +37,11 @@ const reportPreviewLinks = [
     hint: "Hero dial, level cards, pillar dials for 50-q diagnostic.",
   },
   {
+    href: "/preview/boss-pro-report?preview=1&coach=BCA",
+    label: "Boss Pro report (demo)",
+    hint: "Full 50-question report with coach + level preview controls.",
+  },
+  {
     href: "/preview/scorecard-results?preview=1&coach=pam",
     label: "BOSS Scorecard results",
     hint: "New 13-question scorecard results page.",
@@ -70,9 +75,9 @@ const bossProgrammeLinks = [
     hint: "50-question Boss Pro flow (direct link).",
   },
   {
-    href: "/assessment-pro/BCA/thank-you?preview=1",
-    label: "Boss Pro results",
-    hint: "ReportV3 results for Boss Pro assessment.",
+    href: "/preview/boss-pro-report?preview=1&coach=BCA",
+    label: "Boss Pro report (demo)",
+    hint: "Full 50-question report with coach + level preview controls.",
   },
   {
     href: "/admin/prospects",

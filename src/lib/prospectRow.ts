@@ -39,6 +39,8 @@ export type ProspectRow = {
   crm_contact_id?: string | null;
   crm_location_id?: string | null;
   created_at?: string | null;
+  /** Last assessment funnel entered (boss scorecard vs boss pro). */
+  prospect_funnel?: string | null;
 };
 
 export function latestProspectAssessmentAt(

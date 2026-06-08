@@ -219,6 +219,7 @@ export default function LandingVariantPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         coachSlug: coachSlug || null,
+        assessment_type: "boss_scorecard",
         contact: {
           first_name: first || undefined,
           last_name: last || undefined,
@@ -234,14 +235,12 @@ export default function LandingVariantPage() {
     e.preventDefault();
     setFormError(null);
     const phoneVal = phone.trim();
-    if (!phoneVal) {
-      setFormError("Please enter your phone number.");
-      return;
-    }
     const first = firstName.trim();
     const last = lastName.trim();
     const emailVal = email.trim();
-    const fullPhone = `${phoneCountryCode} ${phoneVal}`.trim();
+    const fullPhone = phoneVal
+      ? `${phoneCountryCode} ${phoneVal}`.trim()
+      : "";
     const fullName = [first, last].filter(Boolean).join(" ");
     setSubmitting(true);
     fetch("/api/landing/track", {
@@ -260,6 +259,7 @@ export default function LandingVariantPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         coachSlug: coachSlug || null,
+        assessment_type: "boss_scorecard",
         contact: {
           first_name: first || undefined,
           last_name: last || undefined,
@@ -277,7 +277,7 @@ export default function LandingVariantPage() {
           lastName: last,
           fullName: fullName || undefined,
           email: emailVal,
-          phone: fullPhone,
+          ...(fullPhone ? { phone: fullPhone } : {}),
         })
       );
     } catch {
@@ -867,7 +867,10 @@ function LandingOptInForm(
           {formStep === 3 && (
             <form onSubmit={handleStep3Submit} className="space-y-5">
               <p className={`text-xl font-semibold sm:text-2xl ${labelClass}`}>
-                And your <span className="font-bold">phone number</span>?
+                And your <span className="font-bold">phone number</span>?{" "}
+                <span className={`text-base font-normal sm:text-lg ${subtleText}`}>
+                  (optional)
+                </span>
               </p>
               <div className="flex gap-2">
                 <label htmlFor="landingA-phone-country" className="sr-only">Country code</label>

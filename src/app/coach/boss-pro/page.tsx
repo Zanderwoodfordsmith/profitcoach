@@ -754,6 +754,62 @@ function CoachWorkshopPageContent() {
   const clientsHref = adminUnscoped ? "/admin/clients" : "/coach/clients";
   const clientsLabel = adminUnscoped ? "Admin clients" : "Clients";
   const showNewPersonOption = Boolean(draftCoachId) || adminUnscoped;
+  const showCenteredContactPicker = isMinimalChrome && !activeContactId && !error;
+
+  const workshopPickerProps = useMemo(
+    () => ({
+      contacts,
+      selectedId: pickerSelectedId,
+      onSelectedIdChange: handleSelectedIdChange,
+      sessionSummary,
+      onChangeSession: handleChangeSession,
+      newPersonName,
+      onNewPersonNameChange: setNewPersonName,
+      newPersonTitle,
+      onNewPersonTitleChange: setNewPersonTitle,
+      newPersonBusiness,
+      onNewPersonBusinessChange: setNewPersonBusiness,
+      newPersonCoachId,
+      onNewPersonCoachIdChange: setNewPersonCoachId,
+      coachOptions,
+      isEditingNewPerson,
+      onConfirmNewPerson: handleConfirmNewPerson,
+      onCancelNewPerson: handleCancelNewPerson,
+      confirmError: newPersonConfirmError,
+      confirming: newPersonConfirming,
+      showNewPersonOption,
+      adminUnscoped,
+      clientsHref,
+      clientsLabel,
+      showScorecardLink: hasScorecardForContact,
+      onViewScorecard: handleViewScorecard,
+      onPickerOpen: refreshWorkshopContacts,
+    }),
+    [
+      contacts,
+      pickerSelectedId,
+      handleSelectedIdChange,
+      sessionSummary,
+      handleChangeSession,
+      newPersonName,
+      newPersonTitle,
+      newPersonBusiness,
+      newPersonCoachId,
+      coachOptions,
+      isEditingNewPerson,
+      handleConfirmNewPerson,
+      handleCancelNewPerson,
+      newPersonConfirmError,
+      newPersonConfirming,
+      showNewPersonOption,
+      adminUnscoped,
+      clientsHref,
+      clientsLabel,
+      hasScorecardForContact,
+      handleViewScorecard,
+      refreshWorkshopContacts,
+    ]
+  );
 
   const setWorkshopTopRight = chrome?.setWorkshopTopRight;
   const registerMinimalSlot = chrome?.isMinimalWorkshopChrome;
@@ -774,6 +830,10 @@ function CoachWorkshopPageContent() {
       setWorkshopTopRight(<p className="text-xs text-rose-600">{error}</p>);
       return () => setWorkshopTopRight(null);
     }
+    if (!activeContactId) {
+      setWorkshopTopRight(null);
+      return () => setWorkshopTopRight(null);
+    }
 
     setWorkshopTopRight(
       <div
@@ -783,36 +843,7 @@ function CoachWorkshopPageContent() {
             : "rounded-xl border border-sky-200/90 bg-white px-3.5 py-3 text-left shadow-lg ring-1 ring-slate-900/5 backdrop-blur-sm sm:min-w-[18rem]"
         }
       >
-        <WorkshopSessionPicker
-          idPrefix="workshop-top"
-          compact
-          contacts={contacts}
-          selectedId={pickerSelectedId}
-          onSelectedIdChange={handleSelectedIdChange}
-          sessionSummary={sessionSummary}
-          onChangeSession={handleChangeSession}
-          newPersonName={newPersonName}
-          onNewPersonNameChange={setNewPersonName}
-          newPersonTitle={newPersonTitle}
-          onNewPersonTitleChange={setNewPersonTitle}
-          newPersonBusiness={newPersonBusiness}
-          onNewPersonBusinessChange={setNewPersonBusiness}
-          newPersonCoachId={newPersonCoachId}
-          onNewPersonCoachIdChange={setNewPersonCoachId}
-          coachOptions={coachOptions}
-          isEditingNewPerson={isEditingNewPerson}
-          onConfirmNewPerson={handleConfirmNewPerson}
-          onCancelNewPerson={handleCancelNewPerson}
-          confirmError={newPersonConfirmError}
-          confirming={newPersonConfirming}
-          showNewPersonOption={showNewPersonOption}
-          adminUnscoped={adminUnscoped}
-          clientsHref={clientsHref}
-          clientsLabel={clientsLabel}
-          showScorecardLink={hasScorecardForContact}
-          onViewScorecard={handleViewScorecard}
-          onPickerOpen={refreshWorkshopContacts}
-        />
+        <WorkshopSessionPicker idPrefix="workshop-top" compact {...workshopPickerProps} />
       </div>
     );
     return () => setWorkshopTopRight(null);
@@ -822,50 +853,32 @@ function CoachWorkshopPageContent() {
     loading,
     error,
     activeContactId,
-    sessionSummary,
-    contacts,
-    pickerSelectedId,
-    handleSelectedIdChange,
-    handleChangeSession,
-    newPersonName,
-    newPersonTitle,
-    newPersonBusiness,
-    newPersonCoachId,
-    coachOptions,
-    isEditingNewPerson,
-    handleConfirmNewPerson,
-    handleCancelNewPerson,
-    newPersonConfirmError,
-    newPersonConfirming,
-    showNewPersonOption,
-    adminUnscoped,
-    clientsHref,
-    handleViewScorecard,
-    hasScorecardForContact,
-    refreshWorkshopContacts,
+    workshopPickerProps,
   ]);
 
   return (
     <div className="flex flex-col gap-6">
-      <StickyPageHeader
-        title="Boss Pro"
-        description={
-          <span className="text-base leading-relaxed text-slate-700">
-            {adminUnscoped ? (
-              <>
-                Choose a contact from the <strong>Clients</strong> or <strong>Prospects</strong>{" "}
-                list, or pick <strong>+ Add new person</strong> to score someone who is not listed
-                yet.
-              </>
-            ) : (
-              <>
-                Choose someone from the list, or pick <strong>+ Add new person</strong>, enter their
-                details, and click <strong>Start session</strong> to begin scoring.
-              </>
-            )}
-          </span>
-        }
-      />
+      {!(isMinimalChrome && !activeContactId) ? (
+        <StickyPageHeader
+          title="Boss Pro"
+          description={
+            <span className="text-base leading-relaxed text-slate-700">
+              {adminUnscoped ? (
+                <>
+                  Choose a contact from the <strong>Clients</strong> or <strong>Prospects</strong>{" "}
+                  list, or pick <strong>+ Add new person</strong> to score someone who is not listed
+                  yet.
+                </>
+              ) : (
+                <>
+                  Choose someone from the list, or pick <strong>+ Add new person</strong>, enter
+                  their details, and click <strong>Start session</strong> to begin scoring.
+                </>
+              )}
+            </span>
+          }
+        />
+      ) : null}
 
       {!isMinimalChrome && loading && !activeContactId && (
         <p className="text-sm text-slate-600">Loading contacts…</p>
@@ -874,39 +887,11 @@ function CoachWorkshopPageContent() {
 
       {!isMinimalChrome && (!loading || sessionSummary) && !error && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <WorkshopSessionPicker
-            idPrefix="workshop-main"
-            contacts={contacts}
-            selectedId={pickerSelectedId}
-            onSelectedIdChange={handleSelectedIdChange}
-            sessionSummary={sessionSummary}
-            onChangeSession={handleChangeSession}
-            newPersonName={newPersonName}
-            onNewPersonNameChange={setNewPersonName}
-            newPersonTitle={newPersonTitle}
-            onNewPersonTitleChange={setNewPersonTitle}
-            newPersonBusiness={newPersonBusiness}
-            onNewPersonBusinessChange={setNewPersonBusiness}
-            newPersonCoachId={newPersonCoachId}
-            onNewPersonCoachIdChange={setNewPersonCoachId}
-            coachOptions={coachOptions}
-            isEditingNewPerson={isEditingNewPerson}
-            onConfirmNewPerson={handleConfirmNewPerson}
-            onCancelNewPerson={handleCancelNewPerson}
-            confirmError={newPersonConfirmError}
-            confirming={newPersonConfirming}
-            showNewPersonOption={showNewPersonOption}
-            adminUnscoped={adminUnscoped}
-            clientsHref={clientsHref}
-            clientsLabel={clientsLabel}
-            showScorecardLink={hasScorecardForContact}
-            onViewScorecard={handleViewScorecard}
-            onPickerOpen={refreshWorkshopContacts}
-          />
+          <WorkshopSessionPicker idPrefix="workshop-main" {...workshopPickerProps} />
         </div>
       )}
 
-      {activeContactId && !error ? (
+      {!error ? (
         <ContactBossWorkshopBody
           contactId={activeContactId}
           draftCoachId={draftCoachId}
@@ -915,6 +900,18 @@ function CoachWorkshopPageContent() {
           showProspectMatrix={adminUnscoped}
           canAddNewPerson={showNewPersonOption}
           editingNewPerson={isEditingNewPerson}
+          centerSessionGate={isMinimalChrome}
+          sessionGateContactsLoading={loading}
+          sessionGateSlot={
+            showCenteredContactPicker ? (
+              <WorkshopSessionPicker
+                idPrefix="workshop-gate"
+                hideEmptyStateHeading
+                autoOpenContactList
+                {...workshopPickerProps}
+              />
+            ) : undefined
+          }
           playbookReturnTo={
             searchParams.toString()
               ? `${pathname}?${searchParams.toString()}`

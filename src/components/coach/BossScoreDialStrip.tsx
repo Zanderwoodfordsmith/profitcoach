@@ -33,10 +33,18 @@ const DIAL_CARD_SHELL =
 const CARD_HEADER =
   "border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white";
 
+type PillarDialSize = "default" | "large";
+
 type BossScoreDialStripProps = {
   totalScore: number | null;
   pillarStats: BossPillarDialStat[];
   className?: string;
+  /** When false, only the pillar dial row is shown (full width). Default true. */
+  showHeroScore?: boolean;
+  /** Tighter vertical padding inside the pillar scores card. */
+  compactPillarCard?: boolean;
+  /** Slightly larger pillar ring dials. */
+  pillarDialSize?: PillarDialSize;
 };
 
 function DialCard({
@@ -63,6 +71,9 @@ const HERO_RING_SIZE_CLASS =
 
 const PILLAR_RING_SIZE_CLASS =
   "h-[7.25rem] w-[7.25rem] sm:h-[8rem] sm:w-[8rem] md:h-[8.75rem] md:w-[8.75rem]";
+
+const PILLAR_RING_SIZE_LG_CLASS =
+  "h-[8.5rem] w-[8.5rem] sm:h-[9.5rem] sm:w-[9.5rem] md:h-[10.25rem] md:w-[10.25rem]";
 
 function svgCoord(n: number): number {
   return Number(n.toFixed(3));
@@ -101,6 +112,7 @@ function StrokeRingGauge({
   centerTextGradient,
   ariaLabel,
   size = "pillar",
+  pillarDialSize = "default",
 }: {
   pctFill: number;
   gradientStops: readonly { offset: string; color: string }[];
@@ -110,20 +122,28 @@ function StrokeRingGauge({
   centerTextGradient?: string;
   ariaLabel: string;
   size?: "hero" | "pillar";
+  pillarDialSize?: PillarDialSize;
 }) {
   const gradId = useId().replace(/:/g, "");
   const viewSize = 420;
-  const stroke = size === "hero" ? 36 : 28;
+  const stroke = size === "hero" ? 36 : pillarDialSize === "large" ? 30 : 28;
   const cx = viewSize / 2;
   const cy = viewSize / 2;
   const radius = (viewSize - stroke) / 2;
   const pct = Math.min(100, Math.max(0, pctFill));
   const { path: progressPath, x0, y0, x1, y1 } = describeProgressArc(cx, cy, radius, pct);
-  const ringSizeClass = size === "hero" ? HERO_RING_SIZE_CLASS : PILLAR_RING_SIZE_CLASS;
+  const ringSizeClass =
+    size === "hero"
+      ? HERO_RING_SIZE_CLASS
+      : pillarDialSize === "large"
+        ? PILLAR_RING_SIZE_LG_CLASS
+        : PILLAR_RING_SIZE_CLASS;
   const primaryTextClass =
     size === "hero"
       ? "text-[2rem] sm:text-[2.375rem] md:text-[2.625rem]"
-      : "text-[1.35rem] sm:text-2xl md:text-[1.875rem]";
+      : pillarDialSize === "large"
+        ? "text-[1.5rem] sm:text-[2.125rem] md:text-[2.125rem]"
+        : "text-[1.35rem] sm:text-2xl md:text-[1.875rem]";
 
   return (
     <div className={`relative shrink-0 ${ringSizeClass}`} role="img" aria-label={ariaLabel}>
@@ -239,22 +259,35 @@ function BossScoreHeroCard({
   );
 }
 
-function PillarDialCell({ stat }: { stat: BossPillarDialStat }) {
+function PillarDialCell({
+  stat,
+  pillarDialSize = "default",
+  compact = false,
+}: {
+  stat: BossPillarDialStat;
+  pillarDialSize?: PillarDialSize;
+  compact?: boolean;
+}) {
   const pctFill =
     stat.maxScore > 0 ? Math.min(100, Math.round((stat.sum / stat.maxScore) * 100)) : 0;
   const pillarGradient = BOSS_PILLAR_DIAL_GRADIENTS[stat.pillarKey as BossPillarDialKey];
 
   return (
-    <div className="flex min-w-0 flex-col items-center justify-center px-3 py-3 sm:px-5 sm:py-4">
+    <div
+      className={`flex min-w-0 flex-col items-center justify-center px-3 sm:px-5 ${compact ? "py-2 sm:py-2.5" : "py-3 sm:py-4"}`}
+    >
       <StrokeRingGauge
         size="pillar"
+        pillarDialSize={pillarDialSize}
         pctFill={pctFill}
         gradientStops={pillarGradient.stops}
         centerPrimary={`${pctFill}`}
         percentSuffix
         ariaLabel={`${stat.label}: ${pctFill}% of pillar maximum, ${stat.sum} of ${stat.maxScore} points`}
       />
-      <div className="mt-4 flex max-w-[9rem] flex-col items-center gap-1.5 text-center sm:mt-5">
+      <div
+        className={`flex max-w-[9rem] flex-col items-center gap-1.5 text-center ${compact ? "mt-2.5 sm:mt-3" : "mt-4 sm:mt-5"}`}
+      >
         <span
           className="h-0.5 w-9 shrink-0 rounded-full"
           style={{
@@ -273,17 +306,28 @@ function PillarDialCell({ stat }: { stat: BossPillarDialStat }) {
 function PillarScoresPanel({
   pillarStats,
   className = "",
+  compact = false,
+  pillarDialSize = "default",
 }: {
   pillarStats: BossPillarDialStat[];
   className?: string;
+  compact?: boolean;
+  pillarDialSize?: PillarDialSize;
 }) {
   return (
     <div className={`${DIAL_CARD_SHELL} flex min-w-0 flex-1 flex-col ${className}`}>
       <div className={CARD_HEADER}>Pillar scores</div>
-      <div className="flex flex-1 items-center justify-center px-2 py-4 sm:px-3 sm:py-5">
+      <div
+        className={`flex flex-1 items-center justify-center px-2 sm:px-3 ${compact ? "py-2 sm:py-2.5" : "py-4 sm:py-5"}`}
+      >
         <div className="grid w-full grid-cols-2 sm:grid-cols-4">
           {pillarStats.map((stat) => (
-            <PillarDialCell key={stat.pillarKey} stat={stat} />
+            <PillarDialCell
+              key={stat.pillarKey}
+              stat={stat}
+              pillarDialSize={pillarDialSize}
+              compact={compact}
+            />
           ))}
         </div>
       </div>
@@ -803,10 +847,29 @@ export function BossAnswerMixBar({
   );
 }
 
-export function BossScoreDialStrip({ totalScore, pillarStats, className = "" }: BossScoreDialStripProps) {
+export function BossScoreDialStrip({
+  totalScore,
+  pillarStats,
+  className = "",
+  showHeroScore = true,
+  compactPillarCard = false,
+  pillarDialSize = "default",
+}: BossScoreDialStripProps) {
   const hasScores = totalScore != null;
   const cappedTotal = hasScores ? Math.min(100, Math.max(0, totalScore)) : 0;
   const overallPct = hasScores ? Math.round(cappedTotal) : 0;
+
+  if (!showHeroScore) {
+    return (
+      <div className={`w-full ${className}`}>
+        <PillarScoresPanel
+          pillarStats={pillarStats}
+          compact={compactPillarCard}
+          pillarDialSize={pillarDialSize}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full ${className}`}>
@@ -817,7 +880,11 @@ export function BossScoreDialStrip({ totalScore, pillarStats, className = "" }: 
           notStarted={!hasScores}
           className="mx-auto w-full max-w-[20rem] shrink-0 md:mx-0 md:w-[19.5rem]"
         />
-        <PillarScoresPanel pillarStats={pillarStats} />
+        <PillarScoresPanel
+          pillarStats={pillarStats}
+          compact={compactPillarCard}
+          pillarDialSize={pillarDialSize}
+        />
       </div>
     </div>
   );

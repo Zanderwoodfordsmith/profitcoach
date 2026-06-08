@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     const { data: profileWithLinkedIn, error: profileError } = await supabaseAdmin
       .from("profiles")
       .select(
-        "full_name, coach_business_name, avatar_url, linkedin_url, landing_copy_overrides, landing_variant_preference"
+        "full_name, coach_business_name, avatar_url, linkedin_url, bio, directory_bio, directory_summary, landing_copy_overrides, landing_variant_preference"
       )
       .eq("id", coachId)
       .maybeSingle();
@@ -77,6 +77,9 @@ export async function GET(request: Request) {
       full_name?: string | null;
       coach_business_name?: string | null;
       avatar_url?: string | null;
+      bio?: string | null;
+      directory_bio?: string | null;
+      directory_summary?: string | null;
       landing_copy_overrides?: unknown;
       landing_variant_preference?: string | null;
     } | null;
@@ -91,12 +94,19 @@ export async function GET(request: Request) {
         ? landingPref
         : null;
 
+    const coachBio =
+      prof?.directory_bio?.trim() ||
+      prof?.directory_summary?.trim() ||
+      prof?.bio?.trim() ||
+      null;
+
     return NextResponse.json({
       slug: coachSlug,
       full_name: prof?.full_name ?? null,
       coach_business_name: businessName,
       avatar_url: prof?.avatar_url ?? null,
       linkedin_url: linkedinUrl,
+      bio: coachBio,
       landing_copy_overrides: sanitizeLandingCopyOverrides(
         prof?.landing_copy_overrides
       ),

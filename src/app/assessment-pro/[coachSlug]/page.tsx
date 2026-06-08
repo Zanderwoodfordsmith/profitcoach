@@ -24,6 +24,7 @@ import { SCORECARD_PAGE_BG } from "@/lib/bossScorecardQuestions";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { METHODOLOGY_VERSION } from "@/lib/bossMethodologyMigration";
 import { QUESTIONS_BY_LEVEL } from "@/lib/assessmentQuestions";
+import { splitFullName } from "@/lib/splitFullName";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -165,6 +166,7 @@ export default function BossProAssessmentPage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         coachSlug: coachSlug?.trim() || null,
+        assessment_type: "diagnostic_50",
         contact: {
           first_name: urlContact.firstName ?? undefined,
           last_name: urlContact.lastName ?? undefined,
@@ -185,6 +187,7 @@ export default function BossProAssessmentPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           coachSlug: coachSlug?.trim() || null,
+          assessment_type: "diagnostic_50",
           contact: {
             full_name: fullName.trim() || undefined,
             email: emailVal,
@@ -402,9 +405,20 @@ export default function BossProAssessmentPage({
         throw new Error(`${base}${detail}`);
       }
       try {
+        const { first_name, last_name } = splitFullName(fullName);
         sessionStorage.setItem(
           "boss_assessment_result",
-          JSON.stringify({ answers: answersToSubmit, total_score })
+          JSON.stringify({
+            answers: answersToSubmit,
+            total_score,
+            contact: {
+              first_name: first_name ?? undefined,
+              last_name: last_name ?? undefined,
+              full_name: fullName.trim() || undefined,
+              email: email.trim() || undefined,
+              phone: phone.trim() || undefined,
+            },
+          })
         );
       } catch {
         // ignore storage errors

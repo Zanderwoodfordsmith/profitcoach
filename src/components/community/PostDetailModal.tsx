@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
@@ -52,6 +53,7 @@ import { toggleCommunityPostFavourite } from "@/lib/communityPostFavourite";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
 import { setCommunityPostPinned } from "@/lib/communityPostPin";
 import {
+  appendCommunityPostCommentsCache,
   fetchCommunityPostComments,
   getCachedCommunityPostComments,
   invalidateCommunityPostCommentsCache,
@@ -77,7 +79,21 @@ import {
 } from "@/lib/communityEffectiveAuthorId";
 import { formatCommunityPostTimestamp } from "@/lib/communityRelativeTime";
 import { markCommunityWinPostHandled } from "@/lib/communityNotificationReadState";
+import { communityPostPath } from "@/lib/communityPostSlug";
 import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
+import {
+  CommentAttachButton,
+  CommentImageComposer,
+  CommentImagePreviews,
+  clearPendingCommentImages,
+  type PendingCommentImage,
+} from "@/components/community/CommentImageComposer";
+import { CommentMediaDisplay } from "@/components/community/CommentMediaDisplay";
+import {
+  parseStoredCommunityCommentMedia,
+  uploadCommunityCommentImageFile,
+  type CommunityCommentMediaItem,
+} from "@/lib/communityCommentMedia";
 
 type CommentRow = {
   id: string;
@@ -86,6 +102,7 @@ type CommentRow = {
   body: string;
   created_at: string;
   parent_comment_id: string | null;
+  media: CommunityCommentMediaItem[];
   author: ProfileRow | null;
   like_count: number;
   liked_by_me: boolean;
@@ -104,12 +121,14 @@ const COMMENT_INSERT_SELECT = `
   body,
   created_at,
   parent_comment_id,
+  media,
   author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url, role )
 `;
 
 function mapCommentInsertRow(
-  row: Omit<CommentRow, "like_count" | "liked_by_me" | "author"> & {
+  row: Omit<CommentRow, "like_count" | "liked_by_me" | "author" | "media"> & {
     author: ProfileRow | ProfileRow[] | null;
+    media?: unknown;
   }
 ): CommentRow {
   const author = Array.isArray(row.author)
@@ -122,9 +141,74 @@ function mapCommentInsertRow(
     body: row.body,
     created_at: row.created_at,
     parent_comment_id: row.parent_comment_id,
+    media: parseStoredCommunityCommentMedia(row.media),
     author,
     like_count: 0,
     liked_by_me: false,
+  };
+}
+
+async function uploadPendingCommentImages(
+  pending: PendingCommentImage[]
+): Promise<CommunityCommentMediaItem[] | { error: string }> {
+  const uploaded: CommunityCommentMediaItem[] = [];
+  for (const p of pending) {
+    const up = await uploadCommunityCommentImageFile(p.file);
+    if ("error" in up) return up;
+    uploaded.push(up.media);
+  }
+  return uploaded;
+}
+
+async function insertCommunityCommentRow(args: {
+  postId: string;
+  authorId: string;
+  body: string;
+  parentCommentId: string | null;
+  pendingImages: PendingCommentImage[];
+}): Promise<{ comment: CommentRow } | { error: string }> {
+  let mediaPayload: CommunityCommentMediaItem[] | null = null;
+  if (args.pendingImages.length > 0) {
+    const uploaded = await uploadPendingCommentImages(args.pendingImages);
+    if ("error" in uploaded) return uploaded;
+    mediaPayload = uploaded;
+  }
+
+  const row: {
+    post_id: string;
+    author_id: string;
+    body: string;
+    parent_comment_id: string | null;
+    media?: CommunityCommentMediaItem[];
+  } = {
+    post_id: args.postId,
+    author_id: args.authorId,
+    body: args.body,
+    parent_comment_id: args.parentCommentId,
+  };
+  if (mediaPayload && mediaPayload.length > 0) {
+    row.media = mediaPayload;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("community_post_comments")
+    .insert(row)
+    .select(COMMENT_INSERT_SELECT)
+    .single();
+
+  if (error) {
+    const msg = supabaseErrorMessage(error);
+    const hint = communityAccessHint(msg);
+    return { error: hint ? `${msg}\n\n${hint}` : msg };
+  }
+  if (!data) {
+    return { error: "Comment could not be saved." };
+  }
+
+  return {
+    comment: mapCommentInsertRow(
+      data as Parameters<typeof mapCommentInsertRow>[0]
+    ),
   };
 }
 
@@ -216,7 +300,70 @@ type Props = {
   onMarkPostUnread: (postId: string) => void;
   /** Embedded inside a parent shell (e.g. admin wins queue) — no full-screen backdrop. */
   presentation?: "overlay" | "embedded";
+  /**
+   * Parent-owned close buttons (e.g. wins queue shell) should call this handler
+   * so unsaved comment drafts trigger the same confirmation as the modal X button.
+   */
+  onRegisterCloseHandler?: (handler: (() => void) | null) => void;
 };
+
+function UnsavedCommentDiscardDialog({
+  open,
+  onStay,
+  onLeave,
+}: {
+  open: boolean;
+  onStay: () => void;
+  onLeave: () => void;
+}) {
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unsaved-comment-discard-title"
+      onClick={onStay}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Profit Coach
+        </p>
+        <h2
+          id="unsaved-comment-discard-title"
+          className="mt-2 text-base font-semibold text-slate-900"
+        >
+          Leave without finishing?
+        </h2>
+        <p className="mt-2 text-[15px] leading-snug text-slate-600">
+          You haven&apos;t finished your comment yet. Do you want to leave without
+          finishing?
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onStay}
+            className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Stay
+          </button>
+          <button
+            type="button"
+            onClick={onLeave}
+            className="rounded-xl bg-sky-700 px-4 py-2 text-sm font-medium text-white hover:bg-sky-800"
+          >
+            Leave
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 async function fetchProfilesByIds(ids: string[]): Promise<ProfileRow[]> {
   if (ids.length === 0) return [];
@@ -482,6 +629,7 @@ export function PostDetailModal({
   onMarkPostRead,
   onMarkPostUnread,
   presentation = "overlay",
+  onRegisterCloseHandler,
 }: Props) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
@@ -494,6 +642,14 @@ export function PostDetailModal({
   const [mentionProfileHrefByUserId, setMentionProfileHrefByUserId] =
     useState<Record<string, string>>({});
   const [newComment, setNewComment] = useState("");
+  const [commentComposerFocused, setCommentComposerFocused] = useState(false);
+  const [discardCommentDialogOpen, setDiscardCommentDialogOpen] = useState(false);
+  const [topCommentPendingImages, setTopCommentPendingImages] = useState<
+    PendingCommentImage[]
+  >([]);
+  const [replyPendingImages, setReplyPendingImages] = useState<
+    Record<string, PendingCommentImage[]>
+  >({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyOpenFor, setReplyOpenFor] = useState<string | null>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -603,6 +759,21 @@ export function PostDetailModal({
   }, [post.author?.id, post.id]);
 
   useEffect(() => {
+    setDiscardCommentDialogOpen(false);
+    setCommentComposerFocused(false);
+    setTopCommentPendingImages((prev) => {
+      clearPendingCommentImages(prev);
+      return [];
+    });
+    setReplyPendingImages((prev) => {
+      for (const pending of Object.values(prev)) {
+        clearPendingCommentImages(pending);
+      }
+      return {};
+    });
+  }, [post.id]);
+
+  useEffect(() => {
     void supabaseClient.auth.getUser().then(({ data }) => {
       setCurrentUserId(data.user?.id ?? null);
     });
@@ -637,10 +808,10 @@ export function PostDetailModal({
     const sharePath =
       coachCommunityPathFromAdminPath(pathname) ??
       (pathname.startsWith("/coach/community")
-        ? pathname
+        ? "/coach/community"
         : "/coach/community");
-    return `${window.location.origin}${sharePath}?post=${post.id}`;
-  }, [pathname, post.id]);
+    return `${window.location.origin}${communityPostPath(sharePath, post)}`;
+  }, [pathname, post]);
 
   const needsBodyTruncation = useMemo(
     () => postBodyNeedsTruncation(post.body),
@@ -908,20 +1079,6 @@ export function PostDetailModal({
     return () => overlay.removeEventListener("wheel", trapWheel);
   }, [presentation, commentsLoading, comments.length, post.id, editing]);
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "Escape") return;
-      if (menuOpen) {
-        setMenuOpen(false);
-        e.stopPropagation();
-        return;
-      }
-      onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [menuOpen, onClose]);
-
   const headerAuthor = postAuthorDisplay ?? post.author;
   const mentionPrioritizeUserId = post.author?.id;
   const authorName = headerAuthor
@@ -930,7 +1087,92 @@ export function PostDetailModal({
   const composerDisplayName = composerProfile
     ? displayNameFromProfile(composerProfile)
     : "You";
-  const showCommentComposerActions = newComment.trim().length > 0;
+  const showCommentComposerActions =
+    newComment.trim().length > 0 || topCommentPendingImages.length > 0;
+  const commentComposerExpanded =
+    commentComposerFocused || showCommentComposerActions;
+
+  const hasUnsavedCommentDraft = useMemo(() => {
+    if (newComment.trim()) return true;
+    if (topCommentPendingImages.length > 0) return true;
+    if (Object.values(replyDrafts).some((draft) => draft.trim())) return true;
+    if (Object.values(replyPendingImages).some((images) => images.length > 0)) {
+      return true;
+    }
+    if (editingCommentId) {
+      const original = comments.find((c) => c.id === editingCommentId);
+      const draft = (commentEditDrafts[editingCommentId] ?? "").trim();
+      if (!original) return draft.length > 0;
+      return draft !== original.body.trim();
+    }
+    return false;
+  }, [
+    commentEditDrafts,
+    comments,
+    editingCommentId,
+    newComment,
+    replyDrafts,
+    replyPendingImages,
+    topCommentPendingImages,
+  ]);
+
+  const clearCommentDrafts = useCallback(() => {
+    setNewComment("");
+    setTopCommentPendingImages((prev) => {
+      clearPendingCommentImages(prev);
+      return [];
+    });
+    setReplyDrafts({});
+    setReplyPendingImages((prev) => {
+      for (const pending of Object.values(prev)) {
+        clearPendingCommentImages(pending);
+      }
+      return {};
+    });
+    setReplyOpenFor(null);
+    setEditingCommentId(null);
+    setCommentEditDrafts({});
+    setCommentComposerFocused(false);
+  }, []);
+
+  const requestClose = useCallback(() => {
+    if (submitting) return;
+    if (hasUnsavedCommentDraft) {
+      setDiscardCommentDialogOpen(true);
+      return;
+    }
+    onClose();
+  }, [hasUnsavedCommentDraft, onClose, submitting]);
+
+  const confirmDiscardCommentAndClose = useCallback(() => {
+    setDiscardCommentDialogOpen(false);
+    clearCommentDrafts();
+    onClose();
+  }, [clearCommentDrafts, onClose]);
+
+  useEffect(() => {
+    onRegisterCloseHandler?.(requestClose);
+    return () => onRegisterCloseHandler?.(null);
+  }, [onRegisterCloseHandler, requestClose]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (discardCommentDialogOpen) {
+        setDiscardCommentDialogOpen(false);
+        e.stopPropagation();
+        return;
+      }
+      if (menuOpen) {
+        setMenuOpen(false);
+        e.stopPropagation();
+        return;
+      }
+      requestClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [discardCommentDialogOpen, menuOpen, requestClose]);
 
   const topLevel = useMemo(
     () => comments.filter((c) => c.parent_comment_id === null),
@@ -1118,36 +1360,37 @@ export function PostDetailModal({
 
   const submitTopComment = useCallback(async () => {
     const text = newComment.trim();
-    if (!text || submitting) return;
+    const pendingImages = topCommentPendingImages;
+    if ((!text && pendingImages.length === 0) || submitting) return;
     setSubmitting(true);
-    const authorId = await getCommunityAuthorId(coachPersona);
-    if (!authorId) {
-      setSubmitting(false);
-      return;
-    }
-    const { data, error } = await supabaseClient
-      .from("community_post_comments")
-      .insert({
-        post_id: post.id,
-        author_id: authorId,
+    setActionError(null);
+    try {
+      const authorId = await getCommunityAuthorId(coachPersona);
+      if (!authorId) {
+        setActionError("Not signed in.");
+        return;
+      }
+
+      const result = await insertCommunityCommentRow({
+        postId: post.id,
+        authorId,
         body: text,
-        parent_comment_id: null,
-      })
-      .select(COMMENT_INSERT_SELECT)
-      .single();
-    setSubmitting(false);
-    if (error) {
-      setActionError(supabaseErrorMessage(error));
-      return;
-    }
-    if (data) {
-      const inserted = mapCommentInsertRow(
-        data as Parameters<typeof mapCommentInsertRow>[0]
-      );
+        parentCommentId: null,
+        pendingImages,
+      });
+      if ("error" in result) {
+        setActionError(result.error);
+        return;
+      }
+
+      const inserted = result.comment;
       setNewComment("");
+      clearPendingCommentImages(pendingImages);
+      setTopCommentPendingImages([]);
+      setCommentComposerFocused(false);
       setComments((prev) => appendComment(prev, inserted));
+      appendCommunityPostCommentsCache(post.id, inserted);
       markWinCelebratedIfAdmin();
-      void reloadComments();
       onMarkPostRead(post.id);
       if (onPostLocalUpdate) {
         onPostLocalUpdate(post.id, (p) => ({
@@ -1158,17 +1401,25 @@ export function PostDetailModal({
       } else {
         await onPostsChanged();
       }
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong while posting your comment.";
+      setActionError(msg);
+    } finally {
+      setSubmitting(false);
     }
   }, [
     coachPersona,
     markWinCelebratedIfAdmin,
     newComment,
+    topCommentPendingImages,
     onMarkPostRead,
     onPostLocalUpdate,
     onPostsChanged,
     post.id,
     submitting,
-    reloadComments,
   ]);
 
   const handleToggleLike = useCallback(async () => {
@@ -1261,37 +1512,41 @@ export function PostDetailModal({
   const submitReply = useCallback(
     async (draftKey: string, threadParentId: string) => {
       const text = (replyDrafts[draftKey] ?? "").trim();
-      if (!text || submitting) return;
+      const pendingImages = replyPendingImages[draftKey] ?? [];
+      if ((!text && pendingImages.length === 0) || submitting) return;
       setSubmitting(true);
-      const authorId = await getCommunityAuthorId(coachPersona);
-      if (!authorId) {
-        setSubmitting(false);
-        return;
-      }
-      const { data, error } = await supabaseClient
-        .from("community_post_comments")
-        .insert({
-          post_id: post.id,
-          author_id: authorId,
+      setActionError(null);
+      try {
+        const authorId = await getCommunityAuthorId(coachPersona);
+        if (!authorId) {
+          setActionError("Not signed in.");
+          return;
+        }
+
+        const result = await insertCommunityCommentRow({
+          postId: post.id,
+          authorId,
           body: text,
-          parent_comment_id: threadParentId,
-        })
-        .select(COMMENT_INSERT_SELECT)
-        .single();
-      setSubmitting(false);
-      if (error) {
-        setActionError(supabaseErrorMessage(error));
-        return;
-      }
-      if (data) {
-        const inserted = mapCommentInsertRow(
-          data as Parameters<typeof mapCommentInsertRow>[0]
-        );
+          parentCommentId: threadParentId,
+          pendingImages,
+        });
+        if ("error" in result) {
+          setActionError(result.error);
+          return;
+        }
+
+        const inserted = result.comment;
         setReplyDrafts((d) => ({ ...d, [draftKey]: "" }));
+        clearPendingCommentImages(pendingImages);
+        setReplyPendingImages((prev) => {
+          const next = { ...prev };
+          delete next[draftKey];
+          return next;
+        });
         setReplyOpenFor(null);
         setComments((prev) => appendComment(prev, inserted));
+        appendCommunityPostCommentsCache(post.id, inserted);
         markWinCelebratedIfAdmin();
-        void reloadComments();
         onMarkPostRead(post.id);
         if (onPostLocalUpdate) {
           onPostLocalUpdate(post.id, (p) => ({
@@ -1302,15 +1557,23 @@ export function PostDetailModal({
         } else {
           await onPostsChanged();
         }
+      } catch (err) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Something went wrong while posting your reply.";
+        setActionError(msg);
+      } finally {
+        setSubmitting(false);
       }
     },
     [
       coachPersona,
       markWinCelebratedIfAdmin,
       replyDrafts,
+      replyPendingImages,
       submitting,
       post.id,
-      reloadComments,
       onMarkPostRead,
       onPostLocalUpdate,
       onPostsChanged,
@@ -1433,7 +1696,7 @@ export function PostDetailModal({
         {presentation === "overlay" ? (
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="absolute -right-1.5 -top-1.5 z-30 flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md hover:bg-slate-50 hover:text-slate-800"
             aria-label="Close"
           >
@@ -1820,6 +2083,7 @@ export function PostDetailModal({
             {!editing ? (
               <div>
                 <PostEngagementBar
+                  postId={post.id}
                   detail
                   likeCount={post.like_count}
                   commentCount={post.comment_count}
@@ -1977,12 +2241,20 @@ export function PostDetailModal({
                               </div>
                             </div>
                           ) : (
-                            <MentionBody
-                              body={c.body}
-                              nameById={nameById}
-                              profileHrefByUserId={mentionProfileHrefByUserId}
-                              className="mt-1 text-[17px] text-slate-800"
-                            />
+                            <>
+                              {c.body.trim() ? (
+                                <MentionBody
+                                  body={c.body}
+                                  nameById={nameById}
+                                  profileHrefByUserId={mentionProfileHrefByUserId}
+                                  className="mt-1 text-[17px] text-slate-800"
+                                />
+                              ) : null}
+                              <CommentMediaDisplay
+                                media={c.media}
+                                className={c.body.trim() ? "mt-2" : "mt-1"}
+                              />
+                            </>
                           )}
                           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <CommentLikeButton
@@ -2020,13 +2292,26 @@ export function PostDetailModal({
                                 rows={3}
                                 className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                               />
+                              <CommentImageComposer
+                                pending={replyPendingImages[c.id] ?? []}
+                                onChange={(next) =>
+                                  setReplyPendingImages((prev) => ({
+                                    ...prev,
+                                    [c.id]: next,
+                                  }))
+                                }
+                                disabled={submitting}
+                                onError={setActionError}
+                              />
                               <div className="flex gap-2">
                                 <button
                                   type="button"
                                   onClick={() => void submitReply(c.id, c.id)}
                                   disabled={
                                     submitting ||
-                                    !(replyDrafts[c.id] ?? "").trim()
+                                    (!(replyDrafts[c.id] ?? "").trim() &&
+                                      (replyPendingImages[c.id] ?? []).length ===
+                                        0)
                                   }
                                   className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
                                 >
@@ -2034,7 +2319,17 @@ export function PostDetailModal({
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setReplyOpenFor(null)}
+                                  onClick={() => {
+                                    clearPendingCommentImages(
+                                      replyPendingImages[c.id] ?? []
+                                    );
+                                    setReplyPendingImages((prev) => {
+                                      const next = { ...prev };
+                                      delete next[c.id];
+                                      return next;
+                                    });
+                                    setReplyOpenFor(null);
+                                  }}
                                   className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
                                 >
                                   Cancel
@@ -2189,14 +2484,24 @@ export function PostDetailModal({
                                             </div>
                                           </div>
                                         ) : (
-                                          <MentionBody
-                                            body={r.body}
-                                            nameById={nameById}
-                                            profileHrefByUserId={
-                                              mentionProfileHrefByUserId
-                                            }
-                                            className="mt-0.5 text-[17px] text-slate-800"
-                                          />
+                                          <>
+                                            {r.body.trim() ? (
+                                              <MentionBody
+                                                body={r.body}
+                                                nameById={nameById}
+                                                profileHrefByUserId={
+                                                  mentionProfileHrefByUserId
+                                                }
+                                                className="mt-0.5 text-[17px] text-slate-800"
+                                              />
+                                            ) : null}
+                                            <CommentMediaDisplay
+                                              media={r.media}
+                                              className={
+                                                r.body.trim() ? "mt-2" : "mt-0.5"
+                                              }
+                                            />
+                                          </>
                                         )}
                                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                                           <CommentLikeButton
@@ -2236,6 +2541,17 @@ export function PostDetailModal({
                                               rows={3}
                                               className="w-full resize-y rounded-lg border border-slate-200 px-2 py-1.5 text-[17px] text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                                             />
+                                            <CommentImageComposer
+                                              pending={replyPendingImages[r.id] ?? []}
+                                              onChange={(next) =>
+                                                setReplyPendingImages((prev) => ({
+                                                  ...prev,
+                                                  [r.id]: next,
+                                                }))
+                                              }
+                                              disabled={submitting}
+                                              onError={setActionError}
+                                            />
                                             <div className="flex gap-2">
                                               <button
                                                 type="button"
@@ -2244,9 +2560,9 @@ export function PostDetailModal({
                                                 }
                                                 disabled={
                                                   submitting ||
-                                                  !(
-                                                    replyDrafts[r.id] ?? ""
-                                                  ).trim()
+                                                  (!(replyDrafts[r.id] ?? "").trim() &&
+                                                    (replyPendingImages[r.id] ?? [])
+                                                      .length === 0)
                                                 }
                                                 className="rounded-lg bg-sky-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-800 disabled:opacity-50"
                                               >
@@ -2254,9 +2570,17 @@ export function PostDetailModal({
                                               </button>
                                               <button
                                                 type="button"
-                                                onClick={() =>
-                                                  setReplyOpenFor(null)
-                                                }
+                                                onClick={() => {
+                                                  clearPendingCommentImages(
+                                                    replyPendingImages[r.id] ?? []
+                                                  );
+                                                  setReplyPendingImages((prev) => {
+                                                    const next = { ...prev };
+                                                    delete next[r.id];
+                                                    return next;
+                                                  });
+                                                  setReplyOpenFor(null);
+                                                }}
                                                 className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700"
                                               >
                                                 Cancel
@@ -2297,36 +2621,115 @@ export function PostDetailModal({
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <div className="flex flex-col-reverse overflow-hidden rounded-2xl border border-slate-300 bg-slate-50">
-                  {showCommentComposerActions ? (
-                    <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-white px-3 py-2">
-                      <button
-                        type="button"
-                        onClick={() => setNewComment("")}
-                        className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-800"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        disabled={submitting || !newComment.trim()}
-                        onClick={() => void submitTopComment()}
-                        className="rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-sky-700 disabled:opacity-50"
-                      >
-                        {submitting ? "Sending…" : "Comment"}
-                      </button>
+                <div
+                  className="overflow-hidden rounded-2xl border border-slate-300 bg-slate-50"
+                  onFocus={() => setCommentComposerFocused(true)}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setCommentComposerFocused(false);
+                    }
+                  }}
+                >
+                  {commentComposerExpanded &&
+                  topCommentPendingImages.length > 0 ? (
+                    <div className="border-b border-slate-200 px-3 py-2">
+                      <CommentImagePreviews
+                        pending={topCommentPendingImages}
+                        onChange={setTopCommentPendingImages}
+                        disabled={submitting}
+                      />
                     </div>
                   ) : null}
-                  <MentionTextarea
-                    value={newComment}
-                    onChange={setNewComment}
-                    prioritizeUserId={mentionPrioritizeUserId}
-                    placeholder="Your comment"
-                    autoResize
-                    maxAutoHeightPx={220}
-                    className="min-h-[2.5rem] w-full border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
-                  />
+                  {commentComposerExpanded ? (
+                    <>
+                      <MentionTextarea
+                        value={newComment}
+                        onChange={setNewComment}
+                        prioritizeUserId={mentionPrioritizeUserId}
+                        placeholder="Your comment"
+                        autoResize
+                        maxAutoHeightPx={220}
+                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent px-3.5 py-2 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                      />
+                      <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-2 py-1.5">
+                        {showCommentComposerActions ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewComment("");
+                                clearPendingCommentImages(
+                                  topCommentPendingImages
+                                );
+                                setTopCommentPendingImages([]);
+                                setCommentComposerFocused(false);
+                              }}
+                              className="text-xs font-semibold uppercase tracking-wide text-slate-500 hover:text-slate-800"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                submitting ||
+                                (!newComment.trim() &&
+                                  topCommentPendingImages.length === 0)
+                              }
+                              onClick={() => void submitTopComment()}
+                              className="rounded-lg bg-sky-600 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white hover:bg-sky-700 disabled:opacity-50"
+                            >
+                              {submitting ? "Sending…" : "Comment"}
+                            </button>
+                          </>
+                        ) : null}
+                        <CommentAttachButton
+                          pending={topCommentPendingImages}
+                          onChange={setTopCommentPendingImages}
+                          disabled={submitting}
+                          onError={setActionError}
+                          onAttachInteract={() =>
+                            setCommentComposerFocused(true)
+                          }
+                          size="md"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="relative min-h-[2.75rem]">
+                      <MentionTextarea
+                        value={newComment}
+                        onChange={setNewComment}
+                        prioritizeUserId={mentionPrioritizeUserId}
+                        placeholder="Your comment"
+                        autoResize
+                        maxAutoHeightPx={72}
+                        rows={1}
+                        className="min-h-[2.75rem] w-full resize-none overflow-hidden border-0 bg-transparent py-2 pl-3.5 pr-12 text-[17px] leading-normal text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-0"
+                      />
+                      <div className="pointer-events-none absolute inset-y-0 right-1.5 flex items-center">
+                        <CommentAttachButton
+                          pending={topCommentPendingImages}
+                          onChange={setTopCommentPendingImages}
+                          disabled={submitting}
+                          onError={setActionError}
+                          onAttachInteract={() =>
+                            setCommentComposerFocused(true)
+                          }
+                          size="md"
+                          className="pointer-events-auto"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {actionError ? (
+                  <p
+                    className="mt-2 whitespace-pre-wrap text-sm text-rose-700"
+                    role="alert"
+                  >
+                    {actionError}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -2335,20 +2738,36 @@ export function PostDetailModal({
       </div>
   );
 
+  const discardDialog = (
+    <UnsavedCommentDiscardDialog
+      open={discardCommentDialogOpen}
+      onStay={() => setDiscardCommentDialogOpen(false)}
+      onLeave={confirmDiscardCommentAndClose}
+    />
+  );
+
   if (presentation === "embedded") {
-    return card;
+    return (
+      <>
+        {card}
+        {discardDialog}
+      </>
+    );
   }
 
   return (
-    <div
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overscroll-none bg-black/45 p-4"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="post-detail-title"
-    >
-      {card}
-    </div>
+    <>
+      <div
+        ref={overlayRef}
+        className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overscroll-none bg-black/45 p-4"
+        onClick={requestClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="post-detail-title"
+      >
+        {card}
+      </div>
+      {discardDialog}
+    </>
   );
 }

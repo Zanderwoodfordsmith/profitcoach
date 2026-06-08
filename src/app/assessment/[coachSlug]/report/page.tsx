@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { BossScorecardResults } from "@/components/scorecard/BossScorecardResults";
+import {
+  calendarContactFromFields,
+  resolveReportCalendarContact,
+  type CalendarContactParams,
+} from "@/lib/calendarContactParams";
 import type { ScorecardResultPayload } from "@/lib/bossScorecardScores";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -14,6 +19,8 @@ export default function ScorecardReportPage() {
   const token = searchParams?.get("token")?.trim() ?? "";
 
   const [result, setResult] = useState<ScorecardResultPayload | null>(null);
+  const [calendarContact, setCalendarContact] =
+    useState<CalendarContactParams | null>(null);
   const [coachSlug, setCoachSlug] = useState(coachSlugFromPath);
   const [coachName, setCoachName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +46,13 @@ export default function ScorecardReportPage() {
           error?: string;
           coach_slug?: string;
           result?: ScorecardResultPayload;
+          contact?: {
+            first_name?: string | null;
+            last_name?: string | null;
+            full_name?: string | null;
+            email?: string | null;
+            phone?: string | null;
+          };
         };
         if (!res.ok || !body.result) {
           if (!cancelled) {
@@ -49,6 +63,28 @@ export default function ScorecardReportPage() {
         if (!cancelled) {
           setResult(body.result);
           setCoachSlug(body.coach_slug ?? coachSlugFromPath);
+          const fromApi = body.contact
+            ? calendarContactFromFields({
+                firstName: body.contact.first_name,
+                lastName: body.contact.last_name,
+                fullName: body.contact.full_name,
+                email: body.contact.email,
+                phone: body.contact.phone,
+              })
+            : null;
+          setCalendarContact(
+            resolveReportCalendarContact({
+              searchParams,
+              sessionContact: fromApi
+                ? {
+                    firstName: fromApi.firstName ?? undefined,
+                    lastName: fromApi.lastName ?? undefined,
+                    email: fromApi.email ?? undefined,
+                    phone: fromApi.phone ?? undefined,
+                  }
+                : null,
+            })
+          );
           setError(null);
         }
       } catch {
@@ -59,7 +95,7 @@ export default function ScorecardReportPage() {
     return () => {
       cancelled = true;
     };
-  }, [token, coachSlugFromPath]);
+  }, [token, coachSlugFromPath, searchParams]);
 
   useEffect(() => {
     if (!coachSlug) return;
@@ -103,6 +139,7 @@ export default function ScorecardReportPage() {
       coachSlug={coachSlug}
       coachName={coachName}
       isPreview={false}
+      calendarContact={calendarContact}
     />
   );
 }

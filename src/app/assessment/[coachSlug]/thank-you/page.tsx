@@ -9,6 +9,14 @@ import {
   buildVariedScorecardAnswers,
   type ScorecardResultPayload,
 } from "@/lib/bossScorecardScores";
+import {
+  readLandingContactSession,
+  type LandingContactSession,
+} from "@/lib/assessmentContactParams";
+import {
+  resolveReportCalendarContact,
+  type CalendarContactParams,
+} from "@/lib/calendarContactParams";
 import { getPrimaryCoachSlug } from "@/lib/primaryCoach";
 import { isEmbeddedRequest, useEmbedAutoResize } from "@/lib/embedMode";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -22,6 +30,8 @@ export default function ScorecardThankYouPage() {
   useEmbedAutoResize(searchParams ? isEmbeddedRequest(searchParams) : false);
 
   const [result, setResult] = useState<ScorecardResultPayload | null>(null);
+  const [calendarContact, setCalendarContact] =
+    useState<CalendarContactParams | null>(null);
   const [coachName, setCoachName] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -49,6 +59,40 @@ export default function ScorecardThankYouPage() {
 
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
+
+    let storedContact: LandingContactSession | null = null;
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          contact?: {
+            first_name?: string;
+            last_name?: string;
+            email?: string;
+            phone?: string;
+            full_name?: string;
+          };
+        };
+        if (parsed.contact) {
+          storedContact = {
+            firstName: parsed.contact.first_name,
+            lastName: parsed.contact.last_name,
+            email: parsed.contact.email,
+            phone: parsed.contact.phone,
+            fullName: parsed.contact.full_name,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    setCalendarContact(
+      resolveReportCalendarContact({
+        searchParams,
+        sessionContact: storedContact ?? readLandingContactSession(),
+      })
+    );
 
     const preview =
       searchParams?.get("preview") === "1" ||
@@ -122,6 +166,7 @@ export default function ScorecardThankYouPage() {
       coachSlug={coachSlug}
       coachName={coachName}
       isPreview={isPreview}
+      calendarContact={calendarContact}
     />
   );
 }

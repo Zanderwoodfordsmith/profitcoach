@@ -28,6 +28,7 @@ type ContactRecord = {
   crm_contact_id?: string | null;
   crm_location_id?: string | null;
   created_at?: string | null;
+  prospect_funnel?: string | null;
 };
 
 export async function enrichProspectRows(
@@ -124,6 +125,7 @@ export async function enrichProspectRows(
       crm_contact_id: contact.crm_contact_id ?? null,
       crm_location_id: contact.crm_location_id ?? null,
       created_at: contact.created_at ?? null,
+      prospect_funnel: contact.prospect_funnel ?? null,
     };
   });
 }

@@ -29,6 +29,9 @@ export function AdminWinsReplyQueue() {
   const [posts, setPosts] = useState<CommunityPostRow[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [open, setOpen] = useState(false);
+  const [postDetailRequestClose, setPostDetailRequestClose] = useState<
+    (() => void) | null
+  >(null);
   const [phase, setPhase] = useState<"checking" | "ready">(() =>
     isWinsQueueCheckedThisSession() ? "ready" : "checking"
   );
@@ -195,10 +198,14 @@ export function AdminWinsReplyQueue() {
     setCurrentIndex((i) => Math.min(i, pending.length - 1));
   }, [adminUserId, currentPost]);
 
-  const handleClose = useCallback(() => {
+  const dismissQueue = useCallback(() => {
     dismissWinsQueueForSession();
     setOpen(false);
   }, []);
+
+  const handleClose = useCallback(() => {
+    postDetailRequestClose?.() ?? dismissQueue();
+  }, [dismissQueue, postDetailRequestClose]);
 
   if (phase === "checking") {
     return (
@@ -259,7 +266,8 @@ export function AdminWinsReplyQueue() {
             post={currentPost}
             categories={categories}
             presentation="embedded"
-            onClose={handleClose}
+            onClose={dismissQueue}
+            onRegisterCloseHandler={setPostDetailRequestClose}
             onPostsChanged={handlePostsChanged}
             feedStorageScopeId={adminUserId}
             onMarkPostRead={(postId) => {

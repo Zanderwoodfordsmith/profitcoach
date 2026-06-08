@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseStoredCommunityCommentMedia } from "@/lib/communityCommentMedia";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -18,6 +19,7 @@ type CommentRowRaw = {
   body: string;
   created_at: string;
   parent_comment_id: string | null;
+  media: unknown;
   author: ProfileEmbed | ProfileEmbed[] | null;
 };
 
@@ -139,6 +141,7 @@ export async function GET(
         body,
         created_at,
         parent_comment_id,
+        media,
         author:profiles!author_id (
           id,
           full_name,
@@ -197,6 +200,7 @@ export async function GET(
       body: row.body,
       created_at: row.created_at,
       parent_comment_id: row.parent_comment_id,
+      media: parseStoredCommunityCommentMedia(row.media),
       author: author
         ? {
             ...author,

@@ -357,13 +357,15 @@ function FinalStartCTA() {
   function onStep3(e) {
     e.preventDefault();
     setError("");
-    if (!phone.trim()) return setError("Please enter your phone number.");
 
     const coachSlug = getCoachSlug();
     const first = firstName.trim();
     const last = lastName.trim();
     const fullName = [first, last].filter(Boolean).join(" ");
-    const fullPhone = `${phoneCountryCode} ${phone.trim()}`.trim();
+    const phoneVal = phone.trim();
+    const fullPhone = phoneVal
+      ? `${phoneCountryCode} ${phoneVal}`.trim()
+      : "";
 
     setSubmitting(true);
     fetch("/api/landing/track", {
@@ -395,7 +397,7 @@ function FinalStartCTA() {
           lastName: last,
           fullName: fullName || undefined,
           email: email.trim(),
-          phone: fullPhone,
+          ...(fullPhone ? { phone: fullPhone } : {}),
         })
       );
     } catch {}
@@ -489,10 +491,9 @@ function FinalStartCTA() {
                 </select>
                 <input
                   type="tel"
-                  placeholder="Phone number"
+                  placeholder="Phone number (optional)"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  required
                   style={{
                     flex: 1, background: "transparent", border: "none",
                     color: "#fff", padding: "14px 18px", fontSize: 20,

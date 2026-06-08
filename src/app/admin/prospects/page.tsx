@@ -13,6 +13,7 @@ import {
   type ProspectRow,
 } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
+import { ProspectsDailyBarChart } from "@/components/admin/ProspectsDailyBarChart";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import type { UpdatedProspectFields } from "@/lib/prospects/updateProspectFields";
 
@@ -352,6 +353,8 @@ export default function AdminProspectsPage() {
         <p className="text-sm text-slate-600">Loading…</p>
       )}
       {error && <p className="text-sm text-rose-600">{error}</p>}
+
+      <ProspectsDailyBarChart prospects={prospects} loading={loading} />
 
       {showAddProspect && (
         <AddProspectForm

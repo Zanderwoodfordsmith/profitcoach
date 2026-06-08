@@ -63,11 +63,18 @@ export async function GET(request: Request) {
   }
 
   let prospectFirstName: string | null = null;
+  let contactDetails: {
+    first_name: string | null;
+    last_name: string | null;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null = null;
   const contactId = (row.contact_id as string | null)?.trim() ?? "";
   if (contactId) {
     const { data: contactRow, error: contactError } = await supabaseAdmin
       .from("contacts")
-      .select("full_name, first_name")
+      .select("full_name, first_name, last_name, email, phone")
       .eq("id", contactId)
       .maybeSingle();
 
@@ -75,19 +82,34 @@ export async function GET(request: Request) {
       if (contactError.code === "42703") {
         const { data: fallbackContact } = await supabaseAdmin
           .from("contacts")
-          .select("full_name")
+          .select("full_name, email, phone")
           .eq("id", contactId)
           .maybeSingle();
-        prospectFirstName =
-          splitFullName(fallbackContact?.full_name ?? "").first_name || null;
+        const split = splitFullName(fallbackContact?.full_name ?? "");
+        prospectFirstName = split.first_name || null;
+        contactDetails = {
+          first_name: split.first_name,
+          last_name: split.last_name,
+          full_name: fallbackContact?.full_name?.trim() || null,
+          email: fallbackContact?.email?.trim().toLowerCase() || null,
+          phone: fallbackContact?.phone?.trim() || null,
+        };
       } else {
         console.error("scorecard-report contact lookup:", contactError);
       }
     } else {
+      const split = splitFullName(contactRow?.full_name ?? "");
       prospectFirstName =
         contactRow?.first_name?.trim() ||
-        splitFullName(contactRow?.full_name ?? "").first_name ||
+        split.first_name ||
         null;
+      contactDetails = {
+        first_name: contactRow?.first_name?.trim() || split.first_name,
+        last_name: contactRow?.last_name?.trim() || split.last_name,
+        full_name: contactRow?.full_name?.trim() || null,
+        email: contactRow?.email?.trim().toLowerCase() || null,
+        phone: contactRow?.phone?.trim() || null,
+      };
     }
   }
 
@@ -107,5 +129,6 @@ export async function GET(request: Request) {
   return NextResponse.json({
     coach_slug: coachSlug,
     result,
+    contact: contactDetails,
   });
 }

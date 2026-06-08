@@ -55,6 +55,13 @@ import { extractMentionUserIds } from "@/lib/communityMentions";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
 import {
+  communityPostPath,
+  communityPostSlugFromPathname,
+  fetchCommunityPostIdBySlug,
+  findCommunityPostIdBySlug,
+  isCommunityPostUuidParam,
+} from "@/lib/communityPostSlug";
+import {
   firstCommunityPostImageUrl,
   normalizeCommunityPostMedia,
   type CommunityPostMediaItem,
@@ -1067,13 +1074,22 @@ export function CommunityFeed() {
   // updates keep the URL shareable/back-navigable and stay in sync with
   // `useSearchParams` without triggering a navigation.
   const openDetail = useCallback(
-    (id: string) => {
-      setSelectedPostId(id);
-      markPostRead(id);
+    (post: CommunityPostRow) => {
+      setSelectedPostId(post.id);
+      markPostRead(post.id);
       if (typeof window === "undefined") return;
+      const base = pathname.startsWith("/admin/community")
+        ? "/admin/community"
+        : "/coach/community";
       const sp = new URLSearchParams(window.location.search);
-      sp.set("post", id);
-      window.history.replaceState(null, "", `${pathname}?${sp.toString()}`);
+      sp.delete("post");
+      const qs = sp.toString();
+      const slugPath = communityPostPath(base, post);
+      window.history.replaceState(
+        null,
+        "",
+        qs ? `${slugPath}?${qs}` : slugPath
+      );
     },
     [markPostRead, pathname]
   );
@@ -1142,12 +1158,59 @@ export function CommunityFeed() {
 
   useEffect(() => {
     const q = searchParams.get("post");
-    if (q && /^[0-9a-f-]{36}$/i.test(q)) {
+    const pathSlug = communityPostSlugFromPathname(pathname);
+    const slugParam =
+      q && !isCommunityPostUuidParam(q) ? q.trim().toLowerCase() : pathSlug;
+
+    if (q && isCommunityPostUuidParam(q)) {
       setSelectedPostId(q);
-    } else {
-      setSelectedPostId(null);
+      return;
     }
-  }, [searchParams]);
+
+
+    if (!slugParam) {
+      setSelectedPostId(null);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const fromFeed = findCommunityPostIdBySlug(posts, slugParam);
+      if (fromFeed) {
+        if (!cancelled) setSelectedPostId(fromFeed);
+        return;
+      }
+      const id = await fetchCommunityPostIdBySlug(slugParam);
+      if (!cancelled) setSelectedPostId(id);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, posts, searchParams]);
+
+  useEffect(() => {
+    const q = searchParams.get("post");
+    if (!q || !isCommunityPostUuidParam(q) || typeof window === "undefined") {
+      return;
+    }
+    const post =
+      posts.find((p) => p.id === q) ??
+      (fetchedDetailPost?.id === q ? fetchedDetailPost : null);
+    if (!post) return;
+    const base = pathname.startsWith("/admin/community")
+      ? "/admin/community"
+      : "/coach/community";
+    const sp = new URLSearchParams(window.location.search);
+    sp.delete("post");
+    const qs = sp.toString();
+    const slugPath = communityPostPath(base, post);
+    const next = qs ? `${slugPath}?${qs}` : slugPath;
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current !== next) {
+      window.history.replaceState(null, "", next);
+    }
+  }, [fetchedDetailPost, pathname, posts, searchParams]);
 
   useEffect(() => {
     if (searchParams.get("tab") !== "calendar") return;
@@ -1839,10 +1902,13 @@ export function CommunityFeed() {
     setFetchedDetailPost(null);
     selectedPostEngagementRef.current = null;
     if (typeof window === "undefined") return;
+    const base = pathname.startsWith("/admin/community")
+      ? "/admin/community"
+      : "/coach/community";
     const sp = new URLSearchParams(window.location.search);
     sp.delete("post");
     const q = sp.toString();
-    window.history.replaceState(null, "", q ? `${pathname}?${q}` : pathname);
+    window.history.replaceState(null, "", q ? `${base}?${q}` : base);
   }, [markCommentsSeenUpTo, markPostRead, patchPostInState, pathname]);
 
   const displayedPosts = useMemo(() => {
@@ -2153,7 +2219,7 @@ export function CommunityFeed() {
                                   post,
                                   feedLocalSnapshot
                                 )}
-                                onOpen={() => openDetail(post.id)}
+                                onOpen={() => openDetail(post)}
                                 onPostLocalUpdate={patchPostInState}
                               />
                             </li>
@@ -2172,7 +2238,7 @@ export function CommunityFeed() {
                             post,
                             feedLocalSnapshot
                           )}
-                          onOpen={() => openDetail(post.id)}
+                          onOpen={() => openDetail(post)}
                           onPostLocalUpdate={patchPostInState}
                         />
                       </li>

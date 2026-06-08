@@ -50,6 +50,7 @@ import {
   readLandingContactSession,
   resolveAssessmentProspectFirstName,
 } from "@/lib/assessmentContactParams";
+import { splitFullName } from "@/lib/splitFullName";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -214,6 +215,7 @@ export default function ScorecardAssessmentPage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         coachSlug: coachSlug?.trim() || null,
+        assessment_type: "boss_scorecard",
         contact: {
           first_name: urlContact.firstName ?? undefined,
           last_name: urlContact.lastName ?? undefined,
@@ -426,7 +428,20 @@ export default function ScorecardAssessmentPage({
         throw new Error(body?.error ?? "Failed to save scorecard");
       }
       try {
-        sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result));
+        const { first_name, last_name } = splitFullName(fullName);
+        sessionStorage.setItem(
+          RESULT_STORAGE_KEY,
+          JSON.stringify({
+            ...result,
+            contact: {
+              first_name: first_name ?? undefined,
+              last_name: last_name ?? undefined,
+              full_name: fullName.trim() || undefined,
+              email: email.trim() || undefined,
+              phone: phone.trim() || undefined,
+            },
+          })
+        );
       } catch {
         // ignore
       }

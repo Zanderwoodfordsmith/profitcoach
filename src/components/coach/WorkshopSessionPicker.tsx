@@ -53,6 +53,10 @@ type WorkshopSessionPickerProps = {
   showScorecardLink?: boolean;
   onViewScorecard?: () => void;
   onPickerOpen?: () => void;
+  /** Hides the default “Start session” heading when no contact is selected. */
+  hideEmptyStateHeading?: boolean;
+  /** Opens the contact dropdown as soon as the picker mounts (e.g. centered Boss Pro gate). */
+  autoOpenContactList?: boolean;
 };
 
 function formatSessionSubtitle(summary: WorkshopSessionSummary): string {
@@ -289,6 +293,7 @@ function WorkshopContactCombobox({
   triggerClassName,
   compact,
   onOpen,
+  defaultOpen = false,
 }: {
   id: string;
   contacts: ContactOption[];
@@ -298,11 +303,13 @@ function WorkshopContactCombobox({
   triggerClassName: string;
   compact: boolean;
   onOpen?: () => void;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
   const [query, setQuery] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const didAutoOpenRef = useRef(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -340,6 +347,13 @@ function WorkshopContactCombobox({
     setOpen(false);
     setQuery("");
   }
+
+  useEffect(() => {
+    if (!defaultOpen || didAutoOpenRef.current) return;
+    didAutoOpenRef.current = true;
+    onOpen?.();
+    setOpen(true);
+  }, [defaultOpen, onOpen]);
 
   useEffect(() => {
     if (!open) return;
@@ -428,7 +442,7 @@ function WorkshopContactCombobox({
                 onClick={() => handleSelect(NEW_PERSON_VALUE)}
                 className={`${optionClassName(selectedId === NEW_PERSON_VALUE)} font-medium text-sky-700`}
               >
-                + Add new person
+                + Add new person or demo
               </button>
             ) : null}
             {filtered.length === 0 ? (
@@ -597,6 +611,8 @@ export function WorkshopSessionPicker({
   showScorecardLink = false,
   onViewScorecard,
   onPickerOpen,
+  hideEmptyStateHeading = false,
+  autoOpenContactList = false,
 }: WorkshopSessionPickerProps) {
   const selectId = `${idPrefix}-contact-select`;
   const nameId = `${idPrefix}-new-name`;
@@ -655,16 +671,20 @@ export function WorkshopSessionPicker({
 
   return (
     <div>
-      <p className={headingClassName}>Start session</p>
-      <p className={subheadingClassName}>
-        {isEditingNewPerson
-          ? "Enter their details, then start the session."
-          : showNewPersonOption
-            ? adminUnscoped
-              ? "Pick a contact to score, or add someone new."
-              : "Pick someone or add a new person to score."
-            : "Pick a contact to score."}
-      </p>
+      {!hideEmptyStateHeading ? (
+        <>
+          <p className={headingClassName}>Start session</p>
+          <p className={subheadingClassName}>
+            {isEditingNewPerson
+              ? "Enter their details, then start the session."
+              : showNewPersonOption
+                ? adminUnscoped
+                  ? "Pick a contact to score, or add someone new."
+                  : "Pick someone or add a new person to score."
+                : "Pick a contact to score."}
+          </p>
+        </>
+      ) : null}
 
       {!isEditingNewPerson ? (
         <>
@@ -680,6 +700,7 @@ export function WorkshopSessionPicker({
             triggerClassName={selectClassName}
             compact={compact}
             onOpen={onPickerOpen}
+            defaultOpen={autoOpenContactList}
           />
         </>
       ) : null}
@@ -815,7 +836,7 @@ export function WorkshopSessionPicker({
               : "mt-3 text-sm text-slate-600"
           }
         >
-          No contacts yet — choose <strong>+ Add new person</strong> above.
+          No contacts yet — choose <strong>+ Add new person or demo</strong> above.
         </p>
       ) : null}
 

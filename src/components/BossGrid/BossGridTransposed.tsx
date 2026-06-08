@@ -233,6 +233,9 @@ export function BossGridTransposed({
   } = useBossQuestionTooltip(tooltipDelay, { workshopSheetMode });
   const [collapsedLevels, setCollapsedLevels] = useState<Set<number>>(new Set());
   const isLightGlass = glass && glassTheme === "light";
+  /** When names are always visible, row height follows the tallest wrapped cell in that row only. */
+  const stretchGlassRows = glass && glassAlwaysShowPlaybookNames;
+  const glassStretchTdStyle: React.CSSProperties = stretchGlassRows ? { height: 1 } : {};
   const useLightGlassSlateHeader = isLightGlass;
   const lightGlassSlateHeaderBg = "#334155";
   const lightGlassSlateHeaderBorder = "rgba(71, 85, 105, 0.4)";
@@ -675,10 +678,13 @@ export function BossGridTransposed({
                       verticalAlign: "middle",
                       background: glass ? "transparent" : undefined,
                       fontSize: glass ? 16.5 : undefined,
+                      ...glassStretchTdStyle,
                     }}
                   >
                     {glass ? (
-                      <div className="flex items-center gap-3">
+                      <div
+                        className={`flex items-center gap-3${stretchGlassRows ? " h-full min-h-[54px]" : ""}`}
+                      >
                         <div
                           style={{
                             width: 3,
@@ -716,6 +722,7 @@ export function BossGridTransposed({
                             padding: glassScoreCellPadding,
                             borderBottom: glass ? GLASS_AREA_ROW_BORDER : "1px solid #F1F5F9",
                             verticalAlign: "middle",
+                            ...glassStretchTdStyle,
                           }}
                         />
                       );
@@ -744,6 +751,7 @@ export function BossGridTransposed({
                               padding: glassScoreCellPadding,
                               borderBottom: glass ? GLASS_AREA_ROW_BORDER : "1px solid #F1F5F9",
                               verticalAlign: "middle",
+                              ...glassStretchTdStyle,
                             }}
                           >
                             <div
@@ -774,11 +782,11 @@ export function BossGridTransposed({
                                   : undefined
                               }
                               {...glassQuestionHoverProps(playbook.ref)}
-                              className={`${isClickable ? "cursor-pointer " : ""}flex items-center justify-center rounded-md ${outfit.variable}`}
+                              className={`${isClickable ? "cursor-pointer " : ""}flex items-center justify-center rounded-md ${outfit.variable}${stretchGlassRows ? " h-full min-h-[44px]" : ""}`}
                               style={{
                                 fontFamily: "var(--font-outfit), sans-serif",
                                 ...getGlassCellStyle(score),
-                                minHeight: 44,
+                                ...(stretchGlassRows ? {} : { minHeight: 44 }),
                               }}
                               aria-label={playbook.name}
                             >
@@ -801,6 +809,7 @@ export function BossGridTransposed({
                               padding: glassNamedCellPadding,
                               borderBottom: glass ? GLASS_AREA_ROW_BORDER : "1px solid #F1F5F9",
                               verticalAlign: "middle",
+                              ...glassStretchTdStyle,
                             }}
                           >
                             <div
@@ -831,7 +840,7 @@ export function BossGridTransposed({
                                   : undefined
                               }
                               {...glassQuestionHoverProps(playbook.ref)}
-                              className={`${isClickable ? "cursor-pointer " : ""}flex min-h-[54px] items-center justify-center rounded-lg ${outfit.variable}`}
+                              className={`${isClickable ? "cursor-pointer " : ""}flex h-full min-h-[54px] items-center justify-center rounded-lg ${outfit.variable}`}
                               style={{
                                 fontFamily: "var(--font-outfit), sans-serif",
                                 ...getGlassCellStyle(score),

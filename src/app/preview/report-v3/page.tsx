@@ -7,6 +7,8 @@ import { useSearchParams } from "next/navigation";
 import { CalendarEmbed } from "@/components/CalendarEmbed";
 import { areaHeroGradient } from "@/components/playbooks/PlaybookCard";
 import { BossWheel } from "@/components/BossCharts";
+import { ScorecardPreviewCoachSwitcher } from "@/components/scorecard/ScorecardPreviewCoachSwitcher";
+import { ScorecardPreviewFloatingControls } from "@/components/scorecard/ScorecardPreviewFloatingControls";
 import { AREAS, BOSS_FOUNDATION_COLOR, PLAYBOOKS } from "@/lib/bossData";
 import {
   getOverallLevel,
@@ -25,6 +27,10 @@ import {
 } from "@/lib/bossScores";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
+import {
+  resolveReportCalendarContact,
+  type CalendarContactParams,
+} from "@/lib/calendarContactParams";
 import {
   getPrimaryCoachSlug,
   PRIMARY_COACH_CALENDAR_EMBED_CODE,
@@ -467,22 +473,51 @@ type PillarTabKey = (typeof PILLAR_KEYS)[number];
 
 export type ReportV3Variant = "preview" | "live";
 
+type CoachProfile = {
+  full_name: string | null;
+  coach_business_name: string | null;
+  avatar_url: string | null;
+  linkedin_url: string | null;
+  bio: string | null;
+};
+
+function coachDisplayName(profile: CoachProfile | null, slug: string): string {
+  return (
+    profile?.full_name?.trim() ||
+    profile?.coach_business_name?.trim() ||
+    slug ||
+    "Coach"
+  );
+}
+
+function coachInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function ReportV3({
   answers,
   totalScore,
   coachSlug = "",
   variant = "live",
+  calendarContact,
 }: {
   answers: AnswersMap;
   totalScore: number;
   coachSlug?: string;
   variant?: ReportV3Variant;
+  calendarContact?: CalendarContactParams | null;
 }) {
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
   const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(
     variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
   );
+  const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const [activePillar, setActivePillar] = useState<PillarTabKey>("foundation");
 
   const overall = getOverallLevel(totalScore);
@@ -503,29 +538,60 @@ export function ReportV3({
   const areaScores = useMemo(() => computeAreaScores(answers), [answers]);
 
   const coachSlugParam = coachSlug.trim() || getPrimaryCoachSlug();
+  const coachName = coachDisplayName(coachProfile, coachSlugParam);
+  const coachBio =
+    coachProfile?.bio?.trim() ||
+    "Business scaling specialist helping owners get their time and freedom back without sacrificing profit.";
+  const coachProfileHref = coachProfile?.linkedin_url?.trim()
+    ? coachProfile.linkedin_url.trim()
+    : `/directory/${encodeURIComponent(coachSlugParam)}`;
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
-      const res = await fetch(
-        `/api/public/coaches/${encodeURIComponent(coachSlugParam)}/calendar`
-      );
+      const [calendarRes, profileRes] = await Promise.all([
+        fetch(`/api/public/coaches/${encodeURIComponent(coachSlugParam)}/calendar`),
+        fetch(`/api/coach-by-slug?slug=${encodeURIComponent(coachSlugParam)}`),
+      ]);
       if (cancelled) return;
 
-      if (!res.ok) {
+      if (!calendarRes.ok) {
         setCalendarEmbedCode(
           variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
         );
-        return;
+      } else {
+        const data = (await calendarRes.json().catch(() => ({}))) as {
+          calendar_embed_code?: string | null;
+        };
+        setCalendarEmbedCode(
+          data?.calendar_embed_code ??
+            (variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null)
+        );
       }
-      const data = (await res.json().catch(() => ({}))) as {
-        calendar_embed_code?: string | null;
-      };
-      setCalendarEmbedCode(
-        data?.calendar_embed_code ??
-          (variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null)
-      );
+
+      if (profileRes.ok) {
+        const data = (await profileRes.json().catch(() => null)) as {
+          full_name?: string | null;
+          coach_business_name?: string | null;
+          avatar_url?: string | null;
+          linkedin_url?: string | null;
+          bio?: string | null;
+        } | null;
+        if (data) {
+          setCoachProfile({
+            full_name: data.full_name ?? null,
+            coach_business_name: data.coach_business_name ?? null,
+            avatar_url: data.avatar_url ?? null,
+            linkedin_url: data.linkedin_url ?? null,
+            bio: data.bio ?? null,
+          });
+        } else {
+          setCoachProfile(null);
+        }
+      } else {
+        setCoachProfile(null);
+      }
     }
 
     void load();
@@ -581,22 +647,36 @@ export function ReportV3({
               </p>
             </div>
           </div>
-          {variant === "preview" ? (
-            <div className="flex items-center gap-2">
-              <Link
-                href="/preview/report-design-system"
-                className="rounded-full border border-[#e2e8f0] bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-[#42a1ee]/30"
-              >
-                See v2
-              </Link>
-              <Link
-                href="/preview/thank-you"
-                className="rounded-full border border-[#e2e8f0] bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-[#42a1ee]/30"
-              >
-                Thank-you view
-              </Link>
-            </div>
-          ) : null}
+          <div className="flex min-w-0 items-center gap-3">
+            {variant === "preview" ? (
+              <ScorecardPreviewCoachSwitcher
+                currentSlug={coachSlugParam}
+                alwaysShow
+              />
+            ) : (
+              <div className="flex min-w-0 items-center gap-2.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+                {coachProfile?.avatar_url ? (
+                  <img
+                    src={coachProfile.avatar_url}
+                    alt=""
+                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0c5290] text-xs font-semibold text-white">
+                    {coachInitials(coachName)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    Your coach
+                  </p>
+                  <p className="truncate text-sm font-semibold text-slate-800">
+                    {coachName}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -873,7 +953,10 @@ export function ReportV3({
 
               {calendarEmbedCode ? (
                 <div className="relative mt-6 rounded-2xl bg-white p-3 shadow-inner">
-                  <CalendarEmbed embedCode={calendarEmbedCode} />
+                  <CalendarEmbed
+                    embedCode={calendarEmbedCode}
+                    contact={calendarContact}
+                  />
                 </div>
               ) : (
                 <div className="relative mt-6 rounded-2xl border border-white/15 bg-white/5 p-4 backdrop-blur-sm">
@@ -924,10 +1007,18 @@ export function ReportV3({
               />
               <div className="relative flex flex-col gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="relative h-16 w-16 shrink-0 rounded-full bg-white/10">
-                    <div className="absolute inset-0 flex items-center justify-center text-2xl font-semibold text-white/80">
-                      {coachSlugParam ? coachSlugParam[0]?.toUpperCase() : "S"}
-                    </div>
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-white/10">
+                    {coachProfile?.avatar_url ? (
+                      <img
+                        src={coachProfile.avatar_url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-2xl font-semibold text-white/80">
+                        {coachInitials(coachName)}
+                      </div>
+                    )}
                     <div className="absolute -right-1 -top-1 h-4 w-4 rounded-full border-2 border-[#0c5290] bg-emerald-400" />
                   </div>
                   <div>
@@ -935,18 +1026,20 @@ export function ReportV3({
                       Your coach
                     </p>
                     <h3 className="mt-1 text-xl font-semibold tracking-tight">
-                      {coachSlugParam
-                        ? coachSlugParam.toUpperCase()
-                        : "Sarah Mitchell"}
+                      {coachName}
                     </h3>
+                    {coachProfile?.coach_business_name ? (
+                      <p className="mt-0.5 text-sm text-white/70">
+                        {coachProfile.coach_business_name}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
-                <p className="text-sm leading-relaxed text-white/80">
-                  Business scaling specialist with 15+ years helping owners get
-                  their time and freedom back without sacrificing profit.
-                </p>
+                <p className="text-sm leading-relaxed text-white/80">{coachBio}</p>
                 <Link
-                  href="#"
+                  href={coachProfileHref}
+                  target={coachProfile?.linkedin_url ? "_blank" : undefined}
+                  rel={coachProfile?.linkedin_url ? "noopener noreferrer" : undefined}
                   className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   See coach profile
@@ -960,6 +1053,10 @@ export function ReportV3({
           © {new Date().getFullYear()} Profit Coach. All rights reserved.
         </p>
       </main>
+
+      {variant === "preview" ? (
+        <ScorecardPreviewFloatingControls coachSlug={coachSlugParam} />
+      ) : null}
     </div>
   );
 }
@@ -971,10 +1068,9 @@ function ReportV3PreviewWrapper() {
       searchParams?.get("preview") === "1" ||
       searchParams?.get("preview") === "true";
     const scoreParam = searchParams?.get("score");
-    const target = scoreParam ? parseInt(scoreParam, 10) : undefined;
-    const fake = buildFakeScores(
-      preview || (scoreParam && Number.isFinite(target)) ? target : 47
-    );
+    const parsed = scoreParam ? parseInt(scoreParam, 10) : NaN;
+    const target = Number.isFinite(parsed) ? parsed : 38;
+    const fake = buildFakeScores(target);
     return {
       answers: fake as AnswersMap,
       totalScore: getTotalScore(fake),
@@ -982,6 +1078,7 @@ function ReportV3PreviewWrapper() {
   }, [searchParams]);
 
   const coachSlug = searchParams?.get("coach")?.trim() || getPrimaryCoachSlug();
+  const calendarContact = resolveReportCalendarContact({ searchParams });
 
   return (
     <ReportV3
@@ -989,6 +1086,7 @@ function ReportV3PreviewWrapper() {
       totalScore={totalScore}
       coachSlug={coachSlug}
       variant="preview"
+      calendarContact={calendarContact}
     />
   );
 }

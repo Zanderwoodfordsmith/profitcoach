@@ -66,6 +66,9 @@ export function communityAccessHint(errorMessage: string): string | null {
     if (m.includes("community_posts.media")) {
       return "Add the community post media column: run supabase/migrations/20260607120000_community_posts_media.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
     }
+    if (m.includes("community_post_comments") && m.includes("media")) {
+      return "Add comment image support: run supabase/migrations/20260808130000_community_comment_images.sql in Supabase Dashboard → SQL Editor (or `supabase db push` from this repo). Deploying the app does not run SQL.";
+    }
     if (
       m.includes("community_calendar_events") &&
       (m.includes("recording_link_url") || m.includes("recording_video_url"))

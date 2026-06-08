@@ -69,3 +69,20 @@ export function BossScoreThankYouHeading({
     </h1>
   );
 }
+
+export function BossScoreProThankYouHeading({
+  className,
+}: BossScoreThankYouHeadingProps) {
+  return (
+    <h1
+      className={`text-center font-semibold leading-tight tracking-tight text-slate-900 ${className ?? ""}`}
+    >
+      <span className="block text-2xl md:text-3xl lg:text-4xl">
+        Thank you for taking the
+      </span>
+      <span className="mt-3 block pt-1 text-5xl sm:mt-3.5 sm:pt-1.5 sm:text-6xl md:mt-4 md:text-7xl">
+        <BossScoreProWordmark variant="hero" />
+      </span>
+    </h1>
+  );
+}

@@ -1,3 +1,4 @@
+import { resolveSupabaseBrowserSession } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type CommunityPostMediaKind = "image" | "video";
@@ -148,22 +149,16 @@ function communityPostMediaPublicUrl(path: string): string {
  */
 export async function uploadCommunityPostMediaFile(
   file: File,
-  accessToken: string | null | undefined
+  _accessToken?: string | null | undefined
 ): Promise<{ media: CommunityPostMediaItem } | { error: string }> {
-  if (!accessToken) {
-    return { error: "Not signed in." };
-  }
-
   const validated = validateCommunityPostMediaFile(file);
   if ("error" in validated) {
     return validated;
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabaseClient.auth.getUser();
-  if (userError || !user) {
+  const session = await resolveSupabaseBrowserSession();
+  const user = session?.user;
+  if (!user) {
     return { error: "Not signed in." };
   }
 

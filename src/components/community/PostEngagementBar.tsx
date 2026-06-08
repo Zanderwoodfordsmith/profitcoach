@@ -1,13 +1,16 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageCircle, ThumbsUp } from "lucide-react";
 import {
   profileInitialsFromProfile,
 } from "@/lib/communityProfile";
 import type { ProfileRow } from "@/components/community/CommunityFeed";
 import { CommunityProfileHoverCard } from "@/components/community/CommunityProfileHoverCard";
+import { EngagementActorsHover } from "@/components/community/EngagementActorsHover";
 
 type Props = {
+  postId: string;
   likeCount: number;
   commentCount: number;
   commentedByMe: boolean;
@@ -20,9 +23,12 @@ type Props = {
   commentRecencyVariant?: "new" | "last" | null;
   onToggleLike: () => void | Promise<void>;
   onCommentsClick: () => void;
+  /** Bubble up when a likes/comments hover panel is open (feed cards restore opacity). */
+  onEngagementHoverChange?: (open: boolean) => void;
 };
 
 export function PostEngagementBar({
+  postId,
   likeCount,
   commentCount,
   commentedByMe,
@@ -34,7 +40,27 @@ export function PostEngagementBar({
   commentRecencyVariant = null,
   onToggleLike,
   onCommentsClick,
+  onEngagementHoverChange,
 }: Props) {
+  const [likeHoverOpen, setLikeHoverOpen] = useState(false);
+  const [commentHoverOpen, setCommentHoverOpen] = useState(false);
+  const lastReportedOpen = useRef(false);
+
+  useEffect(() => {
+    const open = likeHoverOpen || commentHoverOpen;
+    if (open === lastReportedOpen.current) return;
+    lastReportedOpen.current = open;
+    onEngagementHoverChange?.(open);
+  }, [commentHoverOpen, likeHoverOpen, onEngagementHoverChange]);
+
+  const handleLikeHoverChange = useCallback((open: boolean) => {
+    setLikeHoverOpen(open);
+  }, []);
+
+  const handleCommentHoverChange = useCallback((open: boolean) => {
+    setCommentHoverOpen(open);
+  }, []);
+
   const likeBtn = (
     <button
       type="button"
@@ -92,8 +118,23 @@ export function PostEngagementBar({
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-      {likeBtn}
-      {commentBtn}
+      <EngagementActorsHover
+        postId={postId}
+        kind="like"
+        count={likeCount}
+        onOpenChange={handleLikeHoverChange}
+      >
+        {likeBtn}
+      </EngagementActorsHover>
+      <EngagementActorsHover
+        postId={postId}
+        kind="comment"
+        count={commentCount}
+        initialAuthors={commentPreviewAuthors}
+        onOpenChange={handleCommentHoverChange}
+      >
+        {commentBtn}
+      </EngagementActorsHover>
       {commentPreviewAuthors.length > 0 || commentRecencyLabel ? (
         <div className="flex min-w-0 items-center gap-2 pl-1">
           {commentPreviewAuthors.length > 0 ? (

@@ -12,6 +12,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { extractMentionUserIds } from "@/lib/communityMentions";
 import { communityPostCardPreview } from "@/lib/communityPostMarkdown";
+import { communityPostPath } from "@/lib/communityPostSlug";
 import {
   fetchUserCommentedPostIds,
   isWinNotificationEligible,
@@ -26,6 +27,7 @@ import {
   winNotificationIdForPost,
   type NotificationReadState,
 } from "@/lib/communityNotificationReadState";
+import type { ProspectNotificationItem } from "@/lib/prospectNotifications";
 
 type DashboardTopActionsProps = {
   variant: "coach" | "admin";
@@ -41,6 +43,7 @@ type DashboardTopActionsProps = {
 };
 
 type NotificationFilter = "all" | "mentions" | "replies" | "announcements" | "wins";
+type NotificationSection = "community" | "prospects";
 
 type NotificationItem = {
   id: string;
@@ -60,7 +63,10 @@ const EMPTY_READ_STATE: NotificationReadState = {
   readAllBefore: null,
 };
 
-function isUnread(item: NotificationItem, state: NotificationReadState): boolean {
+function isUnread(
+  item: { id: string; created_at: string },
+  state: NotificationReadState
+): boolean {
   if (state.readIds[item.id]) return false;
   if (!state.readAllBefore) return true;
   return (
@@ -93,11 +99,17 @@ export function DashboardTopActions({
     useDashboardProfile(avatarOverride);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [section, setSection] = useState<NotificationSection>("community");
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [prospectNotifications, setProspectNotifications] = useState<
+    ProspectNotificationItem[]
+  >([]);
   const [readState, setReadState] = useState<NotificationReadState>(EMPTY_READ_STATE);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [loadingProspectNotifications, setLoadingProspectNotifications] =
+    useState(false);
 
   const notificationsRef = useRef<HTMLDivElement>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
@@ -105,6 +117,7 @@ export function DashboardTopActions({
 
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const communityHref = variant === "coach" ? "/coach/community" : "/admin/community";
+  const prospectsHref = variant === "coach" ? "/coach/prospects" : "/admin/prospects";
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -298,7 +311,9 @@ export function DashboardTopActions({
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} replied to your post`,
             body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
-            href: `${communityHref}?post=${post.id}`,
+            href: communityPostPath(communityHref, {
+              title: post.title ?? "Community post",
+            }),
           });
         }
       }
@@ -327,7 +342,9 @@ export function DashboardTopActions({
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} mentioned you in a post`,
             body: row.body.trim() || row.title?.trim() || "Community post",
-            href: `${communityHref}?post=${row.id}`,
+            href: communityPostPath(communityHref, {
+              title: row.title?.trim() || row.body?.trim() || "Community post",
+            }),
           });
         }
       }
@@ -353,7 +370,9 @@ export function DashboardTopActions({
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} mentioned you in a comment`,
             body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
-            href: `${communityHref}?post=${post.id}`,
+            href: communityPostPath(communityHref, {
+              title: post.title ?? "Community post",
+            }),
           });
         }
       }
@@ -400,7 +419,9 @@ export function DashboardTopActions({
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} posted an announcement`,
             body: row.title?.trim() || row.body?.trim() || "New announcement",
-            href: `${communityHref}?post=${row.id}`,
+            href: communityPostPath(communityHref, {
+              title: row.title?.trim() || row.body?.trim() || "Community post",
+            }),
           });
         }
       }
@@ -455,7 +476,9 @@ export function DashboardTopActions({
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} shared a win`,
             body: row.title?.trim() || row.body?.trim() || "New win",
-            href: `${communityHref}?post=${row.id}`,
+            href: communityPostPath(communityHref, {
+              title: row.title?.trim() || row.body?.trim() || "Community post",
+            }),
           });
         }
       }
@@ -470,14 +493,46 @@ export function DashboardTopActions({
     }
   }, [communityHref, profile?.id, variant]);
 
+  const loadProspectNotifications = useCallback(async () => {
+    const uid = profile?.id;
+    if (!uid) return;
+    setLoadingProspectNotifications(true);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) {
+        setProspectNotifications([]);
+        return;
+      }
+
+      const res = await fetch("/api/notifications/prospects", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!res.ok) {
+        setProspectNotifications([]);
+        return;
+      }
+
+      const body = (await res.json()) as {
+        notifications?: ProspectNotificationItem[];
+      };
+      setProspectNotifications(body.notifications ?? []);
+    } finally {
+      setLoadingProspectNotifications(false);
+    }
+  }, [profile?.id]);
+
   useEffect(() => {
     if (!profile?.id) return;
     void loadNotifications();
+    void loadProspectNotifications();
     const handle = window.setInterval(() => {
       void loadNotifications();
+      void loadProspectNotifications();
     }, 60_000);
     return () => window.clearInterval(handle);
-  }, [loadNotifications, profile?.id]);
+  }, [loadNotifications, loadProspectNotifications, profile?.id]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -501,13 +556,23 @@ export function DashboardTopActions({
     return notifications.filter((n) => n.type === filter);
   }, [notifications, filter]);
 
-  const unreadCount = useMemo(() => {
+  const communityUnreadCount = useMemo(() => {
     let count = 0;
     for (const n of notifications) {
       if (isUnread(n, readState)) count += 1;
     }
     return count;
   }, [notifications, readState]);
+
+  const prospectsUnreadCount = useMemo(() => {
+    let count = 0;
+    for (const n of prospectNotifications) {
+      if (isUnread(n, readState)) count += 1;
+    }
+    return count;
+  }, [prospectNotifications, readState]);
+
+  const unreadCount = communityUnreadCount + prospectsUnreadCount;
 
   const markAllAsRead = useCallback(() => {
     if (!profile?.id) return;
@@ -558,107 +623,188 @@ export function DashboardTopActions({
         </button>
         {notificationsOpen ? (
           <div className="absolute right-0 mt-2 w-[min(92vw,34rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-              <p className="text-lg font-semibold text-slate-900">Notifications</p>
-              <div className="flex items-center gap-2">
+            <div className="border-b border-slate-200 px-4 pt-3 pb-0">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-lg font-semibold text-slate-900">Notifications</p>
                 <button
                   type="button"
                   onClick={markAllAsRead}
-                  className="text-sm font-medium text-sky-700 hover:text-sky-800"
+                  className="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-800"
                 >
                   Mark all as read
                 </button>
-                <div className="relative" ref={filterMenuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setFilterMenuOpen((o) => !o)}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
-                  >
-                    {filter === "all"
-                      ? "All"
-                      : filter === "mentions"
-                        ? "Mentions"
-                        : filter === "replies"
-                          ? "Replies"
-                          : filter === "announcements"
-                            ? "Announcements"
-                            : "Wins"}
-                    <ChevronDown className="h-4 w-4" />
-                  </button>
-                  {filterMenuOpen ? (
-                    <div className="absolute right-0 z-10 mt-1 min-w-[12rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                      {(
-                        [
-                          ["all", "All"],
-                          ["mentions", "Mentions"],
-                          ["replies", "Replies"],
-                          ["announcements", "Announcements"],
-                          ...(variant === "admin"
-                            ? ([["wins", "Wins"]] as const)
-                            : []),
-                        ] as const
-                      ).map(([value, label]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => {
-                            setFilter(value);
-                            setFilterMenuOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
-                            filter === value
-                              ? "bg-amber-100 text-slate-900"
-                              : "text-slate-700 hover:bg-slate-50"
-                          }`}
-                        >
-                          {label}
-                          {filter === value ? <Check className="h-4 w-4" /> : null}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+              </div>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <nav
+                  className="flex gap-5"
+                  aria-label="Notification sections"
+                >
+                  {(
+                    [
+                      ["community", "Community", communityUnreadCount],
+                      ["prospects", "Prospects", prospectsUnreadCount],
+                    ] as const
+                  ).map(([value, label, unread]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setSection(value)}
+                      className={`relative border-b-2 px-0 pb-1.5 text-sm font-semibold transition ${
+                        section === value
+                          ? "border-[#0c5290] text-[#0c5290]"
+                          : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
+                      }`}
+                    >
+                      {label}
+                      {unread > 0 ? (
+                        <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white">
+                          {unread > 99 ? "99+" : unread}
+                        </span>
+                      ) : null}
+                    </button>
+                  ))}
+                </nav>
+                {section === "community" ? (
+                  <div className="relative shrink-0" ref={filterMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setFilterMenuOpen((o) => !o)}
+                      className="mb-0.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                    >
+                      {filter === "all"
+                        ? "All"
+                        : filter === "mentions"
+                          ? "Mentions"
+                          : filter === "replies"
+                            ? "Replies"
+                            : filter === "announcements"
+                              ? "Announcements"
+                              : "Wins"}
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    {filterMenuOpen ? (
+                      <div className="absolute right-0 z-10 mt-1 min-w-[12rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                        {(
+                          [
+                            ["all", "All"],
+                            ["mentions", "Mentions"],
+                            ["replies", "Replies"],
+                            ["announcements", "Announcements"],
+                            ...(variant === "admin"
+                              ? ([["wins", "Wins"]] as const)
+                              : []),
+                          ] as const
+                        ).map(([value, label]) => (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => {
+                              setFilter(value);
+                              setFilterMenuOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
+                              filter === value
+                                ? "bg-amber-100 text-slate-900"
+                                : "text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            {label}
+                            {filter === value ? <Check className="h-4 w-4" /> : null}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
 
             <div className="max-h-[32rem] overflow-y-auto">
-              {loadingNotifications ? (
-                <p className="px-4 py-4 text-sm text-slate-500">Loading...</p>
-              ) : filteredNotifications.length === 0 ? (
-                <p className="px-4 py-4 text-sm text-slate-500">
-                  No notifications yet.
+              {section === "community" ? (
+                loadingNotifications ? (
+                  <p className="px-4 py-3 text-sm text-slate-500">Loading...</p>
+                ) : filteredNotifications.length === 0 ? (
+                  <p className="px-4 py-3 text-sm text-slate-500">
+                    No community notifications yet.
+                  </p>
+                ) : (
+                  <ul>
+                    {filteredNotifications.map((item) => {
+                      const unread = isUnread(item, readState);
+                      const actorInitials = profileInitialsFromName(item.actor_name);
+                      return (
+                        <li key={item.id} className="border-b border-slate-200 last:border-b-0">
+                          <Link
+                            href={item.href}
+                            onClick={() => {
+                              markOneAsRead(item.id);
+                              setNotificationsOpen(false);
+                            }}
+                            className="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
+                          >
+                            {item.actor_avatar_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.actor_avatar_url}
+                                alt=""
+                                className="mt-0.5 h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
+                              />
+                            ) : (
+                              <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
+                                {actorInitials}
+                              </span>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-base leading-snug text-slate-900">
+                                <span className="font-semibold">{item.actor_name}</span>{" "}
+                                {item.title.replace(item.actor_name, "")}
+                                <span className="text-slate-500"> · {relativeAgo(item.created_at)}</span>
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-sm text-slate-700">
+                                {item.body}
+                              </p>
+                            </div>
+                            {unread ? (
+                              <span
+                                className="mt-4 h-3 w-3 shrink-0 rounded-full bg-blue-500"
+                                aria-label="Unread"
+                              />
+                            ) : null}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )
+              ) : loadingProspectNotifications ? (
+                <p className="px-4 py-3 text-sm text-slate-500">Loading...</p>
+              ) : prospectNotifications.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-slate-500">
+                  No prospect activity yet.
                 </p>
               ) : (
                 <ul>
-                  {filteredNotifications.map((item) => {
+                  {prospectNotifications.map((item) => {
                     const unread = isUnread(item, readState);
-                    const actorInitials = profileInitialsFromName(item.actor_name);
+                    const contactInitials = profileInitialsFromName(item.contact_name);
+                    const actionText = item.title.replace(item.contact_name, "").trim();
                     return (
                       <li key={item.id} className="border-b border-slate-200 last:border-b-0">
                         <Link
-                          href={item.href}
+                          href={item.href || prospectsHref}
                           onClick={() => {
                             markOneAsRead(item.id);
                             setNotificationsOpen(false);
                           }}
-                          className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50"
+                          className="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
                         >
-                          {item.actor_avatar_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={item.actor_avatar_url}
-                              alt=""
-                              className="mt-0.5 h-11 w-11 shrink-0 rounded-full object-cover ring-1 ring-slate-200"
-                            />
-                          ) : (
-                            <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600 ring-1 ring-slate-200">
-                              {actorInitials}
-                            </span>
-                          )}
+                          <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-800 ring-1 ring-sky-100">
+                            {contactInitials}
+                          </span>
                           <div className="min-w-0 flex-1">
                             <p className="text-base leading-snug text-slate-900">
-                              <span className="font-semibold">{item.actor_name}</span>{" "}
-                              {item.title.replace(item.actor_name, "")}
+                              <span className="font-semibold">{item.contact_name}</span>{" "}
+                              {actionText}
                               <span className="text-slate-500"> · {relativeAgo(item.created_at)}</span>
                             </p>
                             <p className="mt-1 line-clamp-2 text-sm text-slate-700">

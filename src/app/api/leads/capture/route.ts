@@ -7,6 +7,7 @@ import {
   fireLeadWebhook,
   getCoachLeadWebhookUrl,
   resolveLeadWebhookStatus,
+  type AssessmentType,
 } from "@/lib/leadWebhook";
 import { splitFullName } from "@/lib/splitFullName";
 import {
@@ -17,6 +18,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
   coachSlug?: string | null;
+  assessment_type?: AssessmentType;
   contact: {
     full_name?: string;
     first_name?: string;
@@ -26,6 +28,12 @@ type Body = {
     business_name?: string;
   };
 };
+
+function normalizeProspectFunnel(
+  raw: unknown
+): AssessmentType | null {
+  return raw === "boss_scorecard" || raw === "diagnostic_50" ? raw : null;
+}
 
 /**
  * Captures a partial lead (email is the only hard requirement) and fires the
@@ -107,6 +115,7 @@ export async function POST(request: Request) {
 
   const phone = body.contact?.phone?.trim() || null;
   const businessName = body.contact?.business_name?.trim() || null;
+  const prospectFunnel = normalizeProspectFunnel(body.assessment_type);
 
   // Upsert by (coach_id, email). Older contact rows stay the source of truth
   // when an assessment eventually fires — same row gets updated.
@@ -130,6 +139,7 @@ export async function POST(request: Request) {
     }
     if (phone) patch.phone = phone;
     if (businessName && !existing.business_name) patch.business_name = businessName;
+    if (prospectFunnel) patch.prospect_funnel = prospectFunnel;
     if (Object.keys(patch).length > 0) {
       await tryUpdateContactStripping(contactId, patch);
     }
@@ -142,6 +152,7 @@ export async function POST(request: Request) {
       business_name: businessName,
       phone,
     };
+    if (prospectFunnel) insertPayload.prospect_funnel = prospectFunnel;
     if (firstName) insertPayload.first_name = firstName;
     if (lastName) insertPayload.last_name = lastName;
     const { data: inserted } = await tryInsertContactStripping(insertPayload);

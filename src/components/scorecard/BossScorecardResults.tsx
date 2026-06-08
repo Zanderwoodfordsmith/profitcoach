@@ -24,6 +24,7 @@ import {
   BOSS_LEVEL_NUMBERS,
   bossLevelSaturated,
 } from "@/lib/bossScorecardColors";
+import type { CalendarContactParams } from "@/lib/calendarContactParams";
 import { getPrimaryCoachSlug, PRIMARY_COACH_CALENDAR_EMBED_CODE } from "@/lib/primaryCoach";
 import type { BossLevel } from "@/lib/bossScorecardScores";
 import {
@@ -232,6 +233,7 @@ export function BossScorecardResults({
   coachName: coachNameProp,
   isPreview = false,
   coachGlance = false,
+  calendarContact,
 }: {
   result: ScorecardResultPayload;
   coachSlug: string;
@@ -239,6 +241,8 @@ export function BossScorecardResults({
   isPreview?: boolean;
   /** Compact read-only view for coaches (modal) — hides prospect CTAs and calendar. */
   coachGlance?: boolean;
+  /** Prefills the coach booking calendar (first_name, last_name, email, phone). */
+  calendarContact?: CalendarContactParams | null;
 }) {
   const [calendarEmbed, setCalendarEmbed] = useState<string | null>(null);
   const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
@@ -544,7 +548,10 @@ export function BossScorecardResults({
             </div>
             <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               {displayCalendarEmbed ? (
-                <CalendarEmbed embedCode={displayCalendarEmbed} />
+                <CalendarEmbed
+                  embedCode={displayCalendarEmbed}
+                  contact={calendarContact}
+                />
               ) : (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
                   <p className="text-sm font-semibold text-slate-700">

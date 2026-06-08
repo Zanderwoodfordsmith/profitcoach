@@ -136,6 +136,12 @@ export type ContactBossWorkshopBodyProps = {
    * so admins can open any contact shown in the picker.
    */
   adminUnscoped?: boolean;
+  /** When true, session gate is a viewport-centered card (e.g. sidebar hidden on Boss Pro). */
+  centerSessionGate?: boolean;
+  /** Optional picker UI rendered inside the centered session gate. */
+  sessionGateSlot?: React.ReactNode;
+  /** When true, shows a lightweight loading hint under the gate picker. */
+  sessionGateContactsLoading?: boolean;
 };
 
 export function ContactBossWorkshopBody({
@@ -151,6 +157,9 @@ export function ContactBossWorkshopBody({
   playbookReturnTo,
   showProspectMatrix = false,
   adminUnscoped = false,
+  centerSessionGate = false,
+  sessionGateSlot,
+  sessionGateContactsLoading = false,
 }: ContactBossWorkshopBodyProps) {
   const router = useRouter();
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
@@ -716,91 +725,116 @@ export function ContactBossWorkshopBody({
 
   const sessionGateMessage = editingNewPerson
     ? {
-        title: "Add their details",
-        body: "Fill in their name and click Start session in the panel above.",
+        title: centerSessionGate ? "Add someone new" : "Add their details",
+        body: centerSessionGate
+          ? "Enter their details below, then start the session."
+          : "Fill in their name and click Start session in the panel above.",
       }
     : canAddNewPerson
       ? {
-          title: "Start a session",
-          body: "Choose someone from the list above, or select + Add new person to score someone new.",
+          title: centerSessionGate ? "Pick a contact" : "Start a session",
+          body: centerSessionGate
+            ? "Choose someone to score, or add a new person."
+            : "Choose someone from the list above, or select + Add new person or demo to score someone new or run a practice session.",
         }
       : {
-          title: "Select a contact",
-          body: "Choose someone from the list above to start scoring.",
+          title: centerSessionGate ? "Pick a contact" : "Select a contact",
+          body: centerSessionGate
+            ? "Choose someone from your list to start scoring."
+            : "Choose someone from the list above to start scoring.",
         };
 
-  const inner = (
-    <div className="flex w-full flex-col gap-6">
-      {loading && <p className="text-sm text-slate-600">Loading…</p>}
-      {error && <p className="text-sm text-rose-600">{error}</p>}
-      {sessionError && (
-        <p className="text-sm text-rose-600" role="alert">
-          {sessionError}
-        </p>
+  const centeredGateTitle =
+    sessionGateSlot && centerSessionGate && !editingNewPerson
+      ? "Who are you scoring?"
+      : sessionGateMessage.title;
+
+  const sessionGateOverlay =
+    sessionGateActive && (centerSessionGate || !sessionGateSlot) ? (
+      <div
+        className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center bg-slate-900/10 p-4 sm:p-6"
+        aria-hidden={false}
+      >
+        <div
+          className={`pointer-events-auto rounded-xl border border-slate-200 bg-white text-center shadow-xl ${
+            centerSessionGate
+              ? "w-full max-w-lg px-7 py-8 sm:px-8 sm:py-9"
+              : "max-w-md px-7 py-8 sm:max-w-lg sm:px-8 sm:py-9"
+          }`}
+        >
+          <p className="text-sm font-semibold uppercase tracking-wide text-sky-700">
+            BOSS score
+          </p>
+          <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
+            {centeredGateTitle}
+          </h3>
+          {sessionGateSlot ? (
+            <div className="mt-4 text-left">
+              {sessionGateSlot}
+              {centerSessionGate && !editingNewPerson ? (
+                <div className="mt-4 space-y-2 text-sm leading-relaxed text-slate-600">
+                  {sessionGateContactsLoading ? (
+                    <p className="text-xs text-slate-500">Loading your contacts…</p>
+                  ) : null}
+                  <p>
+                    <strong className="text-slate-800">Existing contact</strong> — pick a client or
+                    prospect from the menu above.
+                  </p>
+                  {canAddNewPerson ? (
+                    <p>
+                      <strong className="text-slate-800">New or practice demo</strong> — choose{" "}
+                      <strong>+ Add new person or demo</strong>, enter a name (e.g. Demo Session),
+                      then click <strong>Start session</strong>.
+                    </p>
+                  ) : null}
+                  <p className="text-xs text-slate-500">
+                    Already have a demo account in your list? Select it like any other contact.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-3 text-base leading-relaxed text-slate-600">
+              {sessionGateMessage.body}
+            </p>
+          )}
+        </div>
+      </div>
+    ) : null;
+
+  const workshopContent = !loading && !error && (
+    <>
+      <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
+
+      {showCharts && (
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="flex justify-center">
+              <BossDoughnut scores={matrixAnswers} />
+            </div>
+            <div>
+              <FocusAreas scores={matrixAnswers} variant="full" />
+            </div>
+          </div>
+        </section>
       )}
 
-      {!loading && !error && (
-        <>
-          <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
-
-          {showCharts && (
-            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-              <h2 className="mb-5 text-base font-semibold text-slate-900">Charts</h2>
-              <div className="grid gap-8 md:grid-cols-2">
-                <div className="flex justify-center">
-                  <BossDoughnut scores={matrixAnswers} />
-                </div>
-                <div>
-                  <FocusAreas scores={matrixAnswers} variant="full" />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {showLiveScoringCheckbox ? (
-            <div className="flex justify-end">
-              <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                  checked={workshopMode}
-                  onChange={(e) => setWorkshopMode(e.target.checked)}
-                />
-                Score together
-              </label>
-            </div>
-          ) : null}
-          <section className="relative mt-3">
-            {sessionGateActive ? (
-              <>
-                <div
-                  className="absolute inset-0 z-10 rounded-xl bg-slate-300/50"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none fixed inset-0 z-20 flex items-center justify-center bg-slate-900/10 p-4 sm:p-6"
-                  aria-hidden={false}
-                >
-                  <div className="pointer-events-auto max-w-md rounded-xl border border-slate-200 bg-white px-7 py-8 text-center shadow-xl sm:max-w-lg sm:px-8 sm:py-9">
-                    <p className="text-sm font-semibold uppercase tracking-wide text-sky-700">
-                      BOSS score
-                    </p>
-                    <h3 className="mt-3 text-xl font-semibold text-slate-900 sm:text-2xl">
-                      {sessionGateMessage.title}
-                    </h3>
-                    <p className="mt-3 text-base leading-relaxed text-slate-600">
-                      {sessionGateMessage.body}
-                    </p>
-                  </div>
-                </div>
-              </>
-            ) : null}
-            <div
-              className={
-                sessionGateActive ? "pointer-events-none select-none opacity-55" : undefined
-              }
-            >
-              <BossGridTransposed
+      {showLiveScoringCheckbox ? (
+        <div className="flex justify-end">
+          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+              checked={workshopMode}
+              onChange={(e) => setWorkshopMode(e.target.checked)}
+            />
+            Score together
+          </label>
+        </div>
+      ) : null}
+      <section className="relative mt-3">
+        <BossGridTransposed
                 answers={matrixAnswers}
                 glass
                 glassTheme="light"
@@ -823,10 +857,9 @@ export function ContactBossWorkshopBody({
                   openPlaybookSheetRef.current = open;
                 }}
               />
-            </div>
-          </section>
+      </section>
 
-          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <section
               ref={ownerLevelsCardRef}
               className={`${WORKSHOP_CARD_SHELL} flex flex-col`}
@@ -914,17 +947,41 @@ export function ContactBossWorkshopBody({
             ) : null}
           </div>
 
-          {showProspectMatrix ? (
-            <WorkshopProspectMatrix
-              playbookNotes={playbookNotes}
-              clientName={contact?.full_name}
-              onPlaybookClick={
-                workshopMode && !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
-              }
-            />
-          ) : null}
-        </>
+      {showProspectMatrix ? (
+        <WorkshopProspectMatrix
+          playbookNotes={playbookNotes}
+          clientName={contact?.full_name}
+          onPlaybookClick={
+            workshopMode && !sessionGateActive ? handleProspectMatrixPlaybookClick : undefined
+          }
+        />
+      ) : null}
+    </>
+  );
+
+  const inner = (
+    <div className="relative flex w-full flex-col gap-6">
+      {loading && <p className="text-sm text-slate-600">Loading…</p>}
+      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {sessionError && (
+        <p className="text-sm text-rose-600" role="alert">
+          {sessionError}
+        </p>
       )}
+
+      {workshopContent ? (
+        <div
+          className={
+            sessionGateActive
+              ? "pointer-events-none flex select-none flex-col gap-6 opacity-45"
+              : "flex flex-col gap-6"
+          }
+        >
+          {workshopContent}
+        </div>
+      ) : null}
+
+      {sessionGateOverlay}
     </div>
   );
 

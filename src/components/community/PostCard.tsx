@@ -40,6 +40,7 @@ export function PostCard({
     ? displayNameFromProfile(post.author)
     : "Unknown";
   const [likeBusy, setLikeBusy] = useState(false);
+  const [engagementHoverOpen, setEngagementHoverOpen] = useState(false);
   const [optimisticLikedByMe, setOptimisticLikedByMe] = useState(post.liked_by_me);
   const [optimisticLikeCount, setOptimisticLikeCount] = useState(post.like_count);
 
@@ -127,7 +128,7 @@ export function PostCard({
         }
       }}
       className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${pinnedChromeClass} ${
-        feedCardHasBeenRead
+        feedCardHasBeenRead && !engagementHoverOpen
           ? post.is_pinned
             ? "opacity-[0.55] shadow-[0_1px_2px_rgb(2_132_199/0.18)]"
             : "opacity-[0.55] shadow-sm"
@@ -213,6 +214,7 @@ export function PostCard({
           </div>
           <div className="mt-3" onClick={(e) => e.stopPropagation()}>
             <PostEngagementBar
+              postId={post.id}
               likeCount={optimisticLikeCount}
               commentCount={post.comment_count}
               commentedByMe={post.commented_by_me}
@@ -223,6 +225,7 @@ export function PostCard({
               commentRecencyVariant={commentActivity?.variant ?? null}
               onToggleLike={handleToggleLike}
               onCommentsClick={onOpen}
+              onEngagementHoverChange={setEngagementHoverOpen}
             />
           </div>
         </div>

@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import {
+  appendCalendarContactParams,
+  type CalendarContactParams,
+} from "@/lib/calendarContactParams";
 
 type CalendarEmbedProps = {
   embedCode: string;
   className?: string;
+  contact?: CalendarContactParams | null;
 };
 
 function isAllowedIframeAttr(name: string): boolean {
@@ -23,15 +28,24 @@ function isAllowedIframeAttr(name: string): boolean {
   ].includes(name);
 }
 
-export function CalendarEmbed({ embedCode, className }: CalendarEmbedProps) {
+export function CalendarEmbed({
+  embedCode,
+  className,
+  contact,
+}: CalendarEmbedProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const effectiveEmbedCode = useMemo(
+    () =>
+      contact ? appendCalendarContactParams(embedCode, contact) : embedCode,
+    [embedCode, contact]
+  );
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     container.innerHTML = "";
-    const trimmed = embedCode.trim();
+    const trimmed = effectiveEmbedCode.trim();
     if (!trimmed) return;
 
     const parsed = new DOMParser().parseFromString(trimmed, "text/html");
@@ -82,7 +96,7 @@ export function CalendarEmbed({ embedCode, className }: CalendarEmbedProps) {
     if (!hasIframe) {
       container.innerHTML = "";
     }
-  }, [embedCode]);
+  }, [effectiveEmbedCode]);
 
   return <div ref={containerRef} className={className} />;
 }

@@ -1,4 +1,5 @@
 import type { ProfileRow } from "@/components/community/CommunityFeed";
+import type { CommunityCommentMediaItem } from "@/lib/communityCommentMedia";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
 export type CommunityPostCommentDto = {
@@ -8,6 +9,7 @@ export type CommunityPostCommentDto = {
   body: string;
   created_at: string;
   parent_comment_id: string | null;
+  media: CommunityCommentMediaItem[];
   author: ProfileRow | null;
   like_count: number;
   liked_by_me: boolean;
@@ -27,6 +29,30 @@ const cache = new Map<
 
 export function invalidateCommunityPostCommentsCache(postId: string): void {
   cache.delete(postId);
+}
+
+/** Keep the warm cache in sync after a local insert (avoids refetching the thread). */
+export function appendCommunityPostCommentsCache(
+  postId: string,
+  comment: CommunityPostCommentDto
+): void {
+  const hit = cache.get(postId);
+  if (!hit) {
+    cache.set(postId, {
+      fetchedAt: Date.now(),
+      payload: { comments: [comment], post_author: null },
+    });
+    return;
+  }
+  if (hit.payload.comments.some((c) => c.id === comment.id)) return;
+  const comments = [...hit.payload.comments, comment].sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+  cache.set(postId, {
+    fetchedAt: Date.now(),
+    payload: { ...hit.payload, comments },
+  });
 }
 
 export function getCachedCommunityPostComments(

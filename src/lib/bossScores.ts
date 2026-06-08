@@ -238,6 +238,72 @@ export function computeScoreBreakdown(
   return { green, amber, red, unanswered };
 }
 
+export type AreaFocusItem = {
+  areaId: number;
+  name: string;
+  score: number;
+  maxScore: number;
+  percent: number;
+  worstLevel: number;
+  status: 0 | 1;
+  priority: number;
+};
+
+/** Top priority business areas — ranked by aggregated playbook points (max 20 per area). */
+export function computeAreaFocusPriorities(
+  scores: AnswersMap | null | undefined,
+  limit = 3
+): AreaFocusItem[] {
+  const areaScores = computeAreaScores(scores);
+  const items: AreaFocusItem[] = [];
+
+  for (let areaId = 0; areaId < AREAS.length; areaId++) {
+    const sum = areaScores[areaId] ?? 0;
+    const maxScore = 20;
+    let worstStatus: 0 | 1 | 2 = 2;
+    let worstLevel = 5;
+
+    for (const p of PLAYBOOKS) {
+      if (p.area !== areaId) continue;
+      const v = scores?.[p.ref];
+      if (v !== 0 && v !== 1 && v !== 2) continue;
+      if (v < worstStatus) {
+        worstStatus = v;
+        worstLevel = p.level;
+      } else if (v === worstStatus && p.level < worstLevel) {
+        worstLevel = p.level;
+      }
+    }
+
+    if (worstStatus === 2) continue;
+
+    const areaWeight = FOCUS_AREA_WEIGHTS[areaId] ?? 1.0;
+    const tiebreaker = FOCUS_AREA_TIEBREAKERS[areaId] ?? 0;
+    const statusWeight = worstStatus === 0 ? 3 : 2;
+    const gapWeight = (maxScore - sum) / maxScore;
+    const priority = statusWeight * gapWeight * areaWeight + tiebreaker;
+
+    items.push({
+      areaId,
+      name: AREAS[areaId].name,
+      score: sum,
+      maxScore,
+      percent: Math.round((sum / maxScore) * 100),
+      worstLevel,
+      status: worstStatus as 0 | 1,
+      priority,
+    });
+  }
+
+  items.sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority;
+    if (a.percent !== b.percent) return a.percent - b.percent;
+    return a.areaId - b.areaId;
+  });
+
+  return items.slice(0, limit);
+}
+
 export function computeFocusAreas(scores: AnswersMap | null | undefined): FocusItem[] {
   const items: FocusItem[] = [];
   if (!scores) return items;
@@ -282,16 +348,24 @@ export function buildFakeScores(targetTotal?: number): AnswersMap {
     }
   });
   if (typeof targetTotal === "number" && Number.isFinite(targetTotal)) {
-    const currentTotal = getTotalScore(scores);
-    if (targetTotal < currentTotal) {
-      const extraRefs = PLAYBOOKS.map((p) => p.ref).filter(
-        (ref) => scores[ref] === 2 && !seedRefs.includes(ref)
-      );
-      let i = 0;
-      while (i < extraRefs.length && getTotalScore(scores) > targetTotal) {
-        scores[extraRefs[i]] = 1;
-        i++;
+    const allRefs = PLAYBOOKS.map((p) => p.ref);
+    while (getTotalScore(scores) > targetTotal) {
+      let lowered = false;
+      for (const ref of allRefs) {
+        if (getTotalScore(scores) <= targetTotal) break;
+        const v = scores[ref];
+        if (v === 2 && getTotalScore(scores) - 2 >= targetTotal) {
+          scores[ref] = 0;
+          lowered = true;
+        } else if (v === 2) {
+          scores[ref] = 1;
+          lowered = true;
+        } else if (v === 1) {
+          scores[ref] = 0;
+          lowered = true;
+        }
       }
+      if (!lowered) break;
     }
   }
   return scores;
