@@ -236,3 +236,35 @@ body {
   animation: scorecard-confetti-down cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
 }
 
+@keyframes todo-disintegrate-particle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  14% {
+    opacity: var(--particle-peak-opacity, 0.35);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  48% {
+    opacity: calc(var(--particle-peak-opacity, 0.35) * 0.88);
+    transform: translate(
+        calc(-50% + var(--mid-x, 0px)),
+        calc(-50% + var(--mid-y, 0px))
+      )
+      scale(0.92);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--sx, 0px)),
+        calc(-50% + var(--sy, 0px))
+      )
+      scale(0.65);
+  }
+}
+
+.todo-disintegrate-particle {
+  animation: todo-disintegrate-particle var(--particle-duration, 2.6s) ease-out
+    forwards;
+}
+

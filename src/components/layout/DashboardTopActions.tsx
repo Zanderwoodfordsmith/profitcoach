@@ -21,8 +21,11 @@ import {
   resolveCommunityCategoryId,
 } from "@/lib/adminWinsReplyQueue";
 import {
+  EMPTY_NOTIFICATION_READ_STATE,
+  isNotificationUnread,
   loadNotificationReadState,
   markCommunityNotificationRead,
+  markNotificationSectionRead,
   persistNotificationReadState,
   winNotificationIdForPost,
   type NotificationReadState,
@@ -58,22 +61,6 @@ type NotificationItem = {
 
 const NOTIFICATION_ITEMS_MAX = 40;
 
-const EMPTY_READ_STATE: NotificationReadState = {
-  readIds: {},
-  readAllBefore: null,
-};
-
-function isUnread(
-  item: { id: string; created_at: string },
-  state: NotificationReadState
-): boolean {
-  if (state.readIds[item.id]) return false;
-  if (!state.readAllBefore) return true;
-  return (
-    new Date(item.created_at).getTime() > new Date(state.readAllBefore).getTime()
-  );
-}
-
 function relativeAgo(iso: string): string {
   const now = Date.now();
   const at = new Date(iso).getTime();
@@ -106,7 +93,9 @@ export function DashboardTopActions({
   const [prospectNotifications, setProspectNotifications] = useState<
     ProspectNotificationItem[]
   >([]);
-  const [readState, setReadState] = useState<NotificationReadState>(EMPTY_READ_STATE);
+  const [readState, setReadState] = useState<NotificationReadState>(
+    EMPTY_NOTIFICATION_READ_STATE
+  );
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [loadingProspectNotifications, setLoadingProspectNotifications] =
     useState(false);
@@ -559,7 +548,7 @@ export function DashboardTopActions({
   const communityUnreadCount = useMemo(() => {
     let count = 0;
     for (const n of notifications) {
-      if (isUnread(n, readState)) count += 1;
+      if (isNotificationUnread(n, readState)) count += 1;
     }
     return count;
   }, [notifications, readState]);
@@ -567,22 +556,20 @@ export function DashboardTopActions({
   const prospectsUnreadCount = useMemo(() => {
     let count = 0;
     for (const n of prospectNotifications) {
-      if (isUnread(n, readState)) count += 1;
+      if (isNotificationUnread(n, readState)) count += 1;
     }
     return count;
   }, [prospectNotifications, readState]);
 
   const unreadCount = communityUnreadCount + prospectsUnreadCount;
 
-  const markAllAsRead = useCallback(() => {
-    if (!profile?.id) return;
-    const next: NotificationReadState = {
-      readIds: {},
-      readAllBefore: new Date().toISOString(),
-    };
-    setReadState(next);
-    persistNotificationReadState(profile.id, next);
-  }, [profile?.id]);
+  const markSectionAsRead = useCallback(
+    (target: NotificationSection) => {
+      if (!profile?.id) return;
+      setReadState(markNotificationSectionRead(profile.id, target));
+    },
+    [profile?.id]
+  );
 
   const markOneAsRead = useCallback(
     (id: string) => {
@@ -624,15 +611,29 @@ export function DashboardTopActions({
         {notificationsOpen ? (
           <div className="absolute right-0 mt-2 w-[min(92vw,34rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
             <div className="border-b border-slate-200 px-4 pt-3 pb-0">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                 <p className="text-lg font-semibold text-slate-900">Notifications</p>
-                <button
-                  type="button"
-                  onClick={markAllAsRead}
-                  className="shrink-0 text-sm font-medium text-sky-700 hover:text-sky-800"
-                >
-                  Mark all as read
-                </button>
+                <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+                  <button
+                    type="button"
+                    onClick={() => markSectionAsRead("community")}
+                    disabled={communityUnreadCount === 0}
+                    className="text-sm font-medium text-sky-700 hover:text-sky-800 disabled:cursor-default disabled:text-slate-400 disabled:hover:text-slate-400"
+                  >
+                    Mark community as read
+                  </button>
+                  <span aria-hidden className="text-slate-300">
+                    ·
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => markSectionAsRead("prospects")}
+                    disabled={prospectsUnreadCount === 0}
+                    className="text-sm font-medium text-sky-700 hover:text-sky-800 disabled:cursor-default disabled:text-slate-400 disabled:hover:text-slate-400"
+                  >
+                    Mark prospects as read
+                  </button>
+                </div>
               </div>
               <div className="mt-2 flex items-end justify-between gap-3">
                 <nav
@@ -730,7 +731,7 @@ export function DashboardTopActions({
                 ) : (
                   <ul>
                     {filteredNotifications.map((item) => {
-                      const unread = isUnread(item, readState);
+                      const unread = isNotificationUnread(item, readState);
                       const actorInitials = profileInitialsFromName(item.actor_name);
                       return (
                         <li key={item.id} className="border-b border-slate-200 last:border-b-0">
@@ -785,7 +786,7 @@ export function DashboardTopActions({
               ) : (
                 <ul>
                   {prospectNotifications.map((item) => {
-                    const unread = isUnread(item, readState);
+                    const unread = isNotificationUnread(item, readState);
                     const contactInitials = profileInitialsFromName(item.contact_name);
                     const actionText = item.title.replace(item.contact_name, "").trim();
                     return (

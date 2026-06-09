@@ -8,6 +8,7 @@ import {
   PageHeaderUnderlineTabs,
   StickyPageHeader,
 } from "@/components/layout";
+import { SwipeToCompleteTodoList } from "@/components/admin/SwipeToCompleteTodoList";
 import {
   BossDashboardSettings,
   type BossDashboardSettingsTabId,
@@ -98,6 +99,7 @@ const ACCOUNT_TAB_IDS = [
   "admins",
   "links",
   "site",
+  "mobile",
 ] as const;
 
 type AccountTabId = (typeof ACCOUNT_TAB_IDS)[number];
@@ -246,6 +248,7 @@ function AdminAccountPageContent() {
     { id: "admins", label: "Admin users" },
     { id: "links", label: "Links" },
     { id: "site", label: "Site tools" },
+    { id: "mobile", label: "Mobile test" },
   ];
 
   const settingsEmbedTab: BossDashboardSettingsTabId | null =
@@ -492,6 +495,22 @@ function AdminAccountPageContent() {
               })}
             </ul>
           </div>
+        </div>
+      ) : null}
+
+      {!checkingRole && !error && activeTab === "mobile" ? (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-slate-600">
+            Swipe right to complete, left to delete. Also available at{" "}
+            <Link
+              href="/admin/mobile-test"
+              className="text-sky-600 underline hover:text-sky-700"
+            >
+              /admin/mobile-test
+            </Link>
+            .
+          </p>
+          <SwipeToCompleteTodoList />
         </div>
       ) : null}
 
