@@ -1372,7 +1372,11 @@ export default function AdminPage() {
         }),
       });
 
-      const body = await res.json().catch(() => ({}));
+      const body = await res.json().catch(() => ({})) as {
+        error?: string;
+        emailSent?: boolean;
+        emailWarning?: string;
+      };
 
       if (!res.ok) {
         throw new Error(body?.error ?? "Unable to create coach.");
@@ -1381,7 +1385,11 @@ export default function AdminPage() {
       setCreateSuccess(
         sendInvite
           ? "Coach created and invite email requested."
-          : "Coach created successfully."
+          : body.emailSent
+            ? "Coach created and welcome email sent."
+            : body.emailWarning
+              ? `Coach created, but the welcome email could not be sent: ${body.emailWarning}`
+              : "Coach created successfully."
       );
       setNewFullName("");
       setNewBusinessName("");
@@ -2273,8 +2281,8 @@ export default function AdminPage() {
                     className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                   />
                   <p className="text-[0.7rem] text-slate-500">
-                    Share this password with the coach out of band. They
-                    can change it later.
+                    We&apos;ll email the coach their login details when their
+                    account is created.
                   </p>
                 </div>
               )}

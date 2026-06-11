@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { getAppBaseUrl } from "@/lib/appBaseUrl";
+import { buildCoachWelcomeEmail } from "@/lib/email/buildCoachWelcomeEmail";
+import { sendTransactionalEmail } from "@/lib/email/sendTransactionalEmail";
 import { deriveCurrentLevelId } from "@/lib/ladder";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import { splitFullName } from "@/lib/splitFullName";
@@ -524,8 +527,40 @@ export async function POST(request: Request) {
       throw new Error("Unable to create coach record.");
     }
 
+    let emailSent = false;
+    let emailWarning: string | null = null;
+
+    if (!invite && password) {
+      const welcomeEmail = buildCoachWelcomeEmail({
+        fullName,
+        email,
+        password,
+        slug,
+        appBaseUrl: getAppBaseUrl(request),
+      });
+      const emailResult = await sendTransactionalEmail({
+        to: email,
+        ...welcomeEmail,
+      });
+      if (emailResult.ok) {
+        emailSent = true;
+      } else {
+        emailWarning = emailResult.error;
+        console.error(
+          "admin/coaches welcome email failed:",
+          emailResult.error
+        );
+      }
+    }
+
     return NextResponse.json(
-      { ok: true, coachUserId: userId, slug },
+      {
+        ok: true,
+        coachUserId: userId,
+        slug,
+        emailSent,
+        emailWarning,
+      },
       { status: 201 }
     );
   } catch (err: any) {
