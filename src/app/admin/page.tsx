@@ -744,7 +744,6 @@ export default function AdminPage() {
   const [newBusinessName, setNewBusinessName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newSlug, setNewSlug] = useState("");
-  const [newPassword, setNewPassword] = useState("");
   const [coachSearchTerm, setCoachSearchTerm] = useState("");
   const [conferenceFilter, setConferenceFilter] =
     useState<ConferenceFilter>("all");
@@ -775,7 +774,6 @@ export default function AdminPage() {
   const columnsMenuRef = useRef<HTMLDivElement | null>(null);
   const filtersMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
-  const [sendInvite, setSendInvite] = useState(true);
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
   );
@@ -1367,35 +1365,22 @@ export default function AdminPage() {
           businessName: newBusinessName,
           email: newEmail,
           slug: newSlug,
-          invite: sendInvite,
-          password: sendInvite ? undefined : newPassword,
         }),
       });
 
       const body = await res.json().catch(() => ({})) as {
         error?: string;
-        emailSent?: boolean;
-        emailWarning?: string;
       };
 
       if (!res.ok) {
         throw new Error(body?.error ?? "Unable to create coach.");
       }
 
-      setCreateSuccess(
-        sendInvite
-          ? "Coach created and invite email requested."
-          : body.emailSent
-            ? "Coach created and welcome email sent."
-            : body.emailWarning
-              ? `Coach created, but the welcome email could not be sent: ${body.emailWarning}`
-              : "Coach created successfully."
-      );
+      setCreateSuccess("Coach created and invite email sent.");
       setNewFullName("");
       setNewBusinessName("");
       setNewEmail("");
       setNewSlug("");
-      setNewPassword("");
 
       // Reload coaches list
       const listRes = await fetch("/api/admin/coaches", {
@@ -2251,41 +2236,6 @@ export default function AdminPage() {
                 <code>/landing/a?coach=alex-smith</code>. Use only lowercase
                 letters, numbers, and hyphens.
               </p>
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="inline-flex cursor-pointer items-center gap-2 text-xs text-slate-700">
-                  <input
-                    type="checkbox"
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                    checked={sendInvite}
-                    onChange={(e) => setSendInvite(e.target.checked)}
-                  />
-                  <span>Send invite email so the coach sets their own password</span>
-                </label>
-              </div>
-              {!sendInvite && (
-                <div className="space-y-1 md:max-w-xs">
-                  <label
-                    htmlFor="coachPassword"
-                    className="block text-xs font-medium text-slate-700"
-                  >
-                    Temporary password
-                  </label>
-                  <input
-                    id="coachPassword"
-                    type="password"
-                    required={!sendInvite}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                  />
-                  <p className="text-[0.7rem] text-slate-500">
-                    We&apos;ll email the coach their login details when their
-                    account is created.
-                  </p>
-                </div>
-              )}
             </div>
             <div className="mt-2 flex flex-col gap-2 md:col-span-2 md:flex-row md:items-center md:justify-between">
               <div className="space-x-2">

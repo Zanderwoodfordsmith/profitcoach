@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAppBaseUrl } from "@/lib/appBaseUrl";
-import { buildCoachWelcomeEmail } from "@/lib/email/buildCoachWelcomeEmail";
-import { sendTransactionalEmail } from "@/lib/email/sendTransactionalEmail";
 import { deriveCurrentLevelId } from "@/lib/ladder";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
+import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
 import { splitFullName } from "@/lib/splitFullName";
 import {
   hasCalendarEmbed,
@@ -28,12 +26,6 @@ type Body = {
   businessName?: string;
   email: string;
   slug: string;
-  /**
-   * If true, send a Supabase invite email so the coach sets
-   * their own password. If false, password must be provided.
-   */
-  invite: boolean;
-  password?: string;
 };
 
 async function requireAdmin(request: Request): Promise<
@@ -430,22 +422,10 @@ export async function POST(request: Request) {
   const businessName = body.businessName?.trim() || null;
   const email = body.email?.trim().toLowerCase();
   const slug = body.slug?.toLowerCase().trim();
-  const invite = !!body.invite;
-  const password = body.password;
 
   if (!fullName || !email || !slug) {
     return NextResponse.json(
       { error: "Please fill in name, email, and slug." },
-      { status: 400 }
-    );
-  }
-
-  if (!invite && !password) {
-    return NextResponse.json(
-      {
-        error:
-          "Password is required when not sending an invite email.",
-      },
       { status: 400 }
     );
   }
@@ -463,35 +443,17 @@ export async function POST(request: Request) {
   try {
     let userId: string | null = null;
 
-    if (invite) {
-      const {
-        data,
-        error: inviteError,
-      } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
+    const {
+      data,
+      error: inviteError,
+    } = await supabaseAdmin.auth.admin.inviteUserByEmail(email);
 
-      if (inviteError || !data?.user) {
-        throw new Error(
-          inviteError?.message ?? "Unable to send invite email."
-        );
-      }
-      userId = data.user.id;
-    } else {
-      const {
-        data,
-        error: createError,
-      } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: password!,
-        email_confirm: true,
-      });
-
-      if (createError || !data.user) {
-        throw new Error(
-          createError?.message ?? "Unable to create user account."
-        );
-      }
-      userId = data.user.id;
+    if (inviteError || !data?.user) {
+      throw new Error(
+        inviteError?.message ?? "Unable to send invite email."
+      );
     }
+    userId = data.user.id;
 
     if (!userId) {
       throw new Error("User id missing after creating coach account.");
@@ -499,68 +461,21 @@ export async function POST(request: Request) {
 
     const { first_name, last_name } = splitFullName(fullName);
 
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .insert({
-        id: userId,
-        role: "coach",
-        full_name: fullName,
-        first_name,
-        last_name,
-        coach_business_name: businessName,
-      });
+    const coachRecordsError = await createCoachProfileAndRow({
+      userId,
+      fullName,
+      firstName: first_name,
+      lastName: last_name,
+      businessName: businessName,
+      slug,
+    });
 
-    if (profileError) {
-      throw new Error("Unable to create coach profile.");
-    }
-
-    const { error: coachError } = await supabaseAdmin
-      .from("coaches")
-      .insert({ id: userId, slug });
-
-    if (coachError) {
-      if ((coachError as any).code === "23505") {
-        throw new Error(
-          "That slug is already in use. Please choose another."
-        );
-      }
-      throw new Error("Unable to create coach record.");
-    }
-
-    let emailSent = false;
-    let emailWarning: string | null = null;
-
-    if (!invite && password) {
-      const welcomeEmail = buildCoachWelcomeEmail({
-        fullName,
-        email,
-        password,
-        slug,
-        appBaseUrl: getAppBaseUrl(request),
-      });
-      const emailResult = await sendTransactionalEmail({
-        to: email,
-        ...welcomeEmail,
-      });
-      if (emailResult.ok) {
-        emailSent = true;
-      } else {
-        emailWarning = emailResult.error;
-        console.error(
-          "admin/coaches welcome email failed:",
-          emailResult.error
-        );
-      }
+    if (coachRecordsError) {
+      throw new Error(coachRecordsError);
     }
 
     return NextResponse.json(
-      {
-        ok: true,
-        coachUserId: userId,
-        slug,
-        emailSent,
-        emailWarning,
-      },
+      { ok: true, coachUserId: userId, slug },
       { status: 201 }
     );
   } catch (err: any) {

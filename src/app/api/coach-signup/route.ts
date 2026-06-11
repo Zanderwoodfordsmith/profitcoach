@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { looksLikeBotSignup } from "@/lib/coachSignupGuard";
+import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -62,29 +63,17 @@ export async function POST(request: Request) {
     const userId = userData.user.id;
     const { first_name, last_name } = splitFullName(fullName);
 
-    // Create profile with coach role
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .insert({
-        id: userId,
-        role: "coach",
-        full_name: fullName,
-        first_name,
-        last_name,
-        coach_business_name: businessName,
-      });
-
-    if (profileError) {
-      throw new Error("Unable to create coach profile.");
-    }
-
-    // Create coach row with slug
-    const coachError = await supabaseInitCoach(
+    const coachError = await createCoachProfileAndRow({
       userId,
-      slug
-    );
+      fullName,
+      firstName: first_name,
+      lastName: last_name,
+      businessName: businessName || null,
+      slug,
+    });
 
     if (coachError) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
       throw new Error(coachError);
     }
 
@@ -95,18 +84,5 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-}
-
-async function supabaseInitCoach(userId: string, slug: string) {
-  const { error } = await supabaseAdmin
-    .from("coaches")
-    .insert({ id: userId, slug });
-  if (error) {
-    if (error.code === "23505") {
-      return "That slug is already in use. Please choose another.";
-    }
-    return "Unable to create coach record.";
-  }
-  return null;
 }
 
