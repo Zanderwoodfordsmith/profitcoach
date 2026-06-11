@@ -13,6 +13,10 @@ import {
   getTotalScore,
 } from "./bossScores";
 
+import { resolveAnthropicModel } from "@/lib/anthropicModel";
+
+const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+
 const INSIGHT_SYSTEM_PROMPT = `You are the coaching voice of the Boss Dashboard. You write short coaching insights for business owners looking at their Profit System scorecard.
 
 YOUR JOB
@@ -302,9 +306,6 @@ function parseInsightsJson(raw: string): StoredInsights | null {
   }
 }
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
-
 export async function generateInsights(answers: AnswersMap): Promise<StoredInsights> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey?.trim()) {
@@ -323,7 +324,7 @@ export async function generateInsights(answers: AnswersMap): Promise<StoredInsig
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: resolveAnthropicModel(),
         max_tokens: 4096,
         system: INSIGHT_SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],

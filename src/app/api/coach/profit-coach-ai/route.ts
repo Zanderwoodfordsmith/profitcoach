@@ -10,13 +10,12 @@ import {
   loadCoachAiContextRow,
   loadCompassSummaryForUser,
 } from "@/lib/profitCoachAi/loadCoachPromptContext";
+import { resolveAnthropicModel } from "@/lib/anthropicModel";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { requireCoachEffectiveId } from "./_auth";
 
 export const runtime = "nodejs";
-
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
 type ClientMessage = { role: "user" | "assistant"; content: string };
 
@@ -164,7 +163,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
+  const model = resolveAnthropicModel();
   const anthropic = new Anthropic({ apiKey });
 
   const stream = anthropic.messages.stream({

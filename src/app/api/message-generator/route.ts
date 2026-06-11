@@ -1,11 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 
+import { resolveAnthropicModel } from "@/lib/anthropicModel";
 import { buildSystemPrompt } from "@/lib/messageGeneratorPrompt";
 
 export const runtime = "nodejs";
-
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
 
 type ClientMessage = { role: "user" | "assistant"; content: string };
 
@@ -78,7 +77,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const model = process.env.ANTHROPIC_MODEL ?? DEFAULT_MODEL;
+  const model = resolveAnthropicModel();
 
   const anthropic = new Anthropic({ apiKey });
 

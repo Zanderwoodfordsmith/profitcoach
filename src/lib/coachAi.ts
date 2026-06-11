@@ -3,8 +3,9 @@
  * Separate from insightGenerator (Insight AI); used for client-facing coaching conversations.
  */
 
+import { resolveAnthropicModel } from "@/lib/anthropicModel";
+
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
 
 export type SectionContext = {
   tab: "levels" | "pillars" | "areas";
@@ -99,7 +100,7 @@ export async function getAssistantReply(
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: resolveAnthropicModel(),
         max_tokens: 4096,
         system: systemMessage,
         messages: anthropicMessages,
