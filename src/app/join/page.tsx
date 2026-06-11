@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AuthSplitShell,
   authInputClassName,
@@ -10,13 +10,10 @@ import {
 } from "@/components/auth/AuthSplitShell";
 
 /**
- * Sendable program link: creates the same coach account as /signup (coach role).
- * Share as /join?key=YOUR_COACH_SIGNUP_SECRET
+ * Program join page: creates the same coach account as /signup (coach role).
  */
-function ProgramJoinPage() {
+export default function ProgramJoinPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const signupKey = searchParams.get("key")?.trim() ?? "";
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
@@ -42,7 +39,6 @@ function ProgramJoinPage() {
           email,
           password,
           slug,
-          signupKey,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -77,12 +73,6 @@ function ProgramJoinPage() {
         </p>
       }
     >
-      {!signupKey ? (
-        <p className="text-sm leading-relaxed text-slate-600">
-          Coach signup is by invitation only. Use the program join link you were
-          sent from your admin.
-        </p>
-      ) : (
       <form onSubmit={handleSubmit} className="space-y-4 text-sm">
         <div className="space-y-1.5">
           <label htmlFor="fullName" className={authLabelClassName}>
@@ -178,24 +168,6 @@ function ProgramJoinPage() {
           {loading ? "Creating account…" : "Create account"}
         </button>
       </form>
-      )}
     </AuthSplitShell>
-  );
-}
-
-export default function ProgramJoinPageWithSuspense() {
-  return (
-    <Suspense
-      fallback={
-        <AuthSplitShell
-          title="Create your coach account"
-          subtitle="One login for your Signature self-evaluation and your Profit Coach workspace."
-        >
-          <p className="text-sm text-slate-600">Loading…</p>
-        </AuthSplitShell>
-      }
-    >
-      <ProgramJoinPage />
-    </Suspense>
   );
 }

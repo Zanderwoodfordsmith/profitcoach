@@ -42,12 +42,12 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
   {
     href: "/join",
     label: "Program join",
-    hint: "Coach signup via program link (?key= from COACH_SIGNUP_SECRET)",
+    hint: "Open coach signup (same flow as /signup)",
   },
   {
     href: "/signup",
     label: "Signup",
-    hint: "Profit Coach coach signup (?key= from COACH_SIGNUP_SECRET)",
+    hint: "Open coach signup",
   },
   {
     href: "/admin/client-success",

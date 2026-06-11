@@ -3,7 +3,6 @@ type SignupFields = {
   businessName?: string;
   email: string;
   slug: string;
-  signupKey?: string;
 };
 
 function dotCountInEmailLocalPart(email: string): number {
@@ -35,16 +34,4 @@ export function looksLikeBotSignup(fields: SignupFields): boolean {
   if (looksLikeRandomBotString(fields.slug)) return true;
 
   return false;
-}
-
-export function validateCoachSignupSecret(signupKey: string | undefined): string | null {
-  const expected = process.env.COACH_SIGNUP_SECRET?.trim();
-  if (!expected) {
-    return "Coach signup is not configured. Please contact support.";
-  }
-  const provided = signupKey?.trim();
-  if (!provided || provided !== expected) {
-    return "Invalid or missing signup link. Please use the link you were sent.";
-  }
-  return null;
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AuthSplitShell,
   authInputClassName,
@@ -9,10 +9,8 @@ import {
   authPrimaryButtonClassName,
 } from "@/components/auth/AuthSplitShell";
 
-function CoachSignupPage() {
+export default function CoachSignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const signupKey = searchParams.get("key")?.trim() ?? "";
   const [fullName, setFullName] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,7 +37,6 @@ function CoachSignupPage() {
           email,
           password,
           slug,
-          signupKey,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -76,12 +73,6 @@ function CoachSignupPage() {
         </p>
       }
     >
-      {!signupKey ? (
-        <p className="text-sm leading-relaxed text-slate-600">
-          Coach signup is by invitation only. Use the signup link you were sent
-          from your program admin.
-        </p>
-      ) : (
       <form onSubmit={handleSubmit} className="space-y-4 text-sm">
         <div className="space-y-1.5">
           <label htmlFor="fullName" className={authLabelClassName}>
@@ -188,24 +179,6 @@ function CoachSignupPage() {
           {loading ? "Creating account…" : "Create coach account"}
         </button>
       </form>
-      )}
     </AuthSplitShell>
-  );
-}
-
-export default function CoachSignupPageWithSuspense() {
-  return (
-    <Suspense
-      fallback={
-        <AuthSplitShell
-          title="Create your coach account"
-          subtitle="Set up your Profit Coach profile in a few steps."
-        >
-          <p className="text-sm text-slate-600">Loading…</p>
-        </AuthSplitShell>
-      }
-    >
-      <CoachSignupPage />
-    </Suspense>
   );
 }
