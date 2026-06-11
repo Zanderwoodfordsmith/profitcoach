@@ -3,8 +3,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 type CreateCoachRecordsInput = {
   userId: string;
   fullName: string;
-  firstName: string;
-  lastName: string;
+  firstName: string | null;
+  lastName: string | null;
   businessName: string | null;
   slug: string;
 };
