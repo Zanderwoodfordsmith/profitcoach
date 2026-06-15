@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { countLandingStatActors } from "@/lib/landingActors";
 import {
   computeLandingAnalytics,
   type LandingEventRow,
@@ -69,5 +70,20 @@ export async function GET(request: Request) {
 
   const analytics = computeLandingAnalytics((events ?? []) as LandingEventRow[]);
 
-  return NextResponse.json({ ...analytics, coachSlug });
+  const [optIns, started, finished] = await Promise.all([
+    countLandingStatActors(coachSlug, coachId, "opt_in", from, to),
+    countLandingStatActors(coachSlug, coachId, "start", from, to),
+    countLandingStatActors(coachSlug, coachId, "finish", from, to),
+  ]);
+
+  return NextResponse.json({
+    ...analytics,
+    totals: {
+      ...analytics.totals,
+      optIns,
+      started,
+      finished,
+    },
+    coachSlug,
+  });
 }

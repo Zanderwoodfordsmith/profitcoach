@@ -791,6 +791,9 @@ export function BossDashboardSettings({
       {activeTab === "funnel" ? (
         <FunnelSettingsTab
           appOrigin={appOrigin}
+          prospectsHref={
+            variant === "admin" ? "/admin/prospects" : "/coach/prospects"
+          }
           coachSlug={coachSlug}
           onCoachSlugChange={setCoachSlug}
           landingEyebrow={landingEyebrow}

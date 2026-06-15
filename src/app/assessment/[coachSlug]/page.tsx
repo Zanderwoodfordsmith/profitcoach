@@ -231,6 +231,8 @@ export default function ScorecardAssessmentPage({
   useEffect(() => {
     if (!isFromLandingFunnel || startTracked.current) return;
     startTracked.current = true;
+    const session = readLandingContactSession();
+    const merged = mergeAssessmentContactWithSession(urlContact, session);
     fetch("/api/landing/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -238,9 +240,10 @@ export default function ScorecardAssessmentPage({
         variant: landingVariant,
         coach_slug: trackCoachSlug,
         event_type: "start",
+        email: merged.email,
       }),
     }).catch(() => {});
-  }, [isFromLandingFunnel, landingVariant, trackCoachSlug]);
+  }, [isFromLandingFunnel, landingVariant, trackCoachSlug, urlContact]);
 
   useEffect(() => {
     if (!isFromLandingFunnel) return;

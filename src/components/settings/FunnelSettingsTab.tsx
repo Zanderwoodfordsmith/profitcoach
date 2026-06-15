@@ -498,6 +498,7 @@ function CrmLeadCaptureFields({
 
 export type FunnelSettingsTabProps = {
   appOrigin: string;
+  prospectsHref?: string;
   coachSlug: string;
   onCoachSlugChange: (value: string) => void;
   landingEyebrow: string;
@@ -520,6 +521,7 @@ export type FunnelSettingsTabProps = {
 
 export function FunnelSettingsTab({
   appOrigin,
+  prospectsHref = "/coach/prospects",
   coachSlug,
   onCoachSlugChange,
   landingEyebrow,
@@ -716,6 +718,23 @@ export function FunnelSettingsTab({
               title="Boss Pro"
               description="Full diagnostic — 50 questions across all playbooks."
             >
+              <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+                <p className="font-medium">No shareable Boss Pro link here</p>
+                <p className="mt-1 leading-relaxed text-rose-800">
+                  Boss Pro has no landing page, so there is not a single URL to
+                  copy on this page. Use{" "}
+                  <span className="font-medium">Personalise</span> below to
+                  generate a link for someone specific, or open{" "}
+                  <Link
+                    href={prospectsHref}
+                    className="font-medium text-rose-900 underline hover:text-rose-950"
+                  >
+                    Prospects
+                  </Link>{" "}
+                  and click <span className="font-medium">Get link</span> in the
+                  Boss Pro column.
+                </p>
+              </div>
               <LinkPreviewRow
                 label="Assessment"
                 href={assessmentProPath}

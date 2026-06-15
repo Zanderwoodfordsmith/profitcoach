@@ -231,7 +231,7 @@ export default function LandingVariantPage() {
     setFormStep(3);
   }
 
-  function handleStep3Submit(e: React.FormEvent) {
+  async function handleStep3Submit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
     const phoneVal = phone.trim();
@@ -243,6 +243,31 @@ export default function LandingVariantPage() {
       : "";
     const fullName = [first, last].filter(Boolean).join(" ");
     setSubmitting(true);
+    // Capture the lead first so opt-in events can be linked to a contact.
+    let contactId: string | null = null;
+    try {
+      const captureRes = await fetch("/api/leads/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          coachSlug: coachSlug || null,
+          assessment_type: "boss_scorecard",
+          contact: {
+            first_name: first || undefined,
+            last_name: last || undefined,
+            full_name: fullName || undefined,
+            email: emailVal,
+            phone: fullPhone || undefined,
+          },
+        }),
+      });
+      const captureBody = (await captureRes.json().catch(() => ({}))) as {
+        contact_id?: string | null;
+      };
+      contactId = captureBody.contact_id ?? null;
+    } catch {
+      // Never block the funnel on lead capture.
+    }
     fetch("/api/landing/track", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -250,23 +275,8 @@ export default function LandingVariantPage() {
         variant: trackVariant,
         coach_slug: trackCoachSlug,
         event_type: "opt_in",
-      }),
-    }).catch(() => {});
-    // Re-fire lead capture now that we also have phone — same contact_id
-    // gets returned, so downstream webhook consumers can dedupe.
-    fetch("/api/leads/capture", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        coachSlug: coachSlug || null,
-        assessment_type: "boss_scorecard",
-        contact: {
-          first_name: first || undefined,
-          last_name: last || undefined,
-          full_name: fullName || undefined,
-          email: emailVal,
-          phone: fullPhone || undefined,
-        },
+        contact_id: contactId,
+        email: emailVal || null,
       }),
     }).catch(() => {});
     try {

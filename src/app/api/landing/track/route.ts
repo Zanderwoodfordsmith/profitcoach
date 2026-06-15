@@ -9,7 +9,35 @@ type Body = {
   session_id?: string | null;
   contact_id?: string | null;
   assessment_id?: string | null;
+  email?: string | null;
 };
+
+async function resolveContactIdForLandingEvent(
+  coachSlug: string | null,
+  contactId: string | null,
+  email: string | null
+): Promise<string | null> {
+  if (contactId) return contactId;
+  const normalizedEmail = email?.trim().toLowerCase() || null;
+  if (!normalizedEmail || !coachSlug) return null;
+
+  const { data: coach } = await supabaseAdmin
+    .from("coaches")
+    .select("id")
+    .eq("slug", coachSlug)
+    .maybeSingle();
+
+  if (!coach?.id) return null;
+
+  const { data: contact } = await supabaseAdmin
+    .from("contacts")
+    .select("id")
+    .eq("coach_id", coach.id)
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  return (contact?.id as string | undefined) ?? null;
+}
 
 export async function POST(request: Request) {
   const body = (await request.json()) as Body;
@@ -39,8 +67,13 @@ export async function POST(request: Request) {
         ? body.coach_slug.trim() || null
         : null;
   const session_id = typeof body.session_id === "string" ? body.session_id.trim() || null : null;
-  const contact_id = body.contact_id ?? null;
   const assessment_id = body.assessment_id ?? null;
+  const email = typeof body.email === "string" ? body.email.trim() || null : null;
+  const contact_id = await resolveContactIdForLandingEvent(
+    coach_slug,
+    body.contact_id ?? null,
+    email
+  );
 
   try {
     const testId = await resolveLandingEventTestId();
