@@ -107,6 +107,7 @@ export function DashboardTopActions({
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const communityHref = variant === "coach" ? "/coach/community" : "/admin/community";
   const prospectsHref = variant === "coach" ? "/coach/prospects" : "/admin/prospects";
+  const prospectsEnabled = variant === "coach";
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -483,6 +484,10 @@ export function DashboardTopActions({
   }, [communityHref, profile?.id, variant]);
 
   const loadProspectNotifications = useCallback(async () => {
+    if (!prospectsEnabled) {
+      setProspectNotifications([]);
+      return;
+    }
     const uid = profile?.id;
     if (!uid) return;
     setLoadingProspectNotifications(true);
@@ -510,18 +515,22 @@ export function DashboardTopActions({
     } finally {
       setLoadingProspectNotifications(false);
     }
-  }, [profile?.id]);
+  }, [profile?.id, prospectsEnabled]);
 
   useEffect(() => {
     if (!profile?.id) return;
     void loadNotifications();
-    void loadProspectNotifications();
+    if (prospectsEnabled) {
+      void loadProspectNotifications();
+    }
     const handle = window.setInterval(() => {
       void loadNotifications();
-      void loadProspectNotifications();
+      if (prospectsEnabled) {
+        void loadProspectNotifications();
+      }
     }, 60_000);
     return () => window.clearInterval(handle);
-  }, [loadNotifications, loadProspectNotifications, profile?.id]);
+  }, [loadNotifications, loadProspectNotifications, profile?.id, prospectsEnabled]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -554,12 +563,13 @@ export function DashboardTopActions({
   }, [notifications, readState]);
 
   const prospectsUnreadCount = useMemo(() => {
+    if (!prospectsEnabled) return 0;
     let count = 0;
     for (const n of prospectNotifications) {
       if (isNotificationUnread(n, readState)) count += 1;
     }
     return count;
-  }, [prospectNotifications, readState]);
+  }, [prospectNotifications, readState, prospectsEnabled]);
 
   const unreadCount = communityUnreadCount + prospectsUnreadCount;
 
@@ -622,17 +632,21 @@ export function DashboardTopActions({
                   >
                     Mark community as read
                   </button>
-                  <span aria-hidden className="text-slate-300">
-                    ·
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => markSectionAsRead("prospects")}
-                    disabled={prospectsUnreadCount === 0}
-                    className="text-sm font-medium text-sky-700 hover:text-sky-800 disabled:cursor-default disabled:text-slate-400 disabled:hover:text-slate-400"
-                  >
-                    Mark prospects as read
-                  </button>
+                  {prospectsEnabled ? (
+                    <>
+                      <span aria-hidden className="text-slate-300">
+                        ·
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => markSectionAsRead("prospects")}
+                        disabled={prospectsUnreadCount === 0}
+                        className="text-sm font-medium text-sky-700 hover:text-sky-800 disabled:cursor-default disabled:text-slate-400 disabled:hover:text-slate-400"
+                      >
+                        Mark prospects as read
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               </div>
               <div className="mt-2 flex items-end justify-between gap-3">
@@ -643,7 +657,9 @@ export function DashboardTopActions({
                   {(
                     [
                       ["community", "Community", communityUnreadCount],
-                      ["prospects", "Prospects", prospectsUnreadCount],
+                      ...(prospectsEnabled
+                        ? ([["prospects", "Prospects", prospectsUnreadCount]] as const)
+                        : []),
                     ] as const
                   ).map(([value, label, unread]) => (
                     <button
@@ -721,7 +737,7 @@ export function DashboardTopActions({
             </div>
 
             <div className="max-h-[32rem] overflow-y-auto">
-              {section === "community" ? (
+              {section === "community" || !prospectsEnabled ? (
                 loadingNotifications ? (
                   <p className="px-4 py-3 text-sm text-slate-500">Loading...</p>
                 ) : filteredNotifications.length === 0 ? (

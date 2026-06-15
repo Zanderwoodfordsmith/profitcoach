@@ -4,7 +4,7 @@ import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { buildProspectNotifications } from "@/lib/prospectNotifications";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-async function requireCoachOrAdmin(request: Request) {
+async function requireCoach(request: Request) {
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.slice("Bearer ".length)
@@ -40,7 +40,7 @@ async function requireCoachOrAdmin(request: Request) {
     .maybeSingle();
 
   const role = profile?.role ?? null;
-  if (role !== "coach" && role !== "admin") {
+  if (role !== "coach") {
     return {
       error: "Not authorized." as const,
       role,
@@ -49,31 +49,16 @@ async function requireCoachOrAdmin(request: Request) {
     };
   }
 
-  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
-  const coachId =
-    role === "admin" && impersonateId
-      ? impersonateId
-      : role === "coach"
-        ? user.id
-        : null;
-
-  if (role === "coach" && !coachId) {
-    return {
-      error: "Not authorized." as const,
-      role,
-      coachId: null,
-      prospectsHref: null,
-    };
-  }
-
-  const prospectsHref =
-    role === "admin" && !impersonateId ? "/admin/prospects" : "/coach/prospects";
-
-  return { error: null, role, coachId, prospectsHref };
+  return {
+    error: null,
+    role,
+    coachId: user.id,
+    prospectsHref: "/coach/prospects",
+  };
 }
 
 export async function GET(request: Request) {
-  const auth = await requireCoachOrAdmin(request);
+  const auth = await requireCoach(request);
   if (auth.error) {
     return NextResponse.json(
       { error: auth.error },
@@ -109,15 +94,9 @@ export async function GET(request: Request) {
             .order("created_at", { ascending: false })
             .limit(120);
 
-          if (auth.coachId) {
-            query = query.eq("coach_id", auth.coachId);
-          }
-
-          return query;
+          return query.eq("coach_id", auth.coachId!);
         },
-        auth.role === "admin" && !auth.coachId
-          ? `coach_id, ${baseColumns}`
-          : baseColumns,
+        baseColumns,
         optionalColumns
       );
 

@@ -2,7 +2,7 @@
   "ref": "1.5",
   "level": 1,
   "area": 5,
-  "name": "Lead Generation",
+  "name": "Customer Acquisition",
   "subtitle": "Level 1 · Overwhelm · Revenue & Marketing",
   "whatThisIs": "Lead generation is the lifeblood of growth. Without a consistent flow of qualified prospects, every month feels like starting from zero. You win some deals, celebrate briefly, then wake up next month with an empty pipeline and have to scramble again.\n\nThis playbook builds a systematic acquisition engine so you never have to pray that the phone rings. It covers the full lead generation system: choosing the right channels, creating content that attracts prospects, capturing them effectively, and measuring what actually works. The goal is predictable, consistent lead flow that feeds your sales process every week.\n\nThis is not about being everywhere at once. It is about finding what works for your business and doubling down on it.",
   "whatItLooksLike": {
@@ -284,7 +284,7 @@
             },
             {
               "title": "Coach Notes",
-              "content": "The biggest mistake with lead magnets: making them too broad or too long. \"The Ultimate Guide to Running a Business\" is too generic. \"The 5-Minute Daily Cash Check for Business Owners\" is specific and actionable. Push clients toward the narrowest, most practical option. The lead magnet does not need to be perfect - it needs to be useful. A simple, well-targeted checklist outperforms a beautifully designed 40-page guide that nobody reads. Also ensure the follow-up sequence is in place - capturing an email and doing nothing with it wastes the entire effort. Connect to Lead Nurture (3.5) for what happens after capture."
+              "content": "The biggest mistake with lead magnets: making them too broad or too long. \"The Ultimate Guide to Running a Business\" is too generic. \"The 5-Minute Daily Cash Check for Business Owners\" is specific and actionable. Push clients toward the narrowest, most practical option. The lead magnet does not need to be perfect - it needs to be useful. A simple, well-targeted checklist outperforms a beautifully designed 40-page guide that nobody reads. Also ensure the follow-up sequence is in place - capturing an email and doing nothing with it wastes the entire effort. Connect to Follow-up & Nurture (4.5) for what happens after capture."
             }
           ]
         },

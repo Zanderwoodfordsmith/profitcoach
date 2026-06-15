@@ -217,7 +217,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     question:
       "Do you have a clearly defined ideal customer, and does your marketing and sales focus on winning them?",
     scoringGuide: {
-      red: "I'll work with anyone who'll pay",
+      red: "I'm not clear about who my target customer is",
       amber:
         "I have a general idea but I'm not focused or consistent in who I target",
       green:
@@ -496,7 +496,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Revenue & Marketing",
     areaCode: "R",
     pillar: "Control Velocity",
-    playbook: "Lead Generation",
+    playbook: "Customer Acquisition",
     page: 6,
     questionNumberOnPage: 1,
     question:
@@ -521,7 +521,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     question:
       "Do you have a repeatable system for acquiring and converting new leads, customers, and/or clients?",
     scoringGuide: {
-      red: "Sales is ad hoc and depends entirely on me",
+      red: "It's very tactical or relies on me personally",
       amber:
         "I have a process but conversion is inconsistent or not transferable",
       green:
@@ -553,17 +553,17 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     area: "Revenue & Marketing",
     areaCode: "R",
     pillar: "Control Velocity",
-    playbook: "Lead Nurture",
+    playbook: "Follow-up & Nurture",
     page: 6,
     questionNumberOnPage: 4,
     question:
-      "Do you stay in touch with prospects who aren't ready to buy, so interest turns into sales over time?",
+      "Do you stay in touch with customers and prospects who aren't ready to buy, so interest turns into sales over time?",
     scoringGuide: {
       red: "If they don't buy straight away, I lose them",
       amber:
         "I do some follow-up but it's manual and inconsistent",
       green:
-        "I have nurture systems that keep prospects warm until they're ready to buy",
+        "I have nurture systems that keep customers and prospects warm until they're ready to buy",
     },
   },
   {

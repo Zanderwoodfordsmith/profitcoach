@@ -87,10 +87,10 @@ export const V2_PLAYBOOK_BY_REF: Record<string, string> = {
   "3.4": "Profit & Pricing",
   "4.4": "Profit Allocation",
   "5.4": "Wealth Building",
-  "1.5": "Lead Generation",
+  "1.5": "Customer Acquisition",
   "2.5": "Sales & Conversion",
   "3.5": "Positioning",
-  "4.5": "Lead Nurture",
+  "4.5": "Follow-up & Nurture",
   "5.5": "Branding",
   "1.6": "Fulfilment",
   "2.6": "Customer Experience",
@@ -125,6 +125,9 @@ export const V1_NAME_TO_V2_REF: Record<string, string> = (() => {
   map["Customers & Offer"] = "1.2";
   map["Brand Visibility"] = "5.5";
   map["Market Authority"] = "5.5";
+  // Pre-rename playbook titles (v2 grid identity unchanged)
+  map["Lead Generation"] = "1.5";
+  map["Lead Nurture"] = "4.5";
   return map;
 })();
 
@@ -156,7 +159,7 @@ export function migrateAnswersV1ToV2(v1Answers: AnswersMap): AnswersMap {
 export const INTERIM_V2_PLAYBOOK_BY_REF: Record<string, string> = {
   ...V1_PLAYBOOK_BY_REF,
   "1.2": "Customers & Offer",
-  "1.5": "Lead Generation",
+  "1.5": "Customer Acquisition",
   "1.7": "Bookkeeping",
   "1.9": "Team Output",
   "2.5": "Sales & Conversion",
@@ -166,7 +169,7 @@ export const INTERIM_V2_PLAYBOOK_BY_REF: Record<string, string> = {
   "3.5": "Brand Visibility",
   "3.8": "Management",
   "3.9": "Recruitment",
-  "4.5": "Lead Nurture",
+  "4.5": "Follow-up & Nurture",
   "4.8": "AI & Automation",
   "5.5": "Market Authority",
 };

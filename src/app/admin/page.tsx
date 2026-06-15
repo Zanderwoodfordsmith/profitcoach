@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { GenerateCertificateModal } from "@/components/admin/GenerateCertificateModal";
 import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
 import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote";
 import { StickyPageHeader } from "@/components/layout";
@@ -14,6 +15,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   ArrowRight,
   ArrowUpDown,
+  Award,
   ChevronDown,
   Columns3,
   ExternalLink,
@@ -737,6 +739,7 @@ export default function AdminPage() {
   const [coaches, setCoaches] = useState<CoachRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showAddCoach, setShowAddCoach] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [creatingCoach, setCreatingCoach] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
@@ -1338,6 +1341,21 @@ export default function AdminPage() {
       if (sortOrder === "oldest_first") return aMs - bMs;
       return bMs - aMs;
     });
+
+  const certificateCoachOptions = useMemo(
+    () =>
+      [...coaches]
+        .map((coach) => ({
+          id: coach.id,
+          label:
+            coach.full_name?.trim() ||
+            coach.coach_business_name?.trim() ||
+            coach.slug ||
+            coach.id,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [coaches]
+  );
 
   async function handleCreateCoach(e: React.FormEvent) {
     e.preventDefault();
@@ -2301,6 +2319,13 @@ export default function AdminPage() {
               }}
             />
 
+            <TableToolbarButton
+              label="Certificate"
+              title="Generate certificate"
+              onClick={() => setShowCertificateModal(true)}
+              icon={<Award className="h-5 w-5 text-slate-500" aria-hidden />}
+            />
+
             <div ref={filtersMenuRef} className="relative">
               <TableToolbarButton
                 label="Filters"
@@ -2950,6 +2975,11 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      <GenerateCertificateModal
+        open={showCertificateModal}
+        coaches={certificateCoachOptions}
+        onClose={() => setShowCertificateModal(false)}
+      />
     </div>
   );
 }
