@@ -9,8 +9,14 @@ import {
   StickyPageHeader,
 } from "@/components/layout";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
-import { ProfileSecurityFields } from "@/components/settings/ProfileSecurityFields";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
+import {
+  ProfileFieldRow,
+  ProfileIdentityCard,
+  ProfileMinimalInput,
+  ProfileMinimalTextarea,
+  ProfileSectionCard,
+} from "@/components/settings/ProfileFormLayout";
 import {
   OutlinedTextArea,
   OutlinedTextField,
@@ -596,11 +602,27 @@ export function BossDashboardSettings({
       {activeTab === "profile" ? (
       <form
         onSubmit={handleProfileSave}
-        className="flex w-full flex-col gap-8"
+        className="flex w-full max-w-2xl flex-col gap-4"
       >
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Profile</h2>
-          <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-10">
+        <ProfileIdentityCard
+          firstName={firstName}
+          lastName={lastName}
+          businessName={businessName}
+          location={location}
+          onFirstNameChange={setFirstName}
+          onLastNameChange={setLastName}
+          onBusinessNameChange={setBusinessName}
+          onLocationChange={setLocation}
+          timezoneIana={profile.timezone ?? null}
+          onTimezoneSaved={() => void loadProfile()}
+          impersonatingCoachId={impersonatingCoachId}
+          hasMapPin={hasMapPin}
+          onChangeMapPin={() => setMapModalOpen(true)}
+          onClearMapPin={() => void clearMapPin()}
+          locationGeocodedManual={
+            profile.location_geocoded_source === "manual"
+          }
+          avatar={
             <ProfileAvatarPicker
               avatarUrl={profile.avatar_url}
               firstName={firstName}
@@ -611,170 +633,119 @@ export function BossDashboardSettings({
               onFileSelected={handleAvatarChange}
               onRemoveAvatar={handleRemoveAvatar}
               removing={removingAvatar}
+              compact
+              fieldStyle
             />
-            <div className="min-w-0 max-w-xl flex-1 space-y-6">
-              <div className="grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2">
-                <OutlinedTextField
-                  id="first_name"
-                  label="First name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  wrapperClassName="w-full min-w-0"
-                />
-                <OutlinedTextField
-                  id="last_name"
-                  label="Last name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  wrapperClassName="w-full min-w-0"
-                />
-              </div>
-              <AccountEmailPasswordFields
-                impersonatingCoachId={impersonatingCoachId}
-              />
-            </div>
-          </div>
-          <div className="mt-8 max-w-lg space-y-4 border-t border-slate-100 pt-8">
-            <OutlinedTextField
-              id="business_name"
-              label="Business name"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
-              wrapperClassName="w-full max-w-md"
-            />
-            <OutlinedTextField
+          }
+        />
+
+        <ProfileSectionCard title="Community">
+          <ProfileFieldRow label="LinkedIn" htmlFor="linkedin_url">
+            <ProfileMinimalInput
               id="linkedin_url"
-              label="LinkedIn profile URL"
               type="url"
               value={linkedinUrl}
               onChange={(e) => setLinkedinUrl(e.target.value)}
               placeholder="https://www.linkedin.com/in/yourprofile/"
-              wrapperClassName="w-full max-w-lg"
             />
-            <OutlinedTextArea
+          </ProfileFieldRow>
+          <ProfileFieldRow
+            label="Bio"
+            htmlFor="community_bio"
+            alignTop
+            hint="Shown in the community roster, sidebar cards, and members map."
+            last
+          >
+            <ProfileMinimalTextarea
               id="community_bio"
-              label="Community bio"
               rows={4}
               value={communityBio}
               onChange={(e) => setCommunityBio(e.target.value)}
-              wrapperClassName="w-full max-w-lg"
             />
-            <p className="-mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
-              Shown to other coaches in the community roster, sidebar hover
-              cards, and members map.
-            </p>
-          <div>
-            <OutlinedTextField
-              id="location"
-              label="Location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="City, region, country"
-              autoComplete="address-level2"
-              wrapperClassName="w-full max-w-md"
-            />
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-600">
-              Use whatever you&apos;re comfortable sharing. A{" "}
-              <span className="font-medium text-slate-700">city and country</span>{" "}
-              is enough for the community map (e.g.{" "}
-              <span className="font-mono text-[11px] text-slate-700">
-                Austin, TX, USA
-              </span>
-              ,{" "}
-              <span className="font-mono text-[11px] text-slate-700">
-                Manchester, UK
-              </span>
-              ). A full street address works too if you prefer.
-            </p>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-              <button
-                type="button"
-                onClick={() => setMapModalOpen(true)}
-                className="font-medium text-sky-700 hover:underline"
+          </ProfileFieldRow>
+        </ProfileSectionCard>
+
+        <ProfileSectionCard title="Account">
+          <AccountEmailPasswordFields
+            impersonatingCoachId={impersonatingCoachId}
+            layout="minimal"
+            className="max-w-none"
+          />
+        </ProfileSectionCard>
+
+        <ProfileSectionCard
+          title="Public directory"
+          description={
+            <>
+              How you appear on the{" "}
+              <Link
+                href="/directory"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-sky-700 hover:text-sky-900 hover:underline"
               >
-                Change my map location
-              </button>
-              {hasMapPin ? (
-                <button
-                  type="button"
-                  onClick={() => void clearMapPin()}
-                  className="text-slate-500 hover:text-rose-600 hover:underline"
-                >
-                  Remove my map location
-                </button>
-              ) : null}
-            </div>
-            {profile.location_geocoded_source === "manual" ? (
-              <p className="mt-2 text-xs text-slate-500">
-                Pin placed manually — changing the text above won&apos;t move the
-                pin until you remove it or pick a new spot on the map.
-              </p>
-            ) : null}
-          </div>
-          <div className="border-t border-slate-100 pt-6">
-            <label className="inline-flex cursor-pointer items-start gap-3">
+                coach directory listing
+              </Link>
+              .
+            </>
+          }
+        >
+          <ProfileFieldRow label="Listed">
+            <label className="inline-flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                 checked={directoryListed}
                 disabled={directoryToggleBusy}
                 onChange={(e) => void handleDirectoryToggle(e.target.checked)}
               />
-              <span className="text-sm text-slate-800">
-                <span className="font-medium">Public coach directory</span>
-                <span className="mt-0.5 block text-xs font-normal text-slate-500">
-                  Allow your profile to appear in the directory listing.
-                </span>
+              <span className="text-sm text-slate-700">
+                Show in the public directory
               </span>
             </label>
             {directoryToggleBusy ? (
-              <p className="mt-2 text-xs text-slate-500">Updating…</p>
+              <p className="mt-1 text-[11px] text-slate-500">Updating…</p>
             ) : null}
             {directoryError ? (
-              <p className="mt-2 text-sm text-rose-600" role="alert">
+              <p className="mt-1 text-sm text-rose-600" role="alert">
                 {directoryError}
               </p>
             ) : null}
-            <div className="mt-6 space-y-4">
-              <OutlinedTextArea
-                id="directory_summary"
-                label="Directory short summary"
-                rows={3}
-                value={directorySummary}
-                onChange={(e) => setDirectorySummary(e.target.value)}
-                wrapperClassName="w-full max-w-lg"
-              />
-              <p className="-mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
-                A brief intro shown on directory cards. Keep it to a few
-                sentences.
-              </p>
-              <OutlinedTextArea
-                id="directory_bio"
-                label="Directory detailed bio"
-                rows={6}
-                value={directoryBio}
-                onChange={(e) => setDirectoryBio(e.target.value)}
-                wrapperClassName="w-full max-w-lg"
-              />
-              <p className="-mt-2 max-w-lg text-xs leading-relaxed text-slate-600">
-                Optional longer copy for your public directory profile page. Leave
-                blank to use your short summary there instead.
-              </p>
-            </div>
-          </div>
-          <ProfileSecurityFields
-            impersonatingCoachId={impersonatingCoachId}
-            timezoneIana={profile.timezone ?? null}
-            onTimezoneSaved={() => void loadProfile()}
-          />
-          </div>
-        </section>
+          </ProfileFieldRow>
+          <ProfileFieldRow
+            label="Short summary"
+            htmlFor="directory_summary"
+            alignTop
+            hint="A brief intro on directory cards."
+          >
+            <ProfileMinimalTextarea
+              id="directory_summary"
+              rows={2}
+              value={directorySummary}
+              onChange={(e) => setDirectorySummary(e.target.value)}
+            />
+          </ProfileFieldRow>
+          <ProfileFieldRow
+            label="Detailed bio"
+            htmlFor="directory_bio"
+            alignTop
+            hint="Optional longer copy for your directory profile page."
+            last
+          >
+            <ProfileMinimalTextarea
+              id="directory_bio"
+              rows={4}
+              value={directoryBio}
+              onChange={(e) => setDirectoryBio(e.target.value)}
+            />
+          </ProfileFieldRow>
+        </ProfileSectionCard>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 pt-1">
           <button
             type="submit"
             disabled={saving}
-            className="rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
           >
             {saving ? "Saving…" : "Save profile"}
           </button>
@@ -957,7 +928,12 @@ export function BossDashboardSettings({
   }
 
   return (
-    <DashboardPageSection gapClass="gap-6" header={settingsHeader}>
+    <DashboardPageSection
+      gapClass="gap-6"
+      header={settingsHeader}
+      contentMaxWidthClass={activeTab === "funnel" ? "max-w-6xl" : "max-w-4xl"}
+      contentClassName={activeTab === "funnel" ? "mx-0 mr-auto w-full" : ""}
+    >
       {settingsBody}
     </DashboardPageSection>
   );

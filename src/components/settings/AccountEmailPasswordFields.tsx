@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { OutlinedTextField } from "@/components/settings/OutlinedFormField";
+import { ProfileFieldRow } from "@/components/settings/ProfileFormLayout";
 
 function outlineButtonClass(disabled?: boolean) {
   return `rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 ${
@@ -13,11 +14,13 @@ function outlineButtonClass(disabled?: boolean) {
 export type AccountEmailPasswordFieldsProps = {
   impersonatingCoachId?: string | null;
   className?: string;
+  layout?: "default" | "minimal";
 };
 
 export function AccountEmailPasswordFields({
   impersonatingCoachId,
   className = "",
+  layout = "default",
 }: AccountEmailPasswordFieldsProps) {
   const isImpersonating = Boolean(impersonatingCoachId);
 
@@ -159,42 +162,86 @@ export function AccountEmailPasswordFields({
     setConfirmPassword("");
   }
 
-  return (
-    <div className={`max-w-md space-y-6 ${className}`}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0 max-w-xs">
-          <p className="text-sm font-semibold text-slate-900">Email</p>
-          <p className="mt-0.5 break-all text-sm text-slate-600">{email ?? "—"}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEmailError(null);
-            setNewEmail(email ?? "");
-            setEmailOpen(true);
-          }}
-          className={outlineButtonClass(false)}
-        >
-          Change email
-        </button>
-      </div>
+  const emailRow = (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="min-w-0 break-all text-sm text-slate-800">{email ?? "—"}</p>
+      <button
+        type="button"
+        onClick={() => {
+          setEmailError(null);
+          setNewEmail(email ?? "");
+          setEmailOpen(true);
+        }}
+        className={outlineButtonClass(false)}
+      >
+        Change email
+      </button>
+    </div>
+  );
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">Password</p>
-          <p className="mt-0.5 text-sm text-slate-600">Change your password</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setPwdError(null);
-            setPwdOpen(true);
-          }}
-          className={outlineButtonClass(false)}
-        >
-          Change password
-        </button>
-      </div>
+  const passwordRow = (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-600">••••••••</p>
+      <button
+        type="button"
+        onClick={() => {
+          setPwdError(null);
+          setPwdOpen(true);
+        }}
+        className={outlineButtonClass(false)}
+      >
+        Change password
+      </button>
+    </div>
+  );
+
+  return (
+    <div className={`${layout === "minimal" ? "space-y-0" : "max-w-md space-y-6"} ${className}`}>
+      {layout === "minimal" ? (
+        <>
+          <ProfileFieldRow label="Email">{emailRow}</ProfileFieldRow>
+          <ProfileFieldRow label="Password" last>
+            {passwordRow}
+          </ProfileFieldRow>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 max-w-xs">
+              <p className="text-sm font-semibold text-slate-900">Email</p>
+              <p className="mt-0.5 break-all text-sm text-slate-600">{email ?? "—"}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEmailError(null);
+                setNewEmail(email ?? "");
+                setEmailOpen(true);
+              }}
+              className={outlineButtonClass(false)}
+            >
+              Change email
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Password</p>
+              <p className="mt-0.5 text-sm text-slate-600">Change your password</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setPwdError(null);
+                setPwdOpen(true);
+              }}
+              className={outlineButtonClass(false)}
+            >
+              Change password
+            </button>
+          </div>
+        </>
+      )}
 
       {emailOpen ? (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4">

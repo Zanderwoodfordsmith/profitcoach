@@ -33,6 +33,9 @@ export type ProfileAvatarPickerProps = {
   uploading: boolean;
   error: string | null;
   disabled?: boolean;
+  compact?: boolean;
+  /** Softer rounded square — fits field-style layouts. */
+  fieldStyle?: boolean;
   onFileSelected: (e: React.ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   onRemoveAvatar?: () => void | Promise<void>;
   removing?: boolean;
@@ -46,6 +49,8 @@ export function ProfileAvatarPicker({
   uploading,
   error,
   disabled,
+  compact = false,
+  fieldStyle = false,
   onFileSelected,
   onRemoveAvatar,
   removing,
@@ -67,8 +72,14 @@ export function ProfileAvatarPicker({
   const initials = profileInitials(firstName, lastName, fullName ?? null);
   const busy = uploading || removing;
 
+  const avatarSizeClass = compact ? "h-[4.5rem] w-[4.5rem]" : "h-24 w-24";
+  const initialsSizeClass = compact ? "text-base" : "text-xl";
+  const shapeClass = fieldStyle
+    ? "rounded-lg border border-slate-200 shadow-sm hover:border-sky-400"
+    : "rounded-full ring-2 ring-slate-200 hover:ring-sky-400";
+
   return (
-    <div ref={wrapRef} className="relative flex flex-col items-center gap-2 sm:items-start">
+    <div ref={wrapRef} className="relative flex shrink-0 flex-col items-start gap-1">
       <input
         ref={fileRef}
         type="file"
@@ -85,7 +96,7 @@ export function ProfileAvatarPicker({
         type="button"
         disabled={disabled || busy}
         onClick={() => setMenuOpen((o) => !o)}
-        className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-full ring-2 ring-slate-200 transition hover:ring-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`group relative shrink-0 overflow-hidden bg-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-60 ${avatarSizeClass} ${shapeClass}`}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-label="Avatar options"
@@ -98,7 +109,7 @@ export function ProfileAvatarPicker({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-sky-600 text-xl font-semibold text-white">
+          <div className={`flex h-full w-full items-center justify-center bg-slate-100 font-semibold text-slate-600 ${initialsSizeClass}`}>
             {initials}
           </div>
         )}
@@ -140,9 +151,11 @@ export function ProfileAvatarPicker({
         </div>
       ) : null}
 
-      <p className="max-w-[12rem] text-center text-xs text-slate-500 sm:text-left">
-        JPEG, PNG or WebP. Max 2MB.
-      </p>
+      {!compact ? (
+        <p className="max-w-[12rem] text-center text-xs text-slate-500 sm:text-left">
+          JPEG, PNG or WebP. Max 2MB.
+        </p>
+      ) : null}
       {uploading ? (
         <p className="text-xs text-slate-600">Uploading…</p>
       ) : null}

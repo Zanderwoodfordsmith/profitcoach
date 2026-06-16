@@ -9,6 +9,10 @@ import {
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { OutlinedSelect } from "@/components/settings/OutlinedFormField";
+import {
+  ProfileFieldRow,
+  ProfileMinimalSelect,
+} from "@/components/settings/ProfileFormLayout";
 
 function outlineButtonClass(disabled?: boolean) {
   return `rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-50 ${
@@ -20,12 +24,14 @@ export type ProfileSecurityFieldsProps = {
   impersonatingCoachId?: string | null;
   timezoneIana: string | null;
   onTimezoneSaved: () => void;
+  layout?: "default" | "minimal";
 };
 
 export function ProfileSecurityFields({
   impersonatingCoachId,
   timezoneIana,
   onTimezoneSaved,
+  layout = "default",
 }: ProfileSecurityFieldsProps) {
   const router = useRouter();
   const securityDisabled = Boolean(impersonatingCoachId);
@@ -100,6 +106,56 @@ export function ProfileSecurityFields({
       await supabaseClient.auth.signOut();
     }
     router.replace("/login");
+  }
+
+  if (layout === "minimal") {
+    return (
+      <div className="space-y-0">
+        {securityDisabled ? (
+          <p className="mb-4 text-sm text-amber-800">
+            You are viewing another coach&apos;s workspace. Sign-out applies to
+            your own sessions — stop impersonating to change your login.
+          </p>
+        ) : null}
+
+        <ProfileFieldRow label="Timezone" htmlFor="profile_timezone">
+          <ProfileMinimalSelect
+            id="profile_timezone"
+            value={tz}
+            disabled={tzBusy}
+            onChange={(e) => void handleTimezoneChange(e)}
+          >
+            {zoneOptions.map((z) => (
+              <option key={z} value={z}>
+                {accountTimezoneOptionLabel(z)}
+              </option>
+            ))}
+          </ProfileMinimalSelect>
+          {tzBusy ? (
+            <p className="mt-1 text-xs text-slate-500">Saving…</p>
+          ) : null}
+          {tzError ? (
+            <p className="mt-1 text-xs text-rose-600">{tzError}</p>
+          ) : null}
+        </ProfileFieldRow>
+
+        <ProfileFieldRow label="Sessions" last>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">
+              Log out of all active sessions on all devices.
+            </p>
+            <button
+              type="button"
+              disabled={securityDisabled || logoutBusy}
+              onClick={() => void logOutEverywhere()}
+              className={outlineButtonClass(securityDisabled || logoutBusy)}
+            >
+              {logoutBusy ? "…" : "Log out everywhere"}
+            </button>
+          </div>
+        </ProfileFieldRow>
+      </div>
+    );
   }
 
   return (

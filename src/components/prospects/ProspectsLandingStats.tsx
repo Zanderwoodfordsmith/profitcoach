@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import { LandingStatActorsHover } from "@/components/prospects/LandingStatActorsHover";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { LandingStatKind } from "@/lib/landingActors";
@@ -9,24 +10,20 @@ import {
   landingConversionRate,
   type LandingAnalyticsResult,
 } from "@/lib/landingAnalytics";
+import {
+  defaultLandingStatsRange,
+  isLandingStatsRangeValid,
+  LANDING_STATS_RANGE_PRESETS,
+  landingStatsRangeLabel,
+  landingStatsRangeQuery,
+  type LandingStatsRange,
+  type LandingStatsRangePreset,
+} from "@/lib/landingStatsRange";
 
 type Props = {
   coachSlug: string | null;
   impersonatingCoachId: string | null;
 };
-
-const RANGE_DAYS = 30;
-
-function rangeParams(): string {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - RANGE_DAYS);
-  const params = new URLSearchParams({
-    from: from.toISOString(),
-    to: to.toISOString(),
-  });
-  return params.toString();
-}
 
 function StatCard({
   label,
@@ -59,15 +56,173 @@ function StatCard({
   );
 }
 
+const PRESET_DROPDOWN_LABELS: Record<LandingStatsRangePreset, string> = {
+  "7": "Last 7 days",
+  "14": "Last 14 days",
+  "30": "Last 30 days",
+  "90": "Last 90 days",
+  all: "All time",
+  custom: "Custom range",
+};
+
+function LandingStatsRangeDropdown({
+  value,
+  onChange,
+}: {
+  value: LandingStatsRange;
+  onChange: (next: LandingStatsRange) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const triggerLabel = useMemo(() => {
+    if (value.preset === "custom") {
+      return landingStatsRangeLabel(value);
+    }
+    return PRESET_DROPDOWN_LABELS[value.preset];
+  }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: MouseEvent) {
+      const root = rootRef.current;
+      if (root && event.target instanceof Node && !root.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  function selectPreset(preset: LandingStatsRangePreset) {
+    onChange({ ...value, preset });
+    setOpen(false);
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Landing page date range"
+        className="inline-flex min-w-[8.5rem] items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-left text-xs font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+      >
+        <span className="min-w-0 flex-1 truncate">{triggerLabel}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        />
+      </button>
+
+      {open ? (
+        <div
+          className="absolute left-0 top-full z-20 mt-1 min-w-[10.5rem] overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5"
+          role="listbox"
+          aria-label="Date range options"
+        >
+          {LANDING_STATS_RANGE_PRESETS.map((preset) => {
+            const active = value.preset === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => selectPreset(preset.id)}
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition ${
+                  active
+                    ? "bg-sky-50 text-sky-900"
+                    : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <Check
+                  className={`h-3.5 w-3.5 shrink-0 ${
+                    active ? "text-sky-600" : "text-transparent"
+                  }`}
+                  aria-hidden
+                />
+                <span>{PRESET_DROPDOWN_LABELS[preset.id]}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function LandingStatsCustomRangeFields({
+  value,
+  onChange,
+}: {
+  value: LandingStatsRange;
+  onChange: (next: LandingStatsRange) => void;
+}) {
+  const customInvalid =
+    value.preset === "custom" && !isLandingStatsRangeValid(value);
+
+  if (value.preset !== "custom") return null;
+
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <label className="flex flex-col gap-1 text-xs text-slate-600">
+        From
+        <input
+          type="date"
+          value={value.customFrom}
+          max={value.customTo || undefined}
+          onChange={(e) => onChange({ ...value, customFrom: e.target.value })}
+          className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-slate-600">
+        To
+        <input
+          type="date"
+          value={value.customTo}
+          min={value.customFrom || undefined}
+          onChange={(e) => onChange({ ...value, customTo: e.target.value })}
+          className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
+        />
+      </label>
+      {customInvalid ? (
+        <p className="pb-1 text-xs text-rose-600">
+          Choose a valid from and to date.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function ProspectsLandingStats({ coachSlug, impersonatingCoachId }: Props) {
   const [stats, setStats] = useState<LandingAnalyticsResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const rangeQuery = useMemo(() => rangeParams(), []);
+  const [dateRange, setDateRange] = useState(defaultLandingStatsRange);
+
+  const rangeQuery = useMemo(
+    () => landingStatsRangeQuery(dateRange),
+    [dateRange]
+  );
+  const rangeValid = isLandingStatsRangeValid(dateRange);
 
   useEffect(() => {
-    if (!coachSlug) {
+    if (!coachSlug || !rangeValid) {
       setLoading(false);
+      if (!rangeValid) {
+        setStats(null);
+      }
       return;
     }
 
@@ -97,9 +252,10 @@ export function ProspectsLandingStats({ coachSlug, impersonatingCoachId }: Props
       }
 
       try {
-        const res = await fetch(`/api/coach/landing/stats?${rangeQuery}`, {
-          headers,
-        });
+        const url = rangeQuery
+          ? `/api/coach/landing/stats?${rangeQuery}`
+          : "/api/coach/landing/stats";
+        const res = await fetch(url, { headers });
         const body = (await res.json().catch(() => ({}))) as
           | (LandingAnalyticsResult & { error?: string })
           | { error?: string };
@@ -124,9 +280,8 @@ export function ProspectsLandingStats({ coachSlug, impersonatingCoachId }: Props
     return () => {
       cancelled = true;
     };
-  }, [coachSlug, impersonatingCoachId, rangeQuery]);
+  }, [coachSlug, impersonatingCoachId, rangeQuery, rangeValid]);
 
-  // No public funnel link yet, so there is nothing to report on.
   if (!coachSlug) return null;
 
   const totals = stats?.totals;
@@ -142,7 +297,7 @@ export function ProspectsLandingStats({ coachSlug, impersonatingCoachId }: Props
   function hoverStat(
     kind: LandingStatKind,
     count: number,
-    card: React.ReactNode
+    card: ReactNode
   ) {
     return (
       <LandingStatActorsHover
@@ -161,13 +316,16 @@ export function ProspectsLandingStats({ coachSlug, impersonatingCoachId }: Props
   const finishedCount = totals?.finished ?? 0;
 
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Landing page (last {RANGE_DAYS} days)
-        </h2>
-        <span className="text-xs text-slate-500">/score/{coachSlug}</span>
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <h2 className="text-sm font-semibold text-slate-900">Landing page</h2>
+          <LandingStatsRangeDropdown value={dateRange} onChange={setDateRange} />
+        </div>
+        <span className="shrink-0 text-xs text-slate-500">/score/{coachSlug}</span>
       </div>
+
+      <LandingStatsCustomRangeFields value={dateRange} onChange={setDateRange} />
 
       {error ? (
         <p className="text-sm text-rose-600">{error}</p>
@@ -175,37 +333,53 @@ export function ProspectsLandingStats({ coachSlug, impersonatingCoachId }: Props
         <div className="grid items-stretch gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Unique views"
-            value={loading ? "—" : (totals?.uniqueViews ?? 0).toLocaleString()}
+            value={
+              loading || !rangeValid
+                ? "—"
+                : (totals?.uniqueViews ?? 0).toLocaleString()
+            }
           />
           {hoverStat(
             "opt_in",
-            loading ? 0 : optInCount,
+            loading || !rangeValid ? 0 : optInCount,
             <StatCard
               label="Opt-ins"
-              value={loading ? "—" : optInCount.toLocaleString()}
-              hint={loading ? undefined : `${formatLandingRate(optInRate)} of views`}
-              hoverable={!loading && optInCount > 0}
+              value={
+                loading || !rangeValid ? "—" : optInCount.toLocaleString()
+              }
+              hint={
+                loading || !rangeValid
+                  ? undefined
+                  : `${formatLandingRate(optInRate)} of views`
+              }
+              hoverable={!loading && rangeValid && optInCount > 0}
             />
           )}
           {hoverStat(
             "start",
-            loading ? 0 : startedCount,
+            loading || !rangeValid ? 0 : startedCount,
             <StatCard
               label="Started scorecard"
-              value={loading ? "—" : startedCount.toLocaleString()}
-              hoverable={!loading && startedCount > 0}
+              value={
+                loading || !rangeValid ? "—" : startedCount.toLocaleString()
+              }
+              hoverable={!loading && rangeValid && startedCount > 0}
             />
           )}
           {hoverStat(
             "finish",
-            loading ? 0 : finishedCount,
+            loading || !rangeValid ? 0 : finishedCount,
             <StatCard
               label="Completed"
-              value={loading ? "—" : finishedCount.toLocaleString()}
-              hint={
-                loading ? undefined : `${formatLandingRate(completionRate)} of views`
+              value={
+                loading || !rangeValid ? "—" : finishedCount.toLocaleString()
               }
-              hoverable={!loading && finishedCount > 0}
+              hint={
+                loading || !rangeValid
+                  ? undefined
+                  : `${formatLandingRate(completionRate)} of views`
+              }
+              hoverable={!loading && rangeValid && finishedCount > 0}
             />
           )}
         </div>
