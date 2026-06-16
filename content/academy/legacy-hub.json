@@ -919,6 +919,19 @@
           ]
         },
         {
+          "id": "client-acquisition-boss-assessment-marketing",
+          "title": "Boss Assessment Marketing",
+          "lessons": [
+            {
+              "id": "client-acquisition-boss-assessment-marketing-how-to-use-the-boss-score-assessment",
+              "title": "How to Use the BOSS Score Assessment",
+              "duration": "",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+            }
+          ]
+        },
+        {
           "id": "client-acquisition-lead-generation-ai-automation",
           "title": "Lead Generation - AI Automation",
           "lessons": [

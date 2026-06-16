@@ -130,6 +130,10 @@ The full Ninety Day Plan SOP is in google drive. [Click here to access \>\>\>](h
 
 [They Ask, You Answer](https://marcussheridan.com/they-ask-you-answer/) \-  Marcus Sheridan discusses 4 types of videos that every business should have
 
+**BOSS Assessment Marketing**
+
+[The BOSS Scorecard Marketing](https://docs.google.com/document/d/1rDJk4xHGb3InGBgZER1d_PEWKfbLF1c2ZFIvQXK2QZQ/edit?usp=sharing)
+
 **Optimise Your Conversion Rate**
 
 [Ultimate guide to conversions rate optimisation](https://www.rich-page.com/cro/conversion-rate-optimization-ultimate-guide/)
