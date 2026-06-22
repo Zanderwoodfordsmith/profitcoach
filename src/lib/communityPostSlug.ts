@@ -44,6 +44,28 @@ export function communityPostSlugFromPathname(pathname: string): string | null {
   return decoded;
 }
 
+export function communityFeedBasePathname(pathname: string): string {
+  return pathname.startsWith("/admin") ? "/admin/community" : "/coach/community";
+}
+
+/** Feed index or a slug deep link — not calendar, members, etc. */
+export function isCommunityFeedPathname(pathname: string): boolean {
+  const base = communityFeedBasePathname(pathname);
+  if (pathname === base || pathname === `${base}/`) return true;
+  return communityPostSlugFromPathname(pathname) !== null;
+}
+
+/**
+ * Path key for feed bootstrap effects. Opening/closing a post only changes the
+ * slug segment and must not re-run session/category bootstrap.
+ */
+export function communityFeedBootstrapPathname(pathname: string): string {
+  if (communityPostSlugFromPathname(pathname)) {
+    return communityFeedBasePathname(pathname);
+  }
+  return pathname;
+}
+
 export function findCommunityPostIdBySlug(
   posts: { id: string; title: string }[],
   slug: string

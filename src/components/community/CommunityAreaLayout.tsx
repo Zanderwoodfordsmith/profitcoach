@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { PageHeaderUnderlineTabs, StickyPageHeader } from "@/components/layout";
 import { CommunityMemberDirectoryProvider } from "@/components/community/useCommunityMemberDirectory";
+import { communityPostSlugFromPathname } from "@/lib/communityPostSlug";
 
 export function CommunityAreaLayout({
   children,
@@ -18,7 +19,9 @@ export function CommunityAreaLayout({
     : "/coach/community";
   const isMembers = pathname === `${base}/members`;
   const onCommunityHome =
-    pathname === base || pathname === `${base}/`;
+    pathname === base ||
+    pathname === `${base}/` ||
+    communityPostSlugFromPathname(pathname) !== null;
   const isCalendarPage =
     pathname === `${base}/calendar` || pathname === `${base}/calendar/`;
   const isFeedbackPage =

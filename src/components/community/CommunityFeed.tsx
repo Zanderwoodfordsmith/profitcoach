@@ -55,6 +55,7 @@ import { extractMentionUserIds } from "@/lib/communityMentions";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
 import {
+  communityFeedBootstrapPathname,
   communityPostPath,
   communityPostSlugFromPathname,
   fetchCommunityPostIdBySlug,
@@ -888,6 +889,7 @@ export function CommunityFeed() {
   );
   const router = useRouter();
   const pathname = usePathname();
+  const bootstrapPathname = communityFeedBootstrapPathname(pathname);
   const searchParams = useSearchParams();
   /**
    * Always-current snapshot of searchParams for effects that should read the
@@ -1771,8 +1773,8 @@ export function CommunityFeed() {
     };
     // `searchParams` is intentionally read via `searchParamsRef` so opening or
     // closing a post (which only changes ?post=) does not re-run bootstrap and
-    // trigger a full feed reload.
-  }, [impersonatingCoachId, loadCategories, pathname, router]);
+    // trigger a full feed reload. `bootstrapPathname` ignores post slug segments.
+  }, [impersonatingCoachId, loadCategories, bootstrapPathname, router]);
 
   useEffect(() => {
     if (!feedBootstrapOk) return;

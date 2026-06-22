@@ -1,10 +1,4 @@
-import { Suspense } from "react";
-import { CommunityFeed } from "@/components/community/CommunityFeed";
-
+/** Feed is rendered by `CommunityFeedLayoutGate` in the community layout. */
 export default function AdminCommunityPage() {
-  return (
-    <Suspense fallback={<p className="text-sm text-slate-600">Loading…</p>}>
-      <CommunityFeed />
-    </Suspense>
-  );
+  return null;
 }
