@@ -1,0 +1,37 @@
+{
+  "event": "recording.completed",
+  "event_ts": 1719859200000,
+  "download_token": "sample-download-token",
+  "payload": {
+    "account_id": "sample-account-id",
+    "object": {
+      "uuid": "sample-meeting-uuid",
+      "id": 81234567890,
+      "host_id": "sample-host-id",
+      "host_email": "coach@example.com",
+      "topic": "Wednesday Coach Call",
+      "type": 8,
+      "start_time": "2026-06-25T13:00:00Z",
+      "timezone": "Europe/London",
+      "duration": 62,
+      "total_size": 123456789,
+      "recording_count": 1,
+      "share_url": "https://zoom.us/rec/share/sample-recording-share-url",
+      "recording_files": [
+        {
+          "id": "sample-file-id",
+          "meeting_id": "81234567890",
+          "recording_start": "2026-06-25T13:01:12Z",
+          "recording_end": "2026-06-25T14:02:45Z",
+          "file_type": "MP4",
+          "file_extension": "MP4",
+          "file_size": 123456789,
+          "recording_type": "shared_screen_with_speaker_view",
+          "status": "completed",
+          "share_url": "https://zoom.us/rec/share/sample-recording-share-url",
+          "play_url": "https://zoom.us/rec/play/sample-recording-play-url"
+        }
+      ]
+    }
+  }
+}

@@ -41,7 +41,8 @@
     "import-historical-coaches": "npx tsx scripts/import-historical-coaches-from-clickup-csv.ts",
     "import-historical-coaches:dry-run": "npx tsx scripts/import-historical-coaches-from-clickup-csv.ts --dry-run",
     "backfill-join-dates-from-payments": "npx tsx scripts/backfill-coach-join-dates-from-payments.ts",
-    "reassign-unassigned-payments": "npx tsx scripts/reassign-unassigned-payments.ts"
+    "reassign-unassigned-payments": "npx tsx scripts/reassign-unassigned-payments.ts",
+    "test-zoom-recording-webhook": "npx tsx scripts/test-zoom-recording-webhook.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
