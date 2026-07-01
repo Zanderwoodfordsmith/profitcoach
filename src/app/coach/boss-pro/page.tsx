@@ -10,6 +10,7 @@ import { ContactBossWorkshopBody } from "@/components/coach/ContactBossWorkshopB
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import {
   NEW_PERSON_VALUE,
+  WorkshopSessionActionsMenu,
   WorkshopSessionPicker,
   type WorkshopSessionSummary,
 } from "@/components/coach/WorkshopSessionPicker";
@@ -152,6 +153,13 @@ function CoachWorkshopPageContent() {
   const [newPersonCoachId, setNewPersonCoachId] = useState("");
   const [hasScorecardForContact, setHasScorecardForContact] = useState(false);
   const [scorecardModalContactId, setScorecardModalContactId] = useState<
+    string | null
+  >(null);
+  const [clientDashboardShareLoading, setClientDashboardShareLoading] =
+    useState(false);
+  const [clientDashboardShareCopied, setClientDashboardShareCopied] =
+    useState(false);
+  const [clientDashboardShareMessage, setClientDashboardShareMessage] = useState<
     string | null
   >(null);
 
@@ -566,6 +574,52 @@ function CoachWorkshopPageContent() {
     setScorecardModalContactId(activeContactId);
   }, [activeContactId]);
 
+  const handleCopyClientDashboardLink = useCallback(async () => {
+    if (!activeContactId) return;
+    setClientDashboardShareLoading(true);
+    setClientDashboardShareCopied(false);
+    setClientDashboardShareMessage(null);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setClientDashboardShareMessage("Sign in to copy the client link.");
+        return;
+      }
+
+      const res = await fetch(
+        `/api/coach/contacts/${encodeURIComponent(activeContactId)}/dashboard-share-link`,
+        {
+          headers: authHeaders(
+            token,
+            adminUnscoped ? null : impersonatingCoachId
+          ),
+        }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+      };
+      if (!res.ok || !body.url) {
+        setClientDashboardShareMessage(
+          body.error ??
+            "Could not create a client dashboard link. Score this contact in Boss Pro first."
+        );
+        return;
+      }
+
+      await navigator.clipboard.writeText(body.url);
+      setClientDashboardShareCopied(true);
+      window.setTimeout(() => setClientDashboardShareCopied(false), 2500);
+    } catch {
+      setClientDashboardShareMessage("Could not copy the client link.");
+    } finally {
+      setClientDashboardShareLoading(false);
+    }
+  }, [activeContactId, adminUnscoped, impersonatingCoachId]);
+
   const clearNewPersonDraft = useCallback(() => {
     setNewPersonName("");
     setNewPersonTitle("");
@@ -783,7 +837,13 @@ function CoachWorkshopPageContent() {
       clientsLabel,
       showScorecardLink: hasScorecardForContact,
       onViewScorecard: handleViewScorecard,
+      showClientDashboardLink: Boolean(activeContactId && sessionSummary),
+      clientDashboardLinkLoading: clientDashboardShareLoading,
+      onCopyClientDashboardLink: handleCopyClientDashboardLink,
+      clientDashboardLinkCopied: clientDashboardShareCopied,
+      clientDashboardLinkError: clientDashboardShareMessage,
       onPickerOpen: refreshWorkshopContacts,
+      suppressSessionSummary: true,
     }),
     [
       contacts,
@@ -807,75 +867,77 @@ function CoachWorkshopPageContent() {
       clientsLabel,
       hasScorecardForContact,
       handleViewScorecard,
+      activeContactId,
+      sessionSummary,
+      clientDashboardShareLoading,
+      handleCopyClientDashboardLink,
+      clientDashboardShareCopied,
+      clientDashboardShareMessage,
       refreshWorkshopContacts,
     ]
   );
 
-  const setWorkshopTopRight = chrome?.setWorkshopTopRight;
-  const registerMinimalSlot = chrome?.isMinimalWorkshopChrome;
-
-  useEffect(() => {
-    if (!setWorkshopTopRight) return;
-    if (!registerMinimalSlot) {
-      setWorkshopTopRight(null);
-      return;
-    }
-    if (loading && !activeContactId) {
-      setWorkshopTopRight(
-        <p className="text-xs text-slate-600">Loading contacts…</p>
-      );
-      return () => setWorkshopTopRight(null);
-    }
-    if (error) {
-      setWorkshopTopRight(<p className="text-xs text-rose-600">{error}</p>);
-      return () => setWorkshopTopRight(null);
-    }
-    if (!activeContactId) {
-      setWorkshopTopRight(null);
-      return () => setWorkshopTopRight(null);
-    }
-
-    setWorkshopTopRight(
-      <div
-        className={
-          sessionSummary
-            ? "rounded-lg border border-sky-200/90 bg-white px-3 py-2.5 text-left shadow-md ring-1 ring-slate-900/5 backdrop-blur-sm"
-            : "rounded-xl border border-sky-200/90 bg-white px-3.5 py-3 text-left shadow-lg ring-1 ring-slate-900/5 backdrop-blur-sm sm:min-w-[18rem]"
-        }
-      >
-        <WorkshopSessionPicker idPrefix="workshop-top" compact {...workshopPickerProps} />
-      </div>
+  const sessionToolbar = useMemo(() => {
+    if (!sessionSummary) return null;
+    const menu = (
+      <WorkshopSessionActionsMenu
+        variant="toolbar"
+        compact={isMinimalChrome}
+        summary={sessionSummary}
+        onChangeSession={handleChangeSession}
+        showScorecardLink={hasScorecardForContact}
+        onViewScorecard={handleViewScorecard}
+        showClientDashboardLink={Boolean(activeContactId)}
+        clientDashboardLinkLoading={clientDashboardShareLoading}
+        onCopyClientDashboardLink={handleCopyClientDashboardLink}
+        clientDashboardLinkCopied={clientDashboardShareCopied}
+        clientDashboardLinkError={clientDashboardShareMessage}
+      />
     );
-    return () => setWorkshopTopRight(null);
+    if (isMinimalChrome && impersonatingCoachId) {
+      return <div className="max-md:mr-28 sm:mr-36">{menu}</div>;
+    }
+    return menu;
   }, [
-    setWorkshopTopRight,
-    registerMinimalSlot,
-    loading,
-    error,
+    sessionSummary,
+    isMinimalChrome,
+    impersonatingCoachId,
+    handleChangeSession,
+    hasScorecardForContact,
+    handleViewScorecard,
     activeContactId,
-    workshopPickerProps,
+    clientDashboardShareLoading,
+    handleCopyClientDashboardLink,
+    clientDashboardShareCopied,
+    clientDashboardShareMessage,
   ]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       {!(isMinimalChrome && !activeContactId) ? (
         <StickyPageHeader
           title="Boss Pro"
+          nowrap
+          actions={sessionToolbar ?? undefined}
           description={
-            <span className="text-base leading-relaxed text-slate-700">
-              {adminUnscoped ? (
-                <>
-                  Choose a contact from the <strong>Clients</strong> or <strong>Prospects</strong>{" "}
-                  list, or pick <strong>+ Add new person</strong> to score someone who is not listed
-                  yet.
-                </>
-              ) : (
-                <>
-                  Choose someone from the list, or pick <strong>+ Add new person</strong>, enter
-                  their details, and click <strong>Start session</strong> to begin scoring.
-                </>
-              )}
-            </span>
+            sessionSummary ? undefined : (
+              <span className="text-base leading-relaxed text-slate-700">
+                {adminUnscoped ? (
+                  <>
+                    Choose a contact from the <strong>Clients</strong> or{" "}
+                    <strong>Prospects</strong> list, or pick{" "}
+                    <strong>+ Add new person</strong> to score someone who is not listed
+                    yet.
+                  </>
+                ) : (
+                  <>
+                    Choose someone from the list, or pick <strong>+ Add new person</strong>,
+                    enter their details, and click <strong>Start session</strong> to begin
+                    scoring.
+                  </>
+                )}
+              </span>
+            )
           }
         />
       ) : null}
@@ -885,7 +947,8 @@ function CoachWorkshopPageContent() {
       )}
       {!isMinimalChrome && error && <p className="text-sm text-rose-600">{error}</p>}
 
-      {!isMinimalChrome && (!loading || sessionSummary) && !error && (
+      <div className="flex min-w-0 flex-col gap-6 overflow-x-hidden">
+      {!isMinimalChrome && !sessionSummary && (!loading || sessionSummary) && !error && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <WorkshopSessionPicker idPrefix="workshop-main" {...workshopPickerProps} />
         </div>
@@ -924,6 +987,7 @@ function CoachWorkshopPageContent() {
         contactId={scorecardModalContactId}
         onClose={() => setScorecardModalContactId(null)}
       />
+      </div>
     </div>
   );
 }

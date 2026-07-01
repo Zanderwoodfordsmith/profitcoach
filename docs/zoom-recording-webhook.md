@@ -7,10 +7,12 @@ Automatically attach Zoom cloud recordings to the community calendar when a reco
 | Setting | Value |
 |---------|-------|
 | **Method** | `POST` |
-| **URL** | `https://<your-production-app-domain>/api/webhooks/zoom/recordings` |
+| **URL** | `https://www.theprofitcoach.com/api/webhooks/zoom/recordings` |
+
+Use the `www` hostname — the apex domain (`theprofitcoach.com`) redirects POST requests with a 307, and Zoom will not follow that during validation.
 | **Health check** | `GET https://<your-production-app-domain>/api/webhooks/zoom/recordings` → `{ ok: true, configured: true }` |
 
-Replace `<your-production-app-domain>` with your deployed app host (e.g. Vercel production URL).
+Replace `<your-production-app-domain>` with your deployed app host. **Use `www.theprofitcoach.com`, not the apex domain** — `theprofitcoach.com` redirects POSTs and Zoom validation will fail.
 
 ## Environment variables
 
@@ -29,7 +31,7 @@ Add these on Vercel (or `.env.local` for local testing):
 2. Open **Features → Event Subscriptions**.
 3. Enable event subscriptions and add your endpoint URL:
    ```
-   https://<your-app-domain>/api/webhooks/zoom/recordings
+   https://www.theprofitcoach.com/api/webhooks/zoom/recordings
    ```
 4. Copy the **Secret Token** into `ZOOM_WEBHOOK_SECRET_TOKEN`.
 5. Subscribe to:

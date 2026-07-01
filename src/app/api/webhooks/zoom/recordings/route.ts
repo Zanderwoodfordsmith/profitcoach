@@ -30,12 +30,6 @@ export async function POST(request: Request) {
   }
 
   const rawBody = await request.text();
-  const timestamp = request.headers.get("x-zm-request-timestamp");
-  const signature = request.headers.get("x-zm-signature");
-
-  if (!verifyZoomWebhookSignature(rawBody, timestamp, signature, webhookSecret)) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
 
   let body: ZoomWebhookEnvelope;
   try {
@@ -44,6 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
+  // Zoom URL validation must be answered before signature checks (see Zoom docs).
   if (body.event === "endpoint.url_validation") {
     const plainToken = body.payload?.plainToken?.trim();
     if (!plainToken) {
@@ -55,6 +50,13 @@ export async function POST(request: Request) {
     return NextResponse.json(
       buildZoomUrlValidationResponse(plainToken, webhookSecret)
     );
+  }
+
+  const timestamp = request.headers.get("x-zm-request-timestamp");
+  const signature = request.headers.get("x-zm-signature");
+
+  if (!verifyZoomWebhookSignature(rawBody, timestamp, signature, webhookSecret)) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
   if (body.event !== "recording.completed") {

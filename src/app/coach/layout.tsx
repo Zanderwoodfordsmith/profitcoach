@@ -220,28 +220,32 @@ export default function CoachLayout({
             </div>
           ) : null
         ) : isMinimalWorkshopChrome ? (
-          <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
-            <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
-            {isImpersonatingCoach ? (
-              <div
-                className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
-                role="status"
-                aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
-              >
-                <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
-                  Admin
-                </span>
-                <AdminCoachImpersonationSwitcher coachName={coachName} />
-                <button
-                  type="button"
-                  onClick={handleExit}
-                  className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
+          workshopTopRightSlot || isImpersonatingCoach ? (
+            <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+              {workshopTopRightSlot ? (
+                <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
+              ) : null}
+              {isImpersonatingCoach ? (
+                <div
+                  className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
+                  role="status"
+                  aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
                 >
-                  Exit
-                </button>
-              </div>
-            ) : null}
-          </div>
+                  <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
+                    Admin
+                  </span>
+                  <AdminCoachImpersonationSwitcher coachName={coachName} />
+                  <button
+                    type="button"
+                    onClick={handleExit}
+                    className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
+                  >
+                    Exit
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null
         ) : (
           <>
             <MobileDashboardTopBar

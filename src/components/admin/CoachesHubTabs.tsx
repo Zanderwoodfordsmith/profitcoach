@@ -7,7 +7,9 @@ import { PageHeaderUnderlineTabs } from "@/components/layout";
 export function CoachesHubTabs() {
   const pathname = usePathname();
   const onCoachesList =
-    pathname === "/admin" || pathname === "/admin/";
+    pathname === "/admin" ||
+    pathname === "/admin/" ||
+    Boolean(pathname?.startsWith("/admin/coaches/"));
   const onClientSuccess =
     pathname === "/admin/client-success" ||
     Boolean(pathname?.startsWith("/admin/client-success/"));

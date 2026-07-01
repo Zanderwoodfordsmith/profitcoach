@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { GenerateCertificateModal } from "@/components/admin/GenerateCertificateModal";
@@ -2698,7 +2699,12 @@ export default function AdminPage() {
                   </td>
                   <td className="w-max whitespace-nowrap px-4 py-2 font-medium text-slate-900">
                     <span className="inline-flex items-center gap-1.5">
-                      {coach.full_name ?? "—"}
+                      <Link
+                        href={`/admin/coaches/${coach.id}`}
+                        className="text-[#0c5290] hover:underline"
+                      >
+                        {coach.full_name ?? "—"}
+                      </Link>
                       <button
                         type="button"
                         onClick={() => {

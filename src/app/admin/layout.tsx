@@ -84,9 +84,13 @@ export default function AdminLayout({
       <UsageTracker />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {playbooksReader ? null : isMinimalWorkshopChrome ? (
-          <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
-            <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
-          </div>
+          <>
+            {workshopTopRightSlot ? (
+              <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+                <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
+              </div>
+            ) : null}
+          </>
         ) : (
           <>
             <MobileDashboardTopBar

@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import { isCoachAccessTier } from "@/lib/coachAccess/tiers";
-import { isCoachRecurringPaymentStatus } from "@/lib/coachBilling";
-import { isValidLadderLevelId } from "@/lib/ladder";
-import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
+import {
+  isCoachRecurringPaymentStatus,
+  type CoachRecurringPaymentStatus,
+} from "@/lib/coachBilling";
+import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
+import { deriveCurrentLevelId, isValidLadderLevelId } from "@/lib/ladder";
+import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
+import {
+  hasCalendarEmbed,
+  isCalendarSyncReady,
+  validateCrmLocationId,
+} from "@/lib/ghlCalendarSync";
+import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
+import {
+  resolveCommunityBio,
+  resolveDirectoryBio,
+  resolveDirectorySummary,
+} from "@/lib/profileBioFields";
+import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -49,6 +65,200 @@ async function requireAdmin(request: Request): Promise<
 const LEVELS = new Set(["certified", "professional", "elite"]);
 const CONFERENCE_STATUSES = new Set(["no", "maybe", "yes"]);
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export async function GET(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const authCheck = await requireAdmin(_request);
+  if (authCheck.error) {
+    const status = authCheck.error === "Server error." ? 500 : 401;
+    return NextResponse.json({ error: authCheck.error }, { status });
+  }
+
+  const { id: coachId } = await context.params;
+  if (!coachId?.trim()) {
+    return NextResponse.json({ error: "Missing coach id." }, { status: 400 });
+  }
+
+  try {
+    const profileSelect =
+      "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)";
+    const coachSelect = `
+      id, slug, directory_listed, directory_level, conference_status, lead_webhook_url,
+      crm_profile_name, crm_location_id, calendar_embed_code, access_tier, access_tier_locked,
+      ghl_calendar_id, has_sales_robot_account, sales_robot_active_campaigns,
+      sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status,
+      ${profileSelect}
+    `;
+
+    const { data: row, error: coachError } = await supabaseAdmin
+      .from("coaches")
+      .select(coachSelect)
+      .eq("id", coachId)
+      .maybeSingle();
+
+    if (coachError) {
+      console.error("admin/coaches/[id] GET coach error:", coachError);
+      return NextResponse.json({ error: "Unable to load coach." }, { status: 500 });
+    }
+    if (!row) {
+      return NextResponse.json({ error: "Coach not found." }, { status: 404 });
+    }
+
+    const profRaw = row.profiles as
+      | Record<string, unknown>
+      | Array<Record<string, unknown>>
+      | undefined;
+    const prof: Record<string, unknown> | undefined = Array.isArray(profRaw)
+      ? profRaw[0]
+      : profRaw;
+
+    const [achRes, contactsRes, paymentsRes, authUserRes] = await Promise.all([
+      supabaseAdmin
+        .from("community_ladder_achievements")
+        .select("level_id")
+        .eq("user_id", coachId),
+      supabaseAdmin
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
+        .eq("coach_id", coachId),
+      supabaseAdmin
+        .from("coach_payments")
+        .select(
+          "id, stripe_payment_intent_id, customer_email, customer_company_name, amount_cents, currency, status, paid_at, assignment_method, decline_reason, description, notes, payment_source, billing_kind_override"
+        )
+        .eq("coach_id", coachId)
+        .order("paid_at", { ascending: false }),
+      supabaseAdmin.auth.admin.getUserById(coachId),
+    ]);
+
+    const achievements = (achRes.data ?? []).map((item) => ({
+      level_id: item.level_id as string,
+    }));
+    const currentLevel = deriveCurrentLevelId(achievements);
+    const bioFields = {
+      bio: (prof?.bio as string | null) ?? null,
+      community_bio: (prof?.community_bio as string | null) ?? null,
+      directory_summary: (prof?.directory_summary as string | null) ?? null,
+      directory_bio: (prof?.directory_bio as string | null) ?? null,
+    };
+
+    const succeededPayments = (paymentsRes.data ?? []).filter(
+      (payment) => payment.status === "succeeded"
+    ) as PaymentForBillingKind[];
+
+    const coach = {
+      id: row.id as string,
+      slug: row.slug as string,
+      email: authUserRes.data.user?.email ?? null,
+      full_name: (prof?.full_name as string | null) ?? null,
+      avatar_url: (prof?.avatar_url as string | null) ?? null,
+      coach_business_name: (prof?.coach_business_name as string | null) ?? null,
+      linkedin_url: (prof?.linkedin_url as string | null) ?? null,
+      current_monthly_income: (() => {
+        const raw = prof?.coaching_income_reported_2024;
+        if (typeof raw !== "string") return null;
+        const parsed = raw
+          .trim()
+          .replace(/,/g, "")
+          .match(/-?\d+(?:\.\d+)?/);
+        if (!parsed) return null;
+        const numeric = Number(parsed[0]);
+        return Number.isFinite(numeric) ? numeric : null;
+      })(),
+      goal_monthly_income:
+        typeof prof?.ladder_goal_level === "string"
+          ? defaultMonthlyIncomeForLevelId(prof.ladder_goal_level)
+          : null,
+      joined_at: resolveCoachJoinedAt(row.slug as string, {
+        discoCommunityJoinedOn:
+          (prof?.disco_community_joined_on as string | null) ?? null,
+        profileCreatedAt: (prof?.created_at as string | null) ?? null,
+      }),
+      client_count: contactsRes.count ?? 0,
+      directory_listed: !!row.directory_listed,
+      directory_level: (row.directory_level as string | null) ?? null,
+      lead_webhook_url: (row.lead_webhook_url as string | null) ?? null,
+      conference_status: (row.conference_status as string | null) ?? null,
+      crm_profile_name: (row.crm_profile_name as string | null) ?? null,
+      crm_location_id: (row.crm_location_id as string | null) ?? null,
+      has_calendar_embed: hasCalendarEmbed(
+        row.calendar_embed_code as string | null,
+        (row.ghl_calendar_id as string | null) ?? null
+      ),
+      calendar_sync_ready: isCalendarSyncReady({
+        crmLocationId: row.crm_location_id as string | null,
+        calendarEmbedCode: row.calendar_embed_code as string | null,
+        ghlCalendarId: (row.ghl_calendar_id as string | null) ?? null,
+        leadWebhookUrl: row.lead_webhook_url as string | null,
+      }),
+      has_lead_webhook: Boolean((row.lead_webhook_url as string | null)?.trim()),
+      has_community_bio: Boolean(resolveCommunityBio(bioFields)),
+      has_directory_summary: Boolean(resolveDirectorySummary(bioFields)),
+      has_directory_bio: Boolean(resolveDirectoryBio(bioFields)),
+      has_sales_robot_account: !!row.has_sales_robot_account,
+      sales_robot_active_campaigns:
+        typeof row.sales_robot_active_campaigns === "number"
+          ? row.sales_robot_active_campaigns
+          : row.sales_robot_active_campaigns != null
+            ? Number(row.sales_robot_active_campaigns)
+            : null,
+      sales_robot_paying_accounts:
+        typeof row.sales_robot_paying_accounts === "number"
+          ? row.sales_robot_paying_accounts
+          : row.sales_robot_paying_accounts != null
+            ? Number(row.sales_robot_paying_accounts)
+            : null,
+      has_profit_coach_email_account: !!row.has_profit_coach_email_account,
+      recurring_payment_status:
+        (row.recurring_payment_status as string | null) ?? null,
+      recurring_billing_active: coachHasActiveRecurringBilling({
+        recurringPaymentStatus: isCoachRecurringPaymentStatus(
+          (row.recurring_payment_status as string | null) ?? ""
+        )
+          ? ((row.recurring_payment_status as string) as CoachRecurringPaymentStatus)
+          : null,
+        payments: succeededPayments,
+      }),
+      access_tier: (row.access_tier as string | null) ?? "pro",
+      access_tier_locked: Boolean(row.access_tier_locked),
+      ladder_level: currentLevel,
+      ladder_goal_level: (prof?.ladder_goal_level as string | null) ?? null,
+      ladder_goal_target_date:
+        (prof?.ladder_goal_target_date as string | null) ?? null,
+      last_login_at: authUserRes.data.user?.last_sign_in_at ?? null,
+      community_bio: bioFields.community_bio,
+      directory_summary: bioFields.directory_summary,
+      directory_bio: bioFields.directory_bio,
+    };
+
+    const payments = (paymentsRes.data ?? []).map((payment) => ({
+      id: payment.id as string,
+      stripe_payment_intent_id:
+        (payment.stripe_payment_intent_id as string | null) ?? null,
+      customer_email: payment.customer_email as string,
+      customer_company_name:
+        (payment.customer_company_name as string | null) ?? null,
+      amount_cents: payment.amount_cents as number,
+      currency: payment.currency as string,
+      status: payment.status as string,
+      paid_at: payment.paid_at as string,
+      assignment_method: payment.assignment_method as string,
+      decline_reason: (payment.decline_reason as string | null) ?? null,
+      description: (payment.description as string | null) ?? null,
+      notes: (payment.notes as string | null) ?? null,
+      payment_source: (payment.payment_source as string) ?? "stripe",
+      billing_kind_override:
+        (payment.billing_kind_override as string | null) ?? null,
+    }));
+
+    return NextResponse.json({ coach, payments });
+  } catch (err) {
+    console.error("admin/coaches/[id] GET catch:", err);
+    return NextResponse.json({ error: "Unable to load coach." }, { status: 500 });
+  }
+}
 
 type PatchBody = {
   directory_listed?: boolean;

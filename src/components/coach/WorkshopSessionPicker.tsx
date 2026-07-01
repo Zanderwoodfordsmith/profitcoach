@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { BarChart2, ChevronDown, Check, Loader2, Share2, UserRound } from "lucide-react";
 
 const NEW_PERSON_VALUE = "__new__";
 
@@ -12,6 +13,55 @@ export type WorkshopSessionSummary = {
   jobTitle?: string | null;
   businessName?: string | null;
 };
+
+/** Read-only business + person labels for Boss Pro headers (coach and shared client link). */
+export function WorkshopSessionHeaderLabel({
+  fullName,
+  businessName,
+  compact = false,
+  className = "",
+}: {
+  fullName: string;
+  businessName?: string | null;
+  compact?: boolean;
+  className?: string;
+}) {
+  const business = businessName?.trim() ?? "";
+  const person = fullName.trim();
+
+  return (
+    <div className={`min-w-0 max-w-[min(100%,20rem)] text-right ${className}`.trim()}>
+      {business ? (
+        <span
+          className={
+            compact
+              ? "block truncate text-sm font-semibold text-slate-900"
+              : "block truncate text-base font-semibold text-slate-900 sm:text-lg"
+          }
+          title={business}
+        >
+          {business}
+        </span>
+      ) : null}
+      {person ? (
+        <span
+          className={
+            business
+              ? compact
+                ? "mt-0.5 block truncate text-[11px] text-slate-600"
+                : "mt-0.5 block truncate text-sm text-slate-600"
+              : compact
+                ? "block truncate text-sm font-semibold text-slate-900"
+                : "block truncate text-base font-semibold text-slate-900 sm:text-lg"
+          }
+          title={person}
+        >
+          {person}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 type ContactOption = {
   id: string;
@@ -52,11 +102,18 @@ type WorkshopSessionPickerProps = {
   compact?: boolean;
   showScorecardLink?: boolean;
   onViewScorecard?: () => void;
+  showClientDashboardLink?: boolean;
+  clientDashboardLinkLoading?: boolean;
+  onCopyClientDashboardLink?: () => void;
+  clientDashboardLinkCopied?: boolean;
+  clientDashboardLinkError?: string | null;
   onPickerOpen?: () => void;
   /** Hides the default “Start session” heading when no contact is selected. */
   hideEmptyStateHeading?: boolean;
   /** Opens the contact dropdown as soon as the picker mounts (e.g. centered Boss Pro gate). */
   autoOpenContactList?: boolean;
+  /** When true, parent renders session actions (e.g. in page header). */
+  suppressSessionSummary?: boolean;
 };
 
 function formatSessionSubtitle(summary: WorkshopSessionSummary): string {
@@ -502,80 +559,285 @@ function WorkshopContactCombobox({
   );
 }
 
-function WorkshopSessionSummaryView({
+export function WorkshopSessionActionsMenu({
   summary,
   onChangeSession,
-  compact,
+  compact = false,
+  variant = "inline",
   showScorecardLink = false,
   onViewScorecard,
+  showClientDashboardLink = false,
+  clientDashboardLinkLoading = false,
+  onCopyClientDashboardLink,
+  clientDashboardLinkCopied = false,
+  clientDashboardLinkError = null,
 }: {
   summary: WorkshopSessionSummary;
   onChangeSession: () => void;
   compact?: boolean;
+  variant?: "inline" | "toolbar";
   showScorecardLink?: boolean;
   onViewScorecard?: () => void;
+  showClientDashboardLink?: boolean;
+  clientDashboardLinkLoading?: boolean;
+  onCopyClientDashboardLink?: () => void;
+  clientDashboardLinkCopied?: boolean;
+  clientDashboardLinkError?: string | null;
 }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(
+    null
+  );
   const subtitle = formatSessionSubtitle(summary);
+  const isToolbar = variant === "toolbar";
 
-  return (
-    <div className={compact ? "min-w-0" : undefined}>
-      <div className="flex items-start justify-between gap-3">
-        <p
-          className={
-            compact
-              ? "text-[11px] font-semibold uppercase tracking-wide text-slate-500"
-              : "text-xs font-semibold uppercase tracking-wide text-slate-500"
-          }
+  useLayoutEffect(() => {
+    if (!open || !isToolbar || !rootRef.current) {
+      setMenuPosition(null);
+      return;
+    }
+
+    const syncMenuPosition = () => {
+      const el = rootRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
+    };
+
+    syncMenuPosition();
+    window.addEventListener("resize", syncMenuPosition);
+    window.addEventListener("scroll", syncMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", syncMenuPosition);
+      window.removeEventListener("scroll", syncMenuPosition, true);
+    };
+  }, [open, isToolbar]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: MouseEvent) {
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!clientDashboardLinkCopied) return;
+    const timer = window.setTimeout(() => setOpen(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, [clientDashboardLinkCopied]);
+
+  const menuItemClassName =
+    "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+
+  const actionsMenuPanel = (
+    <>
+      {showClientDashboardLink && onCopyClientDashboardLink ? (
+        <button
+          type="button"
+          role="menuitem"
+          disabled={clientDashboardLinkLoading}
+          onClick={() => {
+            onCopyClientDashboardLink();
+          }}
+          className={menuItemClassName}
         >
-          Review
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
-          {showScorecardLink && onViewScorecard ? (
-            <button
-              type="button"
-              onClick={onViewScorecard}
-              className={
-                compact
-                  ? "text-[11px] font-medium text-sky-700 hover:text-sky-800 hover:underline"
-                  : "text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
-              }
-            >
-              View BOSS Score
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onChangeSession}
+          {clientDashboardLinkLoading ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-slate-500" aria-hidden />
+          ) : clientDashboardLinkCopied ? (
+            <Check className="h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+          ) : (
+            <Share2 className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          )}
+          <span>
+            {clientDashboardLinkLoading
+              ? "Preparing link…"
+              : clientDashboardLinkCopied
+                ? "Client link copied"
+                : "Share client link"}
+          </span>
+        </button>
+      ) : null}
+
+      {showScorecardLink && onViewScorecard ? (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            onViewScorecard();
+            setOpen(false);
+          }}
+          className={menuItemClassName}
+        >
+          <BarChart2 className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+          <span>View BOSS Score</span>
+        </button>
+      ) : null}
+
+      {(showClientDashboardLink || showScorecardLink) ? (
+        <div className="my-1 border-t border-slate-100" role="separator" />
+      ) : null}
+
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          onChangeSession();
+          setOpen(false);
+        }}
+        className={menuItemClassName}
+      >
+        <UserRound className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+        <span>Change contact</span>
+      </button>
+    </>
+  );
+
+  const actionsMenu =
+    open && (!isToolbar || menuPosition) ? (
+      isToolbar && menuPosition ? (
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-[200] min-w-[14rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5"
+            style={{ top: menuPosition.top, right: menuPosition.right }}
+          >
+            {actionsMenuPanel}
+          </div>,
+          document.body
+        )
+      ) : (
+        <div
+          role="menu"
+          className="absolute z-[200] mt-1 min-w-[14rem] rounded-lg border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5 left-0 top-[calc(100%+4px)]"
+        >
+          {actionsMenuPanel}
+        </div>
+      )
+    ) : null;
+
+  if (isToolbar) {
+    const businessName = summary.businessName?.trim() ?? "";
+    const personName = summary.fullName.trim();
+    const ariaLabel = [businessName, personName].filter(Boolean).join(", ") || "Session";
+
+    return (
+      <div ref={rootRef} className="relative min-w-0 max-w-[min(100%,20rem)]">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          aria-label={`${ariaLabel} session actions`}
+          className="group inline-flex max-w-full items-start gap-2 rounded-md py-0.5 text-right transition-colors hover:text-sky-800"
+        >
+          <WorkshopSessionHeaderLabel
+            fullName={summary.fullName}
+            businessName={summary.businessName}
+            compact={compact}
+            className="flex-1"
+          />
+          <ChevronDown
+            className={`mt-1 h-4 w-4 shrink-0 text-slate-500 transition-transform group-hover:text-sky-700 ${
+              open ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
+        </button>
+        {actionsMenu}
+        {clientDashboardLinkError ? (
+          <p
             className={
               compact
-                ? "shrink-0 text-[11px] font-medium text-sky-700 hover:text-sky-800 hover:underline"
-                : "shrink-0 text-sm font-medium text-sky-700 hover:text-sky-800 hover:underline"
+                ? "mt-1 max-w-[16rem] text-right text-[11px] leading-snug text-rose-600"
+                : "mt-1 max-w-xs text-right text-xs leading-snug text-rose-600"
             }
+            role="alert"
           >
-            Change
-          </button>
-        </div>
+            {clientDashboardLinkError}
+          </p>
+        ) : null}
       </div>
-      <p
-        className={
-          compact
-            ? "mt-0.5 truncate text-sm font-semibold text-slate-900"
-            : "mt-1 text-base font-semibold text-slate-900"
-        }
-        title={summary.fullName}
+    );
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      className={
+        compact ? "relative min-w-0" : "relative w-full max-w-md"
+      }
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="flex w-full min-w-0 items-start gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition-colors hover:border-sky-200 hover:bg-sky-50/30"
       >
-        {summary.fullName}
-      </p>
-      {subtitle ? (
+        <span className="min-w-0 flex-1">
+          <span
+            className={
+              compact
+                ? "block truncate text-sm font-semibold text-slate-900"
+                : "block truncate text-base font-semibold text-slate-900"
+            }
+            title={summary.fullName}
+          >
+            {summary.fullName}
+          </span>
+          {subtitle ? (
+            <span
+              className={
+                compact
+                  ? "mt-0.5 block truncate text-[11px] text-slate-600"
+                  : "mt-0.5 block truncate text-sm text-slate-600"
+              }
+              title={subtitle}
+            >
+              {subtitle}
+            </span>
+          ) : null}
+        </span>
+        <ChevronDown
+          className={`mt-1 h-5 w-5 shrink-0 text-slate-500 transition-transform group-hover:text-slate-700 ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        />
+      </button>
+
+      {actionsMenu}
+
+      {clientDashboardLinkError ? (
         <p
           className={
             compact
-              ? "truncate text-[11px] text-slate-600"
-              : "mt-0.5 text-sm text-slate-600"
+              ? "mt-1 text-[11px] leading-snug text-rose-600"
+              : "mt-2 text-xs leading-snug text-rose-600"
           }
-          title={subtitle}
+          role="alert"
         >
-          {subtitle}
+          {clientDashboardLinkError}
         </p>
       ) : null}
     </div>
@@ -610,9 +872,15 @@ export function WorkshopSessionPicker({
   compact = false,
   showScorecardLink = false,
   onViewScorecard,
+  showClientDashboardLink = false,
+  clientDashboardLinkLoading = false,
+  onCopyClientDashboardLink,
+  clientDashboardLinkCopied = false,
+  clientDashboardLinkError = null,
   onPickerOpen,
   hideEmptyStateHeading = false,
   autoOpenContactList = false,
+  suppressSessionSummary = false,
 }: WorkshopSessionPickerProps) {
   const selectId = `${idPrefix}-contact-select`;
   const nameId = `${idPrefix}-new-name`;
@@ -646,13 +914,19 @@ export function WorkshopSessionPicker({
     : "mb-1.5 block text-sm font-medium text-slate-700";
 
   if (sessionSummary) {
+    if (suppressSessionSummary) return null;
     return (
-      <WorkshopSessionSummaryView
+      <WorkshopSessionActionsMenu
         summary={sessionSummary}
         onChangeSession={onChangeSession}
         compact={compact}
         showScorecardLink={showScorecardLink}
         onViewScorecard={onViewScorecard}
+        showClientDashboardLink={showClientDashboardLink}
+        clientDashboardLinkLoading={clientDashboardLinkLoading}
+        onCopyClientDashboardLink={onCopyClientDashboardLink}
+        clientDashboardLinkCopied={clientDashboardLinkCopied}
+        clientDashboardLinkError={clientDashboardLinkError}
       />
     );
   }

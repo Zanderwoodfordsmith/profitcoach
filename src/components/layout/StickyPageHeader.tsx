@@ -35,6 +35,8 @@ export type StickyPageHeaderProps = {
   bleedInset?: string | false;
   /** Ref on the outer sticky shell — for measuring height without breaking stickiness. */
   rootRef?: Ref<HTMLDivElement>;
+  /** Keep title and actions on one row (e.g. Boss Pro session picker). */
+  nowrap?: boolean;
 };
 
 export function StickyPageHeader({
@@ -49,6 +51,7 @@ export function StickyPageHeader({
   className,
   bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px]",
   rootRef,
+  nowrap = false,
 }: StickyPageHeaderProps) {
   const shell = [
     "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-2 shadow-sm",
@@ -61,7 +64,7 @@ export function StickyPageHeader({
   return (
     <div ref={rootRef} className={shell}>
       <div
-        className={`flex flex-wrap justify-between gap-3 ${tabs ? "items-end" : "items-start"}`}
+        className={`flex ${nowrap ? "flex-nowrap" : "flex-wrap"} justify-between gap-3 ${tabs ? "items-end" : "items-start"}`}
       >
         <header className="min-w-0 flex-1 text-left">
           {leading ? <div className="mb-2">{leading}</div> : null}
@@ -79,9 +82,13 @@ export function StickyPageHeader({
           >
             <div className="flex min-w-0 items-center gap-2">
               {title != null && title !== "" ? (
-                <h1 className="py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                  {title}
-                </h1>
+                typeof title === "string" ? (
+                  <h1 className="py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                    {title}
+                  </h1>
+                ) : (
+                  <div className="min-w-0 py-1">{title}</div>
+                )
               ) : null}
               {description && descriptionPlacement === "info" ? (
                 <PageHeaderDescriptionInfo>
@@ -104,7 +111,7 @@ export function StickyPageHeader({
         </header>
         {actions ? (
           <div
-            className={`flex shrink-0 flex-col items-stretch gap-2 sm:items-end ${tabs ? "" : "self-start"}`}
+            className={`relative z-40 flex shrink-0 flex-col items-stretch gap-2 overflow-visible sm:items-end ${tabs ? "" : "self-start"}`}
           >
             {actions}
           </div>
