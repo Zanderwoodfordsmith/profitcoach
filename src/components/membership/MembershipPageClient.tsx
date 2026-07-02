@@ -35,6 +35,10 @@ import {
   type MembershipPlanKey,
 } from "@/config/membershipPlans";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import {
+  marketingAssetPublicUrl,
+  MEMBERSHIP_CONFERENCE_VIDEO_PATH,
+} from "@/lib/marketingAssets";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type PlanInfo = {
@@ -297,7 +301,7 @@ function scrollToPlans() {
   document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" });
 }
 
-const MEMBERSHIP_CTA_VIDEO_SRC = "/membership/bca-conference-walk-around.mp4";
+const MEMBERSHIP_CTA_VIDEO_SRC = marketingAssetPublicUrl(MEMBERSHIP_CONFERENCE_VIDEO_PATH);
 const MEMBERSHIP_CTA_VIDEO_POSTER = "/membership/bca-conference-walk-around-poster.png";
 
 function MembershipConferenceVideo() {
