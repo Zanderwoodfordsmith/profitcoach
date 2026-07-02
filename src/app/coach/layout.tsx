@@ -15,6 +15,7 @@ import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext"
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
+import { MembershipPaymentBanner } from "@/components/membership/MembershipPaymentBanner";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
@@ -154,7 +155,9 @@ export default function CoachLayout({
     }
   }, [pathname]);
 
-  const playbooksReader = isPlaybooksReaderPath(pathname);
+  const membershipPage = pathname === "/coach/membership";
+  const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
+  const playbooksReader = fullBleed;
   const sidebarVisible = sidebarOpen && !playbooksReader;
   const shellPadClass = sidebarVisible ? "md:pl-64" : "pl-0";
   const topClusterMaxW = sidebarVisible
@@ -166,12 +169,6 @@ export default function CoachLayout({
     impersonatingCoachId
   );
   const { hasFeature } = useCoachAccess(impersonatingCoachId);
-
-  useEffect(() => {
-    if (!isMinimalWorkshopChrome) {
-      setWorkshopTopRightSlot(null);
-    }
-  }, [isMinimalWorkshopChrome]);
 
   const bossWorkshopChromeValue = useMemo(
     () => ({
@@ -192,7 +189,7 @@ export default function CoachLayout({
   return (
     <div
       className={`min-h-screen overflow-x-hidden ${shellPadClass} text-slate-900 ${
-        playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"
+        membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"
       }`}
     >
       <UsageTracker />
@@ -264,20 +261,25 @@ export default function CoachLayout({
             <div
               className={`fixed right-3 top-1.5 z-[100] hidden flex-col items-end gap-2 sm:right-5 md:flex ${topClusterMaxW}`}
             >
-              <DashboardTopActions
-                variant="coach"
-                signingOut={signingOut}
-                onSignOut={handleSignOut}
-                avatarOverride={
-                  isImpersonatingCoach
-                    ? {
-                        name: coachName ?? "Coach",
-                        avatarUrl: coachAvatarUrl,
-                      }
-                    : null
-                }
-                className="!static !right-auto !top-auto z-0"
-              />
+              <div className="flex max-w-full items-center justify-end gap-3">
+                {bossWorkshopPage && workshopTopRightSlot ? (
+                  <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
+                ) : null}
+                <DashboardTopActions
+                  variant="coach"
+                  signingOut={signingOut}
+                  onSignOut={handleSignOut}
+                  avatarOverride={
+                    isImpersonatingCoach
+                      ? {
+                          name: coachName ?? "Coach",
+                          avatarUrl: coachAvatarUrl,
+                        }
+                      : null
+                  }
+                  className="!static !right-auto !top-auto z-0 shrink-0"
+                />
+              </div>
             {isImpersonatingCoach ? (
               <div
                 className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
@@ -325,7 +327,9 @@ export default function CoachLayout({
       ) : null}
         <main
           className={`min-h-screen min-w-0 w-full pt-0 ${
-            playbooksReader
+            membershipPage
+              ? "px-0 pb-0"
+              : playbooksReader
               ? "px-0 pb-10"
               : `px-4 md:px-[60px] ${
                   sidebarVisible
@@ -341,7 +345,10 @@ export default function CoachLayout({
               isSignaturePage ? "max-w-none gap-0" : playbooksReader ? "w-full gap-0" : "gap-4"
             }`}
           >
-            <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
+            <CoachRouteAccessGuard>
+              {!membershipPage ? <MembershipPaymentBanner /> : null}
+              {children}
+            </CoachRouteAccessGuard>
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>

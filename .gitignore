@@ -32,6 +32,8 @@
 # misc
 .DS_Store
 *.pem
+.tmp-frames/
+public/membership/*.mp4
 
 # debug
 npm-debug.log*

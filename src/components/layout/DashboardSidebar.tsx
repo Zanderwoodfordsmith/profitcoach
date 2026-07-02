@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, MessagesSquare, X } from "lucide-react";
+import { LogOut, MessagesSquare, CreditCard, X } from "lucide-react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 import {
   adminSectionNavItems,
@@ -19,6 +19,7 @@ import {
   navLinkActive,
 } from "@/components/layout/dashboardNavItems";
 import type { CoachFeature } from "@/lib/coachAccess/tiers";
+import { membershipPreviewMode } from "@/lib/membership/preview";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount } from "@/components/layout/useNewFeedbackCount";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -286,6 +287,19 @@ export function DashboardSidebar({
           )}
         </nav>
         <div className="shrink-0 border-t border-white/15 px-3 py-3">
+          {variant === "coach" && !membershipPreviewMode() ? (
+            <Link
+              href="/coach/membership"
+              className={`mb-1 flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                pathname === "/coach/membership"
+                  ? "bg-sky-500/80 text-white"
+                  : "text-slate-100/90 hover:bg-white/10"
+              }`}
+            >
+              <CreditCard className="h-5 w-5 shrink-0 opacity-95" />
+              Membership
+            </Link>
+          ) : null}
           <button
             type="button"
             onClick={() => setFeedbackOpen(true)}
@@ -477,6 +491,20 @@ export function DashboardSidebar({
               </div>
             ) : null}
             <div className="border-t border-white/15 px-4 py-3">
+              {variant === "coach" && !membershipPreviewMode() ? (
+                <Link
+                  href="/coach/membership"
+                  onClick={closeMobileSheets}
+                  className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                    pathname === "/coach/membership"
+                      ? "bg-sky-500/80 text-white"
+                      : "text-slate-100/90 hover:bg-white/10"
+                  }`}
+                >
+                  <CreditCard className="h-5 w-5 shrink-0 opacity-95" />
+                  Membership
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {

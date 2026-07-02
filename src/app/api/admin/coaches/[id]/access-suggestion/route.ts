@@ -91,7 +91,7 @@ export async function GET(
 
   const currentTier = isCoachAccessTier(coach.access_tier ?? "")
     ? (coach.access_tier as CoachAccessTier)
-    : "pro";
+    : "premium";
 
   return NextResponse.json({
     currentTier,

@@ -6,6 +6,8 @@ export const COMMUNITY_NOTIFICATION_READ_KEY_PREFIX = "community:notifications";
 
 export type NotificationReadState = {
   readIds: Record<string, true>;
+  /** Explicitly marked unread; overrides readAllBefore cutoffs. */
+  unreadIds?: Record<string, true>;
   /** Legacy global cutoff; used when section-specific cutoffs are unset. */
   readAllBefore: string | null;
   communityReadAllBefore?: string | null;
@@ -14,6 +16,7 @@ export type NotificationReadState = {
 
 export const EMPTY_NOTIFICATION_READ_STATE: NotificationReadState = {
   readIds: {},
+  unreadIds: {},
   readAllBefore: null,
   communityReadAllBefore: null,
   prospectsReadAllBefore: null,
@@ -38,6 +41,7 @@ export function isNotificationUnread(
   state: NotificationReadState
 ): boolean {
   if (state.readIds[item.id]) return false;
+  if (state.unreadIds?.[item.id]) return true;
   const readAllBefore = sectionReadAllBefore(item.id, state);
   if (!readAllBefore) return true;
   return (
@@ -51,8 +55,17 @@ export function markNotificationSectionRead(
 ): NotificationReadState {
   const prev = loadNotificationReadState(uid);
   const now = new Date().toISOString();
+  const nextUnreadIds: Record<string, true> = {};
+  for (const id of Object.keys(prev.unreadIds ?? {})) {
+    const belongsToSection =
+      section === "prospects"
+        ? isProspectNotificationId(id)
+        : !isProspectNotificationId(id);
+    if (!belongsToSection) nextUnreadIds[id] = true;
+  }
   const next: NotificationReadState = {
     ...prev,
+    unreadIds: nextUnreadIds,
     ...(section === "community"
       ? { communityReadAllBefore: now }
       : { prospectsReadAllBefore: now }),
@@ -71,6 +84,7 @@ export function loadNotificationReadState(uid: string): NotificationReadState {
     const parsed = JSON.parse(raw) as Partial<NotificationReadState>;
     return {
       readIds: parsed.readIds ?? {},
+      unreadIds: parsed.unreadIds ?? {},
       readAllBefore: parsed.readAllBefore ?? null,
       communityReadAllBefore: parsed.communityReadAllBefore ?? null,
       prospectsReadAllBefore: parsed.prospectsReadAllBefore ?? null,
@@ -96,10 +110,13 @@ export function markCommunityNotificationRead(
   notificationId: string
 ): void {
   const prev = loadNotificationReadState(uid);
-  if (prev.readIds[notificationId]) return;
+  if (prev.readIds[notificationId] && !prev.unreadIds?.[notificationId]) return;
+  const nextUnreadIds = { ...(prev.unreadIds ?? {}) };
+  delete nextUnreadIds[notificationId];
   persistNotificationReadState(uid, {
     ...prev,
     readIds: { ...prev.readIds, [notificationId]: true },
+    unreadIds: nextUnreadIds,
   });
 }
 

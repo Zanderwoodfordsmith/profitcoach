@@ -69,6 +69,12 @@ type CoachDetail = {
   recurring_billing_active: boolean;
   access_tier: CoachAccessTier;
   access_tier_locked: boolean;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  membership_status: string | null;
+  membership_interval: string | null;
+  membership_current_period_end: string | null;
+  membership_cancel_at_period_end: boolean;
   ladder_level: string | null;
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
@@ -464,6 +470,26 @@ export default function AdminCoachDetailPage({
                   <DetailField
                     label="Recurring active"
                     value={coach.recurring_billing_active ? "Yes" : "No"}
+                  />
+                  <DetailField
+                    label="Membership status"
+                    value={coach.membership_status ?? "Not set"}
+                  />
+                  <DetailField
+                    label="Billing interval"
+                    value={coach.membership_interval ?? "—"}
+                  />
+                  <DetailField
+                    label="Period end"
+                    value={
+                      coach.membership_current_period_end
+                        ? formatIsoDate(coach.membership_current_period_end)
+                        : "—"
+                    }
+                  />
+                  <DetailField
+                    label="Stripe subscription"
+                    value={coach.stripe_subscription_id ?? "—"}
                   />
                   <DetailField
                     label="Sales Robot"

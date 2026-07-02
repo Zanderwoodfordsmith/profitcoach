@@ -11,7 +11,7 @@ export type CoachAccessState = {
 };
 
 const EMPTY_ACCESS: CoachAccessState = {
-  tier: "pro",
+  tier: "premium",
   tierLocked: false,
   features: [],
 };

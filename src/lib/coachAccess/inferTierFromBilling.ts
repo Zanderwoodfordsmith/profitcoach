@@ -20,7 +20,7 @@ function daysSince(iso: string): number {
   return Math.floor(ms / (24 * 60 * 60 * 1000));
 }
 
-function statusSuggestsPro(
+function statusSuggestsPremium(
   status: CoachRecurringPaymentStatus | null | undefined
 ): boolean {
   if (!status) return false;
@@ -80,9 +80,9 @@ export function inferTierFromBilling(input: {
     };
   }
 
-  if (statusSuggestsPro(recurringPaymentStatus)) {
+  if (statusSuggestsPremium(recurringPaymentStatus)) {
     return {
-      suggestedTier: "pro",
+      suggestedTier: "premium",
       reason: `Billing status is ${recurringPaymentStatus}.`,
       confidence: "high",
     };
@@ -90,7 +90,7 @@ export function inferTierFromBilling(input: {
 
   if (hasRecentRecurringPayment(payments)) {
     return {
-      suggestedTier: "pro",
+      suggestedTier: "premium",
       reason: "Recent recurring-tier payment found.",
       confidence: "medium",
     };
@@ -99,7 +99,7 @@ export function inferTierFromBilling(input: {
   if (payments.some((p) => p.status === "succeeded")) {
     return {
       suggestedTier: null,
-      reason: "Payments found but none match active Pro billing — review manually.",
+      reason: "Payments found but none match active Premium billing — review manually.",
       confidence: "low",
     };
   }

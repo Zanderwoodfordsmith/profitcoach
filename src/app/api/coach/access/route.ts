@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { resolveCoachAccessForUserId } from "@/lib/coachAccess/resolveCoachAccess";
-import { featuresForTier } from "@/lib/coachAccess/tiers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
@@ -41,6 +40,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     tier: access.tier,
     tierLocked: access.tierLocked,
-    features: featuresForTier(access.tier),
+    features: access.features,
+    enforcementEnabled: access.enforcementEnabled,
   });
 }

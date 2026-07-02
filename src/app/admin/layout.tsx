@@ -40,12 +40,6 @@ export default function AdminLayout({
   const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
 
-  useEffect(() => {
-    if (!isMinimalWorkshopChrome) {
-      setWorkshopTopRightSlot(null);
-    }
-  }, [isMinimalWorkshopChrome]);
-
   const bossWorkshopChromeValue = useMemo(
     () => ({
       isMinimalWorkshopChrome,
@@ -98,12 +92,15 @@ export default function AdminLayout({
               signingOut={signingOut}
               onSignOut={handleSignOut}
             />
-            <div className="fixed right-5 top-1.5 z-[90] hidden md:block">
+            <div className="fixed right-5 top-1.5 z-[90] hidden items-center gap-3 md:flex">
+              {bossWorkshopPage && workshopTopRightSlot ? (
+                <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
+              ) : null}
               <DashboardTopActions
                 variant="admin"
                 signingOut={signingOut}
                 onSignOut={handleSignOut}
-                className="!static !right-auto !top-auto"
+                className="!static !right-auto !top-auto shrink-0"
               />
             </div>
           </>

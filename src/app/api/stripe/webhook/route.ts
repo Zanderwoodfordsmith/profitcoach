@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
+import {
+  linkStripeCustomerToCoach,
+  syncCoachMembershipFromSubscription,
+} from "@/lib/membership/syncFromStripe";
 import { loadCoachDirectory, upsertCoachPaymentFromStripe } from "@/lib/stripePaymentsSync";
 import { stripeServer } from "@/lib/stripeServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -13,6 +17,23 @@ function coalesceEmail(...values: Array<string | null | undefined>): string | nu
     if (trimmed) return trimmed;
   }
   return null;
+}
+
+async function customerEmailFromStripe(
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer | null
+): Promise<string | null> {
+  if (!customer) return null;
+  if (typeof customer === "string") {
+    try {
+      const fetched = await stripeServer.customers.retrieve(customer);
+      if (fetched.deleted) return null;
+      return coalesceEmail(fetched.email);
+    } catch {
+      return null;
+    }
+  }
+  if (customer.deleted) return null;
+  return coalesceEmail(customer.email);
 }
 
 export async function POST(request: Request) {
@@ -47,28 +68,120 @@ export async function POST(request: Request) {
           session.customer_details?.email,
           session.customer_email
         );
-        if (!customerEmail) break;
+        const coachId =
+          typeof session.metadata?.coach_id === "string"
+            ? session.metadata.coach_id
+            : null;
+
+        if (session.mode === "subscription" && session.subscription) {
+          const subscriptionId =
+            typeof session.subscription === "string"
+              ? session.subscription
+              : session.subscription.id;
+
+          const subscription =
+            await stripeServer.subscriptions.retrieve(subscriptionId);
+
+          if (coachId && session.customer) {
+            const customerId =
+              typeof session.customer === "string"
+                ? session.customer
+                : session.customer.id;
+            await linkStripeCustomerToCoach(supabaseAdmin, coachId, customerId);
+          }
+
+          await syncCoachMembershipFromSubscription(
+            supabaseAdmin,
+            subscription,
+            customerEmail
+          );
+        }
+
         const amountCents = session.amount_total ?? 0;
+        if (customerEmail && amountCents > 0) {
+          const paidAt = new Date(
+            (session.created ?? Math.floor(Date.now() / 1000)) * 1000
+          );
+
+          await upsertCoachPaymentFromStripe(supabaseAdmin, directory, {
+            stripePaymentIntentId:
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : session.payment_intent?.id ?? null,
+            stripeCheckoutSessionId: session.id,
+            customerEmail,
+            amountCents,
+            currency: session.currency ?? "gbp",
+            status: "succeeded",
+            paidAtIso: paidAt.toISOString(),
+            metadataCoachId: coachId,
+            notes: "synced via checkout.session.completed",
+          });
+        }
+        break;
+      }
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+      case "customer.subscription.deleted": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerEmail = await customerEmailFromStripe(subscription.customer);
+        await syncCoachMembershipFromSubscription(
+          supabaseAdmin,
+          subscription,
+          customerEmail
+        );
+        break;
+      }
+      case "invoice.paid":
+      case "invoice.payment_failed": {
+        type InvoiceLegacy = Stripe.Invoice & {
+          payment_intent?: string | Stripe.PaymentIntent | null;
+          subscription?: string | Stripe.Subscription | null;
+        };
+        const invoice = event.data.object as InvoiceLegacy;
+        const customerEmail = coalesceEmail(invoice.customer_email);
+        if (!customerEmail) break;
+
+        const amountCents =
+          event.type === "invoice.paid"
+            ? invoice.amount_paid
+            : invoice.amount_due;
         if (!amountCents || amountCents <= 0) break;
-        const paidAt = new Date((session.created ?? Math.floor(Date.now() / 1000)) * 1000);
+
+        const paidAt = new Date(
+          (invoice.status_transitions?.paid_at ??
+            invoice.created ??
+            Math.floor(Date.now() / 1000)) * 1000
+        );
 
         await upsertCoachPaymentFromStripe(supabaseAdmin, directory, {
           stripePaymentIntentId:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id ?? null,
-          stripeCheckoutSessionId: session.id,
+            typeof invoice.payment_intent === "string"
+              ? invoice.payment_intent
+              : invoice.payment_intent?.id ?? null,
+          stripeCheckoutSessionId: null,
           customerEmail,
           amountCents,
-          currency: session.currency ?? "gbp",
-          status: "succeeded",
+          currency: invoice.currency ?? "gbp",
+          status: event.type === "invoice.paid" ? "succeeded" : "failed",
           paidAtIso: paidAt.toISOString(),
-          metadataCoachId:
-            typeof session.metadata?.coach_id === "string"
-              ? session.metadata.coach_id
-              : null,
-          notes: "synced via checkout.session.completed",
+          metadataCoachId: null,
+          notes: `synced via ${event.type}`,
         });
+
+        if (invoice.subscription) {
+          const subscriptionId =
+            typeof invoice.subscription === "string"
+              ? invoice.subscription
+              : invoice.subscription.id;
+          const subscription =
+            await stripeServer.subscriptions.retrieve(subscriptionId);
+          await syncCoachMembershipFromSubscription(
+            supabaseAdmin,
+            subscription,
+            customerEmail
+          );
+        }
         break;
       }
       case "payment_intent.succeeded":
@@ -140,4 +253,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
   }
 }
-

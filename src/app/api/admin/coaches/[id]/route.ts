@@ -89,6 +89,8 @@ export async function GET(
       crm_profile_name, crm_location_id, calendar_embed_code, access_tier, access_tier_locked,
       ghl_calendar_id, has_sales_robot_account, sales_robot_active_campaigns,
       sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status,
+      stripe_customer_id, stripe_subscription_id, membership_status, membership_interval,
+      membership_current_period_end, membership_cancel_at_period_end,
       ${profileSelect}
     `;
 
@@ -221,8 +223,15 @@ export async function GET(
           : null,
         payments: succeededPayments,
       }),
-      access_tier: (row.access_tier as string | null) ?? "pro",
+      access_tier: (row.access_tier as string | null) ?? "premium",
       access_tier_locked: Boolean(row.access_tier_locked),
+      stripe_customer_id: (row.stripe_customer_id as string | null) ?? null,
+      stripe_subscription_id: (row.stripe_subscription_id as string | null) ?? null,
+      membership_status: (row.membership_status as string | null) ?? null,
+      membership_interval: (row.membership_interval as string | null) ?? null,
+      membership_current_period_end:
+        (row.membership_current_period_end as string | null) ?? null,
+      membership_cancel_at_period_end: Boolean(row.membership_cancel_at_period_end),
       ladder_level: currentLevel,
       ladder_goal_level: (prof?.ladder_goal_level as string | null) ?? null,
       ladder_goal_target_date:
@@ -423,7 +432,7 @@ export async function PATCH(
   }
   if (body.access_tier !== undefined) {
     if (body.access_tier === null || body.access_tier === "") {
-      coachUpdates.access_tier = "pro";
+      coachUpdates.access_tier = "premium";
     } else if (
       typeof body.access_tier === "string" &&
       isCoachAccessTier(body.access_tier)
@@ -431,7 +440,7 @@ export async function PATCH(
       coachUpdates.access_tier = body.access_tier;
     } else {
       return NextResponse.json(
-        { error: "access_tier must be alumni, pro, premium, or null." },
+        { error: "access_tier must be alumni, core, premium, vip, or null." },
         { status: 400 }
       );
     }

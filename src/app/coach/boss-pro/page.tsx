@@ -879,7 +879,7 @@ function CoachWorkshopPageContent() {
 
   const sessionToolbar = useMemo(() => {
     if (!sessionSummary) return null;
-    const menu = (
+    return (
       <WorkshopSessionActionsMenu
         variant="toolbar"
         compact={isMinimalChrome}
@@ -894,14 +894,9 @@ function CoachWorkshopPageContent() {
         clientDashboardLinkError={clientDashboardShareMessage}
       />
     );
-    if (isMinimalChrome && impersonatingCoachId) {
-      return <div className="max-md:mr-28 sm:mr-36">{menu}</div>;
-    }
-    return menu;
   }, [
     sessionSummary,
     isMinimalChrome,
-    impersonatingCoachId,
     handleChangeSession,
     hasScorecardForContact,
     handleViewScorecard,
@@ -912,13 +907,31 @@ function CoachWorkshopPageContent() {
     clientDashboardShareMessage,
   ]);
 
+  const setWorkshopTopRight = chrome?.setWorkshopTopRight;
+
+  useEffect(() => {
+    if (!setWorkshopTopRight) return;
+    if (sessionToolbar && !isMinimalChrome) {
+      setWorkshopTopRight(sessionToolbar);
+    } else {
+      setWorkshopTopRight(null);
+    }
+    return () => setWorkshopTopRight(null);
+  }, [setWorkshopTopRight, sessionToolbar, isMinimalChrome]);
+
   return (
     <div className="flex min-w-0 flex-col gap-6">
       {!(isMinimalChrome && !activeContactId) ? (
         <StickyPageHeader
           title="Boss Pro"
           nowrap
-          actions={sessionToolbar ?? undefined}
+          actions={
+            sessionToolbar
+              ? isMinimalChrome
+                ? sessionToolbar
+                : <div className="md:hidden">{sessionToolbar}</div>
+              : undefined
+          }
           description={
             sessionSummary ? undefined : (
               <span className="text-base leading-relaxed text-slate-700">

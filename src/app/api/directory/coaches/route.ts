@@ -130,6 +130,29 @@ export async function GET(request: Request) {
       linkedin_url: r.linkedin_url,
     }));
 
+    const slugs = coaches.map((c) => c.slug);
+    if (slugs.length > 0) {
+      const { data: tierRows } = await supabaseAdmin
+        .from("coaches")
+        .select("slug, access_tier")
+        .in("slug", slugs);
+
+      const vipSlugs = new Set(
+        (tierRows ?? [])
+          .filter((r) => r.access_tier === "vip")
+          .map((r) => r.slug as string)
+      );
+
+      if (vipSlugs.size > 0) {
+        coaches = [...coaches].sort((a, b) => {
+          const aVip = vipSlugs.has(a.slug) ? 0 : 1;
+          const bVip = vipSlugs.has(b.slug) ? 0 : 1;
+          if (aVip !== bVip) return aVip - bVip;
+          return (a.full_name ?? "").localeCompare(b.full_name ?? "");
+        });
+      }
+    }
+
     // When simply browsing (no search/filter), nudge a couple of women with a
     // photo + summary into the first row of the first page so the top of the
     // directory isn't all one demographic. The DB has no gender field, so this

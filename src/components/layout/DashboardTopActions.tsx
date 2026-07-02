@@ -45,6 +45,40 @@ type DashboardTopActionsProps = {
   notificationsOnly?: boolean;
 };
 
+function NotificationReadToggle({
+  unread,
+  onToggle,
+}: {
+  unread: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <span className="relative mt-2.5 flex shrink-0 items-center justify-center">
+      <button
+        type="button"
+        aria-label={unread ? "Mark read" : "Mark unread"}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggle();
+        }}
+        className={`peer flex h-7 w-7 items-center justify-center rounded-full transition hover:bg-slate-100 ${
+          unread ? "" : "opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+        }`}
+      >
+        {unread ? (
+          <span className="h-3 w-3 rounded-full bg-blue-500" />
+        ) : (
+          <span className="h-3 w-3 rounded-full border-2 border-slate-300" />
+        )}
+      </button>
+      <span className="pointer-events-none absolute -top-6 right-0 z-10 whitespace-nowrap rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-white opacity-0 transition peer-hover:opacity-100">
+        {unread ? "Mark read" : "Mark unread"}
+      </span>
+    </span>
+  );
+}
+
 type NotificationFilter = "all" | "mentions" | "replies" | "announcements" | "wins";
 type NotificationSection = "community" | "prospects";
 
@@ -585,10 +619,31 @@ export function DashboardTopActions({
     (id: string) => {
       if (!profile?.id) return;
       setReadState((prev) => {
-        if (prev.readIds[id]) return prev;
+        if (prev.readIds[id] && !prev.unreadIds?.[id]) return prev;
+        const nextUnreadIds = { ...(prev.unreadIds ?? {}) };
+        delete nextUnreadIds[id];
         const next: NotificationReadState = {
           ...prev,
           readIds: { ...prev.readIds, [id]: true },
+          unreadIds: nextUnreadIds,
+        };
+        persistNotificationReadState(profile.id, next);
+        return next;
+      });
+    },
+    [profile?.id]
+  );
+
+  const markOneAsUnread = useCallback(
+    (id: string) => {
+      if (!profile?.id) return;
+      setReadState((prev) => {
+        const nextReadIds = { ...prev.readIds };
+        delete nextReadIds[id];
+        const next: NotificationReadState = {
+          ...prev,
+          readIds: nextReadIds,
+          unreadIds: { ...(prev.unreadIds ?? {}), [id]: true },
         };
         persistNotificationReadState(profile.id, next);
         return next;
@@ -757,7 +812,7 @@ export function DashboardTopActions({
                               markOneAsRead(item.id);
                               setNotificationsOpen(false);
                             }}
-                            className="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
+                            className="group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
                           >
                             {item.actor_avatar_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -781,12 +836,14 @@ export function DashboardTopActions({
                                 {item.body}
                               </p>
                             </div>
-                            {unread ? (
-                              <span
-                                className="mt-4 h-3 w-3 shrink-0 rounded-full bg-blue-500"
-                                aria-label="Unread"
-                              />
-                            ) : null}
+                            <NotificationReadToggle
+                              unread={unread}
+                              onToggle={() =>
+                                unread
+                                  ? markOneAsRead(item.id)
+                                  : markOneAsUnread(item.id)
+                              }
+                            />
                           </Link>
                         </li>
                       );
@@ -813,7 +870,7 @@ export function DashboardTopActions({
                             markOneAsRead(item.id);
                             setNotificationsOpen(false);
                           }}
-                          className="flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
+                          className="group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
                         >
                           <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-800 ring-1 ring-sky-100">
                             {contactInitials}
@@ -828,12 +885,14 @@ export function DashboardTopActions({
                               {item.body}
                             </p>
                           </div>
-                          {unread ? (
-                            <span
-                              className="mt-4 h-3 w-3 shrink-0 rounded-full bg-blue-500"
-                              aria-label="Unread"
-                            />
-                          ) : null}
+                          <NotificationReadToggle
+                            unread={unread}
+                            onToggle={() =>
+                              unread
+                                ? markOneAsRead(item.id)
+                                : markOneAsUnread(item.id)
+                            }
+                          />
                         </Link>
                       </li>
                     );
