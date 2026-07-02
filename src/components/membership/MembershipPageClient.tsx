@@ -35,6 +35,7 @@ import {
   type MembershipPlanKey,
 } from "@/config/membershipPlans";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { buildLoginUrl } from "@/lib/auth/loginReturnPath";
 import {
   marketingAssetPublicUrl,
   MEMBERSHIP_CONFERENCE_VIDEO_PATH,
@@ -55,6 +56,7 @@ type PlanInfo = {
 
 type MembershipPayload = {
   adminPreview?: boolean;
+  publicView?: boolean;
   tier: string;
   tierLabel: string;
   subscription: {
@@ -95,7 +97,7 @@ const MONO = "var(--font-pc-ds-mono), ui-monospace, 'SF Mono', Menlo, monospace"
 const HIGHLIGHT_PLAN: MembershipPlanKey = "premium";
 /** Column index of the highlighted tier in the comparison table (0 = feature names). */
 const HIGHLIGHT_COLUMN = 2;
-const TABLE_COLS = "24% 25.333% 25.333% 25.333%";
+const TABLE_COLS = "30% 23.333% 23.333% 23.334%";
 
 const FEATURE_BLOCK_ICONS: Record<string, LucideIcon> = {
   "Brand and Profile": Globe,
@@ -117,8 +119,8 @@ const ROW_TO_FEATURE_BLOCK: Record<string, string> = {
   Community: "Community",
   "Monthly calls": "Monthly Momentum Call",
   "Weekly calls": "Weekly Coaching and Implementation Calls",
-  "BOSS and Profit tools": "BOSS and Profit Tools",
-  "CRM and Connector": "CRM and Connector",
+  "BOSS & Profit tools": "BOSS and Profit Tools",
+  "CRM & Connector": "CRM and Connector",
   Conferences: "Profit Coach Conferences",
   "1:1 coaching": "1:1 Coaching",
   "WhatsApp access": "WhatsApp Access",
@@ -130,8 +132,8 @@ const COMPARISON_ROW_ICONS: Record<string, LucideIcon> = {
   Community: Users,
   "Monthly calls": CalendarDays,
   "Weekly calls": CalendarRange,
-  "BOSS and Profit tools": Gauge,
-  "CRM and Connector": Link2,
+  "BOSS & Profit tools": Gauge,
+  "CRM & Connector": Link2,
   Conferences: Presentation,
   "1:1 coaching": PhoneCall,
   "WhatsApp access": MessageCircle,
@@ -904,6 +906,7 @@ export function MembershipPageClient() {
   const tierCards: MembershipPlanKey[] = ["core", "premium", "vip"];
   const hasSubscription = Boolean(data?.subscription.status);
   const isAdminPreview = Boolean(data?.adminPreview);
+  const isPublicView = Boolean(data?.publicView);
   const inFirstSixMonths =
     !hasSubscription && data?.recurringPaymentStatus === "first_6_months";
   const isComplimentary =
@@ -1193,7 +1196,7 @@ export function MembershipPageClient() {
                   <thead>
                     {/* Tier names */}
                     <tr>
-                      <th style={{ width: "24%" }} />
+                      <th style={{ width: "30%" }} />
                       {tierCards.map((key, i) => {
                         const isPremiumCol = i + 1 === HIGHLIGHT_COLUMN;
                         return (
@@ -1201,7 +1204,7 @@ export function MembershipPageClient() {
                             key={key}
                             className={`px-5 pb-2.5 text-center ${isPremiumCol ? "pt-7" : "pt-6"}`}
                             style={{
-                              width: "25.333%",
+                              width: "23.333%",
                               ...(isPremiumCol ? { backgroundColor: "#eaf2fb" } : {}),
                             }}
                           >
@@ -1273,17 +1276,10 @@ export function MembershipPageClient() {
                 <tbody>
                   {copy.comparison.rows.map((row, ri) => {
                     const RowIcon = COMPARISON_ROW_ICONS[row[0]] ?? Check;
-                    const isActiveInfo = infoFeature === row[0];
                     return (
                       <tr
                         key={ri}
-                        className={
-                          isActiveInfo
-                            ? "bg-slate-100"
-                            : ri % 2 === 1
-                              ? "bg-[#f5f8fc]"
-                              : undefined
-                        }
+                        className={ri % 2 === 1 ? "bg-[#f5f8fc]" : undefined}
                       >
                         {row.map((cell, ci) => {
                           const isPremiumCol = ci === HIGHLIGHT_COLUMN;
@@ -1292,7 +1288,7 @@ export function MembershipPageClient() {
                               key={ci}
                               className={`px-6 py-4 text-[14.5px] ${
                                 ci === 0
-                                  ? "text-left font-semibold text-slate-800"
+                                  ? "min-w-[240px] whitespace-nowrap text-left font-semibold text-slate-800"
                                   : "text-center text-slate-600"
                               }`}
                               style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
@@ -1308,19 +1304,17 @@ export function MembershipPageClient() {
                                   >
                                     <RowIcon className="h-4 w-4" strokeWidth={2.25} />
                                   </span>
-                                  <span
-                                    className="inline-flex min-w-0 items-center gap-1"
-                                    onMouseEnter={(e) => openFeatureInfo(row[0], e.currentTarget)}
-                                    onMouseLeave={scheduleCloseFeatureInfo}
-                                  >
-                                    <span className="leading-none">{cell}</span>
+                                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                                    <span className="whitespace-nowrap leading-none">{cell}</span>
                                     <button
                                       type="button"
                                       tabIndex={-1}
+                                      onMouseEnter={(e) => openFeatureInfo(row[0], e.currentTarget)}
+                                      onMouseLeave={scheduleCloseFeatureInfo}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (infoFeature === row[0]) closeFeatureInfo();
-                                        else openFeatureInfo(row[0], e.currentTarget.parentElement!);
+                                        else openFeatureInfo(row[0], e.currentTarget);
                                       }}
                                       className="inline-flex shrink-0 items-center justify-center self-center border-0 bg-transparent p-0 text-slate-400 outline-none transition-colors hover:text-slate-600"
                                       aria-label={`About ${row[0]}`}
@@ -1406,6 +1400,35 @@ export function MembershipPageClient() {
                           style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
                         >
                           {data?.stripeConfigured && !isAdminPreview ? (
+                            isPublicView ? (
+                              <Link
+                                href={buildLoginUrl("/coach/membership#plans")}
+                                className={`inline-flex w-full max-w-[180px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-3 transition ${
+                                  isPremiumCol ? "text-white hover:brightness-110" : "hover:shadow-sm"
+                                }`}
+                                style={
+                                  isPremiumCol
+                                    ? { background: GO_GRADIENT, boxShadow: GO_SHADOW }
+                                    : {
+                                        backgroundColor: "#fff",
+                                        border: "1px solid #e2e8f0",
+                                        color: CHATHAMS,
+                                      }
+                                }
+                              >
+                                <span className="text-[13.5px] font-semibold leading-tight">
+                                  Sign in to join {tierCopy.name}
+                                </span>
+                                <span
+                                  className={`text-[12px] font-medium leading-tight ${
+                                    isPremiumCol ? "text-white/75" : "text-slate-500"
+                                  }`}
+                                  style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
+                                >
+                                  {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
+                                </span>
+                              </Link>
+                            ) : (
                             <button
                               type="button"
                               disabled={
@@ -1446,6 +1469,7 @@ export function MembershipPageClient() {
                                 </>
                               )}
                             </button>
+                            )
                           ) : (
                             <div className="mx-auto inline-flex max-w-[180px] flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
                               <span className="text-[12.5px] font-medium text-slate-400">

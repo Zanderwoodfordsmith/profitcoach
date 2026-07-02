@@ -32,9 +32,10 @@ type CoachMembershipRow = {
   recurring_payment_status: string | null;
 };
 
-function buildAdminPreviewPayload() {
+function buildCatalogPayload(options?: { adminPreview?: boolean; publicView?: boolean }) {
   return {
-    adminPreview: true,
+    adminPreview: options?.adminPreview ?? false,
+    publicView: options?.publicView ?? false,
     tier: "alumni",
     tierLabel: COACH_ACCESS_TIER_LABELS.alumni,
     tierLocked: false,
@@ -78,7 +79,15 @@ export async function GET(request: Request) {
     // Admins browsing the page without impersonating a coach get a read-only
     // preview of the plans instead of an error.
     if (auth.error === "Admin must pass x-impersonate-coach-id for this resource.") {
-      return NextResponse.json(buildAdminPreviewPayload());
+      return NextResponse.json(buildCatalogPayload({ adminPreview: true }));
+    }
+    // Public marketing page and logged-out visitors see plan pricing without auth.
+    if (
+      auth.error === "Missing access token." ||
+      auth.error === "Invalid access token." ||
+      auth.error === "Not authorized."
+    ) {
+      return NextResponse.json(buildCatalogPayload({ publicView: true }));
     }
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
