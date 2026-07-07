@@ -268,3 +268,9 @@ body {
     forwards;
 }
 
+/* Embedded pages (?embed=1) — avoid nested scrollbars inside host iframes. */
+html.pc-embed,
+body.pc-embed {
+  overflow: hidden !important;
+}
+

@@ -91,7 +91,12 @@ function IconWorkshop({ className }: { className?: string }) {
 
 export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   const base: DashboardNavItem[] = [
-    { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
+    {
+      href: `${prefix}/community`,
+      label: "Community",
+      icon: IconMessagesSquare,
+      requiredFeature: "community.feed",
+    },
   ];
   base.push(
     {
@@ -100,7 +105,12 @@ export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
       icon: IconCompass,
       requiredFeature: "nav.compass",
     },
-    { href: `${prefix}/community/calendar`, label: "Calendar", icon: IconCalendar },
+    {
+      href: `${prefix}/community/calendar`,
+      label: "Calendar",
+      icon: IconCalendar,
+      requiredFeature: "calendar.momentum_only",
+    },
     {
       href: `${prefix}/academy`,
       label: "Classroom",
@@ -123,14 +133,24 @@ export function filterNavItemsByFeatures(
 /** Four primary tabs on mobile (BOSS score lives under More). */
 export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   return [
-    { href: `${prefix}/community`, label: "Community", icon: IconMessagesSquare },
+    {
+      href: `${prefix}/community`,
+      label: "Community",
+      icon: IconMessagesSquare,
+      requiredFeature: "community.feed",
+    },
     {
       href: `${prefix}/signature`,
       label: "Compass",
       icon: IconCompass,
       requiredFeature: "nav.compass",
     },
-    { href: `${prefix}/community/calendar`, label: "Calendar", icon: IconCalendar },
+    {
+      href: `${prefix}/community/calendar`,
+      label: "Calendar",
+      icon: IconCalendar,
+      requiredFeature: "calendar.momentum_only",
+    },
     {
       href: `${prefix}/academy`,
       label: "Classroom",

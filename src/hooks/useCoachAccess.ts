@@ -8,12 +8,14 @@ export type CoachAccessState = {
   tier: CoachAccessTier;
   tierLocked: boolean;
   features: CoachFeature[];
+  enforcementEnabled: boolean;
 };
 
 const EMPTY_ACCESS: CoachAccessState = {
   tier: "premium",
   tierLocked: false,
   features: [],
+  enforcementEnabled: false,
 };
 
 export function useCoachAccess(impersonatingCoachId: string | null) {
@@ -46,6 +48,7 @@ export function useCoachAccess(impersonatingCoachId: string | null) {
         tier: body.tier,
         tierLocked: Boolean(body.tierLocked),
         features: body.features ?? [],
+        enforcementEnabled: Boolean(body.enforcementEnabled),
       });
     } else {
       setAccess(EMPTY_ACCESS);

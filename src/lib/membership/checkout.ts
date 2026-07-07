@@ -1,3 +1,4 @@
+import type { MembershipPlanKey } from "@/config/membershipPlans";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { linkStripeCustomerToCoach } from "@/lib/membership/syncFromStripe";
 import { stripeServer } from "@/lib/stripeServer";
@@ -78,6 +79,33 @@ export async function createMembershipCheckoutSession(input: {
       metadata: { coach_id: coachId },
     },
     metadata: { coach_id: coachId },
+    allow_promotion_codes: true,
+  });
+
+  if (!session.url) {
+    throw new Error("Checkout session missing URL.");
+  }
+
+  return { url: session.url };
+}
+
+/** Checkout for logged-out visitors; Stripe collects email and webhooks link by profile email. */
+export async function createGuestMembershipCheckoutSession(input: {
+  priceId: string;
+  planKey: MembershipPlanKey;
+  request: Request;
+}): Promise<{ url: string }> {
+  const baseUrl = getAppBaseUrl(input.request);
+
+  const session = await stripeServer.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [{ price: input.priceId, quantity: 1 }],
+    success_url: `${baseUrl}/membership?success=1`,
+    cancel_url: `${baseUrl}/membership?canceled=1`,
+    subscription_data: {
+      metadata: { plan_key: input.planKey },
+    },
+    metadata: { plan_key: input.planKey },
     allow_promotion_codes: true,
   });
 

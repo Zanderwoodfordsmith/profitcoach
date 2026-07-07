@@ -18,11 +18,13 @@ import {
   paymentStatusLabel,
 } from "@/lib/adminPaymentDisplay";
 import {
+  COACH_ACCESS_TIERS,
   COACH_ACCESS_TIER_LABELS,
   type CoachAccessTier,
 } from "@/lib/coachAccess/tiers";
 import {
   COACH_RECURRING_PAYMENT_LABELS,
+  COACH_RECURRING_PAYMENT_STATUSES,
   type CoachRecurringPaymentStatus,
 } from "@/lib/coachBilling";
 import {
@@ -195,6 +197,15 @@ export default function AdminCoachDetailPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [accessDraft, setAccessDraft] = useState<{
+    access_tier: CoachAccessTier;
+    access_tier_locked: boolean;
+    recurring_payment_status: CoachRecurringPaymentStatus | "";
+  } | null>(null);
+  const [savingAccess, setSavingAccess] = useState(false);
+  const [accessMsg, setAccessMsg] = useState<
+    { kind: "ok" | "err"; text: string } | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -238,6 +249,67 @@ export default function AdminCoachDetailPage({
       cancelled = true;
     };
   }, [coachId, router]);
+
+  useEffect(() => {
+    if (!coach) return;
+    setAccessDraft({
+      access_tier: coach.access_tier,
+      access_tier_locked: coach.access_tier_locked,
+      recurring_payment_status: coach.recurring_payment_status ?? "",
+    });
+    setAccessMsg(null);
+  }, [coach]);
+
+  async function saveAccessBilling() {
+    if (!coach || !accessDraft) return;
+    setSavingAccess(true);
+    setAccessMsg(null);
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) {
+      router.replace("/login");
+      return;
+    }
+
+    const nextRecurring = accessDraft.recurring_payment_status || null;
+    const res = await fetch(
+      `/api/admin/coaches/${encodeURIComponent(coachId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_tier: accessDraft.access_tier,
+          access_tier_locked: accessDraft.access_tier_locked,
+          recurring_payment_status: nextRecurring,
+        }),
+      }
+    );
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+
+    if (!res.ok) {
+      setAccessMsg({ kind: "err", text: body.error ?? "Could not save changes." });
+      setSavingAccess(false);
+      return;
+    }
+
+    setCoach((prev) =>
+      prev
+        ? {
+            ...prev,
+            access_tier: accessDraft.access_tier,
+            access_tier_locked: accessDraft.access_tier_locked,
+            recurring_payment_status: nextRecurring,
+          }
+        : prev
+    );
+    setAccessMsg({ kind: "ok", text: "Saved." });
+    setSavingAccess(false);
+  }
 
   const paymentsWithBilling = useMemo(() => {
     const forBilling = (payment: CoachPayment) => ({
@@ -453,20 +525,119 @@ export default function AdminCoachDetailPage({
                 </dl>
               </SectionCard>
 
-              <SectionCard title="Billing & access">
+              <SectionCard
+                title="Billing & access"
+                description="Access tier and billing status are independent. Tiers only restrict features when tier enforcement is enabled; lock a tier to stop Stripe from changing it (use for complimentary or manually granted access)."
+              >
+                {accessDraft ? (
+                  <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <label className="space-y-1.5">
+                        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Access tier
+                        </span>
+                        <select
+                          value={accessDraft.access_tier}
+                          onChange={(e) =>
+                            setAccessDraft((d) =>
+                              d
+                                ? { ...d, access_tier: e.target.value as CoachAccessTier }
+                                : d
+                            )
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0c5290] focus:outline-none focus:ring-1 focus:ring-[#0c5290]"
+                        >
+                          {COACH_ACCESS_TIERS.map((tier) => (
+                            <option key={tier} value={tier}>
+                              {COACH_ACCESS_TIER_LABELS[tier]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="space-y-1.5">
+                        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Billing status
+                        </span>
+                        <select
+                          value={accessDraft.recurring_payment_status}
+                          onChange={(e) =>
+                            setAccessDraft((d) =>
+                              d
+                                ? {
+                                    ...d,
+                                    recurring_payment_status: e.target
+                                      .value as CoachRecurringPaymentStatus | "",
+                                  }
+                                : d
+                            )
+                          }
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0c5290] focus:outline-none focus:ring-1 focus:ring-[#0c5290]"
+                        >
+                          <option value="">Not set</option>
+                          {COACH_RECURRING_PAYMENT_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {COACH_RECURRING_PAYMENT_LABELS[status]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="flex items-start gap-2.5 sm:col-span-2 lg:col-span-1 lg:pt-6">
+                        <input
+                          type="checkbox"
+                          checked={accessDraft.access_tier_locked}
+                          onChange={(e) =>
+                            setAccessDraft((d) =>
+                              d ? { ...d, access_tier_locked: e.target.checked } : d
+                            )
+                          }
+                          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#0c5290] focus:ring-[#0c5290]"
+                        />
+                        <span className="text-sm text-slate-700">
+                          <span className="font-medium">Lock tier (override)</span>
+                          <span className="block text-xs text-slate-500">
+                            Stripe won&apos;t change this coach&apos;s tier while locked.
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-3">
+                      {(() => {
+                        const dirty =
+                          accessDraft.access_tier !== coach.access_tier ||
+                          accessDraft.access_tier_locked !== coach.access_tier_locked ||
+                          (accessDraft.recurring_payment_status || null) !==
+                            (coach.recurring_payment_status ?? null);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => void saveAccessBilling()}
+                            disabled={!dirty || savingAccess}
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {savingAccess ? (
+                              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                            ) : null}
+                            Save access & billing
+                          </button>
+                        );
+                      })()}
+                      {accessMsg ? (
+                        <span
+                          className={`text-sm ${
+                            accessMsg.kind === "ok" ? "text-emerald-600" : "text-rose-600"
+                          }`}
+                        >
+                          {accessMsg.text}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
                 <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailField
-                    label="Access tier"
-                    value={COACH_ACCESS_TIER_LABELS[coach.access_tier]}
-                  />
-                  <DetailField
-                    label="Billing status"
-                    value={
-                      coach.recurring_payment_status
-                        ? COACH_RECURRING_PAYMENT_LABELS[coach.recurring_payment_status]
-                        : "Not set"
-                    }
-                  />
                   <DetailField
                     label="Recurring active"
                     value={coach.recurring_billing_active ? "Yes" : "No"}

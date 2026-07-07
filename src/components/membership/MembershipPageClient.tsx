@@ -29,13 +29,18 @@ import {
 
 import { membershipPageCopy as copy } from "@/content/membershipPageCopy";
 import {
+  isEmbeddedRequest,
+  navigateTopWindow,
+  useEmbedAutoResize,
+  useEmbedTopNavigation,
+} from "@/lib/embedMode";
+import {
   formatMembershipPrice,
   MEMBERSHIP_PLANS,
   type MembershipInterval,
   type MembershipPlanKey,
 } from "@/config/membershipPlans";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { buildLoginUrl } from "@/lib/auth/loginReturnPath";
 import {
   marketingAssetPublicUrl,
   MEMBERSHIP_CONFERENCE_VIDEO_PATH,
@@ -785,6 +790,9 @@ function FeatureInfoPopover({
 
 export function MembershipPageClient() {
   const searchParams = useSearchParams();
+  const isEmbedded = isEmbeddedRequest(searchParams);
+  useEmbedAutoResize(isEmbedded);
+  useEmbedTopNavigation(isEmbedded);
   const { impersonatingCoachId } = useImpersonation();
   const [data, setData] = useState<MembershipPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -873,7 +881,7 @@ export function MembershipPageClient() {
         setError(body.error ?? "Checkout failed.");
         return;
       }
-      window.location.href = body.url;
+      navigateTopWindow(body.url);
     } catch {
       setError("Checkout failed.");
     } finally {
@@ -895,7 +903,7 @@ export function MembershipPageClient() {
         setError(body.error ?? "Could not open billing portal.");
         return;
       }
-      window.location.href = body.url;
+      navigateTopWindow(body.url);
     } catch {
       setError("Could not open billing portal.");
     } finally {
@@ -906,7 +914,6 @@ export function MembershipPageClient() {
   const tierCards: MembershipPlanKey[] = ["core", "premium", "vip"];
   const hasSubscription = Boolean(data?.subscription.status);
   const isAdminPreview = Boolean(data?.adminPreview);
-  const isPublicView = Boolean(data?.publicView);
   const inFirstSixMonths =
     !hasSubscription && data?.recurringPaymentStatus === "first_6_months";
   const isComplimentary =
@@ -955,7 +962,10 @@ export function MembershipPageClient() {
       : null;
 
   return (
-    <div className="min-h-screen w-full" style={{ backgroundColor: CANVAS, color: "#0f172a" }}>
+    <div
+      className={isEmbedded ? "w-full" : "min-h-screen w-full"}
+      style={{ backgroundColor: CANVAS, color: "#0f172a" }}
+    >
       {(isAdminPreview || Boolean(impersonatingCoachId)) && (
         <AdminPreviewCoachPicker situation={adminSituation} />
       )}
@@ -1400,35 +1410,6 @@ export function MembershipPageClient() {
                           style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
                         >
                           {data?.stripeConfigured && !isAdminPreview ? (
-                            isPublicView ? (
-                              <Link
-                                href={buildLoginUrl("/coach/membership#plans")}
-                                className={`inline-flex w-full max-w-[180px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-3 transition ${
-                                  isPremiumCol ? "text-white hover:brightness-110" : "hover:shadow-sm"
-                                }`}
-                                style={
-                                  isPremiumCol
-                                    ? { background: GO_GRADIENT, boxShadow: GO_SHADOW }
-                                    : {
-                                        backgroundColor: "#fff",
-                                        border: "1px solid #e2e8f0",
-                                        color: CHATHAMS,
-                                      }
-                                }
-                              >
-                                <span className="text-[13.5px] font-semibold leading-tight">
-                                  Sign in to join {tierCopy.name}
-                                </span>
-                                <span
-                                  className={`text-[12px] font-medium leading-tight ${
-                                    isPremiumCol ? "text-white/75" : "text-slate-500"
-                                  }`}
-                                  style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
-                                >
-                                  {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
-                                </span>
-                              </Link>
-                            ) : (
                             <button
                               type="button"
                               disabled={
@@ -1469,7 +1450,6 @@ export function MembershipPageClient() {
                                 </>
                               )}
                             </button>
-                            )
                           ) : (
                             <div className="mx-auto inline-flex max-w-[180px] flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
                               <span className="text-[12.5px] font-medium text-slate-400">

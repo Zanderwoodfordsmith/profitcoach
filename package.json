@@ -41,6 +41,8 @@
     "import-historical-coaches": "npx tsx scripts/import-historical-coaches-from-clickup-csv.ts",
     "import-historical-coaches:dry-run": "npx tsx scripts/import-historical-coaches-from-clickup-csv.ts --dry-run",
     "backfill-join-dates-from-payments": "npx tsx scripts/backfill-coach-join-dates-from-payments.ts",
+    "backfill-membership-tiers:dry-run": "npx tsx scripts/backfill-coach-membership-tiers.ts",
+    "backfill-membership-tiers": "npx tsx scripts/backfill-coach-membership-tiers.ts --apply",
     "reassign-unassigned-payments": "npx tsx scripts/reassign-unassigned-payments.ts",
     "test-zoom-recording-webhook": "npx tsx scripts/test-zoom-recording-webhook.ts"
   },

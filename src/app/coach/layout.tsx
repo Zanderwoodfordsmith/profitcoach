@@ -12,10 +12,8 @@ import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
-import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
-import { MembershipPaymentBanner } from "@/components/membership/MembershipPaymentBanner";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
@@ -165,10 +163,7 @@ export default function CoachLayout({
     : "max-w-[calc(100vw-1.5rem)]";
   const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
-  const { allowed: coachClientHubAllowed } = useCoachClientHubAccess(
-    impersonatingCoachId
-  );
-  const { hasFeature } = useCoachAccess(impersonatingCoachId);
+  const { access, hasFeature } = useCoachAccess(impersonatingCoachId);
 
   const bossWorkshopChromeValue = useMemo(
     () => ({
@@ -205,7 +200,11 @@ export default function CoachLayout({
                 <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
                   Admin
                 </span>
-                <AdminCoachImpersonationSwitcher coachName={coachName} />
+                <AdminCoachImpersonationSwitcher
+                  coachName={coachName}
+                  accessTier={access.tier}
+                  enforcementEnabled={access.enforcementEnabled}
+                />
                 <button
                   type="button"
                   onClick={handleExit}
@@ -231,7 +230,11 @@ export default function CoachLayout({
                   <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
                     Admin
                   </span>
-                  <AdminCoachImpersonationSwitcher coachName={coachName} />
+                  <AdminCoachImpersonationSwitcher
+                  coachName={coachName}
+                  accessTier={access.tier}
+                  enforcementEnabled={access.enforcementEnabled}
+                />
                   <button
                     type="button"
                     onClick={handleExit}
@@ -289,7 +292,11 @@ export default function CoachLayout({
                 <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
                   Admin
                 </span>
-                <AdminCoachImpersonationSwitcher coachName={coachName} />
+                <AdminCoachImpersonationSwitcher
+                  coachName={coachName}
+                  accessTier={access.tier}
+                  enforcementEnabled={access.enforcementEnabled}
+                />
                 <button
                   type="button"
                   onClick={handleExit}
@@ -313,7 +320,6 @@ export default function CoachLayout({
           variant="coach"
           signingOut={signingOut}
           onSignOut={handleSignOut}
-          showCoachDeliveryNav={coachClientHubAllowed}
           coachHasFeature={hasFeature}
           avatarOverride={
             isImpersonatingCoach
@@ -345,10 +351,7 @@ export default function CoachLayout({
               isSignaturePage ? "max-w-none gap-0" : playbooksReader ? "w-full gap-0" : "gap-4"
             }`}
           >
-            <CoachRouteAccessGuard>
-              {!membershipPage ? <MembershipPaymentBanner /> : null}
-              {children}
-            </CoachRouteAccessGuard>
+            <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>

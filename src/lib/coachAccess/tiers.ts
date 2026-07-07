@@ -16,18 +16,21 @@ export type CoachFeature =
   | "calendar.all_events"
   | "nav.compass"
   | "nav.classroom"
+  | "classroom.full"
   | "nav.marketing"
   | "nav.delivery"
   | "directory.featured";
 
 const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
   alumni: new Set([
-    // Certification / reference training only — no live ecosystem access.
+    // Classroom nav is visible, but only a few starter courses are unlocked
+    // (see ALUMNI_FREE_COURSE_IDS). No live ecosystem access.
     "nav.classroom",
   ]),
   core: new Set([
     "community.feed",
     "nav.classroom",
+    "classroom.full",
     "nav.delivery",
     "calendar.momentum_only",
   ]),
@@ -38,6 +41,7 @@ const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
     "calendar.all_events",
     "nav.compass",
     "nav.classroom",
+    "classroom.full",
     "nav.marketing",
     "nav.delivery",
   ]),
@@ -48,6 +52,7 @@ const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
     "calendar.all_events",
     "nav.compass",
     "nav.classroom",
+    "classroom.full",
     "nav.marketing",
     "nav.delivery",
     "directory.featured",
@@ -62,6 +67,7 @@ export const PREMIUM_EQUIVALENT_FEATURES: CoachFeature[] = [
   "calendar.all_events",
   "nav.compass",
   "nav.classroom",
+  "classroom.full",
   "nav.marketing",
   "nav.delivery",
 ];
@@ -79,6 +85,16 @@ export function tierHasFeature(
 
 export function featuresForTier(tier: CoachAccessTier): CoachFeature[] {
   return [...TIER_FEATURES[tier]];
+}
+
+/** Lowest tier (by rank) that includes the feature, or null if none do. */
+export function minimumTierForFeature(
+  feature: CoachFeature
+): CoachAccessTier | null {
+  const ordered = [...COACH_ACCESS_TIERS].sort(
+    (a, b) => tierRank(a) - tierRank(b)
+  );
+  return ordered.find((tier) => TIER_FEATURES[tier].has(feature)) ?? null;
 }
 
 export function calendarEventVisibleToTier(

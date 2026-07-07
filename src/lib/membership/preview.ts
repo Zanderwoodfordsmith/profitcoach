@@ -6,3 +6,11 @@
 export function membershipPreviewMode(): boolean {
   return process.env.NEXT_PUBLIC_MEMBERSHIP_PREVIEW_MODE === "true";
 }
+
+/**
+ * Soft-launch sidebar promo ("Join Premium"). Off in production until you opt in.
+ * Set NEXT_PUBLIC_MEMBERSHIP_SIDEBAR_PROMO=true in .env.local to test locally.
+ */
+export function membershipSidebarPromoEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_MEMBERSHIP_SIDEBAR_PROMO === "true";
+}

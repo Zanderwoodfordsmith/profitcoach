@@ -4,13 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, MessagesSquare, CreditCard, X } from "lucide-react";
+import { Lock, LogOut, MessagesSquare, CreditCard, X } from "lucide-react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 import {
   adminSectionNavItems,
   coachMarketingNavItems,
   deliveryNavItems,
-  filterNavItemsByFeatures,
   mainNavItems,
   marketingNavItems,
   mobileMoreNavItems,
@@ -19,7 +18,11 @@ import {
   navLinkActive,
 } from "@/components/layout/dashboardNavItems";
 import type { CoachFeature } from "@/lib/coachAccess/tiers";
-import { membershipPreviewMode } from "@/lib/membership/preview";
+import {
+  membershipPreviewMode,
+  membershipSidebarPromoEnabled,
+} from "@/lib/membership/preview";
+import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount } from "@/components/layout/useNewFeedbackCount";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -34,9 +37,7 @@ type DashboardSidebarProps = {
     name: string;
     avatarUrl: string | null;
   } | null;
-  /** Coach-only: show Clients / Playbooks under Delivery (limited rollout). */
-  showCoachDeliveryNav?: boolean;
-  /** Coach-only: filter nav items by access tier features. */
+  /** Coach-only: used to lock gated nav items and show upgrade badges. */
   coachHasFeature?: (feature: CoachFeature) => boolean;
 };
 
@@ -49,7 +50,6 @@ export function DashboardSidebar({
   signingOut = false,
   onSignOut,
   avatarOverride = null,
-  showCoachDeliveryNav = false,
   coachHasFeature,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
@@ -66,23 +66,37 @@ export function DashboardSidebar({
     useDashboardProfile(avatarOverride);
   const newFeedbackCount = useNewFeedbackCount(variant === "admin");
 
-  const mainItems = filterNavItemsByFeatures(mainNavItems(prefix), featureCheck);
-  const mobilePrimary = filterNavItemsByFeatures(
-    mobilePrimaryNavItems(prefix),
-    featureCheck
+  // Soft-gate model: gated items stay visible with a lock badge; clicking
+  // through shows the upgrade gate on the page itself.
+  const navItemLocked = (feature?: CoachFeature) =>
+    feature ? !featureCheck(feature) : false;
+  const marketingLocked = variant === "coach" && !featureCheck("nav.marketing");
+  const deliveryLocked = variant === "coach" && !featureCheck("nav.delivery");
+  const lockBadge = (
+    <Lock
+      className="ml-auto h-3.5 w-3.5 shrink-0 text-sky-200/60"
+      aria-label="Upgrade to unlock"
+    />
   );
+
+  const mainItems = mainNavItems(prefix);
+  const mobilePrimary = mobilePrimaryNavItems(prefix);
   const mobileMore = mobileMoreNavItems(prefix);
   const sidebarMarketingItems =
     variant === "coach"
       ? coachMarketingNavItems(prefix)
       : marketingNavItems(prefix, { includeBossScore: true });
-  const showMarketingNav =
-    variant === "admin" || featureCheck("nav.marketing");
-  const showDeliveryNav =
-    variant === "admin" ||
-    (variant === "coach" &&
-      (showCoachDeliveryNav || featureCheck("nav.delivery")));
+  const showMarketingNav = variant === "admin" || variant === "coach";
+  const showDeliveryNav = variant === "admin" || variant === "coach";
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
+  const showMembershipNav =
+    variant === "coach" &&
+    !membershipPreviewMode() &&
+    !membershipSidebarPromoEnabled();
+  const showJoinPremiumPromo =
+    variant === "coach" && membershipSidebarPromoEnabled();
+  const membershipPageActive =
+    pathname === "/coach/membership" || pathname === "/membership";
 
   const closeMobileSheets = () => {
     setMobileMoreOpen(false);
@@ -107,6 +121,7 @@ export function DashboardSidebar({
     }
     const Icon = item.icon;
     const short = mobileNavShortLabel(item.label);
+    const locked = navItemLocked(item.requiredFeature);
     return (
       <Link
         key={item.href}
@@ -116,7 +131,15 @@ export function DashboardSidebar({
           active ? "bg-sky-500/80 text-white" : "text-slate-100/90 active:bg-white/10"
         }`}
       >
-        <Icon className="h-5 w-5 shrink-0" aria-hidden />
+        <span className="relative shrink-0">
+          <Icon className="h-5 w-5 shrink-0" aria-hidden />
+          {locked ? (
+            <Lock
+              className="absolute -right-2 -top-1 h-3 w-3 rounded-full bg-[#0a4274] p-[1px] text-sky-200/80"
+              aria-label="Upgrade to unlock"
+            />
+          ) : null}
+        </span>
         <span className="max-w-full truncate px-0.5 text-[10px] font-medium leading-tight">
           {short}
         </span>
@@ -181,6 +204,7 @@ export function DashboardSidebar({
                 active = false;
               }
               const Icon = item.icon;
+              const locked = navItemLocked(item.requiredFeature);
               return (
                 <li key={item.href}>
                   <Link
@@ -193,6 +217,7 @@ export function DashboardSidebar({
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     {item.label}
+                    {locked ? lockBadge : null}
                   </Link>
                 </li>
               );
@@ -219,6 +244,7 @@ export function DashboardSidebar({
                     >
                       <Icon className="h-5 w-5 shrink-0 opacity-95" />
                       {item.label}
+                      {marketingLocked ? lockBadge : null}
                     </Link>
                   </li>
                 );
@@ -248,6 +274,7 @@ export function DashboardSidebar({
                         >
                           <Icon className="h-5 w-5 shrink-0 opacity-95" />
                           {item.label}
+                          {deliveryLocked ? lockBadge : null}
                         </Link>
                       </li>
                     );
@@ -287,11 +314,14 @@ export function DashboardSidebar({
           )}
         </nav>
         <div className="shrink-0 border-t border-white/15 px-3 py-3">
-          {variant === "coach" && !membershipPreviewMode() ? (
+          {showJoinPremiumPromo ? (
+            <MembershipSidebarPromo active={membershipPageActive} />
+          ) : null}
+          {showMembershipNav ? (
             <Link
               href="/coach/membership"
               className={`mb-1 flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-                pathname === "/coach/membership"
+                membershipPageActive
                   ? "bg-sky-500/80 text-white"
                   : "text-slate-100/90 hover:bg-white/10"
               }`}
@@ -422,6 +452,7 @@ export function DashboardSidebar({
                       >
                         <Icon className="h-5 w-5 shrink-0 opacity-95" />
                         {item.label}
+                        {marketingLocked ? lockBadge : null}
                       </Link>
                     </li>
                   );
@@ -452,6 +483,7 @@ export function DashboardSidebar({
                           >
                             <Icon className="h-5 w-5 shrink-0 opacity-95" />
                             {item.label}
+                            {deliveryLocked ? lockBadge : null}
                           </Link>
                         </li>
                       );
@@ -491,12 +523,19 @@ export function DashboardSidebar({
               </div>
             ) : null}
             <div className="border-t border-white/15 px-4 py-3">
-              {variant === "coach" && !membershipPreviewMode() ? (
+              {showJoinPremiumPromo ? (
+                <MembershipSidebarPromo
+                  active={membershipPageActive}
+                  onNavigate={closeMobileSheets}
+                  className="mb-1"
+                />
+              ) : null}
+              {showMembershipNav ? (
                 <Link
                   href="/coach/membership"
                   onClick={closeMobileSheets}
                   className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
-                    pathname === "/coach/membership"
+                    membershipPageActive
                       ? "bg-sky-500/80 text-white"
                       : "text-slate-100/90 hover:bg-white/10"
                   }`}

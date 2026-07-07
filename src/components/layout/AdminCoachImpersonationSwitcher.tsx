@@ -5,12 +5,18 @@ import { ChevronDown, Loader2 } from "lucide-react";
 
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import {
+  COACH_ACCESS_TIER_LABELS,
+  type CoachAccessTier,
+  isCoachAccessTier,
+} from "@/lib/coachAccess/tiers";
 
 type CoachListRow = {
   id: string;
   slug: string;
   full_name: string | null;
   coach_business_name: string | null;
+  access_tier?: string | null;
 };
 
 function coachDisplayName(c: CoachListRow): string {
@@ -22,6 +28,11 @@ function coachDisplayName(c: CoachListRow): string {
   );
 }
 
+function coachTierLabel(tier: string | null | undefined): string | null {
+  if (!tier || !isCoachAccessTier(tier)) return null;
+  return COACH_ACCESS_TIER_LABELS[tier];
+}
+
 function coachSearchText(c: CoachListRow): string {
   return [c.full_name, c.coach_business_name, c.slug]
     .filter(Boolean)
@@ -31,9 +42,15 @@ function coachSearchText(c: CoachListRow): string {
 
 type Props = {
   coachName: string | null;
+  accessTier?: CoachAccessTier | null;
+  enforcementEnabled?: boolean;
 };
 
-export function AdminCoachImpersonationSwitcher({ coachName }: Props) {
+export function AdminCoachImpersonationSwitcher({
+  coachName,
+  accessTier = null,
+  enforcementEnabled = false,
+}: Props) {
   const { impersonatingCoachId, setImpersonatingCoachId } = useImpersonation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -132,24 +149,33 @@ export function AdminCoachImpersonationSwitcher({ coachName }: Props) {
   }
 
   const label = coachName ?? "Coach";
+  const tierLabel = accessTier ? COACH_ACCESS_TIER_LABELS[accessTier] : null;
 
   return (
     <div ref={rootRef} className="relative min-w-0">
       <button
         type="button"
         onClick={handleToggleOpen}
-        className="group flex min-w-0 max-w-[10rem] items-center gap-0.5 rounded px-0.5 text-left sm:max-w-[14rem]"
+        className="group flex min-w-0 max-w-[10rem] flex-col items-start rounded px-0.5 text-left sm:max-w-[14rem]"
         title="Switch to another coach (same page)"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="min-w-0 truncate text-[11px] font-medium text-amber-950 underline decoration-amber-600/0 underline-offset-2 group-hover:decoration-amber-800/70 sm:text-xs">
-          {label}
+        <span className="flex min-w-0 items-center gap-0.5">
+          <span className="min-w-0 truncate text-[11px] font-medium text-amber-950 underline decoration-amber-600/0 underline-offset-2 group-hover:decoration-amber-800/70 sm:text-xs">
+            {label}
+          </span>
+          <ChevronDown
+            className={`h-3 w-3 shrink-0 text-amber-900 transition-transform sm:h-3.5 sm:w-3.5 ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          />
         </span>
-        <ChevronDown
-          className={`h-3 w-3 shrink-0 text-amber-900 transition-transform sm:h-3.5 sm:w-3.5 ${open ? "rotate-180" : ""}`}
-          aria-hidden
-        />
+        {tierLabel ? (
+          <span className="mt-0.5 truncate text-[10px] font-medium text-amber-800/80">
+            {tierLabel}
+            {!enforcementEnabled ? " · tiers off" : null}
+          </span>
+        ) : null}
       </button>
       {open ? (
         <div
@@ -189,6 +215,7 @@ export function AdminCoachImpersonationSwitcher({ coachName }: Props) {
                     c.full_name?.trim() && c.coach_business_name?.trim()
                       ? c.coach_business_name
                       : null;
+                  const tier = coachTierLabel(c.access_tier);
                   return (
                     <li key={c.id}>
                       <button
@@ -205,6 +232,11 @@ export function AdminCoachImpersonationSwitcher({ coachName }: Props) {
                         <span className="font-medium leading-tight">
                           {primary}
                         </span>
+                        {tier ? (
+                          <span className="mt-0.5 text-[10px] font-medium text-sky-700">
+                            {tier}
+                          </span>
+                        ) : null}
                         {secondary ? (
                           <span className="mt-0.5 line-clamp-1 text-[10px] text-slate-500">
                             {secondary}

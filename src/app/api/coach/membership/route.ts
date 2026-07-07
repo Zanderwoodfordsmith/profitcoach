@@ -199,11 +199,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const auth = await requireCoachRequest(request);
-  if (auth.error) {
-    return NextResponse.json({ error: auth.error }, { status: 401 });
-  }
-
   const body = (await request.json().catch(() => ({}))) as {
     plan?: MembershipPlanKey;
     interval?: MembershipInterval;
@@ -231,16 +226,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const { createMembershipCheckoutSession } = await import(
-    "@/lib/membership/checkout"
-  );
+  const {
+    createGuestMembershipCheckoutSession,
+    createMembershipCheckoutSession,
+  } = await import("@/lib/membership/checkout");
+
+  const auth = await requireCoachRequest(request);
 
   try {
-    const result = await createMembershipCheckoutSession({
-      coachId: auth.userId,
-      priceId,
-      request,
-    });
+    const result = auth.error
+      ? await createGuestMembershipCheckoutSession({ priceId, planKey, request })
+      : await createMembershipCheckoutSession({
+          coachId: auth.userId,
+          priceId,
+          request,
+        });
     return NextResponse.json(result);
   } catch (error) {
     console.error("membership checkout error:", error);
