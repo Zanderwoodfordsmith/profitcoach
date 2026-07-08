@@ -1,3 +1,5 @@
+import { BCA_BUSINESS_CONTACT } from "@/config/businessContact";
+
 export const membershipPageCopy = {
   hero: {
     headline: "Profit Coach Membership: Keep Your System On, Choose Your Pace",
@@ -231,27 +233,21 @@ export const membershipPageCopy = {
     },
     {
       q: "I'm not sure which level is right for me.",
-      a: "If you're unsure, assume Premium, run it for 90 days, then adjust up or down. Or get in touch and we'll help you decide. Call or WhatsApp on +44 7540 269 644.",
+      a: `If you're unsure, assume Premium, run it for 90 days, then adjust up or down. Or get in touch and we'll help you decide. ${BCA_BUSINESS_CONTACT.phoneLine}.`,
     },
   ],
   helpContact: {
     label: "Need help?",
-    phoneLine: "Call or WhatsApp on +44 7540 269 644",
-    phone: "+44 7540 269 644",
-    phoneHref: "tel:+447540269644",
-    whatsAppHref: "https://wa.me/447540269644",
-    email: "support@businesscoachacademy.com",
-    emailHref: "mailto:support@businesscoachacademy.com",
+    ...BCA_BUSINESS_CONTACT,
+    phone: BCA_BUSINESS_CONTACT.phoneDisplay,
+    phoneHref: BCA_BUSINESS_CONTACT.phoneTelHref,
   },
   footerCta: {
     headline: "Choose the level that matches how fast you want to grow.",
     help: "Need help deciding?",
-    phoneLine: "Call or WhatsApp on +44 7540 269 644",
-    phone: "+44 7540 269 644",
-    phoneHref: "tel:+447540269644",
-    whatsAppHref: "https://wa.me/447540269644",
-    email: "support@businesscoachacademy.com",
-    emailHref: "mailto:support@businesscoachacademy.com",
+    ...BCA_BUSINESS_CONTACT,
+    phone: BCA_BUSINESS_CONTACT.phoneDisplay,
+    phoneHref: BCA_BUSINESS_CONTACT.phoneTelHref,
   },
   finalCta: {
     eyebrow: "The final step",
