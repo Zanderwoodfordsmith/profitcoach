@@ -104,12 +104,12 @@ export function useEmbedTopNavigation(enabled: boolean): void {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-      const anchor = (event.target as Element | null)?.closest("a[href]");
+      const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[href]");
       if (!anchor) return;
 
       const href = anchor.getAttribute("href");
       if (!href || href.startsWith("#")) return;
-      if (anchor.getAttribute("target") === "_blank") return;
+      if (anchor.target === "_blank") return;
 
       event.preventDefault();
       event.stopPropagation();
