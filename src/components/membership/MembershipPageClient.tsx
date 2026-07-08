@@ -334,6 +334,7 @@ function scrollToPlans() {
 }
 
 const MEMBERSHIP_HERO_VIDEO_SRC = marketingAssetPublicUrl(MEMBERSHIP_HERO_VIDEO_PATH);
+const MEMBERSHIP_HERO_VIDEO_POSTER = "/membership/bca-membership-video-poster.jpg";
 const MEMBERSHIP_CTA_VIDEO_SRC = marketingAssetPublicUrl(MEMBERSHIP_CONFERENCE_VIDEO_PATH);
 const MEMBERSHIP_CTA_VIDEO_POSTER = "/membership/bca-conference-walk-around-poster.png";
 
@@ -1060,7 +1061,7 @@ export function MembershipPageClient() {
         </div>
 
         {/* Hero content — text left, video right */}
-        <div className="relative z-10 mx-auto grid max-w-[1200px] items-center gap-12 px-6 pb-24 pt-10 sm:px-8 sm:pb-28 sm:pt-14 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)]">
+        <div className="relative z-10 mx-auto grid max-w-[1200px] items-center gap-12 px-6 pb-24 pt-10 sm:px-8 sm:pb-28 sm:pt-14 lg:grid-cols-2">
           <div>
             <Eyebrow light>Profit Coach Membership</Eyebrow>
             <h1
@@ -1095,6 +1096,7 @@ export function MembershipPageClient() {
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/15 bg-white/[0.06] shadow-2xl backdrop-blur">
             <MembershipVideoPlayer
               src={MEMBERSHIP_HERO_VIDEO_SRC}
+              poster={MEMBERSHIP_HERO_VIDEO_POSTER}
               playLabel="Watch: how membership works"
               className="relative h-full w-full"
             />
