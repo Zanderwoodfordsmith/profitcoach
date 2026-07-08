@@ -44,6 +44,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   marketingAssetPublicUrl,
   MEMBERSHIP_CONFERENCE_VIDEO_PATH,
+  MEMBERSHIP_HERO_VIDEO_PATH,
 } from "@/lib/marketingAssets";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -332,10 +333,21 @@ function scrollToPlans() {
   document.getElementById("plans")?.scrollIntoView({ behavior: "smooth" });
 }
 
+const MEMBERSHIP_HERO_VIDEO_SRC = marketingAssetPublicUrl(MEMBERSHIP_HERO_VIDEO_PATH);
 const MEMBERSHIP_CTA_VIDEO_SRC = marketingAssetPublicUrl(MEMBERSHIP_CONFERENCE_VIDEO_PATH);
 const MEMBERSHIP_CTA_VIDEO_POSTER = "/membership/bca-conference-walk-around-poster.png";
 
-function MembershipConferenceVideo() {
+function MembershipVideoPlayer({
+  src,
+  poster,
+  playLabel,
+  className = "relative h-full min-h-[380px] w-full",
+}: {
+  src: string;
+  poster?: string;
+  playLabel: string;
+  className?: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasStarted, setHasStarted] = useState(false);
 
@@ -345,11 +357,11 @@ function MembershipConferenceVideo() {
   }
 
   return (
-    <div className="relative h-full min-h-[380px] w-full">
+    <div className={className}>
       <video
         ref={videoRef}
-        src={MEMBERSHIP_CTA_VIDEO_SRC}
-        poster={MEMBERSHIP_CTA_VIDEO_POSTER}
+        src={src}
+        poster={poster}
         controls={hasStarted}
         playsInline
         preload="metadata"
@@ -361,7 +373,7 @@ function MembershipConferenceVideo() {
           type="button"
           onClick={handleStart}
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/20 transition hover:bg-black/30"
-          aria-label="Play BCA conference walk around video"
+          aria-label={playLabel}
         >
           <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-lg transition hover:scale-105">
             <svg viewBox="0 0 24 24" className="ml-1 h-6 w-6" fill={CHATHAMS} aria-hidden>
@@ -369,11 +381,21 @@ function MembershipConferenceVideo() {
             </svg>
           </span>
           <p className="px-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-            BCA conference walk around
+            {playLabel}
           </p>
         </button>
       )}
     </div>
+  );
+}
+
+function MembershipConferenceVideo() {
+  return (
+    <MembershipVideoPlayer
+      src={MEMBERSHIP_CTA_VIDEO_SRC}
+      poster={MEMBERSHIP_CTA_VIDEO_POSTER}
+      playLabel="BCA conference walk around"
+    />
   );
 }
 
@@ -1070,18 +1092,12 @@ export function MembershipPageClient() {
             </p>
           </div>
 
-          {/* Video placeholder */}
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/15 bg-white/[0.06] shadow-2xl backdrop-blur">
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-              <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-lg transition hover:scale-105">
-                <svg viewBox="0 0 24 24" className="ml-1 h-6 w-6" fill={CHATHAMS} aria-hidden>
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </span>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                Watch: how membership works
-              </p>
-            </div>
+            <MembershipVideoPlayer
+              src={MEMBERSHIP_HERO_VIDEO_SRC}
+              playLabel="Watch: how membership works"
+              className="relative h-full w-full"
+            />
           </div>
         </div>
       </div>
