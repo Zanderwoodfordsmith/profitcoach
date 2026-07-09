@@ -144,7 +144,7 @@ async function main() {
       continue;
     }
 
-    if (row.access_tier_locked) {
+    if (row.access_tier_locked || row.access_tier === "do_not_contact") {
       skippedLocked++;
       continue;
     }

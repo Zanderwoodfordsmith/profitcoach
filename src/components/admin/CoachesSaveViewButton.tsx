@@ -1,0 +1,233 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import {
+  ChevronDown,
+  Download,
+  RotateCcw,
+  Save,
+  SquarePlus,
+  ToggleLeft,
+  ToggleRight,
+  Upload,
+} from "lucide-react";
+
+type Props = {
+  isDirty: boolean;
+  autosave: boolean;
+  onSave: () => void;
+  onToggleAutosave: () => void;
+  onSaveAsNew: (name: string) => void;
+  onRevert: () => void;
+  onExportViews?: () => void;
+  onImportViews?: (file: File) => void;
+};
+
+function SaveViewMenuItem({
+  icon,
+  label,
+  shortcut,
+  disabled,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  shortcut?: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex w-full items-center gap-2 rounded px-2.5 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <span className="inline-flex w-4 shrink-0 justify-center text-slate-500">
+        {icon}
+      </span>
+      <span className="flex-1">{label}</span>
+      {shortcut ? (
+        <span className="text-xs text-slate-400">{shortcut}</span>
+      ) : null}
+    </button>
+  );
+}
+
+export function CoachesSaveViewButton({
+  isDirty,
+  autosave,
+  onSave,
+  onToggleAutosave,
+  onSaveAsNew,
+  onRevert,
+  onExportViews,
+  onImportViews,
+}: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [saveAsNewOpen, setSaveAsNewOpen] = useState(false);
+  const [newViewName, setNewViewName] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
+  const saveAsNewInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handlePointerDown(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+        setSaveAsNewOpen(false);
+        setNewViewName("");
+      }
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (saveAsNewOpen) saveAsNewInputRef.current?.focus();
+  }, [saveAsNewOpen]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        onSave();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onSave]);
+
+  const showDirty = isDirty && !autosave;
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((open) => !open)}
+        className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition ${
+          showDirty
+            ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+        }`}
+      >
+        Save view
+        <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
+      </button>
+
+      {menuOpen ? (
+        <div
+          role="menu"
+          className="absolute right-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+        >
+          <SaveViewMenuItem
+            icon={<Save className="h-4 w-4" aria-hidden />}
+            label="Save view"
+            shortcut="⌘S"
+            disabled={!isDirty && !autosave}
+            onClick={() => {
+              onSave();
+              setMenuOpen(false);
+            }}
+          />
+          <SaveViewMenuItem
+            icon={
+              autosave ? (
+                <ToggleRight className="h-4 w-4 text-sky-600" aria-hidden />
+              ) : (
+                <ToggleLeft className="h-4 w-4" aria-hidden />
+              )
+            }
+            label={autosave ? "Autosave on" : "Enable autosave"}
+            onClick={() => {
+              onToggleAutosave();
+            }}
+          />
+          {saveAsNewOpen ? (
+            <form
+              className="border-t border-slate-100 px-2 py-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const trimmed = newViewName.trim();
+                if (trimmed) {
+                  onSaveAsNew(trimmed);
+                  setMenuOpen(false);
+                  setSaveAsNewOpen(false);
+                  setNewViewName("");
+                }
+              }}
+            >
+              <input
+                ref={saveAsNewInputRef}
+                type="text"
+                value={newViewName}
+                onChange={(e) => setNewViewName(e.target.value)}
+                placeholder="New view name"
+                className="block w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                aria-label="New view name"
+              />
+            </form>
+          ) : (
+            <SaveViewMenuItem
+              icon={<SquarePlus className="h-4 w-4" aria-hidden />}
+              label="Save as new view"
+              onClick={() => setSaveAsNewOpen(true)}
+            />
+          )}
+          <div className="my-1 border-t border-slate-100" role="separator" />
+          <SaveViewMenuItem
+            icon={<RotateCcw className="h-4 w-4" aria-hidden />}
+            label="Revert changes"
+            disabled={!isDirty}
+            onClick={() => {
+              onRevert();
+              setMenuOpen(false);
+            }}
+          />
+          {onExportViews || onImportViews ? (
+            <>
+              <div className="my-1 border-t border-slate-100" role="separator" />
+              {onExportViews ? (
+                <SaveViewMenuItem
+                  icon={<Download className="h-4 w-4" aria-hidden />}
+                  label="Export views"
+                  onClick={() => {
+                    onExportViews();
+                    setMenuOpen(false);
+                  }}
+                />
+              ) : null}
+              {onImportViews ? (
+                <>
+                  <SaveViewMenuItem
+                    icon={<Upload className="h-4 w-4" aria-hidden />}
+                    label="Import views"
+                    onClick={() => importInputRef.current?.click()}
+                  />
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        onImportViews(file);
+                        setMenuOpen(false);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

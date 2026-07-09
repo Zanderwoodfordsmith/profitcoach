@@ -24,6 +24,7 @@ import {
 import {
   getCtaCopy,
   getFocusSectionLead,
+  coachFirstNameFromDisplayName,
   getFocusSectionSubtitle,
   getWarmIntro,
   LEVEL_IMAGES,
@@ -397,7 +398,7 @@ export function BossProReportResults({
     coachProfile?.coach_business_name ??
     "your coach";
 
-  const coachFirstName = coachName.split(/\s+/)[0] ?? coachName;
+  const coachFirstName = coachFirstNameFromDisplayName(coachName);
 
   const overall = getOverallLevel(totalScore);
   const bossLevel = bossLevelFromNumber(overall.level);

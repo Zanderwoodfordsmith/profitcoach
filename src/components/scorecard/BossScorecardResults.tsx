@@ -14,6 +14,7 @@ import {
   getCtaCopy,
   FOCUS_SECTION_INTRO,
   getFocusSectionLead,
+  coachFirstNameFromDisplayName,
   getFocusSectionSubtitle,
   getNextSteps,
   getScorecardLevelDetail,
@@ -277,7 +278,7 @@ export function BossScorecardResults({
     coachProfile?.coach_business_name ??
     "your coach";
 
-  const coachFirstName = coachName.split(/\s+/)[0] ?? coachName;
+  const coachFirstName = coachFirstNameFromDisplayName(coachName);
 
   const ctaTier = getCtaTier(result.totalScore);
   const cta = useMemo(() => getCtaCopy(ctaTier, coachFirstName), [ctaTier, coachFirstName]);

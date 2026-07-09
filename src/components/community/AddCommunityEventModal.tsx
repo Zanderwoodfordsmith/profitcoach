@@ -19,6 +19,7 @@ import type {
 } from "@/lib/communityCalendarTypes";
 import {
   ALL_CALENDAR_ACCESS_TAGS,
+  CALENDAR_EVENT_ACCESS_TAG_TIERS,
   COACH_ACCESS_TIER_LABELS,
   COACH_ACCESS_TIERS,
   type CoachAccessTier,
@@ -718,7 +719,7 @@ export function AddCommunityEventModal({
               Visible to access tiers
             </label>
             <div className="flex flex-wrap gap-2">
-              {COACH_ACCESS_TIERS.map((tier) => {
+              {CALENDAR_EVENT_ACCESS_TAG_TIERS.map((tier) => {
                 const checked = accessTags.includes(tier);
                 return (
                   <label

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isCoachAccessTier } from "@/lib/coachAccess/tiers";
+import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import {
   isCoachRecurringPaymentStatus,
   type CoachRecurringPaymentStatus,
@@ -223,7 +223,7 @@ export async function GET(
           : null,
         payments: succeededPayments,
       }),
-      access_tier: (row.access_tier as string | null) ?? "premium",
+      access_tier: normalizeCoachAccessTier(row.access_tier) ?? "premium",
       access_tier_locked: Boolean(row.access_tier_locked),
       stripe_customer_id: (row.stripe_customer_id as string | null) ?? null,
       stripe_subscription_id: (row.stripe_subscription_id as string | null) ?? null,
@@ -433,20 +433,36 @@ export async function PATCH(
   if (body.access_tier !== undefined) {
     if (body.access_tier === null || body.access_tier === "") {
       coachUpdates.access_tier = "premium";
-    } else if (
-      typeof body.access_tier === "string" &&
-      isCoachAccessTier(body.access_tier)
-    ) {
-      coachUpdates.access_tier = body.access_tier;
     } else {
-      return NextResponse.json(
-        { error: "access_tier must be alumni, core, premium, vip, or null." },
-        { status: 400 }
-      );
+      const normalizedTier = normalizeCoachAccessTier(body.access_tier);
+      if (normalizedTier) {
+        coachUpdates.access_tier = normalizedTier;
+      } else {
+        return NextResponse.json(
+          {
+            error:
+              "access_tier must be alumni, core, premium, vip, do_not_contact, or null.",
+          },
+          { status: 400 }
+        );
+      }
     }
   }
   if (body.access_tier_locked !== undefined) {
     coachUpdates.access_tier_locked = !!body.access_tier_locked;
+  }
+  if (coachUpdates.access_tier === "do_not_contact") {
+    coachUpdates.access_tier_locked = true;
+  }
+  if (coachUpdates.access_tier_locked === false) {
+    const { data: existingCoach } = await supabaseAdmin
+      .from("coaches")
+      .select("access_tier")
+      .eq("id", coachId)
+      .maybeSingle();
+    if (normalizeCoachAccessTier(existingCoach?.access_tier) === "do_not_contact") {
+      coachUpdates.access_tier_locked = true;
+    }
   }
 
   const profileUpdates: Record<string, unknown> = {};
@@ -694,6 +710,15 @@ export async function PATCH(
         );
       }
       if (error?.code === "23514") {
+        if (Object.prototype.hasOwnProperty.call(coachUpdates, "access_tier")) {
+          return NextResponse.json(
+            {
+              error:
+                "Could not save access tier. Apply the latest database migration (do_not_contact tier) and try again.",
+            },
+            { status: 400 }
+          );
+        }
         const includesConferenceStatus =
           Object.prototype.hasOwnProperty.call(coachUpdates, "conference_status");
         const includesRecurringPayment =

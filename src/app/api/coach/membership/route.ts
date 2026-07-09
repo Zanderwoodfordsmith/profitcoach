@@ -141,6 +141,7 @@ export async function GET(request: Request) {
     row.membership_status === "past_due";
 
   const needsPaymentChoice =
+    tier !== "do_not_contact" &&
     !hasActiveSubscription &&
     !recurringActive &&
     row.recurring_payment_status !== "first_6_months" &&
@@ -232,6 +233,21 @@ export async function POST(request: Request) {
   } = await import("@/lib/membership/checkout");
 
   const auth = await requireCoachRequest(request);
+
+  if (!auth.error) {
+    const { data: coachRow } = await supabaseAdmin
+      .from("coaches")
+      .select("access_tier")
+      .eq("id", auth.userId)
+      .maybeSingle();
+
+    if (coachRow?.access_tier === "do_not_contact") {
+      return NextResponse.json(
+        { error: "Membership checkout is not available for this account." },
+        { status: 403 }
+      );
+    }
+  }
 
   try {
     const result = auth.error

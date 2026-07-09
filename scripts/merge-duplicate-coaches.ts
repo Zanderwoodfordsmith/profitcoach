@@ -56,6 +56,11 @@ const MERGE_PLANS: Array<{ label: string; keepId: string; removeId: string }> = 
     keepId: "da985ee9-cf91-47f0-b550-78bd902810eb",
     removeId: "5ffa8f02-a170-48e2-a14e-1d74288a498b",
   },
+  {
+    label: "Marina Bleehan (keep hist-marina-bleahen, has payments)",
+    keepId: "371d2052-57ed-4aaa-97b1-443266f02ec1",
+    removeId: "59f7ebae-229b-4254-95ac-7c8173710741",
+  },
 ];
 
 async function reassignColumn(
@@ -235,8 +240,23 @@ async function mergePair(
   supabase: SupabaseClient,
   plan: (typeof MERGE_PLANS)[number],
   dryRun: boolean
-): Promise<void> {
+): Promise<boolean> {
   const { label, keepId, removeId } = plan;
+
+  const { data: removeCoach, error: removeLookupError } = await supabase
+    .from("coaches")
+    .select("id")
+    .eq("id", removeId)
+    .maybeSingle();
+  if (removeLookupError) {
+    throw new Error(`lookup remove coach: ${removeLookupError.message}`);
+  }
+  if (!removeCoach) {
+    console.log(`\n=== ${label} ===`);
+    console.log(`  skip (duplicate ${removeId} already removed)`);
+    return false;
+  }
+
   console.log(`\n=== ${label} ===`);
   console.log(`  keep   ${keepId}`);
   console.log(`  remove ${removeId}`);
@@ -286,10 +306,13 @@ async function mergePair(
 
   await deleteCoach(supabase, removeId, dryRun);
   console.log(dryRun ? "  would delete duplicate coach + auth user" : "  deleted duplicate coach + auth user");
+  return true;
 }
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
+  const onlyArg = process.argv.find((a) => a.startsWith("--only="));
+  const only = onlyArg?.slice("--only=".length).toLowerCase();
 
   if (!SUPABASE_URL || !SERVICE_KEY) {
     console.error("Missing Supabase env.");
@@ -298,10 +321,19 @@ async function main() {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-  console.log(dryRun ? "DRY RUN" : "EXECUTING MERGES");
-  console.log(`${MERGE_PLANS.length} merge(s) planned`);
+  const plans = only
+    ? MERGE_PLANS.filter((plan) => plan.label.toLowerCase().includes(only))
+    : MERGE_PLANS;
 
-  for (const plan of MERGE_PLANS) {
+  if (plans.length === 0) {
+    console.error(`No merge plans match --only=${only ?? ""}`);
+    process.exit(1);
+  }
+
+  console.log(dryRun ? "DRY RUN" : "EXECUTING MERGES");
+  console.log(`${plans.length} merge(s) planned${only ? ` (filter: ${only})` : ""}`);
+
+  for (const plan of plans) {
     await mergePair(supabase, plan, dryRun);
   }
 

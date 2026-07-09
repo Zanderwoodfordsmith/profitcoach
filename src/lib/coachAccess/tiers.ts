@@ -1,4 +1,10 @@
-export const COACH_ACCESS_TIERS = ["alumni", "core", "premium", "vip"] as const;
+export const COACH_ACCESS_TIERS = [
+  "alumni",
+  "core",
+  "premium",
+  "vip",
+  "do_not_contact",
+] as const;
 
 export type CoachAccessTier = (typeof COACH_ACCESS_TIERS)[number];
 
@@ -7,7 +13,16 @@ export const COACH_ACCESS_TIER_LABELS: Record<CoachAccessTier, string> = {
   core: "Core",
   premium: "Premium",
   vip: "VIP",
+  do_not_contact: "Do not contact",
 };
+
+/** Tiers that can be selected for community calendar event visibility. */
+export const CALENDAR_EVENT_ACCESS_TAG_TIERS: CoachAccessTier[] = [
+  "alumni",
+  "core",
+  "premium",
+  "vip",
+];
 
 export type CoachFeature =
   | "community.feed"
@@ -22,6 +37,7 @@ export type CoachFeature =
   | "directory.featured";
 
 const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
+  do_not_contact: new Set(),
   alumni: new Set([
     // Classroom nav is visible, but only a few starter courses are unlocked
     // (see ALUMNI_FREE_COURSE_IDS). No live ecosystem access.
@@ -76,6 +92,22 @@ export function isCoachAccessTier(value: string): value is CoachAccessTier {
   return (COACH_ACCESS_TIERS as readonly string[]).includes(value);
 }
 
+const ACCESS_TIER_ALIASES: Record<string, CoachAccessTier> = {
+  pro: "premium",
+};
+
+/** Normalize legacy/variant access tier strings from the DB or admin UI. */
+export function normalizeCoachAccessTier(
+  value: unknown
+): CoachAccessTier | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return null;
+  const normalized = trimmed.replace(/-/g, "_").replace(/\s+/g, "_");
+  const mapped = ACCESS_TIER_ALIASES[normalized] ?? normalized;
+  return isCoachAccessTier(mapped) ? mapped : null;
+}
+
 export function tierHasFeature(
   tier: CoachAccessTier,
   feature: CoachFeature
@@ -124,12 +156,17 @@ export const FEEDBACK_REQUEST_CATEGORY_SLUG = "requesting-feedback";
 
 export function tierRank(tier: CoachAccessTier): number {
   const order: Record<CoachAccessTier, number> = {
+    do_not_contact: -1,
     alumni: 0,
     core: 1,
     premium: 2,
     vip: 3,
   };
   return order[tier];
+}
+
+export function isDoNotContactTier(tier: CoachAccessTier): boolean {
+  return tier === "do_not_contact";
 }
 
 export function minimumTierForCalendarEvent(

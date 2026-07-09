@@ -538,13 +538,20 @@ export default function AdminCoachDetailPage({
                         </span>
                         <select
                           value={accessDraft.access_tier}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const nextTier = e.target.value as CoachAccessTier;
                             setAccessDraft((d) =>
                               d
-                                ? { ...d, access_tier: e.target.value as CoachAccessTier }
+                                ? {
+                                    ...d,
+                                    access_tier: nextTier,
+                                    ...(nextTier === "do_not_contact"
+                                      ? { access_tier_locked: true }
+                                      : {}),
+                                  }
                                 : d
-                            )
-                          }
+                            );
+                          }}
                           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-[#0c5290] focus:outline-none focus:ring-1 focus:ring-[#0c5290]"
                         >
                           {COACH_ACCESS_TIERS.map((tier) => (

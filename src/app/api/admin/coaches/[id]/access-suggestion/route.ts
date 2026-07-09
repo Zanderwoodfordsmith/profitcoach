@@ -93,6 +93,18 @@ export async function GET(
     ? (coach.access_tier as CoachAccessTier)
     : "premium";
 
+  if (currentTier === "do_not_contact") {
+    return NextResponse.json({
+      currentTier,
+      tierLocked: true,
+      suggestion: {
+        suggestedTier: null,
+        reason: "Do not contact — tier is set manually and is not changed from billing.",
+        confidence: "high" as const,
+      },
+    });
+  }
+
   return NextResponse.json({
     currentTier,
     tierLocked: Boolean(coach.access_tier_locked),

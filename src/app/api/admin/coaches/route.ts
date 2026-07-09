@@ -18,6 +18,7 @@ import {
   type CoachRecurringPaymentStatus,
 } from "@/lib/coachBilling";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
+import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -381,7 +382,7 @@ export async function GET(request: Request) {
             }),
         access_tier: accessTierMissing
           ? "premium"
-          : ((row.access_tier as string | null) ?? "premium"),
+          : normalizeCoachAccessTier(row.access_tier) ?? "premium",
         access_tier_locked: accessTierMissing
           ? false
           : Boolean(row.access_tier_locked),

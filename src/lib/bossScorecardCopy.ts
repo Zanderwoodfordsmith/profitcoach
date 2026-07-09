@@ -193,6 +193,15 @@ export function insightTextForFocusArea(
   return byRag[questionId] ?? insightTextForRag(rag);
 }
 
+const COACH_DISPLAY_FALLBACK = "your coach";
+
+/** First name for copy — empty when no real coach name (so templates use "your coach"). */
+export function coachFirstNameFromDisplayName(displayName: string): string {
+  const trimmed = displayName.trim();
+  if (!trimmed || trimmed.toLowerCase() === COACH_DISPLAY_FALLBACK) return "";
+  return trimmed.split(/\s+/)[0] ?? trimmed;
+}
+
 export function getFocusSectionLead(tier: CtaTier): string {
   switch (tier) {
     case "high":

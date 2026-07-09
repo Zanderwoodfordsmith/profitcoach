@@ -1,16 +1,44 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { CoachesSaveViewButton } from "@/components/admin/CoachesSaveViewButton";
+import { CoachesTableViewBar } from "@/components/admin/CoachesTableViewBar";
 import { GenerateCertificateModal } from "@/components/admin/GenerateCertificateModal";
 import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
+import { useCoachTableViews } from "@/hooks/useCoachTableViews";
+import type {
+  CoachSortCriterion,
+  CoachSortField,
+  CoachSortOrder,
+  CoachTableViewSettings,
+} from "@/lib/admin/coachTableViews";
+import { DEFAULT_COACH_SORTS } from "@/lib/admin/coachTableViews";
+import {
+  COACH_SORT_FIELD_OPTIONS,
+  coachSortOrderOptions,
+  coachSortsEqual,
+  compareCoachesBySorts,
+  nextUnusedCoachSortField,
+  normalizeCoachTableViewSettings,
+  parseCoachSortsFromPersisted,
+} from "@/lib/admin/coachTableSort";
 import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote";
 import { StickyPageHeader } from "@/components/layout";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import {
+  TableCsvExportButton,
+  type CsvExportScope,
+} from "@/components/table/TableCsvExportButton";
 import { isSystemCoachSlug } from "@/lib/primaryCoach";
+import { exportCoachesToCsv } from "@/lib/exportCoachesCsv";
+import {
+  downloadCoachTableViewsJson,
+  parseCoachTableViewsImport,
+} from "@/lib/exportCoachTableViews";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -22,14 +50,17 @@ import {
   ExternalLink,
   GripVertical,
   Loader2,
+  Plus,
   Search,
   Trash2,
+  X,
 } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 
 import {
   COACH_ACCESS_TIER_LABELS,
   COACH_ACCESS_TIERS,
+  normalizeCoachAccessTier,
   type CoachAccessTier,
 } from "@/lib/coachAccess/tiers";
 import {
@@ -41,7 +72,6 @@ import { LADDER_LEVELS, ladderAdminSelectLabel } from "@/lib/ladder";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
-const COACH_TABLE_SETTINGS_STORAGE_KEY = "admin-coaches-table-settings-v2";
 
 function ladderLevelShortName(id: string | null | undefined): string | null {
   if (!id?.trim()) return null;
@@ -314,13 +344,10 @@ type SalesRobotFilter =
   | "not_paying"
   | "active_campaigns";
 type RecurringBillingFilter = "all" | "active" | "inactive";
-type CoachSortField = "last_login" | "join_date" | "active_campaigns";
-type CoachSortOrder = "recent_first" | "oldest_first" | "missing_first";
 
 type CoachTableColumnVisibility = {
   slug: boolean;
   joinDate: boolean;
-  memberFor: boolean;
   goalLevel: boolean;
   clients: boolean;
   linkedinProfile: boolean;
@@ -354,8 +381,7 @@ type PersistedCoachTableSettings = {
   recurringBillingFilter: RecurringBillingFilter;
   joinDateAfter: string;
   joinDateBefore: string;
-  sortField: CoachSortField;
-  sortOrder: CoachSortOrder;
+  sorts: CoachSortCriterion[];
   columnVisibility: CoachTableColumnVisibility;
   columnOrder: Array<keyof CoachTableColumnVisibility>;
 };
@@ -363,7 +389,6 @@ type PersistedCoachTableSettings = {
 const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   slug: true,
   joinDate: true,
-  memberFor: true,
   goalLevel: true,
   clients: true,
   linkedinProfile: true,
@@ -418,7 +443,6 @@ const COACH_TABLE_COLUMN_GROUPS: Array<{
 const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "slug", label: "Slug", category: "member" },
   { key: "joinDate", label: "Join date", category: "member" },
-  { key: "memberFor", label: "Member for", category: "member" },
   { key: "clients", label: "Clients", category: "member" },
   { key: "linkedinProfile", label: "LinkedIn", category: "member" },
   { key: "conference", label: "Conference", category: "member" },
@@ -538,56 +562,21 @@ function parseRecurringBillingFilter(
     : "all";
 }
 
-function isCoachSortField(value: unknown): value is CoachSortField {
-  return (
-    value === "last_login" ||
-    value === "join_date" ||
-    value === "active_campaigns"
-  );
-}
-
-function isCoachSortOrder(value: unknown): value is CoachSortOrder {
-  return (
-    value === "recent_first" ||
-    value === "oldest_first" ||
-    value === "missing_first"
-  );
-}
-
-function parseCoachSortFromPersisted(
-  parsed: Partial<PersistedCoachTableSettings> & {
-    lastLoginSort?: unknown;
-  }
-): { sortField: CoachSortField; sortOrder: CoachSortOrder } | null {
-  if (isCoachSortField(parsed.sortField) && isCoachSortOrder(parsed.sortOrder)) {
-    return { sortField: parsed.sortField, sortOrder: parsed.sortOrder };
-  }
-  const legacy = parsed.lastLoginSort;
-  if (
-    legacy === "recent_first" ||
-    legacy === "oldest_first" ||
-    legacy === "never_first"
-  ) {
-    return {
-      sortField: "last_login",
-      sortOrder: legacy === "never_first" ? "missing_first" : legacy,
-    };
-  }
-  return null;
-}
-
 function parsePersistedCoachTableSettings(
   raw: string
 ): PersistedCoachTableSettings | null {
   try {
-    const parsed = JSON.parse(raw) as Partial<PersistedCoachTableSettings>;
-    const sort = parseCoachSortFromPersisted(parsed);
+    const parsed = JSON.parse(raw) as Partial<PersistedCoachTableSettings> & {
+      sortField?: unknown;
+      sortOrder?: unknown;
+      lastLoginSort?: unknown;
+    };
+    const sorts = parseCoachSortsFromPersisted(parsed);
     if (
       !parsed ||
       !isConferenceFilter(parsed.conferenceFilter) ||
       !isCrmNameFilter(parsed.crmNameFilter) ||
       !isLastLoginFilter(parsed.lastLoginFilter) ||
-      !sort ||
       !parsed.columnVisibility ||
       !parsed.columnOrder
     ) {
@@ -603,9 +592,17 @@ function parsePersistedCoachTableSettings(
       return acc;
     }, {} as CoachTableColumnVisibility);
 
+    const legacyMemberFor = (
+      parsed.columnVisibility as { memberFor?: boolean } | undefined
+    )?.memberFor;
+    if (legacyMemberFor === true) {
+      visibility.joinDate = true;
+    }
+
     const seen = new Set<keyof CoachTableColumnVisibility>();
     const orderedKeys: Array<keyof CoachTableColumnVisibility> = [];
     for (const key of parsed.columnOrder) {
+      if (key === "memberFor") continue;
       if (COACH_TABLE_COLUMN_OPTION_BY_KEY.has(key) && !seen.has(key)) {
         seen.add(key);
         orderedKeys.push(key);
@@ -627,8 +624,7 @@ function parsePersistedCoachTableSettings(
       joinDateBefore: isOptionalIsoDate(parsed.joinDateBefore)
         ? parsed.joinDateBefore
         : "",
-      sortField: sort.sortField,
-      sortOrder: sort.sortOrder,
+      sorts,
       columnVisibility: visibility,
       columnOrder: orderedKeys,
     };
@@ -645,9 +641,25 @@ function conferenceStatusClasses(status: CoachRow["conference_status"]): string 
 }
 
 function accessTierClasses(tier: CoachAccessTier): string {
+  if (tier === "do_not_contact") return "bg-rose-100 text-rose-800";
   if (tier === "alumni") return "bg-violet-100 text-violet-800";
   if (tier === "premium") return "bg-amber-100 text-amber-900";
   return "bg-emerald-100 text-emerald-800";
+}
+
+function isDoNotContactCoach(coach: Pick<CoachRow, "access_tier">): boolean {
+  return normalizeCoachAccessTier(coach.access_tier) === "do_not_contact";
+}
+
+function coachTableRowClasses(coach: CoachRow, selected: boolean): string {
+  const base = "border-t border-slate-100";
+  if (isDoNotContactCoach(coach)) {
+    return selected
+      ? `${base} bg-rose-200/70 hover:bg-rose-200/80`
+      : `${base} bg-rose-100 hover:bg-rose-100/90`;
+  }
+  if (selected) return `${base} hover:bg-slate-50 bg-sky-50/40`;
+  return `${base} hover:bg-slate-50`;
 }
 
 function recurringPaymentStatusClasses(
@@ -749,6 +761,9 @@ export default function AdminPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [coachSearchTerm, setCoachSearchTerm] = useState("");
+  const [selectedCoachIds, setSelectedCoachIds] = useState<string[]>([]);
+  const lastSelectionAnchorIdRef = useRef<string | null>(null);
+  const selectAllHeaderRef = useRef<HTMLInputElement>(null);
   const [conferenceFilter, setConferenceFilter] =
     useState<ConferenceFilter>("all");
   const [crmNameFilter, setCrmNameFilter] = useState<CrmNameFilter>("all");
@@ -760,15 +775,43 @@ export default function AdminPage() {
     useState<RecurringBillingFilter>("all");
   const [joinDateAfter, setJoinDateAfter] = useState("");
   const [joinDateBefore, setJoinDateBefore] = useState("");
-  const [sortField, setSortField] = useState<CoachSortField>("last_login");
-  const [sortOrder, setSortOrder] = useState<CoachSortOrder>("recent_first");
+  const [sorts, setSorts] = useState<CoachSortCriterion[]>(DEFAULT_COACH_SORTS);
   const [columnVisibility, setColumnVisibility] =
     useState<CoachTableColumnVisibility>(DEFAULT_COACH_TABLE_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<
     Array<keyof CoachTableColumnVisibility>
   >(COACH_TABLE_COLUMN_OPTIONS.map((option) => option.key));
-  const [hasLoadedPersistedSettings, setHasLoadedPersistedSettings] =
-    useState(false);
+  const createDefaultViewSettings = useCallback(
+    (): CoachTableViewSettings => ({
+      conferenceFilter: "all",
+      crmNameFilter: "all",
+      lastLoginFilter: "all",
+      salesRobotFilter: "all",
+      recurringBillingFilter: "all",
+      joinDateAfter: "",
+      joinDateBefore: "",
+      sorts: DEFAULT_COACH_SORTS,
+      columnVisibility: DEFAULT_COACH_TABLE_COLUMNS,
+      columnOrder: COACH_TABLE_COLUMN_OPTIONS.map((option) => option.key),
+      searchTerm: "",
+    }),
+    []
+  );
+
+  const applyViewSettings = useCallback((settings: CoachTableViewSettings) => {
+    const normalized = normalizeCoachTableViewSettings(settings);
+    setConferenceFilter(normalized.conferenceFilter);
+    setCrmNameFilter(normalized.crmNameFilter);
+    setLastLoginFilter(normalized.lastLoginFilter);
+    setSalesRobotFilter(normalized.salesRobotFilter);
+    setRecurringBillingFilter(normalized.recurringBillingFilter);
+    setJoinDateAfter(normalized.joinDateAfter);
+    setJoinDateBefore(normalized.joinDateBefore);
+    setSorts(normalized.sorts);
+    setColumnVisibility(normalized.columnVisibility);
+    setColumnOrder(normalized.columnOrder);
+    setCoachSearchTerm(normalized.searchTerm);
+  }, []);
   const [draggingColumnKey, setDraggingColumnKey] = useState<
     keyof CoachTableColumnVisibility | null
   >(null);
@@ -839,30 +882,8 @@ export default function AdminPage() {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [columnsMenuOpen, filtersMenuOpen, sortMenuOpen]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(COACH_TABLE_SETTINGS_STORAGE_KEY);
-    if (raw) {
-      const parsed = parsePersistedCoachTableSettings(raw);
-      if (parsed) {
-        setConferenceFilter(parsed.conferenceFilter);
-        setCrmNameFilter(parsed.crmNameFilter);
-        setLastLoginFilter(parsed.lastLoginFilter);
-        setSalesRobotFilter(parsed.salesRobotFilter);
-        setRecurringBillingFilter(parsed.recurringBillingFilter);
-        setJoinDateAfter(parsed.joinDateAfter);
-        setJoinDateBefore(parsed.joinDateBefore);
-        setSortField(parsed.sortField);
-        setSortOrder(parsed.sortOrder);
-        setColumnVisibility(parsed.columnVisibility);
-        setColumnOrder(parsed.columnOrder);
-      }
-    }
-    setHasLoadedPersistedSettings(true);
-  }, []);
-
-  const persistedTableSettings = useMemo(
-    (): PersistedCoachTableSettings => ({
+  const currentViewSettings = useMemo(
+    (): CoachTableViewSettings => ({
       conferenceFilter,
       crmNameFilter,
       lastLoginFilter,
@@ -870,10 +891,10 @@ export default function AdminPage() {
       recurringBillingFilter,
       joinDateAfter,
       joinDateBefore,
-      sortField,
-      sortOrder,
+      sorts,
       columnVisibility,
       columnOrder,
+      searchTerm: coachSearchTerm,
     }),
     [
       conferenceFilter,
@@ -883,20 +904,27 @@ export default function AdminPage() {
       recurringBillingFilter,
       joinDateAfter,
       joinDateBefore,
-      sortField,
-      sortOrder,
+      sorts,
       columnVisibility,
       columnOrder,
+      coachSearchTerm,
     ]
   );
 
-  useEffect(() => {
-    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
-    window.localStorage.setItem(
-      COACH_TABLE_SETTINGS_STORAGE_KEY,
-      JSON.stringify(persistedTableSettings)
-    );
-  }, [hasLoadedPersistedSettings, persistedTableSettings]);
+  const migrateLegacySettings = useCallback((raw: string) => {
+    const parsed = parsePersistedCoachTableSettings(raw);
+    return parsed
+      ? normalizeCoachTableViewSettings({ ...parsed, searchTerm: "" })
+      : null;
+  }, []);
+
+  const coachTableViews = useCoachTableViews({
+    currentSettings: currentViewSettings,
+    onApplySettings: applyViewSettings,
+    createDefaultSettings: createDefaultViewSettings,
+    migrateLegacySettings,
+    ready: true,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -1070,7 +1098,12 @@ export default function AdminPage() {
                   ? { recurring_payment_status: body.recurring_payment_status }
                   : {}),
                 ...(body.access_tier !== undefined
-                  ? { access_tier: body.access_tier }
+                  ? {
+                      access_tier: body.access_tier,
+                      ...(body.access_tier === "do_not_contact"
+                        ? { access_tier_locked: true }
+                        : {}),
+                    }
                   : {}),
                 ...(body.access_tier_locked !== undefined
                   ? { access_tier_locked: body.access_tier_locked }
@@ -1156,10 +1189,9 @@ export default function AdminPage() {
     (joinDateBefore !== "" ? 1 : 0) +
     (salesRobotFilter !== "all" ? 1 : 0) +
     (recurringBillingFilter !== "all" ? 1 : 0);
-  const hasActiveSort =
-    sortField !== "last_login" || sortOrder !== "recent_first";
+  const hasActiveSort = !coachSortsEqual(sorts, DEFAULT_COACH_SORTS);
   const visibleColumnCount =
-    3 +
+    4 +
     COACH_TABLE_COLUMN_OPTIONS.reduce(
       (n, { key }) => n + (columnVisibility[key] ? 1 : 0),
       0
@@ -1297,51 +1329,105 @@ export default function AdminPage() {
         matchesRecurringBilling
       );
     })
-    .sort((a, b) => {
-      if (sortField === "active_campaigns") {
-        const aCount = a.sales_robot_active_campaigns;
-        const bCount = b.sales_robot_active_campaigns;
-        const aHas = aCount != null;
-        const bHas = bCount != null;
-        if (sortOrder === "missing_first") {
-          if (aHas !== bHas) return aHas ? 1 : -1;
-          if (!aHas && !bHas) {
-            return (a.full_name ?? "").localeCompare(b.full_name ?? "");
-          }
-        } else if (aHas !== bHas) {
-          return aHas ? -1 : 1;
-        }
-        if (!aHas && !bHas) {
-          return (a.full_name ?? "").localeCompare(b.full_name ?? "");
-        }
-        const aVal = aCount ?? 0;
-        const bVal = bCount ?? 0;
-        if (sortOrder === "oldest_first") return aVal - bVal;
-        return bVal - aVal;
-      }
+    .sort((a, b) => compareCoachesBySorts(a, b, sorts));
 
-      const aIso =
-        sortField === "join_date" ? a.joined_at : a.last_login_at;
-      const bIso =
-        sortField === "join_date" ? b.joined_at : b.last_login_at;
-      const aMs = aIso ? Date.parse(aIso) : Number.NaN;
-      const bMs = bIso ? Date.parse(bIso) : Number.NaN;
-      const aHas = !Number.isNaN(aMs);
-      const bHas = !Number.isNaN(bMs);
-      if (sortOrder === "missing_first") {
-        if (aHas !== bHas) return aHas ? 1 : -1;
-        if (!aHas && !bHas) {
-          return (a.full_name ?? "").localeCompare(b.full_name ?? "");
-        }
-      } else {
-        if (aHas !== bHas) return aHas ? -1 : 1;
+  const selectedCoachIdSet = useMemo(
+    () => new Set(selectedCoachIds),
+    [selectedCoachIds]
+  );
+  const filteredCoachIds = useMemo(
+    () => filteredCoaches.map((coach) => coach.id),
+    [filteredCoaches]
+  );
+  const selectedOnPageCount = useMemo(
+    () => filteredCoachIds.filter((id) => selectedCoachIdSet.has(id)).length,
+    [filteredCoachIds, selectedCoachIdSet]
+  );
+  const allPageSelected =
+    filteredCoachIds.length > 0 &&
+    selectedOnPageCount === filteredCoachIds.length;
+  const somePageSelected =
+    selectedOnPageCount > 0 && selectedOnPageCount < filteredCoachIds.length;
+  const selectedCoaches = useMemo(() => {
+    const byId = new Map(coaches.map((coach) => [coach.id, coach]));
+    return selectedCoachIds
+      .map((id) => byId.get(id))
+      .filter((row): row is CoachRow => Boolean(row));
+  }, [coaches, selectedCoachIds]);
+  const selectedCount = selectedCoaches.length;
+
+  useEffect(() => {
+    const input = selectAllHeaderRef.current;
+    if (!input) return;
+    input.indeterminate = somePageSelected;
+  }, [somePageSelected]);
+
+  function handleCoachSelectionClick(id: string, shiftKey: boolean) {
+    const orderedIds = filteredCoaches.map((coach) => coach.id);
+
+    if (shiftKey && lastSelectionAnchorIdRef.current) {
+      const anchorIdx = orderedIds.indexOf(lastSelectionAnchorIdRef.current);
+      const currentIdx = orderedIds.indexOf(id);
+      if (anchorIdx !== -1 && currentIdx !== -1) {
+        const start = Math.min(anchorIdx, currentIdx);
+        const end = Math.max(anchorIdx, currentIdx);
+        const rangeIds = orderedIds.slice(start, end + 1);
+        setSelectedCoachIds((prev) => [...new Set([...prev, ...rangeIds])]);
+        lastSelectionAnchorIdRef.current = id;
+        return;
       }
-      if (!aHas && !bHas) {
-        return (a.full_name ?? "").localeCompare(b.full_name ?? "");
-      }
-      if (sortOrder === "oldest_first") return aMs - bMs;
-      return bMs - aMs;
+    }
+
+    setSelectedCoachIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+    lastSelectionAnchorIdRef.current = id;
+  }
+
+  function togglePageSelection() {
+    if (allPageSelected) {
+      setSelectedCoachIds((prev) =>
+        prev.filter((id) => !filteredCoachIds.includes(id))
+      );
+      return;
+    }
+    setSelectedCoachIds((prev) => [...new Set([...prev, ...filteredCoachIds])]);
+  }
+
+  function handleExportCoachesCsv(
+    mode: "shown" | "all",
+    scope: CsvExportScope
+  ) {
+    const rows =
+      scope === "selected" && selectedCount > 0
+        ? selectedCoaches
+        : filteredCoaches;
+    exportCoachesToCsv(rows, {
+      mode,
+      columnOrder,
+      columnVisibility,
+      origin,
     });
+  }
+
+  function handleExportViews() {
+    if (!coachTableViews.storage) return;
+    downloadCoachTableViewsJson(coachTableViews.storage);
+  }
+
+  async function handleImportViews(file: File) {
+    try {
+      const raw = await file.text();
+      const parsed = parseCoachTableViewsImport(raw);
+      if (!parsed) {
+        window.alert("That file is not a valid coach views export.");
+        return;
+      }
+      coachTableViews.importViews(parsed);
+    } catch {
+      window.alert("Could not read that views file.");
+    }
+  }
 
   const certificateCoachOptions = useMemo(
     () =>
@@ -1467,15 +1553,8 @@ export default function AdminPage() {
     }
     if (key === "joinDate") {
       return (
-        <th className="sticky top-0 z-10 w-28 bg-slate-50 px-2 py-2">
+        <th className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2">
           Join date
-        </th>
-      );
-    }
-    if (key === "memberFor") {
-      return (
-        <th className="sticky top-0 z-10 w-28 bg-slate-50 px-2 py-2">
-          Member for
         </th>
       );
     }
@@ -1519,7 +1598,7 @@ export default function AdminPage() {
     }
     if (key === "lastLogin") {
       return (
-        <th className="sticky top-0 z-10 w-36 bg-slate-50 px-2 py-2">Last login</th>
+        <th className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2">Last login</th>
       );
     }
     if (key === "crm") {
@@ -1663,36 +1742,31 @@ export default function AdminPage() {
     if (key === "joinDate") {
       return (
         <td className="px-2 py-2 align-middle text-xs text-slate-700">
-          <CoachDatePickerField
-            value={toDateInputValue(coach.joined_at)}
-            disabled={directorySavingId === coach.id}
-            placeholder="Not set"
-            onChange={(v) => {
-              void patchCoachRow(coach.id, {
-                disco_community_joined_on: v || null,
-              });
-            }}
-          />
-        </td>
-      );
-    }
-    if (key === "memberFor") {
-      return (
-        <td className="px-2 py-2 align-middle text-xs text-slate-700">
-          {coach.joined_at ? (
-            (() => {
-              const memberFor = formatMemberFor(coach.joined_at);
-              return (
-                <span
-                  title={`Joined ${formatIsoDateDisplay(coach.joined_at) ?? coach.joined_at} (${memberFor.totalDays} days)`}
-                >
-                  {memberFor.label}
-                </span>
-              );
-            })()
-          ) : (
-            <span className="text-slate-400">Not set</span>
-          )}
+          <div className="flex flex-wrap items-center gap-x-1">
+            <CoachDatePickerField
+              value={toDateInputValue(coach.joined_at)}
+              disabled={directorySavingId === coach.id}
+              placeholder="Not set"
+              onChange={(v) => {
+                void patchCoachRow(coach.id, {
+                  disco_community_joined_on: v || null,
+                });
+              }}
+            />
+            {coach.joined_at ? (
+              (() => {
+                const memberFor = formatMemberFor(coach.joined_at);
+                return (
+                  <span
+                    className="text-slate-500"
+                    title={`Member for ${memberFor.totalDays} days`}
+                  >
+                    ({memberFor.label})
+                  </span>
+                );
+              })()
+            ) : null}
+          </div>
         </td>
       );
     }
@@ -1842,7 +1916,18 @@ export default function AdminPage() {
       return (
         <td className="px-2 py-2 align-middle text-xs text-slate-700">
           {coach.last_login_at ? (
-            formatLastLoginDisplay(coach.last_login_at)
+            (() => {
+              const dateLabel = formatLastLoginDisplay(coach.last_login_at);
+              const since = formatMemberFor(coach.last_login_at);
+              return (
+                <span
+                  title={`Last login ${dateLabel} (${since.totalDays} days ago)`}
+                >
+                  {dateLabel}{" "}
+                  <span className="text-slate-500">({since.label})</span>
+                </span>
+              );
+            })()
           ) : (
             <span className="text-slate-400">Never</span>
           )}
@@ -2001,15 +2086,20 @@ export default function AdminPage() {
           <div className="flex min-w-[10rem] flex-col gap-1">
             <select
               title="Coach access tier"
-              value={coach.access_tier}
+              value={normalizeCoachAccessTier(coach.access_tier) ?? "premium"}
               disabled={directorySavingId === coach.id}
               onChange={(e) => {
+                const nextTier = normalizeCoachAccessTier(e.target.value);
+                if (!nextTier) return;
                 void patchCoachRow(coach.id, {
-                  access_tier: e.target.value as CoachAccessTier,
+                  access_tier: nextTier,
+                  ...(nextTier === "do_not_contact"
+                    ? { access_tier_locked: true }
+                    : {}),
                 });
               }}
               className={`max-w-full cursor-pointer rounded px-1 py-0.5 text-xs font-medium shadow-none ring-0 hover:opacity-90 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${accessTierClasses(
-                coach.access_tier
+                normalizeCoachAccessTier(coach.access_tier) ?? "premium"
               )}`}
             >
               {COACH_ACCESS_TIERS.map((tier) => (
@@ -2032,7 +2122,8 @@ export default function AdminPage() {
               />
               Lock tier
             </label>
-            {!coach.access_tier_locked ? (
+            {!coach.access_tier_locked &&
+            normalizeCoachAccessTier(coach.access_tier) !== "do_not_contact" ? (
               <button
                 type="button"
                 disabled={directorySavingId === coach.id}
@@ -2295,6 +2386,16 @@ export default function AdminPage() {
       )}
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-4 pt-3">
+          <CoachesTableViewBar
+            views={coachTableViews.views}
+            activeViewId={coachTableViews.activeViewId}
+            onSwitchView={coachTableViews.switchView}
+            onAddView={coachTableViews.addViewFromCurrent}
+            onRenameView={coachTableViews.renameView}
+            onDeleteView={coachTableViews.deleteView}
+          />
+        </div>
         <div className="border-b border-slate-100 px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative w-full sm:max-w-xs">
@@ -2498,7 +2599,7 @@ export default function AdminPage() {
                 aria-expanded={sortMenuOpen}
                 aria-controls="coach-sort-menu"
                 active={sortMenuOpen}
-                badge={hasActiveSort ? 1 : null}
+                badge={hasActiveSort ? sorts.length : null}
                 title={hasActiveSort ? "Sort (active)" : "Sort"}
                 onClick={() => {
                   setSortMenuOpen((open) => !open);
@@ -2513,65 +2614,118 @@ export default function AdminPage() {
                 <div
                   id="coach-sort-menu"
                   role="menu"
-                  className="absolute left-0 z-[90] mt-1 w-[min(92vw,18rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
+                  className="absolute left-0 z-[90] mt-1 w-[min(92vw,20rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg"
                 >
                   <div className="space-y-3">
-                    <div>
-                      <label
-                        htmlFor="coach-sort-field"
-                        className="mb-1 block text-xs font-medium text-slate-600"
+                    {sorts.map((criterion, index) => {
+                      const orderOptions = coachSortOrderOptions(criterion.field);
+                      const validOrder = orderOptions.some(
+                        (option) => option.value === criterion.order
+                      )
+                        ? criterion.order
+                        : orderOptions[0]?.value ?? "recent_first";
+                      const usedFields = new Set(
+                        sorts
+                          .filter((_, i) => i !== index)
+                          .map((sort) => sort.field)
+                      );
+                      const fieldOptions = COACH_SORT_FIELD_OPTIONS.filter(
+                        (option) =>
+                          !usedFields.has(option.value) ||
+                          option.value === criterion.field
+                      );
+                      return (
+                        <div
+                          key={`${index}-${criterion.field}`}
+                          className="space-y-2 rounded-md border border-slate-100 bg-slate-50/60 p-2.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-slate-600">
+                              {index === 0 ? "Sort by" : "Then by"}
+                            </span>
+                            {index > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSorts((prev) =>
+                                    prev.filter((_, i) => i !== index)
+                                  )
+                                }
+                                className="rounded p-1 text-slate-400 hover:bg-white hover:text-slate-600"
+                                aria-label={`Remove sort ${index + 1}`}
+                              >
+                                <X className="h-3.5 w-3.5" aria-hidden />
+                              </button>
+                            ) : null}
+                          </div>
+                          <select
+                            value={criterion.field}
+                            onChange={(e) => {
+                              const field = e.target.value as CoachSortField;
+                              setSorts((prev) =>
+                                prev.map((sort, i) =>
+                                  i === index
+                                    ? {
+                                        field,
+                                        order:
+                                          coachSortOrderOptions(field)[0]
+                                            ?.value ?? "recent_first",
+                                      }
+                                    : sort
+                                )
+                              );
+                            }}
+                            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          >
+                            {fieldOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={validOrder}
+                            onChange={(e) => {
+                              const order = e.target.value as CoachSortOrder;
+                              setSorts((prev) =>
+                                prev.map((sort, i) =>
+                                  i === index ? { ...sort, order } : sort
+                                )
+                              );
+                            }}
+                            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          >
+                            {orderOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })}
+                    {nextUnusedCoachSortField(sorts) ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const field = nextUnusedCoachSortField(sorts);
+                          if (!field) return;
+                          setSorts((prev) => [
+                            ...prev,
+                            {
+                              field,
+                              order:
+                                coachSortOrderOptions(field)[0]?.value ??
+                                "recent_first",
+                            },
+                          ]);
+                        }}
+                        className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:border-slate-400 hover:bg-slate-50"
                       >
-                        Sort by
-                      </label>
-                      <select
-                        id="coach-sort-field"
-                        value={sortField}
-                        onChange={(e) =>
-                          setSortField(e.target.value as CoachSortField)
-                        }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                      >
-                        <option value="last_login">Last login</option>
-                        <option value="join_date">Join date</option>
-                        <option value="active_campaigns">Active campaigns</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="coach-sort-order"
-                        className="mb-1 block text-xs font-medium text-slate-600"
-                      >
-                        Order
-                      </label>
-                      <select
-                        id="coach-sort-order"
-                        value={sortOrder}
-                        onChange={(e) =>
-                          setSortOrder(e.target.value as CoachSortOrder)
-                        }
-                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                      >
-                        <option value="recent_first">
-                          {sortField === "join_date"
-                            ? "Newest first"
-                            : sortField === "active_campaigns"
-                              ? "Most first"
-                              : "Most recent first"}
-                        </option>
-                        <option value="oldest_first">
-                          {sortField === "active_campaigns"
-                            ? "Least first"
-                            : "Oldest first"}
-                        </option>
-                        <option value="missing_first">
-                          {sortField === "join_date"
-                            ? "No join date first"
-                            : sortField === "active_campaigns"
-                              ? "Not set first"
-                              : "Never logged in first"}
-                        </option>
-                      </select>
-                    </div>
+                        <Plus className="h-4 w-4" aria-hidden />
+                        Add sort
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
@@ -2633,22 +2787,56 @@ export default function AdminPage() {
               ) : null}
             </div>
 
-            <p
-              className="text-xs text-slate-500 tabular-nums"
-              aria-live="polite"
-            >
-              {loading
-                ? "…"
-                : filteredCoaches.length === coaches.length
-                  ? `${coaches.length} ${coaches.length === 1 ? "coach" : "coaches"}`
-                  : `${filteredCoaches.length} of ${coaches.length}`}
-            </p>
+            <TableCsvExportButton
+              disabled={loading || filteredCoaches.length === 0}
+              entityLabel="coaches"
+              selectedCount={selectedCount}
+              totalMatchingCount={filteredCoaches.length}
+              onExportShown={(scope) => handleExportCoachesCsv("shown", scope)}
+              onExportAll={(scope) => handleExportCoachesCsv("all", scope)}
+            />
+
+            <div className="ml-auto flex items-center gap-2">
+              <CoachesSaveViewButton
+                isDirty={coachTableViews.isDirty}
+                autosave={coachTableViews.autosave}
+                onSave={coachTableViews.saveView}
+                onToggleAutosave={coachTableViews.toggleAutosave}
+                onSaveAsNew={coachTableViews.saveAsNewView}
+                onRevert={coachTableViews.revertChanges}
+                onExportViews={handleExportViews}
+                onImportViews={handleImportViews}
+              />
+              <p
+                className="text-xs text-slate-500 tabular-nums"
+                aria-live="polite"
+              >
+                {loading
+                  ? "…"
+                  : selectedCount > 0
+                    ? `${selectedCount} selected`
+                    : filteredCoaches.length === coaches.length
+                      ? `${coaches.length} ${coaches.length === 1 ? "coach" : "coaches"}`
+                      : `${filteredCoaches.length} of ${coaches.length}`}
+              </p>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
         <table className="w-max min-w-max text-left text-sm">
           <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
             <tr>
+              <th className="sticky top-0 z-10 w-10 bg-slate-50 px-2 py-2 text-center">
+                <input
+                  ref={selectAllHeaderRef}
+                  type="checkbox"
+                  checked={allPageSelected}
+                  onChange={togglePageSelection}
+                  disabled={filteredCoaches.length === 0}
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  aria-label="Select all coaches in current view"
+                />
+              </th>
               <th className="sticky top-0 z-10 w-14 bg-slate-50 px-2 py-2 text-center" aria-label="Avatar" />
               <th className="sticky top-0 z-10 bg-slate-50 px-4 py-2">Coach</th>
               {orderedColumnOptions
@@ -2679,8 +2867,28 @@ export default function AdminPage() {
               return (
                 <tr
                   key={coach.id}
-                  className="border-t border-slate-100 hover:bg-slate-50"
+                  className={coachTableRowClasses(
+                    coach,
+                    selectedCoachIdSet.has(coach.id)
+                  )}
                 >
+                  <td className="px-2 py-2 text-center align-middle">
+                    <input
+                      type="checkbox"
+                      checked={selectedCoachIdSet.has(coach.id)}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onChange={(e) =>
+                        handleCoachSelectionClick(
+                          coach.id,
+                          e.nativeEvent instanceof MouseEvent
+                            ? e.nativeEvent.shiftKey
+                            : false
+                        )
+                      }
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                      aria-label={`Select ${coach.full_name ?? coach.slug}`}
+                    />
+                  </td>
                   <td className="px-2 py-2 align-middle">
                     {coach.avatar_url ? (
                       <img
@@ -2697,11 +2905,21 @@ export default function AdminPage() {
                       </div>
                     )}
                   </td>
-                  <td className="w-max whitespace-nowrap px-4 py-2 font-medium text-slate-900">
+                  <td
+                    className={`w-max whitespace-nowrap px-4 py-2 font-medium ${
+                      isDoNotContactCoach(coach)
+                        ? "text-rose-800"
+                        : "text-slate-900"
+                    }`}
+                  >
                     <span className="inline-flex items-center gap-1.5">
                       <Link
                         href={`/admin/coaches/${coach.id}`}
-                        className="text-[#0c5290] hover:underline"
+                        className={
+                          isDoNotContactCoach(coach)
+                            ? "text-rose-800 hover:text-rose-900 hover:underline"
+                            : "text-[#0c5290] hover:underline"
+                        }
                       >
                         {coach.full_name ?? "—"}
                       </Link>

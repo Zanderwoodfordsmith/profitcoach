@@ -11,6 +11,8 @@ type Props = {
   /** When greater than zero, the export menu asks selected vs all matching. */
   selectedCount?: number;
   totalMatchingCount?: number;
+  /** Label for rows in scope picker, e.g. "prospects" or "coaches". */
+  entityLabel?: string;
   onExportShown: (scope: CsvExportScope) => void;
   onExportAll: (scope: CsvExportScope) => void;
 };
@@ -19,6 +21,7 @@ export function TableCsvExportButton({
   disabled = false,
   selectedCount = 0,
   totalMatchingCount = 0,
+  entityLabel = "prospects",
   onExportShown,
   onExportAll,
 }: Props) {
@@ -73,7 +76,7 @@ export function TableCsvExportButton({
           {showScopeChoice ? (
             <div className="border-b border-slate-100 px-3 py-2.5">
               <p className="mb-2 text-xs font-medium text-slate-600">
-                Which prospects should be exported?
+                Which {entityLabel} should be exported?
               </p>
               <div className="space-y-1.5">
                 <label className="flex cursor-pointer items-start gap-2 rounded-md px-1 py-1 hover:bg-slate-50">

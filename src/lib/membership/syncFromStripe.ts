@@ -162,7 +162,11 @@ export async function syncCoachMembershipFromSubscription(
     updates.recurring_payment_status = "overdue";
   }
 
-  if (!coach.access_tier_locked) {
+  const currentTier = coach.access_tier;
+  const preserveTier =
+    coach.access_tier_locked || currentTier === "do_not_contact";
+
+  if (!preserveTier) {
     if (
       subscription.status === "active" ||
       subscription.status === "trialing" ||
