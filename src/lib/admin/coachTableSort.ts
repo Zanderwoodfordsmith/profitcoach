@@ -192,9 +192,9 @@ function migrateCoachTableColumns(
     columnVisibility.joinDate = false;
   }
 
-  const columnOrder = settings.columnOrder.filter(
-    (key): key is keyof CoachTableColumnVisibility => key !== "memberFor"
-  );
+  const columnOrder = (
+    settings.columnOrder as Array<keyof CoachTableColumnVisibility | "memberFor">
+  ).filter((key): key is keyof CoachTableColumnVisibility => key !== "memberFor");
 
   return { columnVisibility, columnOrder };
 }

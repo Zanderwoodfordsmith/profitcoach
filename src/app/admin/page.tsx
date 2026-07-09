@@ -601,7 +601,9 @@ function parsePersistedCoachTableSettings(
 
     const seen = new Set<keyof CoachTableColumnVisibility>();
     const orderedKeys: Array<keyof CoachTableColumnVisibility> = [];
-    for (const key of parsed.columnOrder) {
+    for (const key of parsed.columnOrder as Array<
+      keyof CoachTableColumnVisibility | "memberFor"
+    >) {
       if (key === "memberFor") continue;
       if (COACH_TABLE_COLUMN_OPTION_BY_KEY.has(key) && !seen.has(key)) {
         seen.add(key);
