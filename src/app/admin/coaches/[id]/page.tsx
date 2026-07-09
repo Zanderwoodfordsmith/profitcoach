@@ -2,7 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   ExternalLink,
@@ -191,6 +191,7 @@ export default function AdminCoachDetailPage({
 }) {
   const { id: coachId } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setImpersonatingCoachId } = useImpersonation();
   const [coach, setCoach] = useState<CoachDetail | null>(null);
   const [payments, setPayments] = useState<CoachPayment[]>([]);
@@ -206,6 +207,13 @@ export default function AdminCoachDetailPage({
   const [accessMsg, setAccessMsg] = useState<
     { kind: "ok" | "err"; text: string } | null
   >(null);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "payments") {
+      setActiveTab("payments");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;

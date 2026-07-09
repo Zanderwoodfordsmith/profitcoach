@@ -17,6 +17,7 @@ import {
   isCoachRecurringPaymentStatus,
   type CoachRecurringPaymentStatus,
 } from "@/lib/coachBilling";
+import { buildCoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
 import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
@@ -380,6 +381,14 @@ export async function GET(request: Request) {
                 : null,
               payments: paymentsByCoachId.get(id) ?? [],
             }),
+        payment_summary: accountBillingMissing
+          ? {
+              succeeded_count: 0,
+              last_paid_at: null,
+              totals_by_currency: [],
+              recent_payments: [],
+            }
+          : buildCoachPaymentSummary(paymentsByCoachId.get(id) ?? []),
         access_tier: accessTierMissing
           ? "premium"
           : normalizeCoachAccessTier(row.access_tier) ?? "premium",

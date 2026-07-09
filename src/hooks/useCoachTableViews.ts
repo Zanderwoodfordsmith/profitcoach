@@ -2,14 +2,22 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  createCoachTableViewRemote,
+  deleteCoachTableViewRemote,
+  fetchCoachTableViews,
+  updateCoachTableViewPreferencesRemote,
+  updateCoachTableViewRemote,
+} from "@/lib/admin/coachTableViewsClient";
+import {
+  COACH_TABLE_VIEWS_MIGRATED_KEY,
   COACH_TABLE_VIEWS_STORAGE_KEY,
   DEFAULT_COACH_TABLE_VIEW_NAME,
   LEGACY_COACH_TABLE_SETTINGS_KEY,
   coachTableViewSettingsEqual,
   createCoachTableView,
-  generateCoachTableViewId,
   type CoachTableView,
   type CoachTableViewSettings,
+  type CoachTableViewsPayload,
   type CoachTableViewsStorage,
 } from "@/lib/admin/coachTableViews";
 import { normalizeCoachTableViewSettings } from "@/lib/admin/coachTableSort";
@@ -18,31 +26,21 @@ type UseCoachTableViewsOptions = {
   currentSettings: CoachTableViewSettings;
   onApplySettings: (settings: CoachTableViewSettings) => void;
   createDefaultSettings: () => CoachTableViewSettings;
-  /** Parse legacy single-view localStorage payload */
+  getAccessToken: () => Promise<string | null>;
   migrateLegacySettings?: (raw: string) => CoachTableViewSettings | null;
-  /** Gate applying persisted views until table column keys etc. are ready */
   ready: boolean;
 };
 
-function createDefaultStorage(
-  settings: CoachTableViewSettings
-): CoachTableViewsStorage {
-  const id = generateCoachTableViewId();
+function payloadToStorage(payload: CoachTableViewsPayload): CoachTableViewsStorage {
   return {
     version: 1,
-    views: [
-      {
-        id,
-        name: DEFAULT_COACH_TABLE_VIEW_NAME,
-        settings,
-      },
-    ],
-    activeViewId: id,
-    autosave: false,
+    views: payload.views,
+    activeViewId: payload.activeViewId,
+    autosave: payload.autosave,
   };
 }
 
-function parseViewsStorage(raw: string): CoachTableViewsStorage | null {
+function parseLocalViewsStorage(raw: string): CoachTableViewsStorage | null {
   try {
     const parsed = JSON.parse(raw) as Partial<CoachTableViewsStorage>;
     if (
@@ -66,6 +64,9 @@ function parseViewsStorage(raw: string): CoachTableViewsStorage | null {
       )
       .map((view) => ({
         ...view,
+        createdBy: view.createdBy ?? "",
+        isPrivate: view.isPrivate ?? true,
+        canEdit: view.canEdit ?? true,
         settings: normalizeCoachTableViewSettings(
           view.settings as CoachTableViewSettings & {
             sortField?: unknown;
@@ -89,52 +90,149 @@ function parseViewsStorage(raw: string): CoachTableViewsStorage | null {
   }
 }
 
-function loadViewsStorage(
+function loadLocalViewsStorage(
   createDefaultSettings: () => CoachTableViewSettings,
   migrateLegacySettings?: (raw: string) => CoachTableViewSettings | null
-): CoachTableViewsStorage {
-  if (typeof window === "undefined") {
-    return createDefaultStorage(createDefaultSettings());
-  }
+): CoachTableViewsStorage | null {
+  if (typeof window === "undefined") return null;
 
   const rawV1 = window.localStorage.getItem(COACH_TABLE_VIEWS_STORAGE_KEY);
   if (rawV1) {
-    const parsed = parseViewsStorage(rawV1);
+    const parsed = parseLocalViewsStorage(rawV1);
     if (parsed) return parsed;
   }
 
   const legacyRaw = window.localStorage.getItem(LEGACY_COACH_TABLE_SETTINGS_KEY);
   if (legacyRaw && migrateLegacySettings) {
     const migrated = migrateLegacySettings(legacyRaw);
-    if (migrated) return createDefaultStorage(migrated);
+    if (migrated) {
+      const view = createCoachTableView(DEFAULT_COACH_TABLE_VIEW_NAME, migrated, {
+        isPrivate: true,
+        canEdit: true,
+      });
+      return {
+        version: 1,
+        views: [view],
+        activeViewId: view.id,
+        autosave: false,
+      };
+    }
   }
 
-  return createDefaultStorage(createDefaultSettings());
+  const fallback = createDefaultSettings();
+  if (!rawV1 && !legacyRaw) return null;
+  const view = createCoachTableView(DEFAULT_COACH_TABLE_VIEW_NAME, fallback, {
+    isPrivate: true,
+    canEdit: true,
+  });
+  return {
+    version: 1,
+    views: [view],
+    activeViewId: view.id,
+    autosave: false,
+  };
 }
 
 export function useCoachTableViews({
   currentSettings,
   onApplySettings,
   createDefaultSettings,
+  getAccessToken,
   migrateLegacySettings,
   ready,
 }: UseCoachTableViewsOptions) {
-  const [storage, setStorage] = useState<CoachTableViewsStorage | null>(() => {
-    if (typeof window === "undefined") return null;
-    return loadViewsStorage(createDefaultSettings, migrateLegacySettings);
-  });
-  const [hasLoaded, setHasLoaded] = useState(() => typeof window !== "undefined");
+  const [storage, setStorage] = useState<CoachTableViewsStorage | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const applyingViewRef = useRef(false);
   const initialAppliedRef = useRef(false);
   const onApplySettingsRef = useRef(onApplySettings);
   onApplySettingsRef.current = onApplySettings;
 
+  const applyPayload = useCallback((payload: CoachTableViewsPayload) => {
+    setCurrentUserId(payload.currentUserId);
+    setStorage(payloadToStorage(payload));
+  }, []);
+
+  const refreshViews = useCallback(async () => {
+    const token = await getAccessToken();
+    if (!token) throw new Error("Missing access token.");
+    const payload = await fetchCoachTableViews(token);
+    applyPayload(payload);
+    return payload;
+  }, [applyPayload, getAccessToken]);
+
+  const migrateLocalViewsIfNeeded = useCallback(
+    async (token: string) => {
+      if (typeof window === "undefined") return;
+      if (window.localStorage.getItem(COACH_TABLE_VIEWS_MIGRATED_KEY) === "1") {
+        return;
+      }
+
+      const local = loadLocalViewsStorage(
+        createDefaultSettings,
+        migrateLegacySettings
+      );
+      if (!local) {
+        window.localStorage.setItem(COACH_TABLE_VIEWS_MIGRATED_KEY, "1");
+        return;
+      }
+
+      const customViews = local.views.filter(
+        (view) => view.name.trim() !== DEFAULT_COACH_TABLE_VIEW_NAME
+      );
+      for (const view of customViews) {
+        await createCoachTableViewRemote(token, {
+          name: view.name,
+          settings: view.settings,
+          isPrivate: true,
+        });
+      }
+
+      window.localStorage.removeItem(COACH_TABLE_VIEWS_STORAGE_KEY);
+      window.localStorage.removeItem(LEGACY_COACH_TABLE_SETTINGS_KEY);
+      window.localStorage.setItem(COACH_TABLE_VIEWS_MIGRATED_KEY, "1");
+    },
+    [createDefaultSettings, migrateLegacySettings]
+  );
+
   useEffect(() => {
-    if (typeof window === "undefined" || hasLoaded) return;
-    const loaded = loadViewsStorage(createDefaultSettings, migrateLegacySettings);
-    setStorage(loaded);
-    setHasLoaded(true);
-  }, [createDefaultSettings, hasLoaded, migrateLegacySettings]);
+    if (!ready || hasLoaded) return;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = await getAccessToken();
+        if (!token) throw new Error("Missing access token.");
+        await migrateLocalViewsIfNeeded(token);
+        const payload = await fetchCoachTableViews(token);
+        if (cancelled) return;
+        applyPayload(payload);
+        setHasLoaded(true);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Unable to load views.");
+        setHasLoaded(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    applyPayload,
+    getAccessToken,
+    hasLoaded,
+    migrateLocalViewsIfNeeded,
+    ready,
+  ]);
 
   const activeView = useMemo(() => {
     if (!storage) return null;
@@ -155,38 +253,47 @@ export function useCoachTableViews({
     });
   }, [activeView, hasLoaded, ready]);
 
+  const canEditActiveView = activeView?.canEdit ?? false;
+
   const isDirty = useMemo(() => {
     if (!activeView) return false;
     return !coachTableViewSettingsEqual(currentSettings, activeView.settings);
   }, [activeView, currentSettings]);
 
-  const persistStorage = useCallback((next: CoachTableViewsStorage) => {
-    setStorage(next);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(
-        COACH_TABLE_VIEWS_STORAGE_KEY,
-        JSON.stringify(next)
-      );
-    }
-  }, []);
+  const runMutation = useCallback(
+    async (mutate: (token: string) => Promise<CoachTableViewsPayload>) => {
+      const token = await getAccessToken();
+      if (!token) throw new Error("Missing access token.");
+      const payload = await mutate(token);
+      applyPayload(payload);
+      return payload;
+    },
+    [applyPayload, getAccessToken]
+  );
 
   const updateActiveViewSettings = useCallback(
-    (settings: CoachTableViewSettings) => {
-      if (!storage || !activeView) return;
-      const views = storage.views.map((view) =>
-        view.id === activeView.id ? { ...view, settings } : view
+    async (settings: CoachTableViewSettings) => {
+      if (!storage || !activeView || !activeView.canEdit) return;
+      await runMutation((token) =>
+        updateCoachTableViewRemote(token, activeView.id, { settings })
       );
-      persistStorage({ ...storage, views });
     },
-    [activeView, persistStorage, storage]
+    [activeView, runMutation, storage]
   );
 
   useEffect(() => {
-    if (!hasLoaded || !storage?.autosave || !activeView || !isDirty) return;
+    if (
+      !hasLoaded ||
+      !storage?.autosave ||
+      !activeView?.canEdit ||
+      !isDirty
+    ) {
+      return;
+    }
     if (applyingViewRef.current) return;
-    updateActiveViewSettings(currentSettings);
+    void updateActiveViewSettings(currentSettings);
   }, [
-    activeView,
+    activeView?.canEdit,
     currentSettings,
     hasLoaded,
     isDirty,
@@ -195,42 +302,60 @@ export function useCoachTableViews({
   ]);
 
   const switchView = useCallback(
-    (viewId: string) => {
+    async (viewId: string) => {
       if (!storage || viewId === storage.activeViewId) return;
       const view = storage.views.find((v) => v.id === viewId);
       if (!view) return;
       applyingViewRef.current = true;
       onApplySettingsRef.current(view.settings);
-      persistStorage({ ...storage, activeViewId: viewId });
-      queueMicrotask(() => {
-        applyingViewRef.current = false;
-      });
+      try {
+        await runMutation((token) =>
+          updateCoachTableViewPreferencesRemote(token, { activeViewId: viewId })
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to switch view.");
+      } finally {
+        queueMicrotask(() => {
+          applyingViewRef.current = false;
+        });
+      }
     },
-    [persistStorage, storage]
+    [runMutation, storage]
   );
 
-  const saveView = useCallback(() => {
-    updateActiveViewSettings(currentSettings);
-  }, [currentSettings, updateActiveViewSettings]);
+  const saveView = useCallback(async () => {
+    if (!activeView?.canEdit) return;
+    try {
+      await updateActiveViewSettings(currentSettings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save view.");
+    }
+  }, [activeView?.canEdit, currentSettings, updateActiveViewSettings]);
 
   const saveAsNewView = useCallback(
-    (name: string) => {
-      if (!storage) return;
+    async (name: string, isPrivate = false) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      const view = createCoachTableView(trimmed, currentSettings);
-      persistStorage({
-        ...storage,
-        views: [...storage.views, view],
-        activeViewId: view.id,
-      });
       applyingViewRef.current = true;
-      onApplySettingsRef.current(view.settings);
-      queueMicrotask(() => {
-        applyingViewRef.current = false;
-      });
+      onApplySettingsRef.current(currentSettings);
+      try {
+        await runMutation((token) =>
+          createCoachTableViewRemote(token, {
+            name: trimmed,
+            settings: currentSettings,
+            isPrivate,
+            makeActive: true,
+          })
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to save view.");
+      } finally {
+        queueMicrotask(() => {
+          applyingViewRef.current = false;
+        });
+      }
     },
-    [currentSettings, persistStorage, storage]
+    [currentSettings, runMutation]
   );
 
   const revertChanges = useCallback(() => {
@@ -242,82 +367,133 @@ export function useCoachTableViews({
     });
   }, [activeView]);
 
-  const toggleAutosave = useCallback(() => {
+  const toggleAutosave = useCallback(async () => {
     if (!storage) return;
     const nextAutosave = !storage.autosave;
-    if (nextAutosave && isDirty) {
-      updateActiveViewSettings(currentSettings);
+    try {
+      if (nextAutosave && isDirty && activeView?.canEdit) {
+        await updateActiveViewSettings(currentSettings);
+      }
+      await runMutation((token) =>
+        updateCoachTableViewPreferencesRemote(token, { autosave: nextAutosave })
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update autosave.");
     }
-    persistStorage({ ...storage, autosave: nextAutosave });
   }, [
+    activeView?.canEdit,
     currentSettings,
     isDirty,
-    persistStorage,
+    runMutation,
     storage,
     updateActiveViewSettings,
   ]);
 
   const addViewFromCurrent = useCallback(
-    (name: string) => {
-      saveAsNewView(name);
+    async (name: string, isPrivate = false) => {
+      await saveAsNewView(name, isPrivate);
     },
     [saveAsNewView]
   );
 
   const renameView = useCallback(
-    (viewId: string, name: string) => {
-      if (!storage) return;
+    async (viewId: string, name: string) => {
       const trimmed = name.trim();
       if (!trimmed) return;
-      const views = storage.views.map((view) =>
-        view.id === viewId ? { ...view, name: trimmed } : view
-      );
-      persistStorage({ ...storage, views });
+      const view = storage?.views.find((row) => row.id === viewId);
+      if (!view?.canEdit) return;
+      try {
+        await runMutation((token) =>
+          updateCoachTableViewRemote(token, viewId, { name: trimmed })
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to rename view.");
+      }
     },
-    [persistStorage, storage]
+    [runMutation, storage?.views]
+  );
+
+  const setViewPrivacy = useCallback(
+    async (viewId: string, isPrivate: boolean) => {
+      const view = storage?.views.find((row) => row.id === viewId);
+      if (!view?.canEdit) return;
+      try {
+        await runMutation((token) =>
+          updateCoachTableViewRemote(token, viewId, { isPrivate })
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Unable to update view privacy."
+        );
+      }
+    },
+    [runMutation, storage?.views]
   );
 
   const deleteView = useCallback(
-    (viewId: string) => {
+    async (viewId: string) => {
       if (!storage || storage.views.length <= 1) return;
-      const remaining = storage.views.filter((view) => view.id !== viewId);
-      if (remaining.length === storage.views.length) return;
+      const view = storage.views.find((row) => row.id === viewId);
+      if (!view?.canEdit) return;
       const deletingActive = storage.activeViewId === viewId;
-      const nextActiveId = deletingActive
-        ? remaining[0].id
-        : storage.activeViewId;
-      const nextActive = remaining.find((view) => view.id === nextActiveId);
-      if (deletingActive && nextActive) {
-        applyingViewRef.current = true;
-        onApplySettingsRef.current(nextActive.settings);
-        queueMicrotask(() => {
-          applyingViewRef.current = false;
-        });
+      try {
+        const payload = await runMutation((token) =>
+          deleteCoachTableViewRemote(token, viewId)
+        );
+        if (deletingActive) {
+          const nextActive =
+            payload.views.find((row) => row.id === payload.activeViewId) ??
+            payload.views[0];
+          if (nextActive) {
+            applyingViewRef.current = true;
+            onApplySettingsRef.current(nextActive.settings);
+            queueMicrotask(() => {
+              applyingViewRef.current = false;
+            });
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to delete view.");
       }
-      persistStorage({
-        ...storage,
-        views: remaining,
-        activeViewId: nextActiveId,
-      });
     },
-    [persistStorage, storage]
+    [runMutation, storage]
   );
 
   const importViews = useCallback(
-    (next: CoachTableViewsStorage) => {
-      persistStorage(next);
-      const active =
-        next.views.find((view) => view.id === next.activeViewId) ??
-        next.views[0];
-      if (active) {
-        applyingViewRef.current = true;
-        onApplySettingsRef.current(active.settings);
-        queueMicrotask(() => {
-          applyingViewRef.current = false;
-        });
+    async (next: CoachTableViewsStorage) => {
+      try {
+        const token = await getAccessToken();
+        if (!token) throw new Error("Missing access token.");
+        for (const view of next.views) {
+          await createCoachTableViewRemote(token, {
+            name: view.name,
+            settings: view.settings,
+            isPrivate: view.isPrivate ?? true,
+          });
+        }
+        const payload = await fetchCoachTableViews(token);
+        applyPayload(payload);
+        const active =
+          payload.views.find((view) => view.id === next.activeViewId) ??
+          payload.views[0];
+        if (active) {
+          applyingViewRef.current = true;
+          onApplySettingsRef.current(active.settings);
+          await updateCoachTableViewPreferencesRemote(token, {
+            activeViewId: active.id,
+            autosave: next.autosave,
+          });
+          const refreshed = await fetchCoachTableViews(token);
+          applyPayload(refreshed);
+          queueMicrotask(() => {
+            applyingViewRef.current = false;
+          });
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to import views.");
       }
     },
-    [persistStorage]
+    [applyPayload, getAccessToken]
   );
 
   return {
@@ -325,9 +501,21 @@ export function useCoachTableViews({
     activeViewId: storage?.activeViewId ?? null,
     activeView,
     autosave: storage?.autosave ?? false,
+    currentUserId,
+    canEditActiveView,
     hasLoaded,
+    loading,
+    error,
     isDirty,
-    storage,
+    storage: storage
+      ? {
+          version: 1 as const,
+          views: storage.views,
+          activeViewId: storage.activeViewId,
+          autosave: storage.autosave,
+        }
+      : null,
+    refreshViews,
     switchView,
     saveView,
     saveAsNewView,
@@ -335,6 +523,7 @@ export function useCoachTableViews({
     toggleAutosave,
     addViewFromCurrent,
     renameView,
+    setViewPrivacy,
     deleteView,
     importViews,
   };

@@ -4,21 +4,26 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   Download,
+  Lock,
   RotateCcw,
   Save,
   SquarePlus,
   ToggleLeft,
   ToggleRight,
   Upload,
+  Users,
 } from "lucide-react";
 
 type Props = {
   isDirty: boolean;
   autosave: boolean;
+  canEditActiveView: boolean;
+  activeViewIsPrivate: boolean;
   onSave: () => void;
   onToggleAutosave: () => void;
-  onSaveAsNew: (name: string) => void;
+  onSaveAsNew: (name: string, isPrivate: boolean) => void;
   onRevert: () => void;
+  onTogglePrivacy?: (isPrivate: boolean) => void;
   onExportViews?: () => void;
   onImportViews?: (file: File) => void;
 };
@@ -58,16 +63,20 @@ function SaveViewMenuItem({
 export function CoachesSaveViewButton({
   isDirty,
   autosave,
+  canEditActiveView,
+  activeViewIsPrivate,
   onSave,
   onToggleAutosave,
   onSaveAsNew,
   onRevert,
+  onTogglePrivacy,
   onExportViews,
   onImportViews,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [saveAsNewOpen, setSaveAsNewOpen] = useState(false);
   const [newViewName, setNewViewName] = useState("");
+  const [newViewPrivate, setNewViewPrivate] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const saveAsNewInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +88,7 @@ export function CoachesSaveViewButton({
         setMenuOpen(false);
         setSaveAsNewOpen(false);
         setNewViewName("");
+        setNewViewPrivate(false);
       }
     }
     document.addEventListener("mousedown", handlePointerDown);
@@ -93,12 +103,12 @@ export function CoachesSaveViewButton({
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        onSave();
+        if (canEditActiveView) onSave();
       }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onSave]);
+  }, [canEditActiveView, onSave]);
 
   const showDirty = isDirty && !autosave;
 
@@ -122,13 +132,13 @@ export function CoachesSaveViewButton({
       {menuOpen ? (
         <div
           role="menu"
-          className="absolute right-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 z-[90] mt-1 w-64 rounded-md border border-slate-200 bg-white py-1 shadow-lg"
         >
           <SaveViewMenuItem
             icon={<Save className="h-4 w-4" aria-hidden />}
-            label="Save view"
+            label={canEditActiveView ? "Save view" : "Save view (read-only)"}
             shortcut="⌘S"
-            disabled={!isDirty && !autosave}
+            disabled={!canEditActiveView || (!isDirty && !autosave)}
             onClick={() => {
               onSave();
               setMenuOpen(false);
@@ -143,10 +153,31 @@ export function CoachesSaveViewButton({
               )
             }
             label={autosave ? "Autosave on" : "Enable autosave"}
+            disabled={!canEditActiveView}
             onClick={() => {
               onToggleAutosave();
             }}
           />
+          {onTogglePrivacy && canEditActiveView ? (
+            <SaveViewMenuItem
+              icon={
+                activeViewIsPrivate ? (
+                  <Lock className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Users className="h-4 w-4" aria-hidden />
+                )
+              }
+              label={
+                activeViewIsPrivate
+                  ? "Make shared with admins"
+                  : "Make private to me"
+              }
+              onClick={() => {
+                onTogglePrivacy(!activeViewIsPrivate);
+                setMenuOpen(false);
+              }}
+            />
+          ) : null}
           {saveAsNewOpen ? (
             <form
               className="border-t border-slate-100 px-2 py-2"
@@ -154,10 +185,11 @@ export function CoachesSaveViewButton({
                 e.preventDefault();
                 const trimmed = newViewName.trim();
                 if (trimmed) {
-                  onSaveAsNew(trimmed);
+                  onSaveAsNew(trimmed, newViewPrivate);
                   setMenuOpen(false);
                   setSaveAsNewOpen(false);
                   setNewViewName("");
+                  setNewViewPrivate(false);
                 }
               }}
             >
@@ -170,6 +202,15 @@ export function CoachesSaveViewButton({
                 className="block w-full rounded border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                 aria-label="New view name"
               />
+              <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={newViewPrivate}
+                  onChange={(e) => setNewViewPrivate(e.target.checked)}
+                  className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                />
+                Private (only me)
+              </label>
             </form>
           ) : (
             <SaveViewMenuItem

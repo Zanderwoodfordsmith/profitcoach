@@ -48,6 +48,7 @@ export type CoachTableColumnVisibility = {
   accessTier: boolean;
   recurringPayment: boolean;
   recurringActive: boolean;
+  payments: boolean;
   calendarEmbed: boolean;
   leadWebhook: boolean;
   communityBio: boolean;
@@ -74,6 +75,9 @@ export type CoachTableView = {
   id: string;
   name: string;
   settings: CoachTableViewSettings;
+  createdBy: string;
+  isPrivate: boolean;
+  canEdit: boolean;
 };
 
 export type CoachTableViewsStorage = {
@@ -83,10 +87,95 @@ export type CoachTableViewsStorage = {
   autosave: boolean;
 };
 
+export type CoachTableViewsPayload = {
+  currentUserId: string;
+  views: CoachTableView[];
+  activeViewId: string;
+  autosave: boolean;
+};
+
 export const COACH_TABLE_VIEWS_STORAGE_KEY = "admin-coaches-table-views-v1";
 export const LEGACY_COACH_TABLE_SETTINGS_KEY = "admin-coaches-table-settings-v2";
+export const COACH_TABLE_VIEWS_MIGRATED_KEY =
+  "admin-coaches-table-views-migrated-v1";
 
 export const DEFAULT_COACH_TABLE_VIEW_NAME = "All coaches";
+
+export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
+  keyof CoachTableColumnVisibility
+> = [
+  "slug",
+  "joinDate",
+  "clients",
+  "linkedinProfile",
+  "conference",
+  "lastLogin",
+  "goalLevel",
+  "currentLevel",
+  "goalBy",
+  "directory",
+  "certification",
+  "communityBio",
+  "directorySummary",
+  "directoryBio",
+  "crm",
+  "calendarEmbed",
+  "leadWebhook",
+  "salesRobot",
+  "activeCampaigns",
+  "payingAccounts",
+  "profitCoachEmail",
+  "accessTier",
+  "recurringPayment",
+  "recurringActive",
+  "payments",
+  "landing",
+];
+
+export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
+  slug: true,
+  joinDate: true,
+  goalLevel: true,
+  clients: true,
+  linkedinProfile: true,
+  directory: true,
+  certification: true,
+  conference: true,
+  currentLevel: true,
+  goalBy: true,
+  lastLogin: true,
+  crm: true,
+  salesRobot: true,
+  activeCampaigns: true,
+  payingAccounts: true,
+  profitCoachEmail: true,
+  accessTier: true,
+  recurringPayment: true,
+  recurringActive: true,
+  payments: true,
+  calendarEmbed: true,
+  leadWebhook: true,
+  communityBio: true,
+  directorySummary: true,
+  directoryBio: true,
+  landing: true,
+};
+
+export function createDefaultCoachTableViewSettings(): CoachTableViewSettings {
+  return {
+    conferenceFilter: "all",
+    crmNameFilter: "all",
+    lastLoginFilter: "all",
+    salesRobotFilter: "all",
+    recurringBillingFilter: "all",
+    joinDateAfter: "",
+    joinDateBefore: "",
+    sorts: DEFAULT_COACH_SORTS,
+    columnVisibility: DEFAULT_COACH_TABLE_COLUMNS,
+    columnOrder: DEFAULT_COACH_TABLE_COLUMN_ORDER,
+    searchTerm: "",
+  };
+}
 
 export function generateCoachTableViewId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -104,11 +193,21 @@ export function coachTableViewSettingsEqual(
 
 export function createCoachTableView(
   name: string,
-  settings: CoachTableViewSettings
+  settings: CoachTableViewSettings,
+  options?: {
+    id?: string;
+    createdBy?: string;
+    isPrivate?: boolean;
+    canEdit?: boolean;
+  }
 ): CoachTableView {
+  const createdBy = options?.createdBy ?? "";
   return {
-    id: generateCoachTableViewId(),
+    id: options?.id ?? generateCoachTableViewId(),
     name,
     settings,
+    createdBy,
+    isPrivate: options?.isPrivate ?? false,
+    canEdit: options?.canEdit ?? createdBy !== "",
   };
 }

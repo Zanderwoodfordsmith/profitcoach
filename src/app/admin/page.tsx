@@ -8,6 +8,10 @@ import { CoachesSaveViewButton } from "@/components/admin/CoachesSaveViewButton"
 import { CoachesTableViewBar } from "@/components/admin/CoachesTableViewBar";
 import { GenerateCertificateModal } from "@/components/admin/GenerateCertificateModal";
 import { CoachesMonthlyBarChart } from "@/components/admin/CoachesMonthlyBarChart";
+import {
+  CoachPaymentsCellContent,
+  CoachPaymentsPopover,
+} from "@/components/admin/CoachPaymentsPopover";
 import { useCoachTableViews } from "@/hooks/useCoachTableViews";
 import type {
   CoachSortCriterion,
@@ -15,7 +19,11 @@ import type {
   CoachSortOrder,
   CoachTableViewSettings,
 } from "@/lib/admin/coachTableViews";
-import { DEFAULT_COACH_SORTS } from "@/lib/admin/coachTableViews";
+import {
+  createDefaultCoachTableViewSettings,
+  DEFAULT_COACH_SORTS,
+} from "@/lib/admin/coachTableViews";
+import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
 import {
   COACH_SORT_FIELD_OPTIONS,
   coachSortOrderOptions,
@@ -35,6 +43,7 @@ import {
 } from "@/components/table/TableCsvExportButton";
 import { isSystemCoachSlug } from "@/lib/primaryCoach";
 import { exportCoachesToCsv } from "@/lib/exportCoachesCsv";
+import { formatPersonName } from "@/lib/formatPersonName";
 import {
   downloadCoachTableViewsJson,
   parseCoachTableViewsImport,
@@ -52,7 +61,6 @@ import {
   Loader2,
   Plus,
   Search,
-  Trash2,
   X,
 } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
@@ -325,6 +333,7 @@ type CoachRow = {
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
+  payment_summary: CoachPaymentSummary;
   access_tier: CoachAccessTier;
   access_tier_locked: boolean;
   ladder_level: string | null;
@@ -365,6 +374,7 @@ type CoachTableColumnVisibility = {
   accessTier: boolean;
   recurringPayment: boolean;
   recurringActive: boolean;
+  payments: boolean;
   calendarEmbed: boolean;
   leadWebhook: boolean;
   communityBio: boolean;
@@ -406,6 +416,7 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   accessTier: true,
   recurringPayment: true,
   recurringActive: true,
+  payments: true,
   calendarEmbed: true,
   leadWebhook: true,
   communityBio: true,
@@ -465,6 +476,7 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "accessTier", label: "Access tier", category: "billing" },
   { key: "recurringPayment", label: "Billing", category: "billing" },
   { key: "recurringActive", label: "Recurring active", category: "billing" },
+  { key: "payments", label: "Payments", category: "billing" },
   { key: "landing", label: "Landing / preview", category: "actions" },
 ];
 
@@ -784,21 +796,16 @@ export default function AdminPage() {
     Array<keyof CoachTableColumnVisibility>
   >(COACH_TABLE_COLUMN_OPTIONS.map((option) => option.key));
   const createDefaultViewSettings = useCallback(
-    (): CoachTableViewSettings => ({
-      conferenceFilter: "all",
-      crmNameFilter: "all",
-      lastLoginFilter: "all",
-      salesRobotFilter: "all",
-      recurringBillingFilter: "all",
-      joinDateAfter: "",
-      joinDateBefore: "",
-      sorts: DEFAULT_COACH_SORTS,
-      columnVisibility: DEFAULT_COACH_TABLE_COLUMNS,
-      columnOrder: COACH_TABLE_COLUMN_OPTIONS.map((option) => option.key),
-      searchTerm: "",
-    }),
+    () => createDefaultCoachTableViewSettings(),
     []
   );
+
+  const getAccessToken = useCallback(async () => {
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    return session?.access_token ?? null;
+  }, []);
 
   const applyViewSettings = useCallback((settings: CoachTableViewSettings) => {
     const normalized = normalizeCoachTableViewSettings(settings);
@@ -826,7 +833,6 @@ export default function AdminPage() {
   const [directorySavingId, setDirectorySavingId] = useState<string | null>(
     null
   );
-  const [deletingCoachId, setDeletingCoachId] = useState<string | null>(null);
   const [webhookEditCoachId, setWebhookEditCoachId] = useState<string | null>(
     null
   );
@@ -924,8 +930,9 @@ export default function AdminPage() {
     currentSettings: currentViewSettings,
     onApplySettings: applyViewSettings,
     createDefaultSettings: createDefaultViewSettings,
+    getAccessToken,
     migrateLegacySettings,
-    ready: true,
+    ready: !checkingRole,
   });
 
   useEffect(() => {
@@ -1193,7 +1200,7 @@ export default function AdminPage() {
     (recurringBillingFilter !== "all" ? 1 : 0);
   const hasActiveSort = !coachSortsEqual(sorts, DEFAULT_COACH_SORTS);
   const visibleColumnCount =
-    4 +
+    3 +
     COACH_TABLE_COLUMN_OPTIONS.reduce(
       (n, { key }) => n + (columnVisibility[key] ? 1 : 0),
       0
@@ -1510,45 +1517,6 @@ export default function AdminPage() {
     }
   }
 
-  async function handleDeleteCoach(coach: CoachRow) {
-    const label = coach.full_name?.trim() || coach.slug;
-    if (
-      !window.confirm(
-        `Delete coach profile for "${label}"? This removes their account and related coach data. This cannot be undone.`
-      )
-    ) {
-      return;
-    }
-
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) {
-      setError("You must be signed in to delete a coach.");
-      return;
-    }
-
-    setDeletingCoachId(coach.id);
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/coaches/${coach.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        throw new Error(body.error ?? "Unable to delete coach.");
-      }
-      setCoaches((prev) => prev.filter((c) => c.id !== coach.id));
-    } catch (e) {
-      setError((e as Error)?.message ?? "Unable to delete coach.");
-    } finally {
-      setDeletingCoachId(null);
-    }
-  }
-
   function renderColumnHeader(key: keyof CoachTableColumnVisibility) {
     if (key === "slug") {
       return <th className="sticky top-0 z-10 bg-slate-50 px-3 py-2">Slug</th>;
@@ -1660,6 +1628,16 @@ export default function AdminPage() {
           title="Active recurring billing (£495/£399 monthly or prepaid annual)"
         >
           Recurring
+        </th>
+      );
+    }
+    if (key === "payments") {
+      return (
+        <th
+          className="sticky top-0 z-10 min-w-[12rem] bg-slate-50 px-2 py-2"
+          title="Successful payments total, count, and last payment date"
+        >
+          Payments
         </th>
       );
     }
@@ -2082,6 +2060,23 @@ export default function AdminPage() {
         </td>
       );
     }
+    if (key === "payments") {
+      const displayName =
+        formatPersonName(coach.full_name) ||
+        coach.coach_business_name?.trim() ||
+        coach.slug;
+      return (
+        <td className="max-w-[14rem] px-2 py-2 align-middle">
+          <CoachPaymentsPopover
+            coachId={coach.id}
+            coachName={displayName}
+            summary={coach.payment_summary}
+          >
+            <CoachPaymentsCellContent summary={coach.payment_summary} />
+          </CoachPaymentsPopover>
+        </td>
+      );
+    }
     if (key === "accessTier") {
       return (
         <td className="px-2 py-2 align-middle">
@@ -2392,10 +2387,19 @@ export default function AdminPage() {
           <CoachesTableViewBar
             views={coachTableViews.views}
             activeViewId={coachTableViews.activeViewId}
-            onSwitchView={coachTableViews.switchView}
-            onAddView={coachTableViews.addViewFromCurrent}
-            onRenameView={coachTableViews.renameView}
-            onDeleteView={coachTableViews.deleteView}
+            currentUserId={coachTableViews.currentUserId}
+            onSwitchView={(viewId) => {
+              void coachTableViews.switchView(viewId);
+            }}
+            onAddView={(name, isPrivate) => {
+              void coachTableViews.addViewFromCurrent(name, isPrivate);
+            }}
+            onRenameView={(viewId, name) => {
+              void coachTableViews.renameView(viewId, name);
+            }}
+            onDeleteView={(viewId) => {
+              void coachTableViews.deleteView(viewId);
+            }}
           />
         </div>
         <div className="border-b border-slate-100 px-4 py-3">
@@ -2802,10 +2806,28 @@ export default function AdminPage() {
               <CoachesSaveViewButton
                 isDirty={coachTableViews.isDirty}
                 autosave={coachTableViews.autosave}
-                onSave={coachTableViews.saveView}
-                onToggleAutosave={coachTableViews.toggleAutosave}
-                onSaveAsNew={coachTableViews.saveAsNewView}
+                canEditActiveView={coachTableViews.canEditActiveView}
+                activeViewIsPrivate={coachTableViews.activeView?.isPrivate ?? false}
+                onSave={() => {
+                  void coachTableViews.saveView();
+                }}
+                onToggleAutosave={() => {
+                  void coachTableViews.toggleAutosave();
+                }}
+                onSaveAsNew={(name, isPrivate) => {
+                  void coachTableViews.saveAsNewView(name, isPrivate);
+                }}
                 onRevert={coachTableViews.revertChanges}
+                onTogglePrivacy={
+                  coachTableViews.activeViewId
+                    ? (isPrivate) => {
+                        void coachTableViews.setViewPrivacy(
+                          coachTableViews.activeViewId!,
+                          isPrivate
+                        );
+                      }
+                    : undefined
+                }
                 onExportViews={handleExportViews}
                 onImportViews={handleImportViews}
               />
@@ -2846,7 +2868,6 @@ export default function AdminPage() {
                 .map(({ key }) => (
                   <Fragment key={key}>{renderColumnHeader(key)}</Fragment>
                 ))}
-              <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2 text-center" aria-label="Delete" />
             </tr>
           </thead>
           <tbody>
@@ -2952,30 +2973,6 @@ export default function AdminPage() {
                         )}
                       </Fragment>
                     ))}
-                  <td className="px-2 py-2 text-center align-middle">
-                    <button
-                      type="button"
-                      onClick={() => void handleDeleteCoach(coach)}
-                      disabled={deletingCoachId === coach.id}
-                      title={
-                        deletingCoachId === coach.id
-                          ? "Deleting coach…"
-                          : `Delete coach ${coach.full_name ?? coach.slug}`
-                      }
-                      aria-label={
-                        deletingCoachId === coach.id
-                          ? "Deleting coach"
-                          : `Delete coach ${coach.full_name ?? coach.slug}`
-                      }
-                      className="inline-flex rounded p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {deletingCoachId === coach.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      )}
-                    </button>
-                  </td>
                 </tr>
               );
             })}

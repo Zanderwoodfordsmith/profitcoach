@@ -1,5 +1,7 @@
 import {
   DEFAULT_COACH_SORTS,
+  DEFAULT_COACH_TABLE_COLUMNS,
+  DEFAULT_COACH_TABLE_COLUMN_ORDER,
   type CoachSortCriterion,
   type CoachSortField,
   type CoachSortOrder,
@@ -195,6 +197,21 @@ function migrateCoachTableColumns(
   const columnOrder = (
     settings.columnOrder as Array<keyof CoachTableColumnVisibility | "memberFor">
   ).filter((key): key is keyof CoachTableColumnVisibility => key !== "memberFor");
+
+  for (const key of Object.keys(
+    DEFAULT_COACH_TABLE_COLUMNS
+  ) as Array<keyof CoachTableColumnVisibility>) {
+    if (columnVisibility[key] === undefined) {
+      columnVisibility[key] = DEFAULT_COACH_TABLE_COLUMNS[key];
+    }
+  }
+
+  const orderSeen = new Set(columnOrder);
+  for (const key of DEFAULT_COACH_TABLE_COLUMN_ORDER) {
+    if (!orderSeen.has(key)) {
+      columnOrder.push(key);
+    }
+  }
 
   return { columnVisibility, columnOrder };
 }

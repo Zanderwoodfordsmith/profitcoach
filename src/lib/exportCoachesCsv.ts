@@ -14,6 +14,8 @@ import {
 } from "@/lib/exportCsv";
 import { LADDER_LEVELS } from "@/lib/ladder";
 import type { CoachTableColumnVisibility } from "@/lib/admin/coachTableViews";
+import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
+import { formatCoachPaymentsExportValue } from "@/lib/admin/coachPaymentSummary";
 
 export type CoachExportRow = {
   id: string;
@@ -47,6 +49,7 @@ export type CoachExportRow = {
   has_profit_coach_email_account: boolean;
   recurring_payment_status: CoachRecurringPaymentStatus | null;
   recurring_billing_active: boolean;
+  payment_summary: CoachPaymentSummary;
   access_tier: CoachAccessTier;
   access_tier_locked: boolean;
 };
@@ -79,6 +82,7 @@ export type CoachExportColumnKey =
   | "accessTierLocked"
   | "recurringPayment"
   | "recurringActive"
+  | "payments"
   | "calendarEmbed"
   | "leadWebhook"
   | "leadWebhookUrl"
@@ -114,6 +118,7 @@ const EXPORT_COLUMN_DEFS: Array<{ key: CoachExportColumnKey; label: string }> =
     { key: "accessTierLocked", label: "Access tier locked" },
     { key: "recurringPayment", label: "Billing" },
     { key: "recurringActive", label: "Recurring active" },
+    { key: "payments", label: "Payments" },
     { key: "calendarEmbed", label: "Calendar embed" },
     { key: "leadWebhook", label: "Lead webhook" },
     { key: "leadWebhookUrl", label: "Lead webhook URL" },
@@ -145,6 +150,7 @@ const TABLE_KEY_TO_EXPORT: Partial<
   accessTier: ["accessTier", "accessTierLocked"],
   recurringPayment: ["recurringPayment"],
   recurringActive: ["recurringActive"],
+  payments: ["payments"],
   calendarEmbed: ["calendarEmbed"],
   leadWebhook: ["leadWebhook", "leadWebhookUrl"],
   communityBio: ["communityBio"],
@@ -280,6 +286,8 @@ function getExportCellValue(
         : "";
     case "recurringActive":
       return yesNo(row.recurring_billing_active);
+    case "payments":
+      return formatCoachPaymentsExportValue(row.payment_summary);
     case "calendarEmbed":
       return yesNo(row.has_calendar_embed);
     case "leadWebhook":
