@@ -12,8 +12,9 @@
  *   - DRY RUN BY DEFAULT. Nothing is written unless you pass --apply.
  *   - Coaches with access_tier_locked = true are SKIPPED (manual overrides /
  *     complimentary grants you set by hand are never touched).
- *   - Because tier enforcement is off, this only records "who is on what";
- *     it does not change what anyone can access until ENFORCE_MEMBERSHIP_TIERS=true.
+ *   - App + DB community RLS both defer enforcement until launch
+ *     (ENFORCE_MEMBERSHIP_TIERS + app_runtime_flags.enforce_membership_tiers).
+ *     Before that flag is enabled, this only records "who is on what".
  *
  * Usage:
  *   npx tsx scripts/backfill-coach-membership-tiers.ts            (dry run, shows changes)
