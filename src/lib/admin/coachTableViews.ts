@@ -25,7 +25,7 @@ export type CoachSortCriterion = {
 };
 
 export const DEFAULT_COACH_SORTS: CoachSortCriterion[] = [
-  { field: "last_login", order: "recent_first" },
+  { field: "join_date", order: "recent_first" },
 ];
 
 export type CoachTableColumnVisibility = {
@@ -85,6 +85,7 @@ export type CoachTableViewsStorage = {
   views: CoachTableView[];
   activeViewId: string;
   autosave: boolean;
+  viewOrder: string[];
 };
 
 export type CoachTableViewsPayload = {
@@ -92,6 +93,8 @@ export type CoachTableViewsPayload = {
   views: CoachTableView[];
   activeViewId: string;
   autosave: boolean;
+  /** Preferred order of non-All view ids for this admin. All is always first. */
+  viewOrder: string[];
 };
 
 export const COACH_TABLE_VIEWS_STORAGE_KEY = "admin-coaches-table-views-v1";
@@ -99,7 +102,60 @@ export const LEGACY_COACH_TABLE_SETTINGS_KEY = "admin-coaches-table-settings-v2"
 export const COACH_TABLE_VIEWS_MIGRATED_KEY =
   "admin-coaches-table-views-migrated-v1";
 
-export const DEFAULT_COACH_TABLE_VIEW_NAME = "All coaches";
+export const DEFAULT_COACH_TABLE_VIEW_NAME = "All";
+/** Older default tab name; still recognized as the system All view. */
+export const LEGACY_DEFAULT_COACH_TABLE_VIEW_NAME = "All coaches";
+
+export function isDefaultCoachTableViewName(name: string): boolean {
+  const normalized = name.trim().toLowerCase();
+  return (
+    normalized === DEFAULT_COACH_TABLE_VIEW_NAME.toLowerCase() ||
+    normalized === LEGACY_DEFAULT_COACH_TABLE_VIEW_NAME.toLowerCase()
+  );
+}
+
+export function pickCanonicalAllView(
+  views: CoachTableView[]
+): CoachTableView | null {
+  const allViews = views.filter((view) => isDefaultCoachTableViewName(view.name));
+  if (allViews.length === 0) return null;
+  return (
+    allViews.find(
+      (view) =>
+        view.name.trim().toLowerCase() ===
+        DEFAULT_COACH_TABLE_VIEW_NAME.toLowerCase()
+    ) ?? allViews[0]
+  );
+}
+
+/** All is always first; remaining tabs follow `viewOrder`, then created order. */
+export function orderCoachTableViews(
+  views: CoachTableView[],
+  viewOrder: string[] = []
+): CoachTableView[] {
+  const allView = pickCanonicalAllView(views);
+  const otherViews = views.filter(
+    (view) => !isDefaultCoachTableViewName(view.name)
+  );
+  const byId = new Map(otherViews.map((view) => [view.id, view]));
+  const ordered: CoachTableView[] = [];
+  for (const id of viewOrder) {
+    const view = byId.get(id);
+    if (!view) continue;
+    ordered.push(view);
+    byId.delete(id);
+  }
+  for (const view of otherViews) {
+    if (byId.has(view.id)) ordered.push(view);
+  }
+  return allView ? [allView, ...ordered] : ordered;
+}
+
+export function sortCoachTableViewsWithAllFirst(
+  views: CoachTableView[]
+): CoachTableView[] {
+  return orderCoachTableViews(views, []);
+}
 
 export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   keyof CoachTableColumnVisibility

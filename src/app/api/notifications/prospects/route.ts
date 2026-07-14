@@ -1,70 +1,29 @@
 import { NextResponse } from "next/server";
+import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { buildProspectNotifications } from "@/lib/prospectNotifications";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-async function requireCoach(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-
-  if (!token) {
-    return {
-      error: "Missing access token." as const,
-      role: null as string | null,
-      coachId: null as string | null,
-      prospectsHref: null as string | null,
-    };
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    return {
-      error: "Invalid access token." as const,
-      role: null,
-      coachId: null,
-      prospectsHref: null,
-    };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const role = profile?.role ?? null;
-  if (role !== "coach") {
-    return {
-      error: "Not authorized." as const,
-      role,
-      coachId: null,
-      prospectsHref: null,
-    };
-  }
-
-  return {
-    error: null,
-    role,
-    coachId: user.id,
-    prospectsHref: "/coach/prospects",
-  };
-}
-
 export async function GET(request: Request) {
-  const auth = await requireCoach(request);
-  if (auth.error) {
+  const auth = await requireCoachRequest(request);
+  if (auth.error || !auth.userId) {
     return NextResponse.json(
-      { error: auth.error },
-      { status: auth.error === "Not authorized." ? 403 : 401 }
+      { error: auth.error ?? "Unauthorized" },
+      {
+        status:
+          auth.error === "Not authorized."
+            ? 403
+            : auth.error ===
+                "Admin must pass x-impersonate-coach-id for this resource."
+              ? 400
+              : 401,
+      }
     );
   }
+
+  const coachId = auth.userId;
+  const prospectsHref = "/coach/prospects";
 
   const baseColumns =
     "id, full_name, email, business_name, job_title, prospect_status, type, created_at";
@@ -94,7 +53,7 @@ export async function GET(request: Request) {
             .order("created_at", { ascending: false })
             .limit(120);
 
-          return query.eq("coach_id", auth.coachId!);
+          return query.eq("coach_id", coachId);
         },
         baseColumns,
         optionalColumns
@@ -116,7 +75,7 @@ export async function GET(request: Request) {
       )
     );
 
-    let coachById: Record<
+    const coachById: Record<
       string,
       {
         full_name: string | null;
@@ -164,8 +123,8 @@ export async function GET(request: Request) {
     const enriched = await enrichProspectRows(
       supabaseAdmin,
       (contacts ?? []).map((contact) => {
-        const coachId = contact.coach_id ?? null;
-        const coach = coachId ? coachById[coachId] : null;
+        const rowCoachId = contact.coach_id ?? null;
+        const coach = rowCoachId ? coachById[rowCoachId] : null;
         return {
           id: contact.id,
           full_name: contact.full_name,
@@ -175,7 +134,7 @@ export async function GET(request: Request) {
           business_name: contact.business_name,
           phone: contact.phone ?? null,
           type: contact.type,
-          coach_id: coachId,
+          coach_id: rowCoachId,
           coach_name: coach?.full_name ?? null,
           coach_business_name: coach?.coach_business_name ?? null,
           crm_contact_id: contact.crm_contact_id ?? null,
@@ -186,10 +145,7 @@ export async function GET(request: Request) {
       })
     );
 
-    const notifications = buildProspectNotifications(
-      enriched,
-      auth.prospectsHref ?? "/coach/prospects"
-    );
+    const notifications = buildProspectNotifications(enriched, prospectsHref);
 
     return NextResponse.json({ notifications });
   } catch (err) {

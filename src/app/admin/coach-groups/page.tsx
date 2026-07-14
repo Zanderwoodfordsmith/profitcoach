@@ -68,21 +68,12 @@ export default function AdminCoachGroupsPage() {
     );
 
     const summaries = groupsData.groups ?? [];
-    const detailed = await Promise.all(
-      summaries.map(async (group) => {
-        const detailRes = await fetch(`/api/admin/coach-groups/${group.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const detailData = (await detailRes.json()) as {
-          members?: Array<{ coach_id: string }>;
-        };
-        return {
-          ...group,
-          coachIds: (detailData.members ?? []).map((member) => member.coach_id),
-        };
-      }),
+    setGroups(
+      summaries.map((group) => ({
+        ...group,
+        coachIds: group.coachIds ?? [],
+      }))
     );
-    setGroups(detailed);
   }, []);
 
   useEffect(() => {

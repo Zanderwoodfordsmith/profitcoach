@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createOutlineLine } from "@/lib/actionPlans/actionOutlineUtils";
 import { fromDatetimeLocalValue } from "@/lib/actionPlans/mappers";
+import {
+  chunkArray,
+  SUPABASE_IN_FILTER_CHUNK,
+} from "@/lib/chunkArray";
 import { isMissingColumnError } from "@/lib/contactsSchemaSafeSelect";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -45,29 +49,33 @@ export async function loadProspectNextActionsByCoach(
 ): Promise<Record<string, ProspectNextAction>> {
   if (!contactIds.length) return {};
 
-  const { data, error } = await supabase
-    .from("coach_action_items")
-    .select("id, text, depth, sort_order, due_at, contact_id, done")
-    .eq("coach_id", coachId)
-    .in("contact_id", contactIds)
-    .eq("done", false);
-
-  if (error) {
-    if (error.code === "42P01" || isMissingColumnError(error)) {
-      return {};
-    }
-    console.warn(
-      "loadProspectNextActionsByCoach:",
-      error.message ?? error.code ?? error
-    );
-    return {};
-  }
-
   const byContact: Record<string, ProspectNextAction> = {};
-  for (const row of (data ?? []) as DbActionItem[]) {
-    if (!row.contact_id) continue;
-    byContact[row.contact_id] = dbActionToProspectNextAction(row);
+
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("coach_action_items")
+      .select("id, text, depth, sort_order, due_at, contact_id, done")
+      .eq("coach_id", coachId)
+      .in("contact_id", idChunk)
+      .eq("done", false);
+
+    if (error) {
+      if (error.code === "42P01" || isMissingColumnError(error)) {
+        return byContact;
+      }
+      console.warn(
+        "loadProspectNextActionsByCoach:",
+        error.message ?? error.code ?? error
+      );
+      return byContact;
+    }
+
+    for (const row of (data ?? []) as DbActionItem[]) {
+      if (!row.contact_id) continue;
+      byContact[row.contact_id] = dbActionToProspectNextAction(row);
+    }
   }
+
   return byContact;
 }
 

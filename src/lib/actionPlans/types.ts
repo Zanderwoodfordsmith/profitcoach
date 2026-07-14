@@ -60,6 +60,8 @@ export type CoachGroupSummary = {
   name: string;
   description: string | null;
   memberCount: number;
+  /** Present when list API embeds membership (avoids N+1 detail fetches). */
+  coachIds?: string[];
   createdAt: string;
   updatedAt: string;
 };

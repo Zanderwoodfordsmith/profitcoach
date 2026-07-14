@@ -4,8 +4,6 @@ import {
   ArrowUpDown,
   ChevronDown,
   ChevronRight,
-  Columns3,
-  GripVertical,
   Layers,
   Loader2,
   Trash2,
@@ -19,9 +17,12 @@ import { useRouter } from "next/navigation";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
+import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { formatDateDisplay } from "@/lib/formatDateDisplay";
 import { formatPersonName } from "@/lib/formatPersonName";
+import { moveKeyInOrder } from "@/hooks/usePersistedColumnSettings";
 import {
   buildPaymentBillingKindIndex,
   establishedCustomerPriorTotalCents,
@@ -751,12 +752,7 @@ function formatJoinDate(value: string | null): string | null {
     ? new Date(value)
     : new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.getTime())) return null;
-  const currentYear = new Date().getFullYear();
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    ...(date.getFullYear() === currentYear ? {} : { year: "numeric" }),
-  }).format(date);
+  return formatDateDisplay(date);
 }
 
 function coachOptionLabel(coach: CoachOption): string {
@@ -1105,16 +1101,7 @@ export default function AdminPaymentsPage() {
     draggedKey: keyof PaymentTableColumnVisibility,
     targetKey: keyof PaymentTableColumnVisibility
   ) {
-    if (draggedKey === targetKey) return;
-    setColumnOrder((prev) => {
-      const from = prev.indexOf(draggedKey);
-      const to = prev.indexOf(targetKey);
-      if (from < 0 || to < 0) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
+    setColumnOrder((prev) => moveKeyInOrder(prev, draggedKey, targetKey));
   }
 
   async function loadPayments() {
@@ -2011,135 +1998,31 @@ export default function AdminPaymentsPage() {
               ) : null}
             </div>
 
-            <div ref={columnsMenuRef} className="relative">
-              <TableToolbarButton
-                label="Columns"
-                id="payments-columns-trigger"
-                aria-haspopup="true"
-                aria-expanded={columnsMenuOpen}
-                aria-controls="payments-columns-menu"
-                active={columnsMenuOpen}
-                onClick={() => {
-                  setColumnsMenuOpen((open) => !open);
-                  setFiltersMenuOpen(false);
-                  setSortMenuOpen(false);
-                  setGroupMenuOpen(false);
-                }}
-                icon={
-                  <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
-                }
-              />
-              {columnsMenuOpen ? (
-                <div
-                  id="payments-columns-menu"
-                  role="menu"
-                  aria-labelledby="payments-columns-trigger"
-                  className="absolute right-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
-                >
-                  <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Shown
-                  </p>
-                  <ul className="space-y-0.5 px-2">
-                    {shownColumnOptions.map(({ key, label }) => (
-                      <li
-                        key={key}
-                        role="none"
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggingColumnKey(key);
-                          e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("text/plain", key);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const droppedKey =
-                            (e.dataTransfer.getData(
-                              "text/plain"
-                            ) as keyof PaymentTableColumnVisibility) ||
-                            draggingColumnKey;
-                          if (droppedKey) moveColumnInOrder(droppedKey, key);
-                          setDraggingColumnKey(null);
-                        }}
-                        onDragEnd={() => setDraggingColumnKey(null)}
-                        className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                      >
-                        <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                          <GripVertical
-                            className="h-3.5 w-3.5 text-slate-400"
-                            aria-hidden
-                          />
-                          <input
-                            type="checkbox"
-                            role="menuitemcheckbox"
-                            className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                            checked={columnVisibility[key]}
-                            onChange={(e) =>
-                              setColumnVisibility((prev) => ({
-                                ...prev,
-                                [key]: e.target.checked,
-                              }))
-                            }
-                          />
-                          <span>{label}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="my-2 border-t border-slate-200" />
-                  <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Hidden
-                  </p>
-                  <ul className="space-y-0.5 px-2">
-                    {hiddenColumnOptions.map(({ key, label }) => (
-                      <li
-                        key={key}
-                        role="none"
-                        draggable
-                        onDragStart={(e) => {
-                          setDraggingColumnKey(key);
-                          e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("text/plain", key);
-                        }}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const droppedKey =
-                            (e.dataTransfer.getData(
-                              "text/plain"
-                            ) as keyof PaymentTableColumnVisibility) ||
-                            draggingColumnKey;
-                          if (droppedKey) moveColumnInOrder(droppedKey, key);
-                          setDraggingColumnKey(null);
-                        }}
-                        onDragEnd={() => setDraggingColumnKey(null)}
-                        className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                      >
-                        <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                          <GripVertical
-                            className="h-3.5 w-3.5 text-slate-400"
-                            aria-hidden
-                          />
-                          <input
-                            type="checkbox"
-                            role="menuitemcheckbox"
-                            className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                            checked={columnVisibility[key]}
-                            onChange={(e) =>
-                              setColumnVisibility((prev) => ({
-                                ...prev,
-                                [key]: e.target.checked,
-                              }))
-                            }
-                          />
-                          <span>{label}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
+            <DataTableColumnsMenu
+              open={columnsMenuOpen}
+              onToggle={() => {
+                setColumnsMenuOpen((open) => !open);
+                setFiltersMenuOpen(false);
+                setSortMenuOpen(false);
+                setGroupMenuOpen(false);
+              }}
+              menuRef={columnsMenuRef}
+              shownOptions={shownColumnOptions}
+              hiddenOptions={hiddenColumnOptions}
+              columnVisibility={columnVisibility}
+              onVisibilityChange={(key, visible) =>
+                setColumnVisibility((prev) => ({
+                  ...prev,
+                  [key]: visible,
+                }))
+              }
+              onMoveColumn={moveColumnInOrder}
+              draggingColumnKey={draggingColumnKey}
+              onDraggingColumnKeyChange={setDraggingColumnKey}
+              align="right"
+              triggerId="payments-columns-trigger"
+              menuId="payments-columns-menu"
+            />
             </div>
           </div>
         </div>

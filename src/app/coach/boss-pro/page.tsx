@@ -56,15 +56,7 @@ async function loadProfileRole(userId: string): Promise<string | null> {
 }
 
 function mergeCoachWorkshopContacts(
-  prospects: Array<{
-    id: string;
-    full_name: string;
-    business_name: string | null;
-    job_title: string | null;
-    type: string;
-    boss_score_premium?: unknown;
-  }>,
-  clients: Array<{
+  rows: Array<{
     id: string;
     full_name: string;
     business_name: string | null;
@@ -73,9 +65,8 @@ function mergeCoachWorkshopContacts(
     boss_score_premium?: unknown;
   }>
 ): PickRow[] {
-  const byId = new Map<string, PickRow>();
-  for (const row of prospects) {
-    byId.set(row.id, {
+  return rows
+    .map((row) => ({
       id: row.id,
       full_name: row.full_name,
       business_name: row.business_name ?? null,
@@ -83,21 +74,8 @@ function mergeCoachWorkshopContacts(
       type: row.type,
       coach_name: null,
       boss_score_premium: readBossScorePremium(row.boss_score_premium),
-    });
-  }
-  for (const row of clients) {
-    if (byId.has(row.id)) continue;
-    byId.set(row.id, {
-      id: row.id,
-      full_name: row.full_name,
-      business_name: row.business_name ?? null,
-      job_title: row.job_title ?? null,
-      type: row.type,
-      coach_name: null,
-      boss_score_premium: readBossScorePremium(row.boss_score_premium),
-    });
-  }
-  return [...byId.values()].sort((a, b) => a.full_name.localeCompare(b.full_name));
+    }))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
 }
 
 function coachOptionLabel(coach: {
@@ -215,14 +193,14 @@ function CoachWorkshopPageContent() {
     }
 
     const headers = authHeaders(token, impersonatingCoachId);
-    const [prospectsRes, clientsRes] = await Promise.all([
-      fetch("/api/coach/prospects", { headers, cache: "no-store" }),
-      fetch("/api/coach/clients", { headers, cache: "no-store" }),
-    ]);
-    if (!prospectsRes.ok) return;
+    const res = await fetch("/api/coach/workshop-contacts", {
+      headers,
+      cache: "no-store",
+    });
+    if (!res.ok) return;
 
-    const prospectsBody = (await prospectsRes.json().catch(() => ({}))) as {
-      prospects?: Array<{
+    const body = (await res.json().catch(() => ({}))) as {
+      contacts?: Array<{
         id: string;
         full_name: string;
         business_name: string | null;
@@ -231,23 +209,8 @@ function CoachWorkshopPageContent() {
         boss_score_premium?: unknown;
       }>;
     };
-    const clientsBody = (await clientsRes.json().catch(() => ({}))) as {
-      clients?: Array<{
-        id: string;
-        full_name: string;
-        business_name: string | null;
-        job_title?: string | null;
-        type: string;
-        boss_score_premium?: unknown;
-      }>;
-    };
 
-    setContacts(
-      mergeCoachWorkshopContacts(
-        prospectsBody.prospects ?? [],
-        clientsBody.clients ?? []
-      )
-    );
+    setContacts(mergeCoachWorkshopContacts(body.contacts ?? []));
   }, [impersonatingCoachId, pathname]);
 
   useEffect(() => {
@@ -381,16 +344,16 @@ function CoachWorkshopPageContent() {
       }
 
       const headers = authHeaders(token, impersonatingCoachId);
-      const [prospectsRes, clientsRes] = await Promise.all([
-        fetch("/api/coach/prospects", { headers, cache: "no-store" }),
-        fetch("/api/coach/clients", { headers, cache: "no-store" }),
-      ]);
+      const res = await fetch("/api/coach/workshop-contacts", {
+        headers,
+        cache: "no-store",
+      });
 
       if (cancelled) return;
 
-      const prospectsBody = (await prospectsRes.json().catch(() => ({}))) as {
+      const body = (await res.json().catch(() => ({}))) as {
         error?: string;
-        prospects?: Array<{
+        contacts?: Array<{
           id: string;
           full_name: string;
           business_name: string | null;
@@ -399,30 +362,14 @@ function CoachWorkshopPageContent() {
           boss_score_premium?: unknown;
         }>;
       };
-      const clientsBody = (await clientsRes.json().catch(() => ({}))) as {
-        error?: string;
-        clients?: Array<{
-          id: string;
-          full_name: string;
-          business_name: string | null;
-          job_title?: string | null;
-          type: string;
-          boss_score_premium?: unknown;
-        }>;
-      };
 
-      if (!prospectsRes.ok) {
-        setError(prospectsBody.error ?? "Unable to load contacts.");
+      if (!res.ok) {
+        setError(body.error ?? "Unable to load contacts.");
         setLoading(false);
         return;
       }
 
-      setContacts(
-        mergeCoachWorkshopContacts(
-          prospectsBody.prospects ?? [],
-          clientsBody.clients ?? []
-        )
-      );
+      setContacts(mergeCoachWorkshopContacts(body.contacts ?? []));
       setLoading(false);
     }
 

@@ -19,8 +19,10 @@ export async function GET(request: Request) {
     const payload = await listCoachTableViewsForAdmin(authCheck.userId);
     return NextResponse.json(payload);
   } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Unable to load views.";
     console.error("coach-table-views GET:", err);
-    return NextResponse.json({ error: "Unable to load views." }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

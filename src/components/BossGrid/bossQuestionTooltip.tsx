@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { BookOpen, X } from "lucide-react";
 import {
@@ -11,7 +12,12 @@ import {
 import { ASSESSMENT_QUESTIONS } from "@/lib/assessmentQuestions";
 import { getPlaybookMeta } from "@/lib/bossData";
 import type { AnswersMap } from "@/lib/bossScores";
-import { WorkshopScoreSheet } from "./WorkshopScoreSheet";
+
+const WorkshopScoreSheet = dynamic(
+  () =>
+    import("./WorkshopScoreSheet").then((m) => m.WorkshopScoreSheet),
+  { ssr: false }
+);
 
 export { playbookActionNotesKey } from "@/lib/playbookSessionNotes";
 

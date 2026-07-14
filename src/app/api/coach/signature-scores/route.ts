@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   isSignatureModuleId,
@@ -7,44 +8,6 @@ import {
   type SignatureScore,
   type SignatureScoresMap,
 } from "@/lib/signatureModelV2";
-
-async function requireCoach(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-
-  if (!token) {
-    return { error: "Missing access token." as const, userId: null };
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
-
-  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  /** Admin acting as a coach uses the impersonated id; otherwise own user id (e.g. /admin/signature). */
-  const effectiveId =
-    profile.role === "admin" && impersonateId ? impersonateId : user.id;
-
-  return { error: null, userId: effectiveId as string };
-}
 
 function parseScoresPayload(body: unknown): Partial<SignatureScoresMap> | null {
   if (!body || typeof body !== "object") return null;
@@ -63,7 +26,7 @@ function parseScoresPayload(body: unknown): Partial<SignatureScoresMap> | null {
 }
 
 export async function GET(request: Request) {
-  const authCheck = await requireCoach(request);
+  const authCheck = await requireCoachRequest(request);
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },
@@ -92,7 +55,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const authCheck = await requireCoach(request);
+  const authCheck = await requireCoachRequest(request);
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },

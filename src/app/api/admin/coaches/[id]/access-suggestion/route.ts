@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { inferTierFromBilling } from "@/lib/coachAccess/inferTierFromBilling";
 import {
   isCoachAccessTier,
@@ -8,41 +9,6 @@ import type { CoachRecurringPaymentStatus } from "@/lib/coachBilling";
 import { isCoachRecurringPaymentStatus } from "@/lib/coachBilling";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-async function requireAdmin(request: Request): Promise<
-  | { error: "Missing access token." | "Invalid access token." | "Not authorized."; userId: null }
-  | { error: null; userId: string }
-> {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-
-  if (!token) {
-    return { error: "Missing access token." as const, userId: null };
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || profile.role !== "admin") {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  return { error: null, userId: user.id as string };
-}
 
 export async function GET(
   request: Request,

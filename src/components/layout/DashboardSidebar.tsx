@@ -17,7 +17,7 @@ import {
   mobilePrimaryNavItems,
   navLinkActive,
 } from "@/components/layout/dashboardNavItems";
-import type { CoachFeature } from "@/lib/coachAccess/tiers";
+import type { CoachAccessTier, CoachFeature } from "@/lib/coachAccess/tiers";
 import {
   membershipPreviewMode,
   membershipSidebarPromoEnabled,
@@ -39,6 +39,13 @@ type DashboardSidebarProps = {
   } | null;
   /** Coach-only: used to lock gated nav items and show upgrade badges. */
   coachHasFeature?: (feature: CoachFeature) => boolean;
+  /**
+   * Coach-only: from resolveCoachAccess / ENFORCE_MEMBERSHIP_TIERS.
+   * Join Premium stays hidden until enforcement is on.
+   */
+  membershipTierEnforcementEnabled?: boolean;
+  /** Coach-only: hide Join Premium for members already on Premium/VIP. */
+  coachAccessTier?: CoachAccessTier | null;
 };
 
 function isCommunityCalendarActive(pathname: string | null, communityHref: string) {
@@ -51,6 +58,8 @@ export function DashboardSidebar({
   onSignOut,
   avatarOverride = null,
   coachHasFeature,
+  membershipTierEnforcementEnabled = false,
+  coachAccessTier = null,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
@@ -89,12 +98,23 @@ export function DashboardSidebar({
   const showMarketingNav = variant === "admin" || variant === "coach";
   const showDeliveryNav = variant === "admin" || variant === "coach";
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
+  const alreadyPremiumOrVip =
+    coachAccessTier === "premium" || coachAccessTier === "vip";
+  const sidebarPromoSoftLaunch = membershipSidebarPromoEnabled();
+  // Join Premium only after ENFORCE_MEMBERSHIP_TIERS is on, and never for
+  // Premium/VIP. Soft-launch flag alone is not enough.
+  const showJoinPremiumPromo =
+    variant === "coach" &&
+    sidebarPromoSoftLaunch &&
+    membershipTierEnforcementEnabled &&
+    !alreadyPremiumOrVip;
+  // Soft-launch: hide Membership until promo/enforcement is live; Premium/VIP
+  // still get the Membership link once tiers are enforced.
   const showMembershipNav =
     variant === "coach" &&
     !membershipPreviewMode() &&
-    !membershipSidebarPromoEnabled();
-  const showJoinPremiumPromo =
-    variant === "coach" && membershipSidebarPromoEnabled();
+    (!sidebarPromoSoftLaunch ||
+      (membershipTierEnforcementEnabled && alreadyPremiumOrVip));
   const membershipPageActive =
     pathname === "/coach/membership" || pathname === "/membership";
 

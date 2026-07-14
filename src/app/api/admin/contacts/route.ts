@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
-import { enrichProspectRows } from "@/lib/loadProspectTableRows";
+import {
+  enrichProspectRows,
+  toLiteProspectRows,
+} from "@/lib/loadProspectTableRows";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -11,38 +15,6 @@ type Body = {
   sendInvite?: boolean;
   type?: "prospect" | "client";
 };
-
-async function requireAdmin(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-
-  if (!token) {
-    return { error: "Missing access token." as const, userId: null };
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profileError || !profile || profile.role !== "admin") {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  return { error: null, userId: user.id as string };
-}
 
 export async function GET(request: Request) {
   const authCheck = await requireAdmin(request);
@@ -55,6 +27,11 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const typeFilter = searchParams.get("type");
+  const enrichIds = searchParams
+    .get("enrichIds")
+    ?.split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 
   try {
     const { data: contacts, error: contactsError } =
@@ -82,6 +59,10 @@ export async function GET(request: Request) {
           query = query.eq("type", "prospect");
         }
 
+        if (enrichIds && enrichIds.length > 0) {
+          query = query.in("id", enrichIds);
+        }
+
         return query;
       }, "id, coach_id, full_name, email, business_name, job_title, prospect_status, type, created_at", [
         "crm_contact_id",
@@ -98,7 +79,7 @@ export async function GET(request: Request) {
     const coachIds = Array.from(
       new Set(contacts.map((c) => c.coach_id).filter(Boolean)) as Set<string>
     );
-    let coachById: Record<
+    const coachById: Record<
       string,
       {
         full_name: string | null;
@@ -146,36 +127,41 @@ export async function GET(request: Request) {
       }
     }
 
+    const contactRecords = contacts.map((c) => {
+      const coachEntry = c.coach_id ? coachById[c.coach_id] : undefined;
+      const coachMeta = coachEntry ?? {
+        full_name: null,
+        coach_business_name: null,
+        crm_location_id: null,
+      };
+      return {
+        id: c.id,
+        coach_id: c.coach_id,
+        full_name: c.full_name,
+        job_title: c.job_title ?? null,
+        prospect_status: c.prospect_status ?? null,
+        email: c.email ?? null,
+        business_name: c.business_name ?? null,
+        phone: c.phone ?? null,
+        type: c.type,
+        coach_name: coachMeta.full_name,
+        coach_business_name: coachMeta.coach_business_name,
+        crm_contact_id: c.crm_contact_id ?? null,
+        crm_location_id: coachMeta.crm_location_id ?? null,
+        created_at: c.created_at ?? null,
+      };
+    });
 
-    const prospects = await enrichProspectRows(
-      supabaseAdmin,
-      contacts.map((c) => {
-        const coachEntry = c.coach_id ? coachById[c.coach_id] : undefined;
-        const coachMeta = coachEntry ?? {
-          full_name: null,
-          coach_business_name: null,
-          crm_location_id: null,
-        };
-        return {
-          id: c.id,
-          coach_id: c.coach_id,
-          full_name: c.full_name,
-          job_title: c.job_title ?? null,
-          prospect_status: c.prospect_status ?? null,
-          email: c.email ?? null,
-          business_name: c.business_name ?? null,
-          phone: c.phone ?? null,
-          type: c.type,
-          coach_name: coachMeta.full_name,
-          coach_business_name: coachMeta.coach_business_name,
-          crm_contact_id: c.crm_contact_id ?? null,
-          crm_location_id: coachMeta.crm_location_id ?? null,
-          created_at: c.created_at ?? null,
-        };
-      })
-    );
+    const useLite =
+      typeFilter === "prospect" && !(enrichIds && enrichIds.length > 0);
+    const prospects = useLite
+      ? toLiteProspectRows(contactRecords)
+      : await enrichProspectRows(supabaseAdmin, contactRecords);
 
-    return NextResponse.json({ prospects });
+    return NextResponse.json({
+      prospects,
+      enriched: !useLite,
+    });
   } catch (err) {
     console.error("admin/contacts GET error:", err);
     return NextResponse.json(

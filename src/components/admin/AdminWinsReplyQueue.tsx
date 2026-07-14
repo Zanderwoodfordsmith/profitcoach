@@ -21,7 +21,15 @@ import type {
   CommunityCategory,
   CommunityPostRow,
 } from "@/components/community/CommunityFeed";
-import { PostDetailModal } from "@/components/community/PostDetailModal";
+import dynamic from "next/dynamic";
+
+const PostDetailModal = dynamic(
+  () =>
+    import("@/components/community/PostDetailModal").then(
+      (m) => m.PostDetailModal
+    ),
+  { ssr: false }
+);
 
 export function AdminWinsReplyQueue() {
   const [adminUserId, setAdminUserId] = useState<string | null>(null);

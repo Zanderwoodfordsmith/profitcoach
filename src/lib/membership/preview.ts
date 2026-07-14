@@ -8,7 +8,9 @@ export function membershipPreviewMode(): boolean {
 }
 
 /**
- * Soft-launch sidebar promo ("Join Premium"). Off in production until you opt in.
+ * Soft-launch sidebar promo ("Join Premium").
+ * Also requires ENFORCE_MEMBERSHIP_TIERS=true (see coach access.enforcementEnabled)
+ * so coaches never see the promo while everyone still has Premium-equivalent access.
  * Set NEXT_PUBLIC_MEMBERSHIP_SIDEBAR_PROMO=true in .env.local to test locally.
  */
 export function membershipSidebarPromoEnabled(): boolean {

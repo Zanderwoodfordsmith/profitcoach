@@ -225,7 +225,10 @@ export function DashboardTopActions({
         .order("created_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
 
-      const announcementsPromise = announcementsCategoryId
+      // Only notify about announcements published after the user joined.
+      // Without this, new coaches see every historical announcement as unread.
+      const joinedAt = profile?.created_at ?? null;
+      let announcementsQuery = announcementsCategoryId
         ? supabaseClient
             .from("community_posts")
             .select(
@@ -242,9 +245,15 @@ export function DashboardTopActions({
             )
             .eq("category_id", announcementsCategoryId)
             .neq("author_id", uid)
-            .lte("published_at", new Date().toISOString())
+            .lte("published_at", nowIso)
             .order("published_at", { ascending: false })
             .limit(NOTIFICATION_ITEMS_MAX)
+        : null;
+      if (announcementsQuery && joinedAt) {
+        announcementsQuery = announcementsQuery.gte("published_at", joinedAt);
+      }
+      const announcementsPromise = announcementsQuery
+        ? announcementsQuery
         : Promise.resolve({ data: [], error: null });
 
       const winsPromise =
@@ -515,7 +524,7 @@ export function DashboardTopActions({
     } finally {
       setLoadingNotifications(false);
     }
-  }, [communityHref, profile?.id, variant]);
+  }, [communityHref, profile?.created_at, profile?.id, variant]);
 
   const loadProspectNotifications = useCallback(async () => {
     if (!prospectsEnabled) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import {
   isCoachRecurringPaymentStatus,
@@ -21,46 +22,6 @@ import {
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-async function requireAdmin(request: Request): Promise<
-  | { error: "Missing access token." | "Invalid access token." | "Not authorized." | "Server error."; userId: null }
-  | { error: null; userId: string }
-> {
-  try {
-    const authHeader = request.headers.get("authorization") ?? "";
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.slice("Bearer ".length)
-      : null;
-
-    if (!token) {
-      return { error: "Missing access token." as const, userId: null };
-    }
-
-    const {
-      data: { user },
-      error,
-    } = await supabaseAdmin.auth.getUser(token);
-
-    if (error || !user) {
-      return { error: "Invalid access token." as const, userId: null };
-    }
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError || !profile || profile.role !== "admin") {
-      return { error: "Not authorized." as const, userId: null };
-    }
-
-    return { error: null, userId: user.id as string };
-  } catch (err) {
-    console.error("admin/coaches/[id] requireAdmin error:", err);
-    return { error: "Server error." as const, userId: null };
-  }
-}
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
 const CONFERENCE_STATUSES = new Set(["no", "maybe", "yes"]);
@@ -124,7 +85,8 @@ export async function GET(
       supabaseAdmin
         .from("contacts")
         .select("id", { count: "exact", head: true })
-        .eq("coach_id", coachId),
+        .eq("coach_id", coachId)
+        .eq("type", "client"),
       supabaseAdmin
         .from("coach_payments")
         .select(

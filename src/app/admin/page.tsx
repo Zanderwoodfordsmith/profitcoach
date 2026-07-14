@@ -37,6 +37,12 @@ import { CalendarSyncStatusNote } from "@/components/ghl/CalendarSyncStatusNote"
 import { StickyPageHeader } from "@/components/layout";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import { formatDateDisplay } from "@/lib/formatDateDisplay";
+import {
+  lastLoginFreshness,
+  lastLoginFreshnessClasses,
+} from "@/lib/lastLoginFreshness";
+import { buildCoachLandingLink } from "@/lib/buildCoachLandingLink";
 import {
   TableCsvExportButton,
   type CsvExportScope,
@@ -84,15 +90,6 @@ const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 function ladderLevelShortName(id: string | null | undefined): string | null {
   if (!id?.trim()) return null;
   return LADDER_LEVELS.find((l) => l.id === id)?.name ?? id;
-}
-
-function formatDateDisplay(value: Date): string {
-  const currentYear = new Date().getFullYear();
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    ...(value.getFullYear() === currentYear ? {} : { year: "numeric" }),
-  }).format(value);
 }
 
 function formatGoalDateDisplay(iso: string): string {
@@ -1893,23 +1890,28 @@ export default function AdminPage() {
       );
     }
     if (key === "lastLogin") {
+      const freshness = lastLoginFreshness(coach.last_login_at);
+      const badgeClass = `inline-flex max-w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses(freshness)}`;
       return (
-        <td className="px-2 py-2 align-middle text-xs text-slate-700">
+        <td className="px-2 py-2 align-middle text-xs">
           {coach.last_login_at ? (
             (() => {
               const dateLabel = formatLastLoginDisplay(coach.last_login_at);
               const since = formatMemberFor(coach.last_login_at);
               return (
                 <span
+                  className={badgeClass}
                   title={`Last login ${dateLabel} (${since.totalDays} days ago)`}
                 >
-                  {dateLabel}{" "}
-                  <span className="text-slate-500">({since.label})</span>
+                  <span>{dateLabel}</span>
+                  <span className="opacity-80">({since.label})</span>
                 </span>
               );
             })()
           ) : (
-            <span className="text-slate-400">Never</span>
+            <span className={badgeClass} title="Never logged in">
+              Never
+            </span>
           )}
         </td>
       );
@@ -2400,6 +2402,9 @@ export default function AdminPage() {
             onDeleteView={(viewId) => {
               void coachTableViews.deleteView(viewId);
             }}
+            onReorderViews={(orderedViewIds) => {
+              void coachTableViews.reorderViews(orderedViewIds);
+            }}
           />
         </div>
         <div className="border-b border-slate-100 px-4 py-3">
@@ -2872,9 +2877,7 @@ export default function AdminPage() {
           </thead>
           <tbody>
             {filteredCoaches.map((coach) => {
-              const link = origin
-                ? `${origin}/landing/a?coach=${encodeURIComponent(coach.slug)}`
-                : `/landing/a?coach=${encodeURIComponent(coach.slug)}`;
+              const link = buildCoachLandingLink(coach.slug, origin) ?? "";
               const reportPreviewLink = origin
                 ? `${origin}/preview/report-design-system?preview=1&score=74&coach=${encodeURIComponent(
                     coach.slug

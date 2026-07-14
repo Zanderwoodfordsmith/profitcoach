@@ -71,7 +71,11 @@ export async function deleteCoachTableViewRemote(
 
 export async function updateCoachTableViewPreferencesRemote(
   accessToken: string,
-  input: { activeViewId?: string; autosave?: boolean }
+  input: {
+    activeViewId?: string;
+    autosave?: boolean;
+    viewOrder?: string[];
+  }
 ): Promise<CoachTableViewsPayload> {
   const res = await fetch("/api/admin/coach-table-views/preferences", {
     method: "PATCH",

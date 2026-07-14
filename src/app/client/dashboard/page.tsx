@@ -1,21 +1,58 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { BossGridTransposed } from "@/components/BossGrid";
-import { BossWheel, BossDoughnut, FocusAreas } from "@/components/BossCharts";
-import { CalendarEmbed } from "@/components/CalendarEmbed";
 import { useWheelColorScheme } from "@/lib/useWheelColorScheme";
 import { useWheelViewMode } from "@/lib/useWheelViewMode";
-import { InsightDashboard } from "@/components/InsightDashboard";
 import type { StoredInsights } from "@/lib/insightGenerator";
 import { computeAreaScores, getTotalScore } from "@/lib/bossScores";
 import type { AnswersMap } from "@/lib/bossScores";
 
+const BossGridTransposed = dynamic(
+  () =>
+    import("@/components/BossGrid").then((m) => ({
+      default: m.BossGridTransposed,
+    })),
+  { ssr: false }
+);
+const BossWheel = dynamic(
+  () =>
+    import("@/components/BossCharts").then((m) => ({ default: m.BossWheel })),
+  { ssr: false }
+);
+const BossDoughnut = dynamic(
+  () =>
+    import("@/components/BossCharts").then((m) => ({
+      default: m.BossDoughnut,
+    })),
+  { ssr: false }
+);
+const FocusAreas = dynamic(
+  () =>
+    import("@/components/BossCharts").then((m) => ({
+      default: m.FocusAreas,
+    })),
+  { ssr: false }
+);
+const InsightDashboard = dynamic(
+  () =>
+    import("@/components/InsightDashboard").then((m) => ({
+      default: m.InsightDashboard,
+    })),
+  { ssr: false }
+);
+const CalendarEmbed = dynamic(
+  () =>
+    import("@/components/CalendarEmbed").then((m) => ({
+      default: m.CalendarEmbed,
+    })),
+  { ssr: false }
+);
 const INSIGHTS_DEBOUNCE_MS = 3 * 60 * 1000; // 3 minutes
 const INSIGHTS_STALE_MS = 2 * 60 * 60 * 1000; // 2 hours
 

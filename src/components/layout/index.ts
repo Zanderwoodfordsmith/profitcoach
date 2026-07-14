@@ -5,9 +5,6 @@ export type {
   PageHeaderDescriptionPlacement,
   StickyPageHeaderProps,
 } from "./StickyPageHeader";
-export { HorizontalScrollRegion } from "./HorizontalScrollRegion";
-export { ResponsiveTable } from "./ResponsiveTable";
-export type { ResponsiveTableColumn } from "./ResponsiveTable";
 export { PageHeaderUnderlineTabs } from "./PageHeaderUnderlineTabs";
 export type {
   PageHeaderUnderlineTabButtonItem,

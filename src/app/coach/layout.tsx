@@ -321,6 +321,8 @@ export default function CoachLayout({
           signingOut={signingOut}
           onSignOut={handleSignOut}
           coachHasFeature={hasFeature}
+          membershipTierEnforcementEnabled={access.enforcementEnabled}
+          coachAccessTier={access.tier}
           avatarOverride={
             isImpersonatingCoach
               ? {

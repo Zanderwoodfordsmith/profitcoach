@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { Modal } from "@/components/ui/Modal";
 
 type ShareQrCodeModalProps = {
   open: boolean;
@@ -57,15 +58,6 @@ export function ShareQrCodeModal({
     };
   }, [open, url]);
 
-  useEffect(() => {
-    if (!open) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
-
   async function downloadPng() {
     setDownloading(true);
     try {
@@ -86,40 +78,19 @@ export function ShareQrCodeModal({
     }
   }
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="share-qr-code-title"
-      onClick={onClose}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      titleId="share-qr-code-title"
+      subtitle={description}
+      maxWidthClassName="max-w-sm"
+      backdropClassName="bg-black/40"
+      overlayClassName="z-[80]"
     >
-      <div
-        className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2
-              id="share-qr-code-title"
-              className="text-lg font-semibold text-slate-900"
-            >
-              {title}
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">{description}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-md px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-          >
-            Close
-          </button>
-        </div>
-
-        <div className="mt-5 flex justify-center">
+      <div className="px-5 py-4">
+        <div className="flex justify-center">
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             {dataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -163,6 +134,6 @@ export function ShareQrCodeModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

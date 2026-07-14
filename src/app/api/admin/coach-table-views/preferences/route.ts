@@ -19,6 +19,10 @@ export async function PATCH(request: Request) {
   }
 
   try {
+    const viewOrder = Array.isArray(body.viewOrder)
+      ? body.viewOrder.filter((id): id is string => typeof id === "string")
+      : undefined;
+
     const payload = await updateCoachTableViewPreferencesForAdmin(
       authCheck.userId,
       {
@@ -26,6 +30,7 @@ export async function PATCH(request: Request) {
           typeof body.activeViewId === "string" ? body.activeViewId : undefined,
         autosave:
           typeof body.autosave === "boolean" ? body.autosave : undefined,
+        viewOrder,
       }
     );
     return NextResponse.json(payload);

@@ -7,8 +7,6 @@ import {
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
-  Columns3,
-  GripVertical,
   Link2,
   Loader2,
   ListTodo,
@@ -16,10 +14,17 @@ import {
   Search,
   Trash2,
 } from "lucide-react";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { supabaseClient } from "@/lib/supabaseClient";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
+import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { TableCsvExportButton, type CsvExportScope } from "@/components/table/TableCsvExportButton";
+import {
+  partitionOrderedColumns,
+  usePersistedColumnSettings,
+} from "@/hooks/usePersistedColumnSettings";
 import { exportProspectsToCsv } from "@/lib/exportProspectsCsv";
 import {
   formatProspectLastAssessed,
@@ -43,6 +48,8 @@ import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
 import { getProspectCrmContactUrl } from "@/lib/ghlContactWebhook";
 import { paginationItems } from "@/lib/communityPagination";
 import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } from "@/lib/assessmentContactParams";
+import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
+import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { splitFullName } from "@/lib/splitFullName";
 
 export type { ProspectRow };
@@ -133,6 +140,10 @@ type Props = {
   coachSlug?: string | null;
   /** Coach slug per coach id (admin prospects view). */
   coachSlugByCoachId?: Record<string, string>;
+  /** Called when the visible page of row ids changes (for progressive enrichment). */
+  onVisibleIdsChange?: (ids: string[]) => void;
+  /** True while Boss / Boss Pro scores are still loading for the full list. */
+  scoresEnriching?: boolean;
 };
 
 const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v6";
@@ -249,53 +260,11 @@ const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
 const DEFAULT_COLUMN_ORDER: ProspectColumnKey[] = COLUMN_OPTIONS.map(
   (option) => option.key
 );
-
-type PersistedProspectTableSettings = {
-  columnVisibility: ProspectColumnVisibility;
-  columnOrder: ProspectColumnKey[];
+const ALL_COLUMN_KEYS = DEFAULT_COLUMN_ORDER;
+const PROSPECT_COLUMN_LEGACY_KEY_MAP: Record<string, ProspectColumnKey> = {
+  last_score: "boss_score",
+  last_assessed: "boss_score",
 };
-
-function parsePersistedProspectTableSettings(
-  raw: string
-): PersistedProspectTableSettings | null {
-  try {
-    const parsed = JSON.parse(raw) as Partial<PersistedProspectTableSettings>;
-    if (!parsed.columnVisibility || !parsed.columnOrder) return null;
-    const validKeys = new Set<ProspectColumnKey>(
-      COLUMN_OPTIONS.map((option) => option.key)
-    );
-    const legacyKeyMap: Record<string, ProspectColumnKey> = {
-      last_score: "boss_score",
-      last_assessed: "boss_score",
-    };
-    const columnVisibility = { ...DEFAULT_COLUMN_VISIBILITY };
-    for (const [rawKey, value] of Object.entries(parsed.columnVisibility)) {
-      const key = validKeys.has(rawKey as ProspectColumnKey)
-        ? (rawKey as ProspectColumnKey)
-        : legacyKeyMap[rawKey];
-      if (key && typeof value === "boolean") {
-        columnVisibility[key] = value;
-      }
-    }
-    const seen = new Set<ProspectColumnKey>();
-    const columnOrder: ProspectColumnKey[] = [];
-    for (const rawKey of parsed.columnOrder) {
-      const key = validKeys.has(rawKey as ProspectColumnKey)
-        ? (rawKey as ProspectColumnKey)
-        : legacyKeyMap[rawKey as string];
-      if (key && validKeys.has(key) && !seen.has(key)) {
-        columnOrder.push(key);
-        seen.add(key);
-      }
-    }
-    for (const key of DEFAULT_COLUMN_ORDER) {
-      if (!seen.has(key)) columnOrder.push(key);
-    }
-    return { columnVisibility, columnOrder };
-  } catch {
-    return null;
-  }
-}
 
 function nextCallStatusClass(status: string | null | undefined): string {
   switch (status) {
@@ -441,9 +410,12 @@ export function ProspectsTable({
   stickyTopOffset = 0,
   coachSlug = null,
   coachSlugByCoachId,
+  onVisibleIdsChange,
+  scoresEnriching = false,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const { impersonatingCoachId } = useImpersonation();
   const workshopBasePath = pathname.startsWith("/admin")
     ? "/admin/boss-pro"
     : "/coach/boss-pro";
@@ -466,14 +438,20 @@ export function ProspectsTable({
   >("all");
   const [sortField, setSortField] = useState<ProspectSortField>("name");
   const [sortOrder, setSortOrder] = useState<ProspectSortOrder>("asc");
-  const [columnVisibility, setColumnVisibility] =
-    useState<ProspectColumnVisibility>(DEFAULT_COLUMN_VISIBILITY);
-  const [columnOrder, setColumnOrder] =
-    useState<ProspectColumnKey[]>(DEFAULT_COLUMN_ORDER);
+  const {
+    columnVisibility,
+    setColumnVisible,
+    columnOrder,
+    moveColumnInOrder,
+  } = usePersistedColumnSettings<ProspectColumnKey>({
+    storageKey: settingsStorageKey,
+    defaultVisibility: DEFAULT_COLUMN_VISIBILITY,
+    defaultOrder: DEFAULT_COLUMN_ORDER,
+    validKeys: ALL_COLUMN_KEYS,
+    legacyKeyMap: PROSPECT_COLUMN_LEGACY_KEY_MAP,
+  });
   const [draggingColumnKey, setDraggingColumnKey] =
     useState<ProspectColumnKey | null>(null);
-  const [hasLoadedPersistedSettings, setHasLoadedPersistedSettings] =
-    useState(false);
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -505,6 +483,13 @@ export function ProspectsTable({
   >(null);
   const [copiedBossProLinkProspectId, setCopiedBossProLinkProspectId] =
     useState<string | null>(null);
+  const [copyFailedBossLinkProspectId, setCopyFailedBossLinkProspectId] =
+    useState<string | null>(null);
+  const [copyFailedBossProLinkProspectId, setCopyFailedBossProLinkProspectId] =
+    useState<string | null>(null);
+  const [sharingBossProDashboardId, setSharingBossProDashboardId] = useState<
+    string | null
+  >(null);
 
   const filtersMenuRef = useRef<HTMLDivElement | null>(null);
   const sortMenuRef = useRef<HTMLDivElement | null>(null);
@@ -542,33 +527,6 @@ export function ProspectsTable({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen, bulkNextActionOpen]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(settingsStorageKey);
-    if (raw) {
-      const parsed = parsePersistedProspectTableSettings(raw);
-      if (parsed) {
-        setColumnVisibility(parsed.columnVisibility);
-        setColumnOrder(parsed.columnOrder);
-      }
-    }
-    setHasLoadedPersistedSettings(true);
-  }, [settingsStorageKey]);
-
-  useEffect(() => {
-    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
-    const payload: PersistedProspectTableSettings = {
-      columnVisibility,
-      columnOrder,
-    };
-    window.localStorage.setItem(settingsStorageKey, JSON.stringify(payload));
-  }, [
-    hasLoadedPersistedSettings,
-    settingsStorageKey,
-    columnVisibility,
-    columnOrder,
-  ]);
-
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (assessmentFilter !== "all") count += 1;
@@ -603,55 +561,17 @@ export function ProspectsTable({
     [showTypeColumn, showCoachColumn, renderRowActions]
   );
 
-  const applicableColumnKeys = useMemo(
-    () => new Set(columnMenuOptions.map((option) => option.key)),
-    [columnMenuOptions]
-  );
-
-  const shownColumnOptions = useMemo(
+  const { shown: shownColumnOptions, hidden: hiddenColumnOptions } = useMemo(
     () =>
-      columnOrder
-        .filter(
-          (key) => applicableColumnKeys.has(key) && columnVisibility[key]
-        )
-        .map(
-          (key) => columnMenuOptions.find((option) => option.key === key)!
-        ),
-    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
+      partitionOrderedColumns(
+        columnOrder,
+        columnVisibility,
+        columnMenuOptions
+      ),
+    [columnOrder, columnVisibility, columnMenuOptions]
   );
 
-  const hiddenColumnOptions = useMemo(
-    () =>
-      columnOrder
-        .filter(
-          (key) => applicableColumnKeys.has(key) && !columnVisibility[key]
-        )
-        .map(
-          (key) => columnMenuOptions.find((option) => option.key === key)!
-        ),
-    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
-  );
-
-  const visibleColumns = useMemo(
-    () => shownColumnOptions,
-    [shownColumnOptions]
-  );
-
-  function moveColumnInOrder(
-    draggedKey: ProspectColumnKey,
-    targetKey: ProspectColumnKey
-  ) {
-    if (draggedKey === targetKey) return;
-    setColumnOrder((prev) => {
-      const from = prev.indexOf(draggedKey);
-      const to = prev.indexOf(targetKey);
-      if (from < 0 || to < 0) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
-  }
+  const visibleColumns = shownColumnOptions;
 
   const filteredProspects = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -865,6 +785,10 @@ export function ProspectsTable({
     () => paginatedProspects.map((p) => p.id),
     [paginatedProspects]
   );
+
+  useEffect(() => {
+    onVisibleIdsChange?.(pageIds);
+  }, [pageIds, onVisibleIdsChange]);
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
 
@@ -1192,13 +1116,19 @@ export function ProspectsTable({
         ? setCopiedBossLinkProspectId
         : setCopiedBossProLinkProspectId;
 
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopiedId(prospect.id);
-      window.setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      // Coach can copy from Funnel settings if clipboard is blocked.
+    const ok = await copyTextToClipboard(link);
+    if (!ok) {
+      if (product === "boss-pro") {
+        setCopyFailedBossProLinkProspectId(prospect.id);
+        window.setTimeout(() => setCopyFailedBossProLinkProspectId(null), 2500);
+      } else {
+        setCopyFailedBossLinkProspectId(prospect.id);
+        window.setTimeout(() => setCopyFailedBossLinkProspectId(null), 2500);
+      }
+      return;
     }
+    setCopiedId(prospect.id);
+    window.setTimeout(() => setCopiedId(null), 2000);
   }
 
   async function copyBossAssessmentLink(prospect: ProspectRow) {
@@ -1207,6 +1137,115 @@ export function ProspectsTable({
 
   async function copyBossProAssessmentLink(prospect: ProspectRow) {
     await copyPersonalisedAssessmentLink(prospect, "boss-pro");
+  }
+
+  function getBossReportPath(prospect: ProspectRow): string | null {
+    const token = prospect.boss_score_report_token?.trim();
+    if (!token) return null;
+    const slug = resolveCoachSlugForProspect(
+      prospect,
+      coachSlug,
+      coachSlugByCoachId
+    );
+    if (!slug) return null;
+    return `/assessment/${encodeURIComponent(slug)}/report?token=${encodeURIComponent(token)}`;
+  }
+
+  function getBossReportUrl(prospect: ProspectRow): string | null {
+    const path = getBossReportPath(prospect);
+    if (!path) return null;
+    if (typeof window !== "undefined") {
+      return `${window.location.origin}${path}`;
+    }
+    const slug = resolveCoachSlugForProspect(
+      prospect,
+      coachSlug,
+      coachSlugByCoachId
+    );
+    const token = prospect.boss_score_report_token?.trim();
+    if (!slug || !token) return null;
+    return buildScorecardReportUrl(slug, token);
+  }
+
+  async function copyBossReportLink(prospect: ProspectRow) {
+    setCopyFailedBossLinkProspectId(null);
+    const link = getBossReportUrl(prospect);
+    if (!link) {
+      setCopyFailedBossLinkProspectId(prospect.id);
+      window.setTimeout(() => setCopyFailedBossLinkProspectId(null), 2500);
+      return;
+    }
+    const ok = await copyTextToClipboard(link);
+    if (!ok) {
+      window.prompt("Copy this Boss report link:", link);
+      setCopyFailedBossLinkProspectId(prospect.id);
+      window.setTimeout(() => setCopyFailedBossLinkProspectId(null), 2500);
+      return;
+    }
+    setCopiedBossLinkProspectId(prospect.id);
+    window.setTimeout(() => setCopiedBossLinkProspectId(null), 2000);
+  }
+
+  function toCurrentOriginUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      return `${window.location.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+    } catch {
+      return url;
+    }
+  }
+
+  async function copyBossProDashboardLink(prospect: ProspectRow) {
+    setCopyFailedBossProLinkProspectId(null);
+    setSharingBossProDashboardId(prospect.id);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        setCopyFailedBossProLinkProspectId(prospect.id);
+        window.setTimeout(() => setCopyFailedBossProLinkProspectId(null), 2500);
+        return;
+      }
+
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${accessToken}`,
+      };
+      if (impersonatingCoachId) {
+        headers["x-impersonate-coach-id"] = impersonatingCoachId;
+      }
+
+      const res = await fetch(
+        `/api/coach/contacts/${encodeURIComponent(prospect.id)}/dashboard-share-link`,
+        { headers, cache: "no-store" }
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+      };
+      if (!res.ok || !body.url) {
+        setCopyFailedBossProLinkProspectId(prospect.id);
+        window.setTimeout(() => setCopyFailedBossProLinkProspectId(null), 2500);
+        return;
+      }
+
+      const link = toCurrentOriginUrl(body.url);
+      const ok = await copyTextToClipboard(link);
+      if (!ok) {
+        window.prompt("Copy this Boss Pro dashboard link:", link);
+        setCopyFailedBossProLinkProspectId(prospect.id);
+        window.setTimeout(() => setCopyFailedBossProLinkProspectId(null), 2500);
+        return;
+      }
+      setCopiedBossProLinkProspectId(prospect.id);
+      window.setTimeout(() => setCopiedBossProLinkProspectId(null), 2000);
+    } catch {
+      setCopyFailedBossProLinkProspectId(prospect.id);
+      window.setTimeout(() => setCopyFailedBossProLinkProspectId(null), 2500);
+    } finally {
+      setSharingBossProDashboardId(null);
+    }
   }
 
   function renderEditableContactValue(
@@ -1353,27 +1392,70 @@ export function ProspectsTable({
             }}
           />
         );
-      case "boss_score":
-        return p.boss_score != null ? (
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <button
-              type="button"
-              data-row-action
-              onClick={(e) => {
-                e.stopPropagation();
-                setScorecardModalContactId(p.id);
-              }}
-              className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
-            >
-              {p.boss_score}%
-            </button>
-            {p.boss_score_at ? (
-              <span className="text-[11px] leading-none text-slate-400">
-                {formatProspectLastAssessed(p.boss_score_at)}
-              </span>
-            ) : null}
-          </div>
-        ) : resolveCoachSlugForProspect(p, coachSlug, coachSlugByCoachId) ? (
+      case "boss_score": {
+        if (p.boss_score != null) {
+          const reportPath = getBossReportPath(p);
+          return (
+            <div className="flex min-w-0 flex-col gap-0.5">
+              {reportPath ? (
+                <a
+                  href={reportPath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-row-action
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                  title="Open Boss score report"
+                >
+                  {p.boss_score}%
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  data-row-action
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setScorecardModalContactId(p.id);
+                  }}
+                  className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+                  title="View Boss scorecard"
+                >
+                  {p.boss_score}%
+                </button>
+              )}
+              {p.boss_score_at ? (
+                <span className="text-[11px] leading-none text-slate-400">
+                  {formatProspectLastAssessed(p.boss_score_at)}
+                </span>
+              ) : null}
+              {reportPath ? (
+                <button
+                  type="button"
+                  data-row-action
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void copyBossReportLink(p);
+                  }}
+                  className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                  title="Copy shareable Boss report link"
+                >
+                  {copiedBossLinkProspectId === p.id ? (
+                    "Copied!"
+                  ) : copyFailedBossLinkProspectId === p.id ? (
+                    "Couldn't copy"
+                  ) : (
+                    <>
+                      <Link2 className="h-3 w-3 shrink-0" aria-hidden />
+                      Share
+                    </>
+                  )}
+                </button>
+              ) : null}
+            </div>
+          );
+        }
+
+        return resolveCoachSlugForProspect(p, coachSlug, coachSlugByCoachId) ? (
           <button
             type="button"
             data-row-action
@@ -1390,6 +1472,8 @@ export function ProspectsTable({
           >
             {copiedBossLinkProspectId === p.id ? (
               "Copied!"
+            ) : copyFailedBossLinkProspectId === p.id ? (
+              "Couldn't copy"
             ) : (
               <>
                 <Link2 className="h-3 w-3 shrink-0" aria-hidden />
@@ -1400,6 +1484,7 @@ export function ProspectsTable({
         ) : (
           <ProspectEmptyValue />
         );
+      }
       case "boss_score_premium":
         return p.boss_score_premium != null ? (
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -1411,6 +1496,7 @@ export function ProspectsTable({
                 router.push(`${workshopBasePath}?contact=${encodeURIComponent(p.id)}`);
               }}
               className="w-fit text-left text-sm font-semibold text-sky-700 hover:text-sky-900 hover:underline"
+              title="Open Boss Pro workshop"
             >
               {p.boss_score_premium}
             </button>
@@ -1419,6 +1505,33 @@ export function ProspectsTable({
                 {formatProspectLastAssessed(p.boss_score_premium_at)}
               </span>
             ) : null}
+            <button
+              type="button"
+              data-row-action
+              disabled={sharingBossProDashboardId === p.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                void copyBossProDashboardLink(p);
+              }}
+              className="inline-flex w-fit items-center gap-1 text-left text-[11px] font-medium text-slate-400 hover:text-slate-600 hover:underline disabled:opacity-60"
+              title="Copy public Boss Pro dashboard link"
+            >
+              {sharingBossProDashboardId === p.id ? (
+                <>
+                  <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden />
+                  Sharing…
+                </>
+              ) : copiedBossProLinkProspectId === p.id ? (
+                "Copied!"
+              ) : copyFailedBossProLinkProspectId === p.id ? (
+                "Couldn't copy"
+              ) : (
+                <>
+                  <Link2 className="h-3 w-3 shrink-0" aria-hidden />
+                  Share
+                </>
+              )}
+            </button>
           </div>
         ) : (
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -1454,6 +1567,8 @@ export function ProspectsTable({
               >
                 {copiedBossProLinkProspectId === p.id ? (
                   "Copied!"
+                ) : copyFailedBossProLinkProspectId === p.id ? (
+                  "Couldn't copy"
                 ) : (
                   <>
                     <Link2 className="h-3 w-3 shrink-0" aria-hidden />
@@ -1623,6 +1738,12 @@ export function ProspectsTable({
     }
     return `${base} ${TABLE_CELL_X}`;
   }
+
+  const scoreFilterNeedsEnrichment =
+    scoresEnriching &&
+    (bossScoreFilter !== "all" ||
+      bossProFilter !== "all" ||
+      assessmentFilter !== "all");
 
   const showProspectsTable =
     loading || sortedProspects.length > 0 || Boolean(error);
@@ -1957,126 +2078,22 @@ export function ProspectsTable({
             ) : null}
           </div>
 
-          <div ref={columnsMenuRef} className="relative">
-            <TableToolbarButton
-              label="Columns"
-              aria-haspopup="true"
-              aria-expanded={columnsMenuOpen}
-              active={columnsMenuOpen}
-              onClick={() => {
-                setColumnsMenuOpen((open) => !open);
-                setFiltersMenuOpen(false);
-                setSortMenuOpen(false);
-              }}
-              icon={
-                <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
-              }
-            />
-            {columnsMenuOpen ? (
-              <div
-                role="menu"
-                className="absolute left-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
-              >
-                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Shown
-                </p>
-                <ul className="space-y-0.5 px-2">
-                  {shownColumnOptions.map(({ key, label }) => (
-                    <li
-                      key={key}
-                      role="none"
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggingColumnKey(key);
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", key);
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const droppedKey =
-                          (e.dataTransfer.getData(
-                            "text/plain"
-                          ) as ProspectColumnKey) || draggingColumnKey;
-                        if (droppedKey) moveColumnInOrder(droppedKey, key);
-                        setDraggingColumnKey(null);
-                      }}
-                      onDragEnd={() => setDraggingColumnKey(null)}
-                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                        <GripVertical
-                          className="h-3.5 w-3.5 text-slate-400"
-                          aria-hidden
-                        />
-                        <input
-                          type="checkbox"
-                          checked={columnVisibility[key]}
-                          onChange={(e) =>
-                            setColumnVisibility((prev) => ({
-                              ...prev,
-                              [key]: e.target.checked,
-                            }))
-                          }
-                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        <span>{label}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="my-2 border-t border-slate-200" />
-                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Hidden
-                </p>
-                <ul className="space-y-0.5 px-2">
-                  {hiddenColumnOptions.map(({ key, label }) => (
-                    <li
-                      key={key}
-                      role="none"
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggingColumnKey(key);
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", key);
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const droppedKey =
-                          (e.dataTransfer.getData(
-                            "text/plain"
-                          ) as ProspectColumnKey) || draggingColumnKey;
-                        if (droppedKey) moveColumnInOrder(droppedKey, key);
-                        setDraggingColumnKey(null);
-                      }}
-                      onDragEnd={() => setDraggingColumnKey(null)}
-                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                        <GripVertical
-                          className="h-3.5 w-3.5 text-slate-400"
-                          aria-hidden
-                        />
-                        <input
-                          type="checkbox"
-                          checked={columnVisibility[key]}
-                          onChange={(e) =>
-                            setColumnVisibility((prev) => ({
-                              ...prev,
-                              [key]: e.target.checked,
-                            }))
-                          }
-                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        <span>{label}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
+          <DataTableColumnsMenu
+            open={columnsMenuOpen}
+            onToggle={() => {
+              setColumnsMenuOpen((open) => !open);
+              setFiltersMenuOpen(false);
+              setSortMenuOpen(false);
+            }}
+            menuRef={columnsMenuRef}
+            shownOptions={shownColumnOptions}
+            hiddenOptions={hiddenColumnOptions}
+            columnVisibility={columnVisibility}
+            onVisibilityChange={setColumnVisible}
+            onMoveColumn={moveColumnInOrder}
+            draggingColumnKey={draggingColumnKey}
+            onDraggingColumnKeyChange={setDraggingColumnKey}
+          />
 
           <TableCsvExportButton
             disabled={loading || sortedProspects.length === 0}
@@ -2248,9 +2265,19 @@ export function ProspectsTable({
           className="min-w-0 flex-1 overflow-x-auto"
           onScroll={(e) => setTableScrollLeft(e.currentTarget.scrollLeft)}
         >
+          {scoreFilterNeedsEnrichment ? (
+            <p
+              className={`flex items-center gap-2 border-b border-amber-100 bg-amber-50/80 py-2 text-sm text-amber-900 ${TABLE_SECTION_PADDING}`}
+            >
+              <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+              Loading Boss scores for all prospects — filter results will fill in…
+            </p>
+          ) : null}
           {!showProspectsTable ? (
             <p className={`py-8 text-center text-sm text-slate-500 ${TABLE_SECTION_PADDING}`}>
-              {emptyMessage}
+              {scoreFilterNeedsEnrichment
+                ? "Loading completed Boss scores…"
+                : emptyMessage}
             </p>
           ) : (
             <table className={prospectsTableClassName} style={prospectsTableStyle}>

@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useLayoutEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -110,14 +111,24 @@ export function ImpersonationProvider({
     setStoredContactId(null);
   }, []);
 
-  const value: ImpersonationContextValue = {
-    impersonatingCoachId,
-    setImpersonatingCoachId,
-    clearImpersonation,
-    impersonatingContactId,
-    setImpersonatingContactId,
-    clearContactImpersonation,
-  };
+  const value = useMemo<ImpersonationContextValue>(
+    () => ({
+      impersonatingCoachId,
+      setImpersonatingCoachId,
+      clearImpersonation,
+      impersonatingContactId,
+      setImpersonatingContactId,
+      clearContactImpersonation,
+    }),
+    [
+      impersonatingCoachId,
+      setImpersonatingCoachId,
+      clearImpersonation,
+      impersonatingContactId,
+      setImpersonatingContactId,
+      clearContactImpersonation,
+    ]
+  );
 
   return (
     <ImpersonationContext.Provider value={value}>

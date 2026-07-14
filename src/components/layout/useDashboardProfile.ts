@@ -11,6 +11,7 @@ export type DashboardProfile = {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
+  created_at: string | null;
 };
 
 export function useDashboardProfile(avatarOverride?: {
@@ -32,7 +33,7 @@ export function useDashboardProfile(avatarOverride?: {
     }
     const { data } = await supabaseClient
       .from("profiles")
-      .select("id, role, full_name, first_name, last_name, avatar_url")
+      .select("id, role, full_name, first_name, last_name, avatar_url, created_at")
       .eq("id", user.id)
       .maybeSingle();
     setProfile((data as DashboardProfile | null) ?? null);

@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  chunkArray,
+  SUPABASE_IN_FILTER_CHUNK,
+} from "./chunkArray";
 import { isMissingColumnError } from "./contactsSchemaSafeSelect";
 
 export type ProspectNextCall = {
@@ -175,25 +179,27 @@ export async function loadFallbackPhonesByContactId(
   const byContact: Record<string, string> = {};
   const contactIds = contacts.map((c) => c.id);
 
-  const { data: byIdRows, error: byIdError } = await supabase
-    .from("ghl_appointments")
-    .select("contact_id, prospect_phone, updated_at")
-    .in("contact_id", contactIds)
-    .not("prospect_phone", "is", null)
-    .order("updated_at", { ascending: false });
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data: byIdRows, error: byIdError } = await supabase
+      .from("ghl_appointments")
+      .select("contact_id, prospect_phone, updated_at")
+      .in("contact_id", idChunk)
+      .not("prospect_phone", "is", null)
+      .order("updated_at", { ascending: false });
 
-  if (byIdError) {
-    if (byIdError.code !== "42P01" && !isMissingColumnError(byIdError)) {
-      console.warn("loadFallbackPhonesByContactId (by contact_id):", byIdError);
-    }
-  } else {
-    for (const row of byIdRows ?? []) {
-      const contactId = (row as { contact_id?: string | null }).contact_id;
-      const phone = normalizePhone(
-        (row as { prospect_phone?: string | null }).prospect_phone
-      );
-      if (contactId && phone && !byContact[contactId]) {
-        byContact[contactId] = phone;
+    if (byIdError) {
+      if (byIdError.code !== "42P01" && !isMissingColumnError(byIdError)) {
+        console.warn("loadFallbackPhonesByContactId (by contact_id):", byIdError);
+      }
+    } else {
+      for (const row of byIdRows ?? []) {
+        const contactId = (row as { contact_id?: string | null }).contact_id;
+        const phone = normalizePhone(
+          (row as { prospect_phone?: string | null }).prospect_phone
+        );
+        if (contactId && phone && !byContact[contactId]) {
+          byContact[contactId] = phone;
+        }
       }
     }
   }
@@ -207,32 +213,35 @@ export async function loadFallbackPhonesByContactId(
     ...new Set(stillMissing.map((c) => c.email!.trim().toLowerCase())),
   ];
 
-  const { data: byEmailRows, error: byEmailError } = await supabase
-    .from("ghl_appointments")
-    .select("prospect_email, prospect_phone, coach_id, updated_at")
-    .in("prospect_email", emails)
-    .not("prospect_phone", "is", null)
-    .order("updated_at", { ascending: false });
-
-  if (byEmailError) {
-    if (byEmailError.code !== "42P01" && !isMissingColumnError(byEmailError)) {
-      console.warn("loadFallbackPhonesByContactId (by email):", byEmailError);
-    }
-    return byContact;
-  }
-
   const phoneByCoachEmail: Record<string, string> = {};
-  for (const row of byEmailRows ?? []) {
-    const email = (row as { prospect_email?: string | null }).prospect_email
-      ?.trim()
-      .toLowerCase();
-    const phone = normalizePhone(
-      (row as { prospect_phone?: string | null }).prospect_phone
-    );
-    const coachId = (row as { coach_id?: string | null }).coach_id ?? "";
-    if (!email || !phone) continue;
-    const key = `${coachId}:${email}`;
-    if (!phoneByCoachEmail[key]) phoneByCoachEmail[key] = phone;
+
+  for (const emailChunk of chunkArray(emails, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data: byEmailRows, error: byEmailError } = await supabase
+      .from("ghl_appointments")
+      .select("prospect_email, prospect_phone, coach_id, updated_at")
+      .in("prospect_email", emailChunk)
+      .not("prospect_phone", "is", null)
+      .order("updated_at", { ascending: false });
+
+    if (byEmailError) {
+      if (byEmailError.code !== "42P01" && !isMissingColumnError(byEmailError)) {
+        console.warn("loadFallbackPhonesByContactId (by email):", byEmailError);
+      }
+      continue;
+    }
+
+    for (const row of byEmailRows ?? []) {
+      const email = (row as { prospect_email?: string | null }).prospect_email
+        ?.trim()
+        .toLowerCase();
+      const phone = normalizePhone(
+        (row as { prospect_phone?: string | null }).prospect_phone
+      );
+      const coachId = (row as { coach_id?: string | null }).coach_id ?? "";
+      if (!email || !phone) continue;
+      const key = `${coachId}:${email}`;
+      if (!phoneByCoachEmail[key]) phoneByCoachEmail[key] = phone;
+    }
   }
 
   for (const contact of stillMissing) {
@@ -254,30 +263,32 @@ export async function loadLatestPastCallsByContactId(
   if (contactIds.length === 0) return {};
 
   const nowIso = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from("ghl_appointments")
-    .select("contact_id, status_normalized, start_time")
-    .in("contact_id", contactIds)
-    .not("start_time", "is", null)
-    .lt("start_time", nowIso)
-    .in("status_normalized", ["showed", "noshow"])
-    .order("start_time", { ascending: false });
-
-  if (error) {
-    if (error.code === "42P01" || isMissingColumnError(error)) {
-      return {};
-    }
-    console.warn("loadLatestPastCallsByContactId:", error);
-    return {};
-  }
-
   const byContact: Record<string, string> = {};
-  for (const row of data ?? []) {
-    const contactId = (row as { contact_id?: string | null }).contact_id;
-    const status = (row as { status_normalized?: string }).status_normalized;
-    if (!contactId || byContact[contactId] || !status) continue;
-    byContact[contactId] = status;
+
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("ghl_appointments")
+      .select("contact_id, status_normalized, start_time")
+      .in("contact_id", idChunk)
+      .not("start_time", "is", null)
+      .lt("start_time", nowIso)
+      .in("status_normalized", ["showed", "noshow"])
+      .order("start_time", { ascending: false });
+
+    if (error) {
+      if (error.code === "42P01" || isMissingColumnError(error)) {
+        return byContact;
+      }
+      console.warn("loadLatestPastCallsByContactId:", error);
+      return byContact;
+    }
+
+    for (const row of data ?? []) {
+      const contactId = (row as { contact_id?: string | null }).contact_id;
+      const status = (row as { status_normalized?: string }).status_normalized;
+      if (!contactId || byContact[contactId] || !status) continue;
+      byContact[contactId] = status;
+    }
   }
 
   return byContact;
@@ -293,38 +304,39 @@ export async function loadNextCallsByContactId(
   if (contactIds.length === 0) return {};
 
   const nowIso = new Date().toISOString();
-
-  const { data, error } = await supabase
-    .from("ghl_appointments")
-    .select("contact_id, start_time, status_normalized, calendar_name, title")
-    .in("contact_id", contactIds)
-    .not("start_time", "is", null)
-    .gte("start_time", nowIso)
-    .order("start_time", { ascending: true });
-
-  if (error) {
-    if (error.code === "42P01" || isMissingColumnError(error)) {
-      return {};
-    }
-    console.warn("loadNextCallsByContactId:", error);
-    return {};
-  }
-
   const byContact: Record<string, ProspectNextCall> = {};
 
-  for (const row of data ?? []) {
-    const contactId = (row as { contact_id?: string | null }).contact_id;
-    const status = (row as { status_normalized?: string }).status_normalized;
-    if (!contactId || byContact[contactId]) continue;
-    if (!status || !UPCOMING_STATUSES.has(status)) continue;
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("ghl_appointments")
+      .select("contact_id, start_time, status_normalized, calendar_name, title")
+      .in("contact_id", idChunk)
+      .not("start_time", "is", null)
+      .gte("start_time", nowIso)
+      .order("start_time", { ascending: true });
 
-    byContact[contactId] = {
-      start_time: (row as { start_time: string }).start_time,
-      status_normalized: status,
-      calendar_name:
-        (row as { calendar_name?: string | null }).calendar_name ?? null,
-      title: (row as { title?: string | null }).title ?? null,
-    };
+    if (error) {
+      if (error.code === "42P01" || isMissingColumnError(error)) {
+        return byContact;
+      }
+      console.warn("loadNextCallsByContactId:", error);
+      return byContact;
+    }
+
+    for (const row of data ?? []) {
+      const contactId = (row as { contact_id?: string | null }).contact_id;
+      const status = (row as { status_normalized?: string }).status_normalized;
+      if (!contactId || byContact[contactId]) continue;
+      if (!status || !UPCOMING_STATUSES.has(status)) continue;
+
+      byContact[contactId] = {
+        start_time: (row as { start_time: string }).start_time,
+        status_normalized: status,
+        calendar_name:
+          (row as { calendar_name?: string | null }).calendar_name ?? null,
+        title: (row as { title?: string | null }).title ?? null,
+      };
+    }
   }
 
   return byContact;

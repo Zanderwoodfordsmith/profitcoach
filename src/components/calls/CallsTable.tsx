@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ArrowUpDown,
-  Columns3,
-  GripVertical,
-  Search,
-} from "lucide-react";
+import { ArrowUpDown, Search } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
+import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
+import {
+  partitionOrderedColumns,
+  usePersistedColumnSettings,
+} from "@/hooks/usePersistedColumnSettings";
 import type { CallRow } from "@/lib/callRow";
 import {
   callStatusClass,
@@ -91,43 +91,7 @@ const DEFAULT_COLUMN_VISIBILITY: CallColumnVisibility = {
 const DEFAULT_COLUMN_ORDER: CallColumnKey[] = COLUMN_OPTIONS.map(
   (option) => option.key
 );
-
-type PersistedCallTableSettings = {
-  columnVisibility: CallColumnVisibility;
-  columnOrder: CallColumnKey[];
-};
-
-function parsePersistedCallTableSettings(
-  raw: string
-): PersistedCallTableSettings | null {
-  try {
-    const parsed = JSON.parse(raw) as Partial<PersistedCallTableSettings>;
-    if (!parsed.columnVisibility || !parsed.columnOrder) return null;
-    const validKeys = new Set<CallColumnKey>(
-      COLUMN_OPTIONS.map((option) => option.key)
-    );
-    const columnVisibility = { ...DEFAULT_COLUMN_VISIBILITY };
-    for (const key of validKeys) {
-      if (typeof parsed.columnVisibility[key] === "boolean") {
-        columnVisibility[key] = parsed.columnVisibility[key] as boolean;
-      }
-    }
-    const seen = new Set<CallColumnKey>();
-    const columnOrder: CallColumnKey[] = [];
-    for (const key of parsed.columnOrder) {
-      if (validKeys.has(key) && !seen.has(key)) {
-        columnOrder.push(key);
-        seen.add(key);
-      }
-    }
-    for (const key of DEFAULT_COLUMN_ORDER) {
-      if (!seen.has(key)) columnOrder.push(key);
-    }
-    return { columnVisibility, columnOrder };
-  } catch {
-    return null;
-  }
-}
+const ALL_COLUMN_KEYS = DEFAULT_COLUMN_ORDER;
 
 function matchStatusLabel(status: string): string {
   switch (status) {
@@ -187,14 +151,19 @@ export function CallsTable({
   >("all");
   const [sortField, setSortField] = useState<CallSortField>("start_time");
   const [sortOrder, setSortOrder] = useState<CallSortOrder>("desc");
-  const [columnVisibility, setColumnVisibility] =
-    useState<CallColumnVisibility>(DEFAULT_COLUMN_VISIBILITY);
-  const [columnOrder, setColumnOrder] =
-    useState<CallColumnKey[]>(DEFAULT_COLUMN_ORDER);
+  const {
+    columnVisibility,
+    setColumnVisible,
+    columnOrder,
+    moveColumnInOrder,
+  } = usePersistedColumnSettings<CallColumnKey>({
+    storageKey: settingsStorageKey,
+    defaultVisibility: DEFAULT_COLUMN_VISIBILITY,
+    defaultOrder: DEFAULT_COLUMN_ORDER,
+    validKeys: ALL_COLUMN_KEYS,
+  });
   const [draggingColumnKey, setDraggingColumnKey] =
     useState<CallColumnKey | null>(null);
-  const [hasLoadedPersistedSettings, setHasLoadedPersistedSettings] =
-    useState(false);
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -224,33 +193,6 @@ export function CallsTable({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(settingsStorageKey);
-    if (raw) {
-      const parsed = parsePersistedCallTableSettings(raw);
-      if (parsed) {
-        setColumnVisibility(parsed.columnVisibility);
-        setColumnOrder(parsed.columnOrder);
-      }
-    }
-    setHasLoadedPersistedSettings(true);
-  }, [settingsStorageKey]);
-
-  useEffect(() => {
-    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
-    const payload: PersistedCallTableSettings = {
-      columnVisibility,
-      columnOrder,
-    };
-    window.localStorage.setItem(settingsStorageKey, JSON.stringify(payload));
-  }, [
-    hasLoadedPersistedSettings,
-    settingsStorageKey,
-    columnVisibility,
-    columnOrder,
-  ]);
-
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (timingFilter !== "all") count += 1;
@@ -273,55 +215,17 @@ export function CallsTable({
     [showCoachColumn, renderRowActions]
   );
 
-  const applicableColumnKeys = useMemo(
-    () => new Set(columnMenuOptions.map((option) => option.key)),
-    [columnMenuOptions]
-  );
-
-  const shownColumnOptions = useMemo(
+  const { shown: shownColumnOptions, hidden: hiddenColumnOptions } = useMemo(
     () =>
-      columnOrder
-        .filter(
-          (key) => applicableColumnKeys.has(key) && columnVisibility[key]
-        )
-        .map(
-          (key) => columnMenuOptions.find((option) => option.key === key)!
-        ),
-    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
+      partitionOrderedColumns(
+        columnOrder,
+        columnVisibility,
+        columnMenuOptions
+      ),
+    [columnOrder, columnVisibility, columnMenuOptions]
   );
 
-  const hiddenColumnOptions = useMemo(
-    () =>
-      columnOrder
-        .filter(
-          (key) => applicableColumnKeys.has(key) && !columnVisibility[key]
-        )
-        .map(
-          (key) => columnMenuOptions.find((option) => option.key === key)!
-        ),
-    [columnOrder, applicableColumnKeys, columnVisibility, columnMenuOptions]
-  );
-
-  const visibleColumns = useMemo(
-    () => shownColumnOptions,
-    [shownColumnOptions]
-  );
-
-  function moveColumnInOrder(
-    draggedKey: CallColumnKey,
-    targetKey: CallColumnKey
-  ) {
-    if (draggedKey === targetKey) return;
-    setColumnOrder((prev) => {
-      const from = prev.indexOf(draggedKey);
-      const to = prev.indexOf(targetKey);
-      if (from < 0 || to < 0) return prev;
-      const next = [...prev];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
-  }
+  const visibleColumns = shownColumnOptions;
 
   const filteredCalls = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -694,126 +598,22 @@ export function CallsTable({
             ) : null}
           </div>
 
-          <div ref={columnsMenuRef} className="relative">
-            <TableToolbarButton
-              label="Columns"
-              aria-haspopup="true"
-              aria-expanded={columnsMenuOpen}
-              active={columnsMenuOpen}
-              onClick={() => {
-                setColumnsMenuOpen((open) => !open);
-                setFiltersMenuOpen(false);
-                setSortMenuOpen(false);
-              }}
-              icon={
-                <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
-              }
-            />
-            {columnsMenuOpen ? (
-              <div
-                role="menu"
-                className="absolute left-0 z-[90] mt-1 max-h-[min(24rem,70vh)] w-[min(100vw-2rem,18rem)] overflow-y-auto rounded-md border border-slate-200 bg-white py-2 shadow-lg"
-              >
-                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Shown
-                </p>
-                <ul className="space-y-0.5 px-2">
-                  {shownColumnOptions.map(({ key, label }) => (
-                    <li
-                      key={key}
-                      role="none"
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggingColumnKey(key);
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", key);
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const droppedKey =
-                          (e.dataTransfer.getData(
-                            "text/plain"
-                          ) as CallColumnKey) || draggingColumnKey;
-                        if (droppedKey) moveColumnInOrder(droppedKey, key);
-                        setDraggingColumnKey(null);
-                      }}
-                      onDragEnd={() => setDraggingColumnKey(null)}
-                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                        <GripVertical
-                          className="h-3.5 w-3.5 text-slate-400"
-                          aria-hidden
-                        />
-                        <input
-                          type="checkbox"
-                          checked={columnVisibility[key]}
-                          onChange={(e) =>
-                            setColumnVisibility((prev) => ({
-                              ...prev,
-                              [key]: e.target.checked,
-                            }))
-                          }
-                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        <span>{label}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="my-2 border-t border-slate-200" />
-                <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Hidden
-                </p>
-                <ul className="space-y-0.5 px-2">
-                  {hiddenColumnOptions.map(({ key, label }) => (
-                    <li
-                      key={key}
-                      role="none"
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggingColumnKey(key);
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", key);
-                      }}
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const droppedKey =
-                          (e.dataTransfer.getData(
-                            "text/plain"
-                          ) as CallColumnKey) || draggingColumnKey;
-                        if (droppedKey) moveColumnInOrder(droppedKey, key);
-                        setDraggingColumnKey(null);
-                      }}
-                      onDragEnd={() => setDraggingColumnKey(null)}
-                      className={`rounded ${draggingColumnKey === key ? "opacity-60" : ""}`}
-                    >
-                      <div className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                        <GripVertical
-                          className="h-3.5 w-3.5 text-slate-400"
-                          aria-hidden
-                        />
-                        <input
-                          type="checkbox"
-                          checked={columnVisibility[key]}
-                          onChange={(e) =>
-                            setColumnVisibility((prev) => ({
-                              ...prev,
-                              [key]: e.target.checked,
-                            }))
-                          }
-                          className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        <span>{label}</span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </div>
+          <DataTableColumnsMenu
+            open={columnsMenuOpen}
+            onToggle={() => {
+              setColumnsMenuOpen((open) => !open);
+              setFiltersMenuOpen(false);
+              setSortMenuOpen(false);
+            }}
+            menuRef={columnsMenuRef}
+            shownOptions={shownColumnOptions}
+            hiddenOptions={hiddenColumnOptions}
+            columnVisibility={columnVisibility}
+            onVisibilityChange={setColumnVisible}
+            onMoveColumn={moveColumnInOrder}
+            draggingColumnKey={draggingColumnKey}
+            onDraggingColumnKeyChange={setDraggingColumnKey}
+          />
 
           {!loading && calls.length > 0 ? (
             <span className="ml-auto text-xs text-slate-500">

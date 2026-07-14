@@ -154,7 +154,8 @@ function useCommunityMemberDirectoryState() {
     return m;
   }, [presenceRows]);
 
-  const loadRoster = useCallback(async () => {
+  const loadRoster = useCallback(async (options?: { includeLadder?: boolean }) => {
+    const includeLadder = options?.includeLadder ?? true;
     const { data: profiles, error: pErr } = await supabaseClient
       .from("profiles")
       .select(
@@ -180,6 +181,11 @@ function useCommunityMemberDirectoryState() {
     }
 
     const merged = mergeRoster(plist as StaffProfileRow[], coaches);
+    if (!includeLadder) {
+      setRoster(merged);
+      return;
+    }
+
     const ladderByUser = await fetchHighestAchievedLevelByUserIds(
       merged.map((m) => m.id)
     );
@@ -242,13 +248,16 @@ function useCommunityMemberDirectoryState() {
   const refresh = useCallback(async () => {
     try {
       setLoadError(null);
-      await Promise.all([loadRoster(), loadPresence()]);
+      await Promise.all([
+        loadRoster({ includeLadder: needsFullRoster }),
+        loadPresence(),
+      ]);
     } catch (e) {
       setLoadError(
         e instanceof Error ? e.message : "Could not load community members."
       );
     }
-  }, [loadPresence, loadRoster]);
+  }, [loadPresence, loadRoster, needsFullRoster]);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,12 +266,15 @@ function useCommunityMemberDirectoryState() {
       try {
         setLoadError(null);
         if (needsFullRoster) {
-          await Promise.all([loadRoster(), loadPresence()]);
+          await Promise.all([
+            loadRoster({ includeLadder: true }),
+            loadPresence(),
+          ]);
         } else {
           await loadPresence();
           rosterDelayId = window.setTimeout(() => {
-            if (!cancelled) void loadRoster();
-          }, 2500);
+            if (!cancelled) void loadRoster({ includeLadder: false });
+          }, 8000);
         }
         if (!cancelled) await touchPresence();
         if (!cancelled) await loadPresence();

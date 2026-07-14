@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getTotalScore } from "./bossScores";
+import {
+  chunkArray,
+  SUPABASE_IN_FILTER_CHUNK,
+} from "./chunkArray";
 import { isMissingColumnError } from "./contactsSchemaSafeSelect";
 import {
   DESIRED_OUTCOME_OTHER_VALUE,
@@ -142,42 +146,46 @@ export async function loadLatestScorecardByContactId(
 ): Promise<Record<string, ScorecardSnapshot>> {
   if (contactIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from("assessments")
-    .select(
-      "contact_id, total_score, completed_at, qualifying_data, boss_level, report_token, assessment_type"
-    )
-    .in("contact_id", contactIds)
-    .eq("assessment_type", "boss_scorecard")
-    .order("completed_at", { ascending: false });
-
-  if (error) {
-    if (isMissingColumnError(error) || error.code === "42P01") {
-      return {};
-    }
-    console.warn("loadLatestScorecardByContactId:", error);
-    return {};
-  }
-
   const byContact: Record<string, ScorecardSnapshot> = {};
-  for (const row of data ?? []) {
-    const contactId = (row as { contact_id?: string }).contact_id;
-    if (!contactId || byContact[contactId]) continue;
 
-    byContact[contactId] = {
-      total_score: (row as { total_score: number }).total_score,
-      completed_at: (row as { completed_at: string }).completed_at,
-      report_token:
-        typeof (row as { report_token?: string | null }).report_token ===
-        "string"
-          ? (row as { report_token: string }).report_token
-          : null,
-      summary: buildProspectAssessmentSummary({
-        qualifying_data: (row as { qualifying_data?: Record<string, unknown> })
-          .qualifying_data,
-        boss_level: (row as { boss_level?: string | null }).boss_level,
-      }),
-    };
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("assessments")
+      .select(
+        "contact_id, total_score, completed_at, qualifying_data, boss_level, report_token, assessment_type"
+      )
+      .in("contact_id", idChunk)
+      .eq("assessment_type", "boss_scorecard")
+      .order("completed_at", { ascending: false });
+
+    if (error) {
+      if (isMissingColumnError(error) || error.code === "42P01") {
+        return byContact;
+      }
+      console.warn("loadLatestScorecardByContactId:", error);
+      return byContact;
+    }
+
+    for (const row of data ?? []) {
+      const contactId = (row as { contact_id?: string }).contact_id;
+      if (!contactId || byContact[contactId]) continue;
+
+      byContact[contactId] = {
+        total_score: (row as { total_score: number }).total_score,
+        completed_at: (row as { completed_at: string }).completed_at,
+        report_token:
+          typeof (row as { report_token?: string | null }).report_token ===
+          "string"
+            ? (row as { report_token: string }).report_token
+            : null,
+        summary: buildProspectAssessmentSummary({
+          qualifying_data: (
+            row as { qualifying_data?: Record<string, unknown> }
+          ).qualifying_data,
+          boss_level: (row as { boss_level?: string | null }).boss_level,
+        }),
+      };
+    }
   }
 
   return byContact;
@@ -189,30 +197,33 @@ export async function loadLatestPremiumDiagnosticByContactId(
 ): Promise<Record<string, PremiumDiagnosticSnapshot>> {
   if (contactIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from("assessments")
-    .select("contact_id, total_score, completed_at, assessment_type")
-    .in("contact_id", contactIds)
-    .eq("assessment_type", "diagnostic_50")
-    .order("completed_at", { ascending: false });
-
-  if (error) {
-    if (isMissingColumnError(error) || error.code === "42P01") {
-      return {};
-    }
-    console.warn("loadLatestPremiumDiagnosticByContactId:", error);
-    return {};
-  }
-
   const byContact: Record<string, PremiumDiagnosticSnapshot> = {};
-  for (const row of data ?? []) {
-    const contactId = (row as { contact_id?: string }).contact_id;
-    if (!contactId || byContact[contactId]) continue;
 
-    byContact[contactId] = {
-      total_score: (row as { total_score: number }).total_score,
-      completed_at: (row as { completed_at: string }).completed_at,
-    };
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("assessments")
+      .select("contact_id, total_score, completed_at, assessment_type")
+      .in("contact_id", idChunk)
+      .eq("assessment_type", "diagnostic_50")
+      .order("completed_at", { ascending: false });
+
+    if (error) {
+      if (isMissingColumnError(error) || error.code === "42P01") {
+        return byContact;
+      }
+      console.warn("loadLatestPremiumDiagnosticByContactId:", error);
+      return byContact;
+    }
+
+    for (const row of data ?? []) {
+      const contactId = (row as { contact_id?: string }).contact_id;
+      if (!contactId || byContact[contactId]) continue;
+
+      byContact[contactId] = {
+        total_score: (row as { total_score: number }).total_score,
+        completed_at: (row as { completed_at: string }).completed_at,
+      };
+    }
   }
 
   return byContact;
@@ -224,28 +235,31 @@ export async function loadPremiumSessionScoresByContactId(
 ): Promise<Record<string, PremiumSessionSnapshot>> {
   if (contactIds.length === 0) return {};
 
-  const { data, error } = await supabase
-    .from("contacts")
-    .select("id, session_answers")
-    .in("id", contactIds);
+  const byContact: Record<string, PremiumSessionSnapshot> = {};
 
-  if (error) {
-    if (isMissingColumnError(error)) {
-      return {};
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id, session_answers")
+      .in("id", idChunk);
+
+    if (error) {
+      if (isMissingColumnError(error)) {
+        return byContact;
+      }
+
+      console.warn("loadPremiumSessionScoresByContactId:", error);
+      return byContact;
     }
 
-    console.warn("loadPremiumSessionScoresByContactId:", error);
-    return {};
-  }
-
-  const byContact: Record<string, PremiumSessionSnapshot> = {};
-  for (const row of data ?? []) {
-    const contactId = (row as { id?: string }).id;
-    if (!contactId) continue;
-    const session = sessionScoreFromAnswers(
-      (row as { session_answers?: unknown }).session_answers
-    );
-    if (session) byContact[contactId] = session;
+    for (const row of data ?? []) {
+      const contactId = (row as { id?: string }).id;
+      if (!contactId) continue;
+      const session = sessionScoreFromAnswers(
+        (row as { session_answers?: unknown }).session_answers
+      );
+      if (session) byContact[contactId] = session;
+    }
   }
 
   return byContact;

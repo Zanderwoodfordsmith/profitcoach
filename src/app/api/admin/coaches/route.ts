@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 import { deriveCurrentLevelId } from "@/lib/ladder";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
@@ -29,46 +30,6 @@ type Body = {
   email: string;
   slug: string;
 };
-
-async function requireAdmin(request: Request): Promise<
-  | { error: "Missing access token." | "Invalid access token." | "Not authorized." | "Server error."; userId: null }
-  | { error: null; userId: string }
-> {
-  try {
-    const authHeader = request.headers.get("authorization") ?? "";
-    const token = authHeader.startsWith("Bearer ")
-      ? authHeader.slice("Bearer ".length)
-      : null;
-
-    if (!token) {
-      return { error: "Missing access token." as const, userId: null };
-    }
-
-    const {
-      data: { user },
-      error,
-    } = await supabaseAdmin.auth.getUser(token);
-
-    if (error || !user) {
-      return { error: "Invalid access token." as const, userId: null };
-    }
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError || !profile || profile.role !== "admin") {
-      return { error: "Not authorized." as const, userId: null };
-    }
-
-    return { error: null, userId: user.id as string };
-  } catch (err) {
-    console.error("admin/coaches requireAdmin error:", err);
-    return { error: "Server error." as const, userId: null };
-  }
-}
 
 export async function GET(request: Request) {
   const authCheck = await requireAdmin(request);
@@ -229,6 +190,7 @@ export async function GET(request: Request) {
       const contactsRes = await supabaseAdmin
         .from("contacts")
         .select("coach_id")
+        .eq("type", "client")
         .in("coach_id", ids);
       if (contactsRes.error?.code !== "42P01" && !contactsRes.error) {
         for (const row of contactsRes.data ?? []) {

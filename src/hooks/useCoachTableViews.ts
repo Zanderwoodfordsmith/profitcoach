@@ -15,12 +15,30 @@ import {
   LEGACY_COACH_TABLE_SETTINGS_KEY,
   coachTableViewSettingsEqual,
   createCoachTableView,
+  isDefaultCoachTableViewName,
+  orderCoachTableViews,
   type CoachTableView,
   type CoachTableViewSettings,
   type CoachTableViewsPayload,
   type CoachTableViewsStorage,
 } from "@/lib/admin/coachTableViews";
 import { normalizeCoachTableViewSettings } from "@/lib/admin/coachTableSort";
+
+function settingsForView(
+  view: CoachTableView,
+  createDefaultSettings: () => CoachTableViewSettings
+): CoachTableViewSettings {
+  if (isDefaultCoachTableViewName(view.name)) {
+    return createDefaultSettings();
+  }
+  return view.settings;
+}
+
+function nonAllViewOrder(views: CoachTableView[]): string[] {
+  return views
+    .filter((view) => !isDefaultCoachTableViewName(view.name))
+    .map((view) => view.id);
+}
 
 type UseCoachTableViewsOptions = {
   currentSettings: CoachTableViewSettings;
@@ -32,11 +50,22 @@ type UseCoachTableViewsOptions = {
 };
 
 function payloadToStorage(payload: CoachTableViewsPayload): CoachTableViewsStorage {
+  const viewOrder = Array.isArray(payload.viewOrder)
+    ? payload.viewOrder
+    : nonAllViewOrder(payload.views);
+  const views = orderCoachTableViews(payload.views, viewOrder);
+  const allViewId = views.find((view) =>
+    isDefaultCoachTableViewName(view.name)
+  )?.id;
+  const activeViewId = views.some((view) => view.id === payload.activeViewId)
+    ? payload.activeViewId
+    : allViewId ?? views[0]?.id ?? payload.activeViewId;
   return {
     version: 1,
-    views: payload.views,
-    activeViewId: payload.activeViewId,
+    views,
+    activeViewId,
     autosave: payload.autosave,
+    viewOrder: nonAllViewOrder(views),
   };
 }
 
@@ -81,9 +110,12 @@ function parseLocalViewsStorage(raw: string): CoachTableViewsStorage | null {
       : views[0].id;
     return {
       version: 1,
-      views,
+      views: orderCoachTableViews(views, parsed.viewOrder ?? []),
       activeViewId,
       autosave: parsed.autosave === true,
+      viewOrder: Array.isArray(parsed.viewOrder)
+        ? parsed.viewOrder.filter((id): id is string => typeof id === "string")
+        : nonAllViewOrder(views),
     };
   } catch {
     return null;
@@ -115,6 +147,7 @@ function loadLocalViewsStorage(
         views: [view],
         activeViewId: view.id,
         autosave: false,
+        viewOrder: [],
       };
     }
   }
@@ -130,6 +163,7 @@ function loadLocalViewsStorage(
     views: [view],
     activeViewId: view.id,
     autosave: false,
+    viewOrder: [],
   };
 }
 
@@ -181,7 +215,7 @@ export function useCoachTableViews({
       }
 
       const customViews = local.views.filter(
-        (view) => view.name.trim() !== DEFAULT_COACH_TABLE_VIEW_NAME
+        (view) => !isDefaultCoachTableViewName(view.name)
       );
       for (const view of customViews) {
         await createCoachTableViewRemote(token, {
@@ -202,6 +236,22 @@ export function useCoachTableViews({
     if (!ready || hasLoaded) return;
     let cancelled = false;
 
+    function seedLocalAllView() {
+      const allView = createCoachTableView(
+        DEFAULT_COACH_TABLE_VIEW_NAME,
+        createDefaultSettings(),
+        { isPrivate: false, canEdit: false }
+      );
+      setStorage({
+        version: 1,
+        views: [allView],
+        activeViewId: allView.id,
+        autosave: false,
+        viewOrder: [],
+      });
+      onApplySettingsRef.current(createDefaultSettings());
+    }
+
     async function load() {
       setLoading(true);
       setError(null);
@@ -211,10 +261,16 @@ export function useCoachTableViews({
         await migrateLocalViewsIfNeeded(token);
         const payload = await fetchCoachTableViews(token);
         if (cancelled) return;
-        applyPayload(payload);
+        if (!payload.views?.length) {
+          seedLocalAllView();
+        } else {
+          applyPayload(payload);
+        }
         setHasLoaded(true);
       } catch (err) {
         if (cancelled) return;
+        // Keep an All tab visible even when the API/migration is unavailable.
+        seedLocalAllView();
         setError(err instanceof Error ? err.message : "Unable to load views.");
         setHasLoaded(true);
       } finally {
@@ -228,37 +284,12 @@ export function useCoachTableViews({
     };
   }, [
     applyPayload,
+    createDefaultSettings,
     getAccessToken,
     hasLoaded,
     migrateLocalViewsIfNeeded,
     ready,
   ]);
-
-  const activeView = useMemo(() => {
-    if (!storage) return null;
-    return (
-      storage.views.find((view) => view.id === storage.activeViewId) ??
-      storage.views[0] ??
-      null
-    );
-  }, [storage]);
-
-  useEffect(() => {
-    if (!ready || !hasLoaded || !activeView || initialAppliedRef.current) return;
-    initialAppliedRef.current = true;
-    applyingViewRef.current = true;
-    onApplySettingsRef.current(activeView.settings);
-    queueMicrotask(() => {
-      applyingViewRef.current = false;
-    });
-  }, [activeView, hasLoaded, ready]);
-
-  const canEditActiveView = activeView?.canEdit ?? false;
-
-  const isDirty = useMemo(() => {
-    if (!activeView) return false;
-    return !coachTableViewSettingsEqual(currentSettings, activeView.settings);
-  }, [activeView, currentSettings]);
 
   const runMutation = useCallback(
     async (mutate: (token: string) => Promise<CoachTableViewsPayload>) => {
@@ -271,9 +302,81 @@ export function useCoachTableViews({
     [applyPayload, getAccessToken]
   );
 
+  const activeView = useMemo(() => {
+    if (!storage) return null;
+    return (
+      storage.views.find((view) => view.id === storage.activeViewId) ??
+      storage.views[0] ??
+      null
+    );
+  }, [storage]);
+
+  const isAllActiveView = Boolean(
+    activeView && isDefaultCoachTableViewName(activeView.name)
+  );
+
+  // On each login / fresh page load, open All with no filters.
+  useEffect(() => {
+    if (!ready || !hasLoaded || !storage || initialAppliedRef.current) return;
+    initialAppliedRef.current = true;
+
+    const allView =
+      storage.views.find((view) => isDefaultCoachTableViewName(view.name)) ??
+      storage.views[0];
+    if (!allView) return;
+
+    applyingViewRef.current = true;
+    onApplySettingsRef.current(createDefaultSettings());
+
+    if (storage.activeViewId !== allView.id) {
+      setStorage((prev) =>
+        prev ? { ...prev, activeViewId: allView.id } : prev
+      );
+      void (async () => {
+        try {
+          await runMutation((token) =>
+            updateCoachTableViewPreferencesRemote(token, {
+              activeViewId: allView.id,
+            })
+          );
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Unable to open All view."
+          );
+        } finally {
+          queueMicrotask(() => {
+            applyingViewRef.current = false;
+          });
+        }
+      })();
+      return;
+    }
+
+    queueMicrotask(() => {
+      applyingViewRef.current = false;
+    });
+  }, [createDefaultSettings, hasLoaded, ready, runMutation, storage]);
+
+  // All is a clean workspace; saves go through "Save as new".
+  const canEditActiveView =
+    Boolean(activeView?.canEdit) && !isAllActiveView;
+
+  const isDirty = useMemo(() => {
+    if (!activeView) return false;
+    const baseline = settingsForView(activeView, createDefaultSettings);
+    return !coachTableViewSettingsEqual(currentSettings, baseline);
+  }, [activeView, createDefaultSettings, currentSettings]);
+
   const updateActiveViewSettings = useCallback(
     async (settings: CoachTableViewSettings) => {
-      if (!storage || !activeView || !activeView.canEdit) return;
+      if (
+        !storage ||
+        !activeView ||
+        !activeView.canEdit ||
+        isDefaultCoachTableViewName(activeView.name)
+      ) {
+        return;
+      }
       await runMutation((token) =>
         updateCoachTableViewRemote(token, activeView.id, { settings })
       );
@@ -285,7 +388,7 @@ export function useCoachTableViews({
     if (
       !hasLoaded ||
       !storage?.autosave ||
-      !activeView?.canEdit ||
+      !canEditActiveView ||
       !isDirty
     ) {
       return;
@@ -293,7 +396,7 @@ export function useCoachTableViews({
     if (applyingViewRef.current) return;
     void updateActiveViewSettings(currentSettings);
   }, [
-    activeView?.canEdit,
+    canEditActiveView,
     currentSettings,
     hasLoaded,
     isDirty,
@@ -307,7 +410,7 @@ export function useCoachTableViews({
       const view = storage.views.find((v) => v.id === viewId);
       if (!view) return;
       applyingViewRef.current = true;
-      onApplySettingsRef.current(view.settings);
+      onApplySettingsRef.current(settingsForView(view, createDefaultSettings));
       try {
         await runMutation((token) =>
           updateCoachTableViewPreferencesRemote(token, { activeViewId: viewId })
@@ -320,17 +423,17 @@ export function useCoachTableViews({
         });
       }
     },
-    [runMutation, storage]
+    [createDefaultSettings, runMutation, storage]
   );
 
   const saveView = useCallback(async () => {
-    if (!activeView?.canEdit) return;
+    if (!canEditActiveView) return;
     try {
       await updateActiveViewSettings(currentSettings);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save view.");
     }
-  }, [activeView?.canEdit, currentSettings, updateActiveViewSettings]);
+  }, [canEditActiveView, currentSettings, updateActiveViewSettings]);
 
   const saveAsNewView = useCallback(
     async (name: string, isPrivate = false) => {
@@ -361,11 +464,13 @@ export function useCoachTableViews({
   const revertChanges = useCallback(() => {
     if (!activeView) return;
     applyingViewRef.current = true;
-    onApplySettingsRef.current(activeView.settings);
+    onApplySettingsRef.current(
+      settingsForView(activeView, createDefaultSettings)
+    );
     queueMicrotask(() => {
       applyingViewRef.current = false;
     });
-  }, [activeView]);
+  }, [activeView, createDefaultSettings]);
 
   const toggleAutosave = useCallback(async () => {
     if (!storage) return;
@@ -401,7 +506,11 @@ export function useCoachTableViews({
       const trimmed = name.trim();
       if (!trimmed) return;
       const view = storage?.views.find((row) => row.id === viewId);
-      if (!view?.canEdit) return;
+      if (!view?.canEdit || isDefaultCoachTableViewName(view.name)) return;
+      if (isDefaultCoachTableViewName(trimmed)) {
+        setError('Reserved view name "All". Choose another name.');
+        return;
+      }
       try {
         await runMutation((token) =>
           updateCoachTableViewRemote(token, viewId, { name: trimmed })
@@ -416,7 +525,7 @@ export function useCoachTableViews({
   const setViewPrivacy = useCallback(
     async (viewId: string, isPrivate: boolean) => {
       const view = storage?.views.find((row) => row.id === viewId);
-      if (!view?.canEdit) return;
+      if (!view?.canEdit || isDefaultCoachTableViewName(view.name)) return;
       try {
         await runMutation((token) =>
           updateCoachTableViewRemote(token, viewId, { isPrivate })
@@ -434,7 +543,7 @@ export function useCoachTableViews({
     async (viewId: string) => {
       if (!storage || storage.views.length <= 1) return;
       const view = storage.views.find((row) => row.id === viewId);
-      if (!view?.canEdit) return;
+      if (!view?.canEdit || isDefaultCoachTableViewName(view.name)) return;
       const deletingActive = storage.activeViewId === viewId;
       try {
         const payload = await runMutation((token) =>
@@ -446,7 +555,9 @@ export function useCoachTableViews({
             payload.views[0];
           if (nextActive) {
             applyingViewRef.current = true;
-            onApplySettingsRef.current(nextActive.settings);
+            onApplySettingsRef.current(
+              settingsForView(nextActive, createDefaultSettings)
+            );
             queueMicrotask(() => {
               applyingViewRef.current = false;
             });
@@ -454,6 +565,30 @@ export function useCoachTableViews({
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to delete view.");
+      }
+    },
+    [createDefaultSettings, runMutation, storage]
+  );
+
+  const reorderViews = useCallback(
+    async (orderedViewIds: string[]) => {
+      if (!storage) return;
+      const nextOrder = orderedViewIds.filter((id) => {
+        const view = storage.views.find((row) => row.id === id);
+        return Boolean(view && !isDefaultCoachTableViewName(view.name));
+      });
+      const nextViews = orderCoachTableViews(storage.views, nextOrder);
+      setStorage({
+        ...storage,
+        views: nextViews,
+        viewOrder: nextOrder,
+      });
+      try {
+        await runMutation((token) =>
+          updateCoachTableViewPreferencesRemote(token, { viewOrder: nextOrder })
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to reorder views.");
       }
     },
     [runMutation, storage]
@@ -465,6 +600,7 @@ export function useCoachTableViews({
         const token = await getAccessToken();
         if (!token) throw new Error("Missing access token.");
         for (const view of next.views) {
+          if (isDefaultCoachTableViewName(view.name)) continue;
           await createCoachTableViewRemote(token, {
             name: view.name,
             settings: view.settings,
@@ -478,10 +614,13 @@ export function useCoachTableViews({
           payload.views[0];
         if (active) {
           applyingViewRef.current = true;
-          onApplySettingsRef.current(active.settings);
+          onApplySettingsRef.current(
+            settingsForView(active, createDefaultSettings)
+          );
           await updateCoachTableViewPreferencesRemote(token, {
             activeViewId: active.id,
             autosave: next.autosave,
+            viewOrder: next.viewOrder,
           });
           const refreshed = await fetchCoachTableViews(token);
           applyPayload(refreshed);
@@ -493,7 +632,7 @@ export function useCoachTableViews({
         setError(err instanceof Error ? err.message : "Unable to import views.");
       }
     },
-    [applyPayload, getAccessToken]
+    [applyPayload, createDefaultSettings, getAccessToken]
   );
 
   return {
@@ -513,6 +652,7 @@ export function useCoachTableViews({
           views: storage.views,
           activeViewId: storage.activeViewId,
           autosave: storage.autosave,
+          viewOrder: storage.viewOrder,
         }
       : null,
     refreshViews,
@@ -525,6 +665,7 @@ export function useCoachTableViews({
     renameView,
     setViewPrivacy,
     deleteView,
+    reorderViews,
     importViews,
   };
 }

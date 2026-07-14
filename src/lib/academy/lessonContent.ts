@@ -105,13 +105,41 @@ export async function loadLegacyCourseWithContent(
   };
 }
 
-async function fetchLessonContentMap(): Promise<Map<string, AcademyLessonContentRow>> {
-  const { data: rows } = await supabaseAdmin.from("academy_lesson_content").select("*");
+async function fetchLessonContentMapUncached(): Promise<
+  Map<string, AcademyLessonContentRow>
+> {
+  const { data: rows } = await supabaseAdmin
+    .from("academy_lesson_content")
+    .select(
+      "course_id, lesson_id, title, video_url, body_markdown, transcript_text, updated_at"
+    );
   const map = new Map<string, AcademyLessonContentRow>();
   for (const row of rows ?? []) {
     const r = row as AcademyLessonContentRow;
     map.set(lessonKey(r.course_id, r.lesson_id), r);
   }
+  return map;
+}
+
+const LESSON_CONTENT_MAP_TTL_MS = 10 * 60 * 1000;
+let lessonContentMapCache:
+  | { map: Map<string, AcademyLessonContentRow>; expiresAt: number }
+  | null = null;
+
+function invalidateLessonContentMapCache() {
+  lessonContentMapCache = null;
+}
+
+async function fetchLessonContentMap(): Promise<Map<string, AcademyLessonContentRow>> {
+  const now = Date.now();
+  if (lessonContentMapCache && lessonContentMapCache.expiresAt > now) {
+    return lessonContentMapCache.map;
+  }
+  const map = await fetchLessonContentMapUncached();
+  lessonContentMapCache = {
+    map,
+    expiresAt: now + LESSON_CONTENT_MAP_TTL_MS,
+  };
   return map;
 }
 
@@ -207,6 +235,7 @@ export async function upsertAcademyLessonContent(input: {
   if (error) {
     throw new Error(error.message ?? "Failed to save lesson content.");
   }
+  invalidateLessonContentMapCache();
   return data as AcademyLessonContentRow;
 }
 

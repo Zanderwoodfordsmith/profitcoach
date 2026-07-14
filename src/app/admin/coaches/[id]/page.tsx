@@ -11,6 +11,11 @@ import {
 
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { formatDateDisplay } from "@/lib/formatDateDisplay";
+import {
+  lastLoginFreshness,
+  lastLoginFreshnessClasses,
+} from "@/lib/lastLoginFreshness";
 import {
   formatPaymentDate,
   formatPaymentMoney,
@@ -102,15 +107,6 @@ type CoachPayment = {
 type TabId = "overview" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
-
-function formatDateDisplay(value: Date): string {
-  const currentYear = new Date().getFullYear();
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    ...(value.getFullYear() === currentYear ? {} : { year: "numeric" }),
-  }).format(value);
-}
 
 function formatIsoDate(iso: string | null | undefined): string {
   if (!iso) return "—";
@@ -496,7 +492,23 @@ export default function AdminCoachDetailPage({
               <SectionCard title="Member" description="Core membership details.">
                 <dl className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   <DetailField label="Clients" value={String(coach.client_count)} />
-                  <DetailField label="Last login" value={formatIsoDate(coach.last_login_at)} />
+                  <DetailField label="Last login">
+                    {coach.last_login_at ? (
+                      <span
+                        className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses(
+                          lastLoginFreshness(coach.last_login_at)
+                        )}`}
+                      >
+                        {formatIsoDate(coach.last_login_at)}
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses("cold")}`}
+                      >
+                        Never
+                      </span>
+                    )}
+                  </DetailField>
                   <DetailField label="Conference" value={coach.conference_status ?? "Not set"} />
                   <DetailField
                     label="LinkedIn"

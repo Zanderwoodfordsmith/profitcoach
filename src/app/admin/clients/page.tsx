@@ -4,6 +4,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
+import { AddClientForm } from "@/components/clients/AddClientForm";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -39,7 +40,7 @@ export default function AdminClientsPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createSuccess, setCreateSuccess] = useState<string | null>(null);
   const [createdContactId, setCreatedContactId] = useState<string | null>(null);
-  const [newCoachId, setNewCoachId] = useState<string>("");
+  const [newCoachId, setNewCoachId] = useState<string>("none");
   const [newFullName, setNewFullName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newBusinessName, setNewBusinessName] = useState("");
@@ -221,96 +222,24 @@ export default function AdminClientsPage() {
       />
 
       {showAddClient && (
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Add client</h2>
-          <form onSubmit={handleCreateClient} className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="space-y-1">
-              <label htmlFor="clientCoach" className="block text-xs font-medium text-slate-700">
-                Coach (optional)
-              </label>
-              <select
-                id="clientCoach"
-                value={newCoachId}
-                onChange={(e) => setNewCoachId(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              >
-                <option value="none">None (unassigned)</option>
-                {coaches.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="clientFullName" className="block text-xs font-medium text-slate-700">
-                Full name
-              </label>
-              <input
-                id="clientFullName"
-                type="text"
-                required
-                value={newFullName}
-                onChange={(e) => setNewFullName(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="clientEmail" className="block text-xs font-medium text-slate-700">
-                Email (optional)
-              </label>
-              <input
-                id="clientEmail"
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="clientBusinessName" className="block text-xs font-medium text-slate-700">
-                Business name (optional)
-              </label>
-              <input
-                id="clientBusinessName"
-                type="text"
-                value={newBusinessName}
-                onChange={(e) => setNewBusinessName(e.target.value)}
-                className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2 md:col-span-2">
-              <button
-                type="submit"
-                disabled={creating}
-                className="inline-flex w-fit items-center rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 disabled:cursor-wait disabled:opacity-70"
-              >
-                {creating ? "Creating…" : "Create client"}
-              </button>
-              {createError && (
-                <p className="text-sm text-rose-600" role="alert">
-                  {createError}
-                </p>
-              )}
-              {createSuccess && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm text-emerald-600" role="status">
-                    {createSuccess}
-                  </p>
-                  {createdContactId && (
-                    <button
-                      type="button"
-                      onClick={() => handleViewAsClient(createdContactId)}
-                      className="text-sm font-medium text-sky-700 underline hover:text-sky-800"
-                    >
-                      View as client →
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          </form>
-        </section>
+        <AddClientForm
+          fullName={newFullName}
+          email={newEmail}
+          businessName={newBusinessName}
+          onFullNameChange={setNewFullName}
+          onEmailChange={setNewEmail}
+          onBusinessNameChange={setNewBusinessName}
+          onSubmit={handleCreateClient}
+          onClose={() => setShowAddClient(false)}
+          creating={creating}
+          createError={createError}
+          createSuccess={createSuccess}
+          createdContactId={createdContactId}
+          onViewAsClient={handleViewAsClient}
+          coachOptions={coaches}
+          selectedCoachId={newCoachId}
+          onCoachIdChange={setNewCoachId}
+        />
       )}
 
       {loading && (

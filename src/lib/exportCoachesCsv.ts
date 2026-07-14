@@ -12,6 +12,7 @@ import {
   downloadCsvFile,
   type CsvCell,
 } from "@/lib/exportCsv";
+import { buildCoachLandingLink } from "@/lib/buildCoachLandingLink";
 import { LADDER_LEVELS } from "@/lib/ladder";
 import type { CoachTableColumnVisibility } from "@/lib/admin/coachTableViews";
 import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
@@ -301,9 +302,7 @@ function getExportCellValue(
     case "directoryBio":
       return yesNo(row.has_directory_bio);
     case "landing":
-      return origin
-        ? `${origin}/landing/a?coach=${encodeURIComponent(row.slug)}`
-        : `/landing/a?coach=${encodeURIComponent(row.slug)}`;
+      return buildCoachLandingLink(row.slug, origin) ?? "";
     default:
       return "";
   }

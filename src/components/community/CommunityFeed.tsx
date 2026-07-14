@@ -11,9 +11,9 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { DateTime } from "luxon";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CreatePostModal } from "@/components/community/CreatePostModal";
-import { PostDetailModal } from "@/components/community/PostDetailModal";
 import { PostCard } from "@/components/community/PostCard";
 import {
   communityAccessHint,
@@ -84,6 +84,14 @@ import {
   buildLoginUrl,
   coachCommunityPathFromAdminPath,
 } from "@/lib/auth/loginReturnPath";
+
+const PostDetailModal = dynamic(
+  () =>
+    import("@/components/community/PostDetailModal").then(
+      (m) => m.PostDetailModal
+    ),
+  { ssr: false }
+);
 
 const POSTS_PER_PAGE = 20;
 /**

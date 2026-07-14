@@ -31,6 +31,53 @@ type ContactRecord = {
   prospect_funnel?: string | null;
 };
 
+/** Unenriched prospect rows for fast list paint; enrich later by id. */
+export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
+  return contacts.map((contact) => {
+    const prospect_status = contact.prospect_status ?? null;
+    return {
+      id: contact.id,
+      full_name: contact.full_name,
+      job_title: contact.job_title ?? null,
+      email: contact.email ?? null,
+      business_name: contact.business_name ?? null,
+      phone: contact.phone ?? null,
+      type: contact.type,
+      prospect_status,
+      status: resolveProspectStatus({
+        prospect_status,
+        last_completed_at: null,
+        next_call: null,
+        last_past_call_status: null,
+        next_action: null,
+      }),
+      coach_id: contact.coach_id ?? undefined,
+      coach_name: contact.coach_name ?? null,
+      coach_business_name: contact.coach_business_name ?? null,
+      boss_score: null,
+      boss_score_at: null,
+      boss_score_report_token: null,
+      boss_score_premium: null,
+      boss_score_premium_at: null,
+      boss_score_premium_source: null,
+      last_assessed_at: null,
+      revenue: null,
+      team_size: null,
+      years_in_business: null,
+      outcome: null,
+      obstacles: null,
+      preferred_support: null,
+      boss_level: null,
+      next_call: null,
+      next_action: null,
+      crm_contact_id: contact.crm_contact_id ?? null,
+      crm_location_id: contact.crm_location_id ?? null,
+      created_at: contact.created_at ?? null,
+      prospect_funnel: contact.prospect_funnel ?? null,
+    };
+  });
+}
+
 export async function enrichProspectRows(
   supabase: SupabaseClient,
   contacts: ContactRecord[]

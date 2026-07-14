@@ -45,6 +45,11 @@ export function parseCoachTableViewsImport(
       views,
       activeViewId,
       autosave: parsed.autosave === true,
+      viewOrder: Array.isArray(parsed.viewOrder)
+        ? parsed.viewOrder.filter((id): id is string => typeof id === "string")
+        : views
+            .filter((view) => view.name.trim().toLowerCase() !== "all")
+            .map((view) => view.id),
     };
   } catch {
     return null;
