@@ -11,7 +11,9 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
 
 export async function GET(request: Request) {
-  const authCheck = await requireCoachRequest(request);
+  const authCheck = await requireCoachRequest(request, {
+    allowAdminSelf: true,
+  });
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },
@@ -322,7 +324,9 @@ type PatchBody = {
 };
 
 export async function PATCH(request: Request) {
-  const authCheck = await requireCoachRequest(request);
+  const authCheck = await requireCoachRequest(request, {
+    allowAdminSelf: true,
+  });
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },

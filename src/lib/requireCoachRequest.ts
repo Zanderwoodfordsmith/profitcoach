@@ -1,6 +1,16 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-export async function requireCoachRequest(request: Request): Promise<
+export async function requireCoachRequest(
+  request: Request,
+  options?: {
+    /**
+     * When true, admins may access the resource as themselves (no
+     * x-impersonate-coach-id). Used for account settings (profile/avatar).
+     * Other coach resources still require impersonation.
+     */
+    allowAdminSelf?: boolean;
+  }
+): Promise<
   | {
       error:
         | "Missing access token."
@@ -43,7 +53,11 @@ export async function requireCoachRequest(request: Request): Promise<
     return { error: "Not authorized." as const, userId: null };
   }
 
-  if (profile.role === "admin" && !impersonateId) {
+  if (
+    profile.role === "admin" &&
+    !impersonateId &&
+    !options?.allowAdminSelf
+  ) {
     return {
       error: "Admin must pass x-impersonate-coach-id for this resource." as const,
       userId: null,

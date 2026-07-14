@@ -11,7 +11,9 @@ const EXT_BY_TYPE: Record<string, string> = {
 };
 
 export async function POST(request: Request) {
-  const authCheck = await requireCoachRequest(request);
+  const authCheck = await requireCoachRequest(request, {
+    allowAdminSelf: true,
+  });
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },
@@ -93,7 +95,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const authCheck = await requireCoachRequest(request);
+  const authCheck = await requireCoachRequest(request, {
+    allowAdminSelf: true,
+  });
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },
