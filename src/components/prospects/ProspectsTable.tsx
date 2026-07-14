@@ -48,6 +48,8 @@ import { splitFullName } from "@/lib/splitFullName";
 export type { ProspectRow };
 
 type AssessmentFilter = "all" | "assessed" | "not_assessed";
+type BossScoreFilter = "all" | "completed" | "not_completed";
+type BossProFilter = "all" | "completed" | "not_completed";
 type NextCallFilter = "all" | "has_call" | "no_call";
 type NextCallStatusFilter = "all" | "booked" | "confirmed" | "other";
 type ProspectStatusFilter = "all" | import("@/lib/prospectStatus").ProspectStatusValue;
@@ -452,6 +454,9 @@ export function ProspectsTable({
   const [emailColumnExpanded, setEmailColumnExpanded] = useState(false);
   const [assessmentFilter, setAssessmentFilter] =
     useState<AssessmentFilter>("all");
+  const [bossScoreFilter, setBossScoreFilter] =
+    useState<BossScoreFilter>("all");
+  const [bossProFilter, setBossProFilter] = useState<BossProFilter>("all");
   const [nextCallFilter, setNextCallFilter] = useState<NextCallFilter>("all");
   const [nextCallStatusFilter, setNextCallStatusFilter] =
     useState<NextCallStatusFilter>("all");
@@ -567,6 +572,8 @@ export function ProspectsTable({
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (assessmentFilter !== "all") count += 1;
+    if (bossScoreFilter !== "all") count += 1;
+    if (bossProFilter !== "all") count += 1;
     if (nextCallFilter !== "all") count += 1;
     if (nextCallStatusFilter !== "all") count += 1;
     if (statusFilter !== "all") count += 1;
@@ -574,6 +581,8 @@ export function ProspectsTable({
     return count;
   }, [
     assessmentFilter,
+    bossScoreFilter,
+    bossProFilter,
     nextCallFilter,
     nextCallStatusFilter,
     statusFilter,
@@ -681,6 +690,20 @@ export function ProspectsTable({
         return false;
       }
 
+      if (bossScoreFilter === "completed" && p.boss_score == null) {
+        return false;
+      }
+      if (bossScoreFilter === "not_completed" && p.boss_score != null) {
+        return false;
+      }
+
+      if (bossProFilter === "completed" && p.boss_score_premium == null) {
+        return false;
+      }
+      if (bossProFilter === "not_completed" && p.boss_score_premium != null) {
+        return false;
+      }
+
       if (nextCallFilter === "has_call" && !p.next_call?.start_time) {
         return false;
       }
@@ -713,6 +736,8 @@ export function ProspectsTable({
     prospects,
     searchTerm,
     assessmentFilter,
+    bossScoreFilter,
+    bossProFilter,
     nextCallFilter,
     nextCallStatusFilter,
     statusFilter,
@@ -808,6 +833,8 @@ export function ProspectsTable({
   }, [
     searchTerm,
     assessmentFilter,
+    bossScoreFilter,
+    bossProFilter,
     nextCallFilter,
     nextCallStatusFilter,
     statusFilter,
@@ -1744,6 +1771,46 @@ export function ProspectsTable({
                       <option value="all">All</option>
                       <option value="assessed">Assessed</option>
                       <option value="not_assessed">Not assessed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="prospect-boss-score-filter"
+                      className="mb-1 block text-xs font-medium text-slate-600"
+                    >
+                      Boss
+                    </label>
+                    <select
+                      id="prospect-boss-score-filter"
+                      value={bossScoreFilter}
+                      onChange={(e) =>
+                        setBossScoreFilter(e.target.value as BossScoreFilter)
+                      }
+                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="all">All</option>
+                      <option value="completed">Completed</option>
+                      <option value="not_completed">Not completed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="prospect-boss-pro-filter"
+                      className="mb-1 block text-xs font-medium text-slate-600"
+                    >
+                      Boss Pro
+                    </label>
+                    <select
+                      id="prospect-boss-pro-filter"
+                      value={bossProFilter}
+                      onChange={(e) =>
+                        setBossProFilter(e.target.value as BossProFilter)
+                      }
+                      className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="all">All</option>
+                      <option value="completed">Completed</option>
+                      <option value="not_completed">Not completed</option>
                     </select>
                   </div>
                   <div>
