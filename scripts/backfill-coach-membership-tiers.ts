@@ -2,11 +2,14 @@
  * One-time backfill: set each coach's access_tier from their billing status.
  *
  * Rule (as agreed):
- *   - Covered -> premium, when ANY of:
+ *   - Build phase (first_6_months / within 6 months of earliest payment) -> programme
+ *   - Covered paying -> premium, when ANY of:
  *       * active recurring billing (e.g. £495/£399 paid within the last 75 days)
- *       * recurring_payment_status of monthly | annual_prepaid | first_6_months | complimentary
- *       * still within their first 6 months (build phase), based on earliest succeeded payment
+ *       * recurring_payment_status of monthly | annual_prepaid | complimentary
  *   - Otherwise (outside 6 months and not currently paying) -> alumni
+ *
+ * Prefer the DB function refresh_coach_programme_status() (join-date based) for
+ * programme assignment; this script remains a billing-signal fallback.
  *
  * Safety:
  *   - DRY RUN BY DEFAULT. Nothing is written unless you pass --apply.
@@ -51,7 +54,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-/** First 6 months = build phase; treat these coaches as covered (premium). */
+/** First 6 months = build phase; treat these coaches as programme. */
 const BUILD_PHASE_MONTHS = 6;
 
 function buildPhaseCutoffIso(): string {
@@ -129,6 +132,7 @@ async function main() {
     }
   }
 
+  let toProgramme = 0;
   let toPremium = 0;
   let toAlumni = 0;
   let unchanged = 0;
@@ -145,12 +149,16 @@ async function main() {
       continue;
     }
 
-    if (row.access_tier_locked || row.access_tier === "do_not_contact") {
+    if (
+      row.access_tier_locked ||
+      row.access_tier === "do_not_contact" ||
+      row.access_tier === "early_exit"
+    ) {
       skippedLocked++;
       continue;
     }
 
-    const current = (row.access_tier as CoachAccessTier | null) ?? "premium";
+    const current = (row.access_tier as CoachAccessTier | null) ?? "programme";
     const statusRaw = (row.recurring_payment_status as string | null) ?? null;
     const status =
       statusRaw && isCoachRecurringPaymentStatus(statusRaw) ? statusRaw : null;
@@ -160,12 +168,17 @@ async function main() {
       paymentsByCoach.get(coachId) ?? [],
       earliestPaidByCoach.get(coachId) ?? null
     );
-    const target: CoachAccessTier = covered ? "premium" : "alumni";
+    const target: CoachAccessTier =
+      covered === "within first 6 months" || status === "first_6_months"
+        ? "programme"
+        : covered
+          ? "premium"
+          : "alumni";
 
     if (target === current) {
       unchanged++;
       if (verbose && covered) {
-        console.log(`  keep premium: ${slug} (${fullName})  [${covered}]`);
+        console.log(`  keep ${target}: ${slug} (${fullName})  [${covered}]`);
       }
       continue;
     }
@@ -175,13 +188,21 @@ async function main() {
       `${dryRun ? "[dry-run] " : ""}${slug} (${fullName}): ${current} → ${target}  [${reason}]`
     );
 
-    if (target === "premium") toPremium++;
+    if (target === "programme") toProgramme++;
+    else if (target === "premium") toPremium++;
     else toAlumni++;
 
     if (apply) {
+      const updates: {
+        access_tier: CoachAccessTier;
+        recurring_payment_status?: CoachRecurringPaymentStatus | null;
+      } = { access_tier: target };
+      if (target === "programme") {
+        updates.recurring_payment_status = "first_6_months";
+      }
       const { error } = await supabase
         .from("coaches")
-        .update({ access_tier: target })
+        .update(updates)
         .eq("id", coachId);
       if (error) {
         console.error(`Failed ${slug}:`, error.message);
@@ -193,6 +214,7 @@ async function main() {
   console.log("\n--- Summary ---");
   console.log(`Mode: ${dryRun ? "DRY RUN (no writes)" : "APPLIED"}`);
   console.log(`Coaches checked: ${coaches?.length ?? 0}`);
+  console.log(`${dryRun ? "Would set" : "Set"} → programme: ${toProgramme}`);
   console.log(`${dryRun ? "Would set" : "Set"} → premium: ${toPremium}`);
   console.log(`${dryRun ? "Would set" : "Set"} → alumni: ${toAlumni}`);
   console.log(`Unchanged: ${unchanged}`);

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   Download,
+  LayoutList,
   Lock,
   RotateCcw,
   Save,
@@ -18,8 +19,14 @@ type Props = {
   isDirty: boolean;
   autosave: boolean;
   canEditActiveView: boolean;
+  /** True when the active tab is the shared All view. */
+  activeViewIsAll?: boolean;
+  /** Current settings differ from the shared All view. */
+  canUpdateAllView?: boolean;
   activeViewIsPrivate: boolean;
+  error?: string | null;
   onSave: () => void;
+  onUpdateAll?: () => void;
   onToggleAutosave: () => void;
   onSaveAsNew: (name: string, isPrivate: boolean) => void;
   onRevert: () => void;
@@ -64,8 +71,12 @@ export function CoachesSaveViewButton({
   isDirty,
   autosave,
   canEditActiveView,
+  activeViewIsAll = false,
+  canUpdateAllView = false,
   activeViewIsPrivate,
+  error = null,
   onSave,
+  onUpdateAll,
   onToggleAutosave,
   onSaveAsNew,
   onRevert,
@@ -120,9 +131,11 @@ export function CoachesSaveViewButton({
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((open) => !open)}
         className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition ${
-          showDirty
-            ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
-            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+          error
+            ? "border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+            : showDirty
+              ? "border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
         }`}
       >
         Save view
@@ -134,9 +147,20 @@ export function CoachesSaveViewButton({
           role="menu"
           className="absolute right-0 z-[90] mt-1 w-64 rounded-md border border-slate-200 bg-white py-1 shadow-lg"
         >
+          {error ? (
+            <p className="border-b border-red-100 px-2.5 py-2 text-xs text-red-700">
+              {error}
+            </p>
+          ) : null}
           <SaveViewMenuItem
             icon={<Save className="h-4 w-4" aria-hidden />}
-            label={canEditActiveView ? "Save view" : "Save view (read-only)"}
+            label={
+              !canEditActiveView
+                ? "Save view (read-only)"
+                : activeViewIsAll
+                  ? "Save All view"
+                  : "Save view"
+            }
             shortcut="⌘S"
             disabled={!canEditActiveView || (!isDirty && !autosave)}
             onClick={() => {
@@ -144,6 +168,17 @@ export function CoachesSaveViewButton({
               setMenuOpen(false);
             }}
           />
+          {onUpdateAll && !activeViewIsAll ? (
+            <SaveViewMenuItem
+              icon={<LayoutList className="h-4 w-4" aria-hidden />}
+              label="Save settings to All"
+              disabled={!canUpdateAllView}
+              onClick={() => {
+                onUpdateAll();
+                setMenuOpen(false);
+              }}
+            />
+          ) : null}
           <SaveViewMenuItem
             icon={
               autosave ? (

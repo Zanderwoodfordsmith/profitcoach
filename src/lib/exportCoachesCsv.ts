@@ -21,6 +21,7 @@ import { formatCoachPaymentsExportValue } from "@/lib/admin/coachPaymentSummary"
 export type CoachExportRow = {
   id: string;
   slug: string;
+  email: string | null;
   full_name: string | null;
   coach_business_name: string | null;
   linkedin_url: string | null;
@@ -61,6 +62,7 @@ export type CoachExportColumnKey =
   | "coach"
   | "business"
   | "slug"
+  | "email"
   | "joinDate"
   | "goalLevel"
   | "clients"
@@ -97,6 +99,7 @@ const EXPORT_COLUMN_DEFS: Array<{ key: CoachExportColumnKey; label: string }> =
     { key: "coach", label: "Coach" },
     { key: "business", label: "Business" },
     { key: "slug", label: "Slug" },
+    { key: "email", label: "Email" },
     { key: "joinDate", label: "Join date" },
     { key: "goalLevel", label: "Goal income" },
     { key: "clients", label: "Clients" },
@@ -133,6 +136,7 @@ const TABLE_KEY_TO_EXPORT: Partial<
   Record<CoachTableColumnKey, CoachExportColumnKey[]>
 > = {
   slug: ["slug"],
+  email: ["email"],
   joinDate: ["joinDate"],
   goalLevel: ["goalLevel"],
   clients: ["clients"],
@@ -234,6 +238,8 @@ function getExportCellValue(
       return row.coach_business_name ?? "";
     case "slug":
       return row.slug;
+    case "email":
+      return row.email ?? "";
     case "joinDate":
       if (!row.joined_at) return "";
       return `${formatIsoDate(row.joined_at)} (${formatMemberFor(row.joined_at)})`;
@@ -309,7 +315,7 @@ function getExportCellValue(
 }
 
 function buildExportColumnKeys(input: ExportCoachesCsvInput): CoachExportColumnKey[] {
-  const keys: CoachExportColumnKey[] = ["coach", "business"];
+  const keys: CoachExportColumnKey[] = ["coach", "business", "email"];
   const seen = new Set<CoachExportColumnKey>(keys);
 
   for (const tableKey of input.columnOrder) {

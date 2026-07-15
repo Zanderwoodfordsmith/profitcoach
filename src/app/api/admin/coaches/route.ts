@@ -152,6 +152,7 @@ export async function GET(request: Request) {
     const ids = rows.map((r) => r.id as string);
     const idSet = new Set(ids);
     const lastLoginByUserId = new Map<string, string | null>();
+    const emailByUserId = new Map<string, string | null>();
 
     if (ids.length > 0) {
       const authUsersRes = await supabaseAdmin.auth.admin.listUsers({
@@ -162,6 +163,7 @@ export async function GET(request: Request) {
         for (const user of authUsersRes.data.users ?? []) {
           if (idSet.has(user.id)) {
             lastLoginByUserId.set(user.id, user.last_sign_in_at ?? null);
+            emailByUserId.set(user.id, user.email ?? null);
           }
         }
       }
@@ -353,7 +355,7 @@ export async function GET(request: Request) {
           : buildCoachPaymentSummary(paymentsByCoachId.get(id) ?? []),
         access_tier: accessTierMissing
           ? "premium"
-          : normalizeCoachAccessTier(row.access_tier) ?? "premium",
+          : normalizeCoachAccessTier(row.access_tier) ?? "programme",
         access_tier_locked: accessTierMissing
           ? false
           : Boolean(row.access_tier_locked),
@@ -365,6 +367,7 @@ export async function GET(request: Request) {
           ? null
           : (prof?.ladder_goal_target_date as string | null) ?? null,
         last_login_at: lastLoginByUserId.get(id) ?? null,
+        email: emailByUserId.get(id) ?? null,
       };
     });
 

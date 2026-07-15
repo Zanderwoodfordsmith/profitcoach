@@ -22,6 +22,7 @@ import type {
 import {
   createDefaultCoachTableViewSettings,
   DEFAULT_COACH_SORTS,
+  isDefaultCoachTableViewName,
 } from "@/lib/admin/coachTableViews";
 import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
 import {
@@ -301,6 +302,7 @@ function ReadonlyLadderLevelCell({
 type CoachRow = {
   id: string;
   slug: string;
+  email: string | null;
   full_name: string | null;
   avatar_url: string | null;
   coach_business_name: string | null;
@@ -353,6 +355,7 @@ type RecurringBillingFilter = "all" | "active" | "inactive";
 
 type CoachTableColumnVisibility = {
   slug: boolean;
+  email: boolean;
   joinDate: boolean;
   goalLevel: boolean;
   clients: boolean;
@@ -395,6 +398,7 @@ type PersistedCoachTableSettings = {
 
 const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   slug: true,
+  email: true,
   joinDate: true,
   goalLevel: true,
   clients: true,
@@ -450,6 +454,7 @@ const COACH_TABLE_COLUMN_GROUPS: Array<{
 
 const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "slug", label: "Slug", category: "member" },
+  { key: "email", label: "Email", category: "member" },
   { key: "joinDate", label: "Join date", category: "member" },
   { key: "clients", label: "Clients", category: "member" },
   { key: "linkedinProfile", label: "LinkedIn", category: "member" },
@@ -653,7 +658,9 @@ function conferenceStatusClasses(status: CoachRow["conference_status"]): string 
 
 function accessTierClasses(tier: CoachAccessTier): string {
   if (tier === "do_not_contact") return "bg-rose-100 text-rose-800";
+  if (tier === "early_exit") return "bg-orange-100 text-orange-900";
   if (tier === "alumni") return "bg-violet-100 text-violet-800";
+  if (tier === "programme") return "bg-sky-100 text-sky-900";
   if (tier === "premium") return "bg-amber-100 text-amber-900";
   return "bg-emerald-100 text-emerald-800";
 }
@@ -662,12 +669,21 @@ function isDoNotContactCoach(coach: Pick<CoachRow, "access_tier">): boolean {
   return normalizeCoachAccessTier(coach.access_tier) === "do_not_contact";
 }
 
+function isEarlyExitCoach(coach: Pick<CoachRow, "access_tier">): boolean {
+  return normalizeCoachAccessTier(coach.access_tier) === "early_exit";
+}
+
 function coachTableRowClasses(coach: CoachRow, selected: boolean): string {
   const base = "border-t border-slate-100";
   if (isDoNotContactCoach(coach)) {
     return selected
       ? `${base} bg-rose-200/70 hover:bg-rose-200/80`
       : `${base} bg-rose-100 hover:bg-rose-100/90`;
+  }
+  if (isEarlyExitCoach(coach)) {
+    return selected
+      ? `${base} bg-orange-200/60 hover:bg-orange-200/70`
+      : `${base} bg-orange-50 hover:bg-orange-50/90`;
   }
   if (selected) return `${base} hover:bg-slate-50 bg-sky-50/40`;
   return `${base} hover:bg-slate-50`;
@@ -1106,7 +1122,8 @@ export default function AdminPage() {
                 ...(body.access_tier !== undefined
                   ? {
                       access_tier: body.access_tier,
-                      ...(body.access_tier === "do_not_contact"
+                      ...(body.access_tier === "do_not_contact" ||
+                      body.access_tier === "early_exit"
                         ? { access_tier_locked: true }
                         : {}),
                     }
@@ -1280,6 +1297,9 @@ export default function AdminPage() {
     .filter((coach) => {
       const matchesName = normalizedCoachSearchTerm
         ? (coach.full_name ?? "")
+            .toLowerCase()
+            .includes(normalizedCoachSearchTerm) ||
+          (coach.email ?? "")
             .toLowerCase()
             .includes(normalizedCoachSearchTerm)
         : true;
@@ -1518,6 +1538,9 @@ export default function AdminPage() {
     if (key === "slug") {
       return <th className="sticky top-0 z-10 bg-slate-50 px-3 py-2">Slug</th>;
     }
+    if (key === "email") {
+      return <th className="sticky top-0 z-10 bg-slate-50 px-3 py-2">Email</th>;
+    }
     if (key === "joinDate") {
       return (
         <th className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2">
@@ -1715,6 +1738,13 @@ export default function AdminPage() {
   ) {
     if (key === "slug") {
       return <td className="px-3 py-2 font-mono text-xs text-slate-500">{coach.slug}</td>;
+    }
+    if (key === "email") {
+      return (
+        <td className="max-w-[14rem] truncate px-3 py-2 text-xs text-slate-600" title={coach.email ?? ""}>
+          {coach.email ?? <span className="text-slate-400">—</span>}
+        </td>
+      );
     }
     if (key === "joinDate") {
       return (
@@ -2085,20 +2115,20 @@ export default function AdminPage() {
           <div className="flex min-w-[10rem] flex-col gap-1">
             <select
               title="Coach access tier"
-              value={normalizeCoachAccessTier(coach.access_tier) ?? "premium"}
+              value={normalizeCoachAccessTier(coach.access_tier) ?? "programme"}
               disabled={directorySavingId === coach.id}
               onChange={(e) => {
                 const nextTier = normalizeCoachAccessTier(e.target.value);
                 if (!nextTier) return;
                 void patchCoachRow(coach.id, {
                   access_tier: nextTier,
-                  ...(nextTier === "do_not_contact"
+                  ...(nextTier === "do_not_contact" || nextTier === "early_exit"
                     ? { access_tier_locked: true }
                     : {}),
                 });
               }}
               className={`max-w-full cursor-pointer rounded px-1 py-0.5 text-xs font-medium shadow-none ring-0 hover:opacity-90 focus:ring-0 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${accessTierClasses(
-                normalizeCoachAccessTier(coach.access_tier) ?? "premium"
+                normalizeCoachAccessTier(coach.access_tier) ?? "programme"
               )}`}
             >
               {COACH_ACCESS_TIERS.map((tier) => (
@@ -2122,7 +2152,8 @@ export default function AdminPage() {
               Lock tier
             </label>
             {!coach.access_tier_locked &&
-            normalizeCoachAccessTier(coach.access_tier) !== "do_not_contact" ? (
+            normalizeCoachAccessTier(coach.access_tier) !== "do_not_contact" &&
+            normalizeCoachAccessTier(coach.access_tier) !== "early_exit" ? (
               <button
                 type="button"
                 disabled={directorySavingId === coach.id}
@@ -2812,9 +2843,18 @@ export default function AdminPage() {
                 isDirty={coachTableViews.isDirty}
                 autosave={coachTableViews.autosave}
                 canEditActiveView={coachTableViews.canEditActiveView}
+                activeViewIsAll={Boolean(
+                  coachTableViews.activeView &&
+                    isDefaultCoachTableViewName(coachTableViews.activeView.name)
+                )}
+                canUpdateAllView={coachTableViews.canUpdateAllView}
                 activeViewIsPrivate={coachTableViews.activeView?.isPrivate ?? false}
+                error={coachTableViews.error}
                 onSave={() => {
                   void coachTableViews.saveView();
+                }}
+                onUpdateAll={() => {
+                  void coachTableViews.updateAllView();
                 }}
                 onToggleAutosave={() => {
                   void coachTableViews.toggleAutosave();
@@ -2824,7 +2864,9 @@ export default function AdminPage() {
                 }}
                 onRevert={coachTableViews.revertChanges}
                 onTogglePrivacy={
-                  coachTableViews.activeViewId
+                  coachTableViews.activeViewId &&
+                  coachTableViews.activeView &&
+                  !isDefaultCoachTableViewName(coachTableViews.activeView.name)
                     ? (isPrivate) => {
                         void coachTableViews.setViewPrivacy(
                           coachTableViews.activeViewId!,

@@ -116,7 +116,7 @@ export function communityAccessHint(errorMessage: string): string | null {
     m.includes("policy") ||
     m.includes("permission denied")
   ) {
-    return "Community access was denied by the database (RLS). Check profiles.role is coach/admin, you have a community_staff_snapshot row, and (if membership enforcement is on) access_tier is not alumni/do_not_contact.";
+    return "Community access was denied by the database (RLS). Check profiles.role is coach/admin, you have a community_staff_snapshot row, and (if membership enforcement is on) access_tier allows community access (not alumni/early_exit/do_not_contact).";
   }
   if (
     m.includes("jwt") ||

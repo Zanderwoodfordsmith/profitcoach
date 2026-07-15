@@ -37,6 +37,7 @@ import {
 import {
   formatMembershipPrice,
   MEMBERSHIP_PLANS,
+  membershipCheckoutHref,
   type MembershipInterval,
   type MembershipPlanKey,
 } from "@/config/membershipPlans";
@@ -843,10 +844,6 @@ export function MembershipPageClient() {
   const { impersonatingCoachId } = useImpersonation();
   const [data, setData] = useState<MembershipPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [actionCheckout, setActionCheckout] = useState<{
-    plan: MembershipPlanKey;
-    interval: MembershipInterval;
-  } | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [infoFeature, setInfoFeature] = useState<string | null>(null);
@@ -913,29 +910,6 @@ export function MembershipPageClient() {
   const success = searchParams.get("success") === "1";
   const updated = searchParams.get("updated") === "1";
 
-  async function startCheckout(plan: MembershipPlanKey, interval: MembershipInterval) {
-    setActionCheckout({ plan, interval });
-    setError(null);
-    try {
-      const headers = await getHeaders();
-      const res = await fetch("/api/coach/membership", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ plan, interval }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-      if (!res.ok || !body.url) {
-        setError(body.error ?? "Checkout failed.");
-        return;
-      }
-      navigateTopWindow(body.url);
-    } catch {
-      setError("Checkout failed.");
-    } finally {
-      setActionCheckout(null);
-    }
-  }
-
   async function openPortal() {
     setPortalLoading(true);
     setError(null);
@@ -962,7 +936,9 @@ export function MembershipPageClient() {
   const hasSubscription = Boolean(data?.subscription.status);
   const isAdminPreview = Boolean(data?.adminPreview);
   const inFirstSixMonths =
-    !hasSubscription && data?.recurringPaymentStatus === "first_6_months";
+    !hasSubscription &&
+    (data?.recurringPaymentStatus === "first_6_months" ||
+      data?.tier === "programme");
   const isComplimentary =
     !hasSubscription && data?.recurringPaymentStatus === "complimentary";
   const needsChoice = Boolean(data?.needsPaymentChoice);
@@ -1431,10 +1407,8 @@ export function MembershipPageClient() {
                       const isCurrentTier = Boolean(planInfo?.isCurrent);
                       const isCurrentMonthly = isCurrentTier && subInterval === "month";
                       const isCurrentAnnual = isCurrentTier && subInterval === "year";
-                      const monthlyCheckoutOk = planInfo?.checkoutAvailable.month;
-                      const checkoutBusy = actionCheckout !== null;
-                      const monthlyLoading =
-                        actionCheckout?.plan === key && actionCheckout.interval === "month";
+                      const monthlyCheckoutOk = planInfo?.checkoutAvailable.month !== false;
+                      const checkoutHref = membershipCheckoutHref(key, "month");
 
                       const actionLabel = isCurrentMonthly
                         ? "Current plan"
@@ -1446,57 +1420,75 @@ export function MembershipPageClient() {
                               ? `Switch to ${tierCopy.name}`
                               : `Join ${tierCopy.name}`;
 
+                      const ctaClass = `inline-flex w-full max-w-[180px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-3 transition ${
+                        isPremiumCol ? "text-white hover:brightness-110" : "hover:shadow-sm"
+                      }`;
+                      const ctaStyle = isPremiumCol
+                        ? { background: GO_GRADIENT, boxShadow: GO_SHADOW }
+                        : {
+                            backgroundColor: "#fff",
+                            border: "1px solid #e2e8f0",
+                            color: CHATHAMS,
+                          };
+                      const priceClass = `text-[12px] font-medium leading-tight ${
+                        isPremiumCol ? "text-white/75" : "text-slate-500"
+                      }`;
+
                       return (
                         <td
                           key={key}
                           className="px-4 py-6 text-center align-middle"
                           style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
                         >
-                          {data?.stripeConfigured && !isAdminPreview ? (
-                            <button
-                              type="button"
-                              disabled={
-                                !monthlyCheckoutOk || checkoutBusy || isCurrentMonthly
-                              }
-                              onClick={() => void startCheckout(key, "month")}
-                              className={`inline-flex w-full max-w-[180px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-3 transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                                isPremiumCol ? "text-white hover:brightness-110" : "hover:shadow-sm"
-                              }`}
-                              style={
-                                isPremiumCol
-                                  ? { background: GO_GRADIENT, boxShadow: GO_SHADOW }
-                                  : {
-                                      backgroundColor: "#fff",
-                                      border: "1px solid #e2e8f0",
-                                      color: CHATHAMS,
-                                    }
-                              }
+                          {isAdminPreview ? (
+                            <div className="mx-auto inline-flex max-w-[180px] flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
+                              <span className="text-[12.5px] font-medium text-slate-400">
+                                Admin preview
+                              </span>
+                              <span
+                                className="mt-0.5 text-[12px] font-medium text-slate-500"
+                                style={{ fontFamily: MONO }}
+                              >
+                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
+                              </span>
+                            </div>
+                          ) : isCurrentMonthly ? (
+                            <div
+                              className={`${ctaClass} cursor-default opacity-60`}
+                              style={ctaStyle}
                             >
-                              {monthlyLoading ? (
-                                <span className="inline-flex items-center gap-2 text-[13.5px] font-semibold">
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  Redirecting…
-                                </span>
-                              ) : (
-                                <>
-                                  <span className="text-[13.5px] font-semibold leading-tight">
-                                    {actionLabel}
-                                  </span>
-                                  <span
-                                    className={`text-[12px] font-medium leading-tight ${
-                                      isPremiumCol ? "text-white/75" : "text-slate-500"
-                                    }`}
-                                    style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
-                                  >
-                                    {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
-                                  </span>
-                                </>
-                              )}
-                            </button>
+                              <span className="text-[13.5px] font-semibold leading-tight">
+                                {actionLabel}
+                              </span>
+                              <span
+                                className={priceClass}
+                                style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
+                              >
+                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
+                              </span>
+                            </div>
+                          ) : monthlyCheckoutOk ? (
+                            <a
+                              href={checkoutHref}
+                              target="_top"
+                              rel="noopener noreferrer"
+                              className={ctaClass}
+                              style={ctaStyle}
+                            >
+                              <span className="text-[13.5px] font-semibold leading-tight">
+                                {actionLabel}
+                              </span>
+                              <span
+                                className={priceClass}
+                                style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
+                              >
+                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
+                              </span>
+                            </a>
                           ) : (
                             <div className="mx-auto inline-flex max-w-[180px] flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
                               <span className="text-[12.5px] font-medium text-slate-400">
-                                {isAdminPreview ? "Admin preview" : "Coming soon"}
+                                Coming soon
                               </span>
                               <span
                                 className="mt-0.5 text-[12px] font-medium text-slate-500"

@@ -30,6 +30,7 @@ export const DEFAULT_COACH_SORTS: CoachSortCriterion[] = [
 
 export type CoachTableColumnVisibility = {
   slug: boolean;
+  email: boolean;
   joinDate: boolean;
   goalLevel: boolean;
   clients: boolean;
@@ -161,6 +162,7 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   keyof CoachTableColumnVisibility
 > = [
   "slug",
+  "email",
   "joinDate",
   "clients",
   "linkedinProfile",
@@ -190,6 +192,7 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
 
 export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   slug: true,
+  email: true,
   joinDate: true,
   goalLevel: true,
   clients: true,

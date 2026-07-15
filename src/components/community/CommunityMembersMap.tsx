@@ -94,8 +94,8 @@ export function CommunityMembersMap() {
   }, []);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="relative h-[calc(100vh-220px)] min-h-[480px] w-full">
+    <div className="relative z-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative z-0 h-[calc(100vh-220px)] min-h-[480px] w-full">
         {state.status === "loading" ? (
           <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
             Loading members map…

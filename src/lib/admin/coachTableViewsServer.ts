@@ -45,7 +45,8 @@ function mapViewRow(row: CoachTableViewRow, currentUserId: string): CoachTableVi
       createdBy: row.created_by,
       // All is always shared with every admin.
       isPrivate: isAll ? false : row.is_private,
-      canEdit: isAll ? false : row.created_by === currentUserId,
+      // Any admin can edit the shared All settings; custom views stay owner-only.
+      canEdit: isAll ? true : row.created_by === currentUserId,
     }
   );
 }
@@ -214,26 +215,17 @@ async function ensureSharedAllView(
     allRows.find((row) => !row.is_private) ??
     [...allRows].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
 
-  const needsReset =
+  // Keep stored All settings; only force canonical name + shared visibility.
+  const needsCanonicalFix =
     preferred.name.trim() !== DEFAULT_COACH_TABLE_VIEW_NAME ||
-    preferred.is_private ||
-    JSON.stringify(
-      normalizeCoachTableViewSettings(
-        preferred.settings as CoachTableViewSettings & {
-          sortField?: unknown;
-          sortOrder?: unknown;
-          lastLoginSort?: unknown;
-        }
-      )
-    ) !== JSON.stringify(defaultSettings);
+    preferred.is_private;
 
-  if (needsReset) {
+  if (needsCanonicalFix) {
     const { error: resetError } = await supabaseAdmin
       .from("admin_coach_table_views")
       .update({
         name: DEFAULT_COACH_TABLE_VIEW_NAME,
         is_private: false,
-        settings: defaultSettings,
         updated_at: new Date().toISOString(),
       })
       .eq("id", preferred.id);
@@ -243,7 +235,6 @@ async function ensureSharedAllView(
   }
   preferred.name = DEFAULT_COACH_TABLE_VIEW_NAME;
   preferred.is_private = false;
-  preferred.settings = defaultSettings;
 
   const duplicates = allRows.filter((row) => row.id !== preferred.id);
   if (duplicates.length > 0) {
@@ -397,14 +388,15 @@ export async function updateCoachTableViewForAdmin(input: {
     throw new Error("View not found.");
   }
   const existingRow = existing as { created_by: string; name: string };
-  if (existingRow.created_by !== input.userId) {
+  const isAllView = isDefaultCoachTableViewName(existingRow.name);
+  // Any admin may update the shared All view; custom views stay owner-only.
+  if (!isAllView && existingRow.created_by !== input.userId) {
     throw new Error("Not authorized to edit this view.");
   }
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
-  const isAllView = isDefaultCoachTableViewName(existingRow.name);
   if (isAllView) {
     if (typeof input.name === "string" && !isDefaultCoachTableViewName(input.name)) {
       throw new Error("The All view cannot be renamed.");
@@ -412,11 +404,10 @@ export async function updateCoachTableViewForAdmin(input: {
     if (input.isPrivate === true) {
       throw new Error("The All view must stay shared with every admin.");
     }
-    // All stays shared and at default unfiltered settings.
     patch.name = DEFAULT_COACH_TABLE_VIEW_NAME;
     patch.is_private = false;
     if (input.settings) {
-      patch.settings = createDefaultCoachTableViewSettings();
+      patch.settings = normalizeCoachTableViewSettings(input.settings);
     }
   } else {
     if (typeof input.name === "string") {

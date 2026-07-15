@@ -503,7 +503,7 @@ export default function AdminCoachDetailPage({
                       </span>
                     ) : (
                       <span
-                        className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses("cold")}`}
+                        className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses("never")}`}
                       >
                         Never
                       </span>
@@ -565,7 +565,8 @@ export default function AdminCoachDetailPage({
                                 ? {
                                     ...d,
                                     access_tier: nextTier,
-                                    ...(nextTier === "do_not_contact"
+                                    ...(nextTier === "do_not_contact" ||
+                                    nextTier === "early_exit"
                                       ? { access_tier_locked: true }
                                       : {}),
                                   }

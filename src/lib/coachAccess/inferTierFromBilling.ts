@@ -20,7 +20,7 @@ function daysSince(iso: string): number {
   return Math.floor(ms / (24 * 60 * 60 * 1000));
 }
 
-function statusSuggestsPremium(
+function statusSuggestsCovered(
   status: CoachRecurringPaymentStatus | null | undefined
 ): boolean {
   if (!status) return false;
@@ -80,7 +80,15 @@ export function inferTierFromBilling(input: {
     };
   }
 
-  if (statusSuggestsPremium(recurringPaymentStatus)) {
+  if (recurringPaymentStatus === "first_6_months") {
+    return {
+      suggestedTier: "programme",
+      reason: "Billing status is first_6_months (build phase).",
+      confidence: "high",
+    };
+  }
+
+  if (statusSuggestsCovered(recurringPaymentStatus)) {
     return {
       suggestedTier: "premium",
       reason: `Billing status is ${recurringPaymentStatus}.`,

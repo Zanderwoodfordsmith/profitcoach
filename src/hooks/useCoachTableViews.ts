@@ -24,13 +24,7 @@ import {
 } from "@/lib/admin/coachTableViews";
 import { normalizeCoachTableViewSettings } from "@/lib/admin/coachTableSort";
 
-function settingsForView(
-  view: CoachTableView,
-  createDefaultSettings: () => CoachTableViewSettings
-): CoachTableViewSettings {
-  if (isDefaultCoachTableViewName(view.name)) {
-    return createDefaultSettings();
-  }
+function settingsForView(view: CoachTableView): CoachTableViewSettings {
   return view.settings;
 }
 
@@ -237,10 +231,11 @@ export function useCoachTableViews({
     let cancelled = false;
 
     function seedLocalAllView() {
+      const defaults = createDefaultSettings();
       const allView = createCoachTableView(
         DEFAULT_COACH_TABLE_VIEW_NAME,
-        createDefaultSettings(),
-        { isPrivate: false, canEdit: false }
+        defaults,
+        { isPrivate: false, canEdit: true }
       );
       setStorage({
         version: 1,
@@ -249,7 +244,7 @@ export function useCoachTableViews({
         autosave: false,
         viewOrder: [],
       });
-      onApplySettingsRef.current(createDefaultSettings());
+      onApplySettingsRef.current(defaults);
     }
 
     async function load() {
@@ -311,11 +306,7 @@ export function useCoachTableViews({
     );
   }, [storage]);
 
-  const isAllActiveView = Boolean(
-    activeView && isDefaultCoachTableViewName(activeView.name)
-  );
-
-  // On each login / fresh page load, open All with no filters.
+  // On each login / fresh page load, open the shared All view with its saved settings.
   useEffect(() => {
     if (!ready || !hasLoaded || !storage || initialAppliedRef.current) return;
     initialAppliedRef.current = true;
@@ -326,7 +317,7 @@ export function useCoachTableViews({
     if (!allView) return;
 
     applyingViewRef.current = true;
-    onApplySettingsRef.current(createDefaultSettings());
+    onApplySettingsRef.current(settingsForView(allView));
 
     if (storage.activeViewId !== allView.id) {
       setStorage((prev) =>
@@ -355,26 +346,21 @@ export function useCoachTableViews({
     queueMicrotask(() => {
       applyingViewRef.current = false;
     });
-  }, [createDefaultSettings, hasLoaded, ready, runMutation, storage]);
+  }, [hasLoaded, ready, runMutation, storage]);
 
-  // All is a clean workspace; saves go through "Save as new".
-  const canEditActiveView =
-    Boolean(activeView?.canEdit) && !isAllActiveView;
+  const canEditActiveView = Boolean(activeView?.canEdit);
 
   const isDirty = useMemo(() => {
     if (!activeView) return false;
-    const baseline = settingsForView(activeView, createDefaultSettings);
-    return !coachTableViewSettingsEqual(currentSettings, baseline);
-  }, [activeView, createDefaultSettings, currentSettings]);
+    return !coachTableViewSettingsEqual(
+      currentSettings,
+      settingsForView(activeView)
+    );
+  }, [activeView, currentSettings]);
 
   const updateActiveViewSettings = useCallback(
     async (settings: CoachTableViewSettings) => {
-      if (
-        !storage ||
-        !activeView ||
-        !activeView.canEdit ||
-        isDefaultCoachTableViewName(activeView.name)
-      ) {
+      if (!storage || !activeView || !activeView.canEdit) {
         return;
       }
       await runMutation((token) =>
@@ -410,7 +396,7 @@ export function useCoachTableViews({
       const view = storage.views.find((v) => v.id === viewId);
       if (!view) return;
       applyingViewRef.current = true;
-      onApplySettingsRef.current(settingsForView(view, createDefaultSettings));
+      onApplySettingsRef.current(settingsForView(view));
       try {
         await runMutation((token) =>
           updateCoachTableViewPreferencesRemote(token, { activeViewId: viewId })
@@ -423,17 +409,64 @@ export function useCoachTableViews({
         });
       }
     },
-    [createDefaultSettings, runMutation, storage]
+    [runMutation, storage]
   );
 
+  const allView = useMemo(
+    () =>
+      storage?.views.find((view) => isDefaultCoachTableViewName(view.name)) ??
+      null,
+    [storage?.views]
+  );
+
+  const canUpdateAllView = useMemo(() => {
+    if (!allView) return false;
+    return !coachTableViewSettingsEqual(
+      currentSettings,
+      settingsForView(allView)
+    );
+  }, [allView, currentSettings]);
+
   const saveView = useCallback(async () => {
-    if (!canEditActiveView) return;
+    if (!activeView) {
+      setError("No active view to save.");
+      return;
+    }
+    if (!activeView.canEdit) {
+      setError("This view is read-only.");
+      return;
+    }
     try {
-      await updateActiveViewSettings(currentSettings);
+      setError(null);
+      await runMutation((token) =>
+        updateCoachTableViewRemote(token, activeView.id, {
+          settings: currentSettings,
+        })
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save view.");
     }
-  }, [canEditActiveView, currentSettings, updateActiveViewSettings]);
+  }, [activeView, currentSettings, runMutation]);
+
+  /** Push the current table settings onto the shared All view (from any tab). */
+  const updateAllView = useCallback(async () => {
+    if (!allView) {
+      setError("All view not found.");
+      return;
+    }
+    try {
+      setError(null);
+      await runMutation((token) =>
+        updateCoachTableViewRemote(token, allView.id, {
+          settings: currentSettings,
+        })
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to update All view."
+      );
+    }
+  }, [allView, currentSettings, runMutation]);
 
   const saveAsNewView = useCallback(
     async (name: string, isPrivate = false) => {
@@ -442,6 +475,7 @@ export function useCoachTableViews({
       applyingViewRef.current = true;
       onApplySettingsRef.current(currentSettings);
       try {
+        setError(null);
         await runMutation((token) =>
           createCoachTableViewRemote(token, {
             name: trimmed,
@@ -464,13 +498,11 @@ export function useCoachTableViews({
   const revertChanges = useCallback(() => {
     if (!activeView) return;
     applyingViewRef.current = true;
-    onApplySettingsRef.current(
-      settingsForView(activeView, createDefaultSettings)
-    );
+    onApplySettingsRef.current(settingsForView(activeView));
     queueMicrotask(() => {
       applyingViewRef.current = false;
     });
-  }, [activeView, createDefaultSettings]);
+  }, [activeView]);
 
   const toggleAutosave = useCallback(async () => {
     if (!storage) return;
@@ -555,9 +587,7 @@ export function useCoachTableViews({
             payload.views[0];
           if (nextActive) {
             applyingViewRef.current = true;
-            onApplySettingsRef.current(
-              settingsForView(nextActive, createDefaultSettings)
-            );
+            onApplySettingsRef.current(settingsForView(nextActive));
             queueMicrotask(() => {
               applyingViewRef.current = false;
             });
@@ -567,7 +597,7 @@ export function useCoachTableViews({
         setError(err instanceof Error ? err.message : "Unable to delete view.");
       }
     },
-    [createDefaultSettings, runMutation, storage]
+    [runMutation, storage]
   );
 
   const reorderViews = useCallback(
@@ -614,9 +644,7 @@ export function useCoachTableViews({
           payload.views[0];
         if (active) {
           applyingViewRef.current = true;
-          onApplySettingsRef.current(
-            settingsForView(active, createDefaultSettings)
-          );
+          onApplySettingsRef.current(settingsForView(active));
           await updateCoachTableViewPreferencesRemote(token, {
             activeViewId: active.id,
             autosave: next.autosave,
@@ -632,16 +660,18 @@ export function useCoachTableViews({
         setError(err instanceof Error ? err.message : "Unable to import views.");
       }
     },
-    [applyPayload, createDefaultSettings, getAccessToken]
+    [applyPayload, getAccessToken]
   );
 
   return {
     views: storage?.views ?? [],
     activeViewId: storage?.activeViewId ?? null,
     activeView,
+    allView,
     autosave: storage?.autosave ?? false,
     currentUserId,
     canEditActiveView,
+    canUpdateAllView,
     hasLoaded,
     loading,
     error,
@@ -658,6 +688,7 @@ export function useCoachTableViews({
     refreshViews,
     switchView,
     saveView,
+    updateAllView,
     saveAsNewView,
     revertChanges,
     toggleAutosave,

@@ -1,3 +1,4 @@
+import { formatPersonName } from "@/lib/formatPersonName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type CreateCoachRecordsInput = {
@@ -8,6 +9,18 @@ type CreateCoachRecordsInput = {
   businessName: string | null;
   slug: string;
 };
+
+function normalizeCoachNameFields(input: CreateCoachRecordsInput) {
+  const fullName = formatPersonName(input.fullName);
+  const firstName = formatPersonName(input.firstName) || null;
+  const lastName = formatPersonName(input.lastName) || null;
+  return {
+    ...input,
+    fullName: fullName || input.fullName.trim(),
+    firstName,
+    lastName,
+  };
+}
 
 function isStaffSnapshotAccessTierError(error: {
   code?: string;
@@ -25,9 +38,12 @@ async function insertCoachRow(
   userId: string,
   slug: string
 ): Promise<string | null> {
-  const { error } = await supabaseAdmin
-    .from("coaches")
-    .insert({ id: userId, slug });
+  const { error } = await supabaseAdmin.from("coaches").insert({
+    id: userId,
+    slug,
+    access_tier: "programme",
+    recurring_payment_status: "first_6_months",
+  });
 
   if (!error) return null;
 
@@ -45,12 +61,13 @@ async function insertCoachRow(
 async function createCoachProfileAndRowViaBootstrap(
   input: CreateCoachRecordsInput
 ): Promise<string | null> {
+  const normalized = normalizeCoachNameFields(input);
   const profileFields = {
-    id: input.userId,
-    full_name: input.fullName,
-    first_name: input.firstName,
-    last_name: input.lastName,
-    coach_business_name: input.businessName,
+    id: normalized.userId,
+    full_name: normalized.fullName,
+    first_name: normalized.firstName,
+    last_name: normalized.lastName,
+    coach_business_name: normalized.businessName,
   };
 
   const { error: bootstrapProfileError } = await supabaseAdmin
@@ -65,21 +82,24 @@ async function createCoachProfileAndRowViaBootstrap(
     return "Unable to create coach profile.";
   }
 
-  const coachError = await insertCoachRow(input.userId, input.slug);
+  const coachError = await insertCoachRow(
+    normalized.userId,
+    normalized.slug
+  );
   if (coachError) {
-    await supabaseAdmin.from("profiles").delete().eq("id", input.userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", normalized.userId);
     return coachError;
   }
 
   const { error: roleError } = await supabaseAdmin
     .from("profiles")
     .update({ role: "coach" })
-    .eq("id", input.userId);
+    .eq("id", normalized.userId);
 
   if (roleError) {
     console.error("createCoachAccountRecords role update:", roleError);
-    await supabaseAdmin.from("coaches").delete().eq("id", input.userId);
-    await supabaseAdmin.from("profiles").delete().eq("id", input.userId);
+    await supabaseAdmin.from("coaches").delete().eq("id", normalized.userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", normalized.userId);
     return "Unable to create coach profile.";
   }
 
@@ -89,12 +109,13 @@ async function createCoachProfileAndRowViaBootstrap(
 export async function createCoachProfileAndRow(
   input: CreateCoachRecordsInput
 ): Promise<string | null> {
+  const normalized = normalizeCoachNameFields(input);
   const profileFields = {
-    id: input.userId,
-    full_name: input.fullName,
-    first_name: input.firstName,
-    last_name: input.lastName,
-    coach_business_name: input.businessName,
+    id: normalized.userId,
+    full_name: normalized.fullName,
+    first_name: normalized.firstName,
+    last_name: normalized.lastName,
+    coach_business_name: normalized.businessName,
   };
 
   const { error: profileError } = await supabaseAdmin
@@ -103,16 +124,19 @@ export async function createCoachProfileAndRow(
 
   if (profileError) {
     if (isStaffSnapshotAccessTierError(profileError)) {
-      return createCoachProfileAndRowViaBootstrap(input);
+      return createCoachProfileAndRowViaBootstrap(normalized);
     }
 
     console.error("createCoachAccountRecords profile insert:", profileError);
     return "Unable to create coach profile.";
   }
 
-  const coachError = await insertCoachRow(input.userId, input.slug);
+  const coachError = await insertCoachRow(
+    normalized.userId,
+    normalized.slug
+  );
   if (coachError) {
-    await supabaseAdmin.from("profiles").delete().eq("id", input.userId);
+    await supabaseAdmin.from("profiles").delete().eq("id", normalized.userId);
     return coachError;
   }
 

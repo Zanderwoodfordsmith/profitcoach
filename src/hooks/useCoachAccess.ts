@@ -12,7 +12,7 @@ export type CoachAccessState = {
 };
 
 const EMPTY_ACCESS: CoachAccessState = {
-  tier: "premium",
+  tier: "programme",
   tierLocked: false,
   features: [],
   enforcementEnabled: false,

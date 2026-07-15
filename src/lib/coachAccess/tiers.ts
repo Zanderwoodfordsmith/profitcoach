@@ -1,8 +1,10 @@
 export const COACH_ACCESS_TIERS = [
   "alumni",
+  "programme",
   "core",
   "premium",
   "vip",
+  "early_exit",
   "do_not_contact",
 ] as const;
 
@@ -10,9 +12,11 @@ export type CoachAccessTier = (typeof COACH_ACCESS_TIERS)[number];
 
 export const COACH_ACCESS_TIER_LABELS: Record<CoachAccessTier, string> = {
   alumni: "Alumni",
+  programme: "Programme",
   core: "Core",
   premium: "Premium",
   vip: "VIP",
+  early_exit: "Early exit",
   do_not_contact: "Do not contact",
 };
 
@@ -36,13 +40,28 @@ export type CoachFeature =
   | "nav.delivery"
   | "directory.featured";
 
+const PREMIUM_FEATURE_SET: ReadonlySet<CoachFeature> = new Set([
+  "community.feed",
+  "community.feedback_channel",
+  "calendar.momentum_only",
+  "calendar.all_events",
+  "nav.compass",
+  "nav.classroom",
+  "classroom.full",
+  "nav.marketing",
+  "nav.delivery",
+]);
+
 const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
   do_not_contact: new Set(),
+  // Love-it-or-leave-it / guarantee opt-out — no product access; not alumni.
+  early_exit: new Set(),
   alumni: new Set([
     // Classroom nav is visible, but only a few starter courses are unlocked
     // (see ALUMNI_FREE_COURSE_IDS). No live ecosystem access.
     "nav.classroom",
   ]),
+  programme: PREMIUM_FEATURE_SET,
   core: new Set([
     "community.feed",
     "nav.classroom",
@@ -50,27 +69,9 @@ const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
     "nav.delivery",
     "calendar.momentum_only",
   ]),
-  premium: new Set([
-    "community.feed",
-    "community.feedback_channel",
-    "calendar.momentum_only",
-    "calendar.all_events",
-    "nav.compass",
-    "nav.classroom",
-    "classroom.full",
-    "nav.marketing",
-    "nav.delivery",
-  ]),
+  premium: PREMIUM_FEATURE_SET,
   vip: new Set([
-    "community.feed",
-    "community.feedback_channel",
-    "calendar.momentum_only",
-    "calendar.all_events",
-    "nav.compass",
-    "nav.classroom",
-    "classroom.full",
-    "nav.marketing",
-    "nav.delivery",
+    ...PREMIUM_FEATURE_SET,
     "directory.featured",
   ]),
 };
@@ -94,6 +95,9 @@ export function isCoachAccessTier(value: string): value is CoachAccessTier {
 
 const ACCESS_TIER_ALIASES: Record<string, CoachAccessTier> = {
   pro: "premium",
+  build: "programme",
+  program: "programme",
+  earlyexit: "early_exit",
 };
 
 /** Normalize legacy/variant access tier strings from the DB or admin UI. */
@@ -119,14 +123,26 @@ export function featuresForTier(tier: CoachAccessTier): CoachFeature[] {
   return [...TIER_FEATURES[tier]];
 }
 
-/** Lowest tier (by rank) that includes the feature, or null if none do. */
+/** Lowest paid/product tier that includes the feature (skips programme). */
 export function minimumTierForFeature(
   feature: CoachFeature
 ): CoachAccessTier | null {
-  const ordered = [...COACH_ACCESS_TIERS].sort(
-    (a, b) => tierRank(a) - tierRank(b)
-  );
+  const ordered = [...COACH_ACCESS_TIERS]
+    .filter(
+      (tier) =>
+        tier !== "programme" &&
+        tier !== "do_not_contact" &&
+        tier !== "early_exit"
+    )
+    .sort((a, b) => tierRank(a) - tierRank(b));
   return ordered.find((tier) => TIER_FEATURES[tier].has(feature)) ?? null;
+}
+
+/** Treat programme coaches as Premium for tag-based visibility. */
+export function effectiveCalendarAccessTier(
+  tier: CoachAccessTier
+): CoachAccessTier {
+  return tier === "programme" ? "premium" : tier;
 }
 
 export function calendarEventVisibleToTier(
@@ -134,7 +150,7 @@ export function calendarEventVisibleToTier(
   tier: CoachAccessTier
 ): boolean {
   const tags = accessTags ?? ["core", "premium", "vip"];
-  return tags.includes(tier);
+  return tags.includes(effectiveCalendarAccessTier(tier));
 }
 
 export function calendarEventLockedForTier(
@@ -157,16 +173,32 @@ export const FEEDBACK_REQUEST_CATEGORY_SLUG = "requesting-feedback";
 export function tierRank(tier: CoachAccessTier): number {
   const order: Record<CoachAccessTier, number> = {
     do_not_contact: -1,
+    early_exit: -1,
     alumni: 0,
     core: 1,
+    programme: 2,
     premium: 2,
     vip: 3,
   };
   return order[tier];
 }
 
+/** First 6 months build phase (not a paid Stripe membership). */
+export function isProgrammeTier(tier: CoachAccessTier): boolean {
+  return tier === "programme";
+}
+
 export function isDoNotContactTier(tier: CoachAccessTier): boolean {
   return tier === "do_not_contact";
+}
+
+export function isEarlyExitTier(tier: CoachAccessTier): boolean {
+  return tier === "early_exit";
+}
+
+/** Manual relationship tiers that auto-refresh / Stripe sync must not overwrite. */
+export function isManuallyPreservedAccessTier(tier: CoachAccessTier): boolean {
+  return tier === "do_not_contact" || tier === "early_exit";
 }
 
 export function minimumTierForCalendarEvent(

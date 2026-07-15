@@ -7,8 +7,8 @@ import { usePathname } from "next/navigation";
 
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { useCommunityMemberDirectory } from "@/components/community/useCommunityMemberDirectory";
-import { LadderLevelUpsCard } from "@/components/community/LadderLevelUpsCard";
 import { profileInitialsFromName } from "@/lib/communityProfile";
+import { ThisWeeksCallsCard } from "@/components/community/ThisWeeksCallsCard";
 import {
   CommunityMemberProfileHoverTrigger,
   communityMemberStatusLabel,
@@ -221,7 +221,7 @@ export function CommunitySidebar({
         </div>
       </div>
 
-      <LadderLevelUpsCard />
+      <ThisWeeksCallsCard />
     </aside>
   );
 }

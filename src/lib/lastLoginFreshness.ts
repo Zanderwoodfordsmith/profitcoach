@@ -17,14 +17,15 @@ export function daysSinceLastLogin(iso: string): number | null {
  * Freshness bands for admin last-login colour coding:
  * - fresh: ≤ 7 days
  * - warm: 8–30 days (inclusive)
- * - cold: &gt; 30 days or never / invalid
+ * - cold: &gt; 30 days or invalid timestamp
+ * - never: no login recorded
  */
-export type LastLoginFreshness = "fresh" | "warm" | "cold";
+export type LastLoginFreshness = "fresh" | "warm" | "cold" | "never";
 
 export function lastLoginFreshness(
   iso: string | null | undefined
 ): LastLoginFreshness {
-  if (!iso) return "cold";
+  if (!iso) return "never";
   const days = daysSinceLastLogin(iso);
   if (days == null) return "cold";
   if (days <= 7) return "fresh";
@@ -37,5 +38,6 @@ export function lastLoginFreshnessClasses(
 ): string {
   if (freshness === "fresh") return "bg-emerald-100 text-emerald-800";
   if (freshness === "warm") return "bg-amber-100 text-amber-800";
-  return "bg-rose-100 text-rose-800";
+  if (freshness === "cold") return "bg-rose-100 text-rose-800";
+  return "bg-red-800 text-red-50";
 }

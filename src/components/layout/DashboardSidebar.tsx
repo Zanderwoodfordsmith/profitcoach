@@ -100,21 +100,24 @@ export function DashboardSidebar({
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const alreadyPremiumOrVip =
     coachAccessTier === "premium" || coachAccessTier === "vip";
+  const inProgrammeBuild = coachAccessTier === "programme";
   const sidebarPromoSoftLaunch = membershipSidebarPromoEnabled();
   // Join Premium only after ENFORCE_MEMBERSHIP_TIERS is on, and never for
-  // Premium/VIP. Soft-launch flag alone is not enough.
+  // Premium/VIP or coaches still in the first-6-months programme.
   const showJoinPremiumPromo =
     variant === "coach" &&
     sidebarPromoSoftLaunch &&
     membershipTierEnforcementEnabled &&
-    !alreadyPremiumOrVip;
+    !alreadyPremiumOrVip &&
+    !inProgrammeBuild;
   // Soft-launch: hide Membership until promo/enforcement is live; Premium/VIP
-  // still get the Membership link once tiers are enforced.
+  // (and programme coaches) still get the Membership link once tiers are enforced.
   const showMembershipNav =
     variant === "coach" &&
     !membershipPreviewMode() &&
     (!sidebarPromoSoftLaunch ||
-      (membershipTierEnforcementEnabled && alreadyPremiumOrVip));
+      (membershipTierEnforcementEnabled &&
+        (alreadyPremiumOrVip || inProgrammeBuild)));
   const membershipPageActive =
     pathname === "/coach/membership" || pathname === "/membership";
 

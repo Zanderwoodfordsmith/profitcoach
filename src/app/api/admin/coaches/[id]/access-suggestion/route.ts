@@ -59,13 +59,16 @@ export async function GET(
     ? (coach.access_tier as CoachAccessTier)
     : "premium";
 
-  if (currentTier === "do_not_contact") {
+  if (currentTier === "do_not_contact" || currentTier === "early_exit") {
     return NextResponse.json({
       currentTier,
       tierLocked: true,
       suggestion: {
         suggestedTier: null,
-        reason: "Do not contact — tier is set manually and is not changed from billing.",
+        reason:
+          currentTier === "early_exit"
+            ? "Early exit — tier is set manually and is not changed from billing."
+            : "Do not contact — tier is set manually and is not changed from billing.",
         confidence: "high" as const,
       },
     });

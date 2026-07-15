@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { membershipTierEnforcementEnabled } from "@/lib/coachAccess/enforcement";
+import { refreshCoachProgrammeStatus } from "@/lib/coachAccess/refreshProgrammeStatus";
 import {
   type CoachAccessTier,
   type CoachFeature,
@@ -17,7 +18,7 @@ export type CoachAccessSnapshot = {
 };
 
 const DEFAULT_ACCESS: CoachAccessSnapshot = {
-  tier: "premium",
+  tier: "programme",
   tierLocked: false,
   features: PREMIUM_EQUIVALENT_FEATURES,
   enforcementEnabled: false,
@@ -26,6 +27,8 @@ const DEFAULT_ACCESS: CoachAccessSnapshot = {
 export async function resolveCoachAccessForUserId(
   userId: string
 ): Promise<CoachAccessSnapshot> {
+  await refreshCoachProgrammeStatus(supabaseAdmin, userId);
+
   const { data, error } = await supabaseAdmin
     .from("coaches")
     .select("access_tier, access_tier_locked")
@@ -38,7 +41,7 @@ export async function resolveCoachAccessForUserId(
 
   const tier = isCoachAccessTier(data.access_tier ?? "")
     ? data.access_tier
-    : "premium";
+    : "programme";
 
   const enforcementEnabled = membershipTierEnforcementEnabled();
   const features = enforcementEnabled

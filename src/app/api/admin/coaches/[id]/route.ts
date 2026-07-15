@@ -21,6 +21,8 @@ import {
 } from "@/lib/profileBioFields";
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
+import { formatPersonName } from "@/lib/formatPersonName";
+import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
@@ -185,7 +187,7 @@ export async function GET(
           : null,
         payments: succeededPayments,
       }),
-      access_tier: normalizeCoachAccessTier(row.access_tier) ?? "premium",
+      access_tier: normalizeCoachAccessTier(row.access_tier) ?? "programme",
       access_tier_locked: Boolean(row.access_tier_locked),
       stripe_customer_id: (row.stripe_customer_id as string | null) ?? null,
       stripe_subscription_id: (row.stripe_subscription_id as string | null) ?? null,
@@ -394,7 +396,7 @@ export async function PATCH(
   }
   if (body.access_tier !== undefined) {
     if (body.access_tier === null || body.access_tier === "") {
-      coachUpdates.access_tier = "premium";
+      coachUpdates.access_tier = "programme";
     } else {
       const normalizedTier = normalizeCoachAccessTier(body.access_tier);
       if (normalizedTier) {
@@ -403,7 +405,7 @@ export async function PATCH(
         return NextResponse.json(
           {
             error:
-              "access_tier must be alumni, core, premium, vip, do_not_contact, or null.",
+              "access_tier must be alumni, programme, core, premium, vip, early_exit, do_not_contact, or null.",
           },
           { status: 400 }
         );
@@ -413,8 +415,17 @@ export async function PATCH(
   if (body.access_tier_locked !== undefined) {
     coachUpdates.access_tier_locked = !!body.access_tier_locked;
   }
-  if (coachUpdates.access_tier === "do_not_contact") {
+  if (
+    coachUpdates.access_tier === "do_not_contact" ||
+    coachUpdates.access_tier === "early_exit"
+  ) {
     coachUpdates.access_tier_locked = true;
+  }
+  if (
+    coachUpdates.access_tier === "programme" &&
+    body.recurring_payment_status === undefined
+  ) {
+    coachUpdates.recurring_payment_status = "first_6_months";
   }
   if (coachUpdates.access_tier_locked === false) {
     const { data: existingCoach } = await supabaseAdmin
@@ -422,7 +433,10 @@ export async function PATCH(
       .select("access_tier")
       .eq("id", coachId)
       .maybeSingle();
-    if (normalizeCoachAccessTier(existingCoach?.access_tier) === "do_not_contact") {
+    const nextTier =
+      normalizeCoachAccessTier(coachUpdates.access_tier) ??
+      normalizeCoachAccessTier(existingCoach?.access_tier);
+    if (nextTier === "do_not_contact" || nextTier === "early_exit") {
       coachUpdates.access_tier_locked = true;
     }
   }
@@ -431,8 +445,14 @@ export async function PATCH(
   if (body.full_name !== undefined) {
     if (body.full_name === null || body.full_name === "") {
       profileUpdates.full_name = null;
+      profileUpdates.first_name = null;
+      profileUpdates.last_name = null;
     } else if (typeof body.full_name === "string") {
-      profileUpdates.full_name = body.full_name.trim();
+      const formatted = formatPersonName(body.full_name);
+      profileUpdates.full_name = formatted || null;
+      const { first_name, last_name } = splitFullName(formatted);
+      profileUpdates.first_name = first_name;
+      profileUpdates.last_name = last_name;
     } else {
       return NextResponse.json(
         { error: "full_name must be a string or null." },
@@ -676,7 +696,7 @@ export async function PATCH(
           return NextResponse.json(
             {
               error:
-                "Could not save access tier. Apply the latest database migration (do_not_contact tier) and try again.",
+                "Could not save access tier. Apply the latest database migration (early_exit tier) and try again.",
             },
             { status: 400 }
           );

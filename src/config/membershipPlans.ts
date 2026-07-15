@@ -95,3 +95,12 @@ export function formatMembershipPrice(amountGbp: number): string {
     maximumFractionDigits: 0,
   }).format(amountGbp);
 }
+
+/** App checkout redirect for a plan (uses configured Stripe price IDs). */
+export function membershipCheckoutHref(
+  plan: MembershipPlanKey,
+  interval: MembershipInterval = "month"
+): string {
+  const params = new URLSearchParams({ plan, interval });
+  return `/api/coach/membership/checkout?${params.toString()}`;
+}

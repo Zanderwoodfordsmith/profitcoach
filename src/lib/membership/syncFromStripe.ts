@@ -164,7 +164,9 @@ export async function syncCoachMembershipFromSubscription(
 
   const currentTier = coach.access_tier;
   const preserveTier =
-    coach.access_tier_locked || currentTier === "do_not_contact";
+    coach.access_tier_locked ||
+    currentTier === "do_not_contact" ||
+    currentTier === "early_exit";
 
   if (!preserveTier) {
     if (

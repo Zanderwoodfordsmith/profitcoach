@@ -12,8 +12,10 @@ import type { CoachAccessTier } from "@/lib/coachAccess/tiers";
 import {
   COACH_ACCESS_TIER_LABELS,
   isCoachAccessTier,
+  isProgrammeTier,
   tierRank,
 } from "@/lib/coachAccess/tiers";
+import { refreshCoachProgrammeStatus } from "@/lib/coachAccess/refreshProgrammeStatus";
 import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
 import { membershipPreviewMode } from "@/lib/membership/preview";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
@@ -94,6 +96,8 @@ export async function GET(request: Request) {
 
   const coachId = auth.userId;
 
+  await refreshCoachProgrammeStatus(supabaseAdmin, coachId);
+
   const { data: coach, error } = await supabaseAdmin
     .from("coaches")
     .select(
@@ -110,7 +114,7 @@ export async function GET(request: Request) {
   const tier: CoachAccessTier =
     row.access_tier && isCoachAccessTier(row.access_tier)
       ? row.access_tier
-      : "premium";
+      : "programme";
 
   const { data: payments } = await supabaseAdmin
     .from("coach_payments")
@@ -142,6 +146,7 @@ export async function GET(request: Request) {
 
   const needsPaymentChoice =
     tier !== "do_not_contact" &&
+    !isProgrammeTier(tier) &&
     !hasActiveSubscription &&
     !recurringActive &&
     row.recurring_payment_status !== "first_6_months" &&
@@ -161,12 +166,14 @@ export async function GET(request: Request) {
         year: Boolean(plan.annualPriceId),
       },
       isCurrent: tier === plan.tier && hasActiveSubscription,
-      relation:
-        tierRank(plan.tier) > tierRank(tier)
-          ? "upgrade"
+      // Programme is not a paid plan — every membership option is a join/upgrade.
+      relation: isProgrammeTier(tier)
+        ? ("upgrade" as const)
+        : tierRank(plan.tier) > tierRank(tier)
+          ? ("upgrade" as const)
           : tierRank(plan.tier) < tierRank(tier)
-            ? "downgrade"
-            : "current",
+            ? ("downgrade" as const)
+            : ("current" as const),
     };
   });
 

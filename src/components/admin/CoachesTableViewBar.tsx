@@ -144,7 +144,7 @@ function SortableViewTab({
             }`}
             title={
               isAllView
-                ? "Shared with every admin. Opens with no filters."
+                ? "Shared with every admin. Saves update All for everyone."
                 : canRename
                   ? `${privacyLabel}. Double-click to rename. Drag handle to reorder.`
                   : `${privacyLabel}. Created by another admin. Drag handle to reorder.`

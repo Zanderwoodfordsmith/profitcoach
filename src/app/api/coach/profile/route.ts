@@ -7,6 +7,7 @@ import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete"
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
+import { formatPersonName } from "@/lib/formatPersonName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
 
@@ -378,8 +379,12 @@ export async function PATCH(request: Request) {
     updates.ai_context = mergeCoachAiContext(prev, body.ai_context);
   }
 
-  if (body.first_name !== undefined) updates.first_name = body.first_name?.trim() ?? null;
-  if (body.last_name !== undefined) updates.last_name = body.last_name?.trim() ?? null;
+  if (body.first_name !== undefined) {
+    updates.first_name = formatPersonName(body.first_name) || null;
+  }
+  if (body.last_name !== undefined) {
+    updates.last_name = formatPersonName(body.last_name) || null;
+  }
   if (body.coach_business_name !== undefined)
     updates.coach_business_name = body.coach_business_name?.trim() ?? null;
   if (body.linkedin_url !== undefined)
@@ -578,10 +583,11 @@ export async function PATCH(request: Request) {
   }
 
   if (body.first_name !== undefined || body.last_name !== undefined) {
-    const first = (body.first_name ?? "").trim();
-    const last = (body.last_name ?? "").trim();
-    updates.full_name =
-      [first, last].filter(Boolean).join(" ").trim() || null;
+    const first =
+      body.first_name !== undefined ? formatPersonName(body.first_name) : "";
+    const last =
+      body.last_name !== undefined ? formatPersonName(body.last_name) : "";
+    updates.full_name = [first, last].filter(Boolean).join(" ").trim() || null;
   }
 
   if (
