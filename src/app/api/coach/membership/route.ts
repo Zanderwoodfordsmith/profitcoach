@@ -17,7 +17,6 @@ import {
 } from "@/lib/coachAccess/tiers";
 import { refreshCoachProgrammeStatus } from "@/lib/coachAccess/refreshProgrammeStatus";
 import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
-import { membershipPreviewMode } from "@/lib/membership/preview";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -34,9 +33,8 @@ type CoachMembershipRow = {
   recurring_payment_status: string | null;
 };
 
-function buildCatalogPayload(options?: { adminPreview?: boolean; publicView?: boolean }) {
+function buildCatalogPayload(options?: { publicView?: boolean }) {
   return {
-    adminPreview: options?.adminPreview ?? false,
     publicView: options?.publicView ?? false,
     tier: "alumni",
     tierLabel: COACH_ACCESS_TIER_LABELS.alumni,
@@ -78,13 +76,10 @@ function buildCatalogPayload(options?: { adminPreview?: boolean; publicView?: bo
 export async function GET(request: Request) {
   const auth = await requireCoachRequest(request);
   if (auth.error) {
-    // Admins browsing the page without impersonating a coach get a read-only
-    // preview of the plans instead of an error.
-    if (auth.error === "Admin must pass x-impersonate-coach-id for this resource.") {
-      return NextResponse.json(buildCatalogPayload({ adminPreview: true }));
-    }
-    // Public marketing page and logged-out visitors see plan pricing without auth.
+    // Admins without impersonation, public page, and logged-out visitors all
+    // see the plan catalog; Join buttons always go to Stripe checkout.
     if (
+      auth.error === "Admin must pass x-impersonate-coach-id for this resource." ||
       auth.error === "Missing access token." ||
       auth.error === "Invalid access token." ||
       auth.error === "Not authorized."
@@ -200,13 +195,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (membershipPreviewMode()) {
-    return NextResponse.json(
-      { error: "Membership checkout is not open yet." },
-      { status: 503 }
-    );
-  }
-
   const body = (await request.json().catch(() => ({}))) as {
     plan?: MembershipPlanKey;
     interval?: MembershipInterval;

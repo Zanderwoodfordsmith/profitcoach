@@ -6,20 +6,12 @@ import {
   type MembershipPlanKey,
   stripePriceIdForPlan,
 } from "@/config/membershipPlans";
-import { membershipPreviewMode } from "@/lib/membership/preview";
 
 /**
  * GET /api/coach/membership/checkout?plan=core|premium|vip&interval=month|year
  * Redirects to Stripe Checkout for the configured price ID.
  */
 export async function GET(request: Request) {
-  if (membershipPreviewMode()) {
-    return NextResponse.json(
-      { error: "Membership checkout is not open yet." },
-      { status: 503 }
-    );
-  }
-
   const { searchParams } = new URL(request.url);
   const planKey = searchParams.get("plan") as MembershipPlanKey | null;
   const interval = (searchParams.get("interval") ?? "month") as MembershipInterval;

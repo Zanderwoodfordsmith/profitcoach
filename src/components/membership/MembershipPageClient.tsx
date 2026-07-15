@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -62,7 +62,6 @@ type PlanInfo = {
 };
 
 type MembershipPayload = {
-  adminPreview?: boolean;
   publicView?: boolean;
   tier: string;
   tierLabel: string;
@@ -79,15 +78,6 @@ type MembershipPayload = {
   recurringActive?: boolean;
 };
 
-const RECURRING_LABELS: Record<string, string> = {
-  monthly: "Monthly",
-  annual_prepaid: "Annual prepaid",
-  first_6_months: "1st 6 months",
-  complimentary: "Complimentary",
-  overdue: "Overdue",
-};
-
-/* Profit Coach design tokens (colors_and_type.css) */
 const CHATHAMS = "#0c5290";
 const CHATHAMS_DEEP = "#063056";
 const VELOCITY = "#42a1ee";
@@ -398,207 +388,6 @@ function MembershipConferenceVideo() {
       poster={MEMBERSHIP_CTA_VIDEO_POSTER}
       playLabel="BCA conference walk around"
     />
-  );
-}
-
-type CoachListRow = {
-  id: string;
-  slug: string;
-  full_name: string | null;
-  coach_business_name: string | null;
-};
-
-function coachDisplayName(c: CoachListRow): string {
-  return c.full_name?.trim() || c.coach_business_name?.trim() || c.slug || "Coach";
-}
-
-/** Collapsible admin FAB — hidden until expanded so the page demos cleanly. */
-function AdminPreviewCoachPicker({
-  situation,
-  className = "",
-}: {
-  situation?: string[] | null;
-  className?: string;
-}) {
-  const { impersonatingCoachId, setImpersonatingCoachId } = useImpersonation();
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [coachPickerOpen, setCoachPickerOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [coaches, setCoaches] = useState<CoachListRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return coaches;
-    return coaches.filter((c) =>
-      [c.full_name, c.coach_business_name, c.slug]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [coaches, query]);
-
-  async function loadCoaches() {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
-        setLoadError("Not signed in.");
-        return;
-      }
-      const res = await fetch("/api/admin/coaches", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        coaches?: CoachListRow[];
-        error?: string;
-      };
-      if (!res.ok) {
-        setLoadError(body.error ?? "Could not load coaches.");
-        return;
-      }
-      const list = body.coaches ?? [];
-      list.sort((a, b) =>
-        coachDisplayName(a).localeCompare(coachDisplayName(b), undefined, {
-          sensitivity: "base",
-        })
-      );
-      setCoaches(list);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleToggleCoachPicker() {
-    if (coachPickerOpen) {
-      setCoachPickerOpen(false);
-      return;
-    }
-    setCoachPickerOpen(true);
-    setQuery("");
-    void loadCoaches();
-  }
-
-  useEffect(() => {
-    if (!coachPickerOpen) return;
-    const t = window.setTimeout(() => inputRef.current?.focus(), 0);
-    function onPointerDown(e: MouseEvent) {
-      const el = rootRef.current;
-      if (el && e.target instanceof Node && !el.contains(e.target)) {
-        setCoachPickerOpen(false);
-      }
-    }
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setCoachPickerOpen(false);
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.clearTimeout(t);
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [coachPickerOpen]);
-
-  return (
-    <div ref={rootRef} className={`fixed bottom-4 right-4 z-[99] sm:bottom-5 sm:right-5 ${className}`}>
-      {panelOpen && (
-        <div className="absolute bottom-[calc(100%+10px)] right-0 w-[min(19rem,calc(100vw-2rem))]">
-          {coachPickerOpen && (
-            <div className="mb-2 rounded-lg border border-amber-400/80 bg-white py-2 shadow-lg ring-1 ring-black/5">
-              <div className="px-2 pb-2">
-                <input
-                  ref={inputRef}
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search name or slug…"
-                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500"
-                  aria-label="Filter coaches"
-                />
-              </div>
-              <div className="max-h-56 overflow-y-auto px-1">
-                {loading ? (
-                  <div className="flex items-center justify-center gap-2 py-6 text-xs text-slate-500">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Loading…
-                  </div>
-                ) : loadError ? (
-                  <p className="px-2 py-2 text-xs text-rose-600">{loadError}</p>
-                ) : filtered.length === 0 ? (
-                  <p className="px-2 py-2 text-xs text-slate-500">
-                    {coaches.length === 0 ? "No coaches found." : "No matches."}
-                  </p>
-                ) : (
-                  <ul className="space-y-0.5">
-                    {filtered.map((c) => (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setImpersonatingCoachId(c.id);
-                            setCoachPickerOpen(false);
-                          }}
-                          className={`flex w-full flex-col items-start rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
-                            c.id === impersonatingCoachId
-                              ? "bg-amber-100 text-amber-950"
-                              : "text-slate-800 hover:bg-slate-100"
-                          }`}
-                        >
-                          <span className="font-medium leading-tight">{coachDisplayName(c)}</span>
-                          <span className="mt-0.5 font-mono text-[10px] text-slate-400">{c.slug}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-          <div className="rounded-lg border border-amber-300/90 bg-amber-50 shadow-lg">
-            <button
-              type="button"
-              onClick={handleToggleCoachPicker}
-              className="w-full px-3 py-2 text-left text-[11px] font-semibold text-amber-950 transition hover:bg-amber-100"
-              aria-expanded={coachPickerOpen}
-              aria-haspopup="listbox"
-            >
-              Admin preview · View as coach {coachPickerOpen ? "▴" : "▾"}
-            </button>
-            {situation && situation.length > 0 && (
-              <div className="space-y-1 border-t border-amber-200/80 px-3 py-2">
-                {situation.map((line) => (
-                  <p key={line} className="text-[10px] leading-snug text-amber-900/90">
-                    {line}
-                  </p>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          setPanelOpen((prev) => {
-            if (prev) setCoachPickerOpen(false);
-            return !prev;
-          });
-        }}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-400/90 bg-amber-100 text-amber-950 shadow-lg ring-1 ring-black/5 transition hover:bg-amber-200"
-        aria-label={panelOpen ? "Close admin preview" : "Open admin preview"}
-        aria-expanded={panelOpen}
-      >
-        {panelOpen ? <X className="h-5 w-5" /> : <Users className="h-5 w-5" />}
-      </button>
-    </div>
   );
 }
 
@@ -934,7 +723,6 @@ export function MembershipPageClient() {
 
   const tierCards: MembershipPlanKey[] = ["core", "premium", "vip"];
   const hasSubscription = Boolean(data?.subscription.status);
-  const isAdminPreview = Boolean(data?.adminPreview);
   const inFirstSixMonths =
     !hasSubscription &&
     (data?.recurringPaymentStatus === "first_6_months" ||
@@ -948,50 +736,13 @@ export function MembershipPageClient() {
     !inFirstSixMonths &&
     !isComplimentary;
   const statusOverlap =
-    !loading && data && !isAdminPreview && (hasSubscription || legacyRecurring);
-
-  // Admin-facing summary of the impersonated coach's situation and what the page shows them.
-  const adminSituation: string[] | null =
-    impersonatingCoachId && data && !isAdminPreview
-      ? [
-          `Tier: ${data.tierLabel}`,
-          `Billing: ${
-            hasSubscription
-              ? `Stripe subscription (${statusLabel(data.subscription.status, data.subscription.cancelAtPeriodEnd)}${
-                  data.subscription.currentPeriodEnd
-                    ? `, renews ${formatRenewalDate(data.subscription.currentPeriodEnd)}`
-                    : ""
-                })`
-              : data.recurringPaymentStatus
-                ? `${RECURRING_LABELS[data.recurringPaymentStatus] ?? data.recurringPaymentStatus} (outside Stripe subscriptions)`
-                : data.recurringActive
-                  ? "recurring payments detected in payment history (no status set, outside Stripe subscriptions)"
-                  : "none on record"
-          }`,
-          `Page shows: ${
-            hasSubscription
-              ? `"You're on ${data.tierLabel}" strip; their plan is marked Current`
-              : inFirstSixMonths
-                ? '"first 6 months. Nothing to do yet." banner'
-                : isComplimentary
-                  ? "complimentary banner"
-                  : legacyRecurring
-                    ? "existing-arrangement banner; join buttons would move them to self-serve Stripe billing"
-                    : needsChoice
-                      ? 'amber "choose a plan" banner'
-                      : "plans only, no banner"
-          }`,
-        ]
-      : null;
+    !loading && data && (hasSubscription || legacyRecurring);
 
   return (
     <div
       className={isEmbedded ? "w-full" : "min-h-screen w-full"}
       style={{ backgroundColor: CANVAS, color: "#0f172a" }}
     >
-      {(isAdminPreview || Boolean(impersonatingCoachId)) && (
-        <AdminPreviewCoachPicker situation={adminSituation} />
-      )}
       {/* Feature info popover (Chess.com-style) */}
       {infoFeature && infoAnchorEl && (
         <FeatureInfoPopover
@@ -1140,7 +891,7 @@ export function MembershipPageClient() {
           </div>
         )}
         {/* Situation banners for coaches without a subscription */}
-        {!loading && data && !isAdminPreview && inFirstSixMonths && (
+        {!loading && data && inFirstSixMonths && (
           <div className="mt-8 flex flex-wrap items-center gap-4 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
             <span
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
@@ -1159,7 +910,7 @@ export function MembershipPageClient() {
             </div>
           </div>
         )}
-        {!loading && data && !isAdminPreview && isComplimentary && (
+        {!loading && data && isComplimentary && (
           <div className="mt-8 flex flex-wrap items-center gap-4 rounded-3xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
             <span
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
@@ -1172,7 +923,7 @@ export function MembershipPageClient() {
             </p>
           </div>
         )}
-        {!loading && data && !isAdminPreview && !hasSubscription && needsChoice && (
+        {!loading && data && !hasSubscription && needsChoice && (
           <div className="mt-8 flex flex-wrap items-center gap-4 rounded-3xl border border-amber-200 bg-amber-50 px-6 py-5 shadow-sm">
             <div className="min-w-0">
               <p className="text-[15px] font-semibold text-amber-950">
@@ -1402,23 +1153,7 @@ export function MembershipPageClient() {
                       const isPremiumCol = i + 1 === HIGHLIGHT_COLUMN;
                       const tierCopy = copy.tiers[key];
                       const plan = MEMBERSHIP_PLANS[key];
-                      const planInfo = data?.plans.find((p) => p.key === key);
-                      const subInterval = data?.subscription.interval;
-                      const isCurrentTier = Boolean(planInfo?.isCurrent);
-                      const isCurrentMonthly = isCurrentTier && subInterval === "month";
-                      const isCurrentAnnual = isCurrentTier && subInterval === "year";
-                      const monthlyCheckoutOk = planInfo?.checkoutAvailable.month !== false;
                       const checkoutHref = membershipCheckoutHref(key, "month");
-
-                      const actionLabel = isCurrentMonthly
-                        ? "Current plan"
-                        : isCurrentAnnual
-                          ? "Switch to monthly"
-                          : planInfo?.relation === "upgrade"
-                            ? `Upgrade to ${tierCopy.name}`
-                            : planInfo?.relation === "downgrade"
-                              ? `Switch to ${tierCopy.name}`
-                              : `Join ${tierCopy.name}`;
 
                       const ctaClass = `inline-flex w-full max-w-[180px] flex-col items-center justify-center gap-0.5 rounded-full px-4 py-3 transition ${
                         isPremiumCol ? "text-white hover:brightness-110" : "hover:shadow-sm"
@@ -1440,64 +1175,23 @@ export function MembershipPageClient() {
                           className="px-4 py-6 text-center align-middle"
                           style={isPremiumCol ? { backgroundColor: "#eaf2fb" } : undefined}
                         >
-                          {isAdminPreview ? (
-                            <div className="mx-auto inline-flex max-w-[180px] flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
-                              <span className="text-[12.5px] font-medium text-slate-400">
-                                Admin preview
-                              </span>
-                              <span
-                                className="mt-0.5 text-[12px] font-medium text-slate-500"
-                                style={{ fontFamily: MONO }}
-                              >
-                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
-                              </span>
-                            </div>
-                          ) : isCurrentMonthly ? (
-                            <div
-                              className={`${ctaClass} cursor-default opacity-60`}
-                              style={ctaStyle}
+                          <a
+                            href={checkoutHref}
+                            target="_top"
+                            rel="noopener noreferrer"
+                            className={ctaClass}
+                            style={ctaStyle}
+                          >
+                            <span className="text-[13.5px] font-semibold leading-tight">
+                              Join {tierCopy.name}
+                            </span>
+                            <span
+                              className={priceClass}
+                              style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
                             >
-                              <span className="text-[13.5px] font-semibold leading-tight">
-                                {actionLabel}
-                              </span>
-                              <span
-                                className={priceClass}
-                                style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
-                              >
-                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
-                              </span>
-                            </div>
-                          ) : monthlyCheckoutOk ? (
-                            <a
-                              href={checkoutHref}
-                              target="_top"
-                              rel="noopener noreferrer"
-                              className={ctaClass}
-                              style={ctaStyle}
-                            >
-                              <span className="text-[13.5px] font-semibold leading-tight">
-                                {actionLabel}
-                              </span>
-                              <span
-                                className={priceClass}
-                                style={{ fontFamily: MONO, letterSpacing: "-0.01em" }}
-                              >
-                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
-                              </span>
-                            </a>
-                          ) : (
-                            <div className="mx-auto inline-flex max-w-[180px] flex-col items-center rounded-full border border-slate-200 bg-slate-50 px-4 py-3">
-                              <span className="text-[12.5px] font-medium text-slate-400">
-                                Coming soon
-                              </span>
-                              <span
-                                className="mt-0.5 text-[12px] font-medium text-slate-500"
-                                style={{ fontFamily: MONO }}
-                              >
-                                {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
-                              </span>
-                            </div>
-                          )}
+                              {formatMembershipPrice(plan.monthlyPriceGbp)}/mo
+                            </span>
+                          </a>
                         </td>
                       );
                     })}
