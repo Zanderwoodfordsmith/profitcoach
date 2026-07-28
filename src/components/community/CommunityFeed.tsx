@@ -45,6 +45,7 @@ import {
 import {
   communityPostHasViewerEngagement,
   isCommunityPostReadOnFeed,
+  loadCommunityFeedLocalState,
   useCommunityFeedCardLocalState,
   type CommunityFeedLocalState,
 } from "@/lib/communityPostFeedLocalState";
@@ -981,9 +982,9 @@ export function CommunityFeed() {
     postIds: Set<string>;
   }>({ scopeId: null, postIds: new Set() });
   const markPostReadWithRetry = useCallback(
-    (postId: string) => {
+    (postId: string, options?: { clearExplicitUnread?: boolean }) => {
       if (feedStorageScopeId) {
-        markPostRead(postId);
+        markPostRead(postId, options);
         return;
       }
       pendingReadPostIdsRef.current.push(postId);
@@ -1055,12 +1056,14 @@ export function CommunityFeed() {
       (p) =>
         p.author?.id === feedStorageScopeId &&
         !synced.has(p.id) &&
-        !feedLocalSnapshot.readPostIds[p.id]
+        !feedLocalSnapshot.readPostIds[p.id] &&
+        !feedLocalSnapshot.unreadPostIds[p.id]
     );
     const engagedToSync = posts.filter(
       (p) =>
         !synced.has(p.id) &&
         !feedLocalSnapshot.readPostIds[p.id] &&
+        !feedLocalSnapshot.unreadPostIds[p.id] &&
         communityPostHasViewerEngagement(p)
     );
     if (ownToSync.length === 0 && engagedToSync.length === 0) return;
@@ -1069,6 +1072,7 @@ export function CommunityFeed() {
     if (engagedToSync.length > 0) markEngagedPostsRead(engagedToSync);
   }, [
     feedLocalSnapshot.readPostIds,
+    feedLocalSnapshot.unreadPostIds,
     feedStorageScopeId,
     markEngagedPostsRead,
     markOwnPostsRead,
@@ -1086,7 +1090,7 @@ export function CommunityFeed() {
   const openDetail = useCallback(
     (post: CommunityPostRow) => {
       setSelectedPostId(post.id);
-      markPostRead(post.id);
+      markPostRead(post.id, { clearExplicitUnread: true });
       if (typeof window === "undefined") return;
       const base = pathname.startsWith("/admin/community")
         ? "/admin/community"
@@ -1168,7 +1172,13 @@ export function CommunityFeed() {
 
   useEffect(() => {
     const q = searchParams.get("post");
-    const pathSlug = communityPostSlugFromPathname(pathname);
+    // Prefer the real browser path: open/close use history.replaceState, which
+    // does not always update Next's usePathname before this effect re-runs
+    // (e.g. after patchPostInState on close). Using a stale slug re-opened the
+    // post and cleared "Mark as unread".
+    const locationPath =
+      typeof window !== "undefined" ? window.location.pathname : pathname;
+    const pathSlug = communityPostSlugFromPathname(locationPath);
     const slugParam =
       q && !isCommunityPostUuidParam(q) ? q.trim().toLowerCase() : pathSlug;
 
@@ -1176,7 +1186,6 @@ export function CommunityFeed() {
       setSelectedPostId(q);
       return;
     }
-
 
     if (!slugParam) {
       setSelectedPostId(null);
@@ -1903,8 +1912,15 @@ export function CommunityFeed() {
         pickFeedEngagementOverride(snap)
       );
       patchPostInState(snap.id, () => pickFeedEngagementOverride(snap));
-      markPostRead(snap.id);
-      if (snap.last_comment_at) {
+      // Never mark read on close. Opening already marks read; closing after
+      // "Mark as unread" must leave the post unread in the feed.
+      const deliberatelyUnread = Boolean(
+        feedStorageScopeId &&
+          loadCommunityFeedLocalState(feedStorageScopeId).unreadPostIds?.[
+            snap.id
+          ]
+      );
+      if (!deliberatelyUnread && snap.last_comment_at) {
         markCommentsSeenUpTo(snap.id, snap.last_comment_at);
       }
     }
@@ -1919,7 +1935,12 @@ export function CommunityFeed() {
     sp.delete("post");
     const q = sp.toString();
     window.history.replaceState(null, "", q ? `${base}?${q}` : base);
-  }, [markCommentsSeenUpTo, markPostRead, patchPostInState, pathname]);
+  }, [
+    feedStorageScopeId,
+    markCommentsSeenUpTo,
+    patchPostInState,
+    pathname,
+  ]);
 
   const displayedPosts = useMemo(() => {
     if (readFilter === "all" || readFilter === "favourites") return posts;
@@ -2364,6 +2385,10 @@ export function CommunityFeed() {
                   onPostLocalUpdate={patchPostInState}
                   feedStorageScopeId={feedStorageScopeId}
                   viewerIsAdmin={viewerIsAdmin}
+                  feedPostIsUnread={isCommunityPostUnreadOnFeed(
+                    selectedPost,
+                    feedLocalSnapshot
+                  )}
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}
                 />

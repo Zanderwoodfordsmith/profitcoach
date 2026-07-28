@@ -296,8 +296,13 @@ type Props = {
   feedStorageScopeId: string | null;
   /** When false, ignore stale sessionStorage impersonation (real coaches). */
   viewerIsAdmin?: boolean | null;
-  onMarkPostRead: (postId: string) => void;
+  onMarkPostRead: (
+    postId: string,
+    options?: { clearExplicitUnread?: boolean }
+  ) => void;
   onMarkPostUnread: (postId: string) => void;
+  /** When true, overflow menu offers "Mark as read" instead of "Mark as unread". */
+  feedPostIsUnread?: boolean;
   /** Embedded inside a parent shell (e.g. admin wins queue) — no full-screen backdrop. */
   presentation?: "overlay" | "embedded";
   /**
@@ -386,12 +391,14 @@ function PostDetailOverflowMenu({
   favouritedByMe,
   isPinned,
   canPin,
-  canMarkUnread,
+  canMarkReadState,
+  feedPostIsUnread,
   onEdit,
   onCopyLink,
   onToggleFavourite,
   onTogglePin,
   onMarkUnread,
+  onMarkRead,
   onReport,
   onDelete,
 }: {
@@ -405,12 +412,14 @@ function PostDetailOverflowMenu({
   favouritedByMe: boolean;
   isPinned: boolean;
   canPin: boolean;
-  canMarkUnread: boolean;
+  canMarkReadState: boolean;
+  feedPostIsUnread: boolean;
   onEdit: () => void;
   onCopyLink: () => void | Promise<void>;
   onToggleFavourite: () => void | Promise<void>;
   onTogglePin: () => void | Promise<void>;
   onMarkUnread: () => void;
+  onMarkRead: () => void;
   onReport: () => void;
   onDelete: () => void | Promise<void>;
 }) {
@@ -498,18 +507,19 @@ function PostDetailOverflowMenu({
                   {isPinned ? "Unpin post" : "Pin post"}
                 </button>
               ) : null}
-              {canMarkUnread ? (
+              {canMarkReadState ? (
                 <button
                   type="button"
                   role="menuitem"
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
                   onClick={() => {
-                    onMarkUnread();
+                    if (feedPostIsUnread) onMarkRead();
+                    else onMarkUnread();
                     setMenuOpen(false);
                   }}
                 >
                   <CircleDot className="h-4 w-4 shrink-0 opacity-70" />
-                  Mark as unread
+                  {feedPostIsUnread ? "Mark as read" : "Mark as unread"}
                 </button>
               ) : null}
               <button
@@ -587,18 +597,19 @@ function PostDetailOverflowMenu({
                   {isPinned ? "Unpin post" : "Pin post"}
                 </button>
               ) : null}
-              {canMarkUnread ? (
+              {canMarkReadState ? (
                 <button
                   type="button"
                   role="menuitem"
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-800 hover:bg-slate-50"
                   onClick={() => {
-                    onMarkUnread();
+                    if (feedPostIsUnread) onMarkRead();
+                    else onMarkUnread();
                     setMenuOpen(false);
                   }}
                 >
                   <CircleDot className="h-4 w-4 shrink-0 opacity-70" />
-                  Mark as unread
+                  {feedPostIsUnread ? "Mark as read" : "Mark as unread"}
                 </button>
               ) : null}
               <button
@@ -628,6 +639,7 @@ export function PostDetailModal({
   viewerIsAdmin = null,
   onMarkPostRead,
   onMarkPostUnread,
+  feedPostIsUnread = false,
   presentation = "overlay",
   onRegisterCloseHandler,
 }: Props) {
@@ -678,6 +690,8 @@ export function PostDetailModal({
   const menuRef = useRef<HTMLDivElement>(null);
   /** After "Mark as unread", skip auto read until switching posts (mark unread bumps parent state). */
   const skipAutoMarkPostReadRef = useRef(false);
+  /** Ensures the open-time auto-read runs once per post id (survives parent re-renders). */
+  const autoReadForPostIdRef = useRef<string | null>(null);
   /** Ignore in-flight comment loads superseded by a newer request or post switch. */
   const commentsLoadGenRef = useRef(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -938,19 +952,41 @@ export function PostDetailModal({
 
   useEffect(() => {
     skipAutoMarkPostReadRef.current = false;
+    autoReadForPostIdRef.current = null;
   }, [post.id]);
 
   useEffect(() => {
     if (!feedStorageScopeId) return;
     if (skipAutoMarkPostReadRef.current) return;
-    onMarkPostRead(post.id);
+    if (autoReadForPostIdRef.current === post.id) return;
+    autoReadForPostIdRef.current = post.id;
+    // Opening a post clears a prior "mark as unread". Later auto-read calls
+    // (and parent re-renders) must not undo a deliberate unread while open.
+    onMarkPostRead(post.id, { clearExplicitUnread: true });
   }, [feedStorageScopeId, post.id, onMarkPostRead]);
 
   const handleMarkPostUnread = useCallback(() => {
     if (!feedStorageScopeId) return;
     skipAutoMarkPostReadRef.current = true;
     onMarkPostUnread(post.id);
-  }, [feedStorageScopeId, post.id, onMarkPostUnread]);
+    // Return to the feed immediately so the unread (full-opacity) state is visible.
+    // Closing must not re-mark the post read (see CommunityFeed.closeDetail).
+    if (presentation === "overlay") {
+      onClose();
+    }
+  }, [
+    feedStorageScopeId,
+    onClose,
+    onMarkPostUnread,
+    post.id,
+    presentation,
+  ]);
+
+  const handleMarkPostRead = useCallback(() => {
+    if (!feedStorageScopeId) return;
+    skipAutoMarkPostReadRef.current = false;
+    onMarkPostRead(post.id, { clearExplicitUnread: true });
+  }, [feedStorageScopeId, post.id, onMarkPostRead]);
 
   const handleToggleFavourite = useCallback(async () => {
     if (favouriteBusy) return;
@@ -1758,7 +1794,8 @@ export function PostDetailModal({
                     favouritedByMe={post.favourited_by_me}
                     isPinned={post.is_pinned}
                     canPin={canPin}
-                    canMarkUnread={Boolean(feedStorageScopeId)}
+                    canMarkReadState={Boolean(feedStorageScopeId)}
+                    feedPostIsUnread={feedPostIsUnread}
                     onEdit={() => {
                       setActionError(null);
                       setEditTitle(post.title);
@@ -1770,6 +1807,7 @@ export function PostDetailModal({
                     onToggleFavourite={handleToggleFavourite}
                     onTogglePin={handleTogglePin}
                     onMarkUnread={handleMarkPostUnread}
+                    onMarkRead={handleMarkPostRead}
                     onReport={reportPost}
                     onDelete={handleDeletePost}
                   />

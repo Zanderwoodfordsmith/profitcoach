@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
@@ -1575,14 +1576,28 @@ export default function AdminPaymentsPage() {
         if (assigned && !editing) {
           return (
             <td key={key} className="px-3 py-2 text-slate-800">
-              <button
-                type="button"
-                onClick={() => setCoachAssignPaymentId(payment.id)}
-                className="max-w-[14rem] truncate text-left hover:text-sky-700"
-                title="Change coach"
-              >
-                {coachLabel(assigned)}
-              </button>
+              <div className="inline-flex max-w-[14rem] items-center gap-0.5">
+                <Link
+                  href={`/admin/coaches/${encodeURIComponent(assigned.id)}?tab=payments`}
+                  className="min-w-0 truncate text-[#0c5290] hover:underline"
+                  title={`View ${coachLabel(assigned)} payments`}
+                >
+                  {coachLabel(assigned)}
+                </Link>
+                <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setCoachAssignPaymentId(payment.id)}
+                    className="absolute inset-0"
+                    title="Change coach"
+                    aria-label={`Change coach for ${payment.customer_email}`}
+                  />
+                  <ChevronDown
+                    className="pointer-events-none h-3.5 w-3.5 text-slate-500"
+                    aria-hidden
+                  />
+                </span>
+              </div>
             </td>
           );
         }
@@ -1614,7 +1629,12 @@ export default function AdminPaymentsPage() {
         return (
           <td key={key} className="px-3 py-2 text-slate-700">
             {payment.suggested_coach ? (
-              coachLabel(payment.suggested_coach)
+              <Link
+                href={`/admin/coaches/${encodeURIComponent(payment.suggested_coach.id)}?tab=payments`}
+                className="text-[#0c5290] hover:underline"
+              >
+                {coachLabel(payment.suggested_coach)}
+              </Link>
             ) : (
               <span className="text-slate-400">—</span>
             )}
@@ -2074,9 +2094,20 @@ export default function AdminPaymentsPage() {
                                   aria-hidden
                                 />
                               )}
-                              <span className="min-w-0 truncate font-semibold text-slate-700">
-                                {group.label}
-                              </span>
+                              {paymentGroupBy === "coach" &&
+                              group.key !== "__unassigned__" ? (
+                                <Link
+                                  href={`/admin/coaches/${encodeURIComponent(group.key)}?tab=payments`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="min-w-0 truncate font-semibold text-[#0c5290] hover:underline"
+                                >
+                                  {group.label}
+                                </Link>
+                              ) : (
+                                <span className="min-w-0 truncate font-semibold text-slate-700">
+                                  {group.label}
+                                </span>
+                              )}
                               <span className="shrink-0 font-normal normal-case tracking-normal text-slate-400">
                                 {formatGroupPaymentCount(group.payments)}
                               </span>

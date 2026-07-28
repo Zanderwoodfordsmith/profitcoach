@@ -278,8 +278,8 @@ export function AdminWinsReplyQueue() {
             onRegisterCloseHandler={setPostDetailRequestClose}
             onPostsChanged={handlePostsChanged}
             feedStorageScopeId={adminUserId}
-            onMarkPostRead={(postId) => {
-              markCommunityPostReadInStorage(adminUserId, postId);
+            onMarkPostRead={(postId, options) => {
+              markCommunityPostReadInStorage(adminUserId, postId, options);
             }}
             onMarkPostUnread={(postId) => {
               markCommunityPostUnreadInStorage(adminUserId, postId);

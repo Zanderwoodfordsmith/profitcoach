@@ -127,5 +127,5 @@ export function winNotificationIdForPost(postId: string): string {
 /** Bell unread + feed read when an admin has celebrated a win. */
 export function markCommunityWinPostHandled(uid: string, postId: string): void {
   markCommunityNotificationRead(uid, winNotificationIdForPost(postId));
-  markCommunityPostReadInStorage(uid, postId);
+  markCommunityPostReadInStorage(uid, postId, { clearExplicitUnread: true });
 }

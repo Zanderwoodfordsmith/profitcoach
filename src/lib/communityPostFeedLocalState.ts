@@ -6,6 +6,8 @@ const STORAGE_PREFIX = "profitCoach.community.feedState.v1";
 
 export type CommunityFeedLocalState = {
   readPostIds: Record<string, true>;
+  /** Explicitly marked unread; overrides read ids and engagement-as-read. */
+  unreadPostIds: Record<string, true>;
   /** Max comment `created_at` (ISO) the user has seen in the thread for that post. */
   commentsSeenUpTo: Record<string, string>;
 };
@@ -29,6 +31,8 @@ export function isCommunityPostReadOnFeed(
   post: CommunityPostViewerEngagement & { id: string },
   snapshot: CommunityFeedLocalState
 ): boolean {
+  // Explicit unread always wins (including over likes/comments).
+  if (snapshot.unreadPostIds?.[post.id]) return false;
   return (
     Boolean(snapshot.readPostIds[post.id]) ||
     communityPostHasViewerEngagement(post)
@@ -36,7 +40,7 @@ export function isCommunityPostReadOnFeed(
 }
 
 function emptyState(): CommunityFeedLocalState {
-  return { readPostIds: {}, commentsSeenUpTo: {} };
+  return { readPostIds: {}, unreadPostIds: {}, commentsSeenUpTo: {} };
 }
 
 function storageKey(scopeId: string): string {
@@ -55,6 +59,10 @@ export function loadCommunityFeedLocalState(
       readPostIds:
         parsed.readPostIds && typeof parsed.readPostIds === "object"
           ? parsed.readPostIds
+          : {},
+      unreadPostIds:
+        parsed.unreadPostIds && typeof parsed.unreadPostIds === "object"
+          ? parsed.unreadPostIds
           : {},
       commentsSeenUpTo:
         parsed.commentsSeenUpTo &&
@@ -83,15 +91,30 @@ function maxIso(a: string, b: string): string {
   return new Date(a).getTime() >= new Date(b).getTime() ? a : b;
 }
 
+export type MarkCommunityPostReadOptions = {
+  /**
+   * When true, clears an explicit "mark as unread" and marks the post read.
+   * Default false so casual auto-read (modal effects, close, engagement) cannot
+   * undo a deliberate unread.
+   */
+  clearExplicitUnread?: boolean;
+};
+
 export function markCommunityPostReadInStorage(
   scopeId: string,
-  postId: string
+  postId: string,
+  options?: MarkCommunityPostReadOptions
 ): boolean {
   const prev = loadCommunityFeedLocalState(scopeId);
-  if (prev.readPostIds[postId]) return false;
+  const hadUnread = Boolean(prev.unreadPostIds[postId]);
+  if (hadUnread && !options?.clearExplicitUnread) return false;
+  if (prev.readPostIds[postId] && !hadUnread) return false;
+  const unreadPostIds = { ...prev.unreadPostIds };
+  if (hadUnread) delete unreadPostIds[postId];
   persistCommunityFeedLocalState(scopeId, {
     ...prev,
     readPostIds: { ...prev.readPostIds, [postId]: true },
+    unreadPostIds,
   });
   return true;
 }
@@ -105,7 +128,13 @@ export function markOwnCommunityPostsReadInStorage(
   let changed = false;
   const readPostIds = { ...prev.readPostIds };
   for (const post of posts) {
-    if (post.author?.id !== scopeId || readPostIds[post.id]) continue;
+    if (
+      post.author?.id !== scopeId ||
+      readPostIds[post.id] ||
+      prev.unreadPostIds[post.id]
+    ) {
+      continue;
+    }
     readPostIds[post.id] = true;
     changed = true;
   }
@@ -126,7 +155,13 @@ export function markEngagedCommunityPostsReadInStorage(
   let changed = false;
   const readPostIds = { ...prev.readPostIds };
   for (const post of posts) {
-    if (readPostIds[post.id] || !communityPostHasViewerEngagement(post)) continue;
+    if (
+      readPostIds[post.id] ||
+      prev.unreadPostIds[post.id] ||
+      !communityPostHasViewerEngagement(post)
+    ) {
+      continue;
+    }
     readPostIds[post.id] = true;
     changed = true;
   }
@@ -143,9 +178,10 @@ export function markCommunityPostUnreadInStorage(
   postId: string
 ): boolean {
   const prev = loadCommunityFeedLocalState(scopeId);
+  const alreadyUnread = Boolean(prev.unreadPostIds[postId]);
   const hadRead = Boolean(prev.readPostIds[postId]);
   const hadSeen = postId in prev.commentsSeenUpTo;
-  if (!hadRead && !hadSeen) return false;
+  if (alreadyUnread && !hadRead && !hadSeen) return false;
   const readPostIds = { ...prev.readPostIds };
   delete readPostIds[postId];
   const commentsSeenUpTo = { ...prev.commentsSeenUpTo };
@@ -153,6 +189,7 @@ export function markCommunityPostUnreadInStorage(
   persistCommunityFeedLocalState(scopeId, {
     ...prev,
     readPostIds,
+    unreadPostIds: { ...prev.unreadPostIds, [postId]: true },
     commentsSeenUpTo,
   });
   return true;
@@ -186,9 +223,9 @@ export function useCommunityFeedCardLocalState(scopeId: string | null) {
   }, [scopeId, version]);
 
   const markPostRead = useCallback(
-    (postId: string) => {
+    (postId: string, options?: MarkCommunityPostReadOptions) => {
       if (!scopeId) return;
-      if (markCommunityPostReadInStorage(scopeId, postId)) bump();
+      if (markCommunityPostReadInStorage(scopeId, postId, options)) bump();
     },
     [scopeId, bump]
   );
