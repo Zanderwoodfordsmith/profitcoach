@@ -6,6 +6,8 @@ export type AcademyLesson = {
   title: string;
   emoji?: string;
   description?: string;
+  /** Sidebar length label, e.g. `6m` (from catalog or DB override). */
+  duration?: string;
   /** Supports common YouTube URLs; other URLs may show as a link or generic video element later. */
   videoUrl?: string | null;
   bodyMarkdown?: string;

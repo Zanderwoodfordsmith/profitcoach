@@ -633,7 +633,7 @@ function buildPaymentGroups(
     const groupPayments = byCoach.get(coachId) ?? [];
     const coach = groupPayments[0]?.assigned_coach;
     groups.push({
-      key: coachId,
+      key: coach?.slug ?? coachId,
       label: coach ? coachLabel(coach) : coachId,
       payments: groupPayments,
       summary: computeGroupPaymentSummary(groupPayments),
@@ -1578,7 +1578,7 @@ export default function AdminPaymentsPage() {
             <td key={key} className="px-3 py-2 text-slate-800">
               <div className="inline-flex max-w-[14rem] items-center gap-0.5">
                 <Link
-                  href={`/admin/coaches/${encodeURIComponent(assigned.id)}?tab=payments`}
+                  href={`/admin/coaches/${encodeURIComponent(assigned.slug)}?tab=payments`}
                   className="min-w-0 truncate text-[#0c5290] hover:underline"
                   title={`View ${coachLabel(assigned)} payments`}
                 >
@@ -1630,7 +1630,7 @@ export default function AdminPaymentsPage() {
           <td key={key} className="px-3 py-2 text-slate-700">
             {payment.suggested_coach ? (
               <Link
-                href={`/admin/coaches/${encodeURIComponent(payment.suggested_coach.id)}?tab=payments`}
+                href={`/admin/coaches/${encodeURIComponent(payment.suggested_coach.slug)}?tab=payments`}
                 className="text-[#0c5290] hover:underline"
               >
                 {coachLabel(payment.suggested_coach)}

@@ -32,13 +32,6 @@ export const GATED_ROUTES: GatedRoute[] = [
       "The community feed is where coaches share wins, ask questions and get support daily. Membership keeps you in the conversation.",
   },
   {
-    prefix: "/coach/signature",
-    feature: "nav.compass",
-    title: "Compass",
-    description:
-      "Compass keeps your numbers, goals and next actions in one place so you always know your position and what to do next.",
-  },
-  {
     prefix: "/coach/prospects",
     feature: "nav.marketing",
     title: "Prospects",
@@ -122,6 +115,8 @@ export const ACADEMY_COURSE_TITLES: Record<string, string> = {
   "profit-coach-certification": "Profit Coach Certification",
   "client-acquisition": "Client Acquisition",
   "client-delivery": "Client Delivery",
+  "profit-coach-system": "Profit Coach System",
+  "profit-coach-os": "Profit Coach OS",
   "profit-brand-framework": "PROFIT Brand & Framework",
 };
 
@@ -129,7 +124,7 @@ const ACADEMY_RESERVED_SEGMENTS = new Set([
   "programs",
   "classroom",
   "resources",
-  "new",
+  "simplified",
 ]);
 
 /** Extract the academy course id from a coach academy path, if any. */

@@ -183,9 +183,9 @@ function SectionCard({
 export default function AdminCoachDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id: coachId } = use(params);
+  const { slug: coachRef } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setImpersonatingCoachId } = useImpersonation();
@@ -226,7 +226,7 @@ export default function AdminCoachDetailPage({
         return;
       }
 
-      const res = await fetch(`/api/admin/coaches/${encodeURIComponent(coachId)}`, {
+      const res = await fetch(`/api/admin/coaches/${encodeURIComponent(coachRef)}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const body = (await res.json().catch(() => ({}))) as {
@@ -243,16 +243,23 @@ export default function AdminCoachDetailPage({
         return;
       }
 
-      setCoach(body.coach ?? null);
+      const loadedCoach = body.coach ?? null;
+      setCoach(loadedCoach);
       setPayments(body.payments ?? []);
       setLoading(false);
+
+      if (loadedCoach && loadedCoach.slug !== coachRef) {
+        const tab = searchParams.get("tab");
+        const query = tab ? `?tab=${encodeURIComponent(tab)}` : "";
+        router.replace(`/admin/coaches/${encodeURIComponent(loadedCoach.slug)}${query}`);
+      }
     }
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, [coachId, router]);
+  }, [coachRef, router, searchParams]);
 
   useEffect(() => {
     if (!coach) return;
@@ -279,7 +286,7 @@ export default function AdminCoachDetailPage({
 
     const nextRecurring = accessDraft.recurring_payment_status || null;
     const res = await fetch(
-      `/api/admin/coaches/${encodeURIComponent(coachId)}`,
+      `/api/admin/coaches/${encodeURIComponent(coach.slug)}`,
       {
         method: "PATCH",
         headers: {
@@ -319,7 +326,7 @@ export default function AdminCoachDetailPage({
     const forBilling = (payment: CoachPayment) => ({
       id: payment.id,
       customer_email: payment.customer_email,
-      coach_id: coachId,
+      coach_id: coach?.id ?? null,
       amount_cents: payment.amount_cents,
       currency: payment.currency,
       status: payment.status,
@@ -341,7 +348,7 @@ export default function AdminCoachDetailPage({
       inferred_billing_kind: inferredById.get(payment.id) ?? "other",
       billing_kind: resolvedById.get(payment.id) ?? "other",
     }));
-  }, [coachId, payments]);
+  }, [coach?.id, payments]);
 
   const paymentSummary = useMemo(() => {
     const succeeded = paymentsWithBilling.filter((payment) => payment.status === "succeeded");

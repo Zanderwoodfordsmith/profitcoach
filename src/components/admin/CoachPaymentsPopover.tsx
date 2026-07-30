@@ -27,14 +27,14 @@ const POPOVER_MAX_HEIGHT = 220;
 const POPOVER_CLOSE_MS = 120;
 
 type Props = {
-  coachId: string;
+  coachSlug: string;
   coachName: string;
   summary: CoachPaymentSummary;
   children: ReactNode;
 };
 
 export function CoachPaymentsPopover({
-  coachId,
+  coachSlug,
   coachName,
   summary,
   children,
@@ -176,7 +176,7 @@ export function CoachPaymentsPopover({
           </ul>
           <div className="mt-2 border-t border-slate-100 pt-2">
             <Link
-              href={`/admin/coaches/${encodeURIComponent(coachId)}?tab=payments`}
+              href={`/admin/coaches/${encodeURIComponent(coachSlug)}?tab=payments`}
               className="text-xs font-medium text-sky-600 hover:text-sky-700"
               onClick={hide}
             >

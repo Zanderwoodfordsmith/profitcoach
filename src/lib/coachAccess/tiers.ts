@@ -33,7 +33,6 @@ export type CoachFeature =
   | "community.feedback_channel"
   | "calendar.momentum_only"
   | "calendar.all_events"
-  | "nav.compass"
   | "nav.classroom"
   | "classroom.full"
   | "nav.marketing"
@@ -45,7 +44,6 @@ const PREMIUM_FEATURE_SET: ReadonlySet<CoachFeature> = new Set([
   "community.feedback_channel",
   "calendar.momentum_only",
   "calendar.all_events",
-  "nav.compass",
   "nav.classroom",
   "classroom.full",
   "nav.marketing",
@@ -82,7 +80,6 @@ export const PREMIUM_EQUIVALENT_FEATURES: CoachFeature[] = [
   "community.feedback_channel",
   "calendar.momentum_only",
   "calendar.all_events",
-  "nav.compass",
   "nav.classroom",
   "classroom.full",
   "nav.marketing",

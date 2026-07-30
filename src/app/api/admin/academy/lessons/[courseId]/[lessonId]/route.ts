@@ -14,6 +14,7 @@ type Body = {
   videoUrl?: string | null;
   bodyMarkdown?: string | null;
   transcriptText?: string | null;
+  duration?: string | null;
 };
 
 export async function GET(
@@ -77,6 +78,7 @@ export async function PATCH(
       videoUrl: body.videoUrl,
       bodyMarkdown: body.bodyMarkdown,
       transcriptText: body.transcriptText,
+      duration: body.duration,
     });
   } catch (err) {
     return NextResponse.json(

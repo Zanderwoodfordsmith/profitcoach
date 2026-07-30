@@ -4,6 +4,7 @@ import {
   CalendarDays,
   Clock,
   Compass,
+  FileUp,
   Filter,
   LayoutGrid,
   MessagesSquare,
@@ -50,6 +51,10 @@ function IconBookOpen({ className }: { className?: string }) {
 
 function IconCompass({ className }: { className?: string }) {
   return <Compass className={className} />;
+}
+
+function IconLessonImport({ className }: { className?: string }) {
+  return <FileUp className={className} />;
 }
 
 function IconCalendar({ className }: { className?: string }) {
@@ -100,24 +105,25 @@ export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   ];
   base.push(
     {
-      href: `${prefix}/signature`,
-      label: "Compass",
-      icon: IconCompass,
-      requiredFeature: "nav.compass",
+      href: `${prefix}/academy`,
+      label: "Classroom",
+      icon: IconAcademy,
+      requiredFeature: "nav.classroom",
     },
     {
       href: `${prefix}/community/calendar`,
       label: "Calendar",
       icon: IconCalendar,
       requiredFeature: "calendar.momentum_only",
-    },
-    {
-      href: `${prefix}/academy`,
-      label: "Classroom",
-      icon: IconAcademy,
-      requiredFeature: "nav.classroom",
     }
   );
+  if (prefix === "/admin") {
+    base.push({
+      href: "/admin/signature",
+      label: "Compass",
+      icon: IconCompass,
+    });
+  }
   return base;
 }
 
@@ -130,9 +136,9 @@ export function filterNavItemsByFeatures(
   );
 }
 
-/** Four primary tabs on mobile (BOSS score lives under More). */
+/** Primary tabs on mobile (BOSS score and admin tools live under More). */
 export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
-  return [
+  const items: DashboardNavItem[] = [
     {
       href: `${prefix}/community`,
       label: "Community",
@@ -140,10 +146,10 @@ export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNav
       requiredFeature: "community.feed",
     },
     {
-      href: `${prefix}/signature`,
-      label: "Compass",
-      icon: IconCompass,
-      requiredFeature: "nav.compass",
+      href: `${prefix}/academy`,
+      label: "Classroom",
+      icon: IconAcademy,
+      requiredFeature: "nav.classroom",
     },
     {
       href: `${prefix}/community/calendar`,
@@ -151,13 +157,15 @@ export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNav
       icon: IconCalendar,
       requiredFeature: "calendar.momentum_only",
     },
-    {
-      href: `${prefix}/academy`,
-      label: "Classroom",
-      icon: IconAcademy,
-      requiredFeature: "nav.classroom",
-    },
   ];
+  if (prefix === "/admin") {
+    items.push({
+      href: "/admin/signature",
+      label: "Compass",
+      icon: IconCompass,
+    });
+  }
+  return items;
 }
 
 export function mobileMoreNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
@@ -226,6 +234,7 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
 
 export const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
+  { href: "/admin/lesson-import", label: "Lesson import", icon: IconLessonImport },
   { href: "/admin/landing-analytics", label: "Landing analytics", icon: IconBarChart },
   { href: "/admin/time-tracker", label: "Time Tracker", icon: IconClock },
   { href: "/admin/linkedin", label: "LinkedIn Scheduler", icon: IconSparkles },

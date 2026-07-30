@@ -2100,7 +2100,7 @@ export default function AdminPage() {
       return (
         <td className="max-w-[14rem] px-2 py-2 align-middle">
           <CoachPaymentsPopover
-            coachId={coach.id}
+            coachSlug={coach.slug}
             coachName={displayName}
             summary={coach.payment_summary}
           >
@@ -2982,7 +2982,7 @@ export default function AdminPage() {
                   >
                     <span className="inline-flex items-center gap-1.5">
                       <Link
-                        href={`/admin/coaches/${coach.id}`}
+                        href={`/admin/coaches/${encodeURIComponent(coach.slug)}`}
                         className={
                           isDoNotContactCoach(coach)
                             ? "text-rose-800 hover:text-rose-900 hover:underline"

@@ -33,6 +33,7 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
   const [saveError, setSaveError] = useState<string | null>(null);
   const [title, setTitle] = useState(initialLesson.title);
   const [videoUrl, setVideoUrl] = useState(initialLesson.videoUrl ?? "");
+  const [duration, setDuration] = useState(initialLesson.duration ?? "");
   const [bodyMarkdown, setBodyMarkdown] = useState(initialLesson.bodyMarkdown ?? "");
 
   const applyPayload = useCallback((data: LessonPayload) => {
@@ -41,6 +42,7 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
     setLesson(data.lesson);
     setTitle(data.lesson.title);
     setVideoUrl(data.lesson.videoUrl ?? "");
+    setDuration(data.lesson.duration ?? "");
     setBodyMarkdown(data.lesson.bodyMarkdown ?? "");
   }, []);
 
@@ -48,6 +50,7 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
     if (editing) return;
     setTitle(lesson.title);
     setVideoUrl(lesson.videoUrl ?? "");
+    setDuration(lesson.duration ?? "");
     setBodyMarkdown(lesson.bodyMarkdown ?? "");
   }, [editing, lesson]);
 
@@ -78,6 +81,7 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
             title: trimmedTitle,
             videoUrl: videoUrl.trim() || null,
             bodyMarkdown,
+            duration: duration.trim() || null,
           }),
         }
       );
@@ -97,6 +101,7 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
         ...lesson,
         title: title.trim() || lesson.title,
         videoUrl: videoUrl.trim() || null,
+        duration: duration.trim() || undefined,
         bodyMarkdown,
       }
     : lesson;
@@ -130,6 +135,7 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
                   setEditing(false);
                   setTitle(lesson.title);
                   setVideoUrl(lesson.videoUrl ?? "");
+                  setDuration(lesson.duration ?? "");
                   setBodyMarkdown(lesson.bodyMarkdown ?? "");
                   setSaveError(null);
                 }}
@@ -166,6 +172,8 @@ export function AdminClassroomLessonEditor({ category, course, lesson: initialLe
           titlePrefix={lesson.emoji}
           videoUrl={videoUrl}
           onVideoUrlChange={setVideoUrl}
+          duration={duration}
+          onDurationChange={setDuration}
           bodyMarkdown={bodyMarkdown}
           onBodyMarkdownChange={setBodyMarkdown}
           uploading={uploading}

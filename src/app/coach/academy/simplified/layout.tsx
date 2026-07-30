@@ -6,7 +6,11 @@ import { useRouter } from "next/navigation";
 
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export default function CoachAcademyNewLayout({ children }: { children: ReactNode }) {
+export default function CoachAcademySimplifiedLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const router = useRouter();
   const [allowed, setAllowed] = useState<boolean | null>(null);
 

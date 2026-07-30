@@ -95,12 +95,12 @@ export default function CoachLayout({
     };
   }, [impersonatingCoachId]);
 
-  /** Admins belong on /admin/signature; /coach/signature is for coaches (or admins while impersonating). */
+  /** Compass is admin-only; /coach/signature stays for impersonation. */
   useEffect(() => {
     if (!pathname?.startsWith("/coach/signature")) return;
     if (impersonatingCoachId) return;
     let cancelled = false;
-    async function redirectAdminIfNeeded() {
+    async function gateCompass() {
       const {
         data: { user },
       } = await supabaseClient.auth.getUser();
@@ -116,9 +116,11 @@ export default function CoachLayout({
       if (cancelled) return;
       if (roleBody.role === "admin") {
         router.replace("/admin/signature");
+      } else {
+        router.replace("/coach/community");
       }
     }
-    void redirectAdminIfNeeded();
+    void gateCompass();
     return () => {
       cancelled = true;
     };

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveCoachByRef } from "@/lib/admin/resolveCoachRef";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -11,7 +12,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const authCheck = await requireAdmin(request);
   if (authCheck.error) {
@@ -19,10 +20,15 @@ export async function POST(
     return NextResponse.json({ error: authCheck.error }, { status });
   }
 
-  const { id: coachId } = await context.params;
-  if (!coachId?.trim()) {
-    return NextResponse.json({ error: "Missing coach id." }, { status: 400 });
+  const { slug: coachRef } = await context.params;
+  if (!coachRef?.trim()) {
+    return NextResponse.json({ error: "Missing coach slug." }, { status: 400 });
   }
+  const resolved = await resolveCoachByRef(coachRef);
+  if (!resolved) {
+    return NextResponse.json({ error: "Coach not found." }, { status: 404 });
+  }
+  const coachId = resolved.id;
 
   let body: CredentialsBody;
   try {

@@ -47,7 +47,7 @@ const DS = {
   canvas: "#f5f8fc",
   chathams: "#0c5290",
   velocity: "#42a1ee",
-  teal: "#0d9488",
+  teal: "#1ca0c2",
   ragRed: "#e11d48",
   ragAmber: "#f59e0b",
   ragGreen: "#10b981",

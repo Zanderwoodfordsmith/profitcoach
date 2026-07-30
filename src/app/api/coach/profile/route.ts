@@ -309,7 +309,7 @@ type PatchBody = {
   directory_level?: unknown;
   /**
    * Outbound webhook fired with prospect contact info + BOSS score. Admins
-   * can also edit this via /api/admin/coaches/[id]; both paths feed the same
+   * can also edit this via /api/admin/coaches/[slug]; both paths feed the same
    * coaches.lead_webhook_url column.
    */
   lead_webhook_url?: string | null;

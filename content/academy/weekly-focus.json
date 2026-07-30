@@ -1,0 +1,125 @@
+{
+  "coverImageUrl": "/academy/simplified/weekly-focus.jpg",
+  "weeks": [
+    {
+      "id": "week-01",
+      "weekOfYear": 1,
+      "pathId": "get-calls",
+      "pathLabel": "Get Calls",
+      "title": "Follow up with warm prospects",
+      "description": "A tiny execution rep that keeps lead generation moving without feeling heavy.",
+      "action": "Send 5 follow-up messages to people who ghosted your value session invite.",
+      "bodyMarkdown": "Ignore cold outreach for this week.\n\nOpen your CRM or message thread list and find five people who showed interest, then went quiet after a value-session invite.\n\nWrite a short, specific follow-up. One clear reason to reconnect. One easy next step."
+    },
+    {
+      "id": "week-02",
+      "weekOfYear": 2,
+      "pathId": "get-calls",
+      "pathLabel": "Get Calls",
+      "title": "Sharpen your positioning",
+      "description": "Use one small prompt to improve how clearly prospects understand what you do.",
+      "action": "Update one line in your LinkedIn headline so it speaks more directly to your core client.",
+      "bodyMarkdown": "Do not rewrite your whole profile.\n\nChange one line so a stranger instantly understands who you help and the outcome you create.\n\nIf it still sounds generic, make it more specific."
+    },
+    {
+      "id": "week-03",
+      "weekOfYear": 3,
+      "pathId": "win-clients",
+      "pathLabel": "Win Clients",
+      "title": "Tighten your booking messages",
+      "description": "Small messaging tweaks compound fast when you are booking value sessions every week.",
+      "action": "Rewrite one invite or reminder message so it sounds more specific, personal, and easy to reply to.",
+      "bodyMarkdown": "Pick your weakest invite or reminder.\n\nMake it shorter. Make the next step obvious. Make it feel like it was written for one person, not a list."
+    },
+    {
+      "id": "week-04",
+      "weekOfYear": 4,
+      "pathId": "profit-coach-system",
+      "pathLabel": "Coach Clients",
+      "title": "Reinforce one client habit",
+      "description": "A fast coaching rep that strengthens delivery quality without needing a full planning session.",
+      "action": "Add one metric to a client dashboard and commit to reviewing it with them in your next session.",
+      "bodyMarkdown": "Choose one number that actually changes behaviour.\n\nAdd it to the dashboard. Tell the client you will review it together next session. Keep the conversation on that one habit."
+    },
+    {
+      "id": "week-05",
+      "weekOfYear": 5,
+      "pathId": "get-calls",
+      "pathLabel": "Get Calls",
+      "title": "Clean your prospect list",
+      "description": "A short list-quality rep that improves every conversation you start this month.",
+      "action": "Remove 10 weak prospects from your active list and replace them with 10 stronger ones.",
+      "bodyMarkdown": "Your list quality sets the ceiling for your outreach.\n\nCut anyone who is not a real fit. Add ten people who match your core client more closely."
+    },
+    {
+      "id": "week-06",
+      "weekOfYear": 6,
+      "pathId": "win-clients",
+      "pathLabel": "Win Clients",
+      "title": "Prep one value session",
+      "description": "A practical sales rep that makes your next value session feel sharper and more useful.",
+      "action": "Spend 15 minutes preparing one upcoming value session with three questions and one clear outcome.",
+      "bodyMarkdown": "Write three discovery questions.\n\nDecide the one outcome you want them to leave with.\n\nThen run the session against that plan, not against improvisation."
+    },
+    {
+      "id": "week-07",
+      "weekOfYear": 7,
+      "pathId": "profit-coach-system",
+      "pathLabel": "Coach Clients",
+      "title": "Close the loop on actions",
+      "description": "A delivery discipline rep that stops coaching from becoming interesting conversation with no follow-through.",
+      "action": "Review last session’s action list with one client and confirm what actually got done.",
+      "bodyMarkdown": "Open the last coaching sheet.\n\nAsk what moved. Ask what stalled. Reset one next action that is clear enough to complete this week."
+    },
+    {
+      "id": "week-08",
+      "weekOfYear": 8,
+      "pathId": "get-calls",
+      "pathLabel": "Get Calls",
+      "title": "Start five new conversations",
+      "description": "A simple pipeline rep. Volume only matters when the messages are personal.",
+      "action": "Start 5 new conversations with people on your Top 100 list.",
+      "bodyMarkdown": "No batch spam.\n\nFive personal openings. Mention something specific. Ask one easy question that invites a reply."
+    },
+    {
+      "id": "week-09",
+      "weekOfYear": 9,
+      "pathId": "win-clients",
+      "pathLabel": "Win Clients",
+      "title": "Practise your pitch transition",
+      "description": "A short sales-skill rep that makes the move into the offer feel natural instead of abrupt.",
+      "action": "Practise your value-session-to-pitch transition out loud once, then refine one sentence.",
+      "bodyMarkdown": "Record yourself or say it out loud once.\n\nIf the transition feels forced, rewrite the bridging sentence until it sounds like the natural next step."
+    },
+    {
+      "id": "week-10",
+      "weekOfYear": 10,
+      "pathId": "profit-coach-system",
+      "pathLabel": "Coach Clients",
+      "title": "Improve one session opening",
+      "description": "A delivery polish rep. Better openings create better sessions.",
+      "action": "Rewrite your first 2 minutes of a coaching session so they start with progress, energy, and one clear focus.",
+      "bodyMarkdown": "Cut the warm-up waffle.\n\nOpen with progress since last time, current energy, and the one issue that matters most today."
+    },
+    {
+      "id": "week-11",
+      "weekOfYear": 11,
+      "pathId": "get-calls",
+      "pathLabel": "Get Calls",
+      "title": "Fix your calendar friction",
+      "description": "A tiny systems rep that removes one reason prospects do not book.",
+      "action": "Check your booking link and availability, then remove one piece of friction that makes scheduling harder than it needs to be.",
+      "bodyMarkdown": "Click your own booking link.\n\nIf it feels confusing, slow, or scarce, fix one thing: clearer times, fewer steps, or a cleaner confirmation message."
+    },
+    {
+      "id": "week-12",
+      "weekOfYear": 12,
+      "pathId": "win-clients",
+      "pathLabel": "Win Clients",
+      "title": "Ask for one decision",
+      "description": "A closing discipline rep. Soft conversations still need a clear next step.",
+      "action": "On your next value session or sales call, ask for one clear decision before you end.",
+      "bodyMarkdown": "Do not leave the call in a vague maybe.\n\nAsk for the next step: book the sales call, start, or decide not to. Clarity helps both of you."
+    }
+  ]
+}

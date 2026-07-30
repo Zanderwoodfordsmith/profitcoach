@@ -126,7 +126,7 @@ export function HowItWorksContent() {
           className="absolute -right-[12%] top-[18%] h-[min(64vh,520px)] w-[min(64vw,520px)] rounded-full opacity-[0.1] blur-3xl"
           style={{
             background:
-              "radial-gradient(circle at 70% 40%, #0d9488, transparent 60%)",
+              "radial-gradient(circle at 70% 40%, #1ca0c2, transparent 60%)",
           }}
         />
       </div>

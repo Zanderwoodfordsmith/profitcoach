@@ -117,20 +117,21 @@ export function ClassroomLessonPlayer({ category, course, lesson, basePath }: Pr
                 const active = l.id === lesson.id;
                 return (
                   <li key={l.id}>
-                    <Link
-                      href={`${basePath}/${course.id}/${l.id}`}
+                    <div
                       className={`flex items-center gap-2.5 rounded-xl px-3 py-3 text-sm transition ${
                         active
                           ? "bg-sky-600 font-medium text-white shadow-sm"
                           : "text-slate-700 hover:bg-white/80"
                       }`}
                     >
-                      <span className="shrink-0" aria-hidden>
-                        {l.emoji ?? "▸"}
-                      </span>
-                      <span className="min-w-0 flex-1 leading-snug">{l.title}</span>
-                      <LessonProgressSidebarControl lessonId={l.id} align="right" />
-                    </Link>
+                      <LessonProgressSidebarControl lessonId={l.id} active={active} />
+                      <Link
+                        href={`${basePath}/${course.id}/${l.id}`}
+                        className="min-w-0 flex-1 leading-snug"
+                      >
+                        {l.title}
+                      </Link>
+                    </div>
                   </li>
                 );
               })}

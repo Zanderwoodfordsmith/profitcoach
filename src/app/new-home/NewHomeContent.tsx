@@ -26,7 +26,7 @@ const DEMO_TOTAL = 62;
 
 const navy = "#0c5290";
 const lightBlue = "#42a1ee";
-const teal = "#0d9488";
+const teal = "#1ca0c2";
 
 const outcomeItems = [
   { label: "More Profit", Icon: TrendingUp },

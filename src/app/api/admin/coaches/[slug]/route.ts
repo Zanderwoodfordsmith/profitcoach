@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveCoachByRef } from "@/lib/admin/resolveCoachRef";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import {
@@ -31,7 +32,7 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(
   _request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const authCheck = await requireAdmin(_request);
   if (authCheck.error) {
@@ -39,10 +40,15 @@ export async function GET(
     return NextResponse.json({ error: authCheck.error }, { status });
   }
 
-  const { id: coachId } = await context.params;
-  if (!coachId?.trim()) {
-    return NextResponse.json({ error: "Missing coach id." }, { status: 400 });
+  const { slug: coachRef } = await context.params;
+  if (!coachRef?.trim()) {
+    return NextResponse.json({ error: "Missing coach slug." }, { status: 400 });
   }
+  const resolved = await resolveCoachByRef(coachRef);
+  if (!resolved) {
+    return NextResponse.json({ error: "Coach not found." }, { status: 404 });
+  }
+  const coachId = resolved.id;
 
   try {
     const profileSelect =
@@ -265,7 +271,7 @@ type PatchBody = {
 
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const authCheck = await requireAdmin(request);
   if (authCheck.error) {
@@ -276,10 +282,15 @@ export async function PATCH(
     );
   }
 
-  const { id: coachId } = await context.params;
-  if (!coachId?.trim()) {
-    return NextResponse.json({ error: "Missing coach id." }, { status: 400 });
+  const { slug: coachRef } = await context.params;
+  if (!coachRef?.trim()) {
+    return NextResponse.json({ error: "Missing coach slug." }, { status: 400 });
   }
+  const resolved = await resolveCoachByRef(coachRef);
+  if (!resolved) {
+    return NextResponse.json({ error: "Coach not found." }, { status: 404 });
+  }
+  const coachId = resolved.id;
 
   let body: PatchBody;
   try {
@@ -752,7 +763,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ slug: string }> }
 ) {
   const authCheck = await requireAdmin(request);
   if (authCheck.error) {
@@ -760,10 +771,15 @@ export async function DELETE(
     return NextResponse.json({ error: authCheck.error }, { status });
   }
 
-  const { id: coachId } = await context.params;
-  if (!coachId?.trim()) {
-    return NextResponse.json({ error: "Missing coach id." }, { status: 400 });
+  const { slug: coachRef } = await context.params;
+  if (!coachRef?.trim()) {
+    return NextResponse.json({ error: "Missing coach slug." }, { status: 400 });
   }
+  const resolved = await resolveCoachByRef(coachRef);
+  if (!resolved) {
+    return NextResponse.json({ error: "Coach not found." }, { status: 404 });
+  }
+  const coachId = resolved.id;
 
   if (coachId === authCheck.userId) {
     return NextResponse.json(

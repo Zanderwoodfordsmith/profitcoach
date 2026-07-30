@@ -26,7 +26,7 @@
             },
             {
               "id": "kickstart-welcome-getting-started-guide-earn-1000-for-every-referal",
-              "title": "Earn £1000 for every referal",
+              "title": "Earn \u00a31000 for every referral",
               "duration": "",
               "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
@@ -102,11 +102,11 @@
       "sections": [
         {
           "id": "coach-action-plan-the-10k-mo-plan",
-          "title": "The £10K/mo Plan",
+          "title": "The \u00a310K/mo Plan",
           "lessons": [
             {
               "id": "coach-action-plan-the-10k-mo-plan-the-10k-mo-blueprint-your-bridge-to-success",
-              "title": "The £10k/mo blueprint: your bridge to success",
+              "title": "The \u00a310k/mo blueprint: your bridge to success",
               "duration": "",
               "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
@@ -120,7 +120,7 @@
             },
             {
               "id": "coach-action-plan-the-10k-mo-plan-wip-conversion-calculator-mastering-procoach-kpis-for-10k-mo-success",
-              "title": "(WIP) Conversion Calculator: Mastering ProCoach KPIs for £10k/mo success",
+              "title": "(WIP) Conversion Calculator: Mastering ProCoach KPIs for \u00a310k/mo success",
               "duration": "",
               "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/procoach-playbook/dashboard"
@@ -650,14 +650,14 @@
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-coachin-a-person-feedback-review",
-              "title": "Coachin a Person Feedback Review",
+              "title": "Coaching a Person Feedback Review",
               "duration": "9m",
               "hasVideo": true,
               "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
             },
             {
               "id": "profit-coach-certification-create-lasting-transformation-pros-cons-coachin-ai-vs-person",
-              "title": "Pros & Cons Coachin AI vs Person",
+              "title": "Pros & Cons Coaching AI vs Person",
               "duration": "15m",
               "hasVideo": true,
               "academyUrl": "https://academy.businesscoachacademy.com/p/profit-coach-certification/curriculum/overview"
@@ -884,7 +884,7 @@
           "lessons": [
             {
               "id": "client-acquisition-calendar-setup-how-to-simplify-scheduling-meetins-with-prospects",
-              "title": "How To Simplify Scheduling Meetins With Prospects",
+              "title": "How To Simplify Scheduling Meetings With Prospects",
               "duration": "",
               "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
@@ -897,7 +897,7 @@
           "lessons": [
             {
               "id": "client-acquisition-lead-generation-intro-traffic-the-best-wat-to-get-leads",
-              "title": "Traffic: The Best Wat to Get Leads",
+              "title": "Traffic: The Best Way to Get Leads",
               "duration": "",
               "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
@@ -951,20 +951,6 @@
             },
             {
               "id": "client-acquisition-lead-generation-ai-automation-write-a-linkedin-connection-message",
-              "title": "Write A LinkedIn Connection Message",
-              "duration": "",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-            },
-            {
-              "id": "client-acquisition-lead-generation-ai-automation-connector-campaign-overview-4",
-              "title": "Connector Campaign: Overview",
-              "duration": "",
-              "hasVideo": false,
-              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-            },
-            {
-              "id": "client-acquisition-lead-generation-ai-automation-write-a-linkedin-connection-message-5",
               "title": "Write A LinkedIn Connection Message",
               "duration": "",
               "hasVideo": false,
@@ -1075,7 +1061,7 @@
             },
             {
               "id": "client-acquisition-replying-to-leads-mistakse-to-avoid-when-replying-to-prospects",
-              "title": "Mistakse To Avoid When Replying To Prospects",
+              "title": "Mistakes To Avoid When Replying To Prospects",
               "duration": "12m",
               "hasVideo": true,
               "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
@@ -1304,7 +1290,7 @@
         },
         {
           "id": "client-delivery-coachiing-session-structure",
-          "title": "Coachiing Session Structure",
+          "title": "Coaching Session Structure",
           "lessons": [
             {
               "id": "client-delivery-coachiing-session-structure-how-to-use-the-coaching-sheet-in-sessions",
@@ -1322,7 +1308,7 @@
             },
             {
               "id": "client-delivery-coachiing-session-structure-how-eo-end-a-coaching-session",
-              "title": "How Eo End A Coaching Session",
+              "title": "How To End A Coaching Session",
               "duration": "",
               "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
@@ -1407,7 +1393,7 @@
         },
         {
           "id": "client-delivery-other-coachin-session-content",
-          "title": "Other Coachin Session Content",
+          "title": "Other Coaching Session Content",
           "lessons": [
             {
               "id": "client-delivery-other-coachin-session-content-coaching-session-business-growth-matrix-by-pam",
@@ -1751,7 +1737,7 @@
         },
         {
           "id": "profit-brand-framework-financlails-kpis",
-          "title": "Financlails & KPIs",
+          "title": "Financials & KPIs",
           "lessons": [
             {
               "id": "profit-brand-framework-financlails-kpis-finance-fundamentals-income-statement-balance-sheet-cashflow-statement",

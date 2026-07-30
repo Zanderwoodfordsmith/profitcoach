@@ -1,12 +1,14 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import type { AcademyCatalog, AcademyLesson } from "./types";
-import type { LegacyHubCourse, LegacyHubLesson } from "./legacyHubCatalog";
+import type { LegacyHubCourse, LegacyHubLesson, LegacyHubSection } from "./legacyHubCatalog";
+import { flattenSections } from "./legacyHubCatalog";
 import { loadAcademyCatalog, loadAcademyCatalogSync } from "./catalog";
 import {
   hasInAppLessonContent,
   type LessonInAppContent,
 } from "./lessonContentUtils";
+import { contentSourceCourseId } from "./simplifiedHubLoad";
 
 export type { LessonInAppContent } from "./lessonContentUtils";
 export { hasInAppLessonContent } from "./lessonContentUtils";
@@ -18,6 +20,8 @@ export type AcademyLessonContentRow = {
   video_url: string | null;
   body_markdown: string | null;
   transcript_text: string | null;
+  /** Display length for the sidebar, e.g. `6m`. */
+  duration: string | null;
   updated_at: string;
 };
 
@@ -29,6 +33,22 @@ function titleFromRow(row: AcademyLessonContentRow | null | undefined): string |
 function transcriptFromRow(row: AcademyLessonContentRow | null | undefined): string | null {
   const t = row?.transcript_text?.trim();
   return t || null;
+}
+
+function durationFromRow(row: AcademyLessonContentRow | null | undefined): string | null {
+  const t = row?.duration?.trim();
+  return t || null;
+}
+
+/** Normalize editor input like `6`, `6m`, `(6m)` → `6m`. Empty clears override. */
+export function normalizeLessonDurationInput(
+  raw: string | null | undefined
+): string | null {
+  if (raw == null) return null;
+  let t = raw.trim().replace(/^\(|\)$/g, "").trim().toLowerCase();
+  if (!t) return null;
+  if (/^\d+(\.\d+)?$/.test(t)) t = `${t}m`;
+  return t;
 }
 
 function lessonKey(courseId: string, lessonId: string): string {
@@ -53,10 +73,12 @@ function lessonContentFromRow(
 function mergeLesson(base: AcademyLesson, row: AcademyLessonContentRow | undefined): AcademyLesson {
   if (!row) return base;
   const titleOverride = titleFromRow(row);
+  const durationOverride = durationFromRow(row);
   const content = lessonContentFromRow(row);
   return {
     ...base,
     ...(titleOverride ? { title: titleOverride } : {}),
+    ...(durationOverride ? { duration: durationOverride } : {}),
     videoUrl: row.video_url,
     bodyMarkdown: row.body_markdown ?? "",
     transcriptText: content?.transcriptText ?? null,
@@ -68,15 +90,44 @@ export function mergeLegacyLesson(
   row: AcademyLessonContentRow | null | undefined
 ): LegacyHubLesson & LessonInAppContent {
   const titleOverride = titleFromRow(row ?? undefined);
+  const durationOverride = durationFromRow(row ?? undefined);
   const merged = {
     ...base,
     ...(titleOverride ? { title: titleOverride } : {}),
+    ...(durationOverride ? { duration: durationOverride } : {}),
   };
   const content = lessonContentFromRow(row ?? undefined);
   if (!content) {
-    return { ...merged, videoUrl: null, bodyMarkdown: "", transcriptText: null };
+    return {
+      ...merged,
+      videoUrl: null,
+      bodyMarkdown: base.bodyMarkdown ?? "",
+      transcriptText: null,
+    };
   }
-  return { ...merged, ...content };
+  return {
+    ...merged,
+    ...content,
+    // Keep hub/catalog body when DB row has media but empty markdown.
+    bodyMarkdown: content.bodyMarkdown.trim()
+      ? content.bodyMarkdown
+      : (base.bodyMarkdown ?? ""),
+  };
+}
+
+function mergeLegacySectionTree(
+  section: LegacyHubSection,
+  byLesson: Map<string, AcademyLessonContentRow>
+): LegacyHubSection {
+  return {
+    ...section,
+    lessons: section.lessons.map((lesson) =>
+      mergeLegacyLesson(lesson, byLesson.get(lesson.id))
+    ),
+    sections: section.sections?.map((child) =>
+      mergeLegacySectionTree(child, byLesson)
+    ),
+  };
 }
 
 /** Legacy programme course with per-lesson DB overrides (titles, video, body, transcript). */
@@ -96,12 +147,47 @@ export async function loadLegacyCourseWithContent(
 
   return {
     ...course,
-    sections: course.sections.map((section) => ({
-      ...section,
-      lessons: section.lessons.map((lesson) =>
-        mergeLegacyLesson(lesson, byLesson.get(lesson.id))
-      ),
-    })),
+    sections: course.sections.map((section) =>
+      mergeLegacySectionTree(section, byLesson)
+    ),
+  };
+}
+
+/**
+ * Simplified hub courses may mix lessons from multiple Current programmes
+ * (e.g. Client Delivery onboarding + Profit Coach Certification). Resolve
+ * content via each lesson's original source course id.
+ */
+export async function loadSimplifiedCourseWithContent(
+  course: LegacyHubCourse
+): Promise<LegacyHubCourse> {
+  const sourceIds = [
+    ...new Set(
+      flattenSections(course.sections).flatMap((section) =>
+        section.lessons.map((lesson) => contentSourceCourseId(lesson.id))
+      )
+    ),
+  ];
+  if (sourceIds.length === 0) return course;
+
+  const { data: rows } = await supabaseAdmin
+    .from("academy_lesson_content")
+    .select("*")
+    .in("course_id", sourceIds);
+
+  const byLesson = new Map<string, AcademyLessonContentRow>();
+  for (const row of rows ?? []) {
+    const r = row as AcademyLessonContentRow;
+    const expected = contentSourceCourseId(r.lesson_id);
+    if (r.course_id !== expected) continue;
+    byLesson.set(r.lesson_id, r);
+  }
+
+  return {
+    ...course,
+    sections: course.sections.map((section) =>
+      mergeLegacySectionTree(section, byLesson)
+    ),
   };
 }
 
@@ -111,7 +197,7 @@ async function fetchLessonContentMapUncached(): Promise<
   const { data: rows } = await supabaseAdmin
     .from("academy_lesson_content")
     .select(
-      "course_id, lesson_id, title, video_url, body_markdown, transcript_text, updated_at"
+      "course_id, lesson_id, title, video_url, body_markdown, transcript_text, duration, updated_at"
     );
   const map = new Map<string, AcademyLessonContentRow>();
   for (const row of rows ?? []) {
@@ -203,6 +289,7 @@ export async function upsertAcademyLessonContent(input: {
   videoUrl?: string | null;
   bodyMarkdown?: string | null;
   transcriptText?: string | null;
+  duration?: string | null;
 }): Promise<AcademyLessonContentRow | null> {
   const existing = await loadAcademyLessonContentRow(input.courseId, input.lessonId);
 
@@ -223,6 +310,10 @@ export async function upsertAcademyLessonContent(input: {
       input.transcriptText !== undefined
         ? input.transcriptText?.trim() || null
         : (existing?.transcript_text ?? null),
+    duration:
+      input.duration !== undefined
+        ? normalizeLessonDurationInput(input.duration)
+        : (existing?.duration ?? null),
     updated_at: new Date().toISOString(),
   };
 

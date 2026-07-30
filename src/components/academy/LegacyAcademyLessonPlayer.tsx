@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronDown, FileText, Video } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft } from "lucide-react";
 
 import { AcademyMarkdown } from "@/components/academy/AcademyMarkdown";
 import {
   LessonProgressHeaderControl,
   LessonProgressSidebarControl,
+  useLessonProgress,
 } from "@/components/academy/LessonProgressControls";
 import { LessonPageEyebrow } from "@/components/academy/LessonPageEyebrow";
 import { LessonResourcesPanel } from "@/components/academy/LessonResourcesPanel";
@@ -17,9 +18,18 @@ import type {
   LegacyHubCatalog,
   LegacyHubCourse,
   LegacyHubLesson,
+  LegacyHubSection,
 } from "@/lib/academy/legacyHubCatalog";
 import type { AcademyResourceRow } from "@/lib/academy/resources";
-import { legacyLessonCount, lessonContextInCourse } from "@/lib/academy/legacyHubCatalog";
+import {
+  courseDurationLabel,
+  flattenSections,
+  legacyLessonCount,
+  lessonContextInCourse,
+  sectionContainsLesson,
+  sectionDurationLabel,
+  sectionLessonCount,
+} from "@/lib/academy/legacyHubCatalog";
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
 import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
 
@@ -37,26 +47,168 @@ type Props = {
   headerActions?: ReactNode;
   /** Replaces the main lesson panel (e.g. edit form) while keeping the sidebar */
   mainPanelOverride?: ReactNode;
+  /**
+   * Where the course contents rail sits on large screens.
+   * Simplified uses left (Skool-style); Current keeps right.
+   */
+  contentsPosition?: "left" | "right";
+  /**
+   * `minimal` strips eyebrow, lesson-count chrome, and boxy section cards —
+   * course title + progress bar in the rail (Simplified).
+   */
+  chrome?: "default" | "minimal";
 };
 
 function durationLabel(raw: string): string | null {
-  const t = raw.trim();
-  if (!t) return null;
-  if (t.startsWith("(") && t.endsWith(")")) return t;
-  return `(${t})`;
+  const t = raw.trim().replace(/^\(|\)$/g, "").trim();
+  return t || null;
+}
+
+function collectAncestorSectionIds(
+  sections: LegacyHubSection[],
+  lessonId: string,
+  ancestors: string[] = [],
+): string[] | null {
+  for (const section of sections) {
+    if (section.lessons.some((l) => l.id === lessonId)) {
+      return [...ancestors, section.id];
+    }
+    if (section.sections?.length) {
+      const hit = collectAncestorSectionIds(section.sections, lessonId, [
+        ...ancestors,
+        section.id,
+      ]);
+      if (hit) return hit;
+    }
+  }
+  return null;
 }
 
 function initialOpenSectionIds(course: LegacyHubCourse, activeLessonId: string): Set<string> {
-  const ids = new Set<string>();
-  for (const section of course.sections) {
-    if (section.lessons.some((l) => l.id === activeLessonId)) {
-      ids.add(section.id);
+  const path = collectAncestorSectionIds(course.sections, activeLessonId);
+  if (path?.length) return new Set(path);
+  const first = course.sections[0];
+  return new Set(first ? [first.id] : []);
+}
+
+function CourseProgressSummary({
+  course,
+  className = "mt-3",
+}: {
+  course: LegacyHubCourse;
+  className?: string;
+}) {
+  const { progress } = useLessonProgress();
+  const total = legacyLessonCount(course);
+  const completed = useMemo(() => {
+    let n = 0;
+    for (const section of flattenSections(course.sections)) {
+      for (const l of section.lessons) {
+        if (progress[l.id] === "completed") n += 1;
+      }
+    }
+    return n;
+  }, [course.sections, progress]);
+  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+  /** Fill too narrow for the label — place it just past the green tip. */
+  const labelOutside = pct < 10;
+
+  return (
+    <div className={`relative h-6 rounded-full bg-slate-200 ${className}`}>
+      <div
+        className="h-full rounded-full bg-emerald-600 transition-[width] duration-300"
+        style={{ width: `${pct}%` }}
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${pct}% complete`}
+      />
+      <span
+        className={`pointer-events-none absolute top-1/2 z-10 text-[11px] font-semibold tabular-nums ${
+          labelOutside ? "text-slate-600" : "text-white"
+        }`}
+        style={
+          labelOutside
+            ? { left: `calc(${pct}% + 0.35rem)`, transform: "translateY(-50%)" }
+            : { left: `calc(${pct}% - 0.35rem)`, transform: "translate(-100%, -50%)" }
+        }
+      >
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
+/** Tiny 12-o'clock dial for category completion (BOSS checklist ring style). */
+function CategoryProgressDial({
+  completed,
+  total,
+}: {
+  completed: number;
+  total: number;
+}) {
+  const size = 16;
+  const stroke = 2;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const ratio = total === 0 ? 0 : completed / total;
+  const allDone = total > 0 && completed === total;
+
+  if (allDone) {
+    return (
+      <span
+        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"
+        aria-label="Category complete"
+      >
+        <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <svg
+      className="h-4 w-4 shrink-0 -rotate-90"
+      viewBox={`0 0 ${size} ${size}`}
+      aria-label={`${completed} of ${total} lessons complete`}
+      role="img"
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        className="text-slate-200"
+      />
+      {ratio > 0 ? (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          className="text-emerald-600"
+          strokeDasharray={`${ratio * circumference} ${circumference}`}
+        />
+      ) : null}
+    </svg>
+  );
+}
+
+function CategoryDialForSection({ section }: { section: LegacyHubSection }) {
+  const { progress } = useLessonProgress();
+  const total = sectionLessonCount(section);
+  let completed = 0;
+  for (const node of flattenSections([section])) {
+    for (const l of node.lessons) {
+      if (progress[l.id] === "completed") completed += 1;
     }
   }
-  if (ids.size === 0 && course.sections[0]) {
-    ids.add(course.sections[0].id);
-  }
-  return ids;
+  return <CategoryProgressDial completed={completed} total={total} />;
 }
 
 export function LegacyAcademyLessonPlayer({
@@ -71,16 +223,21 @@ export function LegacyAcademyLessonPlayer({
   lessonResources = [],
   headerActions,
   mainPanelOverride,
+  contentsPosition = "right",
+  chrome = "default",
 }: Props) {
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(() =>
     initialOpenSectionIds(course, lesson.id)
   );
 
   useEffect(() => {
-    const sec = course.sections.find((s) => s.lessons.some((l) => l.id === lesson.id));
-    if (sec) {
-      setOpenSectionIds((prev) => new Set(prev).add(sec.id));
-    }
+    const path = collectAncestorSectionIds(course.sections, lesson.id);
+    if (!path?.length) return;
+    setOpenSectionIds((prev) => {
+      const next = new Set(prev);
+      for (const id of path) next.add(id);
+      return next;
+    });
   }, [course.sections, lesson.id]);
 
   const ctx = useMemo(
@@ -93,6 +250,8 @@ export function LegacyAcademyLessonPlayer({
   const directVideoUrl =
     videoUrl && !embedUrl && isDirectVideoFileUrl(videoUrl) ? videoUrl : null;
   const lessonCount = legacyLessonCount(course);
+  const contentsOnLeft = contentsPosition === "left";
+  const minimal = chrome === "minimal";
 
   function toggleSection(id: string) {
     setOpenSectionIds((prev) => {
@@ -103,201 +262,401 @@ export function LegacyAcademyLessonPlayer({
     });
   }
 
-  const sidebar = (
-    <aside className="w-full shrink-0 lg:sticky lg:top-28 lg:w-96 lg:self-start">
-      <div className="rounded-2xl bg-slate-100/80 p-5 ring-1 ring-slate-200/70">
-        <p className="text-sm font-semibold text-slate-900">Course contents</p>
-        <p className="mt-0.5 text-xs text-slate-500">
-          {lessonCount} lesson{lessonCount === 1 ? "" : "s"}
-        </p>
-
-        <ul className="mt-5 max-h-[50vh] space-y-3 overflow-y-auto lg:max-h-[calc(100vh-12rem)]">
-          {course.sections.map((section) => {
-            const secOpen = openSectionIds.has(section.id);
-            return (
-              <li key={section.id} className="overflow-hidden rounded-xl bg-white/80 ring-1 ring-slate-200/60">
-                <button
-                  type="button"
-                  onClick={() => toggleSection(section.id)}
-                  className="flex w-full items-center justify-between gap-2 px-3.5 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-white"
-                  aria-expanded={secOpen}
+  function renderLessonRows(lessons: LegacyHubLesson[], indentClass: string) {
+    return (
+      <ul className={indentClass}>
+        {lessons.map((l) => {
+          const active = l.id === lesson.id;
+          const dur = durationLabel(l.duration);
+          return (
+            <li key={l.id}>
+              <div
+                className={
+                  minimal
+                    ? `relative z-0 flex min-w-0 items-center gap-2 py-2 text-sm transition before:pointer-events-none before:absolute before:-inset-x-2 before:inset-y-0 before:z-[-1] before:rounded-md before:content-[''] ${
+                        active
+                          ? "text-[15px] font-medium text-slate-900 before:bg-sky-100"
+                          : "font-normal text-slate-700 hover:before:bg-slate-50"
+                      }`
+                    : `flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition ${
+                        active
+                          ? "bg-sky-600 font-medium text-white shadow-sm"
+                          : "font-normal text-slate-700 hover:bg-slate-50"
+                      }`
+                }
+              >
+                <LessonProgressSidebarControl
+                  lessonId={l.id}
+                  active={minimal ? false : active}
+                />
+                <Link
+                  href={`${basePath}/${course.id}/${l.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-2"
                 >
-                  <span className="min-w-0 leading-snug">{section.title}</span>
-                  <ChevronDown
-                    className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
-                      secOpen ? "rotate-180" : ""
+                  <span
+                    className={`min-w-0 flex-1 truncate ${
+                      minimal ? "leading-normal" : "leading-snug"
                     }`}
-                    aria-hidden
-                  />
-                </button>
-                {secOpen && (
-                  <ul className="space-y-0.5 border-t border-slate-100 px-2 py-2">
-                    {section.lessons.map((l) => {
-                      const active = l.id === lesson.id;
-                      const dur = durationLabel(l.duration);
-                      return (
-                        <li key={l.id}>
-                          <Link
-                            href={`${basePath}/${course.id}/${l.id}`}
-                            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2.5 text-sm transition ${
-                              active
-                                ? "bg-sky-600 font-medium text-white shadow-sm"
-                                : "font-normal text-slate-700 hover:bg-slate-50"
-                            }`}
-                          >
-                            <span
-                              className={`mt-0.5 shrink-0 ${active ? "text-sky-100" : "text-slate-400"}`}
-                              title={l.hasVideo ? "Video lesson" : "Non-video / resource"}
-                            >
-                              {l.hasVideo ? (
-                                <Video className="h-4 w-4" aria-hidden />
-                              ) : (
-                                <FileText className="h-4 w-4" aria-hidden />
-                              )}
-                            </span>
-                            <span className="min-w-0 flex-1 leading-snug">{l.title}</span>
-                            {dur ? (
-                              <span
-                                className={`shrink-0 tabular-nums text-xs ${
-                                  active ? "text-sky-100" : "text-slate-500"
-                                }`}
-                              >
-                                {dur}
-                              </span>
-                            ) : null}
-                            <LessonProgressSidebarControl lessonId={l.id} align="right" />
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                  >
+                    {l.title}
+                  </span>
+                  {dur ? (
+                    <span
+                      className={`shrink-0 tabular-nums text-xs ${
+                        minimal
+                          ? active
+                            ? "text-slate-500"
+                            : "text-slate-400"
+                          : active
+                            ? "text-sky-100"
+                            : "text-slate-500"
+                      }`}
+                    >
+                      {dur}
+                    </span>
+                  ) : null}
+                </Link>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  /** Tier label only (Core / Premium) — left-aligned, not an accordion. */
+  function renderRuleSection(section: LegacyHubSection, depth: number) {
+    const hasChildren = Boolean(section.sections?.length);
+
+    return (
+      <li key={section.id} className="[overflow-anchor:none]">
+        <p
+          className={`text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 ${
+            depth === 0 ? "mb-1 mt-5 first:mt-1" : "mb-1 mt-3"
+          }`}
+        >
+          {section.title}
+        </p>
+        {hasChildren ? (
+          <ul className={minimal ? "space-y-1" : "space-y-2"}>
+            {section.sections!.map((child) =>
+              child.presentation === "rule"
+                ? renderRuleSection(child, depth + 1)
+                : renderAccordionSection(child, depth),
+            )}
+          </ul>
+        ) : section.lessons.length > 0 ? (
+          renderLessonRows(
+            section.lessons,
+            minimal ? "space-y-0.5 pb-0.5" : "space-y-0.5 px-2 py-1",
+          )
+        ) : null}
+      </li>
+    );
+  }
+
+  function renderAccordionSection(section: LegacyHubSection, depth: number) {
+    const secOpen = openSectionIds.has(section.id);
+    const hasChildren = Boolean(section.sections?.length);
+    const sectionHasActive = sectionContainsLesson(section, lesson.id);
+    const highlightCollapsedCategory =
+      minimal && sectionHasActive && !secOpen;
+    const rolledUpDuration = sectionDurationLabel(section);
+    const nestedIndent = minimal
+      ? depth > 0
+        ? "pl-5"
+        : ""
+      : "";
+
+    return (
+      <li
+        key={section.id}
+        className={
+          minimal
+            ? `[overflow-anchor:none] ${nestedIndent}`
+            : "overflow-hidden rounded-xl bg-white/80 ring-1 ring-slate-200/60"
+        }
+      >
+        <button
+          type="button"
+          onClick={() => toggleSection(section.id)}
+          className={
+            minimal
+              ? `relative z-0 flex w-full items-start gap-2 px-0 py-2.5 text-left text-sm font-semibold text-slate-800 transition before:pointer-events-none before:absolute before:-inset-x-2 before:inset-y-0 before:z-[-1] before:rounded-md before:content-[''] hover:before:bg-slate-100/80 ${
+                  highlightCollapsedCategory ? "before:bg-sky-100" : ""
+                }`
+              : `flex w-full gap-2 px-3.5 py-3 text-left text-sm font-semibold text-slate-900 transition hover:bg-white ${
+                  secOpen ? "items-start" : "items-center"
+                }`
+          }
+          aria-expanded={secOpen}
+        >
+          <span className="flex min-w-0 flex-1 items-start gap-2">
+            {minimal ? (
+              <span className="mt-0.5 flex shrink-0">
+                <CategoryDialForSection section={section} />
+              </span>
+            ) : null}
+            <span
+              className={`min-w-0 flex-1 leading-snug ${
+                secOpen ? "whitespace-normal break-words" : "truncate"
+              }`}
+            >
+              {section.title}
+            </span>
+          </span>
+          <span className="mt-0.5 flex shrink-0 items-center gap-0.5">
+            {rolledUpDuration ? (
+              <span className="tabular-nums text-xs font-medium text-slate-400">
+                {rolledUpDuration}
+              </span>
+            ) : null}
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
+                secOpen ? "rotate-180" : ""
+              }`}
+              aria-hidden
+            />
+          </span>
+        </button>
+        {secOpen ? (
+          hasChildren ? (
+            <ul className={minimal ? "space-y-1 pb-1" : "space-y-2 px-2 pb-2"}>
+              {section.sections!.map((child) =>
+                child.presentation === "rule"
+                  ? renderRuleSection(child, depth + 1)
+                  : renderAccordionSection(child, depth + 1),
+              )}
+            </ul>
+          ) : section.lessons.length > 0 ? (
+            renderLessonRows(
+              section.lessons,
+              minimal
+                ? "space-y-0.5 pb-1 pl-5"
+                : "space-y-0.5 border-t border-slate-100 px-2 py-2",
+            )
+          ) : null
+        ) : null}
+      </li>
+    );
+  }
+
+  function renderSection(section: LegacyHubSection, depth: number) {
+    if (section.presentation === "rule") {
+      return renderRuleSection(section, depth);
+    }
+    return renderAccordionSection(section, depth);
+  }
+
+  const rolledUpCourseDuration = courseDurationLabel(course);
+
+  const sectionList = (
+    <ul
+      className={
+        minimal
+          ? "mt-6 space-y-1 [overflow-anchor:none]"
+          : "mt-5 max-h-[50vh] space-y-3 overflow-y-auto lg:max-h-[calc(100vh-12rem)]"
+      }
+    >
+      {course.sections.map((section) => renderSection(section, 0))}
+    </ul>
+  );
+
+  const sidebar = (
+    <aside
+      className={`w-full shrink-0 lg:self-start ${
+        minimal
+          ? "lg:w-[22.5rem]"
+          : contentsOnLeft
+            ? "lg:w-80"
+            : "lg:w-96"
+      } ${minimal ? "" : "lg:sticky lg:top-28"}`}
+    >
+      {minimal ? (
+        <div>
+          <Link
+            href={basePath}
+            className="mb-3 inline-flex items-center gap-0.5 text-xs font-medium text-slate-500 transition hover:text-sky-700"
+          >
+            <ChevronLeft className="-ml-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+            Classroom
+          </Link>
+          <div className="flex items-baseline justify-between gap-3">
+            <Link
+              href={basePath}
+              className="min-w-0 text-xl font-semibold leading-none tracking-tight text-slate-900 transition hover:text-sky-700"
+            >
+              {course.title}
+            </Link>
+            {rolledUpCourseDuration ? (
+              <span className="shrink-0 text-xs font-medium tabular-nums text-slate-400">
+                {rolledUpCourseDuration}
+              </span>
+            ) : null}
+          </div>
+          <CourseProgressSummary course={course} className="mt-[11px]" />
+          {sectionList}
+        </div>
+      ) : (
+        <div className="rounded-2xl bg-slate-100/80 p-5 ring-1 ring-slate-200/70">
+          <p className="text-sm font-semibold text-slate-900">Course contents</p>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {lessonCount} lesson{lessonCount === 1 ? "" : "s"}
+          </p>
+          {sectionList}
+        </div>
+      )}
     </aside>
   );
 
-  return (
-    <div className="flex flex-col gap-8">
-      <header>
-        <LessonPageEyebrow
-          crumbs={[
-            { label: "All programmes", href: basePath },
-            { label: "Classroom", href: classroomHref },
-            { label: course.title },
-          ]}
-        />
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
-          {course.title}
-        </h1>
-      </header>
+  const main = (
+    <div className="min-w-0 flex-1">
+      {mainPanelOverride && headerActions ? (
+        <div className="mb-3 flex justify-end gap-2">{headerActions}</div>
+      ) : null}
+      {mainPanelOverride ?? (
+        <article
+          className={
+            minimal
+              ? "rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/50 md:p-8"
+              : "rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60 md:p-8"
+          }
+        >
+          <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
+            <div className="min-w-0">
+              {!minimal && ctx ? (
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                  {ctx.section.title}
+                </p>
+              ) : null}
+              <h2
+                className={
+                  minimal
+                    ? "text-2xl font-semibold leading-none tracking-tight text-slate-900 md:text-3xl"
+                    : "mt-1.5 text-xl font-semibold text-slate-900 md:text-2xl"
+                }
+              >
+                {lesson.title}
+              </h2>
+              {!inApp ? (
+                <p className="mt-2 text-sm text-slate-500">
+                  {lesson.hasVideo ? "Includes video on Disco" : "Resource / non-video on Disco"}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <LessonProgressHeaderControl lessonId={lesson.id} />
+              {headerActions ? headerActions : null}
+            </div>
+          </header>
 
-      <div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
-          {mainPanelOverride && headerActions ? (
-            <div className="mb-3 flex justify-end gap-2">{headerActions}</div>
-          ) : null}
-          {mainPanelOverride ?? (
-            <article className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60 md:p-8">
-              <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-5">
-                <div className="min-w-0">
-                  {ctx ? (
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                      {ctx.section.title}
-                    </p>
-                  ) : null}
-                  <h2 className="mt-1.5 text-xl font-semibold text-slate-900 md:text-2xl">
-                    {lesson.title}
-                  </h2>
-                  {!inApp ? (
-                    <p className="mt-2 text-sm text-slate-500">
-                      {lesson.hasVideo ? "Includes video on Disco" : "Resource / non-video on Disco"}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  <LessonProgressHeaderControl lessonId={lesson.id} />
-                  {headerActions ? headerActions : null}
-                </div>
-              </header>
-
-              {inApp ? (
-                <>
-                  {videoUrl ? (
-                    <div className="mb-8 overflow-hidden rounded-2xl bg-slate-950 shadow-md">
-                      {embedUrl ? (
-                        <div className="relative aspect-video w-full">
-                          <iframe
-                            title={lesson.title}
-                            src={embedUrl}
-                            className="absolute inset-0 h-full w-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                          />
-                        </div>
-                      ) : directVideoUrl ? (
-                        <video
-                          src={directVideoUrl}
-                          controls
-                          playsInline
-                          className="aspect-video w-full bg-black"
-                        />
-                      ) : (
-                        <div className="p-6 text-sm text-slate-300">
-                          <p>Video URL is set but is not a recognized embed or video file.</p>
-                          <a
-                            href={videoUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 inline-block text-sky-400 underline"
-                          >
-                            Open video
-                          </a>
-                        </div>
-                      )}
+          {inApp ? (
+            <>
+              {videoUrl ? (
+                <div className="mb-8 overflow-hidden rounded-2xl bg-slate-950 shadow-md">
+                  {embedUrl ? (
+                    <div className="relative aspect-video w-full">
+                      <iframe
+                        title={lesson.title}
+                        src={embedUrl}
+                        className="absolute inset-0 h-full w-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
                     </div>
-                  ) : null}
-
-                  {transcriptText?.trim() ? (
-                    <LessonTranscriptPanel transcriptText={transcriptText} />
-                  ) : null}
-
-                  {bodyMarkdown.trim() ? (
-                    <AcademyMarkdown markdown={bodyMarkdown} />
-                  ) : transcriptText?.trim() ? null : (
-                    <p className="text-sm text-slate-500">No written content for this lesson yet.</p>
+                  ) : directVideoUrl ? (
+                    <video
+                      src={directVideoUrl}
+                      controls
+                      playsInline
+                      className="aspect-video w-full bg-black"
+                    />
+                  ) : (
+                    <div className="p-6 text-sm text-slate-300">
+                      <p>Video URL is set but is not a recognized embed or video file.</p>
+                      <a
+                        href={videoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block text-sky-400 underline"
+                      >
+                        Open video
+                      </a>
+                    </div>
                   )}
+                </div>
+              ) : null}
 
-                  <LessonResourcesPanel resources={lessonResources} />
-                </>
-              ) : (
-                <>
-                  <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
-                    {noticeText}
-                  </p>
+              {transcriptText?.trim() ? (
+                <LessonTranscriptPanel transcriptText={transcriptText} />
+              ) : null}
 
-                  <div className="mt-8">
-                    <a
-                      href={lesson.academyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
-                    >
-                      {lesson.title}
-                    </a>
-                  </div>
-
-                  <LessonResourcesPanel resources={lessonResources} />
-                </>
+              {bodyMarkdown.trim() ? (
+                <AcademyMarkdown markdown={bodyMarkdown} />
+              ) : transcriptText?.trim() ? null : (
+                <p className="text-sm text-slate-500">No written content for this lesson yet.</p>
               )}
-            </article>
-          )}
-        </div>
 
-        {sidebar}
+              <LessonResourcesPanel resources={lessonResources} />
+            </>
+          ) : (
+            <>
+              <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
+                {noticeText}
+              </p>
+
+              <div className="mt-8">
+                <a
+                  href={lesson.academyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+                >
+                  {lesson.title}
+                </a>
+              </div>
+
+              <LessonResourcesPanel resources={lessonResources} />
+            </>
+          )}
+        </article>
+      )}
+    </div>
+  );
+
+  return (
+    <div className={`flex flex-col ${minimal ? "gap-5 pt-[15px]" : "gap-8"}`}>
+      {!minimal ? (
+        <header>
+          <LessonPageEyebrow
+            crumbs={[
+              { label: "All programmes", href: basePath },
+              { label: "Classroom", href: classroomHref },
+              { label: course.title },
+            ]}
+          />
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+            {course.title}
+          </h1>
+        </header>
+      ) : null}
+
+      <div
+        className={`flex min-h-[calc(100vh-10rem)] flex-col lg:flex-row lg:items-start ${
+          minimal ? "gap-5 lg:gap-8" : "gap-8"
+        } ${contentsOnLeft && !minimal ? "lg:gap-6" : ""}`}
+      >
+        {contentsOnLeft ? (
+          <>
+            {sidebar}
+            {main}
+          </>
+        ) : (
+          <>
+            {main}
+            {sidebar}
+          </>
+        )}
       </div>
     </div>
   );

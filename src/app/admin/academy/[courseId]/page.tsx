@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-const RESERVED = new Set(["classroom", "programs", "new"]);
+const RESERVED = new Set(["classroom", "programs", "new", "simplified"]);
 
 type Props = { params: Promise<{ courseId: string }> };
 

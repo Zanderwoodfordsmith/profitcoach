@@ -199,8 +199,8 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
 /** Solid fills for module cards (matches `SignaturePetalDiagram` pillar disc colours). */
 export const SIGNATURE_COMPASS_PILLAR_COVER_HEX = {
   reach: "#0c5290",
-  enrol: "#6eb6f0",
-  deliver: "#2a9d8f",
+  enrol: "#42a1ee",
+  deliver: "#1ca0c2",
 } as const;
 
 export type SignatureCompassPillarId = keyof typeof SIGNATURE_COMPASS_PILLAR_COVER_HEX;

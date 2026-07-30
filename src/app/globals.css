@@ -21,8 +21,13 @@
 
   /* Landing page — navy & teal, light theme */
   --landing-navy: #0c5290;
-  --landing-teal: #0d9488;
+  --landing-teal: #1ca0c2;
   --landing-bg: #fafafa;
+
+  /* Shared graphic trio (compass / academy paths) */
+  --brand-chathams: #0c5290;
+  --brand-light-blue: #42a1ee;
+  --brand-teal: #1ca0c2;
 }
 
 @theme inline {

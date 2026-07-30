@@ -40,8 +40,10 @@ export function AdminLegacyAcademyLessonEditor({
   const [savedVideoUrl, setSavedVideoUrl] = useState(initialVideoUrl ?? "");
   const [savedBodyMarkdown, setSavedBodyMarkdown] = useState(initialBodyMarkdown ?? "");
   const [savedTitle, setSavedTitle] = useState(initialLesson.title);
+  const [savedDuration, setSavedDuration] = useState(initialLesson.duration ?? "");
   const [title, setTitle] = useState(initialLesson.title);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl ?? "");
+  const [duration, setDuration] = useState(initialLesson.duration ?? "");
   const [bodyMarkdown, setBodyMarkdown] = useState(initialBodyMarkdown ?? "");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,6 +81,7 @@ export function AdminLegacyAcademyLessonEditor({
             title: trimmedTitle,
             videoUrl: videoUrl.trim() || null,
             bodyMarkdown,
+            duration: duration.trim() || null,
           }),
         }
       );
@@ -95,12 +98,15 @@ export function AdminLegacyAcademyLessonEditor({
       const nextTitle = payload.lesson?.title ?? trimmedTitle;
       const nextVideo = payload.lesson?.videoUrl ?? null;
       const nextBody = payload.lesson?.bodyMarkdown ?? "";
+      const nextDuration = payload.lesson?.duration ?? "";
       setSavedTitle(nextTitle);
       setSavedVideoUrl(nextVideo ?? "");
       setSavedBodyMarkdown(nextBody);
+      setSavedDuration(nextDuration);
       setTitle(nextTitle);
       setVideoUrl(nextVideo ?? "");
       setBodyMarkdown(nextBody);
+      setDuration(nextDuration);
       setEditing(false);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save");
@@ -118,6 +124,7 @@ export function AdminLegacyAcademyLessonEditor({
           setTitle(savedTitle);
           setVideoUrl(savedVideoUrl ?? "");
           setBodyMarkdown(savedBodyMarkdown);
+          setDuration(savedDuration);
           setSaveError(null);
         }}
         className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
@@ -174,6 +181,8 @@ export function AdminLegacyAcademyLessonEditor({
               onTitleChange={setTitle}
               videoUrl={videoUrl}
               onVideoUrlChange={setVideoUrl}
+              duration={duration}
+              onDurationChange={setDuration}
               bodyMarkdown={bodyMarkdown}
               onBodyMarkdownChange={setBodyMarkdown}
               uploading={uploading}

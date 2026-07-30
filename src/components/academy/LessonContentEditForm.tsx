@@ -22,6 +22,9 @@ type Props = {
   titlePrefix?: string;
   videoUrl: string;
   onVideoUrlChange: (value: string) => void;
+  /** Sidebar length label, e.g. `6m`. */
+  duration: string;
+  onDurationChange: (value: string) => void;
   bodyMarkdown: string;
   onBodyMarkdownChange: (value: string) => void;
   uploading: boolean;
@@ -39,6 +42,8 @@ export function LessonContentEditForm({
   titlePrefix,
   videoUrl,
   onVideoUrlChange,
+  duration,
+  onDurationChange,
   bodyMarkdown,
   onBodyMarkdownChange,
   uploading,
@@ -141,6 +146,28 @@ export function LessonContentEditForm({
         uploading={uploading}
         onUploadFile={(file) => void handleVideoUpload(file)}
       />
+
+      <div className="mb-8 max-w-xs">
+        <label
+          htmlFor={`${formId}-duration`}
+          className="block text-sm font-medium text-slate-700"
+        >
+          Duration
+        </label>
+        <input
+          id={`${formId}-duration`}
+          type="text"
+          value={duration}
+          onChange={(e) => onDurationChange(e.target.value)}
+          placeholder="e.g. 6m"
+          className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+        />
+        <p className="mt-1.5 text-xs text-slate-500">
+          Shown next to the lesson in the course sidebar. Use minutes like{" "}
+          <span className="font-medium text-slate-600">6m</span> or{" "}
+          <span className="font-medium text-slate-600">1h 5m</span>.
+        </p>
+      </div>
 
       <div className="border-t border-slate-100 pt-6">
         <div className="mb-3 flex justify-end">

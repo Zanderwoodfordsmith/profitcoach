@@ -290,7 +290,7 @@ export function PamHomepage() {
           aria-hidden
         >
           <div className="absolute -left-[20%] top-[-10%] h-[55%] w-[55%] rounded-full bg-[#0c5290]/35 blur-[100px]" />
-          <div className="absolute -right-[10%] bottom-[-20%] h-[50%] w-[45%] rounded-full bg-[#0d9488]/20 blur-[110px]" />
+          <div className="absolute -right-[10%] bottom-[-20%] h-[50%] w-[45%] rounded-full bg-[#1ca0c2]/20 blur-[110px]" />
           <div
             className="absolute inset-0 opacity-[0.07]"
             style={{
@@ -677,7 +677,7 @@ export function PamHomepage() {
               </div>
               <div className="absolute bottom-6 left-6 right-6 rounded-2xl border border-white/60 bg-white/95 p-4 shadow-xl backdrop-blur sm:left-8 sm:right-auto sm:w-[240px]">
                 <div className="flex -space-x-2">
-                  {["#0c5290", "#42a1ee", "#0d9488", "#10b981"].map((c) => (
+                  {["#0c5290", "#42a1ee", "#1ca0c2", "#10b981"].map((c) => (
                     <span
                       key={c}
                       className="size-8 rounded-full border-2 border-white"
