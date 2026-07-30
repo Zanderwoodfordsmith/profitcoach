@@ -55,8 +55,17 @@ export function UsageTracker() {
       void sendUsageEvent("heartbeat", latestPathRef.current);
     }, HEARTBEAT_MS);
 
+    const onVisibleAgain = () => {
+      if (document.hidden) return;
+      void sendUsageEvent("heartbeat", latestPathRef.current);
+    };
+    document.addEventListener("visibilitychange", onVisibleAgain);
+    window.addEventListener("focus", onVisibleAgain);
+
     return () => {
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibleAgain);
+      window.removeEventListener("focus", onVisibleAgain);
     };
   }, []);
 

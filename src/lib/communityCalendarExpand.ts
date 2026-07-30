@@ -182,11 +182,16 @@ function collectRecurringStarts(
   rangeStart: DateTime,
   rangeEnd: DateTime
 ): DateTime[] {
+  // Callers pass range bounds in the *view* timezone (e.g. Africa/Johannesburg).
+  // Recurrence wall-clock times live in the event `zone` (e.g. Europe/London).
+  // Normalize before iterating so `anchor.hour` is applied in `zone`, not the viewer's.
+  const rangeStartZ = rangeStart.setZone(zone);
+  const rangeEndZ = rangeEnd.setZone(zone);
   const scanStart = DateTime.max(
-    anchor.startOf("day"),
-    rangeStart.minus({ days: RECURRENCE_RESCHEDULE_BUFFER_DAYS }).startOf("day")
+    anchor.setZone(zone).startOf("day"),
+    rangeStartZ.minus({ days: RECURRENCE_RESCHEDULE_BUFFER_DAYS }).startOf("day")
   );
-  const scanEnd = rangeEnd
+  const scanEnd = rangeEndZ
     .plus({ days: RECURRENCE_RESCHEDULE_BUFFER_DAYS })
     .endOf("day");
   const endDay = endOfRecurrenceDay(rec, zone);
@@ -199,8 +204,9 @@ function collectRecurringStarts(
 
   if (rec.unit === "month") {
     const out: DateTime[] = [];
-    let cursor = scanStart.startOf("month");
-    while (cursor <= effectiveEnd) {
+    let cursor = scanStart.setZone(zone).startOf("month");
+    const monthLoopEnd = effectiveEnd.setZone(zone);
+    while (cursor <= monthLoopEnd) {
       const startInst = monthOccurrenceAt(
         cursor.year,
         cursor.month,
@@ -225,8 +231,9 @@ function collectRecurringStarts(
   }
 
   const out: DateTime[] = [];
-  let day = scanStart.startOf("day");
-  while (day <= effectiveEnd) {
+  let day = scanStart.setZone(zone).startOf("day");
+  const dayLoopEnd = effectiveEnd.setZone(zone);
+  while (day <= dayLoopEnd) {
     const startInst = day.set({
       hour: anchor.hour,
       minute: anchor.minute,

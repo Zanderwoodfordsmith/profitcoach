@@ -22,6 +22,7 @@ import { buildCoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
 import { normalizeCoachAccessTier } from "@/lib/coachAccess/tiers";
 import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
+import { loadLastActiveAtByUserId } from "@/lib/admin/loadLastActiveAtByUserId";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -168,6 +169,8 @@ export async function GET(request: Request) {
         }
       }
     }
+
+    const lastActiveByUserId = await loadLastActiveAtByUserId(ids);
 
     // Pull achievements in one query and group by user.
     const achievementsByUser = new Map<string, Array<{ level_id: string }>>();
@@ -367,6 +370,7 @@ export async function GET(request: Request) {
           ? null
           : (prof?.ladder_goal_target_date as string | null) ?? null,
         last_login_at: lastLoginByUserId.get(id) ?? null,
+        last_active_at: lastActiveByUserId.get(id) ?? null,
         email: emailByUserId.get(id) ?? null,
       };
     });

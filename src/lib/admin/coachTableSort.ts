@@ -207,6 +207,14 @@ function migrateCoachTableColumns(
   }
 
   const orderSeen = new Set(columnOrder);
+  // Prefer Last active immediately after Last login for existing saved views.
+  if (!orderSeen.has("lastActive")) {
+    const lastLoginIdx = columnOrder.indexOf("lastLogin");
+    if (lastLoginIdx >= 0) {
+      columnOrder.splice(lastLoginIdx + 1, 0, "lastActive");
+      orderSeen.add("lastActive");
+    }
+  }
   for (const key of DEFAULT_COACH_TABLE_COLUMN_ORDER) {
     if (!orderSeen.has(key)) {
       columnOrder.push(key);

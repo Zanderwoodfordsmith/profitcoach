@@ -41,6 +41,7 @@ export type CoachTableColumnVisibility = {
   currentLevel: boolean;
   goalBy: boolean;
   lastLogin: boolean;
+  lastActive: boolean;
   crm: boolean;
   salesRobot: boolean;
   activeCampaigns: boolean;
@@ -168,6 +169,7 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "linkedinProfile",
   "conference",
   "lastLogin",
+  "lastActive",
   "goalLevel",
   "currentLevel",
   "goalBy",
@@ -203,6 +205,7 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   currentLevel: true,
   goalBy: true,
   lastLogin: true,
+  lastActive: true,
   crm: true,
   salesRobot: true,
   activeCampaigns: true,

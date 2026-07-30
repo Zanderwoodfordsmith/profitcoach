@@ -36,6 +36,7 @@ export type CoachExportRow = {
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
   last_login_at: string | null;
+  last_active_at: string | null;
   crm_profile_name: string | null;
   crm_location_id: string | null;
   calendar_sync_ready: boolean;
@@ -75,6 +76,7 @@ export type CoachExportColumnKey =
   | "ladderGoalLevel"
   | "goalBy"
   | "lastLogin"
+  | "lastActive"
   | "crm"
   | "crmLocationId"
   | "salesRobot"
@@ -112,6 +114,7 @@ const EXPORT_COLUMN_DEFS: Array<{ key: CoachExportColumnKey; label: string }> =
     { key: "ladderGoalLevel", label: "Ladder goal level" },
     { key: "goalBy", label: "Goal by" },
     { key: "lastLogin", label: "Last login" },
+    { key: "lastActive", label: "Last active" },
     { key: "crm", label: "CRM" },
     { key: "crmLocationId", label: "CRM location ID" },
     { key: "salesRobot", label: "Sales Robot" },
@@ -147,6 +150,7 @@ const TABLE_KEY_TO_EXPORT: Partial<
   currentLevel: ["currentLevel"],
   goalBy: ["goalBy"],
   lastLogin: ["lastLogin"],
+  lastActive: ["lastActive"],
   crm: ["crm"],
   salesRobot: ["salesRobot"],
   activeCampaigns: ["activeCampaigns"],
@@ -271,6 +275,10 @@ function getExportCellValue(
       return row.last_login_at
         ? formatIsoDate(row.last_login_at)
         : "Never";
+    case "lastActive":
+      return row.last_active_at
+        ? formatIsoDate(row.last_active_at)
+        : "No activity";
     case "crm":
       return row.crm_profile_name ?? "";
     case "crmLocationId":

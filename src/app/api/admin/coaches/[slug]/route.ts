@@ -24,6 +24,7 @@ import { resolveCoachJoinedAt } from "@/lib/primaryCoach";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { formatPersonName } from "@/lib/formatPersonName";
 import { splitFullName } from "@/lib/splitFullName";
+import { loadLastActiveAtByUserId } from "@/lib/admin/loadLastActiveAtByUserId";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
@@ -85,7 +86,8 @@ export async function GET(
       ? profRaw[0]
       : profRaw;
 
-    const [achRes, contactsRes, paymentsRes, authUserRes] = await Promise.all([
+    const [achRes, contactsRes, paymentsRes, authUserRes, lastActiveByUserId] =
+      await Promise.all([
       supabaseAdmin
         .from("community_ladder_achievements")
         .select("level_id")
@@ -103,7 +105,10 @@ export async function GET(
         .eq("coach_id", coachId)
         .order("paid_at", { ascending: false }),
       supabaseAdmin.auth.admin.getUserById(coachId),
+      loadLastActiveAtByUserId([coachId]),
     ]);
+
+    const lastActiveAt = lastActiveByUserId.get(coachId) ?? null;
 
     const achievements = (achRes.data ?? []).map((item) => ({
       level_id: item.level_id as string,
@@ -207,6 +212,7 @@ export async function GET(
       ladder_goal_target_date:
         (prof?.ladder_goal_target_date as string | null) ?? null,
       last_login_at: authUserRes.data.user?.last_sign_in_at ?? null,
+      last_active_at: lastActiveAt,
       community_bio: bioFields.community_bio,
       directory_summary: bioFields.directory_summary,
       directory_bio: bioFields.directory_bio,

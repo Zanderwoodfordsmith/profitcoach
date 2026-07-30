@@ -339,6 +339,7 @@ type CoachRow = {
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
   last_login_at: string | null;
+  last_active_at: string | null;
 };
 
 type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
@@ -366,6 +367,7 @@ type CoachTableColumnVisibility = {
   currentLevel: boolean;
   goalBy: boolean;
   lastLogin: boolean;
+  lastActive: boolean;
   crm: boolean;
   salesRobot: boolean;
   activeCampaigns: boolean;
@@ -409,6 +411,7 @@ const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   currentLevel: true,
   goalBy: true,
   lastLogin: true,
+  lastActive: true,
   crm: true,
   salesRobot: true,
   activeCampaigns: true,
@@ -460,6 +463,7 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "linkedinProfile", label: "LinkedIn", category: "member" },
   { key: "conference", label: "Conference", category: "member" },
   { key: "lastLogin", label: "Last login", category: "member" },
+  { key: "lastActive", label: "Last active", category: "member" },
   { key: "goalLevel", label: "Goal", category: "ladder" },
   { key: "currentLevel", label: "Current level", category: "ladder" },
   { key: "goalBy", label: "Goal by", category: "ladder" },
@@ -1588,7 +1592,22 @@ export default function AdminPage() {
     }
     if (key === "lastLogin") {
       return (
-        <th className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2">Last login</th>
+        <th
+          className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2"
+          title="Auth sign-in only. Does not update when they return to an already-open tab."
+        >
+          Last login
+        </th>
+      );
+    }
+    if (key === "lastActive") {
+      return (
+        <th
+          className="sticky top-0 z-10 w-44 bg-slate-50 px-2 py-2"
+          title="App activity from page views and heartbeats while the tab is visible. Updates when they use the app or return to an open tab."
+        >
+          Last active
+        </th>
       );
     }
     if (key === "crm") {
@@ -1931,7 +1950,7 @@ export default function AdminPage() {
               return (
                 <span
                   className={badgeClass}
-                  title={`Last login ${dateLabel} (${since.totalDays} days ago)`}
+                  title={`Auth sign-in ${dateLabel} (${since.totalDays} days ago). Not updated by returning to an open tab.`}
                 >
                   <span>{dateLabel}</span>
                   <span className="opacity-80">({since.label})</span>
@@ -1939,8 +1958,41 @@ export default function AdminPage() {
               );
             })()
           ) : (
-            <span className={badgeClass} title="Never logged in">
+            <span
+              className={badgeClass}
+              title="Never signed in (auth). They may still have been active in an open session."
+            >
               Never
+            </span>
+          )}
+        </td>
+      );
+    }
+    if (key === "lastActive") {
+      const freshness = lastLoginFreshness(coach.last_active_at);
+      const badgeClass = `inline-flex max-w-full items-center gap-1.5 rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses(freshness)}`;
+      return (
+        <td className="px-2 py-2 align-middle text-xs">
+          {coach.last_active_at ? (
+            (() => {
+              const dateLabel = formatLastLoginDisplay(coach.last_active_at);
+              const since = formatMemberFor(coach.last_active_at);
+              return (
+                <span
+                  className={badgeClass}
+                  title={`Last app activity ${dateLabel} (${since.totalDays} days ago). From page views and heartbeats while the tab is open.`}
+                >
+                  <span>{dateLabel}</span>
+                  <span className="opacity-80">({since.label})</span>
+                </span>
+              );
+            })()
+          ) : (
+            <span
+              className={badgeClass}
+              title="No tracked app activity yet (usage tracking started later for some coaches)."
+            >
+              No activity
             </span>
           )}
         </td>

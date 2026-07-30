@@ -86,6 +86,7 @@ type CoachDetail = {
   ladder_goal_level: string | null;
   ladder_goal_target_date: string | null;
   last_login_at: string | null;
+  last_active_at: string | null;
   community_bio: string | null;
   directory_summary: string | null;
   directory_bio: string | null;
@@ -505,14 +506,35 @@ export default function AdminCoachDetailPage({
                         className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses(
                           lastLoginFreshness(coach.last_login_at)
                         )}`}
+                        title="Auth sign-in only. Does not update when they return to an already-open tab."
                       >
                         {formatIsoDate(coach.last_login_at)}
                       </span>
                     ) : (
                       <span
                         className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses("never")}`}
+                        title="Never signed in (auth)."
                       >
                         Never
+                      </span>
+                    )}
+                  </DetailField>
+                  <DetailField label="Last active">
+                    {coach.last_active_at ? (
+                      <span
+                        className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses(
+                          lastLoginFreshness(coach.last_active_at)
+                        )}`}
+                        title="App activity from page views and heartbeats while the tab is visible."
+                      >
+                        {formatIsoDate(coach.last_active_at)}
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${lastLoginFreshnessClasses("never")}`}
+                        title="No tracked app activity yet."
+                      >
+                        No activity
                       </span>
                     )}
                   </DetailField>
