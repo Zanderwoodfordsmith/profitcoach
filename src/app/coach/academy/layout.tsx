@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { AcademyCurrentShell } from "@/components/academy/AcademyCurrentShell";
+import { ClassroomShell } from "@/components/academy/ClassroomShell";
 
 export default function CoachAcademyLayout({ children }: { children: ReactNode }) {
-  return <AcademyCurrentShell>{children}</AcademyCurrentShell>;
+  return <ClassroomShell>{children}</ClassroomShell>;
 }

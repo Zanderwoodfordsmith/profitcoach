@@ -67,8 +67,9 @@ export function LadderLevelUpsCard() {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
   const ladderHref = pathname.startsWith("/admin")
-    ? "/admin/signature/ladder"
-    : "/coach/signature/ladder";
+    ? "/admin/account?tab=ladder"
+    : "/coach/settings?tab=ladder";
+
   const [events, setEvents] = useState<CommunityLadderEventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [migrationNeeded, setMigrationNeeded] = useState(false);

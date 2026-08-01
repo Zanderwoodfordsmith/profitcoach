@@ -166,6 +166,8 @@ export const ALL_CALENDAR_ACCESS_TAGS: CoachAccessTier[] = [
 ];
 
 export const FEEDBACK_REQUEST_CATEGORY_SLUG = "requesting-feedback";
+/** Display label for `FEEDBACK_REQUEST_CATEGORY_SLUG` (community Ask & Share channel). */
+export const QA_CATEGORY_LABEL = "Ask & Share";
 
 export function tierRank(tier: CoachAccessTier): number {
   const order: Record<CoachAccessTier, number> = {

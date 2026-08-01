@@ -3,9 +3,9 @@ import {
   BarChart3,
   CalendarDays,
   Clock,
-  Compass,
   FileUp,
   Filter,
+  FlaskConical,
   LayoutGrid,
   MessagesSquare,
   PhoneCall,
@@ -49,12 +49,12 @@ function IconBookOpen({ className }: { className?: string }) {
   );
 }
 
-function IconCompass({ className }: { className?: string }) {
-  return <Compass className={className} />;
-}
-
 function IconLessonImport({ className }: { className?: string }) {
   return <FileUp className={className} />;
+}
+
+function IconScorecard({ className }: { className?: string }) {
+  return <FlaskConical className={className} />;
 }
 
 function IconCalendar({ className }: { className?: string }) {
@@ -117,13 +117,6 @@ export function mainNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
       requiredFeature: "calendar.momentum_only",
     }
   );
-  if (prefix === "/admin") {
-    base.push({
-      href: "/admin/signature",
-      label: "Compass",
-      icon: IconCompass,
-    });
-  }
   return base;
 }
 
@@ -158,13 +151,6 @@ export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNav
       requiredFeature: "calendar.momentum_only",
     },
   ];
-  if (prefix === "/admin") {
-    items.push({
-      href: "/admin/signature",
-      label: "Compass",
-      icon: IconCompass,
-    });
-  }
   return items;
 }
 
@@ -236,6 +222,7 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
   { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
   { href: "/admin/lesson-import", label: "Lesson import", icon: IconLessonImport },
   { href: "/admin/landing-analytics", label: "Landing analytics", icon: IconBarChart },
+  { href: "/admin/signature/scorecard", label: "My Scorecard", icon: IconScorecard },
   { href: "/admin/time-tracker", label: "Time Tracker", icon: IconClock },
   { href: "/admin/linkedin", label: "LinkedIn Scheduler", icon: IconSparkles },
   { href: "/admin/community/feedback", label: "Feedback inbox", icon: IconMessagesSquare },

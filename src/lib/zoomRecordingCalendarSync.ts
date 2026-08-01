@@ -19,10 +19,12 @@ import {
   type ParsedZoomRecordingCompleted,
 } from "@/lib/zoomWebhook";
 
-/** Allow meetings that start slightly early. */
-const MATCH_BEFORE_START_MS = 15 * 60 * 1000;
-/** Recordings often finish after the scheduled end time. */
-const MATCH_AFTER_END_MS = 60 * 60 * 1000;
+/**
+ * Mon/Thu schedule: allow a recording that starts well before or after the
+ * scheduled slot so time drift (e.g. 1pm calendar vs 4pm actual) still attaches.
+ */
+const MATCH_BEFORE_START_MS = 8 * 60 * 60 * 1000;
+const MATCH_AFTER_END_MS = 8 * 60 * 60 * 1000;
 const MATCH_SCAN_BUFFER_DAYS = 2;
 
 export type ZoomRecordingCalendarMatchStatus =
@@ -51,6 +53,21 @@ function occurrenceHasRecording(occurrence: CommunityCalendarOccurrence): boolea
   );
 }
 
+function sameLocalCalendarDay(
+  meetingStartMs: number,
+  occurrence: CommunityCalendarOccurrence
+): boolean {
+  const zone = occurrence.display_timezone?.trim() || "UTC";
+  const meetingLocal = DateTime.fromMillis(meetingStartMs, { zone: "utc" }).setZone(
+    zone
+  );
+  const occurrenceLocal = DateTime.fromISO(occurrence.startsAtIso, {
+    zone: "utc",
+  }).setZone(zone);
+  if (!meetingLocal.isValid || !occurrenceLocal.isValid) return false;
+  return meetingLocal.hasSame(occurrenceLocal, "day");
+}
+
 function scoreOccurrenceMatch(
   occurrence: CommunityCalendarOccurrence,
   meetingStartMs: number,
@@ -64,6 +81,7 @@ function scoreOccurrenceMatch(
   const windowEnd = endsAtMs + MATCH_AFTER_END_MS;
   const inTimeWindow =
     meetingStartMs >= windowStart && meetingStartMs <= windowEnd;
+  const sameDay = sameLocalCalendarDay(meetingStartMs, occurrence);
 
   const locationMeetingId = occurrence.location_url
     ? extractZoomMeetingIdFromUrl(occurrence.location_url)
@@ -73,16 +91,70 @@ function scoreOccurrenceMatch(
     Boolean(locationMeetingId) &&
     meetingId === locationMeetingId;
 
-  if (!inTimeWindow && !meetingIdMatch) return null;
+  // Accept: Zoom meeting ID match, ±8h of the slot, or same local calendar day.
+  if (!inTimeWindow && !sameDay && !meetingIdMatch) return null;
 
   let score = 0;
   if (meetingIdMatch) score += 1000;
+  if (sameDay) score += 200;
   if (inTimeWindow) {
     const midpoint = (startsAtMs + endsAtMs) / 2;
     const distance = Math.abs(meetingStartMs - midpoint);
     score += Math.max(0, 500 - distance / 60_000);
   }
   return score;
+}
+
+/**
+ * When several same-day calls match (e.g. first-Monday Monthly Momentum then
+ * Win The Week), assign recordings in chronological event order: the earliest
+ * occurrence still missing a recording gets the next webhook.
+ */
+function pickAmongSameDayCandidates(
+  candidates: ScoredOccurrence[],
+  meetingStartMs: number
+): ScoredOccurrence | { ambiguous: ScoredOccurrence[] } | null {
+  const open = candidates.filter((c) => !occurrenceHasRecording(c.occurrence));
+  const pool = open.length > 0 ? open : candidates;
+
+  const byDay = new Map<string, ScoredOccurrence[]>();
+  for (const entry of pool) {
+    const zone = entry.occurrence.display_timezone?.trim() || "UTC";
+    const dayKey = DateTime.fromISO(entry.occurrence.startsAtIso, { zone: "utc" })
+      .setZone(zone)
+      .toISODate();
+    if (!dayKey) continue;
+    const list = byDay.get(dayKey) ?? [];
+    list.push(entry);
+    byDay.set(dayKey, list);
+  }
+
+  const meetingDayKeys = [...byDay.keys()].filter((dayKey) => {
+    const sample = byDay.get(dayKey)?.[0];
+    if (!sample) return false;
+    return sameLocalCalendarDay(meetingStartMs, sample.occurrence);
+  });
+
+  if (meetingDayKeys.length === 1) {
+    const sameDay = byDay.get(meetingDayKeys[0]) ?? [];
+    if (sameDay.length >= 1) {
+      sameDay.sort(
+        (a, b) =>
+          Date.parse(a.occurrence.startsAtIso) -
+          Date.parse(b.occurrence.startsAtIso)
+      );
+      return sameDay[0];
+    }
+  }
+
+  pool.sort((a, b) => b.score - a.score);
+  const best = pool[0];
+  const second = pool[1];
+  if (!best) return null;
+  if (second && best.score - second.score < 50) {
+    return { ambiguous: pool.slice(0, 3) };
+  }
+  return best;
 }
 
 export function findBestCalendarOccurrenceForZoomRecording(
@@ -115,15 +187,7 @@ export function findBestCalendarOccurrenceForZoomRecording(
 
   if (scored.length === 0) return null;
 
-  scored.sort((a, b) => b.score - a.score);
-  const best = scored[0];
-  const second = scored[1];
-
-  if (second && best.score - second.score < 50) {
-    return { ambiguous: scored.slice(0, 3) };
-  }
-
-  return best;
+  return pickAmongSameDayCandidates(scored, meetingStartMs);
 }
 
 async function attachRecordingToOccurrence(

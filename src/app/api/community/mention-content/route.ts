@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { listCoursesFlat } from "@/lib/academy/catalog";
+import { listCoursesFlat } from "@/lib/academy/compassCatalog";
 import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
-import { loadLegacyHub } from "@/lib/academy/legacyHubLoad";
+import { flattenSections } from "@/lib/academy/hubCatalog";
+import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
+import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
+import { loadArchiveHub } from "@/lib/academy/archiveHubLoad";
 
 export type MentionTreeLesson = {
   lessonId: string;
@@ -86,24 +89,56 @@ async function loadClassroomCourses(): Promise<MentionTreeCourse[]> {
 }
 
 function loadProgramsCourses(titleOverrides: Map<string, string>): MentionTreeCourse[] {
-  let hub;
+  const courses: MentionTreeCourse[] = [];
+
   try {
-    hub = loadLegacyHub();
+    const hub = loadClassroomHub();
+    for (const course of hub.courses) {
+      courses.push({
+        area: "programs",
+        courseId: course.id,
+        title: course.title,
+        lessons: flattenSections(course.sections).flatMap((section) =>
+          section.lessons.map((lesson) => ({
+            lessonId: lesson.id,
+            title:
+              titleOverrides.get(
+                `${contentSourceCourseId(lesson.id)}:${lesson.id}`,
+              ) ?? lesson.title,
+            section: section.title,
+          })),
+        ),
+      });
+    }
   } catch {
-    return [];
+    // Classroom hub unavailable — continue with archive only.
   }
-  return hub.courses.map((course) => ({
-    area: "programs" as const,
-    courseId: course.id,
-    title: course.title,
-    lessons: course.sections.flatMap((section) =>
-      section.lessons.map((lesson) => ({
-        lessonId: lesson.id,
-        title: titleOverrides.get(`${course.id}:${lesson.id}`) ?? lesson.title,
-        section: section.title,
-      }))
-    ),
-  }));
+
+  // Admin archive: lessons not surfaced on the Classroom hub.
+  try {
+    const archive = loadArchiveHub();
+    for (const course of archive.courses) {
+      courses.push({
+        area: "programs",
+        courseId: course.id,
+        title: course.title,
+        lessons: flattenSections(course.sections).flatMap((section) =>
+          section.lessons.map((lesson) => ({
+            lessonId: lesson.id,
+            title:
+              titleOverrides.get(
+                `${contentSourceCourseId(lesson.id)}:${lesson.id}`,
+              ) ?? lesson.title,
+            section: section.title,
+          })),
+        ),
+      });
+    }
+  } catch {
+    // Archive unavailable.
+  }
+
+  return courses;
 }
 
 export async function GET(request: Request) {

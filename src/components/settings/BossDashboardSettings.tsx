@@ -23,6 +23,7 @@ import {
 } from "@/components/settings/OutlinedFormField";
 import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
+import { MyLadderTab } from "@/components/compass/MyLadderTab";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -64,7 +65,8 @@ type ProfileData = {
 export type BossDashboardSettingsTabId =
   | "profile"
   | "funnel"
-  | "workspace";
+  | "workspace"
+  | "ladder";
 
 export type BossDashboardSettingsProps = {
   variant: "coach" | "admin";
@@ -226,10 +228,28 @@ export function BossDashboardSettings({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read ?tab= from URL on coach settings
     const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "funnel" || tab === "profile" || tab === "workspace") {
+    if (
+      tab === "funnel" ||
+      tab === "profile" ||
+      tab === "workspace" ||
+      tab === "ladder"
+    ) {
       setInternalTab(tab);
     }
   }, []);
+
+  const selectTab = useCallback(
+    (tab: BossDashboardSettingsTabId) => {
+      setInternalTab(tab);
+      if (embed) return;
+      const href =
+        variant === "admin"
+          ? `/admin/account?tab=${tab}`
+          : `/coach/settings?tab=${tab}`;
+      router.replace(href);
+    },
+    [embed, router, variant]
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data bootstrap after async profile-role + coach profile fetches
@@ -576,12 +596,13 @@ export function BossDashboardSettings({
     { id: "profile", label: "Profile" },
     { id: "funnel", label: "Funnel" },
     { id: "workspace", label: "Workspace" },
+    { id: "ladder", label: "My Ladder" },
   ];
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, funnel links, and workspace."
+      description="Profile, funnel links, workspace, and ladder progress."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -590,7 +611,7 @@ export function BossDashboardSettings({
             id: tab.id,
             label: tab.label,
             active: activeTab === tab.id,
-            onClick: () => setInternalTab(tab.id),
+            onClick: () => selectTab(tab.id),
           }))}
         />
       }
@@ -786,6 +807,8 @@ export function BossDashboardSettings({
         />
       ) : null}
 
+      {activeTab === "ladder" ? <MyLadderTab /> : null}
+
       {activeTab === "workspace" ? (
       <form
         onSubmit={handleWorkspaceSave}
@@ -931,8 +954,16 @@ export function BossDashboardSettings({
     <DashboardPageSection
       gapClass="gap-6"
       header={settingsHeader}
-      contentMaxWidthClass={activeTab === "funnel" ? "max-w-6xl" : "max-w-4xl"}
-      contentClassName={activeTab === "funnel" ? "mx-0 mr-auto w-full" : ""}
+      contentMaxWidthClass={
+        activeTab === "funnel" || activeTab === "ladder"
+          ? "max-w-6xl"
+          : "max-w-4xl"
+      }
+      contentClassName={
+        activeTab === "funnel" || activeTab === "ladder"
+          ? "mx-0 mr-auto w-full"
+          : ""
+      }
     >
       {settingsBody}
     </DashboardPageSection>

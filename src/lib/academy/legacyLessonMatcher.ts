@@ -1,4 +1,4 @@
-import type { LegacyHubCatalog, LegacyHubCourse } from "./legacyHubCatalog";
+import type { HubCatalog, HubCourse } from "./hubCatalog";
 import {
   lessonTitleMatchScore,
   lessonTitlePrefixScore,
@@ -28,7 +28,7 @@ export type LessonMatchResult =
   | { status: "ambiguous"; candidates: LessonMatchCandidate[] }
   | { status: "unmatched"; bestScore: number; bestCandidate: LessonMatchCandidate | null };
 
-export function buildLegacyLessonIndex(catalog: LegacyHubCatalog): LegacyLessonIndexEntry[] {
+export function buildLegacyLessonIndex(catalog: HubCatalog): LegacyLessonIndexEntry[] {
   const out: LegacyLessonIndexEntry[] = [];
   for (const course of catalog.courses) {
     for (const section of course.sections) {
@@ -151,7 +151,7 @@ export function matchDocTitleToLesson(
 
 export function resolveCourseIdForPathSegment(
   segment: string,
-  courses: LegacyHubCourse[]
+  courses: HubCourse[]
 ): string | null {
   const fromAlias = resolveCourseIdFromFolderName(segment);
   if (fromAlias) return fromAlias;

@@ -1,7 +1,6 @@
-import { SimplifiedAcademyCatalogGrid } from "@/components/academy/SimplifiedAcademyCatalogGrid";
+import { redirect } from "next/navigation";
 
-const BASE = "/coach/academy/simplified";
-
-export default async function CoachAcademySimplifiedCatalogPage() {
-  return <SimplifiedAcademyCatalogGrid basePath={BASE} />;
+/** Old `/simplified` hub URL → Classroom. */
+export default function CoachAcademySimplifiedRedirectPage() {
+  redirect("/coach/academy/classroom");
 }

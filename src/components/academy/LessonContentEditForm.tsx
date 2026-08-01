@@ -1,16 +1,27 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { FileUp } from "lucide-react";
 
 import { LessonFeaturedMedia } from "@/components/academy/LessonFeaturedMedia";
+import { LessonRecommendedActionsEditor } from "@/components/academy/LessonRecommendedActionsEditor";
 import { LessonRichTextEditor } from "@/components/academy/LessonRichTextEditor";
+import {
+  LessonTabBar,
+  useLessonTabParam,
+  type LessonTab,
+} from "@/components/academy/LessonTabBar";
 import {
   readMarkdownFile,
   splitTitleFromImportedMarkdown,
 } from "@/lib/academy/importLessonMarkdown";
 import { uploadAcademyLessonVideoFile } from "@/lib/academyLessonVideo";
+import type { AcademyRecommendedAction } from "@/lib/academy/lessonActions";
 import { supabaseClient } from "@/lib/supabaseClient";
+
+/** Mirrors the reader's tabs — actions sit with the Overview, as coaches see them. */
+type EditTabId = "overview" | "guide";
+const EDIT_TAB_IDS: readonly EditTabId[] = ["overview", "guide"];
 
 type Props = {
   formId: string;
@@ -25,8 +36,15 @@ type Props = {
   /** Sidebar length label, e.g. `6m`. */
   duration: string;
   onDurationChange: (value: string) => void;
+  /** Overview tab markdown. */
   bodyMarkdown: string;
   onBodyMarkdownChange: (value: string) => void;
+  /** Guide tab markdown (optional long-form). */
+  guideMarkdown: string;
+  onGuideMarkdownChange: (value: string) => void;
+  /** Recommended next steps shown beside the Overview. */
+  recommendedActions: AcademyRecommendedAction[];
+  onRecommendedActionsChange: (actions: AcademyRecommendedAction[]) => void;
   uploading: boolean;
   onUploadingChange: (value: boolean) => void;
   onError: (message: string) => void;
@@ -46,12 +64,29 @@ export function LessonContentEditForm({
   onDurationChange,
   bodyMarkdown,
   onBodyMarkdownChange,
+  guideMarkdown,
+  onGuideMarkdownChange,
+  recommendedActions,
+  onRecommendedActionsChange,
   uploading,
   onUploadingChange,
   onError,
   onSubmit,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
+  const { activeTab, selectTab } = useLessonTabParam(EDIT_TAB_IDS, "overview");
+
+  const tabs = useMemo<LessonTab<EditTabId>[]>(
+    () => [
+      { id: "overview", label: "Overview" },
+      {
+        id: "guide",
+        label: "Guide",
+        hint: guideMarkdown.trim() ? undefined : "Empty",
+      },
+    ],
+    [guideMarkdown]
+  );
 
   async function handleMarkdownImport(file: File) {
     onError("");
@@ -169,34 +204,72 @@ export function LessonContentEditForm({
         </p>
       </div>
 
-      <div className="border-t border-slate-100 pt-6">
-        <div className="mb-3 flex justify-end">
-          <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50">
-            <FileUp className="h-3.5 w-3.5" aria-hidden />
-            Import .md file
-            <input
-              ref={importInputRef}
-              type="file"
-              accept=".md,.markdown,.txt,text/markdown,text/plain"
-              className="sr-only"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleMarkdownImport(file);
-              }}
-            />
-          </label>
-        </div>
+      <LessonTabBar
+        tabs={tabs}
+        activeTab={activeTab}
+        onSelect={selectTab}
+        label="Lesson sections to edit"
+      />
 
-        <LessonRichTextEditor
-          markdown={bodyMarkdown}
-          onChange={onBodyMarkdownChange}
-          onTitleFromPaste={handleTitleFromPaste}
-        />
-        <p className="mt-2 text-xs text-slate-400">
-          Formatted as coaches will see it. Paste from Google Docs with Cmd/Ctrl+V. Save to
-          publish.
-        </p>
-      </div>
+      {activeTab === "overview" ? (
+        <div className="pt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-500">
+              Short what / why — the first thing coaches read under the video.
+            </p>
+            <label className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+              <FileUp className="h-3.5 w-3.5" aria-hidden />
+              Import .md file
+              <input
+                ref={importInputRef}
+                type="file"
+                accept=".md,.markdown,.txt,text/markdown,text/plain"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleMarkdownImport(file);
+                }}
+              />
+            </label>
+          </div>
+
+          <LessonRichTextEditor
+            markdown={bodyMarkdown}
+            onChange={onBodyMarkdownChange}
+            onTitleFromPaste={handleTitleFromPaste}
+          />
+          <p className="mt-2 text-xs text-slate-400">
+            Formatted as coaches will see it. Paste from Google Docs with
+            Cmd/Ctrl+V.
+          </p>
+
+          <div className="mt-8 border-t border-slate-100 pt-6">
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-slate-900">Action items</p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Shown beside the Overview. Coaches tick these off as they work
+                through the lesson.
+              </p>
+            </div>
+            <LessonRecommendedActionsEditor
+              actions={recommendedActions}
+              onChange={onRecommendedActionsChange}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="pt-6">
+          <p className="mb-3 text-xs text-slate-500">
+            Optional longer walkthrough / SOP. Leave blank and the Guide tab stays
+            hidden from coaches.
+          </p>
+          <LessonRichTextEditor
+            markdown={guideMarkdown}
+            onChange={onGuideMarkdownChange}
+            placeholder="Write the full walkthrough, or paste from Google Docs…"
+          />
+        </div>
+      )}
     </form>
   );
 }

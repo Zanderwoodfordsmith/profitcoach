@@ -310,6 +310,18 @@ function isMissingPublishedAtColumnError(error: unknown): boolean {
   );
 }
 
+function isMissingPostScopeColumnError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { code?: string; message?: string };
+  return (
+    maybe.code === "42703" &&
+    typeof maybe.message === "string" &&
+    (maybe.message.includes("community_posts.post_scope") ||
+      maybe.message.includes("post_scope") ||
+      maybe.message.includes("visibility"))
+  );
+}
+
 type NormalizedPostRow = Omit<
   CommunityPostRow,
   | "like_count"
@@ -954,6 +966,25 @@ export function CommunityFeed() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [feedCountersAvailable, setFeedCountersAvailable] = useState(true);
   const [publishedAtAvailable, setPublishedAtAvailable] = useState(true);
+  const [postScopeFilterAvailable, setPostScopeFilterAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { error } = await supabaseClient
+        .from("community_posts")
+        .select("id, post_scope, visibility")
+        .limit(1);
+      if (cancelled) return;
+      if (!error) setPostScopeFilterAvailable(true);
+      else if (isMissingPostScopeColumnError(error)) {
+        setPostScopeFilterAvailable(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [viewerIsAdmin, setViewerIsAdmin] = useState<boolean | null>(null);
   const [communityAuthUserId, setCommunityAuthUserId] = useState<
     string | null
@@ -1321,7 +1352,9 @@ export function CommunityFeed() {
       .select("id, slug, label")
       .order("sort_order", { ascending: true });
     if (error) throw error;
-    setCategories((data ?? []) as CommunityCategory[]);
+    setCategories(
+      ((data ?? []) as CommunityCategory[]).filter((c) => c.slug !== "lesson-qa")
+    );
   }, []);
 
   const commitPostsToState = useCallback((rows: CommunityPostRow[]) => {
@@ -1388,6 +1421,11 @@ export function CommunityFeed() {
           if (publishedAtAvailable && !canPreviewScheduledPosts) {
             favQ = favQ.lte("post.published_at", new Date().toISOString());
           }
+          if (postScopeFilterAvailable) {
+            favQ = favQ.or(
+              "post.post_scope.is.null,post.post_scope.eq.feed,and(post.post_scope.eq.lesson_qa,post.visibility.eq.public)"
+            );
+          }
           return favQ;
         };
 
@@ -1415,6 +1453,12 @@ export function CommunityFeed() {
             if (cat) {
               q = q.eq("category_id", cat.id);
             }
+          }
+          if (postScopeFilterAvailable) {
+            // Main feed + public lesson Ask & Share. Private lesson threads stay off the feed.
+            q = q.or(
+              "post_scope.is.null,post_scope.eq.feed,and(post_scope.eq.lesson_qa,visibility.eq.public)"
+            );
           }
           return q;
         };
@@ -1686,6 +1730,7 @@ export function CommunityFeed() {
       readFilter,
       feedCountersAvailable,
       publishedAtAvailable,
+      postScopeFilterAvailable,
       canPreviewScheduledPosts,
       commitPostsToState,
     ]

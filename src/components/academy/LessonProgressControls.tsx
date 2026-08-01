@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Check } from "lucide-react";
+import { Check, FilePenLine } from "lucide-react";
 
 import type { LessonProgressMap, LessonProgressStatus } from "@/lib/academy/lessonProgressTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -46,9 +46,12 @@ async function getAccessToken(): Promise<string | null> {
 
 export function LessonProgressProvider({
   courseId,
+  activeLessonId,
   children,
 }: {
   courseId: string;
+  /** When set, records this lesson as last opened for Resume Training. */
+  activeLessonId?: string;
   children: ReactNode;
 }) {
   const [progress, setProgress] = useState<LessonProgressMap>({});
@@ -81,6 +84,29 @@ export function LessonProgressProvider({
       cancelled = true;
     };
   }, [courseId]);
+
+  useEffect(() => {
+    if (!activeLessonId) return;
+    let cancelled = false;
+
+    async function recordView() {
+      const token = await getAccessToken();
+      if (!token || cancelled) return;
+
+      await fetch(
+        `/api/coach/academy/lesson-progress/${encodeURIComponent(courseId)}/${encodeURIComponent(activeLessonId!)}/view`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+    }
+
+    void recordView();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, activeLessonId]);
 
   const getStatus = useCallback(
     (lessonId: string): LessonProgressStatus => progress[lessonId] ?? "not_started",
@@ -230,15 +256,34 @@ export function LessonProgressHeaderControl({ lessonId }: { lessonId: string }) 
 export function LessonProgressSidebarControl({
   lessonId,
   active = false,
+  draft = false,
 }: {
   lessonId: string;
   /** When the lesson row is the active (selected) one — adjusts contrast on sky bg */
   active?: boolean;
+  /** Draft lessons show a document icon instead of the completion tick. */
+  draft?: boolean;
   /** @deprecated Menu alignment removed; kept for call-site compatibility */
   align?: "left" | "right";
 }) {
   const ctx = useLessonProgressContext();
   if (!ctx) return null;
+
+  if (draft) {
+    return (
+      <span
+        className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+          active
+            ? "border-amber-200/80 bg-amber-400/20 text-amber-100"
+            : "border-amber-300/80 bg-amber-50 text-amber-600"
+        }`}
+        title="Draft — admins only"
+        aria-label="Draft lesson"
+      >
+        <FilePenLine className="h-3 w-3" strokeWidth={2.25} aria-hidden />
+      </span>
+    );
+  }
 
   const { getStatus, setStatus, saving } = ctx;
   const status = getStatus(lessonId);

@@ -13,8 +13,8 @@ export const COMMUNITY_USER_MENTION_LINK_CLASS =
 export type AcademyArea = "classroom" | "programs";
 
 const ACADEMY_AREA_BASE: Record<AcademyArea, string> = {
-  classroom: "/coach/academy/classroom",
-  programs: "/coach/academy/programs",
+  classroom: "/coach/academy/compass",
+  programs: "/coach/academy/classroom",
 };
 
 /** Legacy stored format: @ plus UUID (no brackets). */

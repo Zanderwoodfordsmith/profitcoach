@@ -2,6 +2,9 @@ export type LessonProgressStatus = "not_started" | "completed" | "needs_review";
 
 export type LessonProgressMap = Record<string, LessonProgressStatus>;
 
+/** ISO timestamps keyed by lesson id (last opened). */
+export type LessonViewMap = Record<string, string>;
+
 export const LESSON_PROGRESS_STATUSES: LessonProgressStatus[] = [
   "not_started",
   "completed",

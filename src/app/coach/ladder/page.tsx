@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function CoachLadderRedirectPage() {
-  redirect("/coach/signature/ladder");
+  redirect("/coach/settings?tab=ladder");
 }

@@ -60,7 +60,7 @@ export type LessonImportCourseGroup = {
   gapCount: number;
 };
 
-/** Programme / section / lesson order from legacy-hub.json (serializable). */
+/** Programme / section / lesson order from archive-hub.json (serializable). */
 export type LessonImportCatalogOrder = {
   courses: Array<{
     id: string;

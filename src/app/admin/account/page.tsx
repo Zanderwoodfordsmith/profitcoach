@@ -96,6 +96,7 @@ const ACCOUNT_TAB_IDS = [
   "profile",
   "funnel",
   "workspace",
+  "ladder",
   "admins",
   "links",
   "site",
@@ -245,6 +246,7 @@ function AdminAccountPageContent() {
     { id: "profile", label: "Profile" },
     { id: "funnel", label: "Funnel" },
     { id: "workspace", label: "Workspace" },
+    { id: "ladder", label: "My Ladder" },
     { id: "admins", label: "Admin users" },
     { id: "links", label: "Links" },
     { id: "site", label: "Site tools" },
@@ -254,12 +256,23 @@ function AdminAccountPageContent() {
   const settingsEmbedTab: BossDashboardSettingsTabId | null =
     activeTab === "profile" ||
     activeTab === "funnel" ||
-    activeTab === "workspace"
+    activeTab === "workspace" ||
+    activeTab === "ladder"
       ? activeTab
       : null;
 
   return (
     <DashboardPageSection
+      contentMaxWidthClass={
+        activeTab === "funnel" || activeTab === "ladder"
+          ? "max-w-6xl"
+          : "max-w-4xl"
+      }
+      contentClassName={
+        activeTab === "funnel" || activeTab === "ladder"
+          ? "mx-0 mr-auto w-full"
+          : ""
+      }
       header={
         <StickyPageHeader
           title="Account"

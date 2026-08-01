@@ -95,12 +95,16 @@ export default function CoachLayout({
     };
   }, [impersonatingCoachId]);
 
-  /** Compass is admin-only; /coach/signature stays for impersonation. */
+  /**
+   * Compass + Actions are coach-accessible (Classroom tabs).
+   * Scorecard stays admin-only. Ladder redirects live on the page.
+   * Admins without impersonation use /admin/signature*.
+   */
   useEffect(() => {
     if (!pathname?.startsWith("/coach/signature")) return;
     if (impersonatingCoachId) return;
     let cancelled = false;
-    async function gateCompass() {
+    async function gateSignature() {
       const {
         data: { user },
       } = await supabaseClient.auth.getUser();
@@ -115,12 +119,22 @@ export default function CoachLayout({
       };
       if (cancelled) return;
       if (roleBody.role === "admin") {
-        router.replace("/admin/signature");
-      } else {
-        router.replace("/coach/community");
+        if (pathname.startsWith("/coach/signature/scorecard")) {
+          router.replace("/admin/signature/scorecard");
+        } else if (pathname.startsWith("/coach/signature/actions")) {
+          router.replace("/admin/signature/actions");
+        } else if (pathname.startsWith("/coach/signature/ladder")) {
+          router.replace("/admin/account?tab=ladder");
+        } else {
+          router.replace("/admin/signature");
+        }
+        return;
+      }
+      if (pathname.startsWith("/coach/signature/scorecard")) {
+        router.replace("/coach/academy/classroom");
       }
     }
-    void gateCompass();
+    void gateSignature();
     return () => {
       cancelled = true;
     };

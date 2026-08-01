@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-const RESERVED = new Set(["classroom", "programs", "new", "simplified"]);
+const RESERVED = new Set(["classroom", "compass", "archive", "programs", "new", "simplified", "resources"]);
 
 type Props = { params: Promise<{ courseId: string; lessonId: string }> };
 
@@ -8,6 +8,6 @@ export default async function AdminAcademyLegacyLessonPathRedirect({ params }: P
   const { courseId, lessonId } = await params;
   if (RESERVED.has(courseId)) notFound();
   redirect(
-    `/admin/academy/classroom/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`,
+    `/admin/academy/compass/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`,
   );
 }

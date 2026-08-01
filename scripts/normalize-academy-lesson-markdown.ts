@@ -1,9 +1,10 @@
 /**
  * Tidy up stored academy lesson markdown (Classroom + Programs share one table).
  *
- * Runs normalizeLessonMarkdown over every academy_lesson_content.body_markdown,
- * repairing jammed `****` bold, dangling delimiters, and missing blank lines
- * between blocks. Embeds (`html-embed` fences) and accordions are preserved.
+ * Runs normalizeLessonMarkdown over every academy_lesson_content.body_markdown
+ * and guide_markdown, repairing jammed `****` bold, shredded lists, dangling
+ * delimiters, and missing blank lines between blocks. Embeds (`html-embed`
+ * fences) and accordions are preserved.
  *
  * Usage:
  *   npx tsx scripts/normalize-academy-lesson-markdown.ts --dry-run   (default; no writes)
@@ -38,7 +39,10 @@ type Row = {
   course_id: string;
   lesson_id: string;
   body_markdown: string | null;
+  guide_markdown: string | null;
 };
+
+type Field = "body_markdown" | "guide_markdown";
 
 /** Show the first chunk that differs between before/after, with a little context. */
 function diffSnippet(before: string, after: string, radius = 120): string {
@@ -55,8 +59,7 @@ function diffSnippet(before: string, after: string, radius = 120): string {
 async function main() {
   const { data, error } = await supabase
     .from("academy_lesson_content")
-    .select("course_id, lesson_id, body_markdown")
-    .not("body_markdown", "is", null);
+    .select("course_id, lesson_id, body_markdown, guide_markdown");
 
   if (error) {
     console.error(error.message);
@@ -64,25 +67,27 @@ async function main() {
   }
 
   const rows = (data ?? []) as Row[];
-  const changes: { row: Row; normalized: string }[] = [];
+  const changes: { row: Row; field: Field; original: string; normalized: string }[] = [];
   let unchanged = 0;
 
   for (const row of rows) {
-    const original = row.body_markdown ?? "";
-    if (!original.trim()) {
-      unchanged += 1;
-      continue;
-    }
+    for (const field of ["body_markdown", "guide_markdown"] as const) {
+      const original = row[field] ?? "";
+      if (!original.trim()) {
+        unchanged += 1;
+        continue;
+      }
 
-    const normalized = normalizeLessonMarkdown(original);
-    if (normalized === original) {
-      unchanged += 1;
-      continue;
-    }
+      const normalized = normalizeLessonMarkdown(original);
+      if (normalized === original) {
+        unchanged += 1;
+        continue;
+      }
 
-    changes.push({ row, normalized });
-    console.log(`[normalize] ${row.course_id}/${row.lesson_id}`);
-    console.log(diffSnippet(original, normalized));
+      changes.push({ row, field, original, normalized });
+      console.log(`[normalize] ${field} ${row.course_id}/${row.lesson_id}`);
+      console.log(diffSnippet(original, normalized));
+    }
   }
 
   if (apply && changes.length > 0) {
@@ -90,20 +95,33 @@ async function main() {
     mkdirSync(dir, { recursive: true });
     const ts = new Date().toISOString().replace(/[:.]/g, "-");
     const file = join(dir, `academy-lesson-markdown-${ts}.json`);
-    writeFileSync(file, JSON.stringify(changes.map((c) => c.row), null, 2), "utf8");
-    console.log(`[normalize] backed up ${changes.length} original rows to ${file}`);
+    writeFileSync(
+      file,
+      JSON.stringify(
+        changes.map((c) => ({
+          course_id: c.row.course_id,
+          lesson_id: c.row.lesson_id,
+          field: c.field,
+          original: c.original,
+        })),
+        null,
+        2
+      ),
+      "utf8"
+    );
+    console.log(`[normalize] backed up ${changes.length} original fields to ${file}`);
   }
 
   let failed = 0;
   if (apply) {
-    for (const { row, normalized } of changes) {
+    for (const { row, field, normalized } of changes) {
       const { error: upErr } = await supabase
         .from("academy_lesson_content")
-        .update({ body_markdown: normalized, updated_at: new Date().toISOString() })
+        .update({ [field]: normalized, updated_at: new Date().toISOString() })
         .eq("course_id", row.course_id)
         .eq("lesson_id", row.lesson_id);
       if (upErr) {
-        console.error(`  failed ${row.course_id}/${row.lesson_id}: ${upErr.message}`);
+        console.error(`  failed ${field} ${row.course_id}/${row.lesson_id}: ${upErr.message}`);
         failed += 1;
       }
     }

@@ -458,7 +458,7 @@ export function AdminAcademyImportUnmatchedTable({
                               {linked.lessonTitle ?? linked.lessonId}
                             </p>
                             <Link
-                              href={`/admin/academy/programs/${linked.courseId}/${linked.lessonId}`}
+                              href={`/admin/academy/archive/${linked.courseId}/${linked.lessonId}`}
                               className="shrink-0 rounded p-0.5 text-sky-700 hover:bg-sky-50"
                               title="Open lesson"
                             >

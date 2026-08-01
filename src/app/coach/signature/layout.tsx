@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { CompassAreaLayout } from "@/components/compass/CompassAreaLayout";
+import { SignatureAreaLayout } from "@/components/compass/SignatureAreaLayout";
 
 export default function CoachSignatureLayout({
   children,
@@ -7,10 +7,8 @@ export default function CoachSignatureLayout({
   children: ReactNode;
 }) {
   return (
-    <Suspense
-      fallback={<p className="text-sm text-slate-600">Loading…</p>}
-    >
-      <CompassAreaLayout>{children}</CompassAreaLayout>
+    <Suspense fallback={<p className="text-sm text-slate-600">Loading…</p>}>
+      <SignatureAreaLayout>{children}</SignatureAreaLayout>
     </Suspense>
   );
 }

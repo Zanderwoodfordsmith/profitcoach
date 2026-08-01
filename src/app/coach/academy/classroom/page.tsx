@@ -1,7 +1,7 @@
-import { AcademyCatalogGrid } from "@/components/academy/AcademyCatalogGrid";
+import { ClassroomCatalogGrid } from "@/components/academy/ClassroomCatalogGrid";
 
-const LINK_BASE = "/coach/academy/classroom";
+const BASE = "/coach/academy/classroom";
 
 export default async function CoachAcademyClassroomCatalogPage() {
-  return <AcademyCatalogGrid linkBasePath={LINK_BASE} />;
+  return <ClassroomCatalogGrid basePath={BASE} />;
 }

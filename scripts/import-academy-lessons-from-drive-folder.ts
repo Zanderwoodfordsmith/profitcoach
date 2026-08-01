@@ -1,7 +1,7 @@
 /**
  * Bulk-import academy programme videos + transcripts from a synced Google Drive folder.
  *
- * Matches files to lessons in content/academy/legacy-hub.json (Current programmes tab).
+ * Matches files to lessons in content/academy/archive-hub.json (Current programmes tab).
  *
  * Prerequisites:
  *   - `.env.local` with NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
@@ -35,14 +35,14 @@ import {
   type LessonMatchCandidate,
   type MediaFileKind,
 } from "../src/lib/academy/legacyLessonMatcher";
-import type { LegacyHubCatalog } from "../src/lib/academy/legacyHubCatalog";
+import type { HubCatalog } from "../src/lib/academy/hubCatalog";
 
 loadEnvConfig(process.cwd());
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const LEGACY_HUB_PATH = path.join(process.cwd(), "content/academy/legacy-hub.json");
+const LEGACY_HUB_PATH = path.join(process.cwd(), "content/academy/archive-hub.json");
 const DEFAULT_OVERRIDES = path.join(process.cwd(), "scripts/academy-import-overrides.json");
 
 /** Must match `academy-lessons` bucket `file_size_limit` (see 20260731150000 migration). */
@@ -210,9 +210,9 @@ type Report = {
   errors: Array<{ relativePath: string; message: string }>;
 };
 
-function loadCatalog(): LegacyHubCatalog {
+function loadCatalog(): HubCatalog {
   const raw = fs.readFileSync(LEGACY_HUB_PATH, "utf8");
-  return JSON.parse(raw) as LegacyHubCatalog;
+  return JSON.parse(raw) as HubCatalog;
 }
 
 function loadOverridesFromFile(): Map<string, FileOverride> {

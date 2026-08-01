@@ -173,7 +173,9 @@ export function DashboardTopActions({
             post:community_posts!post_id (
               id,
               title,
-              author_id
+              author_id,
+              post_scope,
+              lesson_path
             )
           `
         )
@@ -181,6 +183,28 @@ export function DashboardTopActions({
         .neq("author_id", uid)
         .order("created_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
+
+      const lessonQaPromise =
+        variant === "admin"
+          ? supabaseClient
+              .from("community_posts")
+              .select(
+                `
+            id,
+            title,
+            body,
+            created_at,
+            published_at,
+            lesson_path,
+            author_id,
+            author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
+          `
+              )
+              .eq("post_scope", "lesson_qa")
+              .neq("author_id", uid)
+              .order("created_at", { ascending: false })
+              .limit(NOTIFICATION_ITEMS_MAX)
+          : Promise.resolve({ data: [], error: null });
 
       const nowIso = new Date().toISOString();
 
@@ -284,12 +308,14 @@ export function DashboardTopActions({
         winsRes,
         postMentionsRes,
         commentMentionsRes,
+        lessonQaRes,
       ] = await Promise.all([
         repliesPromise,
         announcementsPromise,
         winsPromise,
         postMentionsPromise,
         commentMentionsPromise,
+        lessonQaPromise,
       ]);
 
       type AuthorRow = {
@@ -314,13 +340,28 @@ export function DashboardTopActions({
               id: string;
               title: string | null;
               author_id: string;
+              post_scope?: string | null;
+              lesson_path?: string | null;
             }
           | Array<{
               id: string;
               title: string | null;
               author_id: string;
+              post_scope?: string | null;
+              lesson_path?: string | null;
             }>
           | null;
+      };
+
+      const lessonQaNotificationHref = (lessonPath: string | null | undefined) => {
+        if (!lessonPath?.trim()) return null;
+        let path = lessonPath.trim();
+        if (variant === "admin" && path.startsWith("/coach/")) {
+          path = `/admin/${path.slice("/coach/".length)}`;
+        } else if (variant === "coach" && path.startsWith("/admin/")) {
+          path = `/coach/${path.slice("/admin/".length)}`;
+        }
+        return path.includes("?") ? `${path}&tab=qa` : `${path}?tab=qa`;
       };
 
       const repliedCommentIds = new Set<string>();
@@ -336,17 +377,56 @@ export function DashboardTopActions({
           if (!author || !post) continue;
           const actor = displayNameFromProfile(author);
           repliedCommentIds.add(row.id);
+          const lessonHref =
+            post.post_scope === "lesson_qa"
+              ? lessonQaNotificationHref(post.lesson_path)
+              : null;
           next.push({
             id: `reply:${row.id}`,
             type: "replies",
             created_at: row.created_at,
             actor_name: actor,
             actor_avatar_url: author.avatar_url ?? null,
-            title: `${actor} replied to your post`,
+            title:
+              post.post_scope === "lesson_qa"
+                ? `${actor} replied on a lesson`
+                : `${actor} replied to your post`,
             body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
-            href: communityPostPath(communityHref, {
-              title: post.title ?? "Community post",
-            }),
+            href:
+              lessonHref ??
+              communityPostPath(communityHref, {
+                title: post.title ?? "Community post",
+              }),
+          });
+        }
+      }
+
+      if (!lessonQaRes.error && variant === "admin") {
+        const rows = (lessonQaRes.data ?? []) as Array<{
+          id: string;
+          title: string | null;
+          body: string;
+          created_at: string;
+          published_at?: string | null;
+          lesson_path?: string | null;
+          author: AuthorRow | AuthorRow[] | null;
+        }>;
+        for (const row of rows) {
+          const author = Array.isArray(row.author)
+            ? (row.author[0] ?? null)
+            : (row.author ?? null);
+          if (!author) continue;
+          const actor = displayNameFromProfile(author);
+          const lessonHref = lessonQaNotificationHref(row.lesson_path);
+          next.push({
+            id: `lesson-qa:${row.id}`,
+            type: "replies",
+            created_at: row.published_at ?? row.created_at,
+            actor_name: actor,
+            actor_avatar_url: author.avatar_url ?? null,
+            title: `${actor} posted on a lesson`,
+            body: row.title?.trim() || row.body.trim() || "Ask & Share",
+            href: lessonHref ?? communityHref,
           });
         }
       }

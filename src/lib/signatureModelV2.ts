@@ -2,18 +2,30 @@ export type SignatureScore = "red" | "yellow" | "green" | null;
 
 export const SIGNATURE_MODULE_IDS = [
   "compass",
+  "pipeline_setup",
   "engine",
-  "authority",
   "offer",
-  "pipeline",
   "value",
-  "profit",
+  "closing",
   "launchpad",
-  "playbook",
+  "rhythm",
+  "continuity",
   "time",
   "income",
   "lifestyle_fulfilment",
 ] as const;
+
+/**
+ * Retired module ids whose meaning carried over to a renamed module.
+ * Scores saved under the old key are read when the new key has no value.
+ * (`authority` and `pipeline` are retired without a successor — their
+ * content re-homed but the wedge meaning changed.)
+ */
+export const LEGACY_SIGNATURE_MODULE_ID_MAP: Record<string, SignatureModuleId> =
+  {
+    profit: "rhythm",
+    playbook: "continuity",
+  };
 
 export type SignatureModuleId = (typeof SIGNATURE_MODULE_IDS)[number];
 
@@ -110,20 +122,20 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           onrampHint: "Often green or yellow right after a strong positioning session.",
         },
         {
-          id: "engine",
+          id: "pipeline_setup",
           code: "R2",
-          diagramTitle: "Lead Engine",
+          diagramTitle: "Pipeline Setup",
           question:
-            "I have a simple, repeatable way to generate enquiries that keeps my pipeline full and growing.",
-          onrampHint: "Typically yellow while the engine is new but running.",
+            "My prospect list is built, my profile is optimised, and I always know exactly who to talk to next.",
+          onrampHint: "Usually yellow while the list and profile are still being built out.",
         },
         {
-          id: "authority",
+          id: "engine",
           code: "R3",
-          diagramTitle: "Authority Builder",
+          diagramTitle: "Lead Engine",
           question:
-            "I put out content regularly that builds trust, sparks conversations, and attracts the right people.",
-          onrampHint: "Often red until a rhythm and format that fits you is locked in.",
+            "I run a simple, repeatable lead generation system — conversations and content — that keeps my pipeline full and growing.",
+          onrampHint: "Typically yellow while the engine is new but running.",
         },
       ],
     },
@@ -137,26 +149,26 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
         {
           id: "offer",
           code: "E1",
-          diagramTitle: "Offer Formula",
+          diagramTitle: "Offer Design",
           question:
             "My offer is clear, compelling, and something I'm proud to present every time.",
           onrampHint: "Often green or yellow once packaging and price feel settled.",
         },
         {
-          id: "pipeline",
-          code: "E2",
-          diagramTitle: "Pipeline Accelerator",
-          question:
-            "My sales pipeline is simple and clear, and prospects move through it smoothly with minimal leaks or bottlenecks.",
-          onrampHint: "Yellow or red early while CRM and follow-ups are still forming.",
-        },
-        {
           id: "value",
-          code: "E3",
-          diagramTitle: "Value Session",
+          code: "E2",
+          diagramTitle: "Value Sessions",
           question:
             "I run value sessions with a proven structure that feels natural and converts consistently.",
           onrampHint: "Yellow or red when you’re trained but haven’t had enough reps yet.",
+        },
+        {
+          id: "closing",
+          code: "E3",
+          diagramTitle: "Client Closing",
+          question:
+            "I close confidently, handle objections without pressure, and follow up until prospects decide.",
+          onrampHint: "Yellow or red early while follow-up habits and objection reps are still forming.",
         },
       ],
     },
@@ -168,27 +180,27 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
       red: "Thankless Grind",
       modules: [
         {
-          id: "profit",
-          code: "D1",
-          diagramTitle: "COACH Method",
-          question:
-            "I feel confident in my coaching skills and I have a proven method I trust to guide any conversation.",
-          onrampHint: "Often yellow once certification lands; green with repetition.",
-        },
-        {
           id: "launchpad",
-          code: "D2",
+          code: "D1",
           diagramTitle: "Client Launchpad",
           question:
             "My first sessions create clarity, buy-in, direction and momentum so clients know exactly what to do from week one.",
           onrampHint: "Session one may be strong while sessions two to four are still in build.",
         },
         {
-          id: "playbook",
-          code: "D3",
-          diagramTitle: "Profit System",
+          id: "rhythm",
+          code: "D2",
+          diagramTitle: "Coaching Rhythm",
           question:
-            "I know the tools and frameworks inside out, my clients see real progress, and they stay month after month.",
+            "I run ongoing sessions to a steady rhythm, with a method I trust to guide any conversation and keep clients progressing.",
+          onrampHint: "Often yellow once certification lands; green with repetition.",
+        },
+        {
+          id: "continuity",
+          code: "D3",
+          diagramTitle: "Client Continuity",
+          question:
+            "My clients see real progress they can point to, they stay month after month, and renewals and expansion happen naturally.",
           onrampHint: "Often red before you have a steady client load to refine against.",
         },
       ],
@@ -269,12 +281,22 @@ export function normalizeScores(
     out[id] = null;
   }
   if (!raw || typeof raw !== "object") return out;
+  const record = raw as Record<string, unknown>;
   for (const id of SIGNATURE_MODULE_IDS) {
-    const v = (raw as Record<string, unknown>)[id];
+    const v = record[id];
     if (v === "red" || v === "yellow" || v === "green") {
       out[id] = v;
     } else {
       out[id] = null;
+    }
+  }
+  for (const [legacyId, newId] of Object.entries(
+    LEGACY_SIGNATURE_MODULE_ID_MAP
+  )) {
+    if (out[newId] !== null) continue;
+    const v = record[legacyId];
+    if (v === "red" || v === "yellow" || v === "green") {
+      out[newId] = v;
     }
   }
   return out;

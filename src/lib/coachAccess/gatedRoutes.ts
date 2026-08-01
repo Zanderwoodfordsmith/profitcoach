@@ -107,43 +107,48 @@ export const ALUMNI_FREE_COURSE_IDS: ReadonlySet<string> = new Set([
   "profit-coach-certification",
 ]);
 
-/** Client-safe course id → title map (kept in sync with legacy-hub.json). */
+/** Client-safe course id → title map (kept in sync with archive-hub.json). */
 export const ACADEMY_COURSE_TITLES: Record<string, string> = {
-  kickstart: "Kickstart",
+  kickstart: "Start Here",
   "coach-action-plan": "Coach Action Plan",
   "going-pro": "Going Pro",
+  "get-calls": "Get Calls",
+  "win-clients": "Win Clients",
   "profit-coach-certification": "Profit Coach Certification",
   "client-acquisition": "Client Acquisition",
   "client-delivery": "Client Delivery",
   "profit-coach-system": "Profit Coach System",
   "profit-coach-os": "Profit Coach OS",
   "profit-brand-framework": "PROFIT Brand & Framework",
+  "not-in-classroom": "Not in Classroom",
 };
 
 const ACADEMY_RESERVED_SEGMENTS = new Set([
-  "programs",
   "classroom",
-  "resources",
+  "compass",
+  "archive",
+  "programs",
   "simplified",
+  "resources",
+  "weekly-focus",
 ]);
 
-/** Extract the academy course id from a coach academy path, if any. */
+/**
+ * Extract the academy course id from a coach academy path, if any.
+ *
+ * Hub segments nest the course one level deeper
+ * (`/coach/academy/classroom/going-pro/...`), so skip past them.
+ */
 export function academyCourseIdFromPath(
   pathname: string | null
 ): string | null {
-  if (!pathname) return null;
-  const prefixes = [
-    "/coach/academy/programs/",
-    "/coach/academy/classroom/",
-    "/coach/academy/",
-  ];
-  for (const prefix of prefixes) {
-    if (!pathname.startsWith(prefix)) continue;
-    const segment = pathname.slice(prefix.length).split("/")[0] ?? "";
+  const prefix = "/coach/academy/";
+  if (!pathname?.startsWith(prefix)) return null;
+
+  for (const segment of pathname.slice(prefix.length).split("/").slice(0, 2)) {
+    if (!segment) continue;
     const courseId = decodeURIComponent(segment);
-    if (courseId && !ACADEMY_RESERVED_SEGMENTS.has(courseId)) {
-      return courseId;
-    }
+    if (!ACADEMY_RESERVED_SEGMENTS.has(courseId)) return courseId;
   }
   return null;
 }
