@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { TimeTrackerBoard } from "@/components/admin/timeTracker/TimeTrackerBoard";
@@ -50,6 +51,7 @@ export default function AdminTimeTrackerPage() {
       <StickyPageHeader
         title="Time Tracker"
         description="Block out your week in 15-minute slots, capture notes, and review how the team is spending their time."
+        tabs={<ToolkitHubTabs />}
       />
       <TimeTrackerBoard />
     </div>

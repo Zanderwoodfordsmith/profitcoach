@@ -54,11 +54,12 @@ When Zoom sends `recording.completed`, the app:
    - **Same local calendar day** as the event (in the event’s `display_timezone`)
    - **Wide time window** — meeting start within **8 hours** before the event start and **8 hours** after the event end
 5. When several same-day calls match (notably first-Monday **Monthly Momentum** then **Win The Week**), assigns recordings in **chronological event order**: the earliest occurrence still missing a recording gets the next webhook
-6. Writes the share URL to:
+6. When the recording attaches to **Monthly Momentum** and same-day **Win The Week** still has no recording, **copies the same share URL** onto Win The Week (common when one continuous Zoom recording covers both)
+7. Writes the share URL to:
    - `community_calendar_events.recording_link_url` for one-off events
    - `community_calendar_event_exceptions.recording_link_url` for recurring events
 
-If a recording link is already set on the chosen occurrence, the webhook leaves it unchanged (and will prefer another open same-day slot when one exists).
+If a recording link is already set on the chosen occurrence, the webhook leaves it unchanged (and will prefer another open same-day slot when one exists). Exception: a Win The Week link that was mirrored from Monthly Momentum can be replaced if a second distinct recording arrives later.
 
 If multiple events match equally and same-day ordering cannot decide, the webhook logs `ambiguous` and does not overwrite anything.
 
@@ -123,7 +124,7 @@ For URL validation during Zoom setup, use Zoom’s built-in **Validate** button 
 
 - Put the Zoom join link in each calendar event’s **Location URL** field (meeting ID is the strongest signal)
 - With the Mon/Thu schedule, same-day + ±8h matching tolerates large start-time drift
-- On the first Monday of the month, run Monthly Momentum before Win The Week so the first finished recording attaches to Momentum and the second to Win The Week
+- On the first Monday of the month, run Monthly Momentum before Win The Week so the first finished recording attaches to Momentum (and is copied to Win The Week). If you stop/start a second recording for Win The Week, that second webhook replaces the mirrored link.
 
 ## Deferred (optional later)
 

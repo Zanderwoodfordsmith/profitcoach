@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink } from "lucide-react";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import {
   activeLandingVariants,
@@ -207,6 +208,7 @@ export function AdminLandingAnalytics() {
       <StickyPageHeader
         title="Landing analytics"
         description="Boss Score landing page views and opt-ins. Traffic is grouped by page variant when more than one is in use."
+        tabs={<ToolkitHubTabs />}
         below={
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-xs text-slate-600">

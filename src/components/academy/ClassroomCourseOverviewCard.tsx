@@ -75,7 +75,7 @@ export function ClassroomCourseOverviewCard({
   return (
     <Link
       href={href}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:-translate-y-1 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.22),0_8px_18px_rgba(15,23,42,0.1)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.24),0_8px_18px_rgba(15,23,42,0.1),0_0_0_1px_rgba(12,82,144,0.12),0_0_22px_rgba(12,82,144,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
     >
       <div
         className={`relative aspect-[16/9] overflow-hidden ${
@@ -89,7 +89,7 @@ export function ClassroomCourseOverviewCard({
             alt=""
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+            className="absolute inset-0 h-full w-full object-cover"
           />
         ) : (
           <div

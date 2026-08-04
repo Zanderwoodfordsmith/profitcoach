@@ -32,6 +32,12 @@ export type ActionOutlineLine = {
   autoCompleteRule?: AutoCompleteRuleKey | null;
   doneSource?: DoneSource | null;
   sortOrder?: number;
+  academyCourseId?: string | null;
+  academyLessonId?: string | null;
+  /** Display-only: resolved on load for academy-linked rows. */
+  lessonTitle?: string | null;
+  lessonHref?: string | null;
+  sectionTitle?: string | null;
 };
 
 export type ActionPlanTemplateItemInput = {

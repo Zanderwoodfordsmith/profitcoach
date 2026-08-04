@@ -7,6 +7,7 @@ import {
   mentionMatchScore,
   type MentionProfileRow,
 } from "@/lib/communityMentionUsers";
+import { isHiddenFromMentionPicker } from "@/lib/communityFormerStaff";
 
 const PROFILE_SELECT =
   "id, full_name, first_name, last_name, avatar_url, role" as const;
@@ -149,12 +150,16 @@ export async function GET(request: Request) {
   });
 
   if (q.length === 0) {
+    const prioritizeOk =
+      prioritizeUserId && !isHiddenFromMentionPicker(prioritizeUserId)
+        ? prioritizeUserId
+        : null;
     const [priorityRes, adminsRes] = await Promise.all([
-      prioritizeUserId
+      prioritizeOk
         ? supabaseAdmin
             .from("profiles")
             .select(PROFILE_SELECT)
-            .eq("id", prioritizeUserId)
+            .eq("id", prioritizeOk)
             .maybeSingle()
         : Promise.resolve({ data: null, error: null }),
       supabaseAdmin
@@ -177,7 +182,10 @@ export async function GET(request: Request) {
     }
 
     const sorted = [...(adminsRes.data ?? [])]
-      .filter((row) => row.id !== prioritizeUserId)
+      .filter(
+        (row) =>
+          row.id !== prioritizeOk && !isHiddenFromMentionPicker(row.id as string)
+      )
       .sort(compareAdminMentionOrder);
 
     users.push(...sorted.map((row) => toMentionUser(row as ProfileRow)));
@@ -192,7 +200,9 @@ export async function GET(request: Request) {
 
   const needle = q.toLowerCase();
   const matched = rows.filter(
-    (row) => mentionMatchScore(row, slugByCoach[row.id], needle) > 0
+    (row) =>
+      !isHiddenFromMentionPicker(row.id) &&
+      mentionMatchScore(row, slugByCoach[row.id], needle) > 0
   );
 
   const data = matched

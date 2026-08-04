@@ -10,6 +10,7 @@ import {
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { DateTime } from "luxon";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -79,8 +80,8 @@ import {
   communityCalendarOccurrenceKey,
   isActiveCommunityCalendarOccurrence,
 } from "@/lib/communityCalendarTypes";
-import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 import { formatCommunityEventHappeningWhen } from "@/lib/communityRelativeTime";
+import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import {
   buildLoginUrl,
   coachCommunityPathFromAdminPath,
@@ -1040,9 +1041,19 @@ export function CommunityFeed() {
     useState<CommunityCalendarOccurrence | null>(null);
   const [calendarNextOccurrence, setCalendarNextOccurrence] =
     useState<CommunityCalendarOccurrence | null>(null);
-  const [selectedCalendarOccurrence, setSelectedCalendarOccurrence] =
-    useState<CommunityCalendarOccurrence | null>(null);
   const [calendarTick, setCalendarTick] = useState(0);
+  const communityBasePath = pathname.startsWith("/admin")
+    ? "/admin/community"
+    : "/coach/community";
+  const communityCalendarHref = `${communityBasePath}/calendar`;
+  const viewerTimezone = useMemo(() => defaultCommunityCalendarTimezone(), []);
+  const nextEventWhen = useMemo(() => {
+    if (!calendarNextOccurrence) return null;
+    return formatCommunityEventHappeningWhen(
+      calendarNextOccurrence.startsAtIso,
+      viewerTimezone
+    );
+  }, [calendarNextOccurrence, viewerTimezone, calendarTick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2116,9 +2127,8 @@ export function CommunityFeed() {
               </div>
 
               {calendarLiveOccurrence ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCalendarOccurrence(calendarLiveOccurrence)}
+                <Link
+                  href={communityCalendarHref}
                   className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center"
                 >
                   <span className="inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white">
@@ -2129,25 +2139,30 @@ export function CommunityFeed() {
                     {calendarLiveOccurrence.title}
                   </span>
                   <span className="text-[15px] font-medium text-slate-700">now</span>
-                </button>
-              ) : calendarNextOccurrence ? (
+                </Link>
+              ) : calendarNextOccurrence && nextEventWhen?.label ? (
                 <div className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
-                  <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden />
+                  <Link
+                    href={communityCalendarHref}
+                    className="shrink-0 text-slate-600 hover:text-slate-800"
+                    aria-label="Open community calendar"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                  </Link>
                   <span className="min-w-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedCalendarOccurrence(calendarNextOccurrence)
-                      }
+                    <Link
+                      href={communityCalendarHref}
                       className="truncate text-[15px] font-semibold text-slate-900 hover:underline"
                     >
                       {calendarNextOccurrence.title}
-                    </button>{" "}
-                    is happening{" "}
-                    {formatCommunityEventHappeningWhen(
-                      calendarNextOccurrence.startsAtIso,
-                      calendarNextOccurrence.display_timezone
-                    )}
+                    </Link>{" "}
+                    is happening {nextEventWhen.label}
+                    {nextEventWhen.timezoneShort ? (
+                      <span className="text-slate-400">
+                        {" "}
+                        ({nextEventWhen.timezoneShort})
+                      </span>
+                    ) : null}
                   </span>
                 </div>
               ) : null}
@@ -2436,12 +2451,6 @@ export function CommunityFeed() {
                   )}
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}
-                />
-              ) : null}
-              {selectedCalendarOccurrence ? (
-                <CommunityCalendarEventModal
-                  occurrence={selectedCalendarOccurrence}
-                  onClose={() => setSelectedCalendarOccurrence(null)}
                 />
               ) : null}
             </div>

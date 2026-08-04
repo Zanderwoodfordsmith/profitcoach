@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ProspectsTable } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
@@ -20,8 +21,9 @@ export default function CoachProspectsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         rootRef={page.pageHeaderRef}
-        title="Prospects"
+        title="Get Clients"
         description="Add prospects and share your assessment link, or view those who have completed assessments."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
       {page.loading && (

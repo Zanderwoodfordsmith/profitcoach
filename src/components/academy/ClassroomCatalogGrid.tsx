@@ -31,13 +31,13 @@ const COURSE_COVERS: Record<
     accentClassName: "bg-gradient-to-br from-[#0c5290] via-[#0a6bb5] to-[#1483c8]",
   },
   "coach-action-plan": {
-    coverImageUrl: "/academy/classroom/continue-training.jpg",
+    coverImageUrl: "/academy/classroom/coach-action-plan.jpg",
     eyebrow: "Strategy",
     eyebrowClassName: "text-[#0c5290]",
     accentClassName: "bg-gradient-to-br from-[#134e7d] via-[#1b74ad] to-[#37a3d8]",
   },
   "going-pro": {
-    coverImageUrl: "/academy/classroom/weekly-focus.jpg",
+    coverImageUrl: "/academy/classroom/going-pro.jpg",
     eyebrow: "Foundations",
     eyebrowClassName: "text-[#0c5290]",
     accentClassName: "bg-gradient-to-br from-[#1d5f8a] via-[#2b86b8] to-[#54b2dd]",
@@ -74,7 +74,7 @@ export async function ClassroomCatalogGrid({ basePath }: Props) {
     : basePath;
 
   return (
-    <div className="mx-auto flex w-[80%] max-w-6xl flex-col gap-8">
+    <div className="mx-auto flex w-[80%] max-w-6xl flex-col gap-8 pt-5">
       <div className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {startCourses.map((course) => (
           <CourseCard key={course.id} course={course} basePath={basePath} />

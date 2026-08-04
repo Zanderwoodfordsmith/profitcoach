@@ -36,6 +36,8 @@ type Props = {
   qaLabel?: string;
   transcript?: ReactNode;
   showTranscript?: boolean;
+  /** Drop the top margin where the tabs already start a surface of their own. */
+  flush?: boolean;
 };
 
 export function LessonPlayerTabs({
@@ -50,6 +52,7 @@ export function LessonPlayerTabs({
   qaLabel = "Ask & Share",
   transcript,
   showTranscript = false,
+  flush = false,
 }: Props) {
   const tabs = useMemo<TabDef[]>(
     () =>
@@ -83,9 +86,9 @@ export function LessonPlayerTabs({
               : overview;
 
   return (
-    <div className="mt-8">
+    <div className={flush ? undefined : "mt-8"}>
       <LessonTabBar tabs={tabs} activeTab={activeTab} onSelect={selectTab} />
-      <div className="pt-6">
+      <div className="pt-5">
         <SelectTabContext.Provider value={selectTab}>
           {panel}
         </SelectTabContext.Provider>

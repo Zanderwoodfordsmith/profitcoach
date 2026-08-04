@@ -23,6 +23,8 @@ export type HubLesson = {
   satellites?: HubLesson[];
   /** Set when merged from `academy_lesson_content` (in-app lesson). */
   videoUrl?: string | null;
+  /** Optional listen-along audio under the video. */
+  audioUrl?: string | null;
   /** Overview tab content. */
   bodyMarkdown?: string;
   /** Optional Guide tab (longer written walkthrough / SOP). */
@@ -90,6 +92,15 @@ export function flattenLessonsInSections(sections: HubSection[]): HubLesson[] {
   return out;
 }
 
+/** Main curriculum lessons only (excludes satellite / FAQ extras). */
+export function flattenMainLessonsInSections(sections: HubSection[]): HubLesson[] {
+  const out: HubLesson[] = [];
+  for (const section of flattenSections(sections)) {
+    out.push(...section.lessons);
+  }
+  return out;
+}
+
 function findLessonAmong(lessons: HubLesson[], lessonId: string): HubLesson | null {
   for (const lesson of lessons) {
     if (lesson.id === lessonId) return lesson;
@@ -138,6 +149,13 @@ export function formatDurationMinutes(totalMinutes: number): string | null {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
+/** Sidebar / catalog duration from media length (seconds → `23m` / `1h 5m`). */
+export function formatLessonDurationFromSeconds(seconds: number): string | null {
+  if (!Number.isFinite(seconds) || seconds <= 0) return null;
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  return formatDurationMinutes(minutes);
+}
+
 export function hubLessonCount(course: HubCourse): number {
   return course.sections.reduce((sum, s) => sum + sectionLessonCount(s), 0);
 }
@@ -154,19 +172,19 @@ export function flattenSections(sections: HubSection[]): HubSection[] {
   return out;
 }
 
-/** Sum of lesson durations in a section (including nested sections + satellites). */
+/** Sum of main lesson durations in a section (nested sections included; satellites excluded). */
 export function sectionDurationLabel(section: HubSection): string | null {
   let minutes = 0;
-  for (const lesson of flattenLessonsInSections([section])) {
+  for (const lesson of flattenMainLessonsInSections([section])) {
     minutes += parseDurationMinutes(lesson.duration);
   }
   return formatDurationMinutes(minutes);
 }
 
-/** Sum of all lesson durations in a course (including satellites). */
+/** Sum of main lesson durations in a course (satellites excluded). */
 export function courseDurationLabel(course: HubCourse): string | null {
   let minutes = 0;
-  for (const lesson of flattenLessonsInSections(course.sections)) {
+  for (const lesson of flattenMainLessonsInSections(course.sections)) {
     minutes += parseDurationMinutes(lesson.duration);
   }
   return formatDurationMinutes(minutes);
@@ -206,6 +224,37 @@ export function firstLessonInCourse(course: HubCourse): HubLesson | null {
     if (first) return first;
   }
   return null;
+}
+
+/**
+ * Next addressable lesson after `lessonId` in course order (sections + satellites).
+ * Skips drafts unless `includeDrafts` is set (admin preview).
+ */
+export function nextLessonInCourse(
+  course: HubCourse,
+  lessonId: string,
+  options?: { includeDrafts?: boolean },
+): HubLesson | null {
+  return nextLessonInSequence(
+    flattenLessonsInSections(course.sections),
+    lessonId,
+    options,
+  );
+}
+
+/** Next lesson in a flat ordered list (e.g. Compass courses). */
+export function nextLessonInSequence<T extends { id: string; draft?: boolean }>(
+  lessons: readonly T[],
+  lessonId: string,
+  options?: { includeDrafts?: boolean },
+): T | null {
+  const includeDrafts = options?.includeDrafts === true;
+  const visible = includeDrafts
+    ? [...lessons]
+    : lessons.filter((lesson) => lesson.draft !== true);
+  const index = visible.findIndex((lesson) => lesson.id === lessonId);
+  if (index < 0) return null;
+  return visible[index + 1] ?? null;
 }
 
 export function lessonContextInCourse(

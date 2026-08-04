@@ -41,7 +41,7 @@
       "description": ""
     },
     {
-      "ref": "3.9",
+      "ref": "2.9",
       "description": ""
     },
     {
@@ -61,18 +61,521 @@
   "actionSections": [
     {
       "title": "Attracting Candidates",
-      "description": "Getting the right people to notice you and apply.\n**Play 1: Role Scorecard** — Define the outcomes, responsibilities, and non-negotiable traits for the role before you write a single word of the job ad. If you do not know what winning looks like, you cannot hire a winner.\n**Play 2: The Job Ad** — Write an ad that sells the role to the right person. Lead with what they will achieve, why your business is worth joining, and what the first 90 days look like.\n**Play 3: Channel Selection** — Pick 3–5 places your ideal candidate actually spends time and focus your effort there. Stop posting everywhere and hoping.\n**Play 4: Candidate Tracker** — A simple system to track who has applied, where they are in the process, and what happens next. Nothing falls through the cracks.",
-      "actions": []
+      "description": "Getting the right people to notice you and apply.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Role Scorecard",
+          "description": "Define the outcomes, responsibilities, and non-negotiable traits for the role before you write a single word of the job ad. If you do not know what winning looks like, you cannot hire a winner.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define the outcomes, responsibilities, and non-negotiable traits for a role before you write a single word of the job ad. A scorecard answers three questions: What does winning look like in 90 days? What are the ongoing responsibilities? What kind of person thrives in this role?"
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Most bad hires happen because the role was never clearly defined. The owner had a vague sense of needing \"someone to help with marketing\" but never specified what success looks like. Without a scorecard, you attract the wrong candidates, ask the wrong interview questions, and have no way to measure whether the hire is working. The scorecard is the foundation that makes everything else in the recruitment process work."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Complete one scorecard for every role before you begin recruiting. Update it before re-hiring for the same role.\n\n---"
+            },
+            {
+              "title": "Define the Role",
+              "content": "- [ ] **Role title:** What is the role called? (Keep it simple and recognisable - creative titles confuse candidates)\n- [ ] **Reports to:** Who does this person report to?\n- [ ] **Works with:** Who will they interact with daily?\n- [ ] ⚡ Quick Win: Before writing anything else, answer: \"If this hire is a total success, what will be different about my business in 90 days?\" Write that down. That is the core of your scorecard."
+            },
+            {
+              "title": "Outcomes (What Winning Looks Like)",
+              "content": "- [ ] Define 3-5 measurable outcomes for the first 90 days. These are results, not activities.\n  - Good: \"Generate 20 qualified leads per week through LinkedIn and email outreach\"\n  - Bad: \"Do marketing stuff\"\n- [ ] For each outcome, specify how you will measure it\n- [ ] Prioritise: if they achieve only one outcome, which one matters most?"
+            },
+            {
+              "title": "Ongoing Responsibilities",
+              "content": "- [ ] List 5-8 core responsibilities this role will own permanently\n- [ ] For each, note the time allocation: how much of their week should go to this? (e.g., \"Client delivery: 50%, Admin: 20%, Business development: 30%\")\n- [ ] Identify which responsibilities are the most important (the ones you would hire for even if they did nothing else)"
+            },
+            {
+              "title": "Non-Negotiable Traits",
+              "content": "- [ ] List 3-5 traits or qualities that are essential for this role:\n  - **Skills:** What must they already know how to do? (vs. what can you train)\n  - **Values:** Which of your company values are most critical for this role?\n  - **Behaviours:** What specific behaviours would you see from the right person? (e.g., \"Takes initiative without being asked\", \"Communicates proactively when problems arise\")\n- [ ] Separate \"must have\" from \"nice to have\" - be honest about which is which\n- [ ] Identify any deal-breakers: traits or behaviours that would make someone wrong for this role regardless of other qualities"
+            },
+            {
+              "title": "Compensation and Logistics",
+              "content": "- [ ] Salary range: £___ to £___\n- [ ] Employment type: Full-time / Part-time / Contract / Freelance\n- [ ] Location: On-site / Remote / Hybrid\n- [ ] Start date: When do you need them?\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A one-page scorecard that clearly defines what the role is, what success looks like, and what kind of person fits\n- A foundation for writing a compelling job ad (Action 2)\n- Interview criteria aligned with actual role requirements (Action 6)\n- A 90-day success measurement framework for onboarding (Action 11)\n- Shared understanding between you and anyone else involved in the hiring decision"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The scorecard is the single most important recruitment tool. If the client resists (\"I just need someone, I will figure out the details later\"), push back hard. Hiring without a scorecard is how you end up with someone who interviews well but cannot do the job. The outcomes section is where most clients struggle - they default to listing activities rather than results. Keep asking: \"But what result does that activity produce?\" until they get to something measurable. This scorecard also becomes the basis for the 30-60-90 day plan (Action 11) and ongoing performance management."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "The Job Ad",
+          "description": "Write an ad that sells the role to the right person. Lead with what they will achieve, why your business is worth joining, and what the first 90 days look like.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Write a job ad that sells the role to the right person. Lead with what they will achieve, why your business is worth joining, and what the first 90 days look like. A great job ad attracts great candidates. A boring one attracts whoever is available."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Your job ad is a sales page for the role. The best candidates have options. They are scrolling past dozens of generic ads that list requirements and responsibilities. If your ad reads like every other one, you will get the same generic applicants as everyone else. The businesses that attract top talent write ads that make good people stop scrolling and think \"this sounds like somewhere I could do great work.\""
+            },
+            {
+              "title": "How to Use This",
+              "content": "Use your Role Scorecard (Action 1) as the foundation and follow the structure below.\n\n---"
+            },
+            {
+              "title": "Ad Structure",
+              "content": "### The Hook (First 2-3 Lines)\n\n- [ ] Lead with what the person will ACHIEVE, not what you need: \"You will build a lead generation engine that produces 50 qualified prospects per week\" not \"We are looking for a marketing person\"\n- [ ] ⚡ Quick Win: Write your opening line right now using this template: \"You will [specific achievement] for [type of business] that [one compelling thing about your company].\"\n- [ ] Make it specific to the role, not generic\n\n### Why This Role (The Sell)\n\n- [ ] What will they get to do that is exciting, challenging, or meaningful?\n- [ ] What will they learn or develop?\n- [ ] What kind of impact will they have?\n- [ ] What is the team or culture like? (Be honest, not aspirational)\n\n### What You Will Do (Responsibilities)\n\n- [ ] List 5-8 responsibilities from your scorecard, written as active statements\n- [ ] Lead with the most exciting/impactful responsibilities, not the admin\n- [ ] Use \"You will...\" not \"The candidate should...\"\n- [ ] Be specific: \"Manage a pipeline of 50+ leads and convert 10% to paying clients monthly\" not \"Handle sales\"\n\n### What Success Looks Like in 90 Days\n\n- [ ] Pull directly from your scorecard outcomes\n- [ ] This is powerful because it tells candidates exactly what they are signing up for\n- [ ] It also self-selects: candidates who read this and feel excited are the right ones. Those who feel overwhelmed are probably not.\n\n### Who You Are\n\n- [ ] List must-have qualities from your scorecard (not a laundry list of requirements)\n- [ ] Lead with traits and behaviours, not just qualifications\n- [ ] Be honest about experience level: \"You have managed at least one marketing channel end-to-end\" is more useful than \"5+ years of marketing experience\"\n- [ ] Include deal-breakers if relevant: \"This role requires [location/hours/specific skill]. If that does not work for you, this is not the right fit.\"\n\n### Compensation and Details\n\n- [ ] Include salary range (ads with salary get 30-50% more applicants)\n- [ ] Location and flexibility details\n- [ ] Employment type\n- [ ] How to apply: clear instructions, simple process"
+            },
+            {
+              "title": "Final Check",
+              "content": "- [ ] Read the ad from a top candidate's perspective: would YOU apply?\n- [ ] Check: does the ad sound like your business, or like generic corporate HR?\n- [ ] Check: is the first sentence compelling enough to stop someone scrolling?\n- [ ] Check: is the salary range realistic for the quality of person you want?\n- [ ] Have someone outside the business read it and tell you what they think the role is. If they get it wrong, the ad is unclear.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A compelling job ad that attracts the right candidates and repels the wrong ones\n- Clear expectations set before anyone applies\n- Higher-quality applications because candidates self-select based on specific outcomes\n- A foundation for consistent messaging throughout the recruitment process\n- Less time wasted on interviews with candidates who are not a fit"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most SME job ads are terrible. They list requirements, mention \"competitive salary,\" and say \"we are a dynamic team.\" Challenge clients to write something a real person would actually want to respond to. The 90-day outcomes section is the secret weapon - very few companies include this, and it immediately signals \"this is a serious, well-run business.\" If the client says \"I cannot share the salary,\" push back: hiding salary wastes everyone's time and reduces application volume. The only reason to hide salary is if you plan to lowball candidates, which damages your employer brand."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Channel Selection",
+          "description": "Pick 3–5 places your ideal candidate actually spends time and focus your effort there. Stop posting everywhere and hoping.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Pick 3-5 places your ideal candidate actually spends time and focus your recruitment effort there. Stop posting everywhere and hoping. A targeted approach on the right channels beats a scattered approach on every job board."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Different roles attract candidates through different channels. A junior admin role fills well through Indeed. A senior marketing hire is more likely found through LinkedIn or industry networks. A specialist developer might only be reachable through niche job boards or referrals. If you post your ad on the wrong channels, you get either no applications or the wrong applications. Matching the channel to the candidate is as important as writing a great ad."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Consider the role, the seniority, and where your ideal candidate would be looking, then choose your channels.\n\n---"
+            },
+            {
+              "title": "Channel Options",
+              "content": "Review each and tick the ones that make sense for your current role:\n\n### Job Boards\n- [ ] **Indeed** - High volume, good for operational and admin roles, free listings available\n- [ ] **LinkedIn Jobs** - Best for professional, managerial, and specialist roles. Paid listings get more reach.\n- [ ] **Reed / Totaljobs** - Established UK boards with good reach for mid-level roles\n- [ ] **Industry-specific boards** - Check if your sector has a specialist board (e.g., Charity Job, Escaped)\n\n### Network and Referral\n- [ ] **Your personal network** - Post on LinkedIn, email your contacts, ask your team. Often produces the best candidates.\n- [ ] **Employee referrals** - Ask your team if they know anyone. Offer a referral bonus if appropriate (£250-500 is common).\n- [ ] **Industry groups** - LinkedIn groups, Facebook groups, Slack communities relevant to the role\n- [ ] **Professional associations** - Many have job boards or mailing lists (e.g., CIM for marketing, CIPD for HR)\n\n### Direct Approach\n- [ ] **LinkedIn search and outreach** - For senior or specialist roles, approach candidates directly. This is how recruiters work.\n- [ ] **Freelancer platforms** - Upwork, Fiverr, PeoplePerHour. Good for testing a role as a freelance project before committing to a full hire.\n\n### Recruitment Support\n- [ ] **Recruitment agency** - Typically charges 15-25% of salary. Worth it for hard-to-fill or senior roles. Not worth it for straightforward hires.\n- [ ] ⚡ Quick Win: Before paying for any channel, post on LinkedIn personally and ask your network. This is free and often produces the highest-quality candidates."
+            },
+            {
+              "title": "Select Your Channels",
+              "content": "- [ ] Choose your **Primary Channel** (the one most likely to reach your ideal candidate): ___\n- [ ] Choose 2-3 **Supporting Channels**: ___\n- [ ] Set a timeline: how long will you run the ad before assessing whether the channels are working? (Recommendation: 2 weeks minimum)\n- [ ] Set a budget: how much are you willing to spend on this hire? (Include job board fees, recruiter fees if applicable, and your time)\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- 3-5 targeted channels selected based on where your ideal candidate actually is\n- A clear budget and timeline for the recruitment effort\n- No wasted money on channels that do not match the role\n- A higher-quality applicant pool because you are fishing in the right pond\n- A plan to assess and adjust channels if initial results are poor"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most SME owners default to Indeed for every role because it is familiar. Challenge them to think about where a great candidate for this specific role would be. A talented marketing person is probably on LinkedIn, not scanning Indeed. A skilled tradesperson might respond better to a local Facebook group than a national job board. For senior roles, direct outreach (the client personally messaging potential candidates on LinkedIn) often works better than any job ad. If using a recruiter, insist on seeing the shortlist criteria to make sure they are aligned with the scorecard."
+            }
+          ]
+        },
+        {
+          "number": 4,
+          "title": "Candidate Tracker",
+          "description": "A simple system to track who has applied, where they are in the process, and what happens next. Nothing falls through the cracks.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a simple system to track who has applied, where they are in the process, and what happens next. This prevents candidates falling through the cracks, keeps the process moving, and gives you a clear view of your recruitment pipeline at any point."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a tracker, recruitment quickly becomes chaotic. CVs sit in your inbox unreviewed. You forget who you have spoken to and who you have not. Candidates wait too long for a response and accept other offers. A simple tracker keeps you organised, responsive, and professional throughout the process. Candidates judge your business by how you run the hiring process - a disorganised process signals a disorganised company."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Create a simple spreadsheet or board and update it as candidates move through each stage.\n\n---"
+            },
+            {
+              "title": "Setup",
+              "content": "- [ ] ⚡ Quick Win: Create a spreadsheet with these columns: Name, Source (where they found the ad), Date Applied, Phone Screen (date/status), Interview (date/status), Task (date/status), Decision, Notes\n- [ ] Or use a simple Trello/Notion board with columns for each stage: Applied > Phone Screen > Interview > Task > Offer > Hired / Rejected\n- [ ] Add every applicant the day they apply - even if you know immediately they are not a fit"
+            },
+            {
+              "title": "Track Each Stage",
+              "content": "- [ ] **Applied:** Log every application with name, source, and date received\n- [ ] **Screened:** Mark CVs as Yes (proceed), Maybe (review again), or No (reject) within 48 hours of application\n- [ ] **Phone Screen:** Record date scheduled, date completed, and outcome (proceed or reject)\n- [ ] **Interview:** Record date, interviewers, and outcome\n- [ ] **Task:** Record date sent, date returned, and evaluation\n- [ ] **Decision:** Offer made / Rejected / On hold\n- [ ] **Notes:** Key observations at each stage (useful for comparing candidates later)"
+            },
+            {
+              "title": "Communication Standards",
+              "content": "- [ ] Respond to every applicant within 48 hours, even if just to acknowledge receipt\n- [ ] Reject candidates promptly and politely - do not leave people hanging\n- [ ] Confirm next steps after every stage: \"You will hear from us by [date] about [next step]\"\n- [ ] If delays happen, communicate proactively: \"We are taking a bit longer than expected. I will update you by [date].\""
+            },
+            {
+              "title": "Post-Hire Review",
+              "content": "- [ ] After the hire is made, review the tracker: which channels produced the best candidates? How long did the process take? Where did it get stuck?\n- [ ] Keep the tracker for future hires - it becomes your recruitment data over time\n- [ ] Note any candidates who were strong but not selected - they may be right for a future role\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every candidate tracked from application to decision\n- No applications lost or forgotten\n- A clear, responsive process that reflects well on your business\n- Data on which channels and stages work best\n- A reusable system for every future hire"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The tracker is simple but surprisingly few SMEs use one. Most rely on memory and an overflowing inbox. Even a basic spreadsheet dramatically improves the quality of the hiring process. The communication standards are especially important: a candidate who gets a prompt, professional rejection will still speak positively about your business. A candidate who never hears back will tell everyone. Push clients to set the 48-hour response rule and stick to it. If they are too busy to review applications within 48 hours, they are not ready to hire."
+            }
+          ]
+        }
+      ]
     },
     {
       "title": "Selection & Interviewing",
-      "description": "Choosing the right person based on evidence, not instinct.\n**Play 5: Phone Screen** — A short call to check motivation, logistics, and basic fit before you invest time in a full interview. Kill obvious misfits early.\n**Play 6: Structured Interview** — A consistent set of behavioural and values-based questions asked to every candidate so you are comparing people against the same bar, not your mood on the day.\n**Play 7: Practical Task** — A short, realistic task that mirrors the actual work. Seeing someone do the job tells you more than any interview answer.\n**Play 8: Candidate Scorecard** — A simple rubric for scoring each candidate across the criteria that matter. Every interviewer completes it before the group discussion. Decisions are made on data, not gut feel.",
-      "actions": []
+      "description": "Choosing the right person based on evidence, not instinct.",
+      "actions": [
+        {
+          "number": 5,
+          "title": "Phone Screen",
+          "description": "A short call to check motivation, logistics, and basic fit before you invest time in a full interview. Kill obvious misfits early.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Run a short 15-20 minute call with shortlisted candidates to check motivation, logistics, and basic fit before investing time in a full interview. The phone screen is a filter: it identifies candidates who should definitely progress and candidates who should definitely not, saving hours of unnecessary interviews."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "A full interview is a 45-60 minute investment from you and potentially your team. Phone screens prevent wasting that time on candidates who look good on paper but are wrong in practice - maybe they cannot start for 3 months, maybe they are only interested at double your budget, maybe their communication style is immediately wrong for the role. A 15-minute call reveals these issues before you commit to a full process."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Schedule phone screens for your top 8-10 applicants. Use the same questions for every candidate so you can compare fairly.\n\n---"
+            },
+            {
+              "title": "Before the Call",
+              "content": "- [ ] Review their CV/application and note 1-2 things you want to clarify\n- [ ] Have your Role Scorecard (Action 1) in front of you\n- [ ] Block 20 minutes in your calendar (15 for the call, 5 for notes)"
+            },
+            {
+              "title": "The Call Script (15 Minutes)",
+              "content": "- [ ] **Introduction (2 minutes):** \"Thanks for applying. I would like to spend 15 minutes getting to know you and telling you more about the role. Is now still a good time?\"\n- [ ] ⚡ Quick Win: Ask this first: \"What interested you about this role specifically?\" Their answer tells you immediately whether they read the ad carefully or are applying to everything.\n\n### Check Motivation (5 minutes)\n- [ ] \"What are you looking for in your next role?\"\n- [ ] \"What do you know about our company?\"\n- [ ] \"Why are you leaving (or looking to leave) your current position?\"\n\n### Check Logistics (3 minutes)\n- [ ] \"When would you be available to start?\"\n- [ ] \"The salary range is £X-£Y. Does that work for you?\" (Do not waste time on candidates outside your range)\n- [ ] \"This role is [location/hours]. Does that work for your situation?\"\n\n### Check Fit (3 minutes)\n- [ ] \"Tell me briefly about your most relevant experience for this role.\"\n- [ ] \"What would you say is your biggest strength for this type of work?\"\n- [ ] One role-specific question from your scorecard (e.g., \"Have you managed a team before?\" or \"Are you comfortable with cold outreach?\")\n\n### Close (2 minutes)\n- [ ] \"Do you have any questions about the role or the company?\"\n- [ ] \"Here is what happens next: I am speaking to a few candidates this week and will be in touch by [date] about the next stage.\"\n- [ ] Thank them for their time."
+            },
+            {
+              "title": "After the Call",
+              "content": "- [ ] Rate the candidate immediately (while the conversation is fresh): Strong Yes / Yes / Maybe / No\n- [ ] Note 2-3 key observations in your Candidate Tracker (Action 4)\n- [ ] If No: send a polite rejection within 48 hours\n- [ ] If Yes or Strong Yes: schedule for the full interview (Action 6)\n- [ ] If Maybe: compare against other phone screens before deciding\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- The candidate pool narrowed from 8-10 to 3-5 for full interviews\n- Basic fit (motivation, logistics, salary) confirmed before investing interview time\n- Consistent data on each candidate for fair comparison\n- A professional candidate experience that reflects well on your business\n- Hours saved by not interviewing clearly wrong candidates"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Phone screens are the most efficient part of the recruitment process. Encourage clients to use them for every hire, even if they only have 4-5 applicants. The salary question is crucial - many clients avoid it and then discover at offer stage that the candidate expects 40% more. Get it out of the way early. If a candidate cannot answer \"What interested you about this role?\" with anything specific, that tells you they are applying to everything and have no genuine interest. Move on."
+            }
+          ]
+        },
+        {
+          "number": 6,
+          "title": "Structured Interview",
+          "description": "A consistent set of behavioural and values-based questions asked to every candidate so you are comparing people against the same bar, not your mood on the day.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Run a consistent interview using the same behavioural and values-based questions for every candidate. This means you are comparing people against the same bar using the same criteria, rather than having a different conversation each time and making decisions based on who you liked most."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Unstructured interviews are barely better than flipping a coin. Research consistently shows that \"going with your gut\" in interviews leads to hiring people who are similar to you or who are good at interviewing - neither of which predicts job performance. Structured interviews, where every candidate answers the same questions and is scored against the same criteria, are 2x more predictive of actual job performance. They also protect you legally by ensuring fair, consistent treatment."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design your interview guide before the first interview and use the same guide for every candidate.\n\n---"
+            },
+            {
+              "title": "Interview Design",
+              "content": "- [ ] Pull 3-5 key outcomes and traits from your Role Scorecard (Action 1)\n- [ ] For each, write 1-2 behavioural interview questions (see below)\n- [ ] ⚡ Quick Win: Use this formula for every question: \"Tell me about a time when you [behaviour related to scorecard trait]. What was the situation, what did you do, and what was the result?\"\n- [ ] Prepare a scoring rubric: for each question, what does a great answer (5), good answer (3), and poor answer (1) look like?"
+            },
+            {
+              "title": "Interview Structure (45-60 Minutes)",
+              "content": "### Opening (5 minutes)\n- [ ] Welcome them, explain the interview structure: \"I will ask you some questions about your experience, then tell you more about the role, and we will leave time for your questions.\"\n- [ ] Put them at ease: \"There are no trick questions. I am interested in real examples from your experience.\"\n\n### Behavioural Questions (25-30 minutes)\nAsk each candidate the same questions in the same order:\n\n- [ ] **Question 1 (Core skill):** \"Tell me about a time when you [relevant skill from scorecard]. Walk me through the situation, your approach, and what happened.\"\n- [ ] **Question 2 (Challenge/problem-solving):** \"Describe a situation where [relevant challenge for this role] went wrong. What did you do?\"\n- [ ] **Question 3 (Values/culture):** \"Give me an example of when you [behaviour that demonstrates a key value]. What did you do and why?\"\n- [ ] **Question 4 (Initiative/ownership):** \"Tell me about something you improved or built without being asked to.\"\n- [ ] **Question 5 (Role-specific):** Design one question specific to the most important outcome on your scorecard.\n\n### For each answer, listen for:\n- [ ] **Specificity:** Do they give a real example or speak in generalities?\n- [ ] **Their role:** What did THEY do (not the team)?\n- [ ] **Result:** What was the measurable outcome?\n- [ ] **Learning:** What did they take from the experience?\n\n### Role Presentation (10 minutes)\n- [ ] Describe the role, the 90-day outcomes, and the culture honestly\n- [ ] Explain the challenges as well as the opportunities (this builds trust and helps candidates self-select)\n- [ ] Share what success and failure look like\n\n### Candidate Questions (10 minutes)\n- [ ] Let them ask anything\n- [ ] Pay attention to the quality of their questions - great candidates ask about impact, growth, and expectations. Weak candidates ask about holidays and perks."
+            },
+            {
+              "title": "After the Interview",
+              "content": "- [ ] Score each question 1-5 using your rubric BEFORE discussing with anyone else (prevent groupthink)\n- [ ] Write 3 bullet points: strengths, concerns, and overall recommendation\n- [ ] Update the Candidate Tracker (Action 4)\n- [ ] If multiple interviewers: each scores independently, then compare and discuss\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every candidate assessed against the same criteria using the same questions\n- Objective scoring that reduces bias and gut-feel decisions\n- Better prediction of actual job performance\n- A fair, professional process that candidates respect\n- Clear data for comparing candidates and making confident hiring decisions"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The hardest part is getting clients to stick to the structure. They want to \"have a conversation\" and \"see if they click.\" That is fine for 5 minutes, but the core 30 minutes should be structured. The behavioural question format (\"Tell me about a time when...\") is critical: past behaviour is the best predictor of future behaviour. If a candidate cannot give a specific example, they probably do not have the experience. Probe with: \"Can you be more specific?\" or \"What was your personal contribution?\" Generic answers (\"We improved sales\") should prompt \"What did YOU do specifically?\" Independent scoring before discussion is essential to prevent the loudest voice in the room driving the decision."
+            }
+          ]
+        },
+        {
+          "number": 7,
+          "title": "Practical Task",
+          "description": "A short, realistic task that mirrors the actual work. Seeing someone do the job tells you more than any interview answer.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Design a short, realistic task that mirrors the actual work the person will be doing. Seeing someone do the job tells you more than any interview answer. The task should take 1-2 hours to complete and produce a tangible output you can evaluate."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Some people interview brilliantly but cannot do the work. Others interview poorly but are exceptional at the job. A practical task reveals the truth. It shows you their thinking process, their attention to detail, their communication style, and the quality of their output in a way that no amount of conversation can. It also gives the candidate a realistic preview of the work, which helps them decide if this is the right role for them."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Design the task before you start interviewing so every candidate gets the same brief. Send it after the interview to your top 2-3 candidates.\n\n---"
+            },
+            {
+              "title": "Task Design",
+              "content": "- [ ] Choose one real task from the role that represents the core work\n- [ ] ⚡ Quick Win: Ask yourself: \"What is the first real thing I would ask them to do in week one?\" That is your task.\n- [ ] Make it realistic but bounded: it should take 1-2 hours, not a full day\n- [ ] Provide clear context: what is the situation, what do you need, and what does good look like?\n- [ ] Set a deadline: typically 3-5 days to complete (enough time to fit around their current commitments)"
+            },
+            {
+              "title": "Task Examples by Role Type",
+              "content": "- [ ] **Marketing:** \"Write 3 social media posts for our business targeting [audience]. Include headlines, body copy, and suggested images.\"\n- [ ] **Sales:** \"Prepare a 10-minute pitch for our core service to [type of prospect]. Present it over a video call.\"\n- [ ] **Operations:** \"Review this process document and identify 3 improvements you would make. Explain why and how.\"\n- [ ] **Finance:** \"Here is a P&L for a fictional business. Write a one-page summary of what you see, the top 3 concerns, and what you would investigate next.\"\n- [ ] **Admin:** \"Organise this messy shared folder into a logical structure. Explain your reasoning in a brief note.\"\n- [ ] **Management:** \"Review these team performance summaries and write a brief plan for addressing the underperformer.\""
+            },
+            {
+              "title": "Brief the Candidate",
+              "content": "- [ ] Send a clear brief: what to do, what format to deliver, and when it is due\n- [ ] Include enough context about your business for them to do a reasonable job\n- [ ] Be explicit about time: \"We expect this to take approximately 1-2 hours. Please do not spend more than that.\"\n- [ ] Offer to answer questions before they start (how they ask questions is also revealing)"
+            },
+            {
+              "title": "Evaluate the Output",
+              "content": "- [ ] Score each candidate's task independently before discussing with others\n- [ ] Evaluate on:\n  - Quality of thinking (did they understand the problem?)\n  - Attention to detail (typos, formatting, following instructions)\n  - Communication (is their writing clear and professional?)\n  - Initiative (did they go beyond the brief where appropriate?)\n  - Relevance (does their approach suit your business, or is it generic?)\n- [ ] Compare outputs side by side if you have multiple candidates\n- [ ] Use the task output in the final decision alongside interview scores\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A realistic preview of each candidate's actual work quality\n- A tangible output to evaluate alongside interview impressions\n- Better prediction of on-the-job performance\n- Candidates who self-select by engaging seriously with the task (those who do not complete it are telling you something)\n- A more confident hiring decision based on evidence, not just conversation"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The practical task is where hiring decisions often become clear. Interview scores between top candidates are usually close, but task quality reveals the gap. Two important principles: first, the task must be realistic, not theoretical. \"How would you approach X?\" is an interview question. \"Do X\" is a practical task. Second, respect candidates' time - keep it to 1-2 hours and consider compensating them (£50-100 is reasonable for a senior role). Candidates who produce great work deserve respect, even if they are not selected. Also note: candidates who ask smart clarifying questions before starting often produce better work than those who just dive in."
+            }
+          ]
+        },
+        {
+          "number": 8,
+          "title": "Candidate Scorecard",
+          "description": "A simple rubric for scoring each candidate across the criteria that matter. Every interviewer completes it before the group discussion. Decisions are made on data, not gut feel.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a simple rubric for scoring each candidate across the criteria that matter. Every interviewer completes it independently before any group discussion. The scorecard turns subjective impressions into comparable data so your hiring decision is made on evidence, not gut feel."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a scorecard, hiring discussions default to \"I liked them\" or \"they seemed good.\" These impressions are heavily influenced by unconscious bias, interviewer mood, and how recently you spoke to the candidate. A scorecard forces you to evaluate each candidate against the same criteria and produce a number you can compare. It does not remove human judgment, it structures it so the right factors get weighted and the decision is defensible."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Create the scorecard before interviews begin. Score every candidate immediately after their interview, before discussing with anyone else.\n\n---"
+            },
+            {
+              "title": "Build the Scorecard",
+              "content": "- [ ] ⚡ Quick Win: Create a simple table with these columns: Criteria, Weight (1-3), Candidate A Score (1-5), Candidate B Score (1-5), etc.\n- [ ] Pull 5-7 evaluation criteria from your Role Scorecard (Action 1):\n  - 2-3 skill criteria (can they do the core work?)\n  - 1-2 values/culture criteria (do they fit how you work?)\n  - 1 motivation criterion (are they genuinely interested?)\n  - 1 practical task score (how was their work output?)\n- [ ] Weight each criterion 1-3 based on importance (3 = critical, 1 = nice to have)"
+            },
+            {
+              "title": "Example Criteria",
+              "content": "- [ ] Core technical skill for the role (Weight: 3)\n- [ ] Communication quality (Weight: 2)\n- [ ] Problem-solving approach (Weight: 2)\n- [ ] Cultural alignment with company values (Weight: 2)\n- [ ] Relevant experience (Weight: 2)\n- [ ] Motivation and enthusiasm for the role (Weight: 1)\n- [ ] Practical task quality (Weight: 3)"
+            },
+            {
+              "title": "Scoring Rules",
+              "content": "- [ ] Score immediately after each interview or task evaluation\n- [ ] Score INDEPENDENTLY - do not discuss with other interviewers first\n- [ ] Use the full 1-5 range: 1 = poor, 2 = below average, 3 = acceptable, 4 = good, 5 = excellent\n- [ ] For each score, write one sentence explaining why (this prevents score inflation and forces honest evaluation)\n- [ ] Calculate weighted total: (Score x Weight) for each criterion, then sum"
+            },
+            {
+              "title": "Making the Decision",
+              "content": "- [ ] Compare weighted totals across candidates\n- [ ] Review the individual criterion scores: is there a deal-breaker anywhere (a 1 or 2 on a Weight: 3 criterion)?\n- [ ] If multiple interviewers scored, compare independently before discussing\n- [ ] Where scores differ significantly between interviewers, discuss the specific evidence behind each score\n- [ ] Use the scorecard as the primary input for the decision, supplemented by interview notes and practical task output\n- [ ] If the top two candidates are very close, look at the highest-weighted criteria to break the tie\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A structured, comparable evaluation of every candidate\n- Bias reduced through independent scoring and weighted criteria\n- A clear, defensible basis for your hiring decision\n- Agreement between multiple interviewers grounded in evidence\n- A record of why you chose one candidate over another (useful if challenged or for future reference)"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The scorecard discipline is where most SME owners push back: \"This feels too corporate for a small business.\" Reframe: it takes 10 minutes per candidate and prevents months of pain from a bad hire. The independent scoring rule is the most important part - once interviewers discuss before scoring, the loudest opinion dominates. Also watch for the \"halo effect\": a candidate who is charming and likeable gets inflated scores on every criterion. The scorecard catches this because you evaluate each criterion separately. If a candidate scores 5 on likeability but 2 on core skills, the numbers tell the truth."
+            }
+          ]
+        }
+      ]
     },
     {
       "title": "Onboarding & Early Ramp",
-      "description": "Turning a good hire into a productive team member.\n**Play 9: Pre-Start Prep** — Everything that needs to be ready before day one: contracts, equipment, logins, first-week schedule, and a welcome message. First impressions count both ways.\n**Play 10: First Week Plan** — A structured first week covering introductions, how the business works, how their role fits in, and what they need to know to start contributing.\n**Play 11: 30-60-90 Day Plan** — Clear goals, training milestones, and KPIs for each phase so the new hire knows exactly what success looks like and you can spot problems early.\n**Play 12: Manager Check-Ins** — Scheduled weekly one-to-ones for the first 90 days to remove blockers, give feedback, and adjust expectations. Do not wait for the first performance review to find out something is wrong.\n---",
-      "actions": []
+      "description": "Turning a good hire into a productive team member.",
+      "actions": [
+        {
+          "number": 9,
+          "title": "Pre-Start Prep",
+          "description": "Everything that needs to be ready before day one: contracts, equipment, logins, first-week schedule, and a welcome message. First impressions count both ways.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Get everything ready before day one so the new hire walks into a business that is prepared for them. Contracts signed, equipment ready, logins created, first-week schedule planned, and a welcome message sent. First impressions count both ways - how you prepare for them signals how seriously you take their role."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Nothing kills new-hire enthusiasm faster than arriving on day one to find that nobody expected them. No desk, no login, no plan for the day. It tells them: \"We did not prepare for you, so you are probably not that important.\" The opposite is equally powerful. Walking into a business that has everything ready, a welcome message, a clear first-week plan, and someone genuinely glad to see them, builds immediate trust and commitment. Pre-start prep is a 1-2 hour investment that shapes the entire first impression."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Complete this checklist before the new hire's start date. Ideally, start 1-2 weeks before they arrive.\n\n---"
+            },
+            {
+              "title": "Administrative Prep",
+              "content": "- [ ] Contract signed and returned (do not leave this to day one)\n- [ ] Employee details collected: bank details, emergency contact, ID for right-to-work check\n- [ ] Added to payroll system\n- [ ] Added to pension scheme if applicable\n- [ ] Employee handbook or key policies sent in advance (so they can read before day one, not during it)"
+            },
+            {
+              "title": "Equipment and Access",
+              "content": "- [ ] Computer/laptop set up, tested, and ready\n- [ ] Email account created\n- [ ] ⚡ Quick Win: Send them their email login and any essential system access 2-3 days before they start. Let them set up passwords from home so day one is not spent in IT setup.\n- [ ] Software access: create accounts for every tool they will use (project management, CRM, communication tools, etc.)\n- [ ] Physical setup: desk, chair, phone, stationery, access cards/keys\n- [ ] Shared drive access with relevant folders"
+            },
+            {
+              "title": "Communication",
+              "content": "- [ ] Send a personal welcome message from their manager (email or text, not a formal letter): \"Looking forward to having you. Here is what your first day looks like...\"\n- [ ] Send the first-week schedule in advance so they know what to expect\n- [ ] Tell the existing team: who is starting, what their role is, and when. Ask someone to be their buddy for the first week.\n- [ ] If the role involves client contact, prepare a brief introduction to key clients"
+            },
+            {
+              "title": "First-Day Prep",
+              "content": "- [ ] Print their first-week schedule and leave it on their desk\n- [ ] Prepare a simple welcome pack: key passwords, who to ask for what, where things are, Wi-Fi details\n- [ ] Book a lunch for day one (even a simple team coffee creates belonging)\n- [ ] Clear your calendar for the first 30 minutes of their first day - you should be the first person they see\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Everything administrative, technical, and logistical ready before day one\n- The new hire feels expected, valued, and prepared\n- Day one is spent learning and connecting, not filling in forms and setting up passwords\n- The team is briefed and ready to welcome the new person\n- A professional first impression that builds immediate commitment"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Pre-start prep is where most SMEs fall down because it feels like admin. But the ROI is enormous: a new hire who feels prepared and welcome ramps up faster, integrates with the team more quickly, and is less likely to regret accepting the offer. The personal welcome message is the highest-impact, lowest-effort item on this list - a 2-minute text from the hiring manager makes the new hire feel personally valued. Push clients to complete this checklist at least 3 days before the start date, not the night before."
+            }
+          ]
+        },
+        {
+          "number": 10,
+          "title": "First Week Plan",
+          "description": "A structured first week covering introductions, how the business works, how their role fits in, and what they need to know to start contributing.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create a structured first-week plan covering introductions, how the business works, how their role fits in, and what they need to know to start contributing. The first week should feel purposeful and well-organised, not chaotic and improvised."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "A new hire's first week sets the tone for their entire employment. A structured week tells them: this business is organised, your role matters, and we have thought about how to get you up to speed. An unstructured week tells them: figure it out yourself. New hires who receive a structured first week reach full productivity 30-50% faster than those left to work things out on their own."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Plan the week before they start. Share it with the new hire and anyone who has a role in their onboarding.\n\n---"
+            },
+            {
+              "title": "Day 1: Welcome and Orientation",
+              "content": "- [ ] ⚡ Quick Win: Start with a 30-minute one-to-one with their manager. Cover: \"Welcome, here is what this week looks like, here is what you need to know today, and here is who you will meet.\"\n- [ ] Tour of the workspace (physical or virtual): where things are, who sits where, how to find what they need\n- [ ] Introductions to immediate team members (schedule these, do not leave them to chance)\n- [ ] Set up any remaining technology (should be minimal if Pre-Start Prep was done)\n- [ ] Lunch with the team or their buddy\n- [ ] End of day: 15-minute check-in. \"How was day one? Any questions?\""
+            },
+            {
+              "title": "Day 2: Understanding the Business",
+              "content": "- [ ] Overview of the business: what you do, who you serve, how you make money, and where you are headed\n- [ ] Explain the team structure: who does what and how their role connects\n- [ ] Share key documents: client list, product/service overview, pricing, current projects\n- [ ] If relevant, shadow a colleague doing the kind of work they will be doing\n- [ ] End of day: brief check-in"
+            },
+            {
+              "title": "Day 3: Understanding Their Role",
+              "content": "- [ ] Deep dive into their specific role: responsibilities, expectations, and how success is measured\n- [ ] Review the Role Scorecard (Action 1) with them: \"Here is what winning looks like\"\n- [ ] Walk through the tools and systems they will use daily\n- [ ] Introduce them to the key processes relevant to their role\n- [ ] Give them their first small task: something achievable that produces a visible output"
+            },
+            {
+              "title": "Day 4: Starting to Contribute",
+              "content": "- [ ] They should be working on real tasks today, with support available\n- [ ] Check in mid-day: \"Do you have everything you need? What questions have come up?\"\n- [ ] Introduce them to any clients or external contacts they will work with\n- [ ] Review their first task output together: feedback, guidance, and encouragement"
+            },
+            {
+              "title": "Day 5: Reflection and Planning",
+              "content": "- [ ] 30-minute end-of-week review with their manager:\n  - \"What went well this week?\"\n  - \"What are you unclear about?\"\n  - \"What do you need from me?\"\n  - \"Here is what next week looks like\"\n- [ ] Share the 30-60-90 day plan (Action 11) and walk through the milestones\n- [ ] Ask for their feedback on the onboarding: \"What would have made this week even better?\"\n- [ ] Celebrate: \"You have had a great first week. Here is what you have already contributed.\"\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- A new hire who feels welcomed, informed, and ready to contribute by Friday\n- Clear understanding of the business, the team, and their role\n- First real tasks completed with feedback received\n- A 30-60-90 day plan shared and understood\n- Problems, confusion, and unmet needs surfaced early through daily check-ins"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The first week plan is one of the cheapest, highest-impact investments in a new hire. Most SMEs leave new starters to \"settle in\" which really means \"figure it out alone.\" The daily check-ins are critical - they are only 5-15 minutes each but they catch misunderstandings early and make the new hire feel supported. Push clients to prepare this plan in advance and share it with the new hire before day one. Common mistake: overloading day 1 with information. Spread it across the week. Day 1 should be about belonging, not learning everything at once."
+            }
+          ]
+        },
+        {
+          "number": 11,
+          "title": "30-60-90 Day Plan",
+          "description": "Clear goals, training milestones, and KPIs for each phase so the new hire knows exactly what success looks like and you can spot problems early.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Create clear goals, training milestones, and KPIs for each phase of the new hire's first 90 days. This gives them a roadmap to follow, gives you a way to measure progress, and creates natural checkpoints to course-correct if something is off track."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Without a plan, new hires drift. They do whatever feels most urgent rather than building toward the outcomes you hired them for. A 30-60-90 day plan creates accountability on both sides: the new hire knows what they need to achieve, and you know what to evaluate at each checkpoint. It also prevents the common pattern where everything seems fine for 3 months and then suddenly it becomes clear the person is not performing - by which point you have wasted a quarter."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Build the plan from your Role Scorecard (Action 1). Share it with the new hire during their first week.\n\n---"
+            },
+            {
+              "title": "Days 1-30: Learn and Understand",
+              "content": "The first month is about getting up to speed, not delivering results.\n\n- [ ] ⚡ Quick Win: Write the single most important thing the new hire should understand by day 30. That is the goal for the first month.\n- [ ] **Learning goals:**\n  - Understand the business: who you serve, what you sell, how you deliver\n  - Understand their role: responsibilities, expectations, tools, and processes\n  - Build relationships: meet everyone they will work with regularly\n  - Learn the systems: become competent with daily tools and processes\n- [ ] **Milestone tasks:**\n  - Complete [specific training or reading]\n  - Shadow [specific colleague or process] at least [X] times\n  - Complete [first deliverable] independently (with review)\n- [ ] **Day 30 checkpoint:** Manager review. \"Are you on track? What gaps remain? What support do you need for month 2?\""
+            },
+            {
+              "title": "Days 31-60: Contribute and Build",
+              "content": "The second month is about producing real output with decreasing supervision.\n\n- [ ] **Performance goals:**\n  - Take ownership of [specific responsibility] with minimal oversight\n  - Produce [specific output] at the expected quality level\n  - Identify and flag [specific issues or improvements] proactively\n- [ ] **Milestone tasks:**\n  - Deliver [key project or output] independently\n  - Handle [client interaction or process] without manager involvement\n  - Propose one improvement to a process or approach\n- [ ] **Day 60 checkpoint:** Manager review. \"Are you meeting expectations? What is working well? Where do you need to improve?\""
+            },
+            {
+              "title": "Days 61-90: Own and Deliver",
+              "content": "The third month is about operating at the expected level with full ownership.\n\n- [ ] **Performance goals:**\n  - Consistently deliver the outcomes from the Role Scorecard\n  - Operate independently in the core responsibilities\n  - Demonstrate the values and behaviours expected\n- [ ] **Milestone tasks:**\n  - Hit [specific KPI or target] for at least 2 consecutive weeks\n  - Handle [complex situation or edge case] with good judgment\n  - Be able to explain their role and how it connects to business goals\n- [ ] **Day 90 checkpoint:** Formal review. \"Have the 90-day outcomes been met? Is this person confirmed in the role?\" This is the decision point: confirm, extend probation, or part ways."
+            },
+            {
+              "title": "Build the Plan",
+              "content": "- [ ] Write specific, measurable goals for each phase\n- [ ] Share the plan with the new hire in week 1 so they can see the full picture\n- [ ] Print or share digitally - make it visible and referenced regularly\n- [ ] Adjust the plan if role requirements change, but do not lower the bar without good reason\n- [ ] Use the checkpoints as structured coaching conversations, not just performance reviews\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear expectations set from day one that both parties understand\n- Natural checkpoints at 30, 60, and 90 days to assess progress\n- Problems identified early enough to address or make a change\n- New hires reaching full productivity faster through structured goals\n- A fair, evidence-based decision about role confirmation at 90 days"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The 30-60-90 plan is the bridge between recruitment and performance management. Without it, the first 3 months are a black hole where nobody knows whether things are going well until it is too late. The day 90 checkpoint is the most important: this is where you decide if the hire is confirmed. Many managers avoid this conversation, but it is essential. If performance is not where it needs to be at 90 days, delaying the conversation does not improve it. Push clients to have honest, kind conversations at each checkpoint. \"Here is what is going well. Here is what needs to improve. Here is the support we will provide.\""
+            }
+          ]
+        },
+        {
+          "number": 12,
+          "title": "Manager Check-Ins",
+          "description": "Scheduled weekly one-to-ones for the first 90 days to remove blockers, give feedback, and adjust expectations. Do not wait for the first performance review to find out something is wrong.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Schedule weekly one-to-one check-ins for the first 90 days to remove blockers, give feedback, and adjust expectations. These are short (15 minutes), consistent, and focused conversations that keep the new hire on track and prevent small issues from becoming big problems."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "New hires are most vulnerable in their first 90 days. They are learning, adjusting, and forming opinions about whether this was the right decision. A weekly check-in gives them a safe space to ask questions, raise concerns, and get feedback before problems compound. For the manager, it provides early warning if something is going wrong and regular opportunities to reinforce what is going well. The cost is 15 minutes per week. The return is a faster ramp, fewer surprises, and a new hire who feels supported."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Schedule the check-ins before they start. Run them consistently for 12 weeks.\n\n---"
+            },
+            {
+              "title": "Setup",
+              "content": "- [ ] ⚡ Quick Win: Open your calendar now and block a recurring 15-minute slot weekly for the new hire's first 90 days. Same day, same time, every week.\n- [ ] Choose a format: in-person, video call, or phone - whatever feels most natural for the relationship\n- [ ] Make it clear this is not a performance review - it is a support conversation"
+            },
+            {
+              "title": "Check-In Agenda (15 Minutes)",
+              "content": "Use the same simple structure every week:\n\n### How Are Things Going? (5 minutes)\n- [ ] Let them lead: \"What has gone well this week?\"\n- [ ] Listen for energy and enthusiasm - are they engaged or deflated?\n- [ ] Note any recurring themes (positive or negative) across weeks\n\n### What Is Blocking You? (5 minutes)\n- [ ] \"Is anything slowing you down or getting in your way?\"\n- [ ] \"Do you have everything you need to do your job this week?\"\n- [ ] \"Is there anything you are unsure about or want clarification on?\"\n- [ ] Commit to resolving blockers before the next check-in\n\n### Feedback and Next Steps (5 minutes)\n- [ ] Give one piece of specific positive feedback: \"I noticed you did X well this week. That is exactly what we need.\"\n- [ ] If needed, give one piece of constructive feedback: \"I noticed X. Next time, try Y. Here is why.\"\n- [ ] Align on priorities for next week: \"The most important thing to focus on next week is...\""
+            },
+            {
+              "title": "Tracking Progress",
+              "content": "- [ ] Keep brief notes from each check-in (2-3 bullet points is enough)\n- [ ] Reference the 30-60-90 Day Plan (Action 11): are they on track for the current milestone?\n- [ ] At the 30, 60, and 90 day marks, replace the check-in with the formal review from the 30-60-90 Day Plan\n- [ ] If the same blocker or concern appears 3+ weeks in a row, escalate it - it is not going to resolve itself"
+            },
+            {
+              "title": "After 90 Days",
+              "content": "- [ ] Transition from weekly to fortnightly check-ins (the relationship and rhythm is established)\n- [ ] After 6 months, move to monthly one-to-ones (standard management cadence)\n- [ ] The habit of regular check-ins should continue permanently, just at lower frequency\n- [ ] If the new hire asks to keep weekly check-ins longer, that is a good sign - they value the support\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Consistent weekly support for the new hire throughout their first 90 days\n- Blockers identified and resolved before they cause damage\n- Regular feedback that accelerates learning and performance\n- A documented record of progress that informs the 90-day decision\n- A new hire who feels supported, valued, and clear about expectations"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Manager check-ins are where coaching and management overlap most clearly. The weekly format is deliberately short - 15 minutes is enough if you are consistent. The temptation is to cancel when things seem fine, but that is exactly when check-ins matter most: they maintain the connection and catch the subtle signals that something is shifting. The positive feedback element is the most frequently skipped but most important part. New hires are anxious about whether they are doing well. Specific, genuine praise builds confidence and reinforces the right behaviours. If the client says \"I do not have time for weekly check-ins,\" do the maths: 15 minutes per week for 12 weeks = 3 hours total. A bad hire costs months. It is not even close."
+            }
+          ]
+        }
+      ]
     }
   ]
 }

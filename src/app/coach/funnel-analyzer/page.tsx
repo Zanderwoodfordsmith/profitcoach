@@ -10,8 +10,10 @@ import {
   Users,
   Video,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { StickyPageHeader } from "@/components/layout";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { ConnectionVolumePanel } from "@/components/ConnectionVolumePanel";
 import {
   connectionRequestsPerWeek,
@@ -119,6 +121,8 @@ const ICONS: Record<keyof FunnelCounts, React.ReactNode> = {
 };
 
 export default function CoachFunnelAnalyzerPage() {
+  const pathname = usePathname();
+  const isAdmin = Boolean(pathname?.startsWith("/admin"));
   const [inputs, setInputs] =
     useState<FunnelCountInputs>(DEFAULT_FUNNEL_INPUTS);
   const [reportRange, setReportRange] = useState(() => defaultLast30DayWindow());
@@ -221,6 +225,7 @@ export default function CoachFunnelAnalyzerPage() {
       <StickyPageHeader
         title="Funnel Analyzer"
         description="Enter your numbers and get instant KPI feedback. Green means you’re on track, yellow is within 20% of target, red is the constraint to fix first."
+        tabs={isAdmin ? <ToolkitHubTabs /> : undefined}
       />
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">

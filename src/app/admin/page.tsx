@@ -22,6 +22,8 @@ import type {
 import {
   createDefaultCoachTableViewSettings,
   DEFAULT_COACH_SORTS,
+  DEFAULT_COACH_TABLE_COLUMNS,
+  DEFAULT_COACH_TABLE_COLUMN_ORDER,
   isDefaultCoachTableViewName,
 } from "@/lib/admin/coachTableViews";
 import type { CoachPaymentSummary } from "@/lib/admin/coachPaymentSummary";
@@ -307,6 +309,7 @@ type CoachRow = {
   avatar_url: string | null;
   coach_business_name: string | null;
   linkedin_url: string | null;
+  linkedin_scraped_at: string | null;
   current_monthly_income: number | null;
   goal_monthly_income: number | null;
   joined_at: string | null;
@@ -396,37 +399,6 @@ type PersistedCoachTableSettings = {
   sorts: CoachSortCriterion[];
   columnVisibility: CoachTableColumnVisibility;
   columnOrder: Array<keyof CoachTableColumnVisibility>;
-};
-
-const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
-  slug: true,
-  email: true,
-  joinDate: true,
-  goalLevel: true,
-  clients: true,
-  linkedinProfile: true,
-  directory: true,
-  certification: true,
-  conference: true,
-  currentLevel: true,
-  goalBy: true,
-  lastLogin: true,
-  lastActive: true,
-  crm: true,
-  salesRobot: true,
-  activeCampaigns: true,
-  payingAccounts: true,
-  profitCoachEmail: true,
-  accessTier: true,
-  recurringPayment: true,
-  recurringActive: true,
-  payments: true,
-  calendarEmbed: true,
-  leadWebhook: true,
-  communityBio: true,
-  directorySummary: true,
-  directoryBio: true,
-  landing: true,
 };
 
 type CoachColumnCategory =
@@ -811,7 +783,7 @@ export default function AdminPage() {
     useState<CoachTableColumnVisibility>(DEFAULT_COACH_TABLE_COLUMNS);
   const [columnOrder, setColumnOrder] = useState<
     Array<keyof CoachTableColumnVisibility>
-  >(COACH_TABLE_COLUMN_OPTIONS.map((option) => option.key));
+  >([...DEFAULT_COACH_TABLE_COLUMN_ORDER]);
   const createDefaultViewSettings = useCallback(
     () => createDefaultCoachTableViewSettings(),
     []
@@ -1821,6 +1793,13 @@ export default function AdminPage() {
       );
     }
     if (key === "linkedinProfile") {
+      const scrapedLabel = coach.linkedin_scraped_at
+        ? (() => {
+            const t = Date.parse(coach.linkedin_scraped_at);
+            if (Number.isNaN(t)) return "Scraped";
+            return `Scraped ${formatDateDisplay(new Date(t))}`;
+          })()
+        : null;
       return (
         <td className="max-w-[14rem] px-2 py-2 align-middle text-xs">
           <div className="flex items-center justify-between gap-2">
@@ -1845,6 +1824,20 @@ export default function AdminPage() {
               </a>
             ) : null}
           </div>
+          {coach.linkedin_url ? (
+            <p
+              className={`mt-0.5 px-1 text-[10px] leading-tight ${
+                scrapedLabel ? "text-emerald-700" : "text-amber-700"
+              }`}
+              title={
+                coach.linkedin_scraped_at
+                  ? new Date(coach.linkedin_scraped_at).toLocaleString()
+                  : "LinkedIn URL set but not scraped yet"
+              }
+            >
+              {scrapedLabel ?? "Not scraped"}
+            </p>
+          ) : null}
         </td>
       );
     }

@@ -90,7 +90,7 @@ export const SIGNATURE_LIFESTYLE_LENSES: SignatureLifestyleLens[] = [
     lensLabel: "Impact",
     pillarPair: [1, 2],
     question:
-      "My clients get tangible results I can point to — not just great conversations or sessions ticked off.",
+      "My clients get tangible results I can point to, not just great conversations or sessions ticked off.",
     onrampHint: "Strengthens once your delivery system and milestones are explicit.",
   },
   {
@@ -99,7 +99,7 @@ export const SIGNATURE_LIFESTYLE_LENSES: SignatureLifestyleLens[] = [
     lensLabel: "Freedom",
     pillarPair: [0, 2],
     question:
-      "Coaching fits my life instead of running it — I protect off-time and the practice still grows.",
+      "Coaching fits my life instead of running it: I protect off-time and the practice still grows.",
     onrampHint: "Usually lags ambition until boundaries and leverage catch up.",
   },
 ];
@@ -108,7 +108,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
   pillars: [
     {
       id: "reach",
-      title: "Connect",
+      title: "Get Calls",
       letter: "C",
       green: "Reliable Leads",
       red: "Random Referrals",
@@ -134,14 +134,14 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           code: "R3",
           diagramTitle: "Lead Engine",
           question:
-            "I run a simple, repeatable lead generation system — conversations and content — that keeps my pipeline full and growing.",
+            "I run a simple, repeatable lead generation system of conversations and content that keeps my pipeline full and growing.",
           onrampHint: "Typically yellow while the engine is new but running.",
         },
       ],
     },
     {
       id: "enrol",
-      title: "Enroll",
+      title: "Win Clients",
       letter: "E",
       green: "Simple Sales",
       red: "Exhausting Selling",
@@ -174,7 +174,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
     },
     {
       id: "deliver",
-      title: "Deliver",
+      title: "Coach Clients",
       letter: "D",
       green: "Rewarding Coaching",
       red: "Thankless Grind",
@@ -182,7 +182,7 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
         {
           id: "launchpad",
           code: "D1",
-          diagramTitle: "Client Launchpad",
+          diagramTitle: "Client Launch",
           question:
             "My first sessions create clarity, buy-in, direction and momentum so clients know exactly what to do from week one.",
           onrampHint: "Session one may be strong while sessions two to four are still in build.",
@@ -190,15 +190,15 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
         {
           id: "rhythm",
           code: "D2",
-          diagramTitle: "Coaching Rhythm",
+          diagramTitle: "Coaching Method",
           question:
-            "I run ongoing sessions to a steady rhythm, with a method I trust to guide any conversation and keep clients progressing.",
+            "I have a clear method for ongoing sessions that I trust to guide any conversation and keep clients progressing.",
           onrampHint: "Often yellow once certification lands; green with repetition.",
         },
         {
           id: "continuity",
           code: "D3",
-          diagramTitle: "Client Continuity",
+          diagramTitle: "Client Retention",
           question:
             "My clients see real progress they can point to, they stay month after month, and renewals and expansion happen naturally.",
           onrampHint: "Often red before you have a steady client load to refine against.",

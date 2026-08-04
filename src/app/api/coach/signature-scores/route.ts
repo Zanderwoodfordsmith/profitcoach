@@ -26,7 +26,7 @@ function parseScoresPayload(body: unknown): Partial<SignatureScoresMap> | null {
 }
 
 export async function GET(request: Request) {
-  const authCheck = await requireCoachRequest(request);
+  const authCheck = await requireCoachRequest(request, { allowAdminSelf: true });
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const authCheck = await requireCoachRequest(request);
+  const authCheck = await requireCoachRequest(request, { allowAdminSelf: true });
   if (authCheck.error || !authCheck.userId) {
     return NextResponse.json(
       { error: authCheck.error ?? "Unauthorized" },

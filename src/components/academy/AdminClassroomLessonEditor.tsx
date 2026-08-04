@@ -25,6 +25,7 @@ type Props = {
   course: HubCourse;
   lesson: HubLesson;
   initialVideoUrl?: string | null;
+  initialAudioUrl?: string | null;
   initialBodyMarkdown?: string;
   initialGuideMarkdown?: string;
   basePath: string;
@@ -34,6 +35,8 @@ type Props = {
   chrome?: "default" | "minimal";
   /** Which hub JSON the course comes from — picks the save route. */
   hub?: "archive" | "classroom";
+  /** Minimal chrome back link; `null` hides it. */
+  contentsBackLabel?: string | null;
 };
 
 export function AdminClassroomLessonEditor({
@@ -41,6 +44,7 @@ export function AdminClassroomLessonEditor({
   course: initialCourse,
   lesson: initialLesson,
   initialVideoUrl = null,
+  initialAudioUrl = null,
   initialBodyMarkdown = "",
   initialGuideMarkdown = "",
   basePath,
@@ -49,10 +53,12 @@ export function AdminClassroomLessonEditor({
   contentsPosition,
   chrome,
   hub = "archive",
+  contentsBackLabel,
 }: Props) {
   const [course, setCourse] = useState(initialCourse);
   const [lesson, setLesson] = useState(initialLesson);
   const [savedVideoUrl, setSavedVideoUrl] = useState(initialVideoUrl ?? "");
+  const [savedAudioUrl, setSavedAudioUrl] = useState(initialAudioUrl ?? "");
   const [savedBodyMarkdown, setSavedBodyMarkdown] = useState(initialBodyMarkdown ?? "");
   const [savedGuideMarkdown, setSavedGuideMarkdown] = useState(
     initialGuideMarkdown ?? ""
@@ -64,6 +70,7 @@ export function AdminClassroomLessonEditor({
   const [savedDuration, setSavedDuration] = useState(initialLesson.duration ?? "");
   const [title, setTitle] = useState(initialLesson.title);
   const [videoUrl, setVideoUrl] = useState(initialVideoUrl ?? "");
+  const [audioUrl, setAudioUrl] = useState(initialAudioUrl ?? "");
   const [duration, setDuration] = useState(initialLesson.duration ?? "");
   const [bodyMarkdown, setBodyMarkdown] = useState(initialBodyMarkdown ?? "");
   const [guideMarkdown, setGuideMarkdown] = useState(initialGuideMarkdown ?? "");
@@ -91,6 +98,7 @@ export function AdminClassroomLessonEditor({
   }, [editRequested, pathname, router, searchParams]);
 
   const displayVideoUrl = editing ? videoUrl.trim() || null : savedVideoUrl || null;
+  const displayAudioUrl = editing ? audioUrl.trim() || null : savedAudioUrl || null;
   const displayBody = editing ? bodyMarkdown : savedBodyMarkdown;
   const displayGuide = editing ? guideMarkdown : savedGuideMarkdown;
   const displayRecommendedActions = editing
@@ -105,6 +113,7 @@ export function AdminClassroomLessonEditor({
         {
           title,
           videoUrl,
+          audioUrl,
           duration,
           bodyMarkdown,
           guideMarkdown,
@@ -113,6 +122,7 @@ export function AdminClassroomLessonEditor({
         {
           title: savedTitle,
           videoUrl: savedVideoUrl ?? "",
+          audioUrl: savedAudioUrl ?? "",
           duration: savedDuration,
           bodyMarkdown: savedBodyMarkdown,
           guideMarkdown: savedGuideMarkdown,
@@ -123,12 +133,14 @@ export function AdminClassroomLessonEditor({
       editing,
       title,
       videoUrl,
+      audioUrl,
       duration,
       bodyMarkdown,
       guideMarkdown,
       recommendedActions,
       savedTitle,
       savedVideoUrl,
+      savedAudioUrl,
       savedDuration,
       savedBodyMarkdown,
       savedGuideMarkdown,
@@ -143,6 +155,7 @@ export function AdminClassroomLessonEditor({
     setEditing(false);
     setTitle(savedTitle);
     setVideoUrl(savedVideoUrl ?? "");
+    setAudioUrl(savedAudioUrl ?? "");
     setBodyMarkdown(savedBodyMarkdown);
     setGuideMarkdown(savedGuideMarkdown);
     setRecommendedActions(savedRecommendedActions);
@@ -151,6 +164,7 @@ export function AdminClassroomLessonEditor({
   }, [
     savedTitle,
     savedVideoUrl,
+    savedAudioUrl,
     savedBodyMarkdown,
     savedGuideMarkdown,
     savedRecommendedActions,
@@ -183,6 +197,7 @@ export function AdminClassroomLessonEditor({
           body: JSON.stringify({
             title: trimmedTitle,
             videoUrl: videoUrl.trim() || null,
+            audioUrl: audioUrl.trim() || null,
             bodyMarkdown,
             guideMarkdown,
             recommendedActions: recommendedActions.filter((action) =>
@@ -204,18 +219,21 @@ export function AdminClassroomLessonEditor({
 
       const nextTitle = payload.lesson?.title ?? trimmedTitle;
       const nextVideo = payload.lesson?.videoUrl ?? null;
+      const nextAudio = payload.lesson?.audioUrl ?? null;
       const nextBody = payload.lesson?.bodyMarkdown ?? "";
       const nextGuide = payload.lesson?.guideMarkdown ?? "";
       const nextRecommendedActions = payload.lesson?.recommendedActions ?? [];
       const nextDuration = payload.lesson?.duration ?? "";
       setSavedTitle(nextTitle);
       setSavedVideoUrl(nextVideo ?? "");
+      setSavedAudioUrl(nextAudio ?? "");
       setSavedBodyMarkdown(nextBody);
       setSavedGuideMarkdown(nextGuide);
       setSavedRecommendedActions(nextRecommendedActions);
       setSavedDuration(nextDuration);
       setTitle(nextTitle);
       setVideoUrl(nextVideo ?? "");
+      setAudioUrl(nextAudio ?? "");
       setBodyMarkdown(nextBody);
       setGuideMarkdown(nextGuide);
       setRecommendedActions(nextRecommendedActions);
@@ -281,12 +299,14 @@ export function AdminClassroomLessonEditor({
         basePath={basePath}
         classroomHref={classroomHref}
         videoUrl={displayVideoUrl}
+        audioUrl={displayAudioUrl}
         bodyMarkdown={displayBody}
         guideMarkdown={displayGuide}
         transcriptText={lesson.transcriptText ?? null}
         lessonResources={lessonResources}
         contentsPosition={contentsPosition}
         chrome={chrome}
+        contentsBackLabel={contentsBackLabel}
         viewerIsAdmin
         canEditLessons
         contentSource="classroom"
@@ -301,6 +321,8 @@ export function AdminClassroomLessonEditor({
               onTitleChange={setTitle}
               videoUrl={videoUrl}
               onVideoUrlChange={setVideoUrl}
+              audioUrl={audioUrl}
+              onAudioUrlChange={setAudioUrl}
               duration={duration}
               onDurationChange={setDuration}
               bodyMarkdown={bodyMarkdown}

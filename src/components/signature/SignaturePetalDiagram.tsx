@@ -19,11 +19,11 @@ const SLOT_OFFSETS = [-(PETAL_SPAN + PETAL_GAP), 0, PETAL_SPAN + PETAL_GAP];
 const PETAL_INNER = rC;
 const PETAL_OUTER = rC + 88;
 
-/** Income / Impact / Freedom overlaps — deepest brand navy (darker than Connect) */
+/** Income / Impact / Freedom overlaps — deepest brand navy (darker than Get Calls) */
 const LENS_CORE_NAVY = "#1f3a66";
 const LENS_STROKE = "rgba(22, 45, 80, 0.65)";
 
-/** Pillar discs: Connect, Enroll, Deliver — same hex as classroom module covers */
+/** Pillar discs: Get Calls, Win Clients, Coach Clients — same hex as classroom module covers */
 const PILLAR_COLORS = [
   SIGNATURE_COMPASS_PILLAR_COVER_HEX.reach,
   SIGNATURE_COMPASS_PILLAR_COVER_HEX.enrol,
@@ -563,27 +563,39 @@ export function SignaturePetalDiagram({
         const uy = dy / len;
         const tx = p.pos.x + ux * (rC * 0.4);
         const ty = p.pos.y + uy * (rC * 0.4);
+        const titleLines = p.title.toUpperCase().split(/\s+/).filter(Boolean);
+        const titleStartY =
+          titleLines.length > 1 ? ty - 18 - (titleLines.length - 2) * 11 : ty - 8;
+        const subtitleY = titleLines.length > 1 ? ty + 28 : ty + 22;
         return (
           <g key={`${p.id}-c`} style={{ pointerEvents: "none" }}>
             <text
               x={tx}
-              y={ty - 8}
+              y={titleStartY}
               textAnchor="middle"
               fill={TEXT_ON_FILL}
               style={{
-                font: '600 24px system-ui, "Segoe UI", sans-serif',
-                letterSpacing: "0.14em",
+                font: '600 20px system-ui, "Segoe UI", sans-serif',
+                letterSpacing: "0.1em",
               }}
             >
-              {p.title.toUpperCase()}
+              {titleLines.map((line, lineIndex) => (
+                <tspan
+                  key={`${p.id}-title-${line}`}
+                  x={tx}
+                  dy={lineIndex === 0 ? 0 : 22}
+                >
+                  {line}
+                </tspan>
+              ))}
             </text>
             <text
               x={tx}
-              y={ty + 22}
+              y={subtitleY}
               textAnchor="middle"
               fill={TEXT_ON_FILL}
               style={{
-                font: '400 16px system-ui, "Segoe UI", sans-serif',
+                font: '400 15px system-ui, "Segoe UI", sans-serif',
                 fontStyle: "italic",
               }}
             >
@@ -592,8 +604,8 @@ export function SignaturePetalDiagram({
               </tspan>
               <tspan
                 x={tx}
-                dy="22"
-                style={{ opacity: 0.82, fontStyle: "normal", fontSize: 13 }}
+                dy="20"
+                style={{ opacity: 0.82, fontStyle: "normal", fontSize: 12 }}
               >
                 not {p.red}
               </tspan>

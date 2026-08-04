@@ -10,6 +10,7 @@ import {
   LessonProgressHeaderControl,
   LessonProgressSidebarControl,
   useLessonProgress,
+  useReportLessonWatchProgress,
 } from "@/components/academy/LessonProgressControls";
 import { LessonGuidePanel } from "@/components/academy/LessonGuidePanel";
 import { LessonOverviewPanel } from "@/components/academy/LessonOverviewPanel";
@@ -35,12 +36,15 @@ import {
   flattenSections,
   hubLessonCount,
   lessonContextInCourse,
+  nextLessonInCourse,
   sectionContainsLesson,
   sectionDurationLabel,
   sectionLessonCount,
 } from "@/lib/academy/hubCatalog";
+import { LessonVideoHandoff } from "@/components/academy/LessonVideoHandoff";
+import { LessonMediaPlayer } from "@/components/academy/LessonMediaPlayer";
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
-import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
+import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
 
 type Props = {
   data: HubCatalog;
@@ -49,6 +53,7 @@ type Props = {
   basePath: string;
   classroomHref: string;
   videoUrl?: string | null;
+  audioUrl?: string | null;
   bodyMarkdown?: string;
   guideMarkdown?: string;
   transcriptText?: string | null;
@@ -76,7 +81,28 @@ type Props = {
    * course title + progress bar in the rail (Simplified).
    */
   chrome?: "default" | "minimal";
+  /**
+   * Minimal chrome: label for the back link above the course title.
+   * Pass `null` to hide (e.g. Archive, which has no catalog above the player).
+   */
+  contentsBackLabel?: string | null;
 };
+
+/**
+ * One lesson card: title → inset video → tabs/body.
+ * Horizontal padding is shared so title, video, and overview/actions line up.
+ * No `overflow-hidden` on the slab — that would become the sticky scroll
+ * container and strand the actions rail.
+ */
+const LESSON_SLAB =
+  "rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/60";
+const LESSON_SLAB_GUTTER = "px-6 md:px-8";
+const LESSON_SLAB_HEADER = `${LESSON_SLAB_GUTTER} pt-5 pb-4 md:pt-6 md:pb-5`;
+/** Continues under the header when there is no video. */
+const LESSON_SLAB_BODY = `${LESSON_SLAB_GUTTER} pb-6 md:pb-8`;
+/** Tighter top so tabs sit closer under the video. */
+const LESSON_SLAB_BODY_AFTER_VIDEO = `${LESSON_SLAB_GUTTER} pt-3.5 pb-6 md:pt-4 md:pb-8`;
+const LESSON_SLAB_VIDEO = `${LESSON_SLAB_GUTTER}`;
 
 function durationLabel(raw: string): string | null {
   const t = raw.trim().replace(/^\(|\)$/g, "").trim();
@@ -353,8 +379,8 @@ function LessonSidebarRow({
             } ${
               isDraft
                 ? activeChrome
-                  ? "italic text-white/75"
-                  : "italic text-slate-400"
+                  ? "text-white/70"
+                  : "text-slate-400"
                 : ""
             }`}
           >
@@ -363,14 +389,18 @@ function LessonSidebarRow({
           {dur ? (
             <span
               className={`shrink-0 tabular-nums text-xs ${
-                minimal
-                  ? active
-                    ? "text-slate-500"
+                isDraft
+                  ? activeChrome
+                    ? "text-white/50"
                     : "text-slate-400"
-                  : active
-                    ? "text-sky-100"
-                    : "text-slate-500"
-              } ${isDraft ? "opacity-60" : ""}`}
+                  : minimal
+                    ? active
+                      ? "text-slate-500"
+                      : "text-slate-400"
+                    : active
+                      ? "text-sky-100"
+                      : "text-slate-500"
+              }`}
             >
               {dur}
             </span>
@@ -419,6 +449,7 @@ export function ClassroomLessonPlayer({
   basePath,
   classroomHref,
   videoUrl = null,
+  audioUrl = null,
   bodyMarkdown = "",
   guideMarkdown = "",
   transcriptText = null,
@@ -430,6 +461,7 @@ export function ClassroomLessonPlayer({
   mainPanelOverride,
   contentsPosition = "right",
   chrome = "default",
+  contentsBackLabel = "Classroom",
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -437,11 +469,15 @@ export function ClassroomLessonPlayer({
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(() =>
     initialOpenSectionIds(courseProp, lesson.id)
   );
+  const [showVideoHandoff, setShowVideoHandoff] = useState(false);
 
   useEffect(() => {
     setCourse(courseProp);
   }, [courseProp]);
 
+  useEffect(() => {
+    setShowVideoHandoff(false);
+  }, [lesson.id]);
   const resolveContentCourseId = (lessonId: string) =>
     contentSource === "classroom" ? contentSourceCourseId(lessonId) : course.id;
 
@@ -467,11 +503,29 @@ export function ClassroomLessonPlayer({
     videoUrl,
     bodyMarkdown,
     transcriptText,
-    guideMarkdown
+    guideMarkdown,
+    audioUrl
   );
-  const embedUrl = videoUrl ? toYouTubeEmbedUrl(videoUrl) : null;
+  const videoEmbed = videoUrl ? parseLessonVideoEmbed(videoUrl) : null;
   const directVideoUrl =
-    videoUrl && !embedUrl && isDirectVideoFileUrl(videoUrl) ? videoUrl : null;
+    videoUrl && !videoEmbed && isDirectVideoFileUrl(videoUrl) ? videoUrl : null;
+  const reportWatchProgress = useReportLessonWatchProgress(lesson.id);
+  const nextLesson = useMemo(
+    () =>
+      nextLessonInCourse(course, lesson.id, {
+        includeDrafts: Boolean(viewerIsAdmin),
+      }),
+    [course, lesson.id, viewerIsAdmin],
+  );
+  const nextLessonHref = nextLesson
+    ? `${basePath}/${encodeURIComponent(course.id)}/${encodeURIComponent(nextLesson.id)}`
+    : null;
+  const handoffActionCount = (lesson.recommendedActions ?? []).filter((a) =>
+    a.text.trim(),
+  ).length;
+  const myActionsHref = pathname.startsWith("/admin")
+    ? "/admin/signature/actions"
+    : "/coach/signature/actions";
   const lessonCount = hubLessonCount(course);
   const contentsOnLeft = contentsPosition === "left";
   const minimal = chrome === "minimal";
@@ -538,7 +592,7 @@ export function ClassroomLessonPlayer({
 
   function renderSatellitePlaylist(satellites: HubLesson[], heading: string) {
     return (
-      <section className="mt-8 border-t border-slate-100 pt-6">
+      <section className="mt-8 border-t border-slate-200/80 pt-6">
         <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
         <p className="mt-1 text-sm text-slate-500">
           Optional extras — watch if you need them.
@@ -765,20 +819,28 @@ export function ClassroomLessonPlayer({
     >
       {minimal ? (
         <div>
-          <Link
-            href={basePath}
-            className="mb-3 inline-flex items-center gap-0.5 text-xs font-medium text-slate-500 transition hover:text-sky-700"
-          >
-            <ChevronLeft className="-ml-1 h-3.5 w-3.5 shrink-0" aria-hidden />
-            Classroom
-          </Link>
-          <div className="flex items-baseline justify-between gap-3">
+          {contentsBackLabel ? (
             <Link
               href={basePath}
-              className="min-w-0 text-xl font-semibold leading-none tracking-tight text-slate-900 transition hover:text-sky-700"
+              className="mb-3 inline-flex items-center gap-0.5 text-xs font-medium text-slate-500 transition hover:text-sky-700"
             >
-              {course.title}
+              <ChevronLeft className="-ml-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+              {contentsBackLabel}
             </Link>
+          ) : null}
+          <div className="flex items-baseline justify-between gap-3">
+            {contentsBackLabel ? (
+              <Link
+                href={basePath}
+                className="min-w-0 text-xl font-semibold leading-none tracking-tight text-slate-900 transition hover:text-sky-700"
+              >
+                {course.title}
+              </Link>
+            ) : (
+              <h2 className="min-w-0 text-xl font-semibold leading-none tracking-tight text-slate-900">
+                {course.title}
+              </h2>
+            )}
             {rolledUpCourseDuration ? (
               <span className="shrink-0 text-xs font-medium tabular-nums text-slate-400">
                 {rolledUpCourseDuration}
@@ -806,210 +868,224 @@ export function ClassroomLessonPlayer({
         <div className="mb-3 flex justify-end gap-2">{headerActions}</div>
       ) : null}
       {mainPanelOverride ?? (
-        <article
-          className={
-            minimal
-              ? "rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/50 md:p-8"
-              : "rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200/60 md:p-8"
-          }
-        >
-          <header className="mb-6 flex items-start justify-between gap-3 border-b border-slate-100 pb-5">
-            <div className="min-w-0 flex-1">
-              {!minimal && ctx && !flatLessonList ? (
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
-                  {splitSectionTitleEyebrow(ctx.section.title).eyebrow ??
-                    ctx.section.title}
-                </p>
-              ) : null}
-              <h2
-                className={
-                  minimal
-                    ? "text-xl font-semibold leading-snug tracking-tight text-slate-900 md:text-[26px]"
-                    : "mt-1.5 text-base font-semibold text-slate-900 md:text-xl"
-                }
-              >
-                {lesson.title}
-              </h2>
-              {currentLessonDraft ? (
-                <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
-                  <span
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-300/80 bg-amber-50 text-amber-600"
-                    aria-hidden
-                  >
-                    <FilePenLine className="h-3 w-3" strokeWidth={2.25} />
-                  </span>
+        <article className="min-w-0">
+          <div className={LESSON_SLAB}>
+            {currentLessonDraft && viewerIsAdmin ? (
+              <div className="flex items-center gap-2 rounded-t-2xl border-b border-amber-200/80 bg-amber-50 px-6 py-2 md:px-8">
+                <span
+                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-amber-300/80 bg-white text-amber-600"
+                  aria-hidden
+                >
+                  <FilePenLine className="h-3 w-3" strokeWidth={2.25} />
+                </span>
+                <p className="text-xs font-medium text-amber-800">
                   Draft — visible to admins only
                 </p>
-              ) : null}
-              {parentLesson ? (
-                <p className="mt-2 text-sm text-slate-500">
-                  Extra for{" "}
-                  <Link
-                    href={`${basePath}/${course.id}/${parentLesson.id}`}
-                    className="font-medium text-sky-700 hover:underline"
-                  >
-                    {parentLesson.title}
-                  </Link>
-                </p>
-              ) : null}
-              {!inApp ? (
-                <p className="mt-2 text-sm text-slate-500">
-                  {lesson.hasVideo ? "Includes video on Disco" : "Resource / non-video on Disco"}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <LessonProgressHeaderControl lessonId={lesson.id} />
-              {headerActions ? headerActions : null}
-            </div>
-          </header>
-
-          {inApp ? (
-            <>
-              {videoUrl ? (
-                <div className="mb-2 overflow-hidden rounded-2xl bg-slate-950 shadow-md">
-                  {embedUrl ? (
-                    <div className="relative aspect-video w-full">
-                      <iframe
-                        title={lesson.title}
-                        src={embedUrl}
-                        className="absolute inset-0 h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : directVideoUrl ? (
-                    <video
-                      src={directVideoUrl}
-                      controls
-                      playsInline
-                      className="aspect-video w-full bg-black"
-                    />
-                  ) : (
-                    <div className="p-6 text-sm text-slate-300">
-                      <p>Video URL is set but is not a recognized embed or video file.</p>
-                      <a
-                        href={videoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-block text-sky-400 underline"
-                      >
-                        Open video
-                      </a>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              <LessonPlayerTabs
-                overview={
-                  <LessonOverviewPanel
-                    courseId={course.id}
-                    lessonId={lesson.id}
-                    bodyMarkdown={bodyMarkdown}
-                    hasGuide={Boolean(guideMarkdown.trim())}
-                    recommendedActions={lesson.recommendedActions ?? []}
-                    resources={lessonResources}
-                    readOnlyActions={Boolean(viewerIsAdmin)}
-                  />
-                }
-                showGuide={Boolean(guideMarkdown.trim())}
-                guide={
-                  guideMarkdown.trim() ? (
-                    <LessonGuidePanel guideMarkdown={guideMarkdown} />
-                  ) : null
-                }
-                showRelated={Boolean(satelliteSiblings?.length)}
-                related={
-                  satelliteSiblings?.length
-                    ? renderSatellitePlaylist(
-                        satelliteSiblings,
-                        parentLesson ? "More in this lesson" : "Related lessons",
-                      )
-                    : null
-                }
-                qa={
-                  <LessonQaPanel
-                    courseId={
-                      contentSource === "classroom"
-                        ? contentSourceCourseId(lesson.id)
-                        : course.id
-                    }
-                    lessonId={lesson.id}
-                    lessonPath={pathname}
-                    viewerIsAdmin={viewerIsAdmin}
-                  />
-                }
-                qaLabel={lessonCommunityTabLabel(lesson.id)}
-                showTranscript={Boolean(transcriptText?.trim())}
-                transcript={
-                  transcriptText?.trim() ? (
-                    <pre className="max-h-[32rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-sans text-sm leading-relaxed text-slate-700">
-                      {transcriptText.trim()}
-                    </pre>
-                  ) : null
-                }
-              />
-            </>
-          ) : (
-            <>
-              <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
-                {noticeText}
-              </p>
-
-              <div className="mt-8">
-                <a
-                  href={lesson.academyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+              </div>
+            ) : null}
+            <header
+              className={`${LESSON_SLAB_HEADER} flex items-start justify-between gap-3`}
+            >
+              <div className="min-w-0 flex-1">
+                {!minimal && ctx && !flatLessonList ? (
+                  <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+                    {splitSectionTitleEyebrow(ctx.section.title).eyebrow ??
+                      ctx.section.title}
+                  </p>
+                ) : null}
+                <h2
+                  className={
+                    minimal
+                      ? "text-xl font-semibold leading-snug tracking-tight text-slate-900 md:text-[26px]"
+                      : "mt-1.5 text-base font-semibold text-slate-900 md:text-xl"
+                  }
                 >
                   {lesson.title}
-                </a>
+                </h2>
+                {parentLesson ? (
+                  <p className="mt-2 text-sm text-slate-500">
+                    Extra for{" "}
+                    <Link
+                      href={`${basePath}/${course.id}/${parentLesson.id}`}
+                      className="font-medium text-sky-700 hover:underline"
+                    >
+                      {parentLesson.title}
+                    </Link>
+                  </p>
+                ) : null}
+                {!inApp ? (
+                  <p className="mt-2 text-sm text-slate-500">
+                    {lesson.hasVideo
+                      ? "Includes video on Disco"
+                      : "Resource / non-video on Disco"}
+                  </p>
+                ) : null}
               </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <LessonProgressHeaderControl lessonId={lesson.id} />
+                {headerActions ? headerActions : null}
+              </div>
+            </header>
 
-              <LessonPlayerTabs
-                overview={
-                  <LessonOverviewPanel
-                    courseId={course.id}
-                    lessonId={lesson.id}
-                    bodyMarkdown=""
-                    recommendedActions={lesson.recommendedActions ?? []}
-                    resources={lessonResources}
-                    readOnlyActions={Boolean(viewerIsAdmin)}
-                    emptyOverview={
-                      <p className="text-sm text-slate-500">
-                        Open this lesson on Disco for the full content, or ask a
-                        question below.
-                      </p>
+            {inApp ? (
+              <>
+                {videoUrl || audioUrl?.trim() ? (
+                  <div className={LESSON_SLAB_VIDEO}>
+                    <LessonMediaPlayer
+                      courseId={resolveContentCourseId(lesson.id)}
+                      lessonId={lesson.id}
+                      title={lesson.title}
+                      videoUrl={videoUrl}
+                      audioUrl={audioUrl}
+                      onWatchProgress={reportWatchProgress}
+                      onEnded={() => setShowVideoHandoff(true)}
+                      handoff={
+                        showVideoHandoff &&
+                        (videoEmbed?.kind === "youtube" || directVideoUrl) ? (
+                          <LessonVideoHandoff
+                            nextLessonTitle={nextLesson?.title ?? null}
+                            nextLessonHref={nextLessonHref}
+                            actionCount={handoffActionCount}
+                            myActionsHref={myActionsHref}
+                            onStay={() => setShowVideoHandoff(false)}
+                            onContinue={() => {
+                              if (!nextLessonHref) {
+                                setShowVideoHandoff(false);
+                                return;
+                              }
+                              setShowVideoHandoff(false);
+                              router.push(nextLessonHref);
+                            }}
+                          />
+                        ) : null
+                      }
+                    />
+                  </div>
+                ) : null}
+
+                <div
+                  className={
+                    videoUrl || audioUrl?.trim()
+                      ? LESSON_SLAB_BODY_AFTER_VIDEO
+                      : LESSON_SLAB_BODY
+                  }
+                >
+                  <LessonPlayerTabs
+                    flush
+                    overview={
+                      <LessonOverviewPanel
+                        courseId={course.id}
+                        lessonId={lesson.id}
+                        bodyMarkdown={bodyMarkdown}
+                        hasGuide={Boolean(guideMarkdown.trim())}
+                        recommendedActions={lesson.recommendedActions ?? []}
+                        resources={lessonResources}
+                        readOnlyActions={Boolean(viewerIsAdmin)}
+                      />
+                    }
+                    showGuide={Boolean(guideMarkdown.trim())}
+                    guide={
+                      guideMarkdown.trim() ? (
+                        <LessonGuidePanel guideMarkdown={guideMarkdown} />
+                      ) : null
+                    }
+                    showRelated={Boolean(satelliteSiblings?.length)}
+                    related={
+                      satelliteSiblings?.length
+                        ? renderSatellitePlaylist(
+                            satelliteSiblings,
+                            parentLesson
+                              ? "More in this lesson"
+                              : "Related lessons",
+                          )
+                        : null
+                    }
+                    qa={
+                      <LessonQaPanel
+                        courseId={
+                          contentSource === "classroom"
+                            ? contentSourceCourseId(lesson.id)
+                            : course.id
+                        }
+                        lessonId={lesson.id}
+                        lessonPath={pathname}
+                        viewerIsAdmin={viewerIsAdmin}
+                      />
+                    }
+                    qaLabel={lessonCommunityTabLabel(lesson.id)}
+                    showTranscript={Boolean(transcriptText?.trim())}
+                    transcript={
+                      transcriptText?.trim() ? (
+                        <pre className="max-h-[32rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-sans text-sm leading-relaxed text-slate-700">
+                          {transcriptText.trim()}
+                        </pre>
+                      ) : null
                     }
                   />
-                }
-                showRelated={Boolean(satelliteSiblings?.length)}
-                related={
-                  satelliteSiblings?.length
-                    ? renderSatellitePlaylist(
-                        satelliteSiblings,
-                        parentLesson ? "More in this lesson" : "Related lessons",
-                      )
-                    : null
-                }
-                qa={
-                  <LessonQaPanel
-                    courseId={
-                      contentSource === "classroom"
-                        ? contentSourceCourseId(lesson.id)
-                        : course.id
-                    }
-                    lessonId={lesson.id}
-                    lessonPath={pathname}
-                    viewerIsAdmin={viewerIsAdmin}
-                  />
-                }
-                qaLabel={lessonCommunityTabLabel(lesson.id)}
-              />
-            </>
-          )}
+                </div>
+              </>
+            ) : (
+              <div className={LESSON_SLAB_BODY}>
+                <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
+                  {noticeText}
+                </p>
+
+                <div className="mt-8">
+                  <a
+                    href={lesson.academyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
+                  >
+                    {lesson.title}
+                  </a>
+                </div>
+
+                <LessonPlayerTabs
+                  overview={
+                    <LessonOverviewPanel
+                      courseId={course.id}
+                      lessonId={lesson.id}
+                      bodyMarkdown=""
+                      recommendedActions={lesson.recommendedActions ?? []}
+                      resources={lessonResources}
+                      readOnlyActions={Boolean(viewerIsAdmin)}
+                      emptyOverview={
+                        <p className="text-sm text-slate-500">
+                          Open this lesson on Disco for the full content, or ask
+                          a question below.
+                        </p>
+                      }
+                    />
+                  }
+                  showRelated={Boolean(satelliteSiblings?.length)}
+                  related={
+                    satelliteSiblings?.length
+                      ? renderSatellitePlaylist(
+                          satelliteSiblings,
+                          parentLesson
+                            ? "More in this lesson"
+                            : "Related lessons",
+                        )
+                      : null
+                  }
+                  qa={
+                    <LessonQaPanel
+                      courseId={
+                        contentSource === "classroom"
+                          ? contentSourceCourseId(lesson.id)
+                          : course.id
+                      }
+                      lessonId={lesson.id}
+                      lessonPath={pathname}
+                      viewerIsAdmin={viewerIsAdmin}
+                    />
+                  }
+                  qaLabel={lessonCommunityTabLabel(lesson.id)}
+                />
+              </div>
+            )}
+          </div>
         </article>
       )}
     </div>

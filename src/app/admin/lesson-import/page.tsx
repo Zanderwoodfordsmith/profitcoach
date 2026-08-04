@@ -1,4 +1,5 @@
 import { AdminAcademyImportStatus } from "@/components/academy/AdminAcademyImportStatus";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { loadAcademyImportOverrides } from "@/lib/academy/academyImportOverrides";
 import { loadLatestAcademyBodyImportUnresolved } from "@/lib/academy/bodyImportReport";
@@ -26,6 +27,7 @@ export default async function AdminLessonImportPage() {
             Track video and transcript import from Old Academy Drive against each programme lesson.
           </span>
         }
+        tabs={<ToolkitHubTabs />}
       />
       <AdminAcademyImportStatus
         status={status}

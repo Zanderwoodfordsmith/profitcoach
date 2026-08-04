@@ -1,3 +1,5 @@
+import "server-only";
+
 import fs from "node:fs";
 import path from "node:path";
 
@@ -25,6 +27,8 @@ const CLASSROOM_HUB_PATH = path.join(
   "content/academy/classroom-hub.json",
 );
 
+let classroomHubCache: ClassroomHubCatalog | null = null;
+
 /**
  * Classroom hub cards (product names). Storage `course_id`s may still use older
  * programme prefixes (e.g. kickstart → Start Here).
@@ -45,6 +49,8 @@ export const CLASSROOM_PATH_COURSE_IDS = [
 export const CLASSROOM_OS_COURSE_ID = "profit-coach-os" as const;
 
 export function loadClassroomHub(): ClassroomHubCatalog {
+  if (classroomHubCache) return classroomHubCache;
+
   const raw = fs.readFileSync(CLASSROOM_HUB_PATH, "utf8");
   const data = JSON.parse(raw) as ClassroomHubCatalog;
   if (!Array.isArray(data.courses) || data.courses.length === 0) {
@@ -85,7 +91,7 @@ export function loadClassroomHub(): ClassroomHubCatalog {
       "client-acquisition-client-closing-objections",
     ],
   });
-  return {
+  classroomHubCache = {
     ...data,
     courses: [
       ...data.courses.filter((course) => course.id !== "client-acquisition"),
@@ -93,6 +99,7 @@ export function loadClassroomHub(): ClassroomHubCatalog {
       winClients,
     ],
   };
+  return classroomHubCache;
 }
 
 /** Hub card a lesson now lives on, for redirecting retired programme links. */

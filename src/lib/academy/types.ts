@@ -14,6 +14,8 @@ export type AcademyLesson = {
   duration?: string;
   /** Supports common YouTube URLs; other URLs may show as a link or generic video element later. */
   videoUrl?: string | null;
+  /** Optional listen-along audio under the video. */
+  audioUrl?: string | null;
   /** Overview tab content. */
   bodyMarkdown?: string;
   /** Optional Guide tab (longer walkthrough / SOP). */

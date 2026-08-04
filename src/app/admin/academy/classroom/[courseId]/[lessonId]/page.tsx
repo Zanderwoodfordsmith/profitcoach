@@ -33,6 +33,7 @@ export default async function AdminAcademyClassroomLessonPage({ params }: Props)
           course={course}
           lesson={lesson}
           initialVideoUrl={lesson.videoUrl ?? null}
+          initialAudioUrl={lesson.audioUrl ?? null}
           initialBodyMarkdown={lesson.bodyMarkdown ?? ""}
           initialGuideMarkdown={lesson.guideMarkdown ?? ""}
           basePath={BASE}

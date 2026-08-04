@@ -11,6 +11,10 @@ import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { extractMentionUserIds } from "@/lib/communityMentions";
+import {
+  bodyMentionsViewerForNotification,
+  mentionNotificationSearchIds,
+} from "@/lib/communityFormerStaff";
 import { communityPostCardPreview } from "@/lib/communityPostMarkdown";
 import { communityPostPath } from "@/lib/communityPostSlug";
 import {
@@ -207,6 +211,10 @@ export function DashboardTopActions({
           : Promise.resolve({ data: [], error: null });
 
       const nowIso = new Date().toISOString();
+      const mentionSearchIds = mentionNotificationSearchIds(uid);
+      const mentionBodyOrFilter = mentionSearchIds
+        .map((id) => `body.ilike.%${id}%`)
+        .join(",");
 
       const postMentionsPromise = supabaseClient
         .from("community_posts")
@@ -221,7 +229,7 @@ export function DashboardTopActions({
             author:profiles!author_id ( id, full_name, first_name, last_name, avatar_url )
           `
         )
-        .ilike("body", `%${uid}%`)
+        .or(mentionBodyOrFilter)
         .neq("author_id", uid)
         .lte("published_at", nowIso)
         .order("published_at", { ascending: false })
@@ -244,7 +252,7 @@ export function DashboardTopActions({
             )
           `
         )
-        .ilike("body", `%${uid}%`)
+        .or(mentionBodyOrFilter)
         .neq("author_id", uid)
         .order("created_at", { ascending: false })
         .limit(NOTIFICATION_ITEMS_MAX);
@@ -441,7 +449,17 @@ export function DashboardTopActions({
           author: AuthorRow | AuthorRow[] | null;
         }>;
         for (const row of rows) {
-          if (!extractMentionUserIds(row.body).includes(uid)) continue;
+          const contentAt = row.published_at ?? row.created_at;
+          if (
+            !bodyMentionsViewerForNotification(
+              row.body,
+              uid,
+              contentAt,
+              extractMentionUserIds
+            )
+          ) {
+            continue;
+          }
           const author = Array.isArray(row.author)
             ? (row.author[0] ?? null)
             : (row.author ?? null);
@@ -450,7 +468,7 @@ export function DashboardTopActions({
           next.push({
             id: `mention-post:${row.id}`,
             type: "mentions",
-            created_at: row.published_at ?? row.created_at,
+            created_at: contentAt,
             actor_name: actor,
             actor_avatar_url: author.avatar_url ?? null,
             title: `${actor} mentioned you in a post`,
@@ -466,7 +484,16 @@ export function DashboardTopActions({
         const rows = (commentMentionsRes.data ?? []) as CommentRow[];
         for (const row of rows) {
           if (repliedCommentIds.has(row.id)) continue;
-          if (!extractMentionUserIds(row.body).includes(uid)) continue;
+          if (
+            !bodyMentionsViewerForNotification(
+              row.body,
+              uid,
+              row.created_at,
+              extractMentionUserIds
+            )
+          ) {
+            continue;
+          }
           const author = Array.isArray(row.author)
             ? (row.author[0] ?? null)
             : (row.author ?? null);
@@ -743,7 +770,7 @@ export function DashboardTopActions({
 
   return (
     <div
-      className={`fixed right-5 top-1.5 z-[90] flex items-center gap-3 ${className ?? ""}`}
+      className={`fixed right-6 top-3 z-[90] flex items-center gap-3 ${className ?? ""}`}
     >
       <div className="relative" ref={notificationsRef}>
         <button
@@ -763,8 +790,8 @@ export function DashboardTopActions({
           ) : null}
         </button>
         {notificationsOpen ? (
-          <div className="absolute right-0 mt-2 w-[min(92vw,34rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-            <div className="border-b border-slate-200 px-4 pt-3 pb-0">
+          <div className="absolute right-0 mt-2 w-[min(92vw,34rem)] overflow-hidden rounded-2xl border border-sky-200/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.88)_0%,rgba(240,249,255,0.82)_100%)] shadow-[0_8px_30px_rgba(12,82,144,0.16),0_24px_60px_-12px_rgba(15,23,42,0.26),0_0_0_1px_rgba(255,255,255,0.65)_inset] backdrop-blur-3xl backdrop-saturate-150">
+            <div className="border-b border-sky-200/40 px-4 pt-3 pb-0">
               <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                 <p className="text-lg font-semibold text-slate-900">Notifications</p>
                 <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
@@ -830,7 +857,7 @@ export function DashboardTopActions({
                     <button
                       type="button"
                       onClick={() => setFilterMenuOpen((o) => !o)}
-                      className="mb-0.5 inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                      className="mb-0.5 inline-flex items-center gap-1.5 rounded-full border border-sky-200/50 bg-white/55 px-3 py-1 text-sm font-medium text-slate-700 backdrop-blur-sm hover:bg-white/75"
                     >
                       {filter === "all"
                         ? "All"
@@ -844,7 +871,7 @@ export function DashboardTopActions({
                       <ChevronDown className="h-4 w-4" />
                     </button>
                     {filterMenuOpen ? (
-                      <div className="absolute right-0 z-10 mt-1 min-w-[12rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                      <div className="absolute right-0 z-10 mt-1 min-w-[12rem] rounded-xl border border-sky-200/50 bg-white/90 py-1 shadow-lg backdrop-blur-md">
                         {(
                           [
                             ["all", "All"],
@@ -866,7 +893,7 @@ export function DashboardTopActions({
                             className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
                               filter === value
                                 ? "bg-amber-100 text-slate-900"
-                                : "text-slate-700 hover:bg-slate-50"
+                                : "text-slate-700 hover:bg-sky-50/80"
                             }`}
                           >
                             {label}
@@ -894,14 +921,14 @@ export function DashboardTopActions({
                       const unread = isNotificationUnread(item, readState);
                       const actorInitials = profileInitialsFromName(item.actor_name);
                       return (
-                        <li key={item.id} className="border-b border-slate-200 last:border-b-0">
+                        <li key={item.id} className="border-b border-sky-200/35 last:border-b-0">
                           <Link
                             href={item.href}
                             onClick={() => {
                               markOneAsRead(item.id);
                               setNotificationsOpen(false);
                             }}
-                            className="group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
+                            className="group flex items-start gap-3 px-4 py-2.5 hover:bg-white/45"
                           >
                             {item.actor_avatar_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -918,10 +945,12 @@ export function DashboardTopActions({
                             <div className="min-w-0 flex-1">
                               <p className="text-base leading-snug text-slate-900">
                                 <span className="font-semibold">{item.actor_name}</span>{" "}
-                                {item.title.replace(item.actor_name, "")}
-                                <span className="text-slate-500"> · {relativeAgo(item.created_at)}</span>
+                                <span className="font-medium text-slate-600">
+                                  {item.title.replace(item.actor_name, "")}
+                                </span>
+                                <span className="font-normal text-slate-400"> · {relativeAgo(item.created_at)}</span>
                               </p>
-                              <p className="mt-1 line-clamp-2 text-sm text-slate-700">
+                              <p className="mt-1 line-clamp-2 text-sm text-slate-500">
                                 {item.body}
                               </p>
                             </div>
@@ -952,14 +981,14 @@ export function DashboardTopActions({
                     const contactInitials = profileInitialsFromName(item.contact_name);
                     const actionText = item.title.replace(item.contact_name, "").trim();
                     return (
-                      <li key={item.id} className="border-b border-slate-200 last:border-b-0">
+                      <li key={item.id} className="border-b border-sky-200/35 last:border-b-0">
                         <Link
                           href={item.href || prospectsHref}
                           onClick={() => {
                             markOneAsRead(item.id);
                             setNotificationsOpen(false);
                           }}
-                          className="group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50"
+                          className="group flex items-start gap-3 px-4 py-2.5 hover:bg-white/45"
                         >
                           <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sm font-semibold text-sky-800 ring-1 ring-sky-100">
                             {contactInitials}
@@ -967,10 +996,12 @@ export function DashboardTopActions({
                           <div className="min-w-0 flex-1">
                             <p className="text-base leading-snug text-slate-900">
                               <span className="font-semibold">{item.contact_name}</span>{" "}
-                              {actionText}
-                              <span className="text-slate-500"> · {relativeAgo(item.created_at)}</span>
+                              <span className="font-medium text-slate-600">
+                                {actionText}
+                              </span>
+                              <span className="font-normal text-slate-400"> · {relativeAgo(item.created_at)}</span>
                             </p>
-                            <p className="mt-1 line-clamp-2 text-sm text-slate-700">
+                            <p className="mt-1 line-clamp-2 text-sm text-slate-500">
                               {item.body}
                             </p>
                           </div>
@@ -1029,7 +1060,7 @@ export function DashboardTopActions({
               className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
               onClick={() => setAvatarMenuOpen(false)}
             >
-              Account settings
+              Profile settings
             </Link>
             <button
               type="button"

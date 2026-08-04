@@ -18,6 +18,7 @@ const PROGRAMME_PREFIXES: ReadonlyArray<readonly [string, string]> = [
   ["profit-brand-framework-", "profit-brand-framework"],
   ["client-acquisition-", "client-acquisition"],
   ["client-delivery-", "client-delivery"],
+  ["client-retention-", "profit-coach-system"],
   ["coach-action-plan-", "coach-action-plan"],
   ["going-pro-", "going-pro"],
   ["kickstart-", "kickstart"],

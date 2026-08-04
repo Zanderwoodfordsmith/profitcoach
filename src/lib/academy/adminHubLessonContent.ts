@@ -16,6 +16,7 @@ import { contentSourceCourseId } from "./programmeContentSource";
 type Body = {
   title?: string | null;
   videoUrl?: string | null;
+  audioUrl?: string | null;
   bodyMarkdown?: string | null;
   guideMarkdown?: string | null;
   transcriptText?: string | null;
@@ -58,6 +59,7 @@ export async function patchHubLessonContent(
       lessonId,
       title: body.title,
       videoUrl: body.videoUrl,
+      audioUrl: body.audioUrl,
       bodyMarkdown: body.bodyMarkdown,
       guideMarkdown: body.guideMarkdown,
       transcriptText: body.transcriptText,

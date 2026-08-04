@@ -33,6 +33,7 @@ import {
   sumRowsByWeek,
   forecastWeekColumnStyle,
 } from "@/components/cashFlowForecast/CashFlowForecastGrid";
+import { FinancialsHubTabs } from "@/components/admin/FinancialsHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { isCashFlowForecastAllowedEmail } from "@/lib/cashFlowForecastAccess";
 import { formatForecastOwedDueDate } from "@/lib/cashFlowForecast/owedPayments";
@@ -520,6 +521,7 @@ export function CashFlowForecastClient() {
       <StickyPageHeader
         rootRef={headerRef}
         title="13-week cash flow forecast"
+        tabs={<FinancialsHubTabs />}
         actions={
           saving ? (
             <span className="text-xs text-slate-500">Saving…</span>

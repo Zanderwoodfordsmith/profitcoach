@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import {
   ProspectsTable,
   type ProspectRow,
@@ -33,8 +34,9 @@ export default function AdminProspectsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         rootRef={page.pageHeaderRef}
-        title="Prospects"
+        title="Get Clients"
         description="View prospects by coach, filter, and add prospects directly from the admin area."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
       {page.loading && (

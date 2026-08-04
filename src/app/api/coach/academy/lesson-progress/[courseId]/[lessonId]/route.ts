@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 
 import { setLessonProgressStatus } from "@/lib/academy/lessonProgress";
 import { isLessonProgressStatus } from "@/lib/academy/lessonProgressTypes";
+import {
+  isStartHereLessonId,
+  START_HERE_COURSE_ID,
+  START_HERE_WELCOME_LESSON_ID,
+} from "@/lib/academy/startHereLessons";
+import { syncAcademyLessonTrackedActions } from "@/lib/academy/syncAcademyTrackedActions";
 import { requireCoachForActions } from "@/lib/actionPlans/requireCoachForActions";
 
 type Params = { params: Promise<{ courseId: string; lessonId: string }> };
@@ -22,16 +28,35 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
   }
 
+  const trimmedCourseId = courseId.trim();
+  const trimmedLessonId = lessonId.trim();
+
   const result = await setLessonProgressStatus({
     userId: authCheck.userId,
-    courseId: courseId.trim(),
-    lessonId: lessonId.trim(),
+    courseId: trimmedCourseId,
+    lessonId: trimmedLessonId,
     status: body.status,
     actorId: authCheck.userId,
   });
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
+  }
+
+  // Completing/uncompleting any Start Here lesson may unlock the Welcome action.
+  if (isStartHereLessonId(trimmedLessonId)) {
+    try {
+      await syncAcademyLessonTrackedActions(
+        authCheck.userId,
+        START_HERE_COURSE_ID,
+        START_HERE_WELCOME_LESSON_ID
+      );
+    } catch (err) {
+      console.error(
+        "[lesson-progress] start-here tracked sync:",
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 
   return NextResponse.json({ status: result.status });

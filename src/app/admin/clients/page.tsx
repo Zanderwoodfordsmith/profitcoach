@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
 import { AddClientForm } from "@/components/clients/AddClientForm";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -216,9 +217,9 @@ export default function AdminClientsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        eyebrow="Profit Coach"
-        title="Clients"
+        title="Coach Clients"
         description="Create and manage clients, grouped by coach. View as client to see their portal."
+        below={<CoachToolsHubTabs hub="coach-clients" />}
       />
 
       {showAddClient && (

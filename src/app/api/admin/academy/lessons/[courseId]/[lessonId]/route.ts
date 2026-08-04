@@ -12,6 +12,7 @@ import { requireAdmin } from "@/lib/requireAdmin";
 type Body = {
   title?: string | null;
   videoUrl?: string | null;
+  audioUrl?: string | null;
   bodyMarkdown?: string | null;
   guideMarkdown?: string | null;
   transcriptText?: string | null;
@@ -78,6 +79,7 @@ export async function PATCH(
       lessonId,
       title: body.title,
       videoUrl: body.videoUrl,
+      audioUrl: body.audioUrl,
       bodyMarkdown: body.bodyMarkdown,
       guideMarkdown: body.guideMarkdown,
       transcriptText: body.transcriptText,

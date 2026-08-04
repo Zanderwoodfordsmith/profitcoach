@@ -167,8 +167,8 @@ export function ProfileDirectoryCard({
 }) {
   return (
     <ProfileSectionCard
-      title="Public directory"
-      description="How you appear on the coach directory listing and profile page."
+      title="Profit Coach Directory"
+      description="How you appear on the public coach directory listing and profile page."
     >
       {children}
     </ProfileSectionCard>

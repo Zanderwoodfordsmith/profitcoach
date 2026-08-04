@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
@@ -94,12 +95,13 @@ export default function AdminSettingsBossGridPage() {
       <StickyPageHeader
         title="Boss Grid variations"
         description="All grid components with sample data. Transposed (client dashboard) variant at the top."
+        tabs={<ToolkitHubTabs />}
         leading={
           <Link
-            href="/admin/account?tab=site"
+            href="/admin/links"
             className="text-xs text-sky-600 hover:text-sky-700"
           >
-            ← Site tools
+            ← Links
           </Link>
         }
       />

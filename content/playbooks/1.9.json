@@ -37,11 +37,11 @@
   ],
   "relatedPlaybooks": [
     {
-      "ref": "2.9",
+      "ref": "3.9",
       "description": ""
     },
     {
-      "ref": "3.9",
+      "ref": "2.9",
       "description": ""
     },
     {
@@ -61,18 +61,167 @@
   "actionSections": [
     {
       "title": "Role Clarity",
-      "description": "Defining what everyone does and how performance is measured.\n**Play 1: Role Definition** — Create clear role descriptions that focus on outcomes, not just activities. Each role gets defined by what winning looks like, not just what tasks to do.\n**Play 2: Accountability Map** — Map who is responsible for what across all business functions so there are no gaps and no overlaps. Every important outcome has an owner.\n**Play 3: Performance Standards** — Set explicit standards for how work gets done — quality, timing, communication, problem-solving. Make the invisible expectations visible.",
-      "actions": []
+      "description": "Defining what everyone does and how performance is measured.",
+      "actions": [
+        {
+          "number": 1,
+          "title": "Role Definition",
+          "description": "Create clear role descriptions that focus on outcomes, not just activities. Each role gets defined by what winning looks like, not just what tasks to do.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define what every person in your business is responsible for — including yourself — and create a simple accountability map that shows who owns what. No gaps, no overlaps, no \"I thought you were handling that.\""
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Ryan Deiss's H.O.T. Canvas (High Output Team) starts with Clear Accountability as one of three essentials. Without it, things fall through the cracks, people duplicate effort, and everyone looks to the owner for decisions that should not need them. The problem is rarely that people do not work hard — it is that they do not know what \"winning\" looks like in their role. When you define roles by outcomes rather than activities, people start owning results instead of just completing tasks."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through this even if you are a team of 2-3 people. Especially if you are a team of 2-3 people — small teams assume everyone knows their role, and that assumption causes most of the friction.\n\n---"
+            },
+            {
+              "title": "Define Each Role",
+              "content": "For every person in the business (including yourself):\n\n- [ ] **Write their role title and primary function in one sentence** — Not a job description. A function: \"Ensures every client receives consistent, high-quality delivery on time.\" This is what the role exists to achieve.\n- [ ] **Define what \"winning\" looks like in 90 days** — 2-3 specific, measurable outcomes. Not activities (\"make sales calls\") but outcomes (\"close 8 new clients this quarter\"). If they hit these outcomes, the role is performing.\n- [ ] **List their 3-5 key responsibilities** — The core things they own. Not a comprehensive task list — the responsibilities that, if done well, make everything else work. Keep it to 5 maximum. If a role has 15 responsibilities, the person cannot possibly focus.\n- [ ] **Identify what they do NOT own** — Boundaries matter as much as responsibilities. \"You are responsible for client delivery but NOT for client acquisition\" prevents role creep."
+            },
+            {
+              "title": "Build the Accountability Map",
+              "content": "- [ ] **List every important business function down the left side** — Sales, marketing, delivery, finance, client management, admin, operations, product, hiring. Include everything that matters to the business running.\n- [ ] ⚡ Quick Win · **For each function, write one name** — The person who is ultimately accountable for that function's results. If the answer is \"me\" for everything, you have just discovered why you are overwhelmed. That is useful information.\n- [ ] **Identify the gaps** — Any function with no name is a gap. Something important is happening by accident or not happening at all.\n- [ ] **Identify the overlaps** — Any function with multiple names is an overlap. Shared accountability is no accountability — decide who owns it.\n- [ ] **Flag the functions that should not be yours** — As the business grows, which functions need to move from your name to someone else's? This is your delegation roadmap."
+            },
+            {
+              "title": "Set Performance Standards",
+              "content": "- [ ] **For each role, define 2-3 explicit standards** — How fast should they respond to clients? What quality level is expected? What does \"on time\" mean? Make the invisible expectations visible.\n- [ ] **Share the role definition with the person** — Not by email. In conversation. Ask: \"Does this accurately describe what you think your role is?\" If there is a gap between your definition and theirs, close it now.\n- [ ] ⚡ Quick Win · **Ask each team member: \"What is the single most important thing you should be achieving in your role?\"** — If their answer does not match yours, you have an alignment problem that no amount of harder work will fix.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Every person knows exactly what winning looks like in their role\n- A simple accountability map showing who owns each business function — no gaps, no overlaps\n- Clear boundaries so people focus on their responsibilities, not everyone else's\n- A delegation roadmap showing what needs to move off your plate as the business grows\n- Explicit performance standards that make feedback conversations objective, not personal"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The accountability map often reveals that the owner is listed against 70-80% of functions. This is the moment they understand why they are overwhelmed — they are doing 7 jobs, not one. Use this as the foundation for a delegation plan, but do not overwhelm them with \"you need to hire 5 people.\" Start with: \"Which one function, if taken off your plate, would free up the most of your time?\"\n\nIf a team member's answer about their role does not match the owner's expectations, that is the coaching opportunity. The gap is usually about communication, not competence — they have been guessing at what matters because no one told them explicitly.\n\nFor solo operators with contractors or part-time help, this is still valuable. Define the VA's role, the bookkeeper's role, the subcontractor's role. Even informal roles benefit from clarity."
+            }
+          ]
+        },
+        {
+          "number": 2,
+          "title": "Accountability Map",
+          "description": "Map who is responsible for what across all business functions so there are no gaps and no overlaps. Every important outcome has an owner.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Define who makes which decisions in your business and build a simple organisational structure that makes authority clear. Remove the bottleneck of every decision flowing through you."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "In most small businesses, the owner is the default decision-maker for everything — from strategic direction to which supplier to use for printer paper. This creates two problems: the owner is constantly interrupted, and the team waits around for approvals that should not need them. Decision rights answer the question: \"Who has the authority to make this decision without checking with anyone else?\" When that is clear, the business moves faster and the owner gets their time back."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Work through this even if your team is small. Decision bottlenecks start with 2 people and get worse with every hire.\n\n---"
+            },
+            {
+              "title": "Map Your Decisions",
+              "content": "- [ ] **List the 10 most common decisions in your business** — Not just big strategic ones. Include daily operational decisions: spending under £X, client scheduling, pricing quotes, hiring contractors, changing processes. The decisions that happen every week.\n- [ ] ⚡ Quick Win · **For each decision, write who currently makes it** — If the answer is \"me\" for 8 out of 10, you have found your bottleneck. That is where the team is waiting for you instead of acting.\n- [ ] **Categorise each decision into 3 levels:**\n  - **Level 1: Just do it** — Decisions team members can make without asking anyone. Spending under £100, scheduling changes, standard client responses.\n  - **Level 2: Inform after** — Decisions they can make but should tell you about. Spending £100-£500, non-standard client requests, process changes.\n  - **Level 3: Ask first** — Decisions that need your approval before action. Spending over £500, hiring, pricing changes, new client commitments, anything that sets a precedent.\n- [ ] **Write down the levels and communicate them to your team** — Explicitly. \"You can make any decision under £100 without asking me. Between £100 and £500, make the call but tell me the same day. Over £500, ask first.\" Clear, simple, memorable."
+            },
+            {
+              "title": "Build Your Structure",
+              "content": "- [ ] **Draw a simple org chart** — Even if it is just 3 boxes. Who reports to whom? This is not about hierarchy for hierarchy's sake — it is about clarity. When someone has a question, who do they go to?\n- [ ] **Every person should report to one person** — Not two. Not \"it depends.\" One. Dual reporting creates confusion and conflicting priorities.\n- [ ] **If you have fewer than 5 people, your org chart is flat and that is fine** — Everyone reports to you. But the chart still clarifies: here is who we are and here is what each person does. As you grow, the structure evolves."
+            },
+            {
+              "title": "Unblock Yourself",
+              "content": "- [ ] ⚡ Quick Win · **Identify the decision you get asked about most often that someone else could handle** — Delegate it explicitly. \"From now on, you make this call. I trust you.\" The first one is the hardest.\n- [ ] **Set a weekly \"decision review\" instead of real-time approvals** — For Level 2 decisions, instead of being interrupted throughout the day, batch them. Team members make the call and report in a weekly 15-minute check-in. You review, give feedback, adjust authority levels if needed.\n- [ ] **Track decisions you get pulled into for 1 week** — Every time someone asks you to decide something, write it down. At the end of the week, categorise: which of these could someone else have handled? The answer is usually 60-80%.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- Clear decision authority so the team acts without waiting for you\n- Fewer interruptions because people know what they can decide independently\n- A simple org chart that clarifies reporting and authority\n- A delegation framework you can expand as the team grows\n- More of your time spent on strategic decisions, less on operational ones"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "Most owners resist delegating decisions because \"what if they get it wrong?\" Reframe: what is the cost of them getting it right 90% of the time versus the cost of you being the bottleneck 100% of the time? The 10% of mistakes is cheaper than the owner spending 3 hours a day approving things.\n\nStart small. Delegate one decision category this week. Review it after 2 weeks. If it went well, delegate another. Build trust incrementally rather than dumping everything at once.\n\nThe spending thresholds (Level 1/2/3) are powerful because they are concrete and measurable. Adjust the numbers to fit the business — a £5M business might set Level 1 at £500 and Level 3 at £5,000. The principle is the same."
+            }
+          ]
+        },
+        {
+          "number": 3,
+          "title": "Performance Standards",
+          "description": "Set explicit standards for how work gets done — quality, timing, communication, problem-solving. Make the invisible expectations visible.",
+          "detailSections": [
+            {
+              "title": "What to Do",
+              "content": "Set up a simple, consistent communication rhythm that keeps everyone aligned without drowning in meetings. One weekly check-in with a fixed agenda that replaces the ad hoc interruptions, status-chasing, and \"quick question\" culture that consumes most small teams."
+            },
+            {
+              "title": "Why It Matters",
+              "content": "Verne Harnish's Scaling Up framework identifies the Meeting Rhythm as one of three pillars of execution (alongside Priorities and Data). Without a consistent rhythm, communication is reactive — people only talk when something is wrong. With a rhythm, problems surface early, alignment stays tight, and the owner stops being the central switchboard for every piece of information.\n\nAt Level 1, you do not need daily huddles, monthly off-sites, or quarterly planning retreats. You need one weekly meeting that actually works."
+            },
+            {
+              "title": "How to Use This",
+              "content": "Set up one weekly meeting. Get the format right. Make it a habit. Everything else comes at higher levels.\n\n---"
+            },
+            {
+              "title": "Set Up the Weekly Check-In",
+              "content": "- [ ] ⚡ Quick Win · **Pick a day and time — same slot every week** — Monday morning or Friday afternoon work well. Monday sets the week. Friday reviews it. Pick one and commit. Moving it around kills the habit.\n- [ ] **Set the length at 30 minutes maximum** — If your weekly meeting takes longer than 30 minutes with a small team, the agenda is wrong or the conversation is drifting. 30 minutes, timer on, done.\n- [ ] **Invite everyone who needs alignment** — Your core team. Not clients, not contractors unless they are deeply embedded. Keep it tight."
+            },
+            {
+              "title": "The Agenda (Same Every Week)",
+              "content": "- [ ] **Wins (5 minutes)** — Each person shares one win from the past week. This is not optional fluff — it creates a habit of recognising progress and sets a positive tone. One win each, no discussion.\n- [ ] **Numbers (5 minutes)** — Each person reports their key metric for the week. Revenue, leads, deliveries completed, whatever matters for their role. Just the number. If it is red, it goes on the Issues list.\n- [ ] **Priorities (5 minutes)** — Each person states their #1 priority for the coming week. One thing. Saying it out loud creates accountability.\n- [ ] **Issues (15 minutes)** — The real value. List the problems, blockers, or decisions that need attention. Discuss the most important ones. Make a decision or assign an action. If it cannot be resolved in the meeting, assign it to someone with a deadline.\n- [ ] **Actions (2 minutes)** — Recap: who is doing what by when? Write it down. Start next week's meeting by reviewing whether actions were completed."
+            },
+            {
+              "title": "Make It Stick",
+              "content": "- [ ] **The meeting starts on time, even if someone is missing** — Waiting for people teaches them that being late is acceptable. Starting without them teaches them to be on time.\n- [ ] ⚡ Quick Win · **No phones, no laptops (unless needed for notes)** — 30 minutes of full attention. If people are checking email during the meeting, the meeting is either too long or not valuable enough.\n- [ ] **End on time** — If the 30 minutes is up and there are still issues, they go to next week or get handled offline. Respecting the time boundary is what makes people trust the meeting.\n- [ ] **Send a 3-line summary after** — What was decided, what actions were assigned, what is on the agenda for next week. Takes 2 minutes. Creates accountability."
+            },
+            {
+              "title": "For Solo Operators",
+              "content": "- [ ] **If it is just you, do a solo weekly review instead** — Same agenda, 15 minutes, written. What went well, what are my numbers, what is my #1 priority next week, what issues need resolving? The discipline of checking in with yourself matters as much as checking in with a team.\n\n---"
+            },
+            {
+              "title": "Expected Outcome",
+              "content": "- One consistent weekly meeting that replaces dozens of ad hoc conversations\n- Problems surfacing early instead of festering until they are crises\n- Clear weekly accountability — everyone knows what they committed to\n- Fewer \"quick question\" interruptions because people save non-urgent issues for the meeting\n- A foundation you can build on — daily huddles, monthly reviews, and quarterly planning come at higher levels"
+            },
+            {
+              "title": "Coach Notes",
+              "content": "The weekly check-in is the single highest-leverage team habit at Level 1. If a client does nothing else from this playbook, this one action will improve team alignment more than any other.\n\nThe most common failure: the meeting starts strong for 3-4 weeks, then starts getting skipped. Hold the client accountable. If they skip the meeting, ask \"what happened?\" The reason they skipped it reveals what they value more than team alignment — and that is usually the conversation that needs to happen.\n\nEOS calls this the \"Level 10 Meeting.\" Harnish calls it the \"Weekly.\" Deiss calls it the \"Team Huddle.\" The name does not matter. The rhythm does. Pick a format, start it this week, and iterate from there."
+            }
+          ]
+        }
+      ]
     },
     {
       "title": "Structure & Authority",
-      "description": "Building the framework that lets decisions happen efficiently.\n**Play 4: Simple Org Chart** — Create a basic organizational structure that shows who reports to whom, even if it is just you and two other people. Structure clarifies authority.\n**Play 5: Decision Rights** — Define who makes which decisions and what the approval process looks like for different types of choices. Remove bottlenecks and ambiguity.\n**Play 6: Capability Assessment** — Identify where people need training, support, or development to meet the expectations in their roles. Close the gaps between what you need and what you have.",
-      "actions": []
+      "description": "Building the framework that lets decisions happen efficiently.",
+      "actions": [
+        {
+          "number": 4,
+          "title": "Simple Org Chart",
+          "description": "Create a basic organizational structure that shows who reports to whom, even if it is just you and two other people. Structure clarifies authority."
+        },
+        {
+          "number": 5,
+          "title": "Decision Rights",
+          "description": "Define who makes which decisions and what the approval process looks like for different types of choices. Remove bottlenecks and ambiguity."
+        },
+        {
+          "number": 6,
+          "title": "Capability Assessment",
+          "description": "Identify where people need training, support, or development to meet the expectations in their roles. Close the gaps between what you need and what you have."
+        }
+      ]
     },
     {
       "title": "Communication Systems",
-      "description": "Installing the rhythms and tools that keep everyone aligned.\n**Play 7: Communication Protocols** — Establish how information flows — who needs to know what, when, and through which channels. Make communication predictable.\n**Play 8: Team Meeting Rhythm** — Set up regular check-ins that keep everyone aligned without becoming a meeting-heavy culture. Weekly updates, monthly reviews, quarterly check-ins.\n---",
-      "actions": []
+      "description": "Installing the rhythms and tools that keep everyone aligned.\n\n---",
+      "actions": [
+        {
+          "number": 7,
+          "title": "Communication Protocols",
+          "description": "Establish how information flows — who needs to know what, when, and through which channels. Make communication predictable."
+        },
+        {
+          "number": 8,
+          "title": "Team Meeting Rhythm",
+          "description": "Set up regular check-ins that keep everyone aligned without becoming a meeting-heavy culture. Weekly updates, monthly reviews, quarterly check-ins."
+        }
+      ]
     }
   ]
 }

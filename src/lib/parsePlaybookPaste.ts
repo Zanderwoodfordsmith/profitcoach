@@ -104,8 +104,13 @@ function splitIntoItems(text: string): string[] {
 
 /** Play N: Title — Description (accepts em dash or hyphen) */
 const PLAY_LINE_RE = /^Play\s+(\d+):\s*(.+?)\s+[—\-]\s*(.+)$/;
-/** **Play N: Title** (description may follow on subsequent lines) */
-const PLAY_BOLD_LINE_RE = /^\*\*Play\s+(\d+):\s*(.+?)\*\*\s*$/;
+/**
+ * **Play N: Title** with optional same-line description after the closing **
+ * (e.g. `**Play 1: Role Scorecard** — Define the outcomes…`).
+ * Description may also follow on subsequent lines.
+ */
+const PLAY_BOLD_LINE_RE =
+  /^\*\*Play\s+(\d+):\s*(.+?)\*\*(?:\s*[—\-]\s*(.+))?\s*$/;
 
 function flushPendingIntoSections(
   pending: string[],
@@ -187,7 +192,8 @@ function parsePlaysSection(section: string): {
       const last = sections[sections.length - 1]!;
       const num = parseInt(boldMatch[1], 10);
       const titlePart = boldMatch[2].trim();
-      const descParts: string[] = [];
+      const inlineDesc = (boldMatch[3] ?? "").trim();
+      const descParts: string[] = inlineDesc ? [inlineDesc] : [];
       let j = i + 1;
       while (
         j < lines.length &&

@@ -3,6 +3,7 @@ import type { AcademyRecommendedAction } from "@/lib/academy/lessonActions";
 export type LessonEditSnapshot = {
   title: string;
   videoUrl: string;
+  audioUrl: string;
   duration: string;
   bodyMarkdown: string;
   guideMarkdown: string;
@@ -12,7 +13,13 @@ export type LessonEditSnapshot = {
 function normalizeActions(actions: AcademyRecommendedAction[]) {
   return actions
     .filter((action) => action.text.trim())
-    .map((action) => ({ id: action.id, text: action.text.trim() }));
+    .map((action) => ({
+      id: action.id,
+      text: action.text.trim(),
+      completion: action.completion === "tracked" ? "tracked" : "manual",
+      verifyRule:
+        action.completion === "tracked" ? (action.verifyRule ?? null) : null,
+    }));
 }
 
 /** True when the draft differs from the last saved lesson content. */
@@ -22,6 +29,7 @@ export function isLessonEditDirty(
 ): boolean {
   if (draft.title.trim() !== saved.title.trim()) return true;
   if (draft.videoUrl.trim() !== saved.videoUrl.trim()) return true;
+  if (draft.audioUrl.trim() !== saved.audioUrl.trim()) return true;
   if (draft.duration.trim() !== saved.duration.trim()) return true;
   if (draft.bodyMarkdown !== saved.bodyMarkdown) return true;
   if (draft.guideMarkdown !== saved.guideMarkdown) return true;

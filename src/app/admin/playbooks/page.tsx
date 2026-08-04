@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { PlaybooksLibrary } from "@/components/playbooks/PlaybooksLibrary";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PLAYBOOKS } from "@/lib/bossData";
 import type { PlaybookSummary } from "@/lib/playbookContentTypes";
@@ -84,10 +85,10 @@ export default function AdminPlaybooksPage() {
       summaries={summaries}
       loading={loading}
       error={error}
-      eyebrow="Profit System"
-      title="Playbooks"
+      title="Coach Clients"
       description="Browse the library by area. Open a playbook to edit content and manage the full overview."
       buildHref={(ref) => `/admin/playbooks/${ref}`}
+      tabs={<CoachToolsHubTabs hub="coach-clients" />}
     />
   );
 }

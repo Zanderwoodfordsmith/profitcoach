@@ -35,8 +35,8 @@ export const BCA_OPERATING_EXPENSES: BcaExpenseDefinition[] = [
     id: "payroll:zander",
     label: "Zander Woodford-Smith",
     section: "Salaries & contractors",
-    schedule: { kind: "monthly", dayOfMonth: 1, amountCents: 750_000 },
-    note: "£7,500 on the 1st",
+    schedule: { kind: "monthly", dayOfMonth: 1, amountCents: 250_000 },
+    note: "£2,500 on the 1st",
   },
   {
     id: "payroll:pamela",
@@ -44,20 +44,6 @@ export const BCA_OPERATING_EXPENSES: BcaExpenseDefinition[] = [
     section: "Salaries & contractors",
     schedule: { kind: "monthly", dayOfMonth: 1, amountCents: 250_000 },
     note: "£2,500 on the 1st",
-  },
-  {
-    id: "payroll:zac",
-    label: "Zac Fagan",
-    section: "Salaries & contractors",
-    schedule: { kind: "monthly", dayOfMonth: 1, amountCents: 300_000 },
-    note: "£3,000 on the 1st",
-  },
-  {
-    id: "payroll:mark",
-    label: "Mark James",
-    section: "Salaries & contractors",
-    schedule: { kind: "lastDayOfMonth", amountCents: 833_300 },
-    note: "£8,333 on the last day of the month",
   },
 
   // —— Marketing & sales tools ——
@@ -298,7 +284,10 @@ export function isLegacyExpenseRows(rows: ForecastExpenseRow[]): boolean {
   );
 }
 
-/** Saved manual edits overlay projected BCA defaults (non-zero cells win). */
+/**
+ * Saved manual edits overlay projected BCA defaults.
+ * Only weeks present in the saved row are overrides (including explicit zeros).
+ */
 export function mergeExpenseRows(
   projected: ForecastExpenseRow[],
   saved: ForecastExpenseRow[]
@@ -312,13 +301,45 @@ export function mergeExpenseRows(
 
     const amountsByWeek = { ...row.amountsByWeek };
     for (const [week, amount] of Object.entries(savedRow.amountsByWeek)) {
-      if (amount > 0) amountsByWeek[week] = amount;
+      amountsByWeek[week] = amount;
     }
 
     return {
       ...row,
       label: savedRow.label || row.label,
       amountsByWeek,
+    };
+  });
+}
+
+/**
+ * Persist only cells that differ from the current BCA projection so default
+ * schedule changes (e.g. salary updates) are not frozen by a full-grid save.
+ */
+export function toSavedExpenseOverrides(
+  rows: ForecastExpenseRow[],
+  weekStarts: string[],
+  now = new Date()
+): ForecastExpenseRow[] {
+  const projectedById = new Map(
+    projectBcaOperatingExpenses(weekStarts, now).map((row) => [row.id, row])
+  );
+
+  return rows.map((row) => {
+    const projected = projectedById.get(row.id);
+    const amountsByWeek: Record<string, number> = {};
+    for (const [week, amount] of Object.entries(row.amountsByWeek ?? {})) {
+      const baseline = projected?.amountsByWeek[week] ?? 0;
+      if (amount !== baseline) {
+        amountsByWeek[week] = amount;
+      }
+    }
+    return {
+      id: row.id,
+      label: row.label,
+      section: row.section,
+      amountsByWeek,
+      note: row.note ?? null,
     };
   });
 }

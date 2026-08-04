@@ -1,22 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import type { AcademyCategory, AcademyCourse, AcademyLesson } from "@/lib/academy/types";
 import { lessonCommunityTabLabel } from "@/lib/academy/lessonCommunityChannel";
+import { nextLessonInSequence } from "@/lib/academy/hubCatalog";
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
 import { getSignaturePillarTitleById } from "@/lib/signatureModelV2";
-import { toYouTubeEmbedUrl } from "@/lib/videoEmbed";
+import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
 
 import { LessonGuidePanel } from "./LessonGuidePanel";
 import { LessonOverviewPanel } from "./LessonOverviewPanel";
 import { LessonPageEyebrow } from "./LessonPageEyebrow";
 import { LessonPlayerTabs } from "./LessonPlayerTabs";
 import { LessonQaPanel } from "./LessonQaPanel";
+import { LessonVideoHandoff } from "./LessonVideoHandoff";
+import { LessonMediaPlayer } from "./LessonMediaPlayer";
 import {
   LessonProgressHeaderControl,
   LessonProgressSidebarControl,
+  useReportLessonWatchProgress,
 } from "./LessonProgressControls";
 
 type Props = {
@@ -36,12 +41,36 @@ export function CompassLessonPlayer({
   viewerIsAdmin = null,
 }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const lessons = course.lessons ?? [];
-  const embedUrl = lesson.videoUrl ? toYouTubeEmbedUrl(lesson.videoUrl) : null;
+  const videoEmbed = lesson.videoUrl ? parseLessonVideoEmbed(lesson.videoUrl) : null;
   const directVideoUrl =
-    lesson.videoUrl && !embedUrl && isDirectVideoFileUrl(lesson.videoUrl)
+    lesson.videoUrl && !videoEmbed && isDirectVideoFileUrl(lesson.videoUrl)
       ? lesson.videoUrl
       : null;
+  const reportWatchProgress = useReportLessonWatchProgress(lesson.id);
+  const [showVideoHandoff, setShowVideoHandoff] = useState(false);
+
+  useEffect(() => {
+    setShowVideoHandoff(false);
+  }, [lesson.id]);
+
+  const nextLesson = useMemo(
+    () =>
+      nextLessonInSequence(lessons, lesson.id, {
+        includeDrafts: Boolean(viewerIsAdmin),
+      }),
+    [lessons, lesson.id, viewerIsAdmin],
+  );
+  const nextLessonHref = nextLesson
+    ? `${basePath}/${encodeURIComponent(course.id)}/${encodeURIComponent(nextLesson.id)}`
+    : null;
+  const handoffActionCount = (lesson.recommendedActions ?? []).filter((a) =>
+    a.text.trim(),
+  ).length;
+  const myActionsHref = pathname.startsWith("/admin")
+    ? "/admin/signature/actions"
+    : "/coach/signature/actions";
   const pillarEyebrow =
     getSignaturePillarTitleById(course.compassPillarId) ?? category.title;
   const programsPath = basePath.replace(/\/classroom\/?$/, "/programs");
@@ -78,45 +107,43 @@ export function CompassLessonPlayer({
               </div>
             </header>
 
-            {lesson.videoUrl ? (
-              <div className="overflow-hidden rounded-2xl bg-slate-950 shadow-md">
-                {embedUrl ? (
-                  <div className="relative aspect-video w-full">
-                    <iframe
-                      title={lesson.title}
-                      src={embedUrl}
-                      className="absolute inset-0 h-full w-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : directVideoUrl ? (
-                  <video
-                    src={directVideoUrl}
-                    controls
-                    playsInline
-                    className="aspect-video w-full bg-black"
-                  />
-                ) : (
-                  <div className="p-6 text-sm text-slate-300">
-                    <p>Video URL is set but is not a recognized embed or video file.</p>
-                    <a
-                      href={lesson.videoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 inline-block text-sky-400 underline"
-                    >
-                      Open video
-                    </a>
-                  </div>
-                )}
+            {lesson.videoUrl || lesson.audioUrl?.trim() ? (
+              <div className="overflow-hidden rounded-2xl shadow-md">
+                <LessonMediaPlayer
+                  courseId={course.id}
+                  lessonId={lesson.id}
+                  title={lesson.title}
+                  videoUrl={lesson.videoUrl}
+                  audioUrl={lesson.audioUrl}
+                  onWatchProgress={reportWatchProgress}
+                  onEnded={() => setShowVideoHandoff(true)}
+                  handoff={
+                    showVideoHandoff &&
+                    (videoEmbed?.kind === "youtube" || directVideoUrl) ? (
+                      <LessonVideoHandoff
+                        nextLessonTitle={nextLesson?.title ?? null}
+                        nextLessonHref={nextLessonHref}
+                        actionCount={handoffActionCount}
+                        myActionsHref={myActionsHref}
+                        onStay={() => setShowVideoHandoff(false)}
+                        onContinue={() => {
+                          if (!nextLessonHref) {
+                            setShowVideoHandoff(false);
+                            return;
+                          }
+                          setShowVideoHandoff(false);
+                          router.push(nextLessonHref);
+                        }}
+                      />
+                    ) : null
+                  }
+                />
               </div>
             ) : (
               <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
-                No video for this lesson yet.
+                No media for this lesson yet.
               </div>
             )}
-
             <LessonPlayerTabs
               overview={
                 <LessonOverviewPanel

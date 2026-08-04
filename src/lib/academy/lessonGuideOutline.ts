@@ -102,7 +102,7 @@ export function lessonGuideSections(
 
   const levels = [...counts.keys()].sort((a, b) => a - b);
   const deepest =
-    levels.find((level) => (counts.get(level) ?? 0) >= 3) ??
+    levels.findLast((level) => (counts.get(level) ?? 0) >= 3) ??
     levels[levels.length - 1];
 
   return headings

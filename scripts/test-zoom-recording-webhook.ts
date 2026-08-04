@@ -165,7 +165,7 @@ function baseEvent(
   const momentum = baseEvent({
     id: "mm-1",
     title: "Monthly Momentum",
-    starts_at: "2026-08-03T14:00:00.000Z", // 15:00 London
+    starts_at: "2026-08-03T14:30:00.000Z", // 15:30 London
     ends_at: "2026-08-03T15:00:00.000Z",
   });
   const wtw = baseEvent({
@@ -183,7 +183,7 @@ function baseEvent(
 
   const first = findBestCalendarOccurrenceForZoomRecording(mondayEvents, mondayOccs, {
     meetingId: null,
-    startTimeIso: "2026-08-03T14:05:00.000Z",
+    startTimeIso: "2026-08-03T14:35:00.000Z",
   });
   assert(
     Boolean(first && !("ambiguous" in first) && first.occurrence.eventId === "mm-1"),
@@ -211,6 +211,33 @@ function baseEvent(
       second && !("ambiguous" in second) && second.occurrence.eventId === "wtw-1"
     ),
     "first Monday second recording attaches to Win The Week"
+  );
+
+  // Mirrored WTW (same link as Momentum) is replaceable by a second recording.
+  const mondayOccsMirrored = mondayOccs.map((occ) => {
+    if (occ.eventId === "mm-1" || occ.eventId === "wtw-1") {
+      return {
+        ...occ,
+        recording_link_url: "https://zoom.us/rec/share/combined",
+      };
+    }
+    return occ;
+  });
+  const secondAfterMirror = findBestCalendarOccurrenceForZoomRecording(
+    mondayEvents,
+    mondayOccsMirrored,
+    {
+      meetingId: null,
+      startTimeIso: "2026-08-03T15:05:00.000Z",
+    }
+  );
+  assert(
+    Boolean(
+      secondAfterMirror &&
+        !("ambiguous" in secondAfterMirror) &&
+        secondAfterMirror.occurrence.eventId === "wtw-1"
+    ),
+    "second recording replaces mirrored Win The Week link"
   );
 }
 

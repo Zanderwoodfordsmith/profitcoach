@@ -39,6 +39,7 @@ export default async function AdminAcademyArchiveLessonPage({ params }: Props) {
           course={course}
           lesson={lesson}
           initialVideoUrl={lesson.videoUrl ?? null}
+          initialAudioUrl={lesson.audioUrl ?? null}
           initialBodyMarkdown={lesson.bodyMarkdown ?? ""}
           initialGuideMarkdown={lesson.guideMarkdown ?? ""}
           basePath={BASE}
@@ -46,6 +47,7 @@ export default async function AdminAcademyArchiveLessonPage({ params }: Props) {
           lessonResources={lessonResources}
           contentsPosition="left"
           chrome="minimal"
+          contentsBackLabel={null}
           hub="archive"
         />
       </LessonProgressProvider>

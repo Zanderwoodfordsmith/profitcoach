@@ -17,6 +17,7 @@ export type CoachSortableRow = {
   full_name: string | null;
   joined_at: string | null;
   last_login_at: string | null;
+  last_active_at: string | null;
   sales_robot_active_campaigns: number | null;
 };
 
@@ -24,6 +25,7 @@ export const COACH_SORT_FIELD_OPTIONS: Array<{
   value: CoachSortField;
   label: string;
 }> = [
+  { value: "last_active", label: "Last active" },
   { value: "last_login", label: "Last login" },
   { value: "join_date", label: "Join date" },
   { value: "active_campaigns", label: "Active campaigns" },
@@ -46,6 +48,13 @@ export function coachSortOrderOptions(
       { value: "missing_first", label: "Not set first" },
     ];
   }
+  if (field === "last_active") {
+    return [
+      { value: "recent_first", label: "Most recent first" },
+      { value: "oldest_first", label: "Oldest first" },
+      { value: "missing_first", label: "Never active first" },
+    ];
+  }
   return [
     { value: "recent_first", label: "Most recent first" },
     { value: "oldest_first", label: "Oldest first" },
@@ -63,6 +72,7 @@ export function coachSortsEqual(
 export function isCoachSortField(value: unknown): value is CoachSortField {
   return (
     value === "last_login" ||
+    value === "last_active" ||
     value === "join_date" ||
     value === "active_campaigns"
   );
@@ -137,8 +147,18 @@ export function compareCoachesByCriterion(
     return bVal - aVal;
   }
 
-  const aIso = field === "join_date" ? a.joined_at : a.last_login_at;
-  const bIso = field === "join_date" ? b.joined_at : b.last_login_at;
+  const aIso =
+    field === "join_date"
+      ? a.joined_at
+      : field === "last_active"
+        ? a.last_active_at
+        : a.last_login_at;
+  const bIso =
+    field === "join_date"
+      ? b.joined_at
+      : field === "last_active"
+        ? b.last_active_at
+        : b.last_login_at;
   const aMs = aIso ? Date.parse(aIso) : Number.NaN;
   const bMs = bIso ? Date.parse(bIso) : Number.NaN;
   const aHas = !Number.isNaN(aMs);

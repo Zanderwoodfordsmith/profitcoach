@@ -12,7 +12,7 @@ import { getPlaybookMeta } from "@/lib/bossData";
 import type { PlaybookContent as PlaybookContentType } from "@/lib/playbookContentTypes";
 
 function playbookBackLabel(returnTo: string | null): string {
-  if (returnTo?.includes("/boss-pro")) return "BOSS score";
+  if (returnTo?.includes("/boss-pro")) return "Boss Pro";
   return "Contact playbooks";
 }
 
@@ -97,7 +97,7 @@ function CoachContactPlaybookDetailContent({
           ? undefined
           : {
               href: bossProHubPath(contactId),
-              label: "BOSS score",
+              label: "Boss Pro",
             }
       }
     >

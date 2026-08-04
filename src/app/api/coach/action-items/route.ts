@@ -1,6 +1,8 @@
+import { enrichActionLinesWithLessons } from "@/lib/actionPlans/enrichActionLessons";
 import { dbItemToOutlineLine, outlineLineToDbInsert } from "@/lib/actionPlans/mappers";
 import { requireCoachForActions } from "@/lib/actionPlans/requireCoachForActions";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
+import { ensureClassroomActionsOnLoad } from "@/lib/academy/syncAcademyTrackedActions";
 import type { ActionOutlineLine } from "@/lib/actionPlans/types";
 import { createOutlineLine } from "@/lib/actionPlans/actionOutlineUtils";
 import { NextResponse } from "next/server";
@@ -13,7 +15,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    await syncCoachActionAutoComplete(authCheck.userId);
+    await Promise.all([
+      syncCoachActionAutoComplete(authCheck.userId),
+      ensureClassroomActionsOnLoad(authCheck.userId).catch((syncErr) => {
+        console.error("ensureClassroomActionsOnLoad:", syncErr);
+      }),
+    ]);
 
     const { data, error } = await supabaseAdmin
       .from("coach_action_items")
@@ -25,7 +32,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const items = (data ?? []).map((row) => dbItemToOutlineLine(row));
+    const rows = data ?? [];
+    const lines = rows.map((row) => dbItemToOutlineLine(row));
+    const items = enrichActionLinesWithLessons(lines, rows);
     return NextResponse.json({ items });
   } catch (err) {
     console.error("coach/action-items GET error:", err);
@@ -148,9 +157,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: refreshError.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      items: (refreshed ?? []).map((row) => dbItemToOutlineLine(row)),
-    });
+    const rows = refreshed ?? [];
+    const items = enrichActionLinesWithLessons(
+      rows.map((row) => dbItemToOutlineLine(row)),
+      rows
+    );
+    return NextResponse.json({ items });
   } catch (err) {
     console.error("coach/action-items PUT error:", err);
     return NextResponse.json({ error: "Server error." }, { status: 500 });

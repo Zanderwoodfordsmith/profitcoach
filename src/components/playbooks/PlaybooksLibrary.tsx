@@ -27,6 +27,8 @@ export type PlaybooksLibraryProps = {
   /** Match dashboard main padding (`-mx-[60px] px-[60px]`). Use `false` for standalone pages. */
   stickyBleedInset?: string | false;
   headerLeading?: ReactNode;
+  /** Optional header tabs (e.g. Coach Clients hub). */
+  tabs?: ReactNode;
 };
 
 function levelLabel(levelId: number): string {
@@ -45,6 +47,7 @@ export function PlaybooksLibrary({
   getScore,
   stickyBleedInset,
   headerLeading,
+  tabs,
 }: PlaybooksLibraryProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -95,6 +98,7 @@ export function PlaybooksLibrary({
         eyebrow={eyebrow}
         title={title}
         description={description}
+        below={tabs}
         actions={viewToggle}
         bleedInset={stickyBleedInset ?? undefined}
       />

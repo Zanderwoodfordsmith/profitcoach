@@ -7,6 +7,7 @@ import { loadCallTableRows } from "@/lib/loadCallTableRows";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
@@ -161,8 +162,9 @@ export default function AdminCallsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Calls"
+        title="Get Clients"
         description="Discovery calls booked across all coaches, synced from GoHighLevel."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
       <div className="flex w-full flex-col gap-4">

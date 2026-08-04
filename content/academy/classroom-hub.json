@@ -19,74 +19,83 @@
             {
               "id": "kickstart-welcome-welcome-program-overview",
               "title": "🚀 Welcome & Program Overview",
-              "duration": "3m",
-              "hasVideo": true,
+              "duration": "",
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- Who it’s for\n- What they’re building (5 clients, ~£10k/mo)\n- The 3 core areas: Get Clients, Coach Clients, Profit Coach OS\n- What “success in the first 30 days” looks like\n- Tell them: “After this video, work down this Start Here list.”"
+              "bodyMarkdown": "## Welcome\n\nWelcome to the Profit Coach community.\n\nYou are here to build the confidence, skills and systems to win clients, coach them well and grow a profitable coaching business.\n\n### Do these two things now\n\n1. **Choose your next live call.** Open the Community Calendar and pick a call you can attend in the next seven days.\n2. **Complete Start Here in order.** Mark each lesson complete as you go so you always know what is next.\n\n![Where to mark a lesson complete](/academy/start-here/welcome-lesson.png)\n\nOnce you finish Start Here, complete your **Coach Action Plan** this week. That plan will turn the training into a clear route for your business.\n\nThen use **Pick Your Path** to decide where to begin in the main programme.",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-member-wins",
               "title": "🏆 Member Wins",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- Rapid-fire reel of 3–5 wins (James, Ashley, etc.)\n- Goal: belief and motivation, not training."
+              "bodyMarkdown": "## Real outcomes from real coaches\n\nThe Wins tab below is where members share progress, client results and milestones from inside the community.\n\nRead a few wins. Look for what the coach did, not just the result they achieved. The aim is to see what is possible and borrow ideas you can put into action.\n\nYour win does not need to be huge. A good conversation, a booked call, a clearer offer, a client breakthrough or a task you had been avoiding all count.\n\nWhen you make progress, post it here. Sharing wins helps you recognise your own momentum and shows other coaches what is working.\n\n> If they did it, so can you.",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-pick-your-path",
               "title": "🧭 Pick Your Path",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- “If you don’t have coaching clients yet, go to Get Clients, do 1–6 in order.”\n- “If you already have clients, go to Coach Clients, start with 1 & 2.”\n- Name the exact tiles so they recognize them when they go."
+              "bodyMarkdown": "## Pick the route that matches what you need now\n\nFirst, finish **Start Here** today and complete your **Coach Action Plan** this week. Whichever route you choose, work through **Going Pro** at roughly one lesson per week alongside it.\n\n### Path A — Start from the beginning\n\nChoose this if you do not yet have enough people to speak to about coaching.\n\n1. **Get Calls** — create conversations with the right people.\n2. **Win Clients** — turn those conversations into coaching clients.\n3. **Coach Clients** — deliver excellent coaching and results.\n\n### Path B — Build your coaching confidence first\n\nChoose this if your main concern is, \"Can I confidently coach someone and get them a result?\"\n\n1. **Coach Clients** — learn the coaching process and build delivery confidence.\n2. **Get Calls** — start creating more of the right conversations.\n3. **Win Clients** — turn those conversations into paying clients.\n\n### Path C — You already have people to speak to\n\nChoose this if you already have calls booked, warm contacts or existing relationships you can approach — especially if you are pivoting into the Profit Coach model.\n\n1. **Win Clients** — sharpen the offer and lead the next conversations well.\n2. **Coach Clients** — be ready to deliver confidently when they say yes.\n3. **Get Calls** — build a repeatable pipeline after you have used the opportunities already in front of you.\n\nDo not overthink this choice. Start with the module that solves your immediate bottleneck, then continue through the other two.",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-introduce-yourself",
               "title": "👋 Introduce Yourself",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- Show exactly where to post and give a 3–4 question template for their intro.\n- This is a task, not just info. First “do” moment."
+              "bodyMarkdown": "## Say hello\n\nIntroduce yourself in the Intros tab below. It gives the community enough context to welcome you, connect you with the right people and offer useful help.\n\nCopy this template and make it your own:\n\n> Hey everyone! I’m **[name]** from **[location]**.\n>\n> I currently **[what you do / who you help]**.\n>\n> Over the next 90 days, I want to **[specific business or coaching goal]**.\n>\n> Right now I am **[starting from scratch / building coaching confidence / already speaking to potential clients]**.\n>\n> I would especially value help with **[one specific thing]**.\n\nKeep it simple. You do not need a polished story or a perfect offer before you introduce yourself.",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-community-tour",
               "title": "👥 Community Tour",
-              "duration": "",
+              "duration": "3m",
               "hasVideo": true,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- How to navigate the community, where “wins” posts go, how to ask questions."
+              "bodyMarkdown": "## The Community feed\n\nThe Community is where you ask questions, share progress and learn from coaches working through the same challenges.\n\nWhen replying to someone, tag them with **@their name** so they see your response.\n\n![Tag the person you are replying to](/academy/start-here/community-tagging.png)\n\n### Where to post\n\n* **💬 General Discussion** — questions, ideas and conversations that do not fit another category.\n* **🏆 Wins** — client results, booked calls, shipped work and meaningful progress.\n* **🚨 Announcements** — important updates from the Profit Coach team.\n* **🗣️ Ask & Share** — ask for help or share work when you want feedback.\n* **👋 Intros** — welcome new members and introduce yourself.\n\n### Members\n\nOpen the **Members** tab to browse coaches in the community. Search by name, see who is online, and open someone’s profile when you want to connect.\n\n### Map\n\nThe **Map** tab shows where members are around the world. Use the location box on the map to add your city and place a pin so nearby coaches can find you.\n\n### Get better answers\n\nWhen asking for help, include what you are trying to achieve, what you have already tried and the specific point where you are stuck. Screenshots or a short Loom are useful when the question is visual or technical.\n\nBe generous too. If you know the answer to another coach’s question, jump in.",
+              "draft": false
             },
             {
               "id": "kickstart-welcome-classroom-tour",
               "title": "📚 Classroom Tour",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- Quick walk-through of the 4 tiles: Start Here, Get Clients, Coach Clients, Profit Coach OS.\n- “Here’s what each one does” with 1 line each."
+              "bodyMarkdown": "## Your training library\n\nThe Classroom is organised around the work you need to do, rather than a huge course you must watch from beginning to end.\n\n![The Classroom library](/academy/start-here/classroom-library.png)\n\n### Begin here\n\n* **Start Here** — finish these onboarding lessons first.\n* **Coach Action Plan** — decide your target, pace and priorities for the next 90 days.\n* **Going Pro** — strengthen your energy, time, focus and mindset. Complete roughly one lesson each week alongside your main route.\n\n### Build your coaching business\n\n* **Get Calls** — create a consistent flow of conversations with potential clients.\n* **Win Clients** — shape your offer, lead value sessions and enrol the right clients.\n* **Coach Clients** — deliver excellent coaching, build confidence and help clients get results.\n* **Profit Coach OS** — use the tools and systems that support your coaching business.\n\nFollow the route you chose in **Pick Your Path**. You do not need to consume everything before taking action.\n\n### Progress and points\n\nComplete lessons to track your own progress. Community points come from useful participation — sharing, commenting and helping other members — not from passively watching content.\n\n![How community points work](/academy/start-here/classroom-points.png)",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-calendar-calls",
               "title": "📅 Calendar & Calls",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- Where to find call schedule, what each call is for, how to add to their calendar."
+              "bodyMarkdown": "## Put the calls in your calendar\n\nLive calls help you turn the lessons into decisions and action. Open the **Community Calendar** to see the current schedule, access details and any changes.\n\nThe main call types include:\n\n* **Win The Week** — choose the priority that will move your business forward and follow through.\n* **Profit Coach Training** — develop your coaching, client-winning and business-building skills.\n* **Monthly Momentum** — step back, review progress and set direction for the month.\n\nThe Community Calendar is always the source of truth because times and sessions can change, and some calls depend on your membership.\n\nChoose the next useful call you can attend and add it to your own calendar now. Do not wait until you feel fully prepared — bring your current question or goal with you.",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-support",
               "title": "📙 Support",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- How to get help: email, support form, community tag, expected response times.\n- Link key resources here instead of a vague “Key Resources” lesson."
+              "bodyMarkdown": "## Get unstuck quickly\n\nDo not spend days wrestling with a problem alone. Use the community and live calls to get a clear next step.\n\n### Ask in the community\n\nPost in **Ask & Share** and include:\n\n* A clear title and one-sentence description.\n* What you are trying to achieve.\n* What you have already tried.\n* What happened versus what you expected.\n* Screenshots, error messages or a short Loom when they add useful context.\n\nTag the relevant person when you are replying to them. When the issue is resolved, add a short comment explaining what fixed it so the answer can help the next coach too.\n\n### Bring it to a live call\n\nIf the question needs discussion, judgement or live feedback, bring it to the most relevant session in the Community Calendar. Give the group the context briefly, then ask one clear question.\n\nThe better the context, the faster the community can help.",
+              "draft": true
             },
             {
               "id": "kickstart-welcome-tools-bonuses",
               "title": "🤑 Tools & Bonuses (Optional)",
               "duration": "",
-              "hasVideo": true,
+              "hasVideo": false,
               "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview",
-              "bodyMarkdown": "- £1,000 referral explanation\n- $1 GoHighLevel (if you still want that)\n- Any other “nice to have” tools\n- Make it clear this is optional and last."
+              "bodyMarkdown": "## Useful extras — after the essentials\n\nThis is the place for tools, member benefits and referral details that can support your coaching business.\n\nStart with **Profit Coach OS** when you need the practical systems behind your brand, client journey and coaching operation. Use the tools because they solve a real problem in your current plan — not because you feel you need to set up everything at once.\n\nAny current member offers, recommended software and referral opportunities will be added to this lesson with their terms and instructions.\n\nThis lesson is deliberately last and optional. Do not let a new tool delay the work that matters most:\n\n1. Finish **Start Here**.\n2. Complete your **Coach Action Plan**.\n3. Begin the first module in your chosen path.\n4. Attend a live call and take the next real action.",
+              "draft": true
             }
           ]
         }
@@ -677,7 +686,7 @@
     {
       "id": "profit-coach-system",
       "title": "Coach Clients",
-      "description": "Onboard clients, run a coaching rhythm you trust, and keep clients month after month.",
+      "description": "Onboard clients, run a coaching method you trust, and retain clients month after month.",
       "sections": [
         {
           "id": "profit-coach-system-overview",
@@ -686,7 +695,7 @@
         },
         {
           "id": "client-delivery-client-onboarding",
-          "title": "Client Launchpad: Onboard Clients & Deliver The First 4–6 Weeks",
+          "title": "Client Launch: Onboard and Run the First 4–6 Weeks",
           "lessons": [
             {
               "id": "client-delivery-client-onboarding-how-to-setup-a-new-client",
@@ -822,7 +831,7 @@
         },
         {
           "id": "coach-certification",
-          "title": "Coaching Rhythm: Run Ongoing Sessions That Keep Clients Progressing",
+          "title": "Coaching Method: Run Ongoing Sessions and Apply Your Framework",
           "lessons": [],
           "sections": [
             {
@@ -1236,8 +1245,70 @@
           ]
         },
         {
+          "id": "client-retention",
+          "title": "Client Retention: Retain, Renew, and Expand",
+          "lessons": [
+            {
+              "id": "client-retention-prevent-overwhelm",
+              "title": "Prevent Overwhelm",
+              "duration": "25m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Prevent Overwhelm\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.1).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-remove-distraction",
+              "title": "Remove Distraction",
+              "duration": "13m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Remove Distraction\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.2).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-ownership",
+              "title": "Ownership",
+              "duration": "11m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Ownership\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.3).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-generate-belief",
+              "title": "Generate Belief",
+              "duration": "19m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Generate Belief\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.4).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-results-and-rewards",
+              "title": "Results and Rewards",
+              "duration": "13m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Results and Rewards\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.5).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-exemplify",
+              "title": "Exemplify",
+              "duration": "18m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Exemplify\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.6).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-sustainability",
+              "title": "Sustainability",
+              "duration": "24m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Sustainability\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.7).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            },
+            {
+              "id": "client-retention-self-identity",
+              "title": "Self-Identity",
+              "duration": "21m",
+              "hasVideo": true,
+              "bodyMarkdown": "## Progress Method — Self-Identity\n\nThis lesson is part of the Progress Method for keeping clients engaged, making measurable progress, and staying on the coaching journey (module 9.8).\n\nWatch the video or listen to the audio, then apply the idea in your next client session."
+            }
+          ]
+        },
+        {
           "id": "profit-coach-system-tool-library",
-          "title": "Client Continuity: Coach With The Profit Coach System",
+          "title": "Profit System: Frameworks & Tools",
           "lessons": [],
           "sections": [
             {

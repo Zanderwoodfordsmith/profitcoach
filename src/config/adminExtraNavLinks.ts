@@ -1,10 +1,10 @@
 /**
- * Useful routes that are not in the main admin sidebar (see admin/layout.tsx).
+ * Useful routes listed on Admin → Links (pages not in the main sidebar).
  */
 export type AdminExtraNavLink = {
   href: string;
   label: string;
-  /** Shown as secondary text on Account → Links */
+  /** Shown as secondary text on the Links page */
   hint?: string;
 };
 
@@ -55,8 +55,13 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Also under Coaches hub tabs",
   },
   {
-    href: "/admin/cash-flow-forecast",
-    label: "13-week cash flow forecast",
-    hint: "Zander only — projected subscriptions & payment plans",
+    href: "/admin/discovery-calendar",
+    label: "BCA Let’s Talk / discovery calendar",
+    hint: "Staff preview of the gated book-a-call panel (not applied to coaches)",
+  },
+  {
+    href: "/book/profit-coach-snapshot",
+    label: "Native book page (snapshot)",
+    hint: "Enable under Get Clients → Funnel settings → Native discovery booking",
   },
 ];

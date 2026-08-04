@@ -13,6 +13,7 @@ import {
 import { Check, FilePenLine } from "lucide-react";
 
 import type { LessonProgressMap, LessonProgressStatus } from "@/lib/academy/lessonProgressTypes";
+import { hasReachedWatchCompleteThreshold } from "@/lib/academy/lessonWatchComplete";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type LessonProgressContextValue = {
@@ -20,6 +21,12 @@ type LessonProgressContextValue = {
   progress: LessonProgressMap;
   getStatus: (lessonId: string) => LessonProgressStatus;
   setStatus: (lessonId: string, status: LessonProgressStatus) => Promise<void>;
+  /** Called from video players; marks complete once the watch threshold is reached. */
+  reportWatchProgress: (
+    lessonId: string,
+    currentTimeSeconds: number,
+    durationSeconds: number,
+  ) => void;
   saving: boolean;
 };
 
@@ -35,6 +42,18 @@ export function useLessonProgress() {
     throw new Error("useLessonProgress must be used within LessonProgressProvider");
   }
   return ctx;
+}
+
+/** Safe for players that may render without a progress provider (e.g. admin preview). */
+export function useReportLessonWatchProgress(lessonId: string | null | undefined) {
+  const ctx = useLessonProgressContext();
+  return useCallback(
+    (currentTimeSeconds: number, durationSeconds: number) => {
+      if (!ctx || !lessonId) return;
+      ctx.reportWatchProgress(lessonId, currentTimeSeconds, durationSeconds);
+    },
+    [ctx, lessonId],
+  );
 }
 
 async function getAccessToken(): Promise<string | null> {
@@ -58,6 +77,8 @@ export function LessonProgressProvider({
   const [saving, setSaving] = useState(false);
   const progressRef = useRef(progress);
   progressRef.current = progress;
+  /** Lessons the member manually unmarked — don't auto-tick again this session. */
+  const watchAutoCompleteSuppressedRef = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +139,10 @@ export function LessonProgressProvider({
       const previous = progressRef.current[lessonId] ?? "not_started";
       if (previous === status) return;
 
+      if (previous === "completed" && status === "not_started") {
+        watchAutoCompleteSuppressedRef.current.add(lessonId);
+      }
+
       const nextProgress = { ...progressRef.current };
       if (status === "not_started") {
         delete nextProgress[lessonId];
@@ -164,6 +189,11 @@ export function LessonProgressProvider({
             }
             return reverted;
           });
+        } else {
+          const { notifyAcademyTrackedActionsChanged } = await import(
+            "@/lib/academy/trackedActionsEvents"
+          );
+          notifyAcademyTrackedActionsChanged();
         }
       } finally {
         setSaving(false);
@@ -172,15 +202,26 @@ export function LessonProgressProvider({
     [courseId],
   );
 
+  const reportWatchProgress = useCallback(
+    (lessonId: string, currentTimeSeconds: number, durationSeconds: number) => {
+      if (watchAutoCompleteSuppressedRef.current.has(lessonId)) return;
+      if ((progressRef.current[lessonId] ?? "not_started") === "completed") return;
+      if (!hasReachedWatchCompleteThreshold(currentTimeSeconds, durationSeconds)) return;
+      void setStatus(lessonId, "completed");
+    },
+    [setStatus],
+  );
+
   const value = useMemo(
     () => ({
       courseId,
       progress,
       getStatus,
       setStatus,
+      reportWatchProgress,
       saving,
     }),
-    [courseId, progress, getStatus, setStatus, saving],
+    [courseId, progress, getStatus, setStatus, reportWatchProgress, saving],
   );
 
   return (

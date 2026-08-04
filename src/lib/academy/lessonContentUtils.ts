@@ -4,6 +4,8 @@ import type { AcademyRecommendedAction } from "./lessonActions";
 
 export type LessonInAppContent = {
   videoUrl: string | null;
+  /** Optional listen-along audio (MP3) under the video. */
+  audioUrl: string | null;
   /** Overview tab (short what / why). */
   bodyMarkdown: string;
   /** Optional Guide tab (longer written walkthrough). */
@@ -41,10 +43,12 @@ export function hasInAppLessonContent(
   videoUrl?: string | null,
   bodyMarkdown?: string | null,
   transcriptText?: string | null,
-  guideMarkdown?: string | null
+  guideMarkdown?: string | null,
+  audioUrl?: string | null
 ): boolean {
   return (
     Boolean(videoUrl?.trim()) ||
+    Boolean(audioUrl?.trim()) ||
     Boolean(bodyMarkdown?.trim()) ||
     Boolean(guideMarkdown?.trim()) ||
     Boolean(transcriptText?.trim())

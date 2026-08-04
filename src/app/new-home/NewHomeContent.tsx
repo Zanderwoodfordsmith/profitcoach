@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import {
   ArrowRight,
   Bird,
@@ -13,20 +15,32 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BossWheel } from "@/components/BossCharts/BossWheel";
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-fraunces",
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-jakarta",
+});
 
 const LINK_DIAGNOSTIC = "/assessment";
 const LINK_COACH = "/directory";
 const LINK_SIGNUP_COACH = "/signup";
+const LOGO_WHITE = "/brand/profit-coach-logo-white.svg";
 
 /** Demo wheel scores (0–10 per area) — illustrative only */
 const DEMO_AREA_SCORES = [6.2, 5.4, 7.1, 4.9, 6.8, 5.6, 6.3, 6.9, 5.2, 6.5];
 const DEMO_TOTAL = 62;
-
-const navy = "#0c5290";
-const lightBlue = "#42a1ee";
-const teal = "#1ca0c2";
 
 const outcomeItems = [
   { label: "More Profit", Icon: TrendingUp },
@@ -148,6 +162,14 @@ const testimonialsPlaceholder = [
   },
 ];
 
+const navLinks = [
+  { label: "The Profit System", href: "#profit-system" },
+  { label: "How It Works", href: "/how-it-works" },
+  { label: "Blog", href: "/blog" },
+  { label: "Find a Coach", href: LINK_COACH },
+  { label: "Resources", href: "#resources" },
+] as const;
+
 function cx(...parts: (string | false | undefined)[]) {
   return parts.filter(Boolean).join(" ");
 }
@@ -157,29 +179,34 @@ function PrimaryCta({ className }: { className?: string }) {
     <Link
       href={LINK_DIAGNOSTIC}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-[0.9375rem] font-semibold text-white shadow-lg transition duration-300 hover:brightness-110 active:scale-[0.98]",
+        "group inline-flex items-center justify-center gap-2 rounded-full bg-[#10b981] px-7 py-3.5 text-[15px] font-semibold text-[#061a2e] shadow-[0_14px_30px_-12px_rgba(16,185,129,0.5)] transition hover:brightness-110 active:scale-[0.98]",
         className
       )}
-      style={{
-        background: `linear-gradient(135deg, ${navy} 0%, #063056 100%)`,
-        boxShadow: `0 12px 40px -12px ${navy}88`,
-      }}
     >
       Take the BOSS Diagnostic
-      <ArrowRight className="h-4 w-4 opacity-90" strokeWidth={2} />
+      <ArrowRight
+        className="size-4 transition group-hover:translate-x-1"
+        strokeWidth={2.5}
+      />
     </Link>
   );
 }
 
-function SecondaryCta({ className, dark }: { className?: string; dark?: boolean }) {
+function SecondaryCta({
+  className,
+  dark,
+}: {
+  className?: string;
+  dark?: boolean;
+}) {
   return (
     <Link
       href={LINK_COACH}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 text-[0.9375rem] font-semibold transition duration-300 active:scale-[0.98]",
+        "inline-flex items-center justify-center gap-2 rounded-full border px-7 py-3.5 text-[15px] font-semibold transition active:scale-[0.98]",
         dark
-          ? "border-white/25 bg-white/10 text-white backdrop-blur-md hover:bg-white/15"
-          : "border-slate-200/90 bg-white/60 text-[#0c5290] backdrop-blur-md hover:bg-white/90",
+          ? "border-white/35 text-white hover:border-white hover:bg-white/10"
+          : "border-[#d5dde5] bg-white text-[#0c5290] hover:border-[#0c5290]/40 hover:bg-[#f4f6f8]",
         className
       )}
     >
@@ -188,20 +215,61 @@ function SecondaryCta({ className, dark }: { className?: string; dark?: boolean 
   );
 }
 
+function Eyebrow({
+  children,
+  onDark,
+}: {
+  children: ReactNode;
+  onDark?: boolean;
+}) {
+  return (
+    <p
+      className={cx(
+        "text-[12px] font-semibold uppercase tracking-[0.32em]",
+        onDark ? "text-[#7ec8ff]" : "text-[#0c5290]"
+      )}
+    >
+      {children}
+    </p>
+  );
+}
+
+function DisplayHeading({
+  children,
+  className,
+  as: Tag = "h2",
+}: {
+  children: ReactNode;
+  className?: string;
+  as?: "h1" | "h2";
+}) {
+  return (
+    <Tag
+      className={cx(
+        fraunces.className,
+        "text-balance font-normal leading-[1.08] tracking-[-0.018em]",
+        "[&_em]:font-normal [&_em]:italic",
+        className
+      )}
+    >
+      {children}
+    </Tag>
+  );
+}
+
 function BossWheelBlock({
   className,
   onDark,
 }: {
   className?: string;
-  /** Improve score label contrast on dark backgrounds */
   onDark?: boolean;
 }) {
   return (
     <div
       className={cx(
-        "flex justify-center rounded-[2rem] border border-white/50 bg-white/50 p-6 shadow-[0_20px_60px_-24px_rgba(12,82,144,0.35)] backdrop-blur-xl md:p-10",
+        "flex justify-center rounded-[14px] border border-[#d5dde5] bg-white p-6 shadow-[0_24px_50px_-28px_rgba(12,36,56,0.35)] md:p-8",
         onDark &&
-          "[&_.text-slate-500]:!text-white/85 [&_.font-semibold.text-slate-500]:!text-white/90",
+          "border-white/15 bg-white/95 [&_.text-slate-500]:!text-slate-600",
         className
       )}
     >
@@ -221,173 +289,240 @@ export function NewHomeContent() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen scroll-smooth bg-[#f5f8fc] font-sans text-slate-800 antialiased">
-      {/* ambient background */}
-      <div
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-        aria-hidden
-      >
-        <div
-          className="absolute -left-[20%] top-0 h-[min(80vh,720px)] w-[min(80vw,720px)] rounded-full opacity-[0.14] blur-3xl"
-          style={{ background: `radial-gradient(circle at 30% 30%, ${lightBlue}, transparent 65%)` }}
-        />
-        <div
-          className="absolute -right-[10%] top-[20%] h-[min(70vh,560px)] w-[min(70vw,560px)] rounded-full opacity-[0.11] blur-3xl"
-          style={{ background: `radial-gradient(circle at 70% 40%, ${teal}, transparent 60%)` }}
-        />
-      </div>
+    <div
+      className={cx(
+        jakarta.className,
+        fraunces.variable,
+        jakarta.variable,
+        "min-h-screen scroll-smooth bg-[#f4f6f8] text-[#0c2438] antialiased"
+      )}
+    >
+      <style>{`
+        @keyframes nh-rise {
+          from { opacity: 0; transform: translateY(22px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes nh-fade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .nh-rise { animation: nh-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .nh-fade { animation: nh-fade 0.9s ease both; }
+        @media (prefers-reduced-motion: reduce) {
+          .nh-rise, .nh-fade { animation: none !important; opacity: 1 !important; transform: none !important; }
+        }
+      `}</style>
 
-      <header className="sticky top-0 z-50 border-b border-white/40 bg-[#f5f8fc]/75 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
-          <Link
-            href="/new-home"
-            className="text-lg font-semibold tracking-tight text-[#0c5290] md:text-xl"
-          >
-            The Profit Coach
+      {/* ─── Nav ─── */}
+      <header className="absolute inset-x-0 top-0 z-50">
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-4 px-5 py-5 md:px-8">
+          <Link href="/new-home" className="relative z-10 flex items-center">
+            <Image
+              src={LOGO_WHITE}
+              alt="The Profit Coach"
+              width={148}
+              height={36}
+              className="h-8 w-auto"
+              priority
+              unoptimized
+            />
           </Link>
 
-          <nav className="hidden items-center gap-8 text-[0.8125rem] font-medium text-slate-600 lg:flex">
-            <a href="#profit-system" className="transition hover:text-[#0c5290]">
-              The Profit System
-            </a>
-            <Link href="/how-it-works" className="transition hover:text-[#0c5290]">
-              How It Works
-            </Link>
-            <Link href="/blog" className="transition hover:text-[#0c5290]">
-              Blog
-            </Link>
-            <Link href={LINK_COACH} className="transition hover:text-[#0c5290]">
-              Find a Coach
-            </Link>
-            <a href="#resources" className="transition hover:text-[#0c5290]">
-              Resources
-            </a>
+          <nav className="hidden items-center gap-8 text-[13px] font-medium text-white/75 lg:flex">
+            {navLinks.map((l) =>
+              l.href.startsWith("/") ? (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="transition hover:text-white"
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className="transition hover:text-white"
+                >
+                  {l.label}
+                </a>
+              )
+            )}
           </nav>
 
-          <div className="hidden items-center gap-3 lg:flex">
-            <PrimaryCta className="!py-2.5 !px-5 !text-[0.8125rem]" />
+          <div className="flex items-center gap-3">
+            <Link
+              href={LINK_DIAGNOSTIC}
+              className="hidden rounded-full bg-[#10b981] px-5 py-2.5 text-[13px] font-semibold text-[#061a2e] shadow-[0_10px_24px_-10px_rgba(16,185,129,0.55)] transition hover:brightness-110 sm:inline-flex"
+            >
+              Take the Diagnostic
+            </Link>
+            <button
+              type="button"
+              className="inline-flex size-10 items-center justify-center rounded-full border border-white/25 text-white lg:hidden"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((v) => !v)}
+            >
+              {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
           </div>
-
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/70 text-slate-700 backdrop-blur lg:hidden"
-            aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMobileOpen((o) => !o)}
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
 
         {mobileOpen ? (
-          <div className="border-t border-white/50 bg-[#f5f8fc]/95 px-5 py-6 backdrop-blur-xl lg:hidden">
-            <nav className="flex flex-col gap-4 text-sm font-medium text-slate-700">
-              <a href="#profit-system" onClick={() => setMobileOpen(false)}>
-                The Profit System
-              </a>
-              <Link href="/how-it-works" onClick={() => setMobileOpen(false)}>
-                How It Works
-              </Link>
-              <Link href="/blog" onClick={() => setMobileOpen(false)}>
-                Blog
-              </Link>
-              <Link href={LINK_COACH} onClick={() => setMobileOpen(false)}>
-                Find a Coach
-              </Link>
-              <a href="#resources" onClick={() => setMobileOpen(false)}>
-                Resources
-              </a>
+          <div className="border-t border-white/10 bg-[#061a2e]/95 px-5 py-6 backdrop-blur-xl lg:hidden">
+            <nav className="flex flex-col gap-4 text-sm font-medium text-white/85">
+              {navLinks.map((l) =>
+                l.href.startsWith("/") ? (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="py-1"
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="py-1"
+                  >
+                    {l.label}
+                  </a>
+                )
+              )}
               <PrimaryCta className="mt-2 w-full" />
-              <SecondaryCta className="w-full" />
+              <SecondaryCta dark className="w-full" />
             </nav>
           </div>
         ) : null}
       </header>
 
       <main>
-        {/* Hero */}
-        <section className="mx-auto max-w-6xl px-5 pb-16 pt-12 md:px-8 md:pb-24 md:pt-16 lg:pt-20">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-[#0c5290]/90 md:text-sm">
-            One-to-One Business Coaching
-          </p>
-          <h1 className="max-w-4xl text-[2.375rem] font-light leading-[1.08] tracking-[-0.035em] text-slate-900 md:text-5xl md:leading-[1.06] lg:text-[4rem] lg:leading-[1.02]">
-            Transform your business.
-            <br />
-            <span className="font-normal text-[#0c5290]">Reclaim your life.</span>
-          </h1>
-          <p className="mt-8 max-w-xl text-lg font-normal leading-relaxed text-slate-600 md:text-xl">
-            Personalised coaching for business owners doing £200K–£5M.
-          </p>
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <PrimaryCta />
-            <SecondaryCta />
+        {/* ─── Hero ─── */}
+        <section className="relative overflow-hidden bg-[#061a2e] pt-24 text-white md:pt-28">
+          <div
+            className="pointer-events-none absolute inset-0 nh-fade"
+            aria-hidden
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(ellipse 90% 60% at 50% -10%, rgba(66,161,238,0.30), transparent 60%), radial-gradient(ellipse 50% 50% at 85% 20%, rgba(13,148,136,0.18), transparent 55%), linear-gradient(180deg, #061523 0%, #08243d 55%, #0a3358 100%)",
+              }}
+            />
+            <div className="absolute left-1/2 top-0 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[#42a1ee]/20 blur-[120px]" />
+          </div>
+
+          <div className="relative mx-auto grid max-w-[1180px] items-center gap-12 px-5 pb-14 pt-8 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:pb-16 lg:pt-12">
+            <div className="nh-rise" style={{ animationDelay: "60ms" }}>
+              <Eyebrow onDark>One-to-One Business Coaching</Eyebrow>
+              <DisplayHeading
+                as="h1"
+                className="mt-5 max-w-xl text-[clamp(2.5rem,5vw,4rem)] text-white [&_em]:text-[#75c1ff]"
+              >
+                Transform your business.
+                <br />
+                <em>Reclaim your life.</em>
+              </DisplayHeading>
+              <p className="mt-6 max-w-lg text-[17px] font-normal leading-relaxed text-white/65 sm:text-[18px]">
+                Personalised coaching for business owners doing £200K–£5M.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <PrimaryCta />
+                <SecondaryCta dark />
+              </div>
+            </div>
+
+            <div
+              className="nh-rise relative mx-auto w-full max-w-[480px] lg:mx-0 lg:max-w-none"
+              style={{ animationDelay: "160ms" }}
+            >
+              <div className="relative overflow-hidden rounded-[14px] border border-white/15 bg-white/5 p-4 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.65)] backdrop-blur-sm sm:p-6">
+                <BossWheelBlock
+                  onDark
+                  className="!border-0 !bg-transparent !p-0 !shadow-none"
+                />
+                <p className="mt-3 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
+                  BOSS Diagnostic preview
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* Sub-hero */}
         <section
           id="how-it-works"
-          className="border-y border-white/60 bg-white/40 py-16 backdrop-blur-sm md:py-24"
+          className="scroll-mt-20 border-b border-[#d5dde5] bg-white"
         >
-          <div className="mx-auto grid max-w-6xl gap-12 px-5 md:grid-cols-2 md:items-center md:gap-16 md:px-8">
-            <div>
-              <h2 className="text-3xl font-light leading-tight tracking-[-0.03em] text-slate-900 md:text-4xl lg:text-[2.75rem] lg:leading-[1.12]">
-                Unlock 30–130% more profit in just 12 months.
-              </h2>
-              <p className="mt-6 text-base leading-relaxed text-slate-600 md:text-lg">
-                A certified Profit Coach helps you find the hidden profit in your business — and
-                builds the plan to capture it. One coach. One system. One business that finally
-                pays you back.
+          <div className="mx-auto grid max-w-[1180px] gap-12 px-5 py-16 md:grid-cols-2 md:items-center md:gap-16 md:px-8 md:py-24">
+            <div className="nh-rise" style={{ animationDelay: "80ms" }}>
+              <Eyebrow>How it works</Eyebrow>
+              <DisplayHeading className="mt-4 text-[clamp(1.85rem,3.6vw,2.85rem)] text-[#061a2e] [&_em]:text-[#0c5290]">
+                Unlock 30–130% more profit in just <em>12 months</em>.
+              </DisplayHeading>
+              <p className="mt-6 text-[16px] leading-relaxed text-[#44525f] md:text-[17px]">
+                A certified Profit Coach helps you find the hidden profit in your
+                business — and builds the plan to capture it. One coach. One
+                system. One business that finally pays you back.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <div className="mt-8">
                 <a
                   href="#overview-video"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200/90 bg-white/70 px-7 py-3.5 text-[0.9375rem] font-semibold text-[#0c5290] backdrop-blur-md transition hover:bg-white"
+                  className="group inline-flex items-center gap-3 text-[15px] font-semibold text-[#0c5290] transition hover:text-[#061a2e]"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0c5290] text-white">
-                    <Play className="h-4 w-4 translate-x-0.5" fill="currentColor" strokeWidth={0} />
+                  <span className="inline-flex size-11 items-center justify-center rounded-full border border-[#d5dde5] bg-[#f4f6f8] text-[#0c5290] transition group-hover:border-[#0c5290]/40">
+                    <Play className="size-3.5 fill-current" />
                   </span>
                   Watch the 2-Minute Overview
                 </a>
               </div>
             </div>
-            <BossWheelBlock />
+            <div className="nh-rise" style={{ animationDelay: "180ms" }}>
+              <BossWheelBlock />
+            </div>
           </div>
         </section>
 
-        {/* Overview video — placeholder immediately after sub-hero (Section 2 CTA target) */}
-        <section id="overview-video" className="mx-auto max-w-4xl px-5 py-10 md:px-8 md:py-14">
-          <div className="overflow-hidden rounded-3xl border border-slate-200/60 bg-slate-200/40 shadow-inner backdrop-blur-sm">
+        {/* Overview video placeholder */}
+        <section
+          id="overview-video"
+          className="scroll-mt-20 mx-auto max-w-[900px] px-5 py-12 md:px-8 md:py-16"
+        >
+          <div className="overflow-hidden rounded-[14px] border border-[#d5dde5] bg-[#e8eef3] shadow-[0_24px_50px_-28px_rgba(12,36,56,0.25)]">
             <div className="flex aspect-video flex-col items-center justify-center gap-3 px-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/80 text-[#0c5290] shadow-md">
-                <Play className="h-7 w-7 translate-x-0.5" fill="currentColor" strokeWidth={0} />
+              <div className="flex size-16 items-center justify-center rounded-full border border-white/50 bg-white/80 text-[#0c5290] shadow-md backdrop-blur-md">
+                <Play className="size-6 translate-x-0.5 fill-current" />
               </div>
-              <p className="text-sm font-medium text-slate-600">2-minute overview video</p>
-              <p className="text-xs text-slate-500">Embed or URL to be added before launch.</p>
+              <p className="text-sm font-medium text-[#44525f]">
+                2-minute overview video
+              </p>
+              <p className="text-xs text-[#6b7a88]">
+                Embed or URL to be added before launch.
+              </p>
             </div>
           </div>
         </section>
 
         {/* Outcome band */}
-        <section className="py-10 md:py-12" aria-label="Outcomes">
+        <section className="py-8 md:py-10" aria-label="Outcomes">
           <div className="relative overflow-hidden">
-            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-[#f5f8fc] to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-[#f5f8fc] to-transparent" />
-            <div className="flex gap-4 overflow-x-auto pb-2 pl-5 pr-5 pt-2 [scrollbar-width:none] md:gap-6 md:pl-8 md:pr-8 [&::-webkit-scrollbar]:hidden">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#f4f6f8] to-transparent md:w-16" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#f4f6f8] to-transparent md:w-16" />
+            <div className="flex gap-4 overflow-x-auto px-5 pb-2 pt-2 [scrollbar-width:none] md:gap-5 md:px-8 [&::-webkit-scrollbar]:hidden">
               {outcomeItems.map(({ label, Icon }) => (
                 <div
                   key={label}
-                  className="flex shrink-0 items-center gap-3 rounded-2xl border border-slate-200/60 bg-white/55 px-5 py-3.5 shadow-sm backdrop-blur-md"
+                  className="flex shrink-0 items-center gap-3 rounded-[12px] border border-[#d5dde5] bg-white px-5 py-3.5 shadow-[0_1px_2px_rgba(12,36,56,0.04)]"
                 >
-                  <span
-                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-inner"
-                    style={{
-                      background: `linear-gradient(145deg, ${lightBlue}, ${navy})`,
-                    }}
-                  >
-                    <Icon className="h-5 w-5" strokeWidth={1.75} />
+                  <span className="inline-flex size-10 items-center justify-center rounded-[10px] bg-[#10b981]/12 text-[#059669]">
+                    <Icon className="size-5" strokeWidth={2} />
                   </span>
-                  <span className="whitespace-nowrap text-sm font-semibold text-slate-800 md:text-base">
+                  <span className="whitespace-nowrap text-[14px] font-semibold text-[#061a2e] md:text-[15px]">
                     {label}
                   </span>
                 </div>
@@ -397,18 +532,21 @@ export function NewHomeContent() {
         </section>
 
         {/* Benefits */}
-        <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-          <h2 className="max-w-2xl text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
-            What you get with a certified Profit Coach
-          </h2>
+        <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-8 md:py-24">
+          <Eyebrow>What you get</Eyebrow>
+          <DisplayHeading className="mt-4 max-w-2xl text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e] [&_em]:text-[#0c5290]">
+            What you get with a certified <em>Profit Coach</em>
+          </DisplayHeading>
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
             {benefitCards.map((card) => (
               <article
                 key={card.title}
-                className="group rounded-3xl border border-slate-200/50 bg-white/60 p-8 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.08)] backdrop-blur-xl transition duration-300 hover:border-[#42a1ee]/30 hover:shadow-[0_12px_40px_-12px_rgba(12,82,144,0.15)]"
+                className="rounded-[14px] border border-[#d5dde5] bg-white p-7 shadow-[0_1px_2px_rgba(12,36,56,0.04)] transition hover:border-[#0c5290]/30 hover:shadow-[0_16px_40px_-20px_rgba(12,36,56,0.2)]"
               >
-                <h3 className="text-lg font-semibold text-slate-900">{card.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-[0.9375rem]">
+                <h3 className="text-[17px] font-bold tracking-tight text-[#061a2e]">
+                  {card.title}
+                </h3>
+                <p className="mt-3 text-[14px] leading-relaxed text-[#44525f] md:text-[15px]">
                   {card.body}
                 </p>
               </article>
@@ -417,60 +555,65 @@ export function NewHomeContent() {
         </section>
 
         {/* Vision */}
-        <section className="border-y border-white/50 bg-gradient-to-b from-white/30 to-transparent py-16 md:py-24">
-          <div className="mx-auto max-w-3xl px-5 text-center md:px-8">
-            <h2 className="text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
-              Go from grinding to growing.
-            </h2>
-            <div className="mt-8 space-y-5 text-left text-base leading-[1.75] text-slate-600 md:text-lg">
+        <section className="border-y border-[#d5dde5] bg-white py-16 md:py-24">
+          <div className="mx-auto max-w-[720px] px-5 text-center md:px-8">
+            <Eyebrow>The shift</Eyebrow>
+            <DisplayHeading className="mt-4 text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e] [&_em]:text-[#0c5290]">
+              Go from grinding to <em>growing</em>.
+            </DisplayHeading>
+            <div className="mt-8 space-y-5 text-left text-[16px] leading-[1.78] text-[#44525f] md:text-[17px]">
               <p>
-                You started this for a reason. The income, the freedom, the impact, the life you
-                wanted to build.
+                You started this for a reason. The income, the freedom, the
+                impact, the life you wanted to build.
               </p>
               <p>
-                Somewhere along the way, the business turned into a job — one that runs you instead
-                of working for you. You can&apos;t take a real holiday. Decisions still come back to
-                your desk. The team needs you for everything. Some months are great. Others,
-                you&apos;re watching cash flow more carefully than you&apos;d like.
+                Somewhere along the way, the business turned into a job — one
+                that runs you instead of working for you. You can&apos;t take a
+                real holiday. Decisions still come back to your desk. The team
+                needs you for everything. Some months are great. Others,
+                you&apos;re watching cash flow more carefully than you&apos;d
+                like.
               </p>
               <p>
-                A certified Profit Coach gives you the structure to step back from the day-to-day,
-                build a team that owns the work, and run a business that pays you back — in profit,
-                in freedom, and in the life you started this for.
+                A certified Profit Coach gives you the structure to step back
+                from the day-to-day, build a team that owns the work, and run a
+                business that pays you back — in profit, in freedom, and in the
+                life you started this for.
               </p>
-              <p className="font-medium text-slate-800">
-                This is your roadmap to a business that works for you. Not because of you.
+              <p className="font-semibold text-[#061a2e]">
+                This is your roadmap to a business that works for you. Not
+                because of you.
               </p>
             </div>
           </div>
         </section>
 
         {/* Who it's for */}
-        <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
+        <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-8 md:py-24">
+          <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
             <div>
-              <h2 className="text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
-                Built for owners who want more.
-              </h2>
-              <p className="mt-6 text-base leading-relaxed text-slate-600 md:text-lg">
-                This is for founders, owner-operators, and managing directors of businesses doing
-                £200K to £5M — anyone who&apos;s built something real and is ready to make it work
-                for them, not the other way around.
+              <Eyebrow>Who it&apos;s for</Eyebrow>
+              <DisplayHeading className="mt-4 text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e] [&_em]:text-[#0c5290]">
+                Built for owners who want <em>more</em>.
+              </DisplayHeading>
+              <p className="mt-6 text-[16px] leading-relaxed text-[#44525f] md:text-[17px]">
+                This is for founders, owner-operators, and managing directors of
+                businesses doing £200K to £5M — anyone who&apos;s built something
+                real and is ready to make it work for them, not the other way
+                around.
               </p>
-              <p className="mt-6 text-base font-medium text-slate-800">
-                If three or more of these sound like your week, a Profit Coach can help:
+              <p className="mt-6 text-[15px] font-semibold text-[#061a2e] md:text-[16px]">
+                If three or more of these sound like your week, a Profit Coach
+                can help:
               </p>
             </div>
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               {whoItsFor.map((item) => (
                 <li
                   key={item}
-                  className="flex gap-3 rounded-2xl border border-slate-200/50 bg-white/50 px-5 py-4 text-sm leading-relaxed text-slate-700 backdrop-blur-sm md:text-[0.9375rem]"
+                  className="flex gap-3 rounded-[12px] border border-[#d5dde5] bg-white px-5 py-4 text-[14px] leading-relaxed text-[#44525f] md:text-[15px]"
                 >
-                  <span
-                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: teal }}
-                  />
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[#10b981]" />
                   {item}
                 </li>
               ))}
@@ -481,62 +624,67 @@ export function NewHomeContent() {
         {/* Profit System */}
         <section
           id="profit-system"
-          className="bg-[#071525] py-16 text-white md:py-24"
+          className="scroll-mt-20 relative overflow-hidden py-16 text-white md:py-24"
           style={{
-            backgroundImage: `radial-gradient(ellipse 80% 60% at 50% -20%, ${navy}55, transparent), linear-gradient(180deg, #061018 0%, #071525 100%)`,
+            background:
+              "radial-gradient(ellipse 70% 60% at 80% -10%, rgba(66,161,238,0.20), transparent 60%), linear-gradient(180deg, #0a3358 0%, #061a2e 100%)",
           }}
         >
-          <div className="mx-auto max-w-6xl px-5 md:px-8">
+          <div className="relative mx-auto max-w-[1180px] px-5 md:px-8">
             <div className="grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
               <div>
-                <h2 className="text-3xl font-light tracking-[-0.03em] md:text-4xl lg:text-[2.5rem]">
-                  Built on the world&apos;s best business thinking.
-                </h2>
-                <p className="mt-6 text-base leading-relaxed text-white/75 md:text-lg">
-                  The Profit System is the operating methodology that every certified Profit Coach
-                  uses with their clients. It maps the work of 25+ of the world&apos;s leading
-                  business thinkers — Hormozi, Gerber, Michalowicz, Harnish, and more — into one
+                <Eyebrow onDark>The Profit System</Eyebrow>
+                <DisplayHeading className="mt-4 text-[clamp(1.85rem,3.4vw,2.75rem)] text-white [&_em]:text-[#75c1ff]">
+                  Built on the world&apos;s best business{" "}
+                  <em>thinking</em>.
+                </DisplayHeading>
+                <p className="mt-6 text-[16px] leading-relaxed text-white/70 md:text-[17px]">
+                  The Profit System is the operating methodology that every
+                  certified Profit Coach uses with their clients. It maps the
+                  work of 25+ of the world&apos;s leading business thinkers —
+                  Hormozi, Gerber, Michalowicz, Harnish, and more — into one
                   connected system.
                 </p>
-                <p className="mt-5 text-base leading-relaxed text-white/75 md:text-lg">
-                  10 areas of business, scored across 5 levels of performance. 50 playbooks. One
-                  BOSS Diagnostic that shows you exactly where your business stands today — and
-                  exactly what to fix first.
+                <p className="mt-5 text-[16px] leading-relaxed text-white/70 md:text-[17px]">
+                  10 areas of business, scored across 5 levels of performance. 50
+                  playbooks. One BOSS Diagnostic that shows you exactly where
+                  your business stands today — and exactly what to fix first.
                 </p>
-                <p className="mt-5 text-base leading-relaxed text-white/75 md:text-lg">
-                  This is what a real operating system looks like. Not advice. Not theory. A
-                  complete, integrated playbook for transforming a business — delivered one-to-one,
-                  by a coach who knows your numbers, your priorities, and your people.
+                <p className="mt-5 text-[16px] leading-relaxed text-white/70 md:text-[17px]">
+                  This is what a real operating system looks like. Not advice.
+                  Not theory. A complete, integrated playbook for transforming a
+                  business — delivered one-to-one, by a coach who knows your
+                  numbers, your priorities, and your people.
                 </p>
                 <Link
                   href="/how-it-works#methodology"
-                  className="mt-8 inline-flex items-center gap-2 text-sm font-semibold text-[#7ec8ff] transition hover:text-white"
+                  className="group mt-8 inline-flex items-center gap-2 text-[14px] font-semibold text-[#7ec8ff] transition hover:text-white"
                 >
                   Learn About The Profit System
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="size-4 transition group-hover:translate-x-1" />
                 </Link>
               </div>
-              <BossWheelBlock
-                onDark
-                className="border-white/10 bg-white/5 shadow-[0_24px_80px_-24px_rgba(0,0,0,0.5)]"
-              />
+              <BossWheelBlock onDark />
             </div>
           </div>
         </section>
 
         {/* Differentiators */}
-        <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24">
-          <h2 className="max-w-xl text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
-            What makes a Profit Coach different.
-          </h2>
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
+        <section className="mx-auto max-w-[1180px] px-5 py-16 md:px-8 md:py-24">
+          <Eyebrow>Why Profit Coaching</Eyebrow>
+          <DisplayHeading className="mt-4 max-w-xl text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e] [&_em]:text-[#0c5290]">
+            What makes a Profit Coach <em>different</em>.
+          </DisplayHeading>
+          <div className="mt-12 grid gap-5 md:grid-cols-2 md:gap-6">
             {differentiators.map((d) => (
               <article
                 key={d.title}
-                className="rounded-3xl border border-slate-200/40 bg-white/50 p-8 backdrop-blur-xl"
+                className="rounded-[14px] border border-[#d5dde5] bg-white p-7 shadow-[0_1px_2px_rgba(12,36,56,0.04)]"
               >
-                <h3 className="text-lg font-semibold text-[#0c5290]">{d.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-[0.9375rem]">
+                <h3 className="text-[17px] font-bold tracking-tight text-[#0c5290]">
+                  {d.title}
+                </h3>
+                <p className="mt-3 text-[14px] leading-relaxed text-[#44525f] md:text-[15px]">
                   {d.body}
                 </p>
               </article>
@@ -545,97 +693,123 @@ export function NewHomeContent() {
         </section>
 
         {/* Elite framing */}
-        <section className="border-t border-slate-200/60 bg-white/35 py-16 backdrop-blur-sm md:py-20">
-          <div className="mx-auto max-w-3xl px-5 text-center md:px-8">
-            <h2 className="text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
-              The world&apos;s best businesses run on a system.
-            </h2>
-            <p className="mt-6 text-base leading-relaxed text-slate-600 md:text-lg">
-              The owner-operators who win are the ones who installed an operating system early —
-              and worked it consistently. The ones who plateau are the ones still running the
-              business out of their own head.
+        <section className="border-y border-[#d5dde5] bg-white py-16 md:py-20">
+          <div className="mx-auto max-w-[720px] px-5 text-center md:px-8">
+            <DisplayHeading className="text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e] [&_em]:text-[#0c5290]">
+              The world&apos;s best businesses run on a <em>system</em>.
+            </DisplayHeading>
+            <p className="mt-6 text-[16px] leading-relaxed text-[#44525f] md:text-[17px]">
+              The owner-operators who win are the ones who installed an operating
+              system early — and worked it consistently. The ones who plateau are
+              the ones still running the business out of their own head.
             </p>
-            <p className="mt-5 text-base leading-relaxed text-slate-600 md:text-lg">
-              A certified Profit Coach gives you the system, the accountability, and the outside
-              perspective to see what you can&apos;t see from inside.
+            <p className="mt-5 text-[16px] leading-relaxed text-[#44525f] md:text-[17px]">
+              A certified Profit Coach gives you the system, the accountability,
+              and the outside perspective to see what you can&apos;t see from
+              inside.
             </p>
-            <p className="mt-5 text-base font-medium text-slate-800 md:text-lg">
-              You don&apos;t need more advice. You need a coach who knows what to install, in what
-              order, and how to make it stick.
+            <p className="mt-5 text-[16px] font-semibold text-[#061a2e] md:text-[17px]">
+              You don&apos;t need more advice. You need a coach who knows what to
+              install, in what order, and how to make it stick.
             </p>
           </div>
         </section>
 
         {/* Testimonials */}
-        <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-24" id="proof">
-          <h2 className="text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
+        <section
+          id="proof"
+          className="scroll-mt-20 mx-auto max-w-[1180px] px-5 py-16 md:px-8 md:py-24"
+        >
+          <Eyebrow>Proof</Eyebrow>
+          <DisplayHeading className="mt-4 text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e]">
             Results from real businesses
-          </h2>
-          <p className="mt-3 text-sm text-slate-500 md:text-base">
-            Named case studies with specific numbers — placeholders until launch assets are ready.
+          </DisplayHeading>
+          <p className="mt-3 text-[14px] text-[#6b7a88] md:text-[15px]">
+            Named case studies with specific numbers — placeholders until launch
+            assets are ready.
           </p>
-          <div className="mt-12 grid gap-8 lg:grid-cols-3">
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
             {testimonialsPlaceholder.map((t) => (
               <figure
                 key={t.quote}
-                className="flex flex-col rounded-3xl border border-slate-200/50 bg-white/60 p-8 backdrop-blur-xl"
+                className="flex flex-col rounded-[14px] border border-[#d5dde5] bg-white p-7 shadow-[0_1px_2px_rgba(12,36,56,0.04)]"
               >
-                <blockquote className="flex-1 text-base leading-relaxed text-slate-800">
+                <blockquote
+                  className={cx(
+                    fraunces.className,
+                    "flex-1 text-[17px] italic leading-relaxed text-[#061a2e]"
+                  )}
+                >
                   &ldquo;{t.quote}&rdquo;
                 </blockquote>
-                <figcaption className="mt-6 text-sm text-slate-500">
+                <figcaption className="mt-6 text-[13px] text-[#6b7a88]">
                   — {t.name}, {t.role}
                 </figcaption>
               </figure>
             ))}
           </div>
           <div className="mt-14 flex justify-center">
-            <div className="w-full max-w-md rounded-[2rem] border border-slate-200/50 bg-white/50 p-8 backdrop-blur-xl">
-              <p className="mb-4 text-center text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            <div className="w-full max-w-md rounded-[14px] border border-[#d5dde5] bg-white p-6 shadow-[0_1px_2px_rgba(12,36,56,0.04)] sm:p-8">
+              <p className="mb-4 text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-[#6b7a88]">
                 BOSS wheel
               </p>
-              <BossWheelBlock className="!border-slate-200/40 !shadow-none" />
+              <BossWheelBlock className="!border-0 !p-0 !shadow-none" />
             </div>
           </div>
         </section>
 
         {/* Resources placeholder */}
-        <section id="resources" className="border-y border-slate-200/50 bg-white/40 py-16 md:py-20">
-          <div className="mx-auto max-w-6xl px-5 md:px-8">
-            <h2 className="text-2xl font-light text-slate-900 md:text-3xl">Resources</h2>
-            <p className="mt-2 text-slate-600">Guides, tools, and updates — content coming soon.</p>
+        <section
+          id="resources"
+          className="scroll-mt-20 border-y border-[#d5dde5] bg-white py-16 md:py-20"
+        >
+          <div className="mx-auto max-w-[1180px] px-5 md:px-8">
+            <Eyebrow>Resources</Eyebrow>
+            <DisplayHeading className="mt-4 text-[clamp(1.65rem,3vw,2.25rem)] text-[#061a2e]">
+              Guides, tools, and updates
+            </DisplayHeading>
+            <p className="mt-3 text-[15px] text-[#44525f]">
+              Content coming soon.
+            </p>
             <div className="mt-8 grid gap-5 sm:grid-cols-3">
-              {["Playbook preview", "Owner briefing", "90-day planner"].map((title) => (
-                <div
-                  key={title}
-                  className="rounded-2xl border border-dashed border-slate-300/80 bg-slate-50/50 p-6 text-center text-sm font-medium text-slate-500"
-                >
-                  {title}
-                  <span className="mt-2 block text-xs font-normal text-slate-400">Placeholder</span>
-                </div>
-              ))}
+              {["Playbook preview", "Owner briefing", "90-day planner"].map(
+                (title) => (
+                  <div
+                    key={title}
+                    className="rounded-[12px] border border-dashed border-[#d5dde5] bg-[#f4f6f8] p-6 text-center text-[14px] font-semibold text-[#6b7a88]"
+                  >
+                    {title}
+                    <span className="mt-2 block text-[12px] font-normal text-[#6b7a88]/80">
+                      Placeholder
+                    </span>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </section>
 
         {/* FAQs */}
-        <section className="mx-auto max-w-3xl px-5 py-16 md:px-8 md:py-24">
-          <h2 className="text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl">
+        <section className="mx-auto max-w-[720px] px-5 py-16 md:px-8 md:py-24">
+          <Eyebrow>FAQ</Eyebrow>
+          <DisplayHeading className="mt-4 text-[clamp(1.85rem,3.4vw,2.75rem)] text-[#061a2e]">
             Common questions
-          </h2>
-          <div className="mt-10 space-y-4">
+          </DisplayHeading>
+          <div className="mt-10 space-y-3">
             {faqs.map((faq) => (
               <details
                 key={faq.q}
-                className="group rounded-2xl border border-slate-200/50 bg-white/50 px-6 py-4 backdrop-blur-sm open:bg-white/70"
+                className="group rounded-[12px] border border-[#d5dde5] bg-white px-5 py-4 open:shadow-[0_8px_24px_-16px_rgba(12,36,56,0.2)]"
               >
-                <summary className="cursor-pointer list-none text-left text-sm font-semibold text-slate-900 md:text-[0.9375rem] [&::-webkit-details-marker]:hidden">
+                <summary className="cursor-pointer list-none text-left text-[14px] font-semibold text-[#061a2e] md:text-[15px] [&::-webkit-details-marker]:hidden">
                   <span className="flex items-start justify-between gap-3">
                     {faq.q}
-                    <span className="text-[#0c5290] transition group-open:rotate-45">+</span>
+                    <span className="text-[#0c5290] transition group-open:rotate-45">
+                      +
+                    </span>
                   </span>
                 </summary>
-                <p className="mt-4 text-sm leading-relaxed text-slate-600 md:text-[0.9375rem]">
+                <p className="mt-4 text-[14px] leading-relaxed text-[#44525f] md:text-[15px]">
                   {faq.a}
                 </p>
               </details>
@@ -644,43 +818,69 @@ export function NewHomeContent() {
         </section>
 
         {/* Closing CTA */}
-        <section className="border-t border-slate-200/60 bg-gradient-to-b from-white/50 to-[#f5f8fc] py-20 md:py-28">
-          <div className="mx-auto max-w-3xl px-5 text-center md:px-8">
-            <h2 className="text-3xl font-light tracking-[-0.03em] text-slate-900 md:text-4xl lg:text-[2.75rem]">
+        <section
+          className="relative overflow-hidden py-20 text-white md:py-28"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 60% at 50% -10%, rgba(66,161,238,0.22), transparent 60%), linear-gradient(180deg, #0a3358 0%, #061a2e 100%)",
+          }}
+        >
+          <div className="relative mx-auto max-w-[720px] px-5 text-center md:px-8">
+            <DisplayHeading className="text-[clamp(1.85rem,3.6vw,2.85rem)] text-white [&_em]:text-[#75c1ff]">
               Own your business.
               <br />
-              <span className="text-[#0c5290]">Don&apos;t let it own you.</span>
-            </h2>
-            <p className="mt-6 text-base leading-relaxed text-slate-600 md:text-lg">
-              You started this for a reason. The freedom, the income, the impact, the life you
-              wanted to build.
+              <em>Don&apos;t let it own you.</em>
+            </DisplayHeading>
+            <p className="mt-6 text-[16px] leading-relaxed text-white/70 md:text-[17px]">
+              You started this for a reason. The freedom, the income, the
+              impact, the life you wanted to build.
             </p>
-            <p className="mt-4 text-base leading-relaxed text-slate-600 md:text-lg">
-              The BOSS Diagnostic and a certified Profit Coach are how you get there.
+            <p className="mt-4 text-[16px] leading-relaxed text-white/70 md:text-[17px]">
+              The BOSS Diagnostic and a certified Profit Coach are how you get
+              there.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <PrimaryCta />
-              <SecondaryCta />
+              <SecondaryCta dark />
             </div>
-            <p className="mt-10 text-sm italic text-slate-500">Get the guidance you need to grow.</p>
+            <p
+              className={cx(
+                fraunces.className,
+                "mt-10 text-[15px] italic text-white/50"
+              )}
+            >
+              Get the guidance you need to grow.
+            </p>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-slate-200/80 bg-[#061018] py-16 text-white">
-        <div className="mx-auto max-w-6xl px-5 md:px-8">
+      <footer className="border-t border-white/10 bg-[#04121f] py-16 text-white">
+        <div className="mx-auto max-w-[1180px] px-5 md:px-8">
           <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="text-lg font-semibold">The Profit Coach</p>
-              <p className="mt-2 text-sm text-white/60 italic">
+              <Image
+                src={LOGO_WHITE}
+                alt="The Profit Coach"
+                width={140}
+                height={34}
+                className="h-7 w-auto"
+                unoptimized
+              />
+              <p
+                className={cx(
+                  fraunces.className,
+                  "mt-3 text-[14px] italic text-white/55"
+                )}
+              >
                 Less Chaos. More Profit. Real Freedom.
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">
                 Explore
               </p>
-              <ul className="mt-4 space-y-2 text-sm text-white/75">
+              <ul className="mt-4 space-y-2 text-[14px] text-white/75">
                 <li>
                   <a href="#profit-system" className="hover:text-white">
                     The Profit System
@@ -702,17 +902,20 @@ export function NewHomeContent() {
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:hello@theprofitcoach.com" className="hover:text-white">
+                  <a
+                    href="mailto:hello@theprofitcoach.com"
+                    className="hover:text-white"
+                  >
                     Contact
                   </a>
                 </li>
               </ul>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">
                 Legal
               </p>
-              <ul className="mt-4 space-y-2 text-sm text-white/75">
+              <ul className="mt-4 space-y-2 text-[14px] text-white/75">
                 <li>
                   <a href="#" className="hover:text-white">
                     Privacy Policy
@@ -731,26 +934,26 @@ export function NewHomeContent() {
               </ul>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">
                 Take the next step
               </p>
               <div className="mt-4 flex flex-col gap-2">
                 <Link
                   href={LINK_DIAGNOSTIC}
-                  className="rounded-full bg-white px-5 py-2.5 text-center text-sm font-semibold text-[#0c5290] hover:bg-white/90"
+                  className="rounded-full bg-[#10b981] px-5 py-2.5 text-center text-[13px] font-semibold text-[#061a2e] transition hover:brightness-110"
                 >
                   Take the BOSS Diagnostic
                 </Link>
                 <Link
                   href={LINK_COACH}
-                  className="rounded-full border border-white/25 px-5 py-2.5 text-center text-sm font-semibold text-white hover:bg-white/10"
+                  className="rounded-full border border-white/25 px-5 py-2.5 text-center text-[13px] font-semibold text-white transition hover:bg-white/10"
                 >
                   Speak to a Coach
                 </Link>
               </div>
             </div>
           </div>
-          <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-10 text-center text-xs text-white/45 md:flex-row md:items-center md:justify-between md:text-left">
+          <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-10 text-center text-[12px] text-white/40 md:flex-row md:items-center md:justify-between md:text-left">
             <p>© 2026 The Profit Coach. All rights reserved.</p>
             <Link href={LINK_SIGNUP_COACH} className="hover:text-white/70">
               Become a Certified Profit Coach

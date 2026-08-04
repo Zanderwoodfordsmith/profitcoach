@@ -22,6 +22,8 @@ type DbCoachActionItem = {
   done_source: string | null;
   is_locked: boolean;
   auto_complete_rule: unknown;
+  academy_course_id?: string | null;
+  academy_lesson_id?: string | null;
 };
 
 type DbTemplateItem = {
@@ -75,6 +77,8 @@ export function dbItemToOutlineLine(row: DbCoachActionItem): ActionOutlineLine {
     autoCompleteRule: parseRuleFromDb(row.auto_complete_rule),
     doneSource: parseDoneSource(row.done_source),
     sortOrder: row.sort_order,
+    academyCourseId: row.academy_course_id ?? null,
+    academyLessonId: row.academy_lesson_id ?? null,
   };
 }
 

@@ -7,7 +7,7 @@ import {
 
 type Props = {
   resources: AcademyResourceRow[];
-  /** Tighter card for Overview right column under Actions. */
+  /** Unboxed variant for the Overview right column, under Actions. */
   compact?: boolean;
 };
 
@@ -18,7 +18,7 @@ export function LessonResourcesPanel({ resources, compact = false }: Props) {
     <section
       className={
         compact
-          ? "rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          ? "border-t border-slate-200/80 pt-6"
           : "rounded-xl border border-slate-200 bg-slate-50/60 p-5"
       }
     >

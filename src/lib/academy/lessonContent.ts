@@ -28,6 +28,7 @@ export type AcademyLessonContentRow = {
   lesson_id: string;
   title: string | null;
   video_url: string | null;
+  audio_url: string | null;
   body_markdown: string | null;
   guide_markdown: string | null;
   transcript_text: string | null;
@@ -80,18 +81,26 @@ function lessonContentFromRow(
 ): LessonInAppContent | null {
   if (!row) return null;
   const videoUrl = row.video_url;
+  const audioUrl = row.audio_url;
   const bodyMarkdown = row.body_markdown ?? "";
   const guideMarkdown = row.guide_markdown ?? "";
   const transcriptText = transcriptFromRow(row);
   const recommendedActions = recommendedActionsFromRow(row);
   if (
-    !hasInAppLessonContent(videoUrl, bodyMarkdown, transcriptText, guideMarkdown) &&
+    !hasInAppLessonContent(
+      videoUrl,
+      bodyMarkdown,
+      transcriptText,
+      guideMarkdown,
+      audioUrl
+    ) &&
     recommendedActions.length === 0
   ) {
     return null;
   }
   return {
     videoUrl: videoUrl?.trim() || null,
+    audioUrl: audioUrl?.trim() || null,
     bodyMarkdown,
     guideMarkdown,
     transcriptText,
@@ -125,6 +134,7 @@ function mergeLesson(base: AcademyLesson, row: AcademyLessonContentRow | undefin
     ...(titleOverride ? { title: titleOverride } : {}),
     ...(durationOverride ? { duration: durationOverride } : {}),
     videoUrl: row.video_url,
+    audioUrl: row.audio_url,
     bodyMarkdown: row.body_markdown ?? "",
     guideMarkdown: content?.guideMarkdown ?? row.guide_markdown ?? "",
     recommendedActions:
@@ -152,6 +162,7 @@ export function mergeLegacyLesson(
     return {
       ...merged,
       videoUrl: null,
+      audioUrl: null,
       bodyMarkdown: base.bodyMarkdown ?? "",
       guideMarkdown: base.guideMarkdown ?? "",
       recommendedActions: base.recommendedActions ?? [],
@@ -278,7 +289,7 @@ async function fetchLessonContentMapUncached(): Promise<
   const { data: rows } = await supabaseAdmin
     .from("academy_lesson_content")
     .select(
-      "course_id, lesson_id, title, video_url, body_markdown, guide_markdown, transcript_text, duration, recommended_actions, is_draft, is_deleted, updated_at"
+      "course_id, lesson_id, title, video_url, audio_url, body_markdown, guide_markdown, transcript_text, duration, recommended_actions, is_draft, is_deleted, updated_at"
     );
   const map = new Map<string, AcademyLessonContentRow>();
   for (const row of rows ?? []) {
@@ -372,6 +383,7 @@ export async function upsertAcademyLessonContent(input: {
   lessonId: string;
   title?: string | null;
   videoUrl?: string | null;
+  audioUrl?: string | null;
   bodyMarkdown?: string | null;
   guideMarkdown?: string | null;
   transcriptText?: string | null;
@@ -391,6 +403,8 @@ export async function upsertAcademyLessonContent(input: {
         : (existing?.title ?? null),
     video_url:
       input.videoUrl !== undefined ? input.videoUrl : (existing?.video_url ?? null),
+    audio_url:
+      input.audioUrl !== undefined ? input.audioUrl : (existing?.audio_url ?? null),
     body_markdown:
       input.bodyMarkdown !== undefined
         ? input.bodyMarkdown

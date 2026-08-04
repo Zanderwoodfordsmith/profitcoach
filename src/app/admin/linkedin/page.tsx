@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { LinkedInSchedulerPanel } from "@/components/admin/LinkedInSchedulerPanel";
@@ -50,6 +51,7 @@ export default function AdminLinkedInPage() {
       <StickyPageHeader
         title="LinkedIn Scheduler"
         description="Admin-only tools for connecting LinkedIn, posting now, and scheduling queued posts."
+        tabs={<ToolkitHubTabs />}
       />
       <LinkedInSchedulerPanel />
     </div>

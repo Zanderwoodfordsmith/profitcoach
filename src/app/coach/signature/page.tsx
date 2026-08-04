@@ -112,11 +112,13 @@ type ScorePickerState = {
 function ScoreQuickPicker({
   picker,
   currentValue,
+  classroomHref,
   onSelect,
   onClose,
 }: {
   picker: ScorePickerState;
   currentValue: SignatureScore;
+  classroomHref?: string | null;
   onSelect: (v: SignatureScore) => void;
   onClose: () => void;
 }) {
@@ -152,7 +154,7 @@ function ScoreQuickPicker({
   const viewportHeight =
     typeof window === "undefined" ? 768 : window.innerHeight;
   const left = Math.max(12, Math.min(picker.x - 130, viewportWidth - 272));
-  const top = Math.max(12, Math.min(picker.y + 10, viewportHeight - 210));
+  const top = Math.max(12, Math.min(picker.y + 10, viewportHeight - 230));
 
   return (
     <div
@@ -162,9 +164,20 @@ function ScoreQuickPicker({
       role="dialog"
       aria-label={`Set score for ${picker.moduleLabel}`}
     >
-      <p className="px-1 pb-1 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-        Choose status
-      </p>
+      <div className="mb-1 flex items-start justify-between gap-2 px-1">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+          Choose status
+        </p>
+        {classroomHref ? (
+          <Link
+            href={classroomHref}
+            className="shrink-0 text-xs font-semibold text-sky-700 underline-offset-2 hover:text-sky-600 hover:underline"
+            onClick={onClose}
+          >
+            Lessons
+          </Link>
+        ) : null}
+      </div>
       <div className="space-y-1">
         {options.map((option) => {
           const selected = currentValue === option.value;
@@ -190,13 +203,12 @@ function ScoreQuickPicker({
         <button
           type="button"
           onClick={() => onSelect(null)}
-          className={`w-full rounded-lg px-2 py-2 text-left text-sm transition ${
-            currentValue === null
-              ? "bg-slate-100 text-slate-900"
-              : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-          }`}
+          className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-sm font-medium text-rose-600 transition hover:text-rose-700"
         >
-          Clear selection
+          <span aria-hidden className="text-base leading-none">
+            ×
+          </span>
+          Clear Selection
         </button>
       </div>
     </div>
@@ -215,9 +227,9 @@ function CompassScoringInfoPopover() {
   ] as const;
 
   const jumps = [
-    { href: "#compass-pillar-reach", label: "Connect" },
-    { href: "#compass-pillar-enrol", label: "Enroll" },
-    { href: "#compass-pillar-deliver", label: "Deliver" },
+    { href: "#compass-pillar-reach", label: "Get Calls" },
+    { href: "#compass-pillar-enrol", label: "Win Clients" },
+    { href: "#compass-pillar-deliver", label: "Coach Clients" },
     { href: "#compass-section-centre", label: "Centre" },
   ] as const;
 
@@ -418,12 +430,18 @@ export default function CoachSignaturePage() {
   const router = useRouter();
   const pathname = usePathname();
   const clientsHref = pathname?.startsWith("/admin") ? "/admin/clients" : "/coach/clients";
+  const classroomBasePath = pathname?.startsWith("/admin")
+    ? "/admin/academy/classroom"
+    : "/coach/academy/classroom";
   const { impersonatingCoachId } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hintRow, setHintRow] = useState<string | null>(null);
   const [scorePicker, setScorePicker] = useState<ScorePickerState>(null);
   const [hideOuterModules, setHideOuterModules] = useState(false);
+  const [classroomLinks, setClassroomLinks] = useState<
+    Partial<Record<SignatureModuleId, string>>
+  >({});
   const [scores, setScores] = useState<
     Record<SignatureModuleId, SignatureScore>
   >(() => normalizeScores({}));
@@ -465,13 +483,17 @@ export default function CoachSignaturePage() {
         headers["x-impersonate-coach-id"] = impersonatingCoachId;
       }
 
-      const [roleRes, scoreRes] = await Promise.all([
+      const [roleRes, scoreRes, classroomRes] = await Promise.all([
         fetch("/api/profile-role", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: user.id }),
         }),
         fetch("/api/coach/signature-scores", { headers }),
+        fetch(
+          `/api/coach/signature/classroom-links?basePath=${encodeURIComponent(classroomBasePath)}`,
+          { headers },
+        ),
       ]);
 
       const roleBody = (await roleRes.json().catch(() => ({}))) as {
@@ -500,6 +522,22 @@ export default function CoachSignaturePage() {
         return;
       }
       setScores(normalizeScores(scoreBody.scores ?? {}));
+
+      const classroomBody = (await classroomRes.json().catch(() => ({}))) as {
+        links?: Record<string, { href?: string }>;
+      };
+      if (!cancelled && classroomRes.ok && classroomBody.links) {
+        const next: Partial<Record<SignatureModuleId, string>> = {};
+        for (const [moduleId, link] of Object.entries(classroomBody.links)) {
+          if (!link?.href) continue;
+          if (!SIGNATURE_MODULE_IDS.includes(moduleId as SignatureModuleId)) {
+            continue;
+          }
+          next[moduleId as SignatureModuleId] = link.href;
+        }
+        setClassroomLinks(next);
+      }
+
       setLoading(false);
     }
     void init().finally(() => {
@@ -508,7 +546,7 @@ export default function CoachSignaturePage() {
     return () => {
       cancelled = true;
     };
-  }, [router, impersonatingCoachId]);
+  }, [router, impersonatingCoachId, classroomBasePath]);
 
   const persistPatch = useCallback(
     async (patch: Partial<Record<SignatureModuleId, SignatureScore>>) => {
@@ -624,6 +662,7 @@ export default function CoachSignaturePage() {
                         </div>
                         {pillar.modules.map((m) => {
                           const v = scores[m.id];
+                          const classroomHref = classroomLinks[m.id] ?? null;
                           return (
                             <div
                               key={m.id}
@@ -639,18 +678,27 @@ export default function CoachSignaturePage() {
                                 />
                               </div>
                               <p className="col-start-2 row-start-1 min-w-0 text-pretty text-base font-semibold leading-snug text-slate-900 sm:text-[17px]">
-                                <button
-                                  type="button"
-                                  className="text-left underline-offset-2 hover:underline"
-                                  onClick={(e) =>
-                                    openScorePicker(m.id, m.diagramTitle, {
-                                      x: e.clientX,
-                                      y: e.clientY,
-                                    })
-                                  }
-                                >
-                                  {m.diagramTitle}
-                                </button>
+                                {classroomHref ? (
+                                  <Link
+                                    href={classroomHref}
+                                    className="text-left text-sky-800 underline-offset-2 hover:text-sky-700 hover:underline"
+                                  >
+                                    {m.diagramTitle}
+                                  </Link>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="text-left underline-offset-2 hover:underline"
+                                    onClick={(e) =>
+                                      openScorePicker(m.id, m.diagramTitle, {
+                                        x: e.clientX,
+                                        y: e.clientY,
+                                      })
+                                    }
+                                  >
+                                    {m.diagramTitle}
+                                  </button>
+                                )}
                               </p>
                               <div className="col-start-2 row-start-2 flex min-w-0 items-start gap-1.5 sm:col-start-3 sm:row-start-1">
                                 <p className="min-w-0 flex-1 text-pretty text-base leading-snug text-slate-800 sm:text-[17px] sm:leading-[1.5]">
@@ -736,6 +784,9 @@ export default function CoachSignaturePage() {
       <ScoreQuickPicker
         picker={scorePicker}
         currentValue={scorePicker ? scores[scorePicker.moduleId] : null}
+        classroomHref={
+          scorePicker ? classroomLinks[scorePicker.moduleId] ?? null : null
+        }
         onSelect={(value) => {
           if (!scorePicker) return;
           setModuleScore(scorePicker.moduleId, value);

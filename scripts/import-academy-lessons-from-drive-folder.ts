@@ -36,6 +36,7 @@ import {
   type MediaFileKind,
 } from "../src/lib/academy/legacyLessonMatcher";
 import type { HubCatalog } from "../src/lib/academy/hubCatalog";
+import { probeLessonDurationLabel } from "./lib/probeMediaDuration";
 
 loadEnvConfig(process.cwd());
 
@@ -411,7 +412,11 @@ async function loadExistingContentMap(): Promise<
 async function upsertLessonFields(
   courseId: string,
   lessonId: string,
-  fields: { videoUrl?: string | null; transcriptText?: string | null }
+  fields: {
+    videoUrl?: string | null;
+    transcriptText?: string | null;
+    duration?: string | null;
+  }
 ): Promise<void> {
   const { data: existing } = await supabase
     .from("academy_lesson_content")
@@ -431,6 +436,10 @@ async function upsertLessonFields(
       fields.transcriptText !== undefined
         ? fields.transcriptText
         : (existing?.transcript_text ?? null),
+    duration:
+      fields.duration !== undefined
+        ? fields.duration
+        : (existing?.duration ?? null),
     updated_at: new Date().toISOString(),
   };
 
@@ -756,7 +765,18 @@ async function main() {
               bundle.lessonId,
               bundle.videoPath
             );
-            await upsertLessonFields(bundle.courseId, bundle.lessonId, { videoUrl: url });
+            const duration = await probeLessonDurationLabel({
+              videoPath: bundle.videoPath,
+            });
+            await upsertLessonFields(bundle.courseId, bundle.lessonId, {
+              videoUrl: url,
+              ...(duration ? { duration } : {}),
+            });
+            if (duration) {
+              console.log(
+                `[academy-import] duration ${bundle.courseId}/${bundle.lessonId} → ${duration}`
+              );
+            }
             videoUploaded = true;
           }
         }

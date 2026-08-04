@@ -28,6 +28,7 @@ import {
   lessonCommunityPublicVisibilityTitle,
   lessonCommunityTabLabel,
 } from "@/lib/academy/lessonCommunityChannel";
+import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
 import { FEEDBACK_REQUEST_CATEGORY_SLUG } from "@/lib/coachAccess/tiers";
 
 export type CreatePostLessonContext = {
@@ -317,6 +318,8 @@ export function CreatePostModal({
         onMarkPostRead?.(created.id);
       }
 
+      notifyAcademyTrackedActionsChanged();
+
       revokeAllPending(pendingMedia);
       setPendingMedia([]);
       await onCreated();
@@ -516,9 +519,11 @@ export function CreatePostModal({
                       setCategoryId(e.target.value);
                       if (error) setError(null);
                     }}
+                    aria-label="Where to post"
+                    title="Where to post"
                     className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
                   >
-                    <option value="">Select category</option>
+                    <option value="">Where to post</option>
                     {selectableCategories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.label}

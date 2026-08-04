@@ -98,7 +98,7 @@
         {
           "id": "launchpad",
           "compassPillarId": "deliver",
-          "title": "Client Launchpad",
+          "title": "Client Launch",
           "description": "My first sessions with a new client create clarity, buy-in, and momentum — they know what to do from week one.",
           "lessons": [
             {
@@ -113,7 +113,7 @@
         {
           "id": "profit",
           "compassPillarId": "deliver",
-          "title": "COACH Method",
+          "title": "Coaching Method",
           "description": "I feel confident in my coaching skills and I have a proven method I trust to guide any conversation.",
           "lessons": [
             {
@@ -128,8 +128,8 @@
         {
           "id": "playbook",
           "compassPillarId": "deliver",
-          "title": "Coaching Playbook",
-          "description": "My sessions are structured and engaging — clients show up, do the work, and keep going because they see progress.",
+          "title": "Client Retention",
+          "description": "My clients see real progress, stay month after month, and renewals and expansion happen naturally.",
           "lessons": [
             {
               "id": "playbook-01",

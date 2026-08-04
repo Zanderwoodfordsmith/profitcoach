@@ -39,6 +39,9 @@ export type ZoomRecordingCalendarMatchResult = {
   occurrenceStartIso?: string;
   eventTitle?: string;
   reason?: string;
+  /** When Momentum's recording was also copied onto same-day Win The Week. */
+  mirroredToEventId?: string;
+  mirroredToEventTitle?: string;
 };
 
 type ScoredOccurrence = {
@@ -50,6 +53,49 @@ type ScoredOccurrence = {
 function occurrenceHasRecording(occurrence: CommunityCalendarOccurrence): boolean {
   return Boolean(
     occurrence.recording_link_url?.trim() || occurrence.recording_video_url?.trim()
+  );
+}
+
+function isMonthlyMomentumTitle(title: string): boolean {
+  return /monthly\s+momentum/i.test(title);
+}
+
+function isWinTheWeekTitle(title: string): boolean {
+  return /win\s+the\s+week/i.test(title);
+}
+
+function occurrenceLocalDayKey(occurrence: CommunityCalendarOccurrence): string | null {
+  const zone = occurrence.display_timezone?.trim() || "UTC";
+  return DateTime.fromISO(occurrence.startsAtIso, { zone: "utc" })
+    .setZone(zone)
+    .toISODate();
+}
+
+function sameOccurrenceLocalDay(
+  a: CommunityCalendarOccurrence,
+  b: CommunityCalendarOccurrence
+): boolean {
+  const aKey = occurrenceLocalDayKey(a);
+  const bKey = occurrenceLocalDayKey(b);
+  return Boolean(aKey && bKey && aKey === bKey);
+}
+
+/**
+ * On first Mondays, Monthly Momentum and Win The Week often share one continuous
+ * Zoom recording. We copy Momentum's link onto WTW; if a second recording later
+ * arrives, treat that mirrored WTW link as replaceable.
+ */
+function isMirroredWinTheWeekLink(
+  winTheWeek: CommunityCalendarOccurrence,
+  sameDayOccurrences: CommunityCalendarOccurrence[]
+): boolean {
+  if (!isWinTheWeekTitle(winTheWeek.title)) return false;
+  const wtwUrl = winTheWeek.recording_link_url?.trim();
+  if (!wtwUrl) return false;
+  return sameDayOccurrences.some(
+    (other) =>
+      isMonthlyMomentumTitle(other.title) &&
+      other.recording_link_url?.trim() === wtwUrl
   );
 }
 
@@ -114,15 +160,17 @@ function pickAmongSameDayCandidates(
   candidates: ScoredOccurrence[],
   meetingStartMs: number
 ): ScoredOccurrence | { ambiguous: ScoredOccurrence[] } | null {
-  const open = candidates.filter((c) => !occurrenceHasRecording(c.occurrence));
+  const sameDayOccs = candidates.map((c) => c.occurrence);
+  const open = candidates.filter(
+    (c) =>
+      !occurrenceHasRecording(c.occurrence) ||
+      isMirroredWinTheWeekLink(c.occurrence, sameDayOccs)
+  );
   const pool = open.length > 0 ? open : candidates;
 
   const byDay = new Map<string, ScoredOccurrence[]>();
   for (const entry of pool) {
-    const zone = entry.occurrence.display_timezone?.trim() || "UTC";
-    const dayKey = DateTime.fromISO(entry.occurrence.startsAtIso, { zone: "utc" })
-      .setZone(zone)
-      .toISODate();
+    const dayKey = occurrenceLocalDayKey(entry.occurrence);
     if (!dayKey) continue;
     const list = byDay.get(dayKey) ?? [];
     list.push(entry);
@@ -303,10 +351,17 @@ export async function attachZoomRecordingToCommunityCalendar(
 
   const { occurrence, event } = match;
   const occurrenceStart = communityCalendarExceptionOccurrenceStart(occurrence);
+  const sameDayOccs = occurrences.filter((other) =>
+    sameOccurrenceLocalDay(other, occurrence)
+  );
+  const existingLink = occurrence.recording_link_url?.trim();
+  const canReplaceMirroredWinTheWeek =
+    Boolean(existingLink) &&
+    existingLink !== recording.shareUrl &&
+    isMirroredWinTheWeekLink(occurrence, sameDayOccs);
 
-  if (occurrenceHasRecording(occurrence)) {
-    const existing = occurrence.recording_link_url?.trim();
-    if (existing === recording.shareUrl) {
+  if (occurrenceHasRecording(occurrence) && !canReplaceMirroredWinTheWeek) {
+    if (existingLink === recording.shareUrl) {
       return {
         status: "already_set",
         eventId: occurrence.eventId,
@@ -326,10 +381,39 @@ export async function attachZoomRecordingToCommunityCalendar(
 
   await attachRecordingToOccurrence(supabase, occurrence, event, recording.shareUrl);
 
+  let mirroredToEventId: string | undefined;
+  let mirroredToEventTitle: string | undefined;
+
+  // First-Monday combined session: one Zoom recording covers Momentum + WTW.
+  // Copy the link onto Win The Week when that slot is still empty.
+  if (isMonthlyMomentumTitle(occurrence.title)) {
+    const winTheWeekOcc = sameDayOccs.find(
+      (other) =>
+        isWinTheWeekTitle(other.title) &&
+        !other.isCancelled &&
+        !occurrenceHasRecording(other)
+    );
+    if (winTheWeekOcc) {
+      const winTheWeekEvent = events.find((e) => e.id === winTheWeekOcc.eventId);
+      if (winTheWeekEvent) {
+        await attachRecordingToOccurrence(
+          supabase,
+          winTheWeekOcc,
+          winTheWeekEvent,
+          recording.shareUrl
+        );
+        mirroredToEventId = winTheWeekOcc.eventId;
+        mirroredToEventTitle = winTheWeekOcc.title;
+      }
+    }
+  }
+
   return {
     status: "attached",
     eventId: occurrence.eventId,
     occurrenceStartIso: occurrenceStart,
     eventTitle: occurrence.title,
+    mirroredToEventId,
+    mirroredToEventTitle,
   };
 }

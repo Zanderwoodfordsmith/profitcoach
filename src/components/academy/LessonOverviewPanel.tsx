@@ -40,12 +40,12 @@ export function LessonOverviewPanel({
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,0.85fr)] lg:items-start">
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_15.5rem] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="min-w-0">
         {overview}
         {hasGuide ? <LessonGuideCta /> : null}
       </div>
-      <div className="flex min-w-0 flex-col gap-4">
+      <aside className="flex min-w-0 flex-col gap-6 border-t border-slate-200/80 pt-8 lg:sticky lg:top-8 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:border-t-0 lg:pt-0">
         <LessonActionsPanel
           courseId={courseId}
           lessonId={lessonId}
@@ -55,7 +55,7 @@ export function LessonOverviewPanel({
         {resources.length > 0 ? (
           <LessonResourcesPanel resources={resources} compact />
         ) : null}
-      </div>
+      </aside>
     </div>
   );
 }

@@ -32,6 +32,13 @@ export const GATED_ROUTES: GatedRoute[] = [
       "The community feed is where coaches share wins, ask questions and get support daily. Membership keeps you in the conversation.",
   },
   {
+    prefix: "/coach/first-campaign",
+    feature: "nav.marketing",
+    title: "First Campaign",
+    description:
+      "A guided setup that takes you from LinkedIn import to ICP, avatar, messages, and a starter list of named prospects.",
+  },
+  {
     prefix: "/coach/prospects",
     feature: "nav.marketing",
     title: "Prospects",
@@ -53,9 +60,16 @@ export const GATED_ROUTES: GatedRoute[] = [
       "See where prospects drop off and where the money is, so you can fix the weak point instead of guessing.",
   },
   {
+    prefix: "/coach/funnel-settings",
+    feature: "nav.marketing",
+    title: "Get Clients settings",
+    description:
+      "Set up your share links, CRM sync, and funnel landing copy so leads flow into your pipeline.",
+  },
+  {
     prefix: "/coach/boss-pro",
     feature: "nav.marketing",
-    title: "BOSS score",
+    title: "Boss Pro",
     description:
       "Run the BOSS diagnostic for any client to show exactly where the money is and why your fee is justified.",
   },
@@ -120,7 +134,7 @@ export const ACADEMY_COURSE_TITLES: Record<string, string> = {
   "profit-coach-system": "Profit Coach System",
   "profit-coach-os": "Profit Coach OS",
   "profit-brand-framework": "PROFIT Brand & Framework",
-  "not-in-classroom": "Not in Classroom",
+  "not-in-classroom": "Archive",
 };
 
 const ACADEMY_RESERVED_SEGMENTS = new Set([

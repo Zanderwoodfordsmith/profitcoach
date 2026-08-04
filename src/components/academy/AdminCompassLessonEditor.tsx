@@ -36,6 +36,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
   const [saveError, setSaveError] = useState<string | null>(null);
   const [title, setTitle] = useState(initialLesson.title);
   const [videoUrl, setVideoUrl] = useState(initialLesson.videoUrl ?? "");
+  const [audioUrl, setAudioUrl] = useState(initialLesson.audioUrl ?? "");
   const [duration, setDuration] = useState(initialLesson.duration ?? "");
   const [bodyMarkdown, setBodyMarkdown] = useState(initialLesson.bodyMarkdown ?? "");
   const [guideMarkdown, setGuideMarkdown] = useState(initialLesson.guideMarkdown ?? "");
@@ -49,6 +50,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
     setLesson(data.lesson);
     setTitle(data.lesson.title);
     setVideoUrl(data.lesson.videoUrl ?? "");
+    setAudioUrl(data.lesson.audioUrl ?? "");
     setDuration(data.lesson.duration ?? "");
     setBodyMarkdown(data.lesson.bodyMarkdown ?? "");
     setGuideMarkdown(data.lesson.guideMarkdown ?? "");
@@ -59,6 +61,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
     if (editing) return;
     setTitle(lesson.title);
     setVideoUrl(lesson.videoUrl ?? "");
+    setAudioUrl(lesson.audioUrl ?? "");
     setDuration(lesson.duration ?? "");
     setBodyMarkdown(lesson.bodyMarkdown ?? "");
     setGuideMarkdown(lesson.guideMarkdown ?? "");
@@ -72,6 +75,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
         {
           title,
           videoUrl,
+          audioUrl,
           duration,
           bodyMarkdown,
           guideMarkdown,
@@ -80,6 +84,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
         {
           title: lesson.title,
           videoUrl: lesson.videoUrl ?? "",
+          audioUrl: lesson.audioUrl ?? "",
           duration: lesson.duration ?? "",
           bodyMarkdown: lesson.bodyMarkdown ?? "",
           guideMarkdown: lesson.guideMarkdown ?? "",
@@ -90,6 +95,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
       editing,
       title,
       videoUrl,
+      audioUrl,
       duration,
       bodyMarkdown,
       guideMarkdown,
@@ -105,6 +111,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
     setEditing(false);
     setTitle(lesson.title);
     setVideoUrl(lesson.videoUrl ?? "");
+    setAudioUrl(lesson.audioUrl ?? "");
     setDuration(lesson.duration ?? "");
     setBodyMarkdown(lesson.bodyMarkdown ?? "");
     setGuideMarkdown(lesson.guideMarkdown ?? "");
@@ -138,6 +145,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
           body: JSON.stringify({
             title: trimmedTitle,
             videoUrl: videoUrl.trim() || null,
+            audioUrl: audioUrl.trim() || null,
             bodyMarkdown,
             guideMarkdown,
             recommendedActions: recommendedActions.filter((action) =>
@@ -163,6 +171,7 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
         ...lesson,
         title: title.trim() || lesson.title,
         videoUrl: videoUrl.trim() || null,
+        audioUrl: audioUrl.trim() || null,
         duration: duration.trim() || undefined,
         bodyMarkdown,
         guideMarkdown,
@@ -233,6 +242,8 @@ export function AdminCompassLessonEditor({ category, course, lesson: initialLess
           titlePrefix={lesson.emoji}
           videoUrl={videoUrl}
           onVideoUrlChange={setVideoUrl}
+          audioUrl={audioUrl}
+          onAudioUrlChange={setAudioUrl}
           duration={duration}
           onDurationChange={setDuration}
           bodyMarkdown={bodyMarkdown}

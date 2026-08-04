@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { ClassroomShell } from "@/components/academy/ClassroomShell";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 
 /**
@@ -18,15 +19,17 @@ export function SignatureAreaLayout({
   const pathname = usePathname() ?? "";
   const isScorecard = pathname.includes("/signature/scorecard");
   const isLadder = pathname.includes("/signature/ladder");
+  const isAdminScorecard = pathname.startsWith("/admin/signature/scorecard");
 
   const scorecardHeader = useMemo(
     () => (
       <StickyPageHeader
         title="My Scorecard"
         description="Log weekly pipeline and revenue numbers; targets follow your ladder goal."
+        tabs={isAdminScorecard ? <ToolkitHubTabs /> : undefined}
       />
     ),
-    []
+    [isAdminScorecard]
   );
 
   if (isLadder) {

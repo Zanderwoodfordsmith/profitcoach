@@ -5,7 +5,7 @@
  * - End Wednesday coach calls after July 2026
  * - End New Member Kick-off after July 2026
  * - Win The Week + Profit Coach Training → 4pm London from Aug 2026
- * - Monthly Momentum → 3pm London from Aug 2026
+ * - Monthly Momentum → 3:30–4pm London from Aug 2026
  *
  * Run:    npx tsx scripts/apply-august-2026-call-schedule.ts
  * Dry run: npx tsx scripts/apply-august-2026-call-schedule.ts --dry-run
@@ -230,8 +230,8 @@ async function main() {
   await ensureContinuation({
     newId: MONTHLY_MOMENTUM_NEW_ID,
     oldId: MONTHLY_MOMENTUM_OLD_ID,
-    label: "Monthly Momentum 3pm",
-    startsAt: "2026-08-03T14:00:00+00:00",
+    label: "Monthly Momentum 3:30pm",
+    startsAt: "2026-08-03T14:30:00+00:00",
     endsAt: "2026-08-03T15:00:00+00:00",
     recurrence: {
       end: "after",

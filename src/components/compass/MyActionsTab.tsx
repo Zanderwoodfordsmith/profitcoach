@@ -4,7 +4,7 @@ import {
   ActionPlanInvitationCard,
   type ActionPlanInvitationSummary,
 } from "@/components/actionPlans/ActionPlanInvitationCard";
-import { ActionOutlineEditor } from "@/components/actionPlans/ActionOutlineEditor";
+import { MyActionsBoard } from "@/components/compass/MyActionsBoard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   createOutlineLine,
@@ -16,11 +16,15 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
+/** Pending invitations + assigned platform-setup plans are parked for now. */
+const SHOW_ACTION_PLAN_INVITES = false;
+
 export function MyActionsTab() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const planToken = searchParams.get("plan");
   const { impersonatingCoachId } = useImpersonation();
+  const appPrefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
   const storageKey = useMemo(
     () =>
       pathname.startsWith("/admin")
@@ -59,6 +63,7 @@ export function MyActionsTab() {
   }, [impersonatingCoachId]);
 
   const loadInvitations = useCallback(async (headers: Record<string, string>) => {
+    if (!SHOW_ACTION_PLAN_INVITES) return [];
     const res = await fetch("/api/coach/action-plan-invitations", { headers });
     if (!res.ok) return [];
     const data = (await res.json()) as { invitations?: ActionPlanInvitationSummary[] };
@@ -166,7 +171,9 @@ export function MyActionsTab() {
   }, [loadItems]);
 
   useEffect(() => {
-    if (!planToken || handledPlanTokenRef.current === planToken) return;
+    if (!SHOW_ACTION_PLAN_INVITES || !planToken || handledPlanTokenRef.current === planToken) {
+      return;
+    }
     handledPlanTokenRef.current = planToken;
 
     async function openFromLink() {
@@ -238,7 +245,21 @@ export function MyActionsTab() {
         const data = (await res.json()) as { items?: ActionOutlineLine[] };
         if (data.items) {
           skipSaveRef.current = true;
-          setItems(data.items);
+          const prevById = new Map(nextItems.map((line) => [line.id, line]));
+          setItems(
+            data.items.map((line) => {
+              const prev = prevById.get(line.id);
+              if (!prev) return line;
+              return {
+                ...line,
+                academyCourseId: line.academyCourseId ?? prev.academyCourseId,
+                academyLessonId: line.academyLessonId ?? prev.academyLessonId,
+                lessonTitle: line.lessonTitle ?? prev.lessonTitle,
+                lessonHref: line.lessonHref ?? prev.lessonHref,
+                sectionTitle: line.sectionTitle ?? prev.sectionTitle,
+              };
+            }),
+          );
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to save actions.");
@@ -297,7 +318,19 @@ export function MyActionsTab() {
       if (data.item) {
         skipSaveRef.current = true;
         setItems((prev) =>
-          prev.map((line) => (line.id === data.item!.id ? data.item! : line)),
+          prev.map((line) =>
+            line.id === data.item!.id
+              ? {
+                  ...line,
+                  ...data.item!,
+                  academyCourseId: data.item!.academyCourseId ?? line.academyCourseId,
+                  academyLessonId: data.item!.academyLessonId ?? line.academyLessonId,
+                  lessonTitle: line.lessonTitle,
+                  lessonHref: line.lessonHref,
+                  sectionTitle: line.sectionTitle,
+                }
+              : line,
+          ),
         );
       }
     } catch (err) {
@@ -367,37 +400,38 @@ export function MyActionsTab() {
   return (
     <div>
       {error ? (
-        <div className="mx-auto mb-4 max-w-5xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mx-auto mb-4 max-w-3xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       ) : null}
-      {invitations.map((invitation) => (
-        <ActionPlanInvitationCard
-          key={invitation.id}
-          invitation={invitation}
-          previewItems={previewByInvitationId[invitation.id]}
-          previewLoading={previewLoadingId === invitation.id}
-          expanded={expandedInvitationId === invitation.id}
-          onToggleExpand={() =>
-            setExpandedInvitationId((current) =>
-              current === invitation.id ? null : invitation.id,
-            )
-          }
-          onAccept={handleAccept}
-          onDecline={handleDecline}
-          busy={inviteBusyId === invitation.id}
-        />
-      ))}
+      {SHOW_ACTION_PLAN_INVITES
+        ? invitations.map((invitation) => (
+            <ActionPlanInvitationCard
+              key={invitation.id}
+              invitation={invitation}
+              previewItems={previewByInvitationId[invitation.id]}
+              previewLoading={previewLoadingId === invitation.id}
+              expanded={expandedInvitationId === invitation.id}
+              onToggleExpand={() =>
+                setExpandedInvitationId((current) =>
+                  current === invitation.id ? null : invitation.id,
+                )
+              }
+              onAccept={handleAccept}
+              onDecline={handleDecline}
+              busy={inviteBusyId === invitation.id}
+            />
+          ))
+        : null}
       {saving ? (
-        <div className="mx-auto mb-2 max-w-5xl px-4 text-xs text-slate-500">Saving…</div>
+        <div className="mx-auto mb-2 max-w-3xl px-4 text-xs text-slate-400">Saving…</div>
       ) : null}
-      <ActionOutlineEditor
+      <MyActionsBoard
         items={items}
         onItemsChange={setItems}
-        mode="coach"
-        isRowLocked={(_index, item) => Boolean(item.isLocked)}
         onToggleDone={handleToggleDone}
         loading={saving}
+        appPrefix={appPrefix}
       />
     </div>
   );

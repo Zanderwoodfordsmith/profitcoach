@@ -26,6 +26,7 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
   if (!lesson) notFound();
 
   const videoUrl = "videoUrl" in lesson ? lesson.videoUrl : null;
+  const audioUrl = "audioUrl" in lesson ? lesson.audioUrl : null;
   const bodyMarkdown = "bodyMarkdown" in lesson ? lesson.bodyMarkdown : "";
   const guideMarkdown = "guideMarkdown" in lesson ? lesson.guideMarkdown : "";
   const transcriptText = "transcriptText" in lesson ? lesson.transcriptText : null;
@@ -40,6 +41,7 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
           basePath={BASE}
           classroomHref={BASE}
           videoUrl={videoUrl}
+          audioUrl={audioUrl}
           bodyMarkdown={bodyMarkdown}
           guideMarkdown={guideMarkdown}
           transcriptText={transcriptText}

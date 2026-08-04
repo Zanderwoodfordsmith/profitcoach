@@ -36,3 +36,19 @@ export function defaultCommunityCalendarTimezone(): string {
     return "UTC";
   }
 }
+
+/** Short timezone label for a moment (e.g. "SAST", "GMT+2", "EST"). */
+export function formatCommunityTimezoneShort(
+  iana: string,
+  at: Date = new Date()
+): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: iana,
+      timeZoneName: "short",
+    }).formatToParts(at);
+    return parts.find((p) => p.type === "timeZoneName")?.value ?? iana;
+  } catch {
+    return iana;
+  }
+}

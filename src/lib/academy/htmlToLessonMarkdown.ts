@@ -8,12 +8,71 @@ import {
 } from "./lessonHtmlEmbed";
 import { readElementTextColor, coloredTextHtml } from "./lessonTextColor";
 import { normalizeImportedLessonMarkdown } from "./importLessonMarkdown";
+import {
+  isLessonImgAlign,
+  readLessonImgAlign,
+} from "./lessonImageDisplay";
 
 let turndown: TurndownService | null = null;
+
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function imgDisplayWidthPx(el: HTMLImageElement): number | null {
+  const attr = el.getAttribute("width")?.trim();
+  if (attr && /^\d+(\.\d+)?$/.test(attr)) {
+    const n = Number(attr);
+    if (Number.isFinite(n) && n > 0) return Math.round(n);
+  }
+  const styleWidth = el.style.width?.trim();
+  if (styleWidth) {
+    const px = styleWidth.match(/^(\d+(?:\.\d+)?)px$/i);
+    if (px) {
+      const n = Number(px[1]);
+      if (Number.isFinite(n) && n > 0) return Math.round(n);
+    }
+  }
+  return null;
+}
+
+function imgNeedsHtml(el: HTMLImageElement): boolean {
+  if (imgDisplayWidthPx(el)) return true;
+  const align = readLessonImgAlign(el);
+  return align !== "left";
+}
 
 function configureLessonTurndown(service: TurndownService): void {
   service.keep(["a"]);
   service.remove(["style", "script", "meta", "head"]);
+
+  // Width / alignment need HTML — markdown ![alt](src) cannot carry them.
+  service.addRule("lessonStyledImage", {
+    filter(node) {
+      return node.nodeName === "IMG" && imgNeedsHtml(node as HTMLImageElement);
+    },
+    replacement(_content, node) {
+      const el = node as HTMLImageElement;
+      const src = el.getAttribute("src")?.trim() ?? "";
+      if (!src) return "";
+      const alt = el.getAttribute("alt") ?? "";
+      const width = imgDisplayWidthPx(el);
+      const align = readLessonImgAlign(el);
+      const parts = [
+        `src="${escapeHtmlAttr(src)}"`,
+        `alt="${escapeHtmlAttr(alt)}"`,
+      ];
+      if (width) parts.push(`width="${width}"`);
+      if (align !== "left" && isLessonImgAlign(align)) {
+        parts.push(`data-align="${align}"`);
+      }
+      return `\n\n<img ${parts.join(" ")}>\n\n`;
+    },
+  });
 
   service.addRule("lessonTextColor", {
     filter(node) {

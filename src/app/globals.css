@@ -1,8 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1f5f9;
+  --background: #e9eef4;
   --foreground: #0f172a;
+
+  /* Soft blue canvas used across coach/admin/client shells */
+  --app-canvas-base: #e9eef4;
+  --app-canvas-gradient: linear-gradient(
+    135deg,
+    #f7f9fb 0%,
+    #eef3f8 38%,
+    #e4edf6 72%,
+    #dce8f3 100%
+  );
+  --app-canvas-glow: radial-gradient(
+      circle at 12% 10%,
+      rgba(255, 255, 255, 0.7),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 88% 18%,
+      rgba(148, 186, 224, 0.18),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 70% 82%,
+      rgba(125, 176, 214, 0.14),
+      transparent 42%
+    );
 
   /* Profit Coach app colors */
   --boss-foundation: #4c667a;
@@ -42,6 +67,11 @@ body {
   color: var(--foreground);
 }
 
+.app-canvas-bg {
+  background-color: var(--app-canvas-base);
+  background-image: var(--app-canvas-glow), var(--app-canvas-gradient);
+}
+
 /* ----------------------------------------------------------------------
  * Academy lesson typography — shared by the coach view, the admin preview,
  * and the visual editor.
@@ -51,7 +81,7 @@ body {
 .academy-prose {
   max-width: none;
   font-size: 1rem;
-  line-height: 1.7;
+  line-height: 1.4;
   color: #334155;
 }
 
@@ -71,7 +101,8 @@ body {
 .academy-prose h6 {
   color: #0f172a;
   font-weight: 600;
-  text-wrap: balance;
+  /* Avoid text-wrap: balance — long callout headings wrap early and look clipped. */
+  text-wrap: pretty;
 }
 
 .academy-prose h1 {
@@ -183,6 +214,34 @@ body {
   border-radius: 0.75rem;
   max-width: 100%;
   height: auto;
+}
+
+.academy-prose img[data-align="left"] {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.academy-prose img[data-align="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.academy-prose img[data-align="right"] {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Lesson visual editor: clickable images + selected resize outline */
+.lesson-rich-editor img {
+  cursor: pointer;
+}
+
+.lesson-rich-editor img[data-lesson-img-selected="true"] {
+  outline: 2px solid rgb(14 165 233);
+  outline-offset: 2px;
 }
 
 .academy-prose :not(pre) > code {

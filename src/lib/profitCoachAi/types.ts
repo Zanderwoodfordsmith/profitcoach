@@ -3,6 +3,12 @@ export type CoachAiContext = {
   superpowers?: string;
   hobbies_and_recent?: string;
   client_results?: Array<{ title: string; story: string }>;
+  /** First Campaign / ICP — confirmed by coach */
+  ideal_client?: string;
+  industry_vocabulary?: string;
+  pain_language?: string;
+  messaging_hooks?: string;
+  proof_framing?: string;
 };
 
 export type AiContextKey = keyof CoachAiContext;

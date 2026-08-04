@@ -9,6 +9,10 @@ import {
   Loader2,
 } from "lucide-react";
 
+import {
+  AdminCoachLinkedInPanel,
+  type AdminCoachLinkedInProfile,
+} from "@/components/admin/AdminCoachLinkedInPanel";
 import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { formatDateDisplay } from "@/lib/formatDateDisplay";
@@ -55,6 +59,7 @@ type CoachDetail = {
   avatar_url: string | null;
   coach_business_name: string | null;
   linkedin_url: string | null;
+  linkedin_profile: AdminCoachLinkedInProfile | null;
   joined_at: string | null;
   client_count: number;
   directory_listed: boolean;
@@ -105,7 +110,7 @@ type CoachPayment = {
   billing_kind_override: PaymentBillingKind | null;
 };
 
-type TabId = "overview" | "payments";
+type TabId = "overview" | "linkedin" | "payments";
 
 const CRM_LOCATION_BASE_URL = "https://app.procoachplatform.com/v2/location";
 
@@ -207,8 +212,10 @@ export default function AdminCoachDetailPage({
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "payments") {
-      setActiveTab("payments");
+    if (tab === "payments" || tab === "linkedin") {
+      setActiveTab(tab);
+    } else if (!tab) {
+      setActiveTab("overview");
     }
   }, [searchParams]);
 
@@ -380,7 +387,16 @@ export default function AdminCoachDetailPage({
     <button
       key={id}
       type="button"
-      onClick={() => setActiveTab(id)}
+      onClick={() => {
+        setActiveTab(id);
+        const url = new URL(window.location.href);
+        if (id === "overview") {
+          url.searchParams.delete("tab");
+        } else {
+          url.searchParams.set("tab", id);
+        }
+        router.replace(`${url.pathname}${url.search}`, { scroll: false });
+      }}
       className={`border-b-2 px-0 py-3 text-sm font-semibold tracking-tight transition ${
         activeTab === id
           ? "border-[#0c5290] text-[#0c5290]"
@@ -491,7 +507,8 @@ export default function AdminCoachDetailPage({
           <div className="border-b border-slate-200/80">
             <nav className="-mb-px flex flex-wrap gap-x-8 gap-y-1" aria-label="Coach sections">
               {tabButton("overview", "Overview")}
-              {tabButton("payments", `Payments (${payments.length})`)}
+              {tabButton("linkedin", "LinkedIn")}
+              {tabButton("payments", `Payments (${paymentSummary.succeededCount})`)}
             </nav>
           </div>
 
@@ -554,6 +571,16 @@ export default function AdminCoachDetailPage({
                       </a>
                     ) : null}
                   </DetailField>
+                  <DetailField
+                    label="LinkedIn scrape"
+                    value={
+                      coach.linkedin_profile?.scraped_at
+                        ? formatIsoDate(coach.linkedin_profile.scraped_at)
+                        : coach.linkedin_url
+                          ? "Not scraped"
+                          : null
+                    }
+                  />
                 </dl>
               </SectionCard>
 
@@ -782,6 +809,25 @@ export default function AdminCoachDetailPage({
                 ) : null}
               </SectionCard>
             </div>
+          ) : null}
+
+          {activeTab === "linkedin" ? (
+            <AdminCoachLinkedInPanel
+              coachId={coach.id}
+              linkedinUrl={coach.linkedin_url}
+              initialProfile={coach.linkedin_profile}
+              onProfileChange={(next) => {
+                setCoach((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        linkedin_url: next.linkedin_url,
+                        linkedin_profile: next,
+                      }
+                    : prev
+                );
+              }}
+            />
           ) : null}
 
           {activeTab === "payments" ? (

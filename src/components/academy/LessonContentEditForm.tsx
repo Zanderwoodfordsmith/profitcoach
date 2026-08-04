@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { FileUp } from "lucide-react";
+import { FileUp, Headphones, Upload, X } from "lucide-react";
 
 import { LessonFeaturedMedia } from "@/components/academy/LessonFeaturedMedia";
 import { LessonRecommendedActionsEditor } from "@/components/academy/LessonRecommendedActionsEditor";
@@ -15,7 +15,9 @@ import {
   readMarkdownFile,
   splitTitleFromImportedMarkdown,
 } from "@/lib/academy/importLessonMarkdown";
+import { uploadAcademyLessonAudioFile } from "@/lib/academyLessonAudio";
 import { uploadAcademyLessonVideoFile } from "@/lib/academyLessonVideo";
+import { probeBrowserMediaDurationLabel } from "@/lib/academy/probeBrowserMediaDuration";
 import type { AcademyRecommendedAction } from "@/lib/academy/lessonActions";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -33,6 +35,8 @@ type Props = {
   titlePrefix?: string;
   videoUrl: string;
   onVideoUrlChange: (value: string) => void;
+  audioUrl: string;
+  onAudioUrlChange: (value: string) => void;
   /** Sidebar length label, e.g. `6m`. */
   duration: string;
   onDurationChange: (value: string) => void;
@@ -60,6 +64,8 @@ export function LessonContentEditForm({
   titlePrefix,
   videoUrl,
   onVideoUrlChange,
+  audioUrl,
+  onAudioUrlChange,
   duration,
   onDurationChange,
   bodyMarkdown,
@@ -74,6 +80,7 @@ export function LessonContentEditForm({
   onSubmit,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const { activeTab, selectTab } = useLessonTabParam(EDIT_TAB_IDS, "overview");
 
   const tabs = useMemo<LessonTab<EditTabId>[]>(
@@ -140,6 +147,8 @@ export function LessonContentEditForm({
       );
       if ("error" in up) throw new Error(up.error);
       onVideoUrlChange(up.url);
+      const label = await probeBrowserMediaDurationLabel(file);
+      if (label) onDurationChange(label);
     } catch (err) {
       onError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -147,13 +156,42 @@ export function LessonContentEditForm({
     }
   }
 
+  async function handleAudioUpload(file: File) {
+    onError("");
+    onUploadingChange(true);
+    try {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const up = await uploadAcademyLessonAudioFile(
+        file,
+        courseId,
+        lessonId,
+        session?.access_token
+      );
+      if ("error" in up) throw new Error(up.error);
+      onAudioUrlChange(up.url);
+      // Prefer keeping an existing video-derived duration when both exist.
+      if (!duration.trim()) {
+        const label = await probeBrowserMediaDurationLabel(file);
+        if (label) onDurationChange(label);
+      }
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      onUploadingChange(false);
+    }
+  }
+
+  const trimmedAudio = audioUrl.trim();
+
   return (
     <form
       id={formId}
       onSubmit={onSubmit}
-      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:p-8"
+      className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_rgba(15,23,42,0.06)] ring-1 ring-slate-900/[0.04] md:p-8"
     >
-      <header className="mb-6 border-b border-slate-100 pb-4">
+      <header className="mb-6 border-b border-slate-200/80 pb-4">
         <label className="sr-only" htmlFor={`${formId}-title`}>
           Lesson title
         </label>
@@ -181,6 +219,67 @@ export function LessonContentEditForm({
         uploading={uploading}
         onUploadFile={(file) => void handleVideoUpload(file)}
       />
+
+      <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <Headphones className="h-4 w-4 text-slate-500" aria-hidden />
+              Listen audio
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Optional MP3 shown under the video for on-the-go listening.
+            </p>
+          </div>
+          {trimmedAudio ? (
+            <button
+              type="button"
+              onClick={() => onAudioUrlChange("")}
+              className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-100"
+              aria-label="Remove audio"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
+        {trimmedAudio ? (
+          <audio className="mt-3 w-full" controls preload="metadata" src={trimmedAudio} />
+        ) : null}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => audioInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+          >
+            <Upload className="h-3.5 w-3.5" aria-hidden />
+            {uploading
+              ? "Uploading…"
+              : trimmedAudio
+                ? "Replace audio"
+                : "Upload MP3"}
+          </button>
+          <input
+            type="url"
+            value={audioUrl}
+            onChange={(e) => onAudioUrlChange(e.target.value)}
+            placeholder="Or paste an audio URL"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+          />
+        </div>
+        <input
+          ref={audioInputRef}
+          type="file"
+          accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg"
+          className="sr-only"
+          disabled={uploading}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleAudioUpload(file);
+            e.target.value = "";
+          }}
+        />
+      </div>
 
       <div className="mb-8 max-w-xs">
         <label
@@ -236,19 +335,22 @@ export function LessonContentEditForm({
           <LessonRichTextEditor
             markdown={bodyMarkdown}
             onChange={onBodyMarkdownChange}
+            courseId={courseId}
+            lessonId={lessonId}
             onTitleFromPaste={handleTitleFromPaste}
+            onError={onError}
           />
           <p className="mt-2 text-xs text-slate-400">
-            Formatted as coaches will see it. Paste from Google Docs with
-            Cmd/Ctrl+V.
+            Formatted as coaches will see it. Paste from Google Docs, or add
+            images with the Image button, drag-and-drop, or Cmd/Ctrl+V.
           </p>
 
-          <div className="mt-8 border-t border-slate-100 pt-6">
+          <div className="mt-8 border-t border-slate-200/80 pt-6">
             <div className="mb-4">
               <p className="text-sm font-semibold text-slate-900">Action items</p>
               <p className="mt-0.5 text-xs text-slate-500">
-                Shown beside the Overview. Coaches tick these off as they work
-                through the lesson.
+                Shown beside the Overview. Use checklist for self-reported steps,
+                or tracked when the system can verify the coach did it.
               </p>
             </div>
             <LessonRecommendedActionsEditor
@@ -266,6 +368,9 @@ export function LessonContentEditForm({
           <LessonRichTextEditor
             markdown={guideMarkdown}
             onChange={onGuideMarkdownChange}
+            courseId={courseId}
+            lessonId={lessonId}
+            onError={onError}
             placeholder="Write the full walkthrough, or paste from Google Docs…"
           />
         </div>

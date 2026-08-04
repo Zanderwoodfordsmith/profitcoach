@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { PlaybooksLibrary } from "@/components/playbooks/PlaybooksLibrary";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -106,9 +107,10 @@ export default function CoachPlaybooksPage() {
         summaries={summaries}
         loading={loading}
         error={error}
-        title="Playbooks"
+        title="Coach Clients"
         description="Browse the full library. Open a playbook for the client-facing overview—your coach link is applied automatically when you share it."
         buildHref={hrefForRef}
+        tabs={<CoachToolsHubTabs hub="coach-clients" />}
       />
     </CoachClientHubGate>
   );

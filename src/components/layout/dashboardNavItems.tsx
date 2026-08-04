@@ -1,15 +1,14 @@
 import type React from "react";
 import {
-  BarChart3,
+  Archive,
   CalendarDays,
-  Clock,
-  FileUp,
-  Filter,
-  FlaskConical,
   LayoutGrid,
   MessagesSquare,
   PhoneCall,
+  Rocket,
   Sparkles,
+  Wallet,
+  Wrench,
 } from "lucide-react";
 import type { CoachFeature } from "@/lib/coachAccess/tiers";
 
@@ -23,6 +22,8 @@ export type DashboardNavItem = {
 
 export type AdminSectionNavItem = DashboardNavItem & {
   coachesHub?: boolean;
+  financialsHub?: boolean;
+  toolkitHub?: boolean;
 };
 
 function IconBriefcase({ className }: { className?: string }) {
@@ -49,18 +50,6 @@ function IconBookOpen({ className }: { className?: string }) {
   );
 }
 
-function IconLessonImport({ className }: { className?: string }) {
-  return <FileUp className={className} />;
-}
-
-function IconScorecard({ className }: { className?: string }) {
-  return <FlaskConical className={className} />;
-}
-
-function IconCalendar({ className }: { className?: string }) {
-  return <CalendarDays className={className} />;
-}
-
 function IconAcademy({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -70,8 +59,8 @@ function IconAcademy({ className }: { className?: string }) {
   );
 }
 
-function IconFilter({ className }: { className?: string }) {
-  return <Filter className={className} />;
+function IconCalendar({ className }: { className?: string }) {
+  return <CalendarDays className={className} />;
 }
 
 function IconSparkles({ className }: { className?: string }) {
@@ -80,6 +69,10 @@ function IconSparkles({ className }: { className?: string }) {
 
 function IconMessagesSquare({ className }: { className?: string }) {
   return <MessagesSquare className={className} />;
+}
+
+function IconArchive({ className }: { className?: string }) {
+  return <Archive className={className} />;
 }
 
 function IconUsers({ className }: { className?: string }) {
@@ -129,7 +122,7 @@ export function filterNavItemsByFeatures(
   );
 }
 
-/** Primary tabs on mobile (BOSS score and admin tools live under More). */
+/** Primary tabs on mobile (Boss Pro and admin tools live under More). */
 export function mobilePrimaryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
     {
@@ -159,7 +152,7 @@ export function mobileMoreNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
 }
 
 function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
-  return { href: `${prefix}/boss-pro`, label: "BOSS score", icon: IconWorkshop };
+  return { href: `${prefix}/boss-pro`, label: "Boss Pro", icon: IconWorkshop };
 }
 
 function callsNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
@@ -170,12 +163,16 @@ function IconPhoneCall({ className }: { className?: string }) {
   return <PhoneCall className={className} />;
 }
 
-function IconBarChart({ className }: { className?: string }) {
-  return <BarChart3 className={className} />;
+function IconWallet({ className }: { className?: string }) {
+  return <Wallet className={className} />;
 }
 
-function IconClock({ className }: { className?: string }) {
-  return <Clock className={className} />;
+function IconSiteTools({ className }: { className?: string }) {
+  return <Wrench className={className} />;
+}
+
+function IconRocket({ className }: { className?: string }) {
+  return <Rocket className={className} />;
 }
 
 export type MarketingNavOptions = {
@@ -189,24 +186,20 @@ export function marketingNavItems(
   options?: MarketingNavOptions
 ): DashboardNavItem[] {
   const items: DashboardNavItem[] = [
+    { href: `${prefix}/first-campaign`, label: "First Campaign", icon: IconRocket },
     { href: `${prefix}/prospects`, label: "Prospects", icon: IconUserPlus },
     callsNavItem(prefix),
   ];
   if (options?.includeBossScore) {
     items.push(bossScoreNavItem(prefix));
   }
-  items.push({
-    href: `${prefix}/funnel-analyzer`,
-    label: "Funnel Analyzer",
-    icon: IconFilter,
-  });
   if (options?.includeAi !== false) {
     items.push({ href: `${prefix}/message-generator`, label: "AI", icon: IconSparkles });
   }
   return items;
 }
 
-/** Marketing links shown to coaches (BOSS score, prospects, funnel — no AI). */
+/** Marketing links shown to coaches (Boss Pro, prospects, funnel — no AI). */
 export function coachMarketingNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   return marketingNavItems(prefix, { includeBossScore: true, includeAi: false });
 }
@@ -218,25 +211,207 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
   ];
 }
 
-export const adminSectionNavItems: AdminSectionNavItem[] = [
-  { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
-  { href: "/admin/lesson-import", label: "Lesson import", icon: IconLessonImport },
-  { href: "/admin/landing-analytics", label: "Landing analytics", icon: IconBarChart },
-  { href: "/admin/signature/scorecard", label: "My Scorecard", icon: IconScorecard },
-  { href: "/admin/time-tracker", label: "Time Tracker", icon: IconClock },
-  { href: "/admin/linkedin", label: "LinkedIn Scheduler", icon: IconSparkles },
-  { href: "/admin/community/feedback", label: "Feedback inbox", icon: IconMessagesSquare },
-];
+/** Coach sidebar: Marketing + Delivery collapsed into two Tools hubs. */
+export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
+  return [
+    {
+      href: `${prefix}/prospects`,
+      label: "Get Clients",
+      icon: IconUserPlus,
+      requiredFeature: "nav.marketing",
+    },
+    {
+      href: `${prefix}/clients`,
+      label: "Coach Clients",
+      icon: IconBriefcase,
+      requiredFeature: "nav.delivery",
+    },
+  ];
+}
 
-export function navLinkActive(pathname: string | null, href: string, coachesHub?: boolean) {
-  if (coachesHub) {
+/** Tabs inside the Get Clients hub (former Marketing links). Admins also get AI. */
+export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
+  return getClientsTabItems(prefix).map((item) => item.href);
+}
+
+/** Tabs inside the Coach Clients hub (former Delivery links). */
+export function coachClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
+  return [`${prefix}/clients`, `${prefix}/playbooks`];
+}
+
+export function isToolsHubPath(
+  pathname: string | null,
+  hrefs: string[]
+): boolean {
+  if (!pathname) return false;
+  return hrefs.some(
+    (href) => pathname === href || pathname.startsWith(`${href}/`)
+  );
+}
+
+export function getClientsTabItems(prefix: "/coach" | "/admin"): {
+  href: string;
+  label: string;
+  /** Gear-only tab at the end of the Get Clients hub. */
+  iconOnly?: boolean;
+}[] {
+  const items: {
+    href: string;
+    label: string;
+    iconOnly?: boolean;
+  }[] = marketingNavItems(prefix, {
+    includeBossScore: true,
+    includeAi: prefix === "/admin",
+  }).map(({ href, label }) => ({ href, label }));
+  items.push({
+    href: `${prefix}/funnel-settings`,
+    label: "Settings",
+    iconOnly: true,
+  });
+  return items;
+}
+
+export function coachClientsTabItems(
+  prefix: "/coach" | "/admin",
+  options?: { contactId?: string | null }
+): {
+  href: string;
+  label: string;
+  /** Stable key for active-state matching */
+  key: string;
+}[] {
+  const contactId = options?.contactId ?? null;
+  const toolHref = (tab: string) => {
+    if (contactId) {
+      const path = `${prefix}/clients/${encodeURIComponent(contactId)}`;
+      if (!tab || tab === "overview") return path;
+      return `${path}?tab=${encodeURIComponent(tab)}`;
+    }
+    const path = `${prefix}/clients/coaching`;
+    if (!tab || tab === "overview") return path;
+    return `${path}?tab=${encodeURIComponent(tab)}`;
+  };
+
+  return [
+    { key: "clients", href: `${prefix}/clients`, label: "Clients" },
+    { key: "playbooks", href: `${prefix}/playbooks`, label: "Playbooks" },
+    { key: "overview", href: toolHref("overview"), label: "Overview" },
+    { key: "plan", href: toolHref("plan"), label: "3-Year Plan" },
+    { key: "ninety-day", href: toolHref("ninety-day"), label: "90-Day" },
+    { key: "revenue", href: toolHref("revenue"), label: "Revenue" },
+    { key: "expenses", href: toolHref("expenses"), label: "Expenses" },
+    { key: "team", href: toolHref("team"), label: "Team" },
+    { key: "notes", href: toolHref("notes"), label: "Notes" },
+  ];
+}
+
+const CLIENT_ID_PATH =
+  /^\/(coach|admin)\/clients\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+
+export function coachClientsTabActive(
+  pathname: string | null,
+  search: string | null,
+  tabKey: string
+): boolean {
+  if (!pathname) return false;
+  const raw = search?.startsWith("?") ? search.slice(1) : search ?? "";
+  const params = new URLSearchParams(raw);
+  const tabParam = params.get("tab") || "overview";
+
+  if (tabKey === "clients") {
+    return pathname === "/coach/clients" || pathname === "/admin/clients";
+  }
+  if (tabKey === "playbooks") {
     return (
-      pathname === "/admin" ||
-      pathname === "/admin/" ||
-      pathname === "/admin/client-success" ||
-      Boolean(pathname?.startsWith("/admin/client-success/"))
+      pathname === "/coach/playbooks" ||
+      pathname === "/admin/playbooks" ||
+      Boolean(pathname.startsWith("/coach/playbooks/")) ||
+      Boolean(pathname.startsWith("/admin/playbooks/"))
     );
   }
+
+  const onCoachingHub =
+    pathname === "/coach/clients/coaching" ||
+    pathname === "/admin/clients/coaching";
+  const onClientWorkspace = CLIENT_ID_PATH.test(pathname);
+
+  if (!onCoachingHub && !onClientWorkspace) return false;
+  if (tabKey === "overview") return !params.get("tab") || tabParam === "overview";
+  return tabParam === tabKey;
+}
+
+export const adminSectionNavItems: AdminSectionNavItem[] = [
+  { href: "/admin", label: "Coaches", icon: IconUsers, coachesHub: true },
+  {
+    href: "/admin/payments",
+    label: "Financials",
+    icon: IconWallet,
+    financialsHub: true,
+  },
+  {
+    href: "/admin/links",
+    label: "Tools and links",
+    icon: IconSiteTools,
+    toolkitHub: true,
+  },
+  {
+    href: "/admin/academy/archive",
+    label: "Archive",
+    icon: IconArchive,
+  },
+  { href: "/admin/community/feedback", label: "Inbox", icon: IconMessagesSquare },
+];
+
+function pathMatches(pathname: string | null, href: string): boolean {
+  return Boolean(
+    pathname === href || pathname?.startsWith(`${href}/`)
+  );
+}
+
+export function isCoachesHubPath(pathname: string | null): boolean {
+  return (
+    pathname === "/admin" ||
+    pathname === "/admin/" ||
+    pathMatches(pathname, "/admin/coaches") ||
+    pathMatches(pathname, "/admin/client-success") ||
+    pathMatches(pathname, "/admin/action-plans") ||
+    pathMatches(pathname, "/admin/coach-groups")
+  );
+}
+
+export function isFinancialsHubPath(pathname: string | null): boolean {
+  return (
+    pathMatches(pathname, "/admin/payments") ||
+    pathMatches(pathname, "/admin/cash-flow-forecast")
+  );
+}
+
+export function isToolkitHubPath(pathname: string | null): boolean {
+  return (
+    pathMatches(pathname, "/admin/links") ||
+    pathMatches(pathname, "/admin/settings") ||
+    pathMatches(pathname, "/admin/signature/scorecard") ||
+    pathMatches(pathname, "/admin/time-tracker") ||
+    pathMatches(pathname, "/admin/landing-analytics") ||
+    pathMatches(pathname, "/admin/lesson-import") ||
+    pathMatches(pathname, "/admin/linkedin") ||
+    pathMatches(pathname, "/admin/lead-finder") ||
+    pathMatches(pathname, "/admin/funnel-analyzer")
+  );
+}
+
+export function adminSectionNavItemActive(
+  pathname: string | null,
+  item: AdminSectionNavItem
+): boolean {
+  if (item.coachesHub) return isCoachesHubPath(pathname);
+  if (item.financialsHub) return isFinancialsHubPath(pathname);
+  if (item.toolkitHub) return isToolkitHubPath(pathname);
+  return navLinkActive(pathname, item.href);
+}
+
+export function navLinkActive(pathname: string | null, href: string, coachesHub?: boolean) {
+  if (coachesHub) return isCoachesHubPath(pathname);
   const pathOnly = href.split("?")[0] ?? href;
   const root = pathOnly.split("/").slice(0, 2).join("/");
   return (
@@ -246,6 +421,5 @@ export function navLinkActive(pathname: string | null, href: string, coachesHub?
 }
 
 export function mobileNavShortLabel(label: string): string {
-  if (label === "BOSS score") return "BOSS";
   return label;
 }

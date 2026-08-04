@@ -5,7 +5,7 @@ import Link from "next/link";
 
 /** Matches admin Coaches hub tabs (Coaches / Client success / Revenue). */
 const tabBase =
-  "-mb-px border-b-[3px] pb-2 text-base font-semibold leading-tight transition-colors";
+  "-mb-px border-b-[3px] pb-2 text-sm font-semibold leading-tight transition-colors sm:text-base";
 const tabActive = "border-sky-600 text-sky-700";
 const tabInactive =
   "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800";
@@ -56,7 +56,7 @@ export function PageHeaderUnderlineTabs({
 }: PageHeaderUnderlineTabsProps) {
   return (
     <nav
-      className="flex flex-wrap items-end justify-start gap-x-6 gap-y-1"
+      className="flex flex-wrap items-end justify-start gap-x-4 gap-y-1 sm:gap-x-5"
       aria-label={ariaLabel}
     >
       {items.map((item) => {
@@ -67,7 +67,7 @@ export function PageHeaderUnderlineTabs({
         if (item.kind === "link") {
           return (
             <Link
-              key={item.href}
+              key={`${item.href}::${typeof item.label === "string" ? item.label : "tab"}`}
               href={item.href}
               scroll={item.scroll ?? false}
               className={cls}

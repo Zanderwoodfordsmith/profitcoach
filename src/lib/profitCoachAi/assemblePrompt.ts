@@ -79,6 +79,20 @@ function formatBrain(ctx: CoachAiContext | null | undefined): string {
       })
     );
   }
+
+  // First Campaign Setup — ICP/avatar slices confirmed by the coach.
+  const campaignFields: Array<[label: string, key: keyof CoachAiContext]> = [
+    ["ideal_client", "ideal_client"],
+    ["industry_vocabulary", "industry_vocabulary"],
+    ["pain_language", "pain_language"],
+    ["messaging_hooks", "messaging_hooks"],
+    ["proof_framing", "proof_framing"],
+  ];
+  for (const [label, key] of campaignFields) {
+    const value = (ctx[key] as string | undefined)?.trim();
+    lines.push(`- ${label}: ${value ? value.slice(0, 2_000) : "(empty)"}`);
+  }
+
   return lines.join("\n");
 }
 

@@ -105,6 +105,8 @@ export async function POST(request: Request) {
         eventId: result.eventId,
         eventTitle: result.eventTitle,
         occurrenceStartIso: result.occurrenceStartIso,
+        mirroredToEventId: result.mirroredToEventId,
+        mirroredToEventTitle: result.mirroredToEventTitle,
       });
     }
 
@@ -115,6 +117,8 @@ export async function POST(request: Request) {
       occurrence_start: result.occurrenceStartIso ?? null,
       event_title: result.eventTitle ?? null,
       reason: result.reason ?? null,
+      mirrored_to_event_id: result.mirroredToEventId ?? null,
+      mirrored_to_event_title: result.mirroredToEventTitle ?? null,
     });
   } catch (error) {
     console.error("zoom recording webhook attach failed:", error);

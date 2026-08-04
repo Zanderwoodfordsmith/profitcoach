@@ -36,7 +36,7 @@ export default function AdminLayout({
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
   const sidebarVisible = sidebarOpen && !playbooksReader;
-  const shellPadClass = sidebarVisible ? "md:pl-64" : "pl-0";
+  const shellPadClass = sidebarVisible ? "md:pl-56" : "pl-0";
   const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
 
@@ -50,7 +50,7 @@ export default function AdminLayout({
 
   if (!authReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="app-canvas-bg flex min-h-screen items-center justify-center px-4">
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -72,7 +72,7 @@ export default function AdminLayout({
   return (
     <div
       className={`min-h-screen ${shellPadClass} text-slate-900 ${
-        playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"
+        playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
     >
       <UsageTracker />
@@ -80,7 +80,7 @@ export default function AdminLayout({
         {playbooksReader ? null : isMinimalWorkshopChrome ? (
           <>
             {workshopTopRightSlot ? (
-              <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+              <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
                 <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
               </div>
             ) : null}
@@ -92,7 +92,7 @@ export default function AdminLayout({
               signingOut={signingOut}
               onSignOut={handleSignOut}
             />
-            <div className="fixed right-5 top-1.5 z-[90] hidden items-center gap-3 md:flex">
+            <div className="fixed right-6 top-3 z-[90] hidden items-center gap-3 md:flex">
               {bossWorkshopPage && workshopTopRightSlot ? (
                 <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
               ) : null}
@@ -100,6 +100,7 @@ export default function AdminLayout({
                 variant="admin"
                 signingOut={signingOut}
                 onSignOut={handleSignOut}
+                notificationsOnly
                 className="!static !right-auto !top-auto shrink-0"
               />
             </div>

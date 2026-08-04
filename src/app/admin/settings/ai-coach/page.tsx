@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -110,13 +111,14 @@ export default function AdminSettingsAICoachPage() {
       <StickyPageHeader
         title="Coaching AI prompt"
         description="This system prompt controls how the AI Coach behaves for all clients. The Insight AI (dashboard insights) uses a separate prompt."
+        tabs={<ToolkitHubTabs />}
         leading={
           <p className="text-sm text-slate-500">
             <Link
-              href="/admin/account?tab=site"
+              href="/admin/links"
               className="text-sky-600 hover:text-sky-700"
             >
-              Site tools
+              Links
             </Link>
             {" / AI Coach"}
           </p>

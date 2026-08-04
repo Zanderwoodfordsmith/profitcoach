@@ -7,6 +7,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
@@ -85,8 +86,9 @@ export default function CoachCallsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Calls"
+        title="Get Clients"
         description="Discovery calls booked through your calendar, with live status from GoHighLevel."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
       <div className="flex w-full flex-col gap-4">
