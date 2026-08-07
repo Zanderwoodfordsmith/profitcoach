@@ -63,7 +63,8 @@ async function fetchTree(): Promise<TreeCourse[]> {
 }
 
 function areaLabel(area: AcademyArea): string {
-  return area === "programs" ? "Programs" : "Classroom";
+  // Stored mention area keys are stable; labels match current product names.
+  return area === "programs" ? "Classroom" : "Compass";
 }
 
 export function AcademyMentionPicker({ open, mode, onClose, onPick }: Props) {

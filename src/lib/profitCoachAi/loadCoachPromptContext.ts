@@ -89,5 +89,23 @@ export function mergeCoachAiContext(
       patch.client_results !== undefined
         ? patch.client_results
         : prev.client_results,
+    ideal_client:
+      patch.ideal_client !== undefined ? patch.ideal_client : prev.ideal_client,
+    industry_vocabulary:
+      patch.industry_vocabulary !== undefined
+        ? patch.industry_vocabulary
+        : prev.industry_vocabulary,
+    pain_language:
+      patch.pain_language !== undefined
+        ? patch.pain_language
+        : prev.pain_language,
+    messaging_hooks:
+      patch.messaging_hooks !== undefined
+        ? patch.messaging_hooks
+        : prev.messaging_hooks,
+    proof_framing:
+      patch.proof_framing !== undefined
+        ? patch.proof_framing
+        : prev.proof_framing,
   };
 }

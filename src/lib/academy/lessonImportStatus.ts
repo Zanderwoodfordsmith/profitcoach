@@ -1,7 +1,12 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-import { loadLegacyHub } from "./legacyHubLoad";
-import type { LegacyHubCourse, LegacyHubLesson } from "./legacyHubCatalog";
+import {
+  flattenSections,
+  type HubCourse,
+  type HubLesson,
+} from "./hubCatalog";
+import { contentSourceCourseId } from "./programmeContentSource";
+import { loadClassroomHub } from "./classroomHubLoad";
 import {
   lessonVideoImportStatus,
   type LessonImportCatalogOrder,
@@ -39,12 +44,14 @@ function lessonKey(courseId: string, lessonId: string): string {
   return `${courseId}:${lessonId}`;
 }
 
-function catalogOrderFromHub(hub: ReturnType<typeof loadLegacyHub>): LessonImportCatalogOrder {
+function catalogOrderFromHub(
+  hub: ReturnType<typeof loadClassroomHub>,
+): LessonImportCatalogOrder {
   return {
     courses: hub.courses.map((course) => ({
       id: course.id,
       title: course.title,
-      sections: course.sections.map((section) => ({
+      sections: flattenSections(course.sections).map((section) => ({
         id: section.id,
         title: section.title,
         lessonIds: section.lessons.map((l) => l.id),
@@ -54,11 +61,11 @@ function catalogOrderFromHub(hub: ReturnType<typeof loadLegacyHub>): LessonImpor
 }
 
 function rowFromLesson(
-  course: LegacyHubCourse,
+  course: HubCourse,
   sectionTitle: string,
-  lesson: LegacyHubLesson,
+  lesson: HubLesson,
   content: ContentRow | undefined,
-  adminBasePath: string
+  adminBasePath: string,
 ): LessonImportStatusRow {
   const hasInAppVideo = Boolean(content?.video_url?.trim());
   const hasContent = Boolean(content?.body_markdown?.trim());
@@ -90,9 +97,9 @@ function rowFromLesson(
 }
 
 export async function loadLessonImportStatusReport(
-  adminBasePath = "/admin/academy/programs"
+  adminBasePath = "/admin/academy/classroom",
 ): Promise<LessonImportStatusReport> {
-  const hub = loadLegacyHub();
+  const hub = loadClassroomHub();
   const catalogOrder = catalogOrderFromHub(hub);
 
   const { data: contentRows, error: contentError } = await supabaseAdmin
@@ -111,16 +118,16 @@ export async function loadLessonImportStatusReport(
 
   const lessons: LessonImportStatusRow[] = [];
   for (const course of hub.courses) {
-    for (const section of course.sections) {
+    for (const section of flattenSections(course.sections)) {
       for (const lesson of section.lessons) {
         lessons.push(
           rowFromLesson(
             course,
             section.title,
             lesson,
-            byKey.get(lessonKey(course.id, lesson.id)),
-            adminBasePath
-          )
+            byKey.get(lessonKey(contentSourceCourseId(lesson.id), lesson.id)),
+            adminBasePath,
+          ),
         );
       }
     }
@@ -137,7 +144,7 @@ export async function loadLessonImportStatusReport(
       (l) =>
         (!l.legacyExpectsVideo || l.hasInAppVideo) &&
         !l.missingContent &&
-        !l.missingTranscript
+        !l.missingTranscript,
     ).length,
   };
 

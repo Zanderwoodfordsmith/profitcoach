@@ -9,5 +9,7 @@ export const lessonMarkdownSanitizeSchema = {
     span: [...(defaultSchema.attributes?.span ?? []), "style"],
     details: ["class", "style", "data-accordion-color"],
     summary: ["class"],
+    // Width + alignment from the lesson editor (HTML <img width data-align>).
+    img: [...(defaultSchema.attributes?.img ?? []), "width", "height", "data-align"],
   },
 };

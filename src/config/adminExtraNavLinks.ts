@@ -1,10 +1,10 @@
 /**
- * Useful routes that are not in the main admin sidebar (see admin/layout.tsx).
+ * Useful routes listed on Admin → Links (pages not in the main sidebar).
  */
 export type AdminExtraNavLink = {
   href: string;
   label: string;
-  /** Shown as secondary text on Account → Links */
+  /** Shown as secondary text on the Links page */
   hint?: string;
 };
 
@@ -28,6 +28,11 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     href: "/admin/landing-analytics",
     label: "Landing analytics",
     hint: "Boss Score landing views, opt-ins, and per-coach breakdown",
+  },
+  {
+    href: "/admin/sales-nav-imports",
+    label: "Sales Nav imports",
+    hint: "Apify scrape runs: who, counts, new vs updated, estimated cost",
   },
   {
     href: "/assessment",
@@ -55,8 +60,13 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Also under Coaches hub tabs",
   },
   {
-    href: "/admin/cash-flow-forecast",
-    label: "13-week cash flow forecast",
-    hint: "Zander only — projected subscriptions & payment plans",
+    href: "/admin/funnel-settings",
+    label: "My native booking (hours)",
+    hint: "Set your own availability — no impersonation. Book link appears after save.",
+  },
+  {
+    href: "/zander",
+    label: "My public book page (/zander)",
+    hint: "Enable booking under Funnel settings first, then share this URL.",
   },
 ];

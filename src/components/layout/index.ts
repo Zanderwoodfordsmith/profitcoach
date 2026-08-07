@@ -12,3 +12,5 @@ export type {
   PageHeaderUnderlineTabLinkItem,
   PageHeaderUnderlineTabsProps,
 } from "./PageHeaderUnderlineTabs";
+export { CoachToolsHubTabs } from "./CoachToolsHubTabs";
+export type { CoachToolsHub } from "./CoachToolsHubTabs";

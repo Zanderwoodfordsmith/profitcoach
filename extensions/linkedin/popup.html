@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profit Coach</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <p class="brand">Profit Coach</p>
+      <h1>LinkedIn</h1>
+      <p class="sub">
+        Open a LinkedIn profile, then open the side panel to save or draft.
+      </p>
+
+      <p id="access" class="status"></p>
+
+      <button id="openPanel" type="button" class="primary">
+        Open side panel
+      </button>
+
+      <details class="adv">
+        <summary>Sales Nav session &amp; site</summary>
+        <label class="field">
+          <span>Site</span>
+          <select id="origin"></select>
+        </label>
+        <button id="save" type="button" class="secondary">
+          Save Sales Nav session
+        </button>
+        <button id="copy" type="button" class="secondary">
+          Copy cookies
+        </button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </details>
+    </main>
+    <script src="config.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,179 @@
+{
+  "lessonPanelNotice": "The video and workbook for each lesson are hosted in Business Coach Academy (Disco). Use the button below to open the full course curriculum in a new tab (you may need to sign in), rather than a direct link to an individual lesson.",
+  "courses": [
+    {
+      "id": "not-in-classroom",
+      "title": "Archive",
+      "description": "Lessons from the original programmes that are not on the Classroom hub. Nothing here is removed from Classroom — this archive is only what the hub does not surface.",
+      "sections": [
+        {
+          "id": "kickstart",
+          "title": "Kickstart",
+          "lessons": [],
+          "sections": [
+            {
+              "id": "kickstart-welcome-getting-started-guide",
+              "title": "Welcome & Getting Started Guide",
+              "lessons": [
+                {
+                  "id": "kickstart-welcome-getting-started-guide-welcome-to-business-coach-academy",
+                  "title": "Welcome To Business Coach Academy",
+                  "duration": "3m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                },
+                {
+                  "id": "kickstart-welcome-getting-started-guide-speed-up-your-learning",
+                  "title": "Speed Up Your Learning",
+                  "duration": "3m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                },
+                {
+                  "id": "kickstart-welcome-getting-started-guide-earn-1000-for-every-referal",
+                  "title": "Earn £1000 for every referral",
+                  "duration": "",
+                  "hasVideo": false,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                }
+              ]
+            },
+            {
+              "id": "kickstart-how-to-use-the-members-area",
+              "title": "How To Use The Members Area",
+              "lessons": [
+                {
+                  "id": "kickstart-how-to-use-the-members-area-adjust-email-notifications-from-the-academy",
+                  "title": "Adjust email notifications from the academy",
+                  "duration": "1m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                },
+                {
+                  "id": "kickstart-how-to-use-the-members-area-how-to-watch-the-training",
+                  "title": "How to watch the training",
+                  "duration": "1m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                },
+                {
+                  "id": "kickstart-how-to-use-the-members-area-how-to-make-a-post-in-the-community",
+                  "title": "How to make a post in the community",
+                  "duration": "3m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                }
+              ]
+            },
+            {
+              "id": "kickstart-how-to-get-support",
+              "title": "How to get support",
+              "lessons": [
+                {
+                  "id": "kickstart-how-to-get-support-how-to-get-support",
+                  "title": "How to get support",
+                  "duration": "0.5m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                },
+                {
+                  "id": "kickstart-how-to-get-support-how-to-access-support-calls",
+                  "title": "How to access support calls",
+                  "duration": "2m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                }
+              ]
+            },
+            {
+              "id": "kickstart-key-resources",
+              "title": "Key Resources",
+              "lessons": [
+                {
+                  "id": "kickstart-key-resources-key-links-and-resources",
+                  "title": "Key links and resources",
+                  "duration": "",
+                  "hasVideo": false,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/kick-start/curriculum/overview"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "going-pro",
+          "title": "Going Pro",
+          "lessons": [],
+          "sections": [
+            {
+              "id": "going-pro-pro-business",
+              "title": "Pro Business",
+              "lessons": [
+                {
+                  "id": "going-pro-iii-2-pro-business-business-setup-and-essentials",
+                  "title": "Business Setup and Essentials",
+                  "duration": "8m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/going-pro/curriculum/overview"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "client-acquisition",
+          "title": "Client Acquisition",
+          "lessons": [],
+          "sections": [
+            {
+              "id": "client-acquisition-linkedin-optimization",
+              "title": "LinkedIn Optimization",
+              "lessons": [
+                {
+                  "id": "client-acquisition-linkedin-optimization-linkedin-profile-checklist-to-optimise-your-profile-2",
+                  "title": "LinkedIn Profile: Checklist To Optimise Your Profile",
+                  "duration": "",
+                  "hasVideo": false,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "client-delivery",
+          "title": "Client Delivery",
+          "lessons": [],
+          "sections": [
+            {
+              "id": "client-delivery-other-coachin-session-content",
+              "title": "Other Coaching Session Content",
+              "lessons": [
+                {
+                  "id": "client-delivery-other-coachin-session-content-coaching-session-business-growth-matrix-by-pam",
+                  "title": "Coaching Session: Business Growth Matrix by Pam",
+                  "duration": "93m",
+                  "hasVideo": true,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
+                }
+              ]
+            },
+            {
+              "id": "client-delivery-profit-system-framework",
+              "title": "Profit System Framework",
+              "lessons": [
+                {
+                  "id": "client-delivery-profit-system-framework-where-is-the-profit-system",
+                  "title": "Where is the Profit System?",
+                  "duration": "",
+                  "hasVideo": false,
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/coaching-sessions-2p7iq/curriculum/overview"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

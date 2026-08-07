@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -25,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
 import { coachCommunityPathFromAdminPath } from "@/lib/auth/loginReturnPath";
 import {
   displayNameFromProfile,
@@ -204,6 +206,8 @@ async function insertCommunityCommentRow(args: {
   if (!data) {
     return { error: "Comment could not be saved." };
   }
+
+  notifyAcademyTrackedActionsChanged();
 
   return {
     comment: mapCommentInsertRow(
@@ -423,6 +427,48 @@ function PostDetailOverflowMenu({
   onReport: () => void;
   onDelete: () => void | Promise<void>;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null
+  );
+
+  const updateMenuPos = useCallback(() => {
+    const trigger = menuRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    setMenuPos({
+      top: rect.bottom + 4,
+      right: Math.max(8, window.innerWidth - rect.right),
+    });
+  }, [menuRef]);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      setMenuPos(null);
+      return;
+    }
+    updateMenuPos();
+    window.addEventListener("resize", updateMenuPos);
+    // Capture scroll from the post body so the menu stays with the trigger.
+    window.addEventListener("scroll", updateMenuPos, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPos);
+      window.removeEventListener("scroll", updateMenuPos, true);
+    };
+  }, [menuOpen, updateMenuPos]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen, menuRef, setMenuOpen]);
+
   return (
     <div className="relative shrink-0" ref={menuRef}>
       <button
@@ -435,11 +481,14 @@ function PostDetailOverflowMenu({
       >
         <MoreHorizontal className="h-5 w-5" strokeWidth={1.75} />
       </button>
-      {menuOpen ? (
-        <div
-          role="menu"
-          className="absolute right-0 z-30 mt-1 min-w-[13.5rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
-        >
+      {menuOpen && menuPos
+        ? createPortal(
+            <div
+              ref={panelRef}
+              role="menu"
+              className="fixed z-[220] min-w-[13.5rem] rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+              style={{ top: menuPos.top, right: menuPos.right }}
+            >
           {canManagePost ? (
             <>
               <button
@@ -623,8 +672,10 @@ function PostDetailOverflowMenu({
               </button>
             </>
           )}
-        </div>
-      ) : null}
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
@@ -806,16 +857,6 @@ export function PostDetailModal({
       cancelled = true;
     };
   }, [currentUserId]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onDoc(e: MouseEvent) {
-      if (menuRef.current?.contains(e.target as Node)) return;
-      setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [menuOpen]);
 
   const shareUrl = useMemo(() => {
     if (typeof window === "undefined") return "";

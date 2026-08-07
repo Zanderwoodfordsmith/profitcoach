@@ -18,6 +18,18 @@ export async function GET(request: Request) {
     );
   }
 
+  const looksPlaceholder = (value: string) =>
+    value.startsWith("your-") || value.includes("placeholder");
+  if (looksPlaceholder(clientId) || looksPlaceholder(stateSecret)) {
+    return NextResponse.json(
+      {
+        error:
+          "LinkedIn OAuth still has placeholder credentials in .env.local. Set LINKEDIN_CLIENT_ID and LINKEDIN_CLIENT_SECRET from the LinkedIn Developer Portal, then restart the dev server.",
+      },
+      { status: 500 }
+    );
+  }
+
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.slice("Bearer ".length).trim()

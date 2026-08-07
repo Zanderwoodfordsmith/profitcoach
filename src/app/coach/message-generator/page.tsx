@@ -1,13 +1,13 @@
 "use client";
 
 import { Suspense, useMemo } from "react";
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 import {
   PageHeaderUnderlineTabs,
   StickyPageHeader,
 } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ProfitCoachAiWorkspace } from "@/components/profitCoachAi/ProfitCoachAiWorkspace";
 import type { ProfitCoachAiTab } from "@/components/profitCoachAi/ProfitCoachAiWorkspace";
 
@@ -19,16 +19,13 @@ function parseProfitCoachAiTab(search: string | null): ProfitCoachAiTab {
 function CoachMessageGeneratorContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const basePath = pathname.startsWith("/admin")
+  const isAdmin = pathname.startsWith("/admin");
+  const basePath = isAdmin
     ? "/admin/message-generator"
     : "/coach/message-generator";
   const activeTab = parseProfitCoachAiTab(searchParams.get("tab"));
 
-  const settingsHref = pathname.startsWith("/admin")
-    ? "/admin/account"
-    : "/coach/settings";
-
-  const tabs = useMemo(
+  const aiSubTabs = useMemo(
     () => (
       <PageHeaderUnderlineTabs
         ariaLabel="AI coach sections"
@@ -56,17 +53,10 @@ function CoachMessageGeneratorContent() {
   return (
     <div className="flex min-h-[calc(100dvh-4rem)] flex-col gap-4">
       <StickyPageHeader
-        title="AI Coach"
-        description="Choose a skill and optional role, then chat with Profit Coach methodology, playbook excerpts, and your saved brain context. Chats are saved; open Settings to edit superpowers, hobbies, and client results anytime."
-        tabs={tabs}
-        actions={
-          <Link
-            href={settingsHref}
-            className="text-sm font-medium text-sky-700 hover:underline"
-          >
-            Settings
-          </Link>
-        }
+        title={isAdmin ? "Get Clients" : "AI Coach"}
+        description="Choose a skill and optional role, then chat with Profit Coach methodology, playbook excerpts, and your saved brain context. Chats are saved; edit My brain anytime to update superpowers, hobbies, and client results."
+        tabs={isAdmin ? <CoachToolsHubTabs hub="get-clients" /> : aiSubTabs}
+        below={isAdmin ? aiSubTabs : undefined}
       />
 
       <div

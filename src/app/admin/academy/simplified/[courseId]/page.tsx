@@ -1,22 +1,10 @@
-import { notFound, redirect } from "next/navigation";
-
-import { findLegacyCourse, firstLessonInCourse } from "@/lib/academy/legacyHubCatalog";
-import { loadSimplifiedHub } from "@/lib/academy/simplifiedHubLoad";
-
-const BASE = "/admin/academy/simplified";
+import { redirect } from "next/navigation";
 
 type Props = { params: Promise<{ courseId: string }> };
 
-export default async function AdminAcademySimplifiedCourseEntryPage({
+export default async function AdminAcademySimplifiedCourseRedirectPage({
   params,
 }: Props) {
   const { courseId } = await params;
-  const data = loadSimplifiedHub();
-  const course = findLegacyCourse(data, courseId);
-  if (!course) notFound();
-
-  const first = firstLessonInCourse(course);
-  if (!first) redirect(BASE);
-
-  redirect(`${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(first.id)}`);
+  redirect(`/admin/academy/classroom/${encodeURIComponent(courseId)}`);
 }

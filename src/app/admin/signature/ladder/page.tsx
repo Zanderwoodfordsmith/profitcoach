@@ -1,1 +1,6 @@
-export { default } from "@/app/coach/signature/ladder/page";
+import { redirect } from "next/navigation";
+
+/** Ladder lives under Account settings. */
+export default function AdminSignatureLadderRedirectPage() {
+  redirect("/admin/account?tab=ladder");
+}

@@ -7,9 +7,13 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
-import { academyProseClassName } from "@/components/academy/academyProseClassName";
+import {
+  academyGuideProseClassName,
+  academyProseClassName,
+} from "@/components/academy/academyProseClassName";
 import { LessonHtmlEmbed } from "@/components/academy/LessonHtmlEmbed";
 import { LESSON_EMBED_LANG } from "@/lib/academy/lessonHtmlEmbed";
+import { headingLabel, headingSlug } from "@/lib/academy/lessonGuideOutline";
 import { lessonMarkdownSanitizeSchema } from "@/lib/academy/lessonMarkdownSanitizeSchema";
 import { normalizeLessonMarkdown } from "@/lib/academy/normalizeLessonMarkdown";
 
@@ -45,12 +49,35 @@ function collectText(children: ElementContent[] | undefined): string {
 }
 
 type PreProps = ComponentPropsWithoutRef<"pre"> & { node?: Element };
+type HeadingProps = ComponentPropsWithoutRef<"h2"> & { node?: Element };
 
-export function AcademyMarkdown({ markdown }: { markdown: string }) {
+export function AcademyMarkdown({
+  markdown,
+  variant = "default",
+}: {
+  markdown: string;
+  /** `guide` sizes the type for long-form reading and anchors its headings. */
+  variant?: "default" | "guide";
+}) {
   if (!markdown.trim()) return null;
   const normalized = normalizeLessonMarkdown(markdown);
+  const guide = variant === "guide";
+
+  const heading =
+    (Tag: "h1" | "h2" | "h3") =>
+    ({ node, children, ...rest }: HeadingProps) => {
+      const id = guide
+        ? headingSlug(headingLabel(collectText(node?.children)))
+        : undefined;
+      return (
+        <Tag id={id} {...rest}>
+          {children}
+        </Tag>
+      );
+    };
+
   return (
-    <div className={academyProseClassName}>
+    <div className={guide ? academyGuideProseClassName : academyProseClassName}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw, [rehypeSanitize, lessonMarkdownSanitizeSchema]]}
@@ -62,6 +89,9 @@ export function AcademyMarkdown({ markdown }: { markdown: string }) {
             }
             return <pre {...rest}>{children}</pre>;
           },
+          h1: heading("h1"),
+          h2: heading("h2"),
+          h3: heading("h3"),
         }}
       >
         {normalized}

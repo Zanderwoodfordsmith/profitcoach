@@ -10,6 +10,7 @@ export type ProspectRow = {
   job_title: string | null;
   email: string | null;
   business_name: string | null;
+  linkedin_url?: string | null;
   phone: string | null;
   type: string;
   prospect_status: string | null;

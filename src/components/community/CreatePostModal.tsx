@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ImagePlus, Video, X } from "lucide-react";
+import { CalendarDays, Globe2, ImagePlus, Lock, Video, X } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import type { CommunityCategory } from "@/components/community/CommunityFeed";
 import { MentionTextarea } from "@/components/community/MentionTextarea";
@@ -22,6 +22,20 @@ import {
   getCommunityAuthorId,
 } from "@/lib/communityEffectiveAuthorId";
 import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
+import {
+  lessonCommunityCategorySlug,
+  lessonCommunityComposerPlaceholder,
+  lessonCommunityPublicVisibilityTitle,
+  lessonCommunityTabLabel,
+} from "@/lib/academy/lessonCommunityChannel";
+import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
+import { FEEDBACK_REQUEST_CATEGORY_SLUG } from "@/lib/coachAccess/tiers";
+
+export type CreatePostLessonContext = {
+  courseId: string;
+  lessonId: string;
+  lessonPath: string;
+};
 
 type Props = {
   categories: CommunityCategory[];
@@ -33,6 +47,12 @@ type Props = {
   viewerIsAdmin?: boolean | null;
   /** Mark the new post read for the author (including scheduled posts). */
   onMarkPostRead?: (postId: string) => void;
+  /**
+   * Lesson community mode: same composer, but category is fixed to the
+   * lesson's channel (Wins / Intros / Ask & Share) and the picker becomes
+   * Public vs Private.
+   */
+  lessonContext?: CreatePostLessonContext | null;
 };
 
 type PendingMedia = { key: string; file: File; previewUrl: string };
@@ -54,12 +74,16 @@ export function CreatePostModal({
   onCreated,
   viewerIsAdmin = null,
   onMarkPostRead,
+  lessonContext = null,
 }: Props) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [lessonVisibility, setLessonVisibility] = useState<"public" | "private">(
+    "public"
+  );
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
@@ -70,9 +94,20 @@ export function CreatePostModal({
   const [schedulePopoverOpen, setSchedulePopoverOpen] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const isAuthorAdmin = authorRole === "admin";
+  const isLessonQa = Boolean(lessonContext);
+  const lessonCategorySlug = lessonContext
+    ? lessonCommunityCategorySlug(lessonContext.lessonId)
+    : FEEDBACK_REQUEST_CATEGORY_SLUG;
+  const lessonChannelLabel = lessonContext
+    ? lessonCommunityTabLabel(lessonContext.lessonId)
+    : "Ask & Share";
   const announcementsCategory = useMemo(
     () => categories.find((c) => c.slug === "announcements") ?? null,
     [categories]
+  );
+  const lessonCategory = useMemo(
+    () => categories.find((c) => c.slug === lessonCategorySlug) ?? null,
+    [categories, lessonCategorySlug]
   );
   const selectableCategories = useMemo(
     () =>
@@ -83,10 +118,14 @@ export function CreatePostModal({
   );
 
   useEffect(() => {
+    if (isLessonQa) {
+      if (lessonCategory?.id) setCategoryId(lessonCategory.id);
+      return;
+    }
     if (categoryId && !selectableCategories.some((c) => c.id === categoryId)) {
       setCategoryId("");
     }
-  }, [categoryId, selectableCategories]);
+  }, [categoryId, selectableCategories, isLessonQa, lessonCategory?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,15 +216,26 @@ export function CreatePostModal({
 
   const submit = useCallback(async () => {
     if (!canSubmit) return;
-    if (!categoryId) {
-      setError("Please choose a category before posting.");
+    const resolvedCategoryId = isLessonQa
+      ? lessonCategory?.id || categoryId
+      : categoryId;
+    if (!resolvedCategoryId) {
+      setError(
+        isLessonQa
+          ? `${lessonChannelLabel} category is missing. Apply the latest community migrations.`
+          : "Please choose a category before posting."
+      );
       return;
     }
-    if (announcementsCategory && categoryId === announcementsCategory.id && !isAuthorAdmin) {
+    if (
+      announcementsCategory &&
+      resolvedCategoryId === announcementsCategory.id &&
+      !isAuthorAdmin
+    ) {
       setError("Only admins can post in Announcements.");
       return;
     }
-    if (isAuthorAdmin && scheduledAtIso) {
+    if (isAuthorAdmin && scheduledAtIso && !isLessonQa) {
       const scheduleMs = new Date(scheduledAtIso).getTime();
       if (Number.isNaN(scheduleMs)) {
         setError("Pick a valid scheduled date and time.");
@@ -230,18 +280,30 @@ export function CreatePostModal({
       const mediaPayload = uploaded.length > 0 ? uploaded : null;
       const imageUrl = uploaded.length > 0 ? firstCommunityPostImageUrl(uploaded) : null;
 
-      const { data: created, error: insErr } = await supabaseClient
-        .from("community_posts")
-        .insert({
+      const insertRow: Record<string, unknown> = {
         author_id: authorId,
-        category_id: categoryId,
+        category_id: resolvedCategoryId,
         title: capitalizeFirstUnicodeLetter(trimmedTitle),
         body: capitalizeFirstUnicodeLetter(trimmedBody),
         image_url: imageUrl,
         media: mediaPayload,
         published_at:
-          isAuthorAdmin && scheduledAtIso ? scheduledAtIso : new Date().toISOString(),
-      })
+          isAuthorAdmin && scheduledAtIso && !isLessonQa
+            ? scheduledAtIso
+            : new Date().toISOString(),
+      };
+
+      if (lessonContext) {
+        insertRow.post_scope = "lesson_qa";
+        insertRow.visibility = lessonVisibility;
+        insertRow.lesson_course_id = lessonContext.courseId;
+        insertRow.lesson_id = lessonContext.lessonId;
+        insertRow.lesson_path = lessonContext.lessonPath;
+      }
+
+      const { data: created, error: insErr } = await supabaseClient
+        .from("community_posts")
+        .insert(insertRow)
         .select("id")
         .single();
 
@@ -255,6 +317,8 @@ export function CreatePostModal({
       if (created?.id) {
         onMarkPostRead?.(created.id);
       }
+
+      notifyAcademyTrackedActionsChanged();
 
       revokeAllPending(pendingMedia);
       setPendingMedia([]);
@@ -270,14 +334,20 @@ export function CreatePostModal({
     canSubmit,
     categoryId,
     impersonatingCoachId,
+    isLessonQa,
+    lessonContext,
+    lessonVisibility,
     onCreated,
     onMarkPostRead,
     pathname,
     viewerIsAdmin,
     pendingMedia,
+    lessonCategory?.id,
+    lessonChannelLabel,
     revokeAllPending,
     scheduledAtIso,
     isAuthorAdmin,
+    announcementsCategory,
     title,
   ]);
 
@@ -349,7 +419,13 @@ export function CreatePostModal({
         <MentionTextarea
           value={body}
           onChange={setBody}
-          placeholder="Write something…"
+          placeholder={
+            isLessonQa && lessonContext
+              ? lessonCommunityComposerPlaceholder(lessonContext.lessonId)
+              : isLessonQa
+                ? "Ask a question or share something…"
+                : "Write something…"
+          }
           autoResize
           maxAutoHeightPx={0}
           minAutoHeightPx={140}
@@ -389,21 +465,72 @@ export function CreatePostModal({
             </div>
             <div className="flex flex-col items-end gap-1.5">
               <div className="flex items-center gap-2">
-                <select
-                  value={categoryId}
-                  onChange={(e) => {
-                    setCategoryId(e.target.value);
-                    if (error) setError(null);
-                  }}
-                  className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
-                >
-                  <option value="">Select category</option>
-                  {selectableCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                {isLessonQa ? (
+                  <div
+                    className="flex gap-0.5 rounded-lg bg-slate-100 p-0.5"
+                    role="group"
+                    aria-label="Who can see this post"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLessonVisibility("public");
+                        if (error) setError(null);
+                      }}
+                      aria-pressed={lessonVisibility === "public"}
+                      title={
+                        lessonContext
+                          ? lessonCommunityPublicVisibilityTitle(
+                              lessonContext.lessonId
+                            )
+                          : "Everyone can see this in Ask & Share"
+                      }
+                      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                        lessonVisibility === "public"
+                          ? "bg-emerald-600 text-white shadow-sm"
+                          : "text-slate-400 hover:bg-emerald-50 hover:text-emerald-700"
+                      }`}
+                    >
+                      <Globe2 className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} aria-hidden />
+                      Public
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLessonVisibility("private");
+                        if (error) setError(null);
+                      }}
+                      aria-pressed={lessonVisibility === "private"}
+                      title="Only you and the team can see this"
+                      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                        lessonVisibility === "private"
+                          ? "bg-amber-400 text-amber-950 shadow-sm"
+                          : "text-slate-400 hover:bg-amber-50 hover:text-amber-700"
+                      }`}
+                    >
+                      <Lock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} aria-hidden />
+                      Private
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    value={categoryId}
+                    onChange={(e) => {
+                      setCategoryId(e.target.value);
+                      if (error) setError(null);
+                    }}
+                    aria-label="Where to post"
+                    title="Where to post"
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500/40"
+                  >
+                    <option value="">Where to post</option>
+                    {selectableCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <button
                   type="button"
                   onClick={onClose}
@@ -417,9 +544,13 @@ export function CreatePostModal({
                   onClick={() => void submit()}
                   className="rounded-lg bg-sky-700 px-5 py-2.5 text-base font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {saving ? "Posting…" : scheduledAtIso ? "Schedule" : "Post"}
+                  {saving
+                    ? "Posting…"
+                    : !isLessonQa && scheduledAtIso
+                      ? "Schedule"
+                      : "Post"}
                 </button>
-                {isAuthorAdmin ? (
+                {isAuthorAdmin && !isLessonQa ? (
                   <div className="relative">
                     <button
                       type="button"
@@ -470,7 +601,7 @@ export function CreatePostModal({
                   </div>
                 ) : null}
               </div>
-              {isAuthorAdmin && scheduleSummary ? (
+              {isAuthorAdmin && !isLessonQa && scheduleSummary ? (
                 <p className="text-right text-[11px] text-sky-700">
                   Scheduled for {scheduleSummary}
                 </p>

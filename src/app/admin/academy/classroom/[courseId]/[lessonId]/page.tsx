@@ -1,27 +1,49 @@
 import { notFound } from "next/navigation";
 
 import { AdminClassroomLessonEditor } from "@/components/academy/AdminClassroomLessonEditor";
-import { findCourse } from "@/lib/academy/catalog";
-import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
+import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
+import { findHubCourse, findLessonInCourse } from "@/lib/academy/hubCatalog";
+import { loadClassroomCourseWithContent } from "@/lib/academy/lessonContent";
+import { loadLessonResources } from "@/lib/academy/resources";
+import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
+import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
+
+const BASE = "/admin/academy/classroom";
 
 type Props = { params: Promise<{ courseId: string; lessonId: string }> };
 
 export default async function AdminAcademyClassroomLessonPage({ params }: Props) {
   const { courseId, lessonId } = await params;
-  const catalog = await loadAcademyCatalogWithDb();
-  const found = findCourse(catalog, courseId);
-  if (!found) notFound();
+  const data = loadClassroomHub();
+  const baseCourse = findHubCourse(data, courseId);
+  if (!baseCourse) notFound();
 
-  const lesson = found.course.lessons?.find((l) => l.id === lessonId);
+  const [course, lessonResources] = await Promise.all([
+    loadClassroomCourseWithContent(baseCourse, { includeDrafts: true }),
+    loadLessonResources(contentSourceCourseId(lessonId), lessonId),
+  ]);
+  const lesson = findLessonInCourse(course, lessonId);
   if (!lesson) notFound();
 
   return (
-    <div className="pt-6">
-      <AdminClassroomLessonEditor
-        category={found.category}
-        course={found.course}
-        lesson={lesson}
-      />
+    <div>
+      <LessonProgressProvider courseId={courseId} activeLessonId={lessonId}>
+        <AdminClassroomLessonEditor
+          data={data}
+          course={course}
+          lesson={lesson}
+          initialVideoUrl={lesson.videoUrl ?? null}
+          initialAudioUrl={lesson.audioUrl ?? null}
+          initialBodyMarkdown={lesson.bodyMarkdown ?? ""}
+          initialGuideMarkdown={lesson.guideMarkdown ?? ""}
+          basePath={BASE}
+          classroomHref={BASE}
+          lessonResources={lessonResources}
+          contentsPosition="left"
+          chrome="minimal"
+          hub="classroom"
+        />
+      </LessonProgressProvider>
     </div>
   );
 }

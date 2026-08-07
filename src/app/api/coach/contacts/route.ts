@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { normalizeLinkedInProfileUrl } from "@/lib/apify/linkedinProfile";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -7,6 +9,7 @@ type Body = {
   email?: string;
   jobTitle?: string;
   businessName?: string;
+  linkedinUrl?: string;
   sendInvite?: boolean;
   type?: "prospect" | "client";
 };
@@ -30,6 +33,17 @@ export async function POST(request: Request) {
   const sendInvite = !!body.sendInvite;
   const contactType = body.type === "client" ? "client" : "prospect";
 
+  let linkedinUrl: string | null = null;
+  if (body.linkedinUrl?.trim()) {
+    linkedinUrl = normalizeLinkedInProfileUrl(body.linkedinUrl);
+    if (!linkedinUrl) {
+      return NextResponse.json(
+        { error: "Invalid LinkedIn profile URL." },
+        { status: 400 }
+      );
+    }
+  }
+
   if (!fullName) {
     return NextResponse.json(
       { error: contactType === "client" ? "Please provide client name." : "Please provide prospect name." },
@@ -48,18 +62,15 @@ export async function POST(request: Request) {
       throw new Error("Coach record not found.");
     }
 
-    const { data: inserted, error: insertError } = await supabaseAdmin
-      .from("contacts")
-      .insert({
-        coach_id: coachId,
-        full_name: fullName,
-        email,
-        job_title: jobTitle,
-        business_name: businessName,
-        type: contactType,
-      })
-      .select("id")
-      .maybeSingle();
+    const { data: inserted, error: insertError } = await tryInsertContactStripping({
+      coach_id: coachId,
+      full_name: fullName,
+      email,
+      job_title: jobTitle,
+      business_name: businessName,
+      linkedin_url: linkedinUrl,
+      type: contactType,
+    });
 
     if (insertError || !inserted) {
       throw new Error(contactType === "client" ? "Unable to create client." : "Unable to create prospect.");
@@ -77,10 +88,8 @@ export async function POST(request: Request) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
-    return NextResponse.json(
-      { error: err?.message ?? "Unexpected error." },
-      { status: 400 }
-    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unexpected error.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

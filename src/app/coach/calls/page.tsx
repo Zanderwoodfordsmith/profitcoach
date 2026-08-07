@@ -7,7 +7,9 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
-import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
+import { CallsHub } from "@/components/calls/CallsHub";
+import type { CallRow } from "@/lib/callRow";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 export default function CoachCallsPage() {
@@ -17,6 +19,11 @@ export default function CoachCallsPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appOrigin, setAppOrigin] = useState("");
+
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,27 +92,26 @@ export default function CoachCallsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Calls"
-        description="Discovery calls booked through your calendar, with live status from GoHighLevel."
+        title="Get Clients"
+        description="Calendar view, call list, and booking calendars — native bookings plus GoHighLevel."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
-      <div className="flex w-full flex-col gap-4">
-        {loading && <p className="text-sm text-slate-600">Loading…</p>}
-        {error && <p className="text-sm text-rose-600">{error}</p>}
-
-        <CallsTable
-          calls={calls}
-          loading={loading}
-          error={error}
-          showCoachColumn={false}
-          onRowClick={(row) => {
-            if (row.contact_id && clientHubAllowed) {
-              router.push(bossProHubPath(row.contact_id));
-            }
-          }}
-          emptyMessage="No calls yet. When prospects book through your calendar, they will appear here."
-        />
-      </div>
+      <CallsHub
+        calls={calls}
+        loading={loading}
+        error={error}
+        showCoachColumn={false}
+        appOrigin={appOrigin}
+        callsBasePath="/coach/calls"
+        onCallsChange={setCalls}
+        onRowClick={(row) => {
+          if (row.contact_id && clientHubAllowed) {
+            router.push(bossProHubPath(row.contact_id));
+          }
+        }}
+        emptyMessage="No calls yet. When prospects book through your calendars, they will appear here."
+      />
     </div>
   );
 }

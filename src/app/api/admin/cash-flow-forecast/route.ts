@@ -4,6 +4,7 @@ import {
   buildCashFlowForecast,
   defaultExpenseSections,
 } from "@/lib/cashFlowForecast/buildForecast";
+import { toSavedExpenseOverrides } from "@/lib/cashFlowForecast/bcaOperatingExpenses";
 import type {
   CashFlowForecastSettings,
   ForecastExpenseRow,
@@ -16,7 +17,13 @@ import {
 import { requireForecastAccess } from "@/lib/requireForecastAccess";
 import { loadCoachDirectory } from "@/lib/stripePaymentsSync";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { isMondayIso } from "@/lib/scorecardWeeks";
+import {
+  isMondayIso,
+  mondayOfWeekContaining,
+  mondaySequenceFromStart,
+  toIsoDate,
+} from "@/lib/scorecardWeeks";
+import { CASH_FLOW_FORECAST_WEEKS } from "@/lib/cashFlowForecast/types";
 
 function parseExpenseRows(value: unknown): ForecastExpenseRow[] {
   if (!Array.isArray(value)) return defaultExpenseSections();
@@ -235,12 +242,24 @@ export async function PATCH(request: Request) {
       startMonday = body.startMonday;
     }
 
-    const expenseRows = body.expenseRows
+    const expenseRowsRaw = body.expenseRows
       ? parseExpenseRows(body.expenseRows)
       : current.expenseRows;
     const excludedStreamKeys = body.excludedStreamKeys
       ? parseExcludedStreamKeys(body.excludedStreamKeys)
       : current.excludedStreamKeys;
+
+    const resolvedStartMonday =
+      startMonday && isMondayIso(startMonday)
+        ? startMonday
+        : toIsoDate(mondayOfWeekContaining(new Date()));
+    const weekStarts = mondaySequenceFromStart(
+      resolvedStartMonday,
+      CASH_FLOW_FORECAST_WEEKS
+    );
+    const expenseRows = body.expenseRows
+      ? toSavedExpenseOverrides(expenseRowsRaw, weekStarts)
+      : expenseRowsRaw;
 
     const { error } = await supabaseAdmin.from("cash_flow_forecast_settings").upsert(
       {

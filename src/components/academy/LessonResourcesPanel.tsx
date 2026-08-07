@@ -7,19 +7,36 @@ import {
 
 type Props = {
   resources: AcademyResourceRow[];
+  /** Unboxed variant for the Overview right column, under Actions. */
+  compact?: boolean;
 };
 
-export function LessonResourcesPanel({ resources }: Props) {
+export function LessonResourcesPanel({ resources, compact = false }: Props) {
   if (resources.length === 0) return null;
 
   return (
-    <section className="mt-8 rounded-xl border border-slate-200 bg-slate-50/60 p-5">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-        Lesson resources
+    <section
+      className={
+        compact
+          ? "border-t border-slate-200/80 pt-6"
+          : "rounded-xl border border-slate-200 bg-slate-50/60 p-5"
+      }
+    >
+      <h2
+        className={
+          compact
+            ? "text-sm font-semibold text-slate-900"
+            : "text-sm font-semibold uppercase tracking-wide text-slate-700"
+        }
+      >
+        Resources
       </h2>
       <ul className="mt-3 divide-y divide-slate-200">
         {resources.map((resource) => (
-          <li key={resource.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+          <li
+            key={resource.id}
+            className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0"
+          >
             <div className="min-w-0">
               <a
                 href={resource.url}

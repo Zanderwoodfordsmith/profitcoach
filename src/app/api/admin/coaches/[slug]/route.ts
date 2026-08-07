@@ -25,6 +25,7 @@ import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete"
 import { formatPersonName } from "@/lib/formatPersonName";
 import { splitFullName } from "@/lib/splitFullName";
 import { loadLastActiveAtByUserId } from "@/lib/admin/loadLastActiveAtByUserId";
+import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const LEVELS = new Set(["certified", "professional", "elite"]);
@@ -86,8 +87,14 @@ export async function GET(
       ? profRaw[0]
       : profRaw;
 
-    const [achRes, contactsRes, paymentsRes, authUserRes, lastActiveByUserId] =
-      await Promise.all([
+    const [
+      achRes,
+      contactsRes,
+      paymentsRes,
+      authUserRes,
+      lastActiveByUserId,
+      linkedinRes,
+    ] = await Promise.all([
       supabaseAdmin
         .from("community_ladder_achievements")
         .select("level_id")
@@ -106,6 +113,11 @@ export async function GET(
         .order("paid_at", { ascending: false }),
       supabaseAdmin.auth.admin.getUserById(coachId),
       loadLastActiveAtByUserId([coachId]),
+      supabaseAdmin
+        .from("coach_linkedin_profiles")
+        .select("linkedin_url, scraped_at, snapshot")
+        .eq("coach_id", coachId)
+        .maybeSingle(),
     ]);
 
     const lastActiveAt = lastActiveByUserId.get(coachId) ?? null;
@@ -133,6 +145,15 @@ export async function GET(
       avatar_url: (prof?.avatar_url as string | null) ?? null,
       coach_business_name: (prof?.coach_business_name as string | null) ?? null,
       linkedin_url: (prof?.linkedin_url as string | null) ?? null,
+      linkedin_profile: linkedinRes.error?.code === "42P01" || linkedinRes.error
+        ? null
+        : linkedinRes.data
+          ? {
+              linkedin_url: linkedinRes.data.linkedin_url as string,
+              scraped_at: linkedinRes.data.scraped_at as string,
+              snapshot: linkedinRes.data.snapshot as LinkedInProfileSnapshot,
+            }
+          : null,
       current_monthly_income: (() => {
         const raw = prof?.coaching_income_reported_2024;
         if (typeof raw !== "string") return null;

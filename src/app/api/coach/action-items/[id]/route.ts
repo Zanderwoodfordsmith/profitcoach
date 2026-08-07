@@ -1,3 +1,4 @@
+import { isAcademyRecommendedActionTracked } from "@/lib/academy/syncAcademyTrackedActions";
 import { dbItemToOutlineLine } from "@/lib/actionPlans/mappers";
 import { requireCoachForActions } from "@/lib/actionPlans/requireCoachForActions";
 import { NextResponse } from "next/server";
@@ -32,6 +33,26 @@ export async function PATCH(
     }
     if (!existing) {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
+    }
+
+    const recommendedId = existing.academy_recommended_action_id as string | null;
+    const courseId = existing.academy_course_id as string | null;
+    const lessonId = existing.academy_lesson_id as string | null;
+    if (recommendedId && courseId && lessonId) {
+      const tracked = await isAcademyRecommendedActionTracked(
+        courseId,
+        lessonId,
+        recommendedId
+      );
+      if (tracked) {
+        return NextResponse.json(
+          {
+            error:
+              "This action completes automatically when you do it — it cannot be ticked off manually.",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const now = new Date().toISOString();

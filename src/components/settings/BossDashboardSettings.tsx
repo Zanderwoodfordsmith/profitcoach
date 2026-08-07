@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,16 +17,18 @@ import {
   ProfileMinimalTextarea,
   ProfileSectionCard,
 } from "@/components/settings/ProfileFormLayout";
-import {
-  OutlinedTextArea,
-  OutlinedTextField,
-} from "@/components/settings/OutlinedFormField";
-import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
-import type { CoachAiContext } from "@/lib/profitCoachAi/types";
-import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
+import { MyLadderTab } from "@/components/compass/MyLadderTab";
+import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
+import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+
+type LinkedInImportProfile = {
+  linkedinUrl: string;
+  scrapedAt: string;
+  snapshot: LinkedInProfileSnapshot;
+};
 
 type ProfileData = {
   first_name: string | null;
@@ -44,27 +46,11 @@ type ProfileData = {
   latitude?: number | null;
   longitude?: number | null;
   location_geocoded_source?: string | null;
-  ai_context?: CoachAiContext | null;
-  coach_slug: string | null;
   directory_listed: boolean;
   directory_level: string | null;
-  /** Outbound URL fired with prospect contact info + BOSS score. */
-  lead_webhook_url?: string | null;
-  crm_profile_name?: string | null;
-  crm_location_id?: string | null;
-  calendar_embed_code?: string | null;
-  crm_location_configured?: boolean;
-  has_calendar_embed?: boolean;
-  calendar_sync_ready?: boolean;
-  /** Default funnel variant when share link has no ?variant= or cookie. */
-  landing_variant_preference?: "a" | "b" | "c" | "d" | null;
-  landing_copy_overrides?: Record<string, string> | null;
 };
 
-export type BossDashboardSettingsTabId =
-  | "profile"
-  | "funnel"
-  | "workspace";
+export type BossDashboardSettingsTabId = "profile" | "ladder";
 
 export type BossDashboardSettingsProps = {
   variant: "coach" | "admin";
@@ -90,11 +76,6 @@ export function BossDashboardSettings({
   const [directorySummary, setDirectorySummary] = useState("");
   const [directoryBio, setDirectoryBio] = useState("");
   const [location, setLocation] = useState("");
-  const [leadWebhookUrl, setLeadWebhookUrl] = useState("");
-  const [calendarEmbedCode, setCalendarEmbedCode] = useState("");
-  const [coachSlug, setCoachSlug] = useState("");
-  const [crmProfileName, setCrmProfileName] = useState("");
-  const [crmLocationId, setCrmLocationId] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -105,44 +86,18 @@ export function BossDashboardSettings({
   const [directoryToggleBusy, setDirectoryToggleBusy] = useState(false);
   const [directoryError, setDirectoryError] = useState<string | null>(null);
 
-  const [landingEyebrow, setLandingEyebrow] = useState("");
-
-  const [brainSuperpowers, setBrainSuperpowers] = useState("");
-  const [brainHobbies, setBrainHobbies] = useState("");
-  const [brainClientResults, setBrainClientResults] = useState<
-    Array<{ title: string; story: string }>
-  >([]);
+  const [linkedinImport, setLinkedinImport] =
+    useState<LinkedInImportProfile | null>(null);
+  const [linkedinImportLoading, setLinkedinImportLoading] = useState(false);
+  const [linkedinImporting, setLinkedinImporting] = useState(false);
+  const [linkedinImportError, setLinkedinImportError] = useState<string | null>(
+    null
+  );
 
   const [internalTab, setInternalTab] =
     useState<BossDashboardSettingsTabId>("profile");
   const activeTab = embed?.activeTab ?? internalTab;
   const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [workspaceSaving, setWorkspaceSaving] = useState(false);
-  const [workspaceSaveMessage, setWorkspaceSaveMessage] = useState<
-    "success" | "error" | null
-  >(null);
-  const [workspaceSaveError, setWorkspaceSaveError] = useState<string | null>(
-    null
-  );
-
-  const [funnelSaving, setFunnelSaving] = useState(false);
-  const [funnelSaveMessage, setFunnelSaveMessage] = useState<
-    "success" | "error" | null
-  >(null);
-  const [funnelSaveError, setFunnelSaveError] = useState<string | null>(null);
-
-  const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
-
-  const calendarSyncStatus = useMemo(
-    () =>
-      getCalendarSyncStatus({
-        crmLocationId,
-        calendarEmbedCode,
-        leadWebhookUrl,
-        audience: "coach",
-      }),
-    [crmLocationId, calendarEmbedCode, leadWebhookUrl]
-  );
 
   const loadProfile = useCallback(async () => {
     const {
@@ -205,42 +160,63 @@ export function BossDashboardSettings({
     setDirectorySummary(data.directory_summary ?? data.bio ?? "");
     setDirectoryBio(data.directory_bio ?? "");
     setLocation(data.location ?? "");
-    setLeadWebhookUrl(data.lead_webhook_url ?? "");
-    setCalendarEmbedCode(data.calendar_embed_code ?? "");
-    setCoachSlug(data.coach_slug ?? "");
-    setCrmProfileName(data.crm_profile_name ?? "");
-    setCrmLocationId(data.crm_location_id ?? "");
-    setLandingEyebrow(data.landing_copy_overrides?.eyebrow ?? "");
-    const ctx = data.ai_context ?? {};
-    setBrainSuperpowers(ctx.superpowers ?? "");
-    setBrainHobbies(ctx.hobbies_and_recent ?? "");
-    setBrainClientResults(
-      (ctx.client_results ?? []).map((r) => ({
-        title: r.title ?? "",
-        story: r.story ?? "",
-      }))
-    );
+
+    setLinkedinImportLoading(true);
+    setLinkedinImportError(null);
+    try {
+      const liRes = await fetch("/api/coach/linkedin/profile", { headers });
+      if (liRes.ok) {
+        const liBody = (await liRes.json()) as {
+          profile?: LinkedInImportProfile | null;
+        };
+        setLinkedinImport(liBody.profile ?? null);
+      }
+    } catch {
+      // Non-blocking: profile still loads without prior LinkedIn import.
+    } finally {
+      setLinkedinImportLoading(false);
+    }
+
     setLoading(false);
   }, [router, impersonatingCoachId, variant]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read ?tab= from URL on coach settings
     const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "funnel" || tab === "profile" || tab === "workspace") {
+    if (tab === "funnel") {
+      router.replace(
+        variant === "admin" ? "/admin/funnel-settings" : "/coach/calls"
+      );
+      return;
+    }
+    if (tab === "workspace") {
+      if (variant === "admin") {
+        router.replace("/admin/message-generator?tab=brain");
+      }
+      return;
+    }
+    if (tab === "profile" || tab === "ladder") {
       setInternalTab(tab);
     }
-  }, []);
+  }, [router, variant]);
+
+  const selectTab = useCallback(
+    (tab: BossDashboardSettingsTabId) => {
+      setInternalTab(tab);
+      if (embed) return;
+      const href =
+        variant === "admin"
+          ? `/admin/account?tab=${tab}`
+          : `/coach/settings?tab=${tab}`;
+      router.replace(href);
+    },
+    [embed, router, variant]
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data bootstrap after async profile-role + coach profile fetches
     void loadProfile();
   }, [loadProfile]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.origin) {
-      setAppOrigin(window.location.origin);
-    }
-  }, []);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -278,6 +254,7 @@ export function BossDashboardSettings({
     setSaving(false);
     if (res.ok) {
       setSaveMessage("success");
+      notifyAcademyTrackedActionsChanged();
       void loadProfile();
     } else {
       setSaveMessage("error");
@@ -285,10 +262,8 @@ export function BossDashboardSettings({
     }
   }
 
-  async function handleWorkspaceSave(e: React.FormEvent) {
-    e.preventDefault();
-    setWorkspaceSaveMessage(null);
-    setWorkspaceSaveError(null);
+  async function handleLinkedInImport() {
+    setLinkedinImportError(null);
     const {
       data: { session },
     } = await supabaseClient.auth.getSession();
@@ -302,100 +277,36 @@ export function BossDashboardSettings({
       headers["x-impersonate-coach-id"] = impersonatingCoachId;
     }
 
-    setWorkspaceSaving(true);
-    const res = await fetch("/api/coach/profile", {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({
-        ai_context: {
-          superpowers: brainSuperpowers.trim() || undefined,
-          hobbies_and_recent: brainHobbies.trim() || undefined,
-          client_results: brainClientResults.filter(
-            (r) => r.title.trim() || r.story.trim()
-          ),
-        },
-      }),
-    });
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    setWorkspaceSaving(false);
-    if (res.ok) {
-      setWorkspaceSaveMessage("success");
-      void loadProfile();
-    } else {
-      setWorkspaceSaveMessage("error");
-      setWorkspaceSaveError(body.error ?? "Save failed.");
-    }
-  }
-
-  async function handleFunnelSave(e: React.FormEvent) {
-    e.preventDefault();
-    setFunnelSaveMessage(null);
-    setFunnelSaveError(null);
-
-    const normalizedSlug = coachSlug.toLowerCase().trim();
-    if (!normalizedSlug) {
-      setFunnelSaveMessage("error");
-      setFunnelSaveError("Slug is required.");
-      return;
-    }
-    if (!/^[a-z0-9-]+$/.test(normalizedSlug)) {
-      setFunnelSaveMessage("error");
-      setFunnelSaveError(
-        "Slug can only contain lowercase letters, numbers, and hyphens."
-      );
-      return;
-    }
-
-    const locationValidation = validateCrmLocationId(crmLocationId);
-    if (!locationValidation.ok) {
-      setFunnelSaveMessage("error");
-      setFunnelSaveError(locationValidation.error);
-      return;
-    }
-
-    const trimmedWebhook = leadWebhookUrl.trim();
-    if (trimmedWebhook && !/^https?:\/\//i.test(trimmedWebhook)) {
-      setFunnelSaveMessage("error");
-      setFunnelSaveError("Lead webhook URL must start with http:// or https://.");
-      return;
-    }
-
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return;
-
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-    if (impersonatingCoachId) {
-      headers["x-impersonate-coach-id"] = impersonatingCoachId;
-    }
-
-    setFunnelSaving(true);
-    const res = await fetch("/api/coach/profile", {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({
-        slug: normalizedSlug,
-        crm_profile_name: crmProfileName.trim() || null,
-        crm_location_id: locationValidation.value,
-        lead_webhook_url: trimmedWebhook || null,
-        calendar_embed_code: calendarEmbedCode.trim() || null,
-        landing_copy_overrides: landingEyebrow.trim()
-          ? { eyebrow: landingEyebrow.trim() }
-          : {},
-      }),
-    });
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    setFunnelSaving(false);
-    if (res.ok) {
-      setFunnelSaveMessage("success");
-      void loadProfile();
-    } else {
-      setFunnelSaveMessage("error");
-      setFunnelSaveError(body.error ?? "Save failed.");
+    setLinkedinImporting(true);
+    try {
+      const res = await fetch("/api/coach/linkedin/profile", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          linkedinUrl: linkedinUrl.trim() || undefined,
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        profile?: LinkedInImportProfile | null;
+      };
+      if (body.profile) {
+        setLinkedinImport(body.profile);
+        if (body.profile.linkedinUrl) {
+          setLinkedinUrl(body.profile.linkedinUrl);
+        }
+      }
+      if (!res.ok) {
+        setLinkedinImportError(
+          body.error ?? "Could not import LinkedIn profile."
+        );
+        return;
+      }
+      notifyAcademyTrackedActionsChanged();
+    } catch {
+      setLinkedinImportError("Could not import LinkedIn profile.");
+    } finally {
+      setLinkedinImporting(false);
     }
   }
 
@@ -422,6 +333,7 @@ export function BossDashboardSettings({
     if (!res.ok) {
       throw new Error(body.error ?? "Could not save map pin.");
     }
+    notifyAcademyTrackedActionsChanged();
     await loadProfile();
   }
 
@@ -442,7 +354,10 @@ export function BossDashboardSettings({
       headers,
       body: JSON.stringify({ clear_map_pin: true }),
     });
-    if (res.ok) void loadProfile();
+    if (res.ok) {
+      notifyAcademyTrackedActionsChanged();
+      void loadProfile();
+    }
   }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -570,18 +485,15 @@ export function BossDashboardSettings({
     Number.isFinite(profile.latitude) &&
     Number.isFinite(profile.longitude);
 
-  const compassHref = variant === "admin" ? "/admin/signature" : "/coach/signature";
-
   const tabDefs: { id: BossDashboardSettingsTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
-    { id: "funnel", label: "Funnel" },
-    { id: "workspace", label: "Workspace" },
+    { id: "ladder", label: "My Ladder" },
   ];
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, funnel links, and workspace."
+      description="Your profile, directory listing, and ladder progress."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -590,7 +502,7 @@ export function BossDashboardSettings({
             id: tab.id,
             label: tab.label,
             active: activeTab === tab.id,
-            onClick: () => setInternalTab(tab.id),
+            onClick: () => selectTab(tab.id),
           }))}
         />
       }
@@ -640,14 +552,79 @@ export function BossDashboardSettings({
         />
 
         <ProfileSectionCard title="Community">
-          <ProfileFieldRow label="LinkedIn" htmlFor="linkedin_url">
-            <ProfileMinimalInput
-              id="linkedin_url"
-              type="url"
-              value={linkedinUrl}
-              onChange={(e) => setLinkedinUrl(e.target.value)}
-              placeholder="https://www.linkedin.com/in/yourprofile/"
-            />
+          <ProfileFieldRow label="LinkedIn" htmlFor="linkedin_url" alignTop>
+            <div className="flex w-full flex-col gap-2">
+              <ProfileMinimalInput
+                id="linkedin_url"
+                type="url"
+                value={linkedinUrl}
+                onChange={(e) => setLinkedinUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/in/yourprofile/"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleLinkedInImport()}
+                  disabled={linkedinImporting || !linkedinUrl.trim()}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {linkedinImporting
+                    ? "Importing…"
+                    : "Import from LinkedIn"}
+                </button>
+                {linkedinImport?.scrapedAt ? (
+                  <span className="text-xs text-slate-500">
+                    Last imported{" "}
+                    {new Date(linkedinImport.scrapedAt).toLocaleString()}
+                  </span>
+                ) : linkedinImportLoading ? (
+                  <span className="text-xs text-slate-400">Checking…</span>
+                ) : null}
+              </div>
+              {linkedinImportError ? (
+                <p className="text-sm text-red-600">{linkedinImportError}</p>
+              ) : null}
+              {linkedinImport?.snapshot ? (
+                <div className="mt-1 flex gap-3 rounded-md border border-slate-200 bg-slate-50/80 p-3">
+                  {linkedinImport.snapshot.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- remote LinkedIn CDN URL
+                    <img
+                      src={linkedinImport.snapshot.photoUrl}
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 shrink-0 rounded-full bg-slate-200" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">
+                      {linkedinImport.snapshot.fullName ??
+                        linkedinImport.snapshot.headline ??
+                        "LinkedIn profile"}
+                    </p>
+                    {linkedinImport.snapshot.headline ? (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-slate-600">
+                        {linkedinImport.snapshot.headline}
+                      </p>
+                    ) : null}
+                    {linkedinImport.snapshot.about ? (
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                        {linkedinImport.snapshot.about}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 text-xs text-slate-500">
+                      {linkedinImport.snapshot.experiences.length} experience
+                      {linkedinImport.snapshot.experiences.length === 1
+                        ? ""
+                        : "s"}
+                      {linkedinImport.snapshot.featured.length > 0
+                        ? ` · ${linkedinImport.snapshot.featured.length} featured`
+                        : ""}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </ProfileFieldRow>
           <ProfileFieldRow
             label="Bio"
@@ -674,7 +651,7 @@ export function BossDashboardSettings({
         </ProfileSectionCard>
 
         <ProfileSectionCard
-          title="Public directory"
+          title="Profit Coach Directory"
           description={
             <>
               How you appear on the{" "}
@@ -684,7 +661,7 @@ export function BossDashboardSettings({
                 rel="noreferrer"
                 className="font-medium text-sky-700 hover:text-sky-900 hover:underline"
               >
-                coach directory listing
+                public coach directory
               </Link>
               .
             </>
@@ -700,7 +677,7 @@ export function BossDashboardSettings({
                 onChange={(e) => void handleDirectoryToggle(e.target.checked)}
               />
               <span className="text-sm text-slate-700">
-                Show in the public directory
+                Show in the Profit Coach Directory
               </span>
             </label>
             {directoryToggleBusy ? (
@@ -759,157 +736,7 @@ export function BossDashboardSettings({
       </form>
       ) : null}
 
-      {activeTab === "funnel" ? (
-        <FunnelSettingsTab
-          appOrigin={appOrigin}
-          prospectsHref={
-            variant === "admin" ? "/admin/prospects" : "/coach/prospects"
-          }
-          coachSlug={coachSlug}
-          onCoachSlugChange={setCoachSlug}
-          landingEyebrow={landingEyebrow}
-          onLandingEyebrowChange={setLandingEyebrow}
-          crmProfileName={crmProfileName}
-          onCrmProfileNameChange={setCrmProfileName}
-          crmLocationId={crmLocationId}
-          onCrmLocationIdChange={setCrmLocationId}
-          calendarEmbedCode={calendarEmbedCode}
-          onCalendarEmbedCodeChange={setCalendarEmbedCode}
-          leadWebhookUrl={leadWebhookUrl}
-          onLeadWebhookUrlChange={setLeadWebhookUrl}
-          calendarSyncStatus={calendarSyncStatus}
-          impersonatingCoachId={impersonatingCoachId}
-          saving={funnelSaving}
-          saveMessage={funnelSaveMessage}
-          saveError={funnelSaveError}
-          onSubmit={(e) => void handleFunnelSave(e)}
-        />
-      ) : null}
-
-      {activeTab === "workspace" ? (
-      <form
-        onSubmit={handleWorkspaceSave}
-        className="flex w-full flex-col gap-8"
-      >
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">
-            AI context (your brain)
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            The in-app AI coach reads this into every reply (along with playbook
-            excerpts and your{" "}
-            <Link
-              href={compassHref}
-              className="font-medium text-sky-700 underline hover:text-sky-800"
-            >
-              Compass
-            </Link>{" "}
-            scores). Edit here or from the AI Coach screen.
-          </p>
-          <div className="mt-4 max-w-lg space-y-4">
-            <OutlinedTextArea
-              id="brain_superpowers"
-              label="Superpowers"
-              rows={4}
-              value={brainSuperpowers}
-              onChange={(e) => setBrainSuperpowers(e.target.value)}
-              placeholder="What you’re uniquely strong at…"
-              wrapperClassName="w-full max-w-lg"
-            />
-            <OutlinedTextArea
-              id="brain_hobbies"
-              label="Hobbies and recent"
-              rows={3}
-              value={brainHobbies}
-              onChange={(e) => setBrainHobbies(e.target.value)}
-              placeholder="Human details you’re happy to weave into content…"
-              wrapperClassName="w-full max-w-lg"
-            />
-            <div>
-              <p className="text-sm font-medium text-slate-700">Client results</p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Short titles plus outcome stories the model can cite as proof.
-              </p>
-              <div className="mt-3 flex flex-col gap-3">
-                {brainClientResults.map((r, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg border border-slate-200 bg-slate-50/80 p-3"
-                  >
-                    <OutlinedTextField
-                      id={`brain_client_title_${i}`}
-                      label="Title"
-                      value={r.title}
-                      onChange={(e) => {
-                        const next = [...brainClientResults];
-                        next[i] = { ...next[i]!, title: e.target.value };
-                        setBrainClientResults(next);
-                      }}
-                      placeholder="Short headline"
-                      wrapperClassName="w-full max-w-md"
-                    />
-                    <div className="mt-3">
-                      <OutlinedTextArea
-                        id={`brain_client_story_${i}`}
-                        label="Outcome / story"
-                        rows={3}
-                        value={r.story}
-                        onChange={(e) => {
-                          const next = [...brainClientResults];
-                          next[i] = { ...next[i]!, story: e.target.value };
-                          setBrainClientResults(next);
-                        }}
-                        placeholder="Outcome / story"
-                        wrapperClassName="w-full max-w-lg"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setBrainClientResults(
-                          brainClientResults.filter((_, j) => j !== i)
-                        )
-                      }
-                      className="mt-2 text-xs font-medium text-rose-600 hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setBrainClientResults([
-                      ...brainClientResults,
-                      { title: "", story: "" },
-                    ])
-                  }
-                  className="rounded-lg border border-dashed border-slate-300 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  + Add client result
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div className="flex items-center gap-4">
-          <button
-            type="submit"
-            disabled={workspaceSaving}
-            className="rounded-md bg-sky-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
-          >
-            {workspaceSaving ? "Saving…" : "Save workspace"}
-          </button>
-          {workspaceSaveMessage === "success" ? (
-            <span className="text-sm text-green-700">Saved.</span>
-          ) : null}
-          {workspaceSaveMessage === "error" && workspaceSaveError ? (
-            <span className="text-sm text-rose-600">{workspaceSaveError}</span>
-          ) : null}
-        </div>
-      </form>
-      ) : null}
+      {activeTab === "ladder" ? <MyLadderTab /> : null}
 
       <MapLocationPickerModal
         open={mapModalOpen}
@@ -931,8 +758,10 @@ export function BossDashboardSettings({
     <DashboardPageSection
       gapClass="gap-6"
       header={settingsHeader}
-      contentMaxWidthClass={activeTab === "funnel" ? "max-w-6xl" : "max-w-4xl"}
-      contentClassName={activeTab === "funnel" ? "mx-0 mr-auto w-full" : ""}
+      contentMaxWidthClass={activeTab === "ladder" ? "max-w-6xl" : "max-w-4xl"}
+      contentClassName={
+        activeTab === "ladder" ? "mx-0 mr-auto w-full" : ""
+      }
     >
       {settingsBody}
     </DashboardPageSection>

@@ -1,7 +1,7 @@
 /**
  * Bulk-import academy programme videos + transcripts from a synced Google Drive folder.
  *
- * Matches files to lessons in content/academy/legacy-hub.json (Current programmes tab).
+ * Matches files to lessons in content/academy/archive-hub.json (Current programmes tab).
  *
  * Prerequisites:
  *   - `.env.local` with NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
@@ -35,14 +35,15 @@ import {
   type LessonMatchCandidate,
   type MediaFileKind,
 } from "../src/lib/academy/legacyLessonMatcher";
-import type { LegacyHubCatalog } from "../src/lib/academy/legacyHubCatalog";
+import type { HubCatalog } from "../src/lib/academy/hubCatalog";
+import { probeLessonDurationLabel } from "./lib/probeMediaDuration";
 
 loadEnvConfig(process.cwd());
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const LEGACY_HUB_PATH = path.join(process.cwd(), "content/academy/legacy-hub.json");
+const LEGACY_HUB_PATH = path.join(process.cwd(), "content/academy/archive-hub.json");
 const DEFAULT_OVERRIDES = path.join(process.cwd(), "scripts/academy-import-overrides.json");
 
 /** Must match `academy-lessons` bucket `file_size_limit` (see 20260731150000 migration). */
@@ -210,9 +211,9 @@ type Report = {
   errors: Array<{ relativePath: string; message: string }>;
 };
 
-function loadCatalog(): LegacyHubCatalog {
+function loadCatalog(): HubCatalog {
   const raw = fs.readFileSync(LEGACY_HUB_PATH, "utf8");
-  return JSON.parse(raw) as LegacyHubCatalog;
+  return JSON.parse(raw) as HubCatalog;
 }
 
 function loadOverridesFromFile(): Map<string, FileOverride> {
@@ -411,7 +412,11 @@ async function loadExistingContentMap(): Promise<
 async function upsertLessonFields(
   courseId: string,
   lessonId: string,
-  fields: { videoUrl?: string | null; transcriptText?: string | null }
+  fields: {
+    videoUrl?: string | null;
+    transcriptText?: string | null;
+    duration?: string | null;
+  }
 ): Promise<void> {
   const { data: existing } = await supabase
     .from("academy_lesson_content")
@@ -431,6 +436,10 @@ async function upsertLessonFields(
       fields.transcriptText !== undefined
         ? fields.transcriptText
         : (existing?.transcript_text ?? null),
+    duration:
+      fields.duration !== undefined
+        ? fields.duration
+        : (existing?.duration ?? null),
     updated_at: new Date().toISOString(),
   };
 
@@ -756,7 +765,18 @@ async function main() {
               bundle.lessonId,
               bundle.videoPath
             );
-            await upsertLessonFields(bundle.courseId, bundle.lessonId, { videoUrl: url });
+            const duration = await probeLessonDurationLabel({
+              videoPath: bundle.videoPath,
+            });
+            await upsertLessonFields(bundle.courseId, bundle.lessonId, {
+              videoUrl: url,
+              ...(duration ? { duration } : {}),
+            });
+            if (duration) {
+              console.log(
+                `[academy-import] duration ${bundle.courseId}/${bundle.lessonId} → ${duration}`
+              );
+            }
             videoUploaded = true;
           }
         }

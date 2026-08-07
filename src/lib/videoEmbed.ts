@@ -1,33 +1,60 @@
+export type LessonVideoEmbed =
+  | { kind: "youtube"; videoId: string; embedUrl: string }
+  | { kind: "vimeo"; videoId: string; embedUrl: string };
+
 /**
- * Best-effort YouTube watch/share URLs → embed URL. Returns null if not recognized.
+ * Best-effort YouTube / Vimeo watch URLs → embed details. Returns null if not recognized.
  */
-export function toYouTubeEmbedUrl(url: string): string | null {
+export function parseLessonVideoEmbed(url: string): LessonVideoEmbed | null {
   try {
     const u = new URL(url.trim());
     const host = u.hostname.replace(/^www\./, "");
 
     if (host === "youtu.be") {
-      const id = u.pathname.replace(/^\//, "").split("/")[0];
-      return id ? `https://www.youtube.com/embed/${id}` : null;
+      const videoId = u.pathname.replace(/^\//, "").split("/")[0];
+      if (!videoId) return null;
+      return {
+        kind: "youtube",
+        videoId,
+        embedUrl: `https://www.youtube.com/embed/${videoId}`,
+      };
     }
 
     if (host === "youtube.com" || host === "m.youtube.com") {
+      let videoId: string | null = null;
       if (u.pathname.startsWith("/embed/")) {
-        return `https://www.youtube.com/embed/${u.pathname.replace("/embed/", "").split("/")[0]}`;
+        videoId = u.pathname.replace("/embed/", "").split("/")[0] || null;
+      } else {
+        videoId = u.searchParams.get("v");
       }
-      const v = u.searchParams.get("v");
-      if (v) return `https://www.youtube.com/embed/${v}`;
+      if (!videoId) return null;
+      return {
+        kind: "youtube",
+        videoId,
+        embedUrl: `https://www.youtube.com/embed/${videoId}`,
+      };
     }
 
     if (host === "vimeo.com" || host === "player.vimeo.com") {
       const parts = u.pathname.split("/").filter(Boolean);
-      const id = parts[parts.length - 1];
-      if (id && /^\d+$/.test(id)) {
-        return `https://player.vimeo.com/video/${id}`;
+      const videoId = parts[parts.length - 1];
+      if (videoId && /^\d+$/.test(videoId)) {
+        return {
+          kind: "vimeo",
+          videoId,
+          embedUrl: `https://player.vimeo.com/video/${videoId}`,
+        };
       }
     }
   } catch {
     return null;
   }
   return null;
+}
+
+/**
+ * Best-effort YouTube / Vimeo watch URLs → embed URL. Returns null if not recognized.
+ */
+export function toYouTubeEmbedUrl(url: string): string | null {
+  return parseLessonVideoEmbed(url)?.embedUrl ?? null;
 }

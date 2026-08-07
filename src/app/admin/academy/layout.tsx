@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
-import { AcademyCurrentShell } from "@/components/academy/AcademyCurrentShell";
-
+/** Academy routes pick their own chrome (ClassroomShell vs bare Archive). */
 export default function AdminAcademyLayout({ children }: { children: ReactNode }) {
-  return <AcademyCurrentShell>{children}</AcademyCurrentShell>;
+  return children;
 }

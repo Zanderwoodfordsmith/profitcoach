@@ -10,9 +10,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Check } from "lucide-react";
+import { Check, FilePenLine } from "lucide-react";
 
 import type { LessonProgressMap, LessonProgressStatus } from "@/lib/academy/lessonProgressTypes";
+import { hasReachedWatchCompleteThreshold } from "@/lib/academy/lessonWatchComplete";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type LessonProgressContextValue = {
@@ -20,6 +21,12 @@ type LessonProgressContextValue = {
   progress: LessonProgressMap;
   getStatus: (lessonId: string) => LessonProgressStatus;
   setStatus: (lessonId: string, status: LessonProgressStatus) => Promise<void>;
+  /** Called from video players; marks complete once the watch threshold is reached. */
+  reportWatchProgress: (
+    lessonId: string,
+    currentTimeSeconds: number,
+    durationSeconds: number,
+  ) => void;
   saving: boolean;
 };
 
@@ -37,6 +44,18 @@ export function useLessonProgress() {
   return ctx;
 }
 
+/** Safe for players that may render without a progress provider (e.g. admin preview). */
+export function useReportLessonWatchProgress(lessonId: string | null | undefined) {
+  const ctx = useLessonProgressContext();
+  return useCallback(
+    (currentTimeSeconds: number, durationSeconds: number) => {
+      if (!ctx || !lessonId) return;
+      ctx.reportWatchProgress(lessonId, currentTimeSeconds, durationSeconds);
+    },
+    [ctx, lessonId],
+  );
+}
+
 async function getAccessToken(): Promise<string | null> {
   const {
     data: { session },
@@ -46,15 +65,20 @@ async function getAccessToken(): Promise<string | null> {
 
 export function LessonProgressProvider({
   courseId,
+  activeLessonId,
   children,
 }: {
   courseId: string;
+  /** When set, records this lesson as last opened for Resume Training. */
+  activeLessonId?: string;
   children: ReactNode;
 }) {
   const [progress, setProgress] = useState<LessonProgressMap>({});
   const [saving, setSaving] = useState(false);
   const progressRef = useRef(progress);
   progressRef.current = progress;
+  /** Lessons the member manually unmarked — don't auto-tick again this session. */
+  const watchAutoCompleteSuppressedRef = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +106,29 @@ export function LessonProgressProvider({
     };
   }, [courseId]);
 
+  useEffect(() => {
+    if (!activeLessonId) return;
+    let cancelled = false;
+
+    async function recordView() {
+      const token = await getAccessToken();
+      if (!token || cancelled) return;
+
+      await fetch(
+        `/api/coach/academy/lesson-progress/${encodeURIComponent(courseId)}/${encodeURIComponent(activeLessonId!)}/view`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+    }
+
+    void recordView();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, activeLessonId]);
+
   const getStatus = useCallback(
     (lessonId: string): LessonProgressStatus => progress[lessonId] ?? "not_started",
     [progress],
@@ -91,6 +138,10 @@ export function LessonProgressProvider({
     async (lessonId: string, status: LessonProgressStatus) => {
       const previous = progressRef.current[lessonId] ?? "not_started";
       if (previous === status) return;
+
+      if (previous === "completed" && status === "not_started") {
+        watchAutoCompleteSuppressedRef.current.add(lessonId);
+      }
 
       const nextProgress = { ...progressRef.current };
       if (status === "not_started") {
@@ -138,6 +189,11 @@ export function LessonProgressProvider({
             }
             return reverted;
           });
+        } else {
+          const { notifyAcademyTrackedActionsChanged } = await import(
+            "@/lib/academy/trackedActionsEvents"
+          );
+          notifyAcademyTrackedActionsChanged();
         }
       } finally {
         setSaving(false);
@@ -146,15 +202,26 @@ export function LessonProgressProvider({
     [courseId],
   );
 
+  const reportWatchProgress = useCallback(
+    (lessonId: string, currentTimeSeconds: number, durationSeconds: number) => {
+      if (watchAutoCompleteSuppressedRef.current.has(lessonId)) return;
+      if ((progressRef.current[lessonId] ?? "not_started") === "completed") return;
+      if (!hasReachedWatchCompleteThreshold(currentTimeSeconds, durationSeconds)) return;
+      void setStatus(lessonId, "completed");
+    },
+    [setStatus],
+  );
+
   const value = useMemo(
     () => ({
       courseId,
       progress,
       getStatus,
       setStatus,
+      reportWatchProgress,
       saving,
     }),
-    [courseId, progress, getStatus, setStatus, saving],
+    [courseId, progress, getStatus, setStatus, reportWatchProgress, saving],
   );
 
   return (
@@ -230,15 +297,34 @@ export function LessonProgressHeaderControl({ lessonId }: { lessonId: string }) 
 export function LessonProgressSidebarControl({
   lessonId,
   active = false,
+  draft = false,
 }: {
   lessonId: string;
   /** When the lesson row is the active (selected) one — adjusts contrast on sky bg */
   active?: boolean;
+  /** Draft lessons show a document icon instead of the completion tick. */
+  draft?: boolean;
   /** @deprecated Menu alignment removed; kept for call-site compatibility */
   align?: "left" | "right";
 }) {
   const ctx = useLessonProgressContext();
   if (!ctx) return null;
+
+  if (draft) {
+    return (
+      <span
+        className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+          active
+            ? "border-amber-200/80 bg-amber-400/20 text-amber-100"
+            : "border-amber-300/80 bg-amber-50 text-amber-600"
+        }`}
+        title="Draft — admins only"
+        aria-label="Draft lesson"
+      >
+        <FilePenLine className="h-3 w-3" strokeWidth={2.25} aria-hidden />
+      </span>
+    );
+  }
 
   const { getStatus, setStatus, saving } = ctx;
   const status = getStatus(lessonId);

@@ -22,7 +22,7 @@ import { loadEnvConfig } from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 
 import { loadAcademyCatalogSync } from "../src/lib/academy/catalog";
-import { loadLegacyHub } from "../src/lib/academy/legacyHubLoad";
+import { loadArchiveHub } from "../src/lib/academy/archiveHubLoad";
 
 loadEnvConfig(process.cwd());
 
@@ -92,9 +92,9 @@ function buildLessonIndex(): Map<string, LessonMeta> {
     console.error("Warning: could not load classroom catalog:", (err as Error).message);
   }
 
-  // Programs (legacy-hub.json)
+  // Programs (archive-hub.json)
   try {
-    const hub = loadLegacyHub();
+    const hub = loadArchiveHub();
     for (const course of hub.courses) {
       for (const section of course.sections) {
         for (const lesson of section.lessons) {
@@ -247,7 +247,7 @@ async function main() {
   );
   console.log(
     "Note: this scans in-app lesson content. Legacy 'Programs' external CTA " +
-      "links (academyUrl) live in content/academy/legacy-hub.json, not the DB."
+      "links (academyUrl) live in content/academy/archive-hub.json, not the DB."
   );
 }
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
+import { loadEnrichedProspectById } from "@/lib/prospects/loadEnrichedProspect";
 import {
   updateProspectFields,
   type ProspectFieldPatch,
@@ -7,6 +8,28 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(request: Request, context: RouteContext) {
+  const authCheck = await requireAdmin(request);
+  if (authCheck.error) {
+    return NextResponse.json({ error: authCheck.error }, { status: 401 });
+  }
+
+  const { id: contactId } = await context.params;
+  if (!contactId?.trim()) {
+    return NextResponse.json({ error: "Missing contact id." }, { status: 400 });
+  }
+
+  const loaded = await loadEnrichedProspectById(contactId);
+  if (!loaded) {
+    return NextResponse.json({ error: "Prospect not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    prospect: loaded.prospect,
+    coachSlug: loaded.coachSlug,
+  });
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const authCheck = await requireAdmin(request);

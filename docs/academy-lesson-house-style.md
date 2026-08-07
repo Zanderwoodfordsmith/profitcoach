@@ -18,7 +18,7 @@ styling lives in `src/components/academy/academyProseClassName.ts`.
 ## Golden rules
 
 - **Do not include the lesson title** as an `#` H1 in the body. The title is stored
-  separately (it comes from `legacy-hub.json`). Bodies start at the first section.
+  separately (it comes from `archive-hub.json`). Bodies start at the first section.
 - **One blank line** between every block (heading, paragraph, list, table, quote).
 - **Bold** is `**text**` with no inner padding and no `****` runs. Never leave a
   dangling `**`.

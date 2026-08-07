@@ -56,13 +56,16 @@ export function buildInitialBrainForm(
       title: r.title ?? "",
       story: r.story ?? "",
     })),
+    idealClient: initialContext.ideal_client ?? "",
+    industryVocabulary: initialContext.industry_vocabulary ?? "",
+    painLanguage: initialContext.pain_language ?? "",
+    messagingHooks: initialContext.messaging_hooks ?? "",
+    proofFraming: initialContext.proof_framing ?? "",
   };
 }
 
 type Props = {
   compassHref: string;
-  /** Full-page tab: link to coach/admin settings profile section */
-  settingsHref?: string;
   initialContext: CoachAiContext;
   draftFromChat?: string | null;
   saving: boolean;
@@ -76,7 +79,6 @@ type Props = {
 
 export function ProfitCoachAiBrainForm({
   compassHref,
-  settingsHref,
   initialContext,
   draftFromChat,
   saving,
@@ -90,6 +92,11 @@ export function ProfitCoachAiBrainForm({
   const [superpowers, setSuperpowers] = useState(init.superpowers);
   const [hobbies, setHobbies] = useState(init.hobbies);
   const [clientResults, setClientResults] = useState(init.clientResults);
+  const [idealClient, setIdealClient] = useState(init.idealClient);
+  const [industryVocabulary, setIndustryVocabulary] = useState(init.industryVocabulary);
+  const [painLanguage, setPainLanguage] = useState(init.painLanguage);
+  const [messagingHooks, setMessagingHooks] = useState(init.messagingHooks);
+  const [proofFraming, setProofFraming] = useState(init.proofFraming);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,6 +106,11 @@ export function ProfitCoachAiBrainForm({
       client_results: clientResults.filter(
         (r) => r.title.trim() || r.story.trim()
       ),
+      ideal_client: idealClient.trim() || undefined,
+      industry_vocabulary: industryVocabulary.trim() || undefined,
+      pain_language: painLanguage.trim() || undefined,
+      messaging_hooks: messagingHooks.trim() || undefined,
+      proof_framing: proofFraming.trim() || undefined,
     });
   }
 
@@ -116,19 +128,6 @@ export function ProfitCoachAiBrainForm({
             Compass
           </Link>{" "}
           (read-only in the model).
-          {settingsHref ? (
-            <>
-              {" "}
-              You can also edit this in{" "}
-              <Link
-                href={settingsHref}
-                className="font-medium text-sky-700 underline hover:text-sky-800"
-              >
-                Settings
-              </Link>
-              .
-            </>
-          ) : null}
         </p>
       </div>
     ) : (
@@ -228,6 +227,80 @@ export function ProfitCoachAiBrainForm({
           >
             + Add client result
           </button>
+        </div>
+      </Section>
+
+      <Section title="Campaign & ICP (from First Campaign Setup)">
+        <p className="mb-3 text-xs text-slate-500">
+          Confirmed from your First Campaign wizard. Feeds message generation
+          and future AI content — edit here any time.
+        </p>
+        <div className="flex flex-col gap-3">
+          <label htmlFor={`${uid}-ideal-client`} className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Ideal client
+            </span>
+            <textarea
+              id={`${uid}-ideal-client`}
+              rows={2}
+              value={idealClient}
+              onChange={(e) => setIdealClient(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              placeholder="Who you target — market, titles, size, revenue…"
+            />
+          </label>
+          <label htmlFor={`${uid}-industry-vocab`} className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Industry vocabulary
+            </span>
+            <textarea
+              id={`${uid}-industry-vocab`}
+              rows={2}
+              value={industryVocabulary}
+              onChange={(e) => setIndustryVocabulary(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              placeholder="The trade words this ICP actually uses…"
+            />
+          </label>
+          <label htmlFor={`${uid}-pain-language`} className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Pain language
+            </span>
+            <textarea
+              id={`${uid}-pain-language`}
+              rows={2}
+              value={painLanguage}
+              onChange={(e) => setPainLanguage(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              placeholder="Their pains and frustrations, in their own words…"
+            />
+          </label>
+          <label htmlFor={`${uid}-messaging-hooks`} className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Messaging hooks
+            </span>
+            <textarea
+              id={`${uid}-messaging-hooks`}
+              rows={2}
+              value={messagingHooks}
+              onChange={(e) => setMessagingHooks(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              placeholder="Openers and angles proven to land with this ICP…"
+            />
+          </label>
+          <label htmlFor={`${uid}-proof-framing`} className="block">
+            <span className="mb-1 block text-xs font-medium text-slate-600">
+              Proof framing
+            </span>
+            <textarea
+              id={`${uid}-proof-framing`}
+              rows={2}
+              value={proofFraming}
+              onChange={(e) => setProofFraming(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/20"
+              placeholder="How your proof / results should be framed for them…"
+            />
+          </label>
         </div>
       </Section>
 

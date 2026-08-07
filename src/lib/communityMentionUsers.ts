@@ -6,7 +6,7 @@ export type MentionProfileRow = ProfileNames & {
 };
 
 /** Default @-mention picker order when the query is empty (bare `@`). */
-export const ADMIN_MENTION_FIRST_NAMES = ["Mark", "Zac", "Pam", "Zander"] as const;
+export const ADMIN_MENTION_FIRST_NAMES = ["Pam", "Zander"] as const;
 
 export function adminMentionSortIndex(row: ProfileNames): number {
   const first = (row.first_name ?? "").trim().toLowerCase();

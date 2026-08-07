@@ -1,16 +1,19 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { FeatureGateOverlay } from "@/components/coach/FeatureGateOverlay";
+import { adminPreviewCoachRouteForPath } from "@/lib/coachAccess/adminPreviewRoutes";
 import {
   ACADEMY_COURSE_TITLES,
   academyCourseIdFromPath,
   academyCourseLocked,
   gatedRouteForPath,
 } from "@/lib/coachAccess/gatedRoutes";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 type Props = {
   children: ReactNode;
@@ -18,8 +21,60 @@ type Props = {
 
 export function CoachRouteAccessGuard({ children }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
   const { hasFeature, loading } = useCoachAccess(impersonatingCoachId);
+  const [roleLoading, setRoleLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setRoleLoading(true);
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user) {
+        if (!cancelled) {
+          setIsAdmin(false);
+          setRoleLoading(false);
+        }
+        return;
+      }
+      const roleRes = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        role?: string;
+      };
+      if (!cancelled) {
+        setIsAdmin(roleBody.role === "admin");
+        setRoleLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const previewRoute = adminPreviewCoachRouteForPath(pathname);
+
+  useEffect(() => {
+    if (roleLoading || isAdmin || !previewRoute) return;
+    router.replace(previewRoute.fallback);
+  }, [roleLoading, isAdmin, previewRoute, router]);
+
+  if (previewRoute && (roleLoading || !isAdmin)) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center px-4">
+        <p className="text-sm text-slate-600">
+          {roleLoading ? "Loading…" : "Redirecting…"}
+        </p>
+      </div>
+    );
+  }
 
   if (loading) {
     return <>{children}</>;

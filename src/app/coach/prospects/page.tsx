@@ -1,27 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ProspectsTable } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
-import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { prospectWorkspacePath } from "@/lib/prospects/loadEnrichedProspect";
 import { useProspectsPage } from "@/hooks/useProspectsPage";
 
 export default function CoachProspectsPage() {
   const router = useRouter();
-  const { impersonatingCoachId } = useImpersonation();
-  const { allowed: clientHubAllowed } =
-    useCoachClientHubAccess(impersonatingCoachId);
   const page = useProspectsPage({ scope: "coach" });
 
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         rootRef={page.pageHeaderRef}
-        title="Prospects"
+        title="Get Clients"
         description="Add prospects and share your assessment link, or view those who have completed assessments."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
       {page.loading && (
@@ -61,11 +58,7 @@ export default function CoachProspectsPage() {
           showTypeColumn={true}
           onAddClick={page.openAddProspect}
           addActive={page.showAddProspect}
-          onRowClick={
-            clientHubAllowed
-              ? (id) => router.push(bossProHubPath(id))
-              : undefined
-          }
+          onRowClick={(id) => router.push(prospectWorkspacePath(id))}
           editable
           onUpdateProspect={page.handleUpdateProspect}
           onDelete={page.handleDeleteProspect}

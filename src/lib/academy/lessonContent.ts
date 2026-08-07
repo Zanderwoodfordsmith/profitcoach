@@ -1,27 +1,42 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import type { AcademyCatalog, AcademyLesson } from "./types";
-import type { LegacyHubCourse, LegacyHubLesson, LegacyHubSection } from "./legacyHubCatalog";
-import { flattenSections } from "./legacyHubCatalog";
-import { loadAcademyCatalog, loadAcademyCatalogSync } from "./catalog";
+import type { HubCourse, HubLesson, HubSection } from "./hubCatalog";
+import { flattenSections, lessonWithSatellites } from "./hubCatalog";
+import { loadAcademyCatalog, loadAcademyCatalogSync } from "./compassCatalog";
+import {
+  parseRecommendedActions,
+  type AcademyRecommendedAction,
+} from "./lessonActions";
 import {
   hasInAppLessonContent,
   type LessonInAppContent,
 } from "./lessonContentUtils";
-import { contentSourceCourseId } from "./simplifiedHubLoad";
+import { contentSourceCourseId } from "./programmeContentSource";
+import {
+  applyCatalogVisibility,
+  applyLegacyCourseVisibility,
+  type LessonVisibilityOptions,
+} from "./lessonVisibility";
 
 export type { LessonInAppContent } from "./lessonContentUtils";
 export { hasInAppLessonContent } from "./lessonContentUtils";
+export type { AcademyRecommendedAction } from "./lessonActions";
 
 export type AcademyLessonContentRow = {
   course_id: string;
   lesson_id: string;
   title: string | null;
   video_url: string | null;
+  audio_url: string | null;
   body_markdown: string | null;
+  guide_markdown: string | null;
   transcript_text: string | null;
   /** Display length for the sidebar, e.g. `6m`. */
   duration: string | null;
+  recommended_actions?: unknown;
+  is_draft?: boolean | null;
+  is_deleted?: boolean | null;
   updated_at: string;
 };
 
@@ -55,23 +70,62 @@ function lessonKey(courseId: string, lessonId: string): string {
   return `${courseId}:${lessonId}`;
 }
 
+function recommendedActionsFromRow(
+  row: AcademyLessonContentRow | null | undefined
+): AcademyRecommendedAction[] {
+  return parseRecommendedActions(row?.recommended_actions);
+}
+
 function lessonContentFromRow(
   row: AcademyLessonContentRow | null | undefined
 ): LessonInAppContent | null {
   if (!row) return null;
   const videoUrl = row.video_url;
+  const audioUrl = row.audio_url;
   const bodyMarkdown = row.body_markdown ?? "";
+  const guideMarkdown = row.guide_markdown ?? "";
   const transcriptText = transcriptFromRow(row);
-  if (!hasInAppLessonContent(videoUrl, bodyMarkdown, transcriptText)) return null;
+  const recommendedActions = recommendedActionsFromRow(row);
+  if (
+    !hasInAppLessonContent(
+      videoUrl,
+      bodyMarkdown,
+      transcriptText,
+      guideMarkdown,
+      audioUrl
+    ) &&
+    recommendedActions.length === 0
+  ) {
+    return null;
+  }
   return {
     videoUrl: videoUrl?.trim() || null,
+    audioUrl: audioUrl?.trim() || null,
     bodyMarkdown,
+    guideMarkdown,
     transcriptText,
+    recommendedActions,
   };
+}
+
+function draftFromRow(
+  baseDraft: boolean | undefined,
+  row: AcademyLessonContentRow | null | undefined
+): boolean {
+  if (row?.is_draft === true) return true;
+  if (row?.is_draft === false) return false;
+  return baseDraft === true;
+}
+
+function isDeletedRow(row: AcademyLessonContentRow | null | undefined): boolean {
+  return row?.is_deleted === true;
 }
 
 function mergeLesson(base: AcademyLesson, row: AcademyLessonContentRow | undefined): AcademyLesson {
   if (!row) return base;
+  if (isDeletedRow(row)) {
+    return { ...base, draft: draftFromRow(base.draft, row) };
+  }
   const titleOverride = titleFromRow(row);
   const durationOverride = durationFromRow(row);
   const content = lessonContentFromRow(row);
@@ -80,50 +134,80 @@ function mergeLesson(base: AcademyLesson, row: AcademyLessonContentRow | undefin
     ...(titleOverride ? { title: titleOverride } : {}),
     ...(durationOverride ? { duration: durationOverride } : {}),
     videoUrl: row.video_url,
+    audioUrl: row.audio_url,
     bodyMarkdown: row.body_markdown ?? "",
+    guideMarkdown: content?.guideMarkdown ?? row.guide_markdown ?? "",
+    recommendedActions:
+      content?.recommendedActions ?? recommendedActionsFromRow(row),
     transcriptText: content?.transcriptText ?? null,
+    draft: draftFromRow(base.draft, row),
   };
 }
 
 export function mergeLegacyLesson(
-  base: LegacyHubLesson,
+  base: HubLesson,
   row: AcademyLessonContentRow | null | undefined
-): LegacyHubLesson & LessonInAppContent {
+): HubLesson & LessonInAppContent {
   const titleOverride = titleFromRow(row ?? undefined);
   const durationOverride = durationFromRow(row ?? undefined);
+  const draft = draftFromRow(base.draft, row);
   const merged = {
     ...base,
     ...(titleOverride ? { title: titleOverride } : {}),
     ...(durationOverride ? { duration: durationOverride } : {}),
+    draft,
   };
   const content = lessonContentFromRow(row ?? undefined);
   if (!content) {
     return {
       ...merged,
       videoUrl: null,
+      audioUrl: null,
       bodyMarkdown: base.bodyMarkdown ?? "",
+      guideMarkdown: base.guideMarkdown ?? "",
+      recommendedActions: base.recommendedActions ?? [],
       transcriptText: null,
     };
   }
   return {
     ...merged,
     ...content,
+    draft,
     // Keep hub/catalog body when DB row has media but empty markdown.
     bodyMarkdown: content.bodyMarkdown.trim()
       ? content.bodyMarkdown
       : (base.bodyMarkdown ?? ""),
+    guideMarkdown: content.guideMarkdown.trim()
+      ? content.guideMarkdown
+      : (base.guideMarkdown ?? ""),
+    recommendedActions: content.recommendedActions.length
+      ? content.recommendedActions
+      : (base.recommendedActions ?? []),
   };
 }
 
 function mergeLegacySectionTree(
-  section: LegacyHubSection,
+  section: HubSection,
   byLesson: Map<string, AcademyLessonContentRow>
-): LegacyHubSection {
+): HubSection {
   return {
     ...section,
-    lessons: section.lessons.map((lesson) =>
-      mergeLegacyLesson(lesson, byLesson.get(lesson.id))
-    ),
+    lessons: section.lessons.flatMap((lesson) => {
+      const row = byLesson.get(lesson.id);
+      if (isDeletedRow(row)) return [];
+      const merged = mergeLegacyLesson(lesson, row);
+      if (!lesson.satellites?.length) return [merged];
+      return [
+        {
+          ...merged,
+          satellites: lesson.satellites.flatMap((sat) => {
+            const satRow = byLesson.get(sat.id);
+            if (isDeletedRow(satRow)) return [];
+            return [mergeLegacyLesson(sat, satRow)];
+          }),
+        },
+      ];
+    }),
     sections: section.sections?.map((child) =>
       mergeLegacySectionTree(child, byLesson)
     ),
@@ -132,8 +216,9 @@ function mergeLegacySectionTree(
 
 /** Legacy programme course with per-lesson DB overrides (titles, video, body, transcript). */
 export async function loadLegacyCourseWithContent(
-  course: LegacyHubCourse
-): Promise<LegacyHubCourse> {
+  course: HubCourse,
+  options: LessonVisibilityOptions = {}
+): Promise<HubCourse> {
   const { data: rows } = await supabaseAdmin
     .from("academy_lesson_content")
     .select("*")
@@ -145,12 +230,13 @@ export async function loadLegacyCourseWithContent(
     byLesson.set(r.lesson_id, r);
   }
 
-  return {
+  const merged: HubCourse = {
     ...course,
     sections: course.sections.map((section) =>
       mergeLegacySectionTree(section, byLesson)
     ),
   };
+  return applyLegacyCourseVisibility(merged, options);
 }
 
 /**
@@ -158,17 +244,22 @@ export async function loadLegacyCourseWithContent(
  * (e.g. Client Delivery onboarding + Profit Coach Certification). Resolve
  * content via each lesson's original source course id.
  */
-export async function loadSimplifiedCourseWithContent(
-  course: LegacyHubCourse
-): Promise<LegacyHubCourse> {
+export async function loadClassroomCourseWithContent(
+  course: HubCourse,
+  options: LessonVisibilityOptions = {}
+): Promise<HubCourse> {
   const sourceIds = [
     ...new Set(
       flattenSections(course.sections).flatMap((section) =>
-        section.lessons.map((lesson) => contentSourceCourseId(lesson.id))
+        section.lessons.flatMap((lesson) =>
+          lessonWithSatellites(lesson).map((l) => contentSourceCourseId(l.id))
+        )
       )
     ),
   ];
-  if (sourceIds.length === 0) return course;
+  if (sourceIds.length === 0) {
+    return applyLegacyCourseVisibility(course, options);
+  }
 
   const { data: rows } = await supabaseAdmin
     .from("academy_lesson_content")
@@ -183,12 +274,13 @@ export async function loadSimplifiedCourseWithContent(
     byLesson.set(r.lesson_id, r);
   }
 
-  return {
+  const merged: HubCourse = {
     ...course,
     sections: course.sections.map((section) =>
       mergeLegacySectionTree(section, byLesson)
     ),
   };
+  return applyLegacyCourseVisibility(merged, options);
 }
 
 async function fetchLessonContentMapUncached(): Promise<
@@ -197,7 +289,7 @@ async function fetchLessonContentMapUncached(): Promise<
   const { data: rows } = await supabaseAdmin
     .from("academy_lesson_content")
     .select(
-      "course_id, lesson_id, title, video_url, body_markdown, transcript_text, duration, updated_at"
+      "course_id, lesson_id, title, video_url, audio_url, body_markdown, guide_markdown, transcript_text, duration, recommended_actions, is_draft, is_deleted, updated_at"
     );
   const map = new Map<string, AcademyLessonContentRow>();
   for (const row of rows ?? []) {
@@ -239,19 +331,23 @@ function applyLessonContentToCatalog(
       ...category,
       courses: (category.courses ?? []).map((course) => ({
         ...course,
-        lessons: (course.lessons ?? []).map((lesson) =>
-          mergeLesson(lesson, byKey.get(lessonKey(course.id, lesson.id)))
-        ),
+        lessons: (course.lessons ?? []).flatMap((lesson) => {
+          const row = byKey.get(lessonKey(course.id, lesson.id));
+          if (isDeletedRow(row)) return [];
+          return [mergeLesson(lesson, row)];
+        }),
       })),
     })),
   };
 }
 
 /** Catalog with DB lesson overrides merged in. */
-export async function loadAcademyCatalogWithDb(): Promise<AcademyCatalog> {
+export async function loadAcademyCatalogWithDb(
+  options: LessonVisibilityOptions = {}
+): Promise<AcademyCatalog> {
   const catalog = await loadAcademyCatalog();
   const byKey = await fetchLessonContentMap();
-  return applyLessonContentToCatalog(catalog, byKey);
+  return applyCatalogVisibility(applyLessonContentToCatalog(catalog, byKey), options);
 }
 
 export function loadAcademyCatalogWithDbSync(): AcademyCatalog {
@@ -276,8 +372,8 @@ export async function loadAcademyLessonContentRow(
 export async function loadLegacyLessonWithContent(
   courseId: string,
   lessonId: string,
-  base: LegacyHubLesson
-): Promise<LegacyHubLesson & LessonInAppContent> {
+  base: HubLesson
+): Promise<HubLesson & LessonInAppContent> {
   const row = await loadAcademyLessonContentRow(courseId, lessonId);
   return mergeLegacyLesson(base, row);
 }
@@ -287,9 +383,14 @@ export async function upsertAcademyLessonContent(input: {
   lessonId: string;
   title?: string | null;
   videoUrl?: string | null;
+  audioUrl?: string | null;
   bodyMarkdown?: string | null;
+  guideMarkdown?: string | null;
   transcriptText?: string | null;
   duration?: string | null;
+  recommendedActions?: AcademyRecommendedAction[] | null;
+  isDraft?: boolean;
+  isDeleted?: boolean;
 }): Promise<AcademyLessonContentRow | null> {
   const existing = await loadAcademyLessonContentRow(input.courseId, input.lessonId);
 
@@ -302,10 +403,16 @@ export async function upsertAcademyLessonContent(input: {
         : (existing?.title ?? null),
     video_url:
       input.videoUrl !== undefined ? input.videoUrl : (existing?.video_url ?? null),
+    audio_url:
+      input.audioUrl !== undefined ? input.audioUrl : (existing?.audio_url ?? null),
     body_markdown:
       input.bodyMarkdown !== undefined
         ? input.bodyMarkdown
         : (existing?.body_markdown ?? null),
+    guide_markdown:
+      input.guideMarkdown !== undefined
+        ? input.guideMarkdown
+        : (existing?.guide_markdown ?? null),
     transcript_text:
       input.transcriptText !== undefined
         ? input.transcriptText?.trim() || null
@@ -314,6 +421,16 @@ export async function upsertAcademyLessonContent(input: {
       input.duration !== undefined
         ? normalizeLessonDurationInput(input.duration)
         : (existing?.duration ?? null),
+    recommended_actions:
+      input.recommendedActions !== undefined
+        ? parseRecommendedActions(input.recommendedActions ?? [])
+        : parseRecommendedActions(existing?.recommended_actions),
+    is_draft:
+      input.isDraft !== undefined ? input.isDraft : (existing?.is_draft ?? false),
+    is_deleted:
+      input.isDeleted !== undefined
+        ? input.isDeleted
+        : (existing?.is_deleted ?? false),
     updated_at: new Date().toISOString(),
   };
 
@@ -328,6 +445,21 @@ export async function upsertAcademyLessonContent(input: {
   }
   invalidateLessonContentMapCache();
   return data as AcademyLessonContentRow;
+}
+
+/** Set draft and/or soft-delete without clearing other content fields. */
+export async function setAcademyLessonVisibility(input: {
+  courseId: string;
+  lessonId: string;
+  isDraft?: boolean;
+  isDeleted?: boolean;
+}): Promise<AcademyLessonContentRow | null> {
+  return upsertAcademyLessonContent({
+    courseId: input.courseId,
+    lessonId: input.lessonId,
+    isDraft: input.isDraft,
+    isDeleted: input.isDeleted,
+  });
 }
 
 export async function findMergedLesson(

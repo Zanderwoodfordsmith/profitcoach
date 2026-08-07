@@ -22,6 +22,9 @@
 # academy import dry-run outputs
 /reports/
 
+# ideal client avatar research corpus (member data pulled from Drive)
+/.ica-research/
+
 # next.js
 /.next/
 /out/

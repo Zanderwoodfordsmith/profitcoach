@@ -18,7 +18,7 @@ import {
   lessonsForCourse,
   type LegacyLessonIndexEntry,
 } from "../src/lib/academy/legacyLessonMatcher";
-import { loadLegacyHub } from "../src/lib/academy/legacyHubLoad";
+import { loadArchiveHub } from "../src/lib/academy/archiveHubLoad";
 import {
   lessonTitleMatchScore,
 } from "../src/lib/academy/normalizeMatchText";
@@ -163,7 +163,7 @@ async function main() {
   const parsed = parseAcademyResourcesMarkdown(markdown);
   const withAlignmentTabs = appendClientAlignmentMasterfileTabs(parsed.resources);
   const { resources, appearancesByUrl, removedCount } = dedupeParsedResources(withAlignmentTabs);
-  const legacyHub = loadLegacyHub();
+  const legacyHub = loadArchiveHub();
   const lessonIndex = buildLegacyLessonIndex(legacyHub);
 
   console.log(

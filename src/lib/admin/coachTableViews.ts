@@ -16,7 +16,7 @@ export type SalesRobotFilter =
   | "not_paying"
   | "active_campaigns";
 export type RecurringBillingFilter = "all" | "active" | "inactive";
-export type CoachSortField = "last_login" | "join_date" | "active_campaigns";
+export type CoachSortField = "last_login" | "last_active" | "join_date" | "active_campaigns";
 export type CoachSortOrder = "recent_first" | "oldest_first" | "missing_first";
 
 export type CoachSortCriterion = {
@@ -162,14 +162,18 @@ export function sortCoachTableViewsWithAllFirst(
 export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   keyof CoachTableColumnVisibility
 > = [
+  "joinDate",
+  "lastActive",
+  "linkedinProfile",
+  "accessTier",
+  "recurringPayment",
+  "recurringActive",
+  "payments",
   "slug",
   "email",
-  "joinDate",
   "clients",
-  "linkedinProfile",
   "conference",
   "lastLogin",
-  "lastActive",
   "goalLevel",
   "currentLevel",
   "goalBy",
@@ -185,42 +189,39 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "activeCampaigns",
   "payingAccounts",
   "profitCoachEmail",
-  "accessTier",
-  "recurringPayment",
-  "recurringActive",
-  "payments",
   "landing",
 ];
 
+/** Default visible columns for the shared All view (and new views). */
 export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
-  slug: true,
-  email: true,
+  slug: false,
+  email: false,
   joinDate: true,
-  goalLevel: true,
-  clients: true,
+  goalLevel: false,
+  clients: false,
   linkedinProfile: true,
-  directory: true,
-  certification: true,
-  conference: true,
-  currentLevel: true,
-  goalBy: true,
-  lastLogin: true,
+  directory: false,
+  certification: false,
+  conference: false,
+  currentLevel: false,
+  goalBy: false,
+  lastLogin: false,
   lastActive: true,
-  crm: true,
-  salesRobot: true,
-  activeCampaigns: true,
-  payingAccounts: true,
-  profitCoachEmail: true,
+  crm: false,
+  salesRobot: false,
+  activeCampaigns: false,
+  payingAccounts: false,
+  profitCoachEmail: false,
   accessTier: true,
   recurringPayment: true,
   recurringActive: true,
   payments: true,
-  calendarEmbed: true,
-  leadWebhook: true,
-  communityBio: true,
-  directorySummary: true,
-  directoryBio: true,
-  landing: true,
+  calendarEmbed: false,
+  leadWebhook: false,
+  communityBio: false,
+  directorySummary: false,
+  directoryBio: false,
+  landing: false,
 };
 
 export function createDefaultCoachTableViewSettings(): CoachTableViewSettings {

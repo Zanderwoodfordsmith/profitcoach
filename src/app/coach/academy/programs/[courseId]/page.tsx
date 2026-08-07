@@ -1,20 +1,15 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 
-import { findLegacyCourse, firstLessonInCourse } from "@/lib/academy/legacyHubCatalog";
-import { loadLegacyHub } from "@/lib/academy/legacyHubLoad";
+import { findHubCourse } from "@/lib/academy/hubCatalog";
+import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
 
-const BASE = "/coach/academy/programs";
+const BASE = "/coach/academy/classroom";
 
 type Props = { params: Promise<{ courseId: string }> };
 
+/** Retired hub: keep old programme links working by landing on the new card. */
 export default async function CoachAcademyProgramsCourseEntryPage({ params }: Props) {
   const { courseId } = await params;
-  const data = loadLegacyHub();
-  const course = findLegacyCourse(data, courseId);
-  if (!course) notFound();
-
-  const first = firstLessonInCourse(course);
-  if (!first) redirect(BASE);
-
-  redirect(`${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(first.id)}`);
+  const course = findHubCourse(loadClassroomHub(), courseId);
+  redirect(course ? `${BASE}/${encodeURIComponent(course.id)}` : BASE);
 }

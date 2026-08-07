@@ -1,8 +1,33 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f1f5f9;
+  --background: #e9eef4;
   --foreground: #0f172a;
+
+  /* Soft blue canvas used across coach/admin/client shells */
+  --app-canvas-base: #e9eef4;
+  --app-canvas-gradient: linear-gradient(
+    135deg,
+    #f7f9fb 0%,
+    #eef3f8 38%,
+    #e4edf6 72%,
+    #dce8f3 100%
+  );
+  --app-canvas-glow: radial-gradient(
+      circle at 12% 10%,
+      rgba(255, 255, 255, 0.7),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 88% 18%,
+      rgba(148, 186, 224, 0.18),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 70% 82%,
+      rgba(125, 176, 214, 0.14),
+      transparent 42%
+    );
 
   /* Profit Coach app colors */
   --boss-foundation: #4c667a;
@@ -40,6 +65,349 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
+}
+
+.app-canvas-bg {
+  background-color: var(--app-canvas-base);
+  background-image: var(--app-canvas-glow), var(--app-canvas-gradient);
+}
+
+/* ----------------------------------------------------------------------
+ * Academy lesson typography — shared by the coach view, the admin preview,
+ * and the visual editor.
+ * Class name: src/components/academy/academyProseClassName.ts
+ * --------------------------------------------------------------------*/
+
+.academy-prose {
+  max-width: none;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #334155;
+}
+
+.academy-prose > :first-child {
+  margin-top: 0;
+}
+
+.academy-prose p {
+  margin: 0.85rem 0;
+}
+
+.academy-prose h1,
+.academy-prose h2,
+.academy-prose h3,
+.academy-prose h4,
+.academy-prose h5,
+.academy-prose h6 {
+  color: #0f172a;
+  font-weight: 600;
+  /* Avoid text-wrap: balance — long callout headings wrap early and look clipped. */
+  text-wrap: pretty;
+}
+
+.academy-prose h1 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.academy-prose h2 {
+  margin: 2.25rem 0 0.85rem;
+  font-size: 1.125rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.academy-prose h3 {
+  margin: 1.75rem 0 0.6rem;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.academy-prose h4,
+.academy-prose h5,
+.academy-prose h6 {
+  margin: 1.35rem 0 0.5rem;
+  font-size: 0.9375rem;
+}
+
+/* A heading immediately after another is a kicker, not a new section. */
+.academy-prose :is(h1, h2, h3, h4, h5, h6) + :is(h2, h3, h4, h5, h6) {
+  margin-top: 0.85rem;
+}
+
+.academy-prose strong {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.academy-prose a {
+  color: #0369a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.academy-prose a:hover {
+  color: #075985;
+}
+
+.academy-prose ul,
+.academy-prose ol {
+  margin: 0.85rem 0;
+  padding-left: 1.5rem;
+}
+
+.academy-prose ul {
+  list-style: disc;
+}
+
+.academy-prose ol {
+  list-style: decimal;
+}
+
+.academy-prose li {
+  margin: 0.4rem 0;
+  padding-left: 0.25rem;
+}
+
+.academy-prose li::marker {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Nested lists sit closer to their parent item than to their siblings. */
+.academy-prose li > :is(ul, ol) {
+  margin: 0.35rem 0;
+}
+
+.academy-prose li > p {
+  margin: 0.35rem 0;
+}
+
+.academy-prose hr {
+  margin: 2rem 0;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.academy-prose blockquote {
+  margin: 1.25rem 0;
+  border-left: 3px solid #bae6fd;
+  background: #f8fafc;
+  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.75rem 1rem;
+  color: #475569;
+  font-style: italic;
+}
+
+.academy-prose blockquote p:first-child {
+  margin-top: 0;
+}
+
+.academy-prose blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.academy-prose img {
+  margin: 1.25rem 0;
+  border-radius: 0.75rem;
+  max-width: 100%;
+  height: auto;
+}
+
+.academy-prose img[data-align="left"] {
+  display: block;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.academy-prose img[data-align="center"] {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.academy-prose img[data-align="right"] {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+
+/* Lesson visual editor: clickable images + selected resize outline */
+.lesson-rich-editor img {
+  cursor: pointer;
+}
+
+.lesson-rich-editor img[data-lesson-img-selected="true"] {
+  outline: 2px solid rgb(14 165 233);
+  outline-offset: 2px;
+}
+
+.academy-prose :not(pre) > code {
+  border-radius: 0.3rem;
+  background: #f1f5f9;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.875em;
+  color: #0f172a;
+}
+
+.academy-prose pre {
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  padding: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #e2e8f0;
+}
+
+/* Tables arrive from Google Docs with no classes, so style the element. */
+.academy-prose table {
+  margin: 1.5rem 0;
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.academy-prose thead {
+  background: #f8fafc;
+}
+
+.academy-prose th {
+  border-bottom: 1px solid #cbd5e1;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.academy-prose td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.6rem 0.75rem;
+  vertical-align: top;
+}
+
+/* ---- Accordions and embed placeholders authored in the lesson editor ---- */
+
+.academy-prose details.lesson-accordion {
+  margin: 1rem 0;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 1rem;
+}
+
+.academy-prose details.lesson-accordion summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.academy-prose details.lesson-accordion summary::marker {
+  content: none;
+}
+
+.academy-prose details.lesson-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.academy-prose details.lesson-accordion[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+.academy-prose details.lesson-accordion > *:not(summary) {
+  margin-top: 0.5rem;
+}
+
+.academy-prose .lesson-embed-block {
+  margin: 1rem 0;
+  display: flex;
+  cursor: pointer;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.125rem 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px dashed #7dd3fc;
+  background: #f0f9ff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.academy-prose .lesson-embed-block:hover {
+  border-color: #38bdf8;
+}
+
+.academy-prose .lesson-embed-block__icon {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-weight: 600;
+  color: #0284c7;
+}
+
+.academy-prose .lesson-embed-block__title {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.academy-prose .lesson-embed-block__hint {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* ---- Guide tab: same voice, sized for long-form reading ---- */
+
+.academy-prose--guide {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+.academy-prose--guide p {
+  margin: 1rem 0;
+}
+
+/* Give each section a visible headline break in a long document. */
+.academy-prose--guide h2 {
+  margin: 2.75rem 0 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+}
+
+.academy-prose--guide h3 {
+  margin: 2.25rem 0 0.75rem;
+  font-size: 1.125rem;
+}
+
+.academy-prose--guide h4,
+.academy-prose--guide h5,
+.academy-prose--guide h6 {
+  margin: 1.6rem 0 0.5rem;
+  font-size: 1rem;
+}
+
+.academy-prose--guide :is(h1, h2, h3, h4, h5, h6) + :is(h2, h3, h4, h5, h6) {
+  margin-top: 1rem;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.academy-prose--guide li {
+  margin: 0.6rem 0;
+}
+
+.academy-prose--guide ul,
+.academy-prose--guide ol {
+  margin: 1rem 0;
+  padding-left: 1.75rem;
+}
+
+/* Anchor targets clear the sticky app header when jumped to. */
+.academy-prose--guide :is(h1, h2, h3) {
+  scroll-margin-top: 7rem;
 }
 
 /* ----------------------------------------------------------------------

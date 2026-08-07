@@ -229,6 +229,22 @@ export async function GET(request: Request) {
       }
     }
 
+    const linkedinScrapedAtByCoachId = new Map<string, string>();
+    if (ids.length > 0) {
+      const liRes = await supabaseAdmin
+        .from("coach_linkedin_profiles")
+        .select("coach_id, scraped_at")
+        .in("coach_id", ids);
+      if (liRes.error?.code !== "42P01" && !liRes.error) {
+        for (const row of liRes.data ?? []) {
+          const coachId = row.coach_id as string | null;
+          const scrapedAt = row.scraped_at as string | null;
+          if (!coachId || !scrapedAt) continue;
+          linkedinScrapedAtByCoachId.set(coachId, scrapedAt);
+        }
+      }
+    }
+
     const coaches = rows.map((row) => {
       const profRaw = row.profiles as
         | Record<string, unknown>
@@ -254,6 +270,7 @@ export async function GET(request: Request) {
         coach_business_name:
           (prof?.coach_business_name as string | null) ?? null,
         linkedin_url: (prof?.linkedin_url as string | null) ?? null,
+        linkedin_scraped_at: linkedinScrapedAtByCoachId.get(id) ?? null,
         current_monthly_income: (() => {
           const raw = prof?.coaching_income_reported_2024;
           if (typeof raw !== "string") return null;

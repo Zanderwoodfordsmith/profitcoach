@@ -12,12 +12,59 @@ const PROSE =
   "font-sans text-[1.08rem] leading-[2rem] text-slate-800 md:text-[1.14rem] md:leading-[2.15rem]";
 const SECTION_HEADING =
   "text-2xl font-bold leading-tight tracking-[-0.02em] text-slate-900 md:text-3xl";
+const MD_PROSE =
+  `${PROSE} [&_p]:my-0 [&_p+p]:mt-3 [&_strong]:font-semibold [&_strong]:text-slate-900 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_li]:my-1 [&_a]:font-semibold [&_a]:text-[#0c5290] [&_a]:underline`;
 
 /** Split text into [first sentence, rest] for bold first sentence. */
 function splitFirstSentence(text: string): [string, string] {
   const match = text.match(/^([^.!?]+[.!?])\s*([\s\S]*)$/);
   return match ? [match[1], match[2].trimStart()] : [text, ""];
 }
+
+function looksLikeMarkdown(text: string): boolean {
+  return /(\*\*|__|#{1,6}\s|\[.+\]\(.+\)|^\s*[-*+]\s|\n\s*[-*+]\s)/m.test(text);
+}
+
+function InlineMarkdown({ text, className }: { text: string; className?: string }) {
+  if (!looksLikeMarkdown(text)) {
+    return <span className={className}>{text}</span>;
+  }
+  return (
+    <div className={className ? `${MD_PROSE} ${className}` : MD_PROSE}>
+      <ReactMarkdown>{text}</ReactMarkdown>
+    </div>
+  );
+}
+
+const STATUS_CARDS = [
+  {
+    key: "broken" as const,
+    badge: "Broken",
+    hint: "Urgent gaps — no reliable process",
+    badgeClass: "bg-rose-700 text-white",
+    ringClass: "border-rose-300/80",
+    barClass: "bg-rose-700",
+    panelClass: "bg-rose-50/90",
+  },
+  {
+    key: "ok" as const,
+    badge: "Okay",
+    hint: "Partial / inconsistent — works sometimes",
+    badgeClass: "bg-amber-700 text-white",
+    ringClass: "border-amber-300/80",
+    barClass: "bg-amber-600",
+    panelClass: "bg-amber-50/90",
+  },
+  {
+    key: "working" as const,
+    badge: "Working",
+    hint: "Reliable system — repeatable results",
+    badgeClass: "bg-emerald-800 text-white",
+    ringClass: "border-emerald-300/80",
+    barClass: "bg-emerald-700",
+    panelClass: "bg-emerald-50/90",
+  },
+];
 
 /** First sentence for hero dek (blog-style lead). */
 function leadSentence(text: string): string {
@@ -168,54 +215,49 @@ export function PlaybookOverviewContent({
 
       <section className="space-y-8">
         <h2 className={SECTION_HEADING}>What It Looks Like</h2>
-        <div className="space-y-6">
-          <div
-            className="rounded-2xl border border-white/70 px-6 py-6 shadow-sm md:px-8 md:py-7"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(254,242,242,0.85) 0%, rgba(255,251,235,0.75) 100%)",
-            }}
-          >
-            <p className="text-base font-semibold text-slate-900">
-              {content.whatItLooksLike.broken.emoji} {content.whatItLooksLike.broken.label}
-            </p>
-            <p className={`mt-4 ${PROSE}`}>{content.whatItLooksLike.broken.content}</p>
-          </div>
-          <div
-            className="rounded-2xl border border-white/70 px-6 py-6 shadow-sm md:px-8 md:py-7"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(234,245,255,0.9) 0%, rgba(243,232,255,0.65) 100%)",
-            }}
-          >
-            <p className="text-base font-semibold text-slate-900">
-              {content.whatItLooksLike.ok.emoji} {content.whatItLooksLike.ok.label}
-            </p>
-            <p className={`mt-4 ${PROSE}`}>{content.whatItLooksLike.ok.content}</p>
-          </div>
-          <div
-            className="rounded-2xl border border-white/70 px-6 py-6 shadow-sm md:px-8 md:py-7"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(236,253,245,0.9) 0%, rgba(224,242,254,0.75) 100%)",
-            }}
-          >
-            <p className="text-base font-semibold text-slate-900">
-              {content.whatItLooksLike.working.emoji} {content.whatItLooksLike.working.label}
-            </p>
-            <p className={`mt-4 ${PROSE}`}>{content.whatItLooksLike.working.content}</p>
-          </div>
+        <div className="space-y-5">
+          {STATUS_CARDS.map((card) => {
+            const item = content.whatItLooksLike[card.key];
+            return (
+              <div
+                key={card.key}
+                className={`overflow-hidden rounded-2xl border ${card.ringClass} shadow-sm ${card.panelClass}`}
+              >
+                <div className={`h-1.5 w-full ${card.barClass}`} aria-hidden />
+                <div className="px-6 py-6 md:px-8 md:py-7">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span
+                      className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold uppercase tracking-[0.14em] ${card.badgeClass}`}
+                    >
+                      {card.badge}
+                    </span>
+                    <p className="text-sm font-medium text-slate-600">{card.hint}</p>
+                  </div>
+                  <p className="mt-3 text-base font-semibold text-slate-900">{item.label}</p>
+                  <p className={`mt-3 ${PROSE}`}>{item.content}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
       {content.thingsToThinkAbout.length > 0 && (
         <section className="space-y-8">
           <h2 className={SECTION_HEADING}>Things to Think About</h2>
-          <ul className={`mt-8 space-y-5 ${PROSE}`}>
+          <ul className="mt-8 space-y-5">
             {content.thingsToThinkAbout.map((item, i) => {
+              if (looksLikeMarkdown(item)) {
+                return (
+                  <li key={i} className="flex gap-4 leading-relaxed">
+                    <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-[#0c5290]/50" />
+                    <InlineMarkdown text={item} className="min-w-0 flex-1" />
+                  </li>
+                );
+              }
               const [first, rest] = splitFirstSentence(item);
               return (
-                <li key={i} className="flex gap-4 leading-relaxed">
+                <li key={i} className={`flex gap-4 leading-relaxed ${PROSE}`}>
                   <span className="mt-2.5 h-2 w-2 shrink-0 rounded-full bg-[#0c5290]/50" />
                   <span>
                     <strong className="font-semibold text-slate-900">{first}</strong>
@@ -232,7 +274,7 @@ export function PlaybookOverviewContent({
         <section className="space-y-6">
           <h2 className={SECTION_HEADING}>The Actions Inside This Playbook</h2>
           {content.actionsIntro ? (
-            <p className={`mt-6 whitespace-pre-line ${PROSE}`}>{content.actionsIntro}</p>
+            <InlineMarkdown text={content.actionsIntro} className="mt-6 whitespace-pre-line" />
           ) : (
             <p className={`mt-6 ${PROSE}`}>
               When you open this playbook in the Profit System, you will find:
@@ -246,7 +288,7 @@ export function PlaybookOverviewContent({
                     {sec.title}
                   </h3>
                   {sec.description ? (
-                    <p className={`mt-3 leading-relaxed ${PROSE}`}>{sec.description}</p>
+                    <InlineMarkdown text={sec.description} className="mt-3" />
                   ) : null}
                   <ul className="mt-6 space-y-5">
                     {sec.actions?.map((action, ai) => (
@@ -269,11 +311,18 @@ export function PlaybookOverviewContent({
       {content.quickWins.length > 0 && (
         <section className="space-y-6">
           <h2 className={SECTION_HEADING}>Quick Wins</h2>
-          <ul className={`mt-2 space-y-4 ${PROSE}`}>
+          <ul className="mt-2 space-y-4">
             {content.quickWins.map((win, i) => {
+              if (looksLikeMarkdown(win)) {
+                return (
+                  <li key={i}>
+                    <InlineMarkdown text={win} />
+                  </li>
+                );
+              }
               const [first, rest] = splitFirstSentence(win);
               return (
-                <li key={i} className="leading-relaxed">
+                <li key={i} className={`leading-relaxed ${PROSE}`}>
                   <strong className="font-semibold text-slate-900">{first}</strong>
                   {rest ? ` ${rest}` : ""}
                 </li>

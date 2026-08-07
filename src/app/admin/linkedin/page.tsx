@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { LinkedInSchedulerPanel } from "@/components/admin/LinkedInSchedulerPanel";
 
@@ -48,8 +49,9 @@ export default function AdminLinkedInPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="LinkedIn Scheduler"
-        description="Admin-only tools for connecting LinkedIn, posting now, and scheduling queued posts."
+        title="Get Clients"
+        description="Compose, schedule, and reuse LinkedIn content."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
       <LinkedInSchedulerPanel />
     </div>

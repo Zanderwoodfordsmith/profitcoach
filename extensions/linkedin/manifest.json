@@ -1,0 +1,83 @@
+{
+  "manifest_version": 3,
+  "name": "Profit Coach for LinkedIn",
+  "short_name": "Profit Coach",
+  "description": "Save LinkedIn prospects, score ICP fit, draft notes/comments/replies — you always click Send.",
+  "version": "2.2.1",
+  "homepage_url": "https://www.businesscoachacademy.com",
+  "action": {
+    "default_title": "Profit Coach for LinkedIn",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "cookies",
+    "clipboardWrite",
+    "storage",
+    "tabs",
+    "scripting",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*.linkedin.com/*",
+    "https://*.businesscoachacademy.com/*",
+    "http://localhost:3002/*",
+    "http://127.0.0.1:3002/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.businesscoachacademy.com/*",
+        "http://localhost:3002/*",
+        "http://127.0.0.1:3002/*",
+        "http://localhost:3000/*",
+        "http://127.0.0.1:3000/*"
+      ],
+      "js": ["content-bridge.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://*.linkedin.com/in/*", "https://linkedin.com/in/*"],
+      "js": ["content-linkedin.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.linkedin.com/sales/lead/*",
+        "https://www.linkedin.com/sales/people/*",
+        "https://linkedin.com/sales/lead/*",
+        "https://linkedin.com/sales/people/*"
+      ],
+      "js": ["content-sales-nav.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.linkedin.com/feed/*",
+        "https://www.linkedin.com/",
+        "https://www.linkedin.com/messaging/*",
+        "https://linkedin.com/feed/*",
+        "https://linkedin.com/messaging/*"
+      ],
+      "js": ["content-engage.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

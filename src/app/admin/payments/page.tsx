@@ -15,7 +15,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { CoachesHubTabs } from "@/components/admin/CoachesHubTabs";
+import { FinancialsHubTabs } from "@/components/admin/FinancialsHubTabs";
 import { PaymentsMonthlyBarChart } from "@/components/admin/PaymentsMonthlyBarChart";
 import { StickyPageHeader } from "@/components/layout";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
@@ -1647,7 +1647,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <StickyPageHeader title="Payments" tabs={<CoachesHubTabs />} />
+      <StickyPageHeader title="Payments" tabs={<FinancialsHubTabs />} />
 
       {checkingRole ? <p className="text-sm text-slate-600">Checking access…</p> : null}
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}

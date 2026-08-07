@@ -175,7 +175,7 @@ export default function ClientLayout({
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="app-canvas-bg flex min-h-screen items-center justify-center px-4">
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -183,7 +183,7 @@ export default function ClientLayout({
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="app-canvas-bg flex min-h-screen items-center justify-center px-4">
         <p className="text-sm text-rose-600">{error}</p>
       </div>
     );
@@ -213,7 +213,7 @@ export default function ClientLayout({
 
   return (
     <div
-      className={`min-h-screen text-slate-900 ${playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"}`}
+      className={`min-h-screen text-slate-900 ${playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"}`}
     >
       <UsageTracker />
       {hasBanner && (
@@ -236,7 +236,7 @@ export default function ClientLayout({
       )}
       {!playbooksReader ? (
       <aside
-        className={`fixed left-0 bottom-0 z-10 flex w-64 flex-col border-r border-slate-200 bg-gradient-to-b from-[#0c5290] to-[#0a4274] text-white ${sidebarTop}`}
+        className={`fixed left-0 bottom-0 z-10 flex w-64 flex-col border-r border-white/10 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] text-white ${sidebarTop}`}
         style={{ height: hasBanner ? "calc(100vh - 3rem)" : "100vh" }}
       >
         <div className="shrink-0 px-4 py-4">

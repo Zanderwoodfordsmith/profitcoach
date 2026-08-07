@@ -316,9 +316,12 @@ export function ScorecardClient() {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
 
-  const base = pathname.startsWith("/admin")
+  const compassBase = pathname.startsWith("/admin")
     ? "/admin/signature"
     : "/coach/signature";
+  const ladderHref = pathname.startsWith("/admin")
+    ? "/admin/account?tab=ladder"
+    : "/coach/settings?tab=ladder";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -557,7 +560,7 @@ export function ScorecardClient() {
           <span>
             Time to update your Scorecard for this week.{" "}
             <Link
-              href={`${base}/scorecard`}
+              href={`${compassBase}/scorecard`}
               className="font-medium text-sky-800 underline"
             >
               Open My Scorecard
@@ -580,7 +583,7 @@ export function ScorecardClient() {
       {monthlyIncomeGoal === null ? (
         <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
           Set a goal on{" "}
-          <Link href={`${base}/ladder`} className="font-medium underline">
+          <Link href={ladderHref} className="font-medium underline">
             My Ladder
           </Link>{" "}
           for targets.

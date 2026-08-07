@@ -25,7 +25,7 @@ import { loadEnvConfig } from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 
 import { parseLessonDocFile, type ParsedLessonDoc } from "../src/lib/academy/parseLessonDocs";
-import { loadLegacyHub } from "../src/lib/academy/legacyHubLoad";
+import { loadArchiveHub } from "../src/lib/academy/archiveHubLoad";
 import {
   buildLegacyLessonIndex,
   matchDocTitleToLesson,
@@ -172,7 +172,7 @@ async function main() {
     process.exit(1);
   }
 
-  const index = buildLegacyLessonIndex(loadLegacyHub());
+  const index = buildLegacyLessonIndex(loadArchiveHub());
   const { byExact, byNormalized } = loadOverrides();
 
   const resolved: Resolved[] = [];

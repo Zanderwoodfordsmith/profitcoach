@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default function AdminSettingsPage() {
-  redirect("/admin/account?tab=site");
+/** Site tools now live at the top of Admin → Links. */
+export default function AdminSiteToolsPage() {
+  redirect("/admin/links");
 }

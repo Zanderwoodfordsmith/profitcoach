@@ -1,11 +1,11 @@
 import { AcademyCourseCard } from "@/components/academy/AcademyCourseCard";
-import { lessonCount, listCoursesFlat } from "@/lib/academy/catalog";
+import { lessonCount, listCoursesFlat } from "@/lib/academy/compassCatalog";
 import { loadAcademyCatalogWithDb } from "@/lib/academy/lessonContent";
 import { courseVisibleToAccessTier } from "@/lib/academy/accessTierFilter";
 import type { CoachAccessTier } from "@/lib/coachAccess/tiers";
 
 type Props = {
-  /** Prefix for course card links (e.g. `/coach/academy/classroom`). */
+  /** Prefix for course card links (e.g. `/coach/academy/compass`). */
   linkBasePath: string;
   /** When set, filters courses by optional catalog `accessTiers`. */
   viewerAccessTier?: CoachAccessTier | null;

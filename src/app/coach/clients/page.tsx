@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import { AddClientForm } from "@/components/clients/AddClientForm";
 import {
   ProspectsTable,
   type ProspectRow,
 } from "@/components/prospects/ProspectsTable";
-import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
 
 export default function CoachClientsPage() {
   const router = useRouter();
@@ -151,8 +152,9 @@ export default function CoachClientsPage() {
     <CoachClientHubGate>
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Clients"
+        title="Coach Clients"
         description="View your clients. Add clients or move prospects to clients when they convert."
+        below={<CoachToolsHubTabs hub="coach-clients" />}
       />
 
       <div className="flex w-full flex-col gap-4">
@@ -188,7 +190,11 @@ export default function CoachClientsPage() {
         onAddClick={() => setShowAddClient((open) => !open)}
         addActive={showAddClient}
         addLabel={showAddClient ? "Cancel" : "Add"}
-        onRowClick={(id) => router.push(bossProHubPath(id))}
+        onRowClick={
+          impersonatingCoachId
+            ? (id) => router.push(clientWorkspacePath(id))
+            : undefined
+        }
         emptyMessage="No clients yet."
         renderRowActions={(row) => (
           <button

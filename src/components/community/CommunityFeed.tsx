@@ -10,6 +10,7 @@ import {
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { DateTime } from "luxon";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -79,8 +80,8 @@ import {
   communityCalendarOccurrenceKey,
   isActiveCommunityCalendarOccurrence,
 } from "@/lib/communityCalendarTypes";
-import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
 import { formatCommunityEventHappeningWhen } from "@/lib/communityRelativeTime";
+import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import {
   buildLoginUrl,
   coachCommunityPathFromAdminPath,
@@ -307,6 +308,18 @@ function isMissingPublishedAtColumnError(error: unknown): boolean {
     maybe.code === "42703" &&
     typeof maybe.message === "string" &&
     maybe.message.includes("community_posts.published_at")
+  );
+}
+
+function isMissingPostScopeColumnError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { code?: string; message?: string };
+  return (
+    maybe.code === "42703" &&
+    typeof maybe.message === "string" &&
+    (maybe.message.includes("community_posts.post_scope") ||
+      maybe.message.includes("post_scope") ||
+      maybe.message.includes("visibility"))
   );
 }
 
@@ -954,6 +967,25 @@ export function CommunityFeed() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [feedCountersAvailable, setFeedCountersAvailable] = useState(true);
   const [publishedAtAvailable, setPublishedAtAvailable] = useState(true);
+  const [postScopeFilterAvailable, setPostScopeFilterAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { error } = await supabaseClient
+        .from("community_posts")
+        .select("id, post_scope, visibility")
+        .limit(1);
+      if (cancelled) return;
+      if (!error) setPostScopeFilterAvailable(true);
+      else if (isMissingPostScopeColumnError(error)) {
+        setPostScopeFilterAvailable(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [viewerIsAdmin, setViewerIsAdmin] = useState<boolean | null>(null);
   const [communityAuthUserId, setCommunityAuthUserId] = useState<
     string | null
@@ -1009,9 +1041,19 @@ export function CommunityFeed() {
     useState<CommunityCalendarOccurrence | null>(null);
   const [calendarNextOccurrence, setCalendarNextOccurrence] =
     useState<CommunityCalendarOccurrence | null>(null);
-  const [selectedCalendarOccurrence, setSelectedCalendarOccurrence] =
-    useState<CommunityCalendarOccurrence | null>(null);
   const [calendarTick, setCalendarTick] = useState(0);
+  const communityBasePath = pathname.startsWith("/admin")
+    ? "/admin/community"
+    : "/coach/community";
+  const communityCalendarHref = `${communityBasePath}/calendar`;
+  const viewerTimezone = useMemo(() => defaultCommunityCalendarTimezone(), []);
+  const nextEventWhen = useMemo(() => {
+    if (!calendarNextOccurrence) return null;
+    return formatCommunityEventHappeningWhen(
+      calendarNextOccurrence.startsAtIso,
+      viewerTimezone
+    );
+  }, [calendarNextOccurrence, viewerTimezone, calendarTick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1321,7 +1363,9 @@ export function CommunityFeed() {
       .select("id, slug, label")
       .order("sort_order", { ascending: true });
     if (error) throw error;
-    setCategories((data ?? []) as CommunityCategory[]);
+    setCategories(
+      ((data ?? []) as CommunityCategory[]).filter((c) => c.slug !== "lesson-qa")
+    );
   }, []);
 
   const commitPostsToState = useCallback((rows: CommunityPostRow[]) => {
@@ -1388,6 +1432,11 @@ export function CommunityFeed() {
           if (publishedAtAvailable && !canPreviewScheduledPosts) {
             favQ = favQ.lte("post.published_at", new Date().toISOString());
           }
+          if (postScopeFilterAvailable) {
+            favQ = favQ.or(
+              "post.post_scope.is.null,post.post_scope.eq.feed,and(post.post_scope.eq.lesson_qa,post.visibility.eq.public)"
+            );
+          }
           return favQ;
         };
 
@@ -1415,6 +1464,12 @@ export function CommunityFeed() {
             if (cat) {
               q = q.eq("category_id", cat.id);
             }
+          }
+          if (postScopeFilterAvailable) {
+            // Main feed + public lesson Ask & Share. Private lesson threads stay off the feed.
+            q = q.or(
+              "post_scope.is.null,post_scope.eq.feed,and(post_scope.eq.lesson_qa,visibility.eq.public)"
+            );
           }
           return q;
         };
@@ -1686,6 +1741,7 @@ export function CommunityFeed() {
       readFilter,
       feedCountersAvailable,
       publishedAtAvailable,
+      postScopeFilterAvailable,
       canPreviewScheduledPosts,
       commitPostsToState,
     ]
@@ -2071,9 +2127,8 @@ export function CommunityFeed() {
               </div>
 
               {calendarLiveOccurrence ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedCalendarOccurrence(calendarLiveOccurrence)}
+                <Link
+                  href={communityCalendarHref}
                   className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center"
                 >
                   <span className="inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white">
@@ -2084,25 +2139,30 @@ export function CommunityFeed() {
                     {calendarLiveOccurrence.title}
                   </span>
                   <span className="text-[15px] font-medium text-slate-700">now</span>
-                </button>
-              ) : calendarNextOccurrence ? (
+                </Link>
+              ) : calendarNextOccurrence && nextEventWhen?.label ? (
                 <div className="mt-[-8px] flex w-full items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
-                  <CalendarDays className="h-3.5 w-3.5 shrink-0 text-slate-600" aria-hidden />
+                  <Link
+                    href={communityCalendarHref}
+                    className="shrink-0 text-slate-600 hover:text-slate-800"
+                    aria-label="Open community calendar"
+                  >
+                    <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                  </Link>
                   <span className="min-w-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedCalendarOccurrence(calendarNextOccurrence)
-                      }
+                    <Link
+                      href={communityCalendarHref}
                       className="truncate text-[15px] font-semibold text-slate-900 hover:underline"
                     >
                       {calendarNextOccurrence.title}
-                    </button>{" "}
-                    is happening{" "}
-                    {formatCommunityEventHappeningWhen(
-                      calendarNextOccurrence.startsAtIso,
-                      calendarNextOccurrence.display_timezone
-                    )}
+                    </Link>{" "}
+                    is happening {nextEventWhen.label}
+                    {nextEventWhen.timezoneShort ? (
+                      <span className="text-slate-400">
+                        {" "}
+                        ({nextEventWhen.timezoneShort})
+                      </span>
+                    ) : null}
                   </span>
                 </div>
               ) : null}
@@ -2391,12 +2451,6 @@ export function CommunityFeed() {
                   )}
                   onMarkPostRead={markPostRead}
                   onMarkPostUnread={markPostUnread}
-                />
-              ) : null}
-              {selectedCalendarOccurrence ? (
-                <CommunityCalendarEventModal
-                  occurrence={selectedCalendarOccurrence}
-                  onClose={() => setSelectedCalendarOccurrence(null)}
                 />
               ) : null}
             </div>

@@ -1,7 +1,6 @@
-import { LegacyAcademyCatalogGrid } from "@/components/academy/LegacyAcademyCatalogGrid";
+import { redirect } from "next/navigation";
 
-const BASE = "/admin/academy/programs";
-
-export default async function AdminAcademyProgramsCatalogPage() {
-  return <LegacyAcademyCatalogGrid basePath={BASE} />;
+/** Old admin `/programs` archive → `/archive`. */
+export default function AdminAcademyProgramsRedirectPage() {
+  redirect("/admin/academy/archive");
 }

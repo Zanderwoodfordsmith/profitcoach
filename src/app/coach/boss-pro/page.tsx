@@ -6,6 +6,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useBossWorkshopChrome } from "@/contexts/BossWorkshopChromeContext";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { ContactBossWorkshopBody } from "@/components/coach/ContactBossWorkshopBody";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import {
@@ -870,8 +871,9 @@ function CoachWorkshopPageContent() {
     <div className="flex min-w-0 flex-col gap-6">
       {!(isMinimalChrome && !activeContactId) ? (
         <StickyPageHeader
-          title="Boss Pro"
+          title="Get Clients"
           nowrap
+          tabs={<CoachToolsHubTabs hub="get-clients" />}
           actions={
             sessionToolbar
               ? isMinimalChrome

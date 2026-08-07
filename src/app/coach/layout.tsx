@@ -11,6 +11,7 @@ import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachI
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
+import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
@@ -95,12 +96,16 @@ export default function CoachLayout({
     };
   }, [impersonatingCoachId]);
 
-  /** Compass is admin-only; /coach/signature stays for impersonation. */
+  /**
+   * Compass + Actions are coach-accessible (Classroom tabs).
+   * Scorecard stays admin-only. Ladder redirects live on the page.
+   * Admins without impersonation use /admin/signature*.
+   */
   useEffect(() => {
     if (!pathname?.startsWith("/coach/signature")) return;
     if (impersonatingCoachId) return;
     let cancelled = false;
-    async function gateCompass() {
+    async function gateSignature() {
       const {
         data: { user },
       } = await supabaseClient.auth.getUser();
@@ -115,12 +120,22 @@ export default function CoachLayout({
       };
       if (cancelled) return;
       if (roleBody.role === "admin") {
-        router.replace("/admin/signature");
-      } else {
-        router.replace("/coach/community");
+        if (pathname.startsWith("/coach/signature/scorecard")) {
+          router.replace("/admin/signature/scorecard");
+        } else if (pathname.startsWith("/coach/signature/actions")) {
+          router.replace("/admin/signature/actions");
+        } else if (pathname.startsWith("/coach/signature/ladder")) {
+          router.replace("/admin/account?tab=ladder");
+        } else {
+          router.replace("/admin/signature");
+        }
+        return;
+      }
+      if (pathname.startsWith("/coach/signature/scorecard")) {
+        router.replace("/coach/academy/classroom");
       }
     }
-    void gateCompass();
+    void gateSignature();
     return () => {
       cancelled = true;
     };
@@ -159,9 +174,9 @@ export default function CoachLayout({
   const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
   const playbooksReader = fullBleed;
   const sidebarVisible = sidebarOpen && !playbooksReader;
-  const shellPadClass = sidebarVisible ? "md:pl-64" : "pl-0";
+  const shellPadClass = sidebarVisible ? "md:pl-56" : "pl-0";
   const topClusterMaxW = sidebarVisible
-    ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-17rem)]"
+    ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-15rem)]"
     : "max-w-[calc(100vw-1.5rem)]";
   const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
@@ -177,7 +192,7 @@ export default function CoachLayout({
 
   if (!authReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+      <div className="app-canvas-bg flex min-h-screen items-center justify-center px-4">
         <p className="text-sm text-slate-600">Loading…</p>
       </div>
     );
@@ -186,14 +201,14 @@ export default function CoachLayout({
   return (
     <div
       className={`min-h-screen overflow-x-hidden ${shellPadClass} text-slate-900 ${
-        membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "bg-slate-100"
+        membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
     >
       <UsageTracker />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {playbooksReader ? (
           isImpersonatingCoach ? (
-            <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+            <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
               <div
                 className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
                 role="status"
@@ -219,7 +234,7 @@ export default function CoachLayout({
           ) : null
         ) : isMinimalWorkshopChrome ? (
           workshopTopRightSlot || isImpersonatingCoach ? (
-            <div className="fixed right-3 top-1.5 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-5">
+            <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
               {workshopTopRightSlot ? (
                 <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
               ) : null}
@@ -264,7 +279,7 @@ export default function CoachLayout({
               }
             />
             <div
-              className={`fixed right-3 top-1.5 z-[100] hidden flex-col items-end gap-2 sm:right-5 md:flex ${topClusterMaxW}`}
+              className={`fixed right-3 top-3 z-[100] hidden flex-col items-end gap-2 sm:right-6 md:flex ${topClusterMaxW}`}
             >
               <div className="flex max-w-full items-center justify-end gap-3">
                 {bossWorkshopPage && workshopTopRightSlot ? (
@@ -274,6 +289,7 @@ export default function CoachLayout({
                   variant="coach"
                   signingOut={signingOut}
                   onSignOut={handleSignOut}
+                  notificationsOnly
                   avatarOverride={
                     isImpersonatingCoach
                       ? {
@@ -359,6 +375,7 @@ export default function CoachLayout({
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>
+      <SalesNavImportToast />
     </div>
   );
 }

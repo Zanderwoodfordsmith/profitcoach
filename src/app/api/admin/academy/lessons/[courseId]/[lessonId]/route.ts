@@ -5,16 +5,19 @@ import {
   loadAcademyCatalogWithDb,
   upsertAcademyLessonContent,
 } from "@/lib/academy/lessonContent";
-import { findCourse, loadAcademyCatalog } from "@/lib/academy/catalog";
+import { findCourse, loadAcademyCatalog } from "@/lib/academy/compassCatalog";
 import type { AcademyLesson } from "@/lib/academy/types";
 import { requireAdmin } from "@/lib/requireAdmin";
 
 type Body = {
   title?: string | null;
   videoUrl?: string | null;
+  audioUrl?: string | null;
   bodyMarkdown?: string | null;
+  guideMarkdown?: string | null;
   transcriptText?: string | null;
   duration?: string | null;
+  recommendedActions?: { id: string; text: string }[] | null;
 };
 
 export async function GET(
@@ -28,7 +31,7 @@ export async function GET(
   }
 
   const { courseId, lessonId } = await context.params;
-  const catalog = await loadAcademyCatalogWithDb();
+  const catalog = await loadAcademyCatalogWithDb({ includeDrafts: true });
   const found = findCourse(catalog, courseId);
   if (!found) {
     return NextResponse.json({ error: "Course not found." }, { status: 404 });
@@ -76,9 +79,12 @@ export async function PATCH(
       lessonId,
       title: body.title,
       videoUrl: body.videoUrl,
+      audioUrl: body.audioUrl,
       bodyMarkdown: body.bodyMarkdown,
+      guideMarkdown: body.guideMarkdown,
       transcriptText: body.transcriptText,
       duration: body.duration,
+      recommendedActions: body.recommendedActions,
     });
   } catch (err) {
     return NextResponse.json(

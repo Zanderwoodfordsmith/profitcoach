@@ -1,5 +1,9 @@
+import type { AcademyRecommendedAction } from "./lessonActions";
+
 /** Pillar ids from My Compass / signature v2 (`reach` = Connect, `enrol` = Enroll). */
 export type AcademyCompassPillarId = "reach" | "enrol" | "deliver";
+
+export type { AcademyRecommendedAction } from "./lessonActions";
 
 export type AcademyLesson = {
   id: string;
@@ -10,8 +14,20 @@ export type AcademyLesson = {
   duration?: string;
   /** Supports common YouTube URLs; other URLs may show as a link or generic video element later. */
   videoUrl?: string | null;
+  /** Optional listen-along audio under the video. */
+  audioUrl?: string | null;
+  /** Overview tab content. */
   bodyMarkdown?: string;
+  /** Optional Guide tab (longer walkthrough / SOP). */
+  guideMarkdown?: string;
+  /** Recommended next steps shown beside Overview. */
+  recommendedActions?: AcademyRecommendedAction[];
   transcriptText?: string | null;
+  /**
+   * Admin-only: coaches never see draft lessons.
+   * From catalog JSON and/or `academy_lesson_content.is_draft`.
+   */
+  draft?: boolean;
 };
 
 export type AcademyCourse = {

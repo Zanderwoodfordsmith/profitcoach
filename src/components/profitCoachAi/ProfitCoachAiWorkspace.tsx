@@ -87,7 +87,6 @@ export function ProfitCoachAiWorkspace({
   const { impersonatingCoachId } = useImpersonation();
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
   const compassHref = `${prefix}/signature`;
-  const settingsHref = `${prefix}/settings`;
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MsgRow[]>([]);
@@ -796,7 +795,6 @@ export function ProfitCoachAiWorkspace({
               <ProfitCoachAiBrainForm
                 key={brainFormKey}
                 compassHref={compassHref}
-                settingsHref={settingsHref}
                 initialContext={aiContext}
                 draftFromChat={brainDraftFromChat}
                 saving={brainSaving}

@@ -26,23 +26,31 @@ import {
 } from "@/lib/communityCalendarDisplay";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 
-function formatDayName(dt: DateTime): string {
-  return dt.toFormat("cccc");
+function formatDayAbbrev(dt: DateTime): string {
+  return dt.toFormat("ccc");
 }
 
-function formatTime(dt: DateTime): string {
-  return dt.toFormat("h:mma").toLowerCase();
-}
-
-function formatTimeRange(start: DateTime, end: DateTime): string {
-  const sameMeridiem = start.toFormat("a") === end.toFormat("a");
-  const startStr = sameMeridiem
-    ? start.toFormat(start.minute === 0 ? "h" : "h:mm")
-    : start.toFormat(start.minute === 0 ? "ha" : "h:mma").toLowerCase();
-  const endStr = end
-    .toFormat(end.minute === 0 ? "ha" : "h:mma")
+function formatStartTime(dt: DateTime): string {
+  return dt
+    .toFormat(dt.minute === 0 ? "ha" : "h:mma")
     .toLowerCase();
-  return `${sameMeridiem ? startStr : startStr} – ${endStr}`;
+}
+
+function formatTimezoneShort(iana: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: iana,
+      timeZoneName: "short",
+    }).formatToParts(new Date());
+    return parts.find((p) => p.type === "timeZoneName")?.value ?? iana;
+  } catch {
+    return iana;
+  }
+}
+
+function formatTimezoneCity(iana: string): string {
+  const city = iana.split("/").pop()?.replaceAll("_", " ");
+  return city || iana;
 }
 
 type CallItem = {
@@ -139,6 +147,9 @@ export function ThisWeeksCallsCard() {
     });
   }, [events, exceptions, tz, nowTick]);
 
+  const tzShort = useMemo(() => formatTimezoneShort(tz), [tz]);
+  const tzCity = useMemo(() => formatTimezoneCity(tz), [tz]);
+
   return (
     <div className="mt-4 rounded-xl border border-slate-200/80 bg-white shadow-sm">
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 pt-4 pb-3">
@@ -146,9 +157,15 @@ export function ThisWeeksCallsCard() {
           className="h-4 w-4 shrink-0 text-sky-600"
           aria-hidden
         />
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+        <p className="min-w-0 flex-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
           This Week&rsquo;s Calls
         </p>
+        <span
+          className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400"
+          title={`Times shown in ${tzCity} (${tz})`}
+        >
+          {tzShort}
+        </span>
       </div>
 
       <div className="px-4 pb-4">
@@ -161,48 +178,44 @@ export function ThisWeeksCallsCard() {
         ) : (
           <ul className="mt-3 space-y-2.5">
             {calls.map((c) => {
-              const dayNum = c.start.day;
+              const borderTone = c.isLive
+                ? "border-red-200"
+                : "border-slate-200";
+              const timeText = c.isLive
+                ? "text-red-600"
+                : c.isPast
+                  ? "text-slate-400"
+                  : "text-slate-500";
+              const dayBar = c.isLive
+                ? "bg-red-500 text-white"
+                : c.isPast
+                  ? "bg-slate-200 text-slate-500"
+                  : "bg-sky-600 text-white";
+
               return (
                 <li
                   key={`${c.occurrence.eventId}-${c.occurrence.startsAtIso}`}
-                  className="flex items-start gap-3"
+                  className="flex items-center gap-3"
                 >
-                  {/* Calendar date icon */}
                   <div
-                    className={`flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border text-center leading-none ${
-                      c.isLive
-                        ? "border-red-200 bg-red-50"
-                        : c.isPast
-                          ? "border-slate-200 bg-slate-50"
-                          : "border-sky-200 bg-sky-50"
-                    }`}
+                    className={`flex h-11 w-11 shrink-0 flex-col overflow-hidden rounded-lg border bg-white text-center leading-none ${borderTone}`}
+                    aria-label={`${formatDayAbbrev(c.start)} ${formatStartTime(c.start)}`}
                   >
-                    <span
-                      className={`text-base font-bold tabular-nums leading-none ${
-                        c.isLive
-                          ? "text-red-600"
-                          : c.isPast
-                            ? "text-slate-400"
-                            : "text-sky-700"
-                      }`}
+                    <div
+                      className={`shrink-0 py-0.5 text-[9px] font-semibold tracking-wide ${dayBar}`}
                     >
-                      {dayNum}
-                    </span>
+                      {formatDayAbbrev(c.start)}
+                    </div>
+                    <div className="flex min-h-0 flex-1 items-center justify-center px-0.5">
+                      <span
+                        className={`text-[10px] font-medium tabular-nums leading-none ${timeText}`}
+                      >
+                        {formatStartTime(c.start)}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Call info */}
-                  <div className="min-w-0 flex-1 pt-px">
-                    <p
-                      className={`text-[11px] font-medium leading-snug ${
-                        c.isPast && !c.isLive
-                          ? "text-slate-400"
-                          : "text-slate-500"
-                      }`}
-                    >
-                      {formatDayName(c.start)}
-                      {" · "}
-                      {formatTimeRange(c.start, c.end)}
-                    </p>
+                  <div className="min-w-0 flex-1 self-center">
                     <p
                       className={`truncate text-[0.8125rem] font-semibold leading-snug ${
                         c.isPast && !c.isLive

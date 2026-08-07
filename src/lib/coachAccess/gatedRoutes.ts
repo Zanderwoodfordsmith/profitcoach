@@ -32,11 +32,25 @@ export const GATED_ROUTES: GatedRoute[] = [
       "The community feed is where coaches share wins, ask questions and get support daily. Membership keeps you in the conversation.",
   },
   {
+    prefix: "/coach/first-campaign",
+    feature: "nav.marketing",
+    title: "First Campaign",
+    description:
+      "A guided setup that takes you from LinkedIn import to ICP, avatar, messages, and a starter list of named prospects.",
+  },
+  {
     prefix: "/coach/prospects",
     feature: "nav.marketing",
     title: "Prospects",
     description:
       "Track every lead in one pipeline and know exactly who needs a follow-up, so opportunities stop slipping through the cracks.",
+  },
+  {
+    prefix: "/coach/pipeline",
+    feature: "nav.marketing",
+    title: "Pipeline",
+    description:
+      "See every prospect on a simple board — who’s new, who’s in calls, and who needs a follow-up.",
   },
   {
     prefix: "/coach/calls",
@@ -53,9 +67,16 @@ export const GATED_ROUTES: GatedRoute[] = [
       "See where prospects drop off and where the money is, so you can fix the weak point instead of guessing.",
   },
   {
+    prefix: "/coach/funnel-settings",
+    feature: "nav.marketing",
+    title: "Get Clients settings",
+    description:
+      "Set up your share links, CRM sync, and funnel landing copy so leads flow into your pipeline.",
+  },
+  {
     prefix: "/coach/boss-pro",
     feature: "nav.marketing",
-    title: "BOSS score",
+    title: "Boss Pro",
     description:
       "Run the BOSS diagnostic for any client to show exactly where the money is and why your fee is justified.",
   },
@@ -107,43 +128,48 @@ export const ALUMNI_FREE_COURSE_IDS: ReadonlySet<string> = new Set([
   "profit-coach-certification",
 ]);
 
-/** Client-safe course id → title map (kept in sync with legacy-hub.json). */
+/** Client-safe course id → title map (kept in sync with archive-hub.json). */
 export const ACADEMY_COURSE_TITLES: Record<string, string> = {
-  kickstart: "Kickstart",
+  kickstart: "Start Here",
   "coach-action-plan": "Coach Action Plan",
   "going-pro": "Going Pro",
+  "get-calls": "Get Calls",
+  "win-clients": "Win Clients",
   "profit-coach-certification": "Profit Coach Certification",
   "client-acquisition": "Client Acquisition",
   "client-delivery": "Client Delivery",
   "profit-coach-system": "Profit Coach System",
   "profit-coach-os": "Profit Coach OS",
   "profit-brand-framework": "PROFIT Brand & Framework",
+  "not-in-classroom": "Archive",
 };
 
 const ACADEMY_RESERVED_SEGMENTS = new Set([
-  "programs",
   "classroom",
-  "resources",
+  "compass",
+  "archive",
+  "programs",
   "simplified",
+  "resources",
+  "weekly-focus",
 ]);
 
-/** Extract the academy course id from a coach academy path, if any. */
+/**
+ * Extract the academy course id from a coach academy path, if any.
+ *
+ * Hub segments nest the course one level deeper
+ * (`/coach/academy/classroom/going-pro/...`), so skip past them.
+ */
 export function academyCourseIdFromPath(
   pathname: string | null
 ): string | null {
-  if (!pathname) return null;
-  const prefixes = [
-    "/coach/academy/programs/",
-    "/coach/academy/classroom/",
-    "/coach/academy/",
-  ];
-  for (const prefix of prefixes) {
-    if (!pathname.startsWith(prefix)) continue;
-    const segment = pathname.slice(prefix.length).split("/")[0] ?? "";
+  const prefix = "/coach/academy/";
+  if (!pathname?.startsWith(prefix)) return null;
+
+  for (const segment of pathname.slice(prefix.length).split("/").slice(0, 2)) {
+    if (!segment) continue;
     const courseId = decodeURIComponent(segment);
-    if (courseId && !ACADEMY_RESERVED_SEGMENTS.has(courseId)) {
-      return courseId;
-    }
+    if (!ACADEMY_RESERVED_SEGMENTS.has(courseId)) return courseId;
   }
   return null;
 }

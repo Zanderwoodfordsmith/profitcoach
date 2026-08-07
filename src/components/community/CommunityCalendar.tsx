@@ -72,6 +72,7 @@ import { AddCommunityEventModal } from "@/components/community/AddCommunityEvent
 import { CommunityCalendarCancelModal } from "@/components/community/CommunityCalendarCancelModal";
 import type { CommunityCalendarCancelScope } from "@/components/community/CommunityCalendarCancelModal";
 import { CommunityCalendarEventModal } from "@/components/community/CommunityCalendarEventModal";
+import { CommunityCalendarSubscribeButton } from "@/components/community/CommunityCalendarSubscribeModal";
 import { useBelowBreakpoint } from "@/hooks/useBreakpoint";
 
 const LIST_PAGE_SIZE = 6;
@@ -79,6 +80,7 @@ const LIST_PAGE_SIZE = 6;
 const WEEK_HEADERS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 const WEEKEND_CELL_BG_CLASS = "bg-slate-200/70";
+const TODAY_CELL_BG_CLASS = "bg-sky-50";
 
 const BCA_CONFERENCE_YEAR = 2026;
 const BCA_CONFERENCE_MONTH = 5;
@@ -933,7 +935,7 @@ export function CommunityCalendar({
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
+        <div>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <button
               type="button"
@@ -973,7 +975,7 @@ export function CommunityCalendar({
               )}
               <div
                 ref={tzPickerRef}
-                className="relative mt-1 flex justify-center px-2"
+                className="relative mt-0.5 flex justify-center px-2"
               >
                 <button
                   type="button"
@@ -1025,6 +1027,7 @@ export function CommunityCalendar({
             </div>
 
             <div className="order-3 flex flex-wrap items-center justify-end gap-2 self-end sm:self-start">
+              <CommunityCalendarSubscribeButton />
               {canAddEvent ? (
                 <button
                   type="button"
@@ -1105,7 +1108,7 @@ export function CommunityCalendar({
             calendarLayout === "month" ? (
               <div className="mt-6 max-md:hidden overflow-x-auto lg:overflow-visible">
                 <div
-                  className="grid min-w-[640px] border border-slate-200 lg:min-w-0 lg:w-full"
+                  className="grid min-w-[640px] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm lg:min-w-0 lg:w-full"
                   style={{ gridTemplateColumns: monthGridTemplateColumns }}
                 >
                   {WEEK_HEADERS.map((h, i) => {
@@ -1138,13 +1141,15 @@ export function CommunityCalendar({
                     const hasDayEvents = dayEvents.length > 0;
                     const cellBgClass = conferenceCell
                       ? BCA_CONFERENCE_CELL_BG_CLASS
-                      : isWeekend
-                        ? WEEKEND_CELL_BG_CLASS
-                        : "bg-white";
+                      : isToday
+                        ? TODAY_CELL_BG_CLASS
+                        : isWeekend
+                          ? WEEKEND_CELL_BG_CLASS
+                          : "bg-white";
                     return (
                       <div
                         key={key}
-                        className={`relative border-b border-r border-slate-200 px-1.5 pt-1.5 align-top last:border-r-0 ${cellBgClass} ${
+                        className={`relative border-b border-r border-slate-200 pl-2.5 pr-1.5 pt-1.5 align-top last:border-r-0 ${cellBgClass} ${
                           hasDayEvents ? "pb-4" : "pb-1.5"
                         } ${showFullWeekendCell ? "min-h-[6.5rem]" : "min-h-[3rem]"}`}
                       >
@@ -1155,7 +1160,7 @@ export function CommunityCalendar({
                             }`}
                           >
                             {isToday ? (
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-white">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-sky-600 text-white">
                                 {cell.day}
                               </span>
                             ) : (
@@ -1167,13 +1172,13 @@ export function CommunityCalendar({
                         </div>
                         {conferenceCell?.showBanner ? (
                           <div
-                            className="pointer-events-none absolute bottom-1.5 left-1.5 z-[1] flex items-center justify-center rounded-md bg-sky-600 px-2 py-2.5 shadow-sm"
+                            className="pointer-events-none absolute bottom-1.5 left-2.5 z-[1] flex items-center justify-center rounded-md bg-sky-600 px-2 py-2.5 shadow-sm"
                             style={{
                               top: "1.75rem",
                               width:
                                 conferenceCell.spanColumns === 2
-                                  ? "calc(200% + 1px - 0.75rem)"
-                                  : "calc(100% - 0.75rem)",
+                                  ? "calc(200% + 1px - 1rem)"
+                                  : "calc(100% - 1rem)",
                             }}
                           >
                             <span className="text-center text-sm font-bold leading-snug text-white">
