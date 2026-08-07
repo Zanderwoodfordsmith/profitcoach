@@ -84,13 +84,16 @@ export function SalesNavImportsPanel() {
   }, []);
 
   return (
-    <>
-      <StickyPageHeader
-        title="Sales Nav imports"
-        description="Apify Short scrapes into the shared lead cache — who ran them, how many came in, and estimated cost. Open Lead Finder → Sales Nav → History to re-view leads from a run."
-        tabs={<ToolkitHubTabs />}
-      />
-      <DashboardPageSection>
+    <DashboardPageSection
+      header={
+        <StickyPageHeader
+          title="Sales Nav imports"
+          description="Apify Short scrapes into the shared lead cache — who ran them, how many came in, and estimated cost. Open Lead Finder → Sales Nav → History to re-view leads from a run."
+          tabs={<ToolkitHubTabs />}
+        />
+      }
+      contentMaxWidthClass="max-w-6xl"
+    >
         {error ? (
           <p className="mb-4 text-sm text-rose-700" role="alert">
             {error}
@@ -233,7 +236,6 @@ export function SalesNavImportsPanel() {
           not used on import.
         </p>
       </DashboardPageSection>
-    </>
   );
 }
 
