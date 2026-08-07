@@ -8,7 +8,6 @@ import {
 } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
-import { NativeBookingSettingsCard } from "@/components/booking/NativeBookingSettingsCard";
 import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -239,7 +238,6 @@ export function FunnelSettingsClient() {
             saveError={saveError}
             onSubmit={(e) => void handleSave(e)}
           />
-          <NativeBookingSettingsCard appOrigin={appOrigin} />
           <Suspense
             fallback={
               <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

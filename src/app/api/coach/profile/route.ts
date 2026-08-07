@@ -8,8 +8,43 @@ import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext"
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
 import { sanitizeLandingCopyOverrides } from "@/lib/landingCopy";
 import { formatPersonName } from "@/lib/formatPersonName";
+import { resolveAccountTimezoneToPersist } from "@/lib/accountProfileTimezones";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { geocodeLocation, reverseGeocodeLocation } from "@/lib/geocodeLocation";
+
+/**
+ * If the coach has no timezone yet, persist one from request IP (when not
+ * impersonating), else location hint, else Europe/London. Never uses the
+ * viewer's browser timezone.
+ */
+async function ensureProfileTimezone(opts: {
+  coachId: string;
+  request: Request;
+  current: string | null | undefined;
+  location: string | null | undefined;
+  isImpersonating: boolean;
+}): Promise<string> {
+  const existing = opts.current?.trim() || null;
+  if (existing) return existing;
+
+  const timezone = resolveAccountTimezoneToPersist({
+    request: opts.request,
+    location: opts.location,
+    allowIpInfer: !opts.isImpersonating,
+  });
+
+  const { error } = await supabaseAdmin
+    .from("profiles")
+    .update({ timezone })
+    .eq("id", opts.coachId);
+  if (error) {
+    console.warn(
+      `Could not persist default timezone for ${opts.coachId}:`,
+      error.message
+    );
+  }
+  return timezone;
+}
 
 export async function GET(request: Request) {
   const authCheck = await requireCoachRequest(request, {
@@ -80,6 +115,24 @@ export async function GET(request: Request) {
         { error: "Could not load profile" },
         { status: 500 }
       );
+    }
+
+    const isImpersonating = Boolean(impersonateHeader);
+    const ensuredTimezone = await ensureProfileTimezone({
+      coachId,
+      request,
+      current:
+        typeof profileRow?.timezone === "string"
+          ? profileRow.timezone
+          : null,
+      location:
+        typeof profileRow?.location === "string"
+          ? profileRow.location
+          : null,
+      isImpersonating,
+    });
+    if (profileRow) {
+      profileRow = { ...profileRow, timezone: ensuredTimezone };
     }
 
     let coachRowResult = await supabaseAdmin

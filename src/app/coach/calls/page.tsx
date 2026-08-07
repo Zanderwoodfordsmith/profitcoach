@@ -19,11 +19,6 @@ export default function CoachCallsPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [appOrigin, setAppOrigin] = useState("");
-
-  useEffect(() => {
-    setAppOrigin(window.location.origin);
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,7 +88,7 @@ export default function CoachCallsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Get Clients"
-        description="Calendar view, call list, and booking calendars — native bookings plus GoHighLevel."
+        description="Booked calls from native calendars and GoHighLevel."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
@@ -102,8 +97,6 @@ export default function CoachCallsPage() {
         loading={loading}
         error={error}
         showCoachColumn={false}
-        appOrigin={appOrigin}
-        callsBasePath="/coach/calls"
         onCallsChange={setCalls}
         onRowClick={(row) => {
           if (row.contact_id && clientHubAllowed) {

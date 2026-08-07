@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ACCOUNT_SETTING_TIMEZONES,
+  DEFAULT_ACCOUNT_TIMEZONE,
   accountTimezoneOptionLabel,
 } from "@/lib/accountProfileTimezones";
-import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { ProfileMinimalSelect } from "@/components/settings/ProfileFormLayout";
 
@@ -24,20 +24,20 @@ export function ProfileTimezoneSelect({
   editing = true,
 }: ProfileTimezoneSelectProps) {
   const [tz, setTz] = useState<string>(
-    timezoneIana?.trim() || defaultCommunityCalendarTimezone()
+    timezoneIana?.trim() || DEFAULT_ACCOUNT_TIMEZONE
   );
   const [tzBusy, setTzBusy] = useState(false);
   const [tzError, setTzError] = useState<string | null>(null);
 
   useEffect(() => {
-    setTz(timezoneIana?.trim() || defaultCommunityCalendarTimezone());
+    setTz(timezoneIana?.trim() || DEFAULT_ACCOUNT_TIMEZONE);
   }, [timezoneIana]);
 
   const zoneOptions = useMemo(() => {
     const s = new Set<string>([...ACCOUNT_SETTING_TIMEZONES]);
     const cur = tz.trim();
     if (cur) s.add(cur);
-    s.add(defaultCommunityCalendarTimezone());
+    s.add(DEFAULT_ACCOUNT_TIMEZONE);
     return [...s].sort((a, b) =>
       accountTimezoneOptionLabel(a).localeCompare(accountTimezoneOptionLabel(b))
     );

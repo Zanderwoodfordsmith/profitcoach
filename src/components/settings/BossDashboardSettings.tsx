@@ -303,6 +303,8 @@ export function BossDashboardSettings({
         return;
       }
       notifyAcademyTrackedActionsChanged();
+      // Avatar may have been set from LinkedIn photo when profile had none
+      await loadProfile();
     } catch {
       setLinkedinImportError("Could not import LinkedIn profile.");
     } finally {
