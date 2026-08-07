@@ -229,7 +229,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
   ];
 }
 
-/** Tabs inside the Get Clients hub (former Marketing links). Admins also get AI. */
+/** Tabs inside the Get Clients hub (former Marketing links). */
 export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
   return getClientsTabItems(prefix).map((item) => item.href);
 }
@@ -249,24 +249,70 @@ export function isToolsHubPath(
   );
 }
 
-export function getClientsTabItems(prefix: "/coach" | "/admin"): {
+export type ToolsHubTabItem = {
   href: string;
   label: string;
   /** Gear-only tab at the end of the Get Clients hub. */
   iconOnly?: boolean;
-}[] {
-  const items: {
-    href: string;
-    label: string;
-    iconOnly?: boolean;
-  }[] = marketingNavItems(prefix, {
-    includeBossScore: true,
-    includeAi: prefix === "/admin",
-  }).map(({ href, label }) => ({ href, label }));
+  /**
+   * Not released to coaches yet. Shown only for admins (subtle/grey + lock).
+   * Coaches never see these tabs; direct /coach URLs redirect away.
+   */
+  adminPreview?: boolean;
+};
+
+export type CoachClientsTabItem = {
+  href: string;
+  label: string;
+  /** Stable key for active-state matching */
+  key: string;
+  adminPreview?: boolean;
+};
+
+export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
+  /** Funnel order: Prospects → Pipeline → Calls stay clustered. */
+  const items: ToolsHubTabItem[] = [
+    {
+      href: `${prefix}/first-campaign`,
+      label: "First Campaign",
+      adminPreview: true,
+    },
+  ];
+  if (prefix === "/admin") {
+    items.push({
+      href: "/admin/lead-finder",
+      label: "Lead Finder",
+      adminPreview: true,
+    });
+  }
+  items.push(
+    { href: `${prefix}/prospects`, label: "Prospects" },
+    { href: `${prefix}/pipeline`, label: "Pipeline", adminPreview: true },
+    { href: `${prefix}/calls`, label: "Calls" },
+    { href: `${prefix}/boss-pro`, label: "Boss Pro" }
+  );
+  if (prefix === "/admin") {
+    items.push({
+      href: "/admin/linkedin",
+      label: "Content planner",
+      adminPreview: true,
+    });
+    items.push({
+      href: "/admin/newsletter",
+      label: "Newsletter",
+      adminPreview: true,
+    });
+    items.push({
+      href: `${prefix}/message-generator`,
+      label: "AI",
+      adminPreview: true,
+    });
+  }
   items.push({
     href: `${prefix}/funnel-settings`,
     label: "Settings",
     iconOnly: true,
+    adminPreview: true,
   });
   return items;
 }
@@ -274,12 +320,7 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): {
 export function coachClientsTabItems(
   prefix: "/coach" | "/admin",
   options?: { contactId?: string | null }
-): {
-  href: string;
-  label: string;
-  /** Stable key for active-state matching */
-  key: string;
-}[] {
+): CoachClientsTabItem[] {
   const contactId = options?.contactId ?? null;
   const toolHref = (tab: string) => {
     if (contactId) {
@@ -295,13 +336,48 @@ export function coachClientsTabItems(
   return [
     { key: "clients", href: `${prefix}/clients`, label: "Clients" },
     { key: "playbooks", href: `${prefix}/playbooks`, label: "Playbooks" },
-    { key: "overview", href: toolHref("overview"), label: "Overview" },
-    { key: "plan", href: toolHref("plan"), label: "3-Year Plan" },
-    { key: "ninety-day", href: toolHref("ninety-day"), label: "90-Day" },
-    { key: "revenue", href: toolHref("revenue"), label: "Revenue" },
-    { key: "expenses", href: toolHref("expenses"), label: "Expenses" },
-    { key: "team", href: toolHref("team"), label: "Team" },
-    { key: "notes", href: toolHref("notes"), label: "Notes" },
+    {
+      key: "overview",
+      href: toolHref("overview"),
+      label: "Overview",
+      adminPreview: true,
+    },
+    {
+      key: "plan",
+      href: toolHref("plan"),
+      label: "3-Year Plan",
+      adminPreview: true,
+    },
+    {
+      key: "ninety-day",
+      href: toolHref("ninety-day"),
+      label: "90-Day",
+      adminPreview: true,
+    },
+    {
+      key: "revenue",
+      href: toolHref("revenue"),
+      label: "Revenue",
+      adminPreview: true,
+    },
+    {
+      key: "expenses",
+      href: toolHref("expenses"),
+      label: "Expenses",
+      adminPreview: true,
+    },
+    {
+      key: "team",
+      href: toolHref("team"),
+      label: "Team",
+      adminPreview: true,
+    },
+    {
+      key: "notes",
+      href: toolHref("notes"),
+      label: "Notes",
+      adminPreview: true,
+    },
   ];
 }
 
@@ -394,8 +470,6 @@ export function isToolkitHubPath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/time-tracker") ||
     pathMatches(pathname, "/admin/landing-analytics") ||
     pathMatches(pathname, "/admin/lesson-import") ||
-    pathMatches(pathname, "/admin/linkedin") ||
-    pathMatches(pathname, "/admin/lead-finder") ||
     pathMatches(pathname, "/admin/funnel-analyzer")
   );
 }

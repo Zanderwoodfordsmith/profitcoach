@@ -190,7 +190,11 @@ export default function CoachClientsPage() {
         onAddClick={() => setShowAddClient((open) => !open)}
         addActive={showAddClient}
         addLabel={showAddClient ? "Cancel" : "Add"}
-        onRowClick={(id) => router.push(clientWorkspacePath(id))}
+        onRowClick={
+          impersonatingCoachId
+            ? (id) => router.push(clientWorkspacePath(id))
+            : undefined
+        }
         emptyMessage="No clients yet."
         renderRowActions={(row) => (
           <button

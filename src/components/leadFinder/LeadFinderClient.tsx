@@ -8,13 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Ban,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Columns3,
-  Copy,
   ExternalLink,
   Eye,
   EyeOff,
@@ -25,12 +25,18 @@ import {
   Phone,
   Plus,
   Search,
+  Upload,
   X,
 } from "lucide-react";
-import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
 import { StickyPageHeader } from "@/components/layout";
+import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
+import { SalesNavResultsPanel } from "@/components/leadFinder/SalesNavResultsPanel";
+import { SalesNavStrategyPanel } from "@/components/leadFinder/SalesNavStrategyPanel";
 import { isLeadFinderAllowedEmail } from "@/lib/leadFinderAccess";
+import { SALES_NAV_IMPORT_RESUME_EVENT } from "@/lib/salesNavigator/importJobWatch";
+import { applyProspectSearchStrategy } from "@/lib/salesNavigator/prospectSearch/applyStrategy";
+import type { ProspectSearchStrategy } from "@/lib/salesNavigator/prospectSearch/types";
 import {
   LEAD_FINDER_PAGE_SIZE,
   LEAD_FINDER_PAGE_SIZE_OPTIONS,
@@ -43,12 +49,17 @@ import {
   LEADROCKS_US_STATES,
 } from "@/lib/leadFinder/leadrocksOptions";
 import {
+  BASE_SEARCH_COMPANY_EXCLUDES,
+  BASE_SEARCH_TITLE_EXCLUDES,
+  BASE_SEARCH_TITLE_INCLUDES,
   defaultCompanyKeywords,
   defaultJobTitleKeywords,
 } from "@/lib/salesNavigator/baseSearchDefaults";
 import {
   buildSalesNavSearchUrl,
+  YEARS_AT_CURRENT_COMPANY,
   type SalesNavDegree,
+  type SalesNavYearsAtCompanyId,
 } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 import type { LeadReveal, LeadTeaser } from "@/lib/leadFinder/types";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -79,6 +90,7 @@ type SearchPayload = {
   companyExcludes: string[];
   teamSizes: string[];
   revenueRanges: string[];
+  yearsAtCompanyBuckets: string[];
   requireContacts: Array<"email" | "phone" | "linkedin">;
 };
 
@@ -90,192 +102,330 @@ type FilterKeyword = {
 const fieldClass =
   "w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-900";
 
+function keywordSummary(values: FilterKeyword[]): string {
+  const included = values.filter((v) => v.mode === "include").length;
+  const excluded = values.filter((v) => v.mode === "exclude").length;
+  if (included === 0 && excluded === 0) return "None selected";
+  if (included > 0 && excluded > 0) {
+    return `${included} included · ${excluded} excluded`;
+  }
+  if (included > 0) {
+    return `${included} included`;
+  }
+  return `${excluded} excluded`;
+}
+
+type KeywordTab = "include" | "exclude";
+
 /**
- * Keyword chips (Sales Navigator-style): green include / red exclude.
- * Click chip or Ban to flip; X removes.
+ * Expandable keyword editor: Included / Excluded tabs, pushes content below.
+ * Chevron expands/collapses; plus lives inside the active tab to add terms.
  */
-function KeywordChipField({
+function KeywordFilterMenu({
   label,
-  placeholder,
   values,
   onChange,
-  suggestions = [],
+  presets,
 }: {
   label: string;
-  placeholder: string;
   values: FilterKeyword[];
   onChange: (next: FilterKeyword[]) => void;
-  suggestions?: readonly string[];
+  presets: readonly string[];
 }) {
-  const [draft, setDraft] = useState("");
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [tab, setTab] = useState<KeywordTab>("include");
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const addInputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
 
-  const selected = useMemo(
-    () => new Set(values.map((v) => v.term.toLowerCase())),
-    [values]
+  const modeByTerm = useMemo(() => {
+    const map = new Map<string, "include" | "exclude">();
+    for (const v of values) {
+      map.set(v.term.toLowerCase(), v.mode);
+    }
+    return map;
+  }, [values]);
+
+  const presetKeys = useMemo(
+    () => new Set(presets.map((p) => p.toLowerCase())),
+    [presets]
   );
 
-  const filteredSuggestions = useMemo(() => {
-    const q = draft.trim().toLowerCase();
-    return suggestions
-      .filter((s) => !selected.has(s.toLowerCase()))
-      .filter((s) => !q || s.toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [draft, selected, suggestions]);
+  const includedCount = values.filter((v) => v.mode === "include").length;
+  const excludedCount = values.filter((v) => v.mode === "exclude").length;
+
+  const tabRows = useMemo(() => {
+    const active: Array<{ term: string; on: true }> = [];
+    const available: Array<{ term: string; on: false }> = [];
+    const seen = new Set<string>();
+
+    for (const v of values) {
+      if (v.mode !== tab) continue;
+      const key = v.term.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      active.push({ term: v.term, on: true });
+    }
+
+    for (const term of presets) {
+      const key = term.toLowerCase();
+      if (seen.has(key) || modeByTerm.has(key)) continue;
+      seen.add(key);
+      available.push({ term, on: false });
+    }
+
+    return [...active, ...available];
+  }, [values, presets, tab, modeByTerm]);
 
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (adding) {
+          setAdding(false);
+          setDraft("");
+          return;
+        }
+        setOpen(false);
+      }
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, adding]);
 
-  function addTerms(rawTerms: string[]) {
-    const existing = new Set(values.map((v) => v.term.toLowerCase()));
-    const added: FilterKeyword[] = [];
-    for (const term of rawTerms.map((s) => s.trim()).filter(Boolean)) {
-      if (existing.has(term.toLowerCase())) continue;
-      existing.add(term.toLowerCase());
-      added.push({ term, mode: "include" });
+  useEffect(() => {
+    if (adding) addInputRef.current?.focus();
+  }, [adding]);
+
+  function setTermMode(term: string, mode: KeywordTab | null) {
+    const key = term.toLowerCase();
+    const without = values.filter((v) => v.term.toLowerCase() !== key);
+    if (!mode) {
+      onChange(without);
+      return;
     }
-    if (added.length === 0) return;
-    onChange([...values, ...added]);
+    onChange([...without, { term, mode }]);
   }
 
-  function commitDraft() {
-    const terms = draft
-      .split(/[,]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (terms.length === 0) return;
-    addTerms(terms);
+  function toggleOnTab(term: string, currentlyOn: boolean) {
+    setTermMode(term, currentlyOn ? null : tab);
+  }
+
+  function commitCustom() {
+    const term = draft.trim();
+    if (!term) return;
+    const key = term.toLowerCase();
+    if (modeByTerm.get(key) === tab) {
+      setDraft("");
+      setAdding(false);
+      return;
+    }
+    setTermMode(term, tab);
     setDraft("");
-    setOpen(false);
+    setAdding(false);
   }
 
-  function pickSuggestion(term: string) {
-    addTerms([term]);
+  function expand() {
+    setTab(includedCount === 0 && excludedCount > 0 ? "exclude" : "include");
+    setOpen(true);
+  }
+
+  function collapse() {
+    setOpen(false);
+    setAdding(false);
     setDraft("");
-    setOpen(false);
   }
-
-  function toggleMode(term: string) {
-    onChange(
-      values.map((v) =>
-        v.term === term
-          ? { ...v, mode: v.mode === "include" ? "exclude" : "include" }
-          : v
-      )
-    );
-  }
-
-  function remove(term: string) {
-    onChange(values.filter((v) => v.term !== term));
-  }
-
-  const showSuggestions = open && suggestions.length > 0;
 
   return (
-    <div ref={rootRef} className="relative">
-      <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-        {label}
-      </p>
-      {values.length > 0 ? (
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {values.map((v) => {
-            const excluded = v.mode === "exclude";
-            return (
-              <span
-                key={v.term}
-                className={`inline-flex max-w-full items-center gap-0.5 rounded-full border pl-2.5 pr-1 py-0.5 text-xs font-medium ${
-                  excluded
-                    ? "border-rose-300 bg-rose-100 text-rose-800"
-                    : "border-emerald-300 bg-emerald-100 text-emerald-800"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleMode(v.term)}
-                  title={
-                    excluded
-                      ? "Excluded — click to include"
-                      : "Included — click to exclude"
-                  }
-                  className="inline-flex min-w-0 items-center gap-1 truncate"
-                >
-                  {excluded ? (
-                    <Ban className="h-3 w-3 shrink-0 opacity-80" strokeWidth={2.25} />
-                  ) : null}
-                  <span className="min-w-0 truncate">{v.term}</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Remove ${v.term}`}
-                  className={`shrink-0 rounded-full p-1 ${
-                    excluded
-                      ? "text-rose-600 hover:bg-rose-200/70 hover:text-rose-900"
-                      : "text-emerald-700 hover:bg-emerald-200/70 hover:text-emerald-950"
-                  }`}
-                  onClick={() => remove(v.term)}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            );
-          })}
-        </div>
-      ) : null}
-      <input
-        value={draft}
-        aria-expanded={showSuggestions}
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
         aria-controls={listId}
-        onChange={(e) => {
-          setDraft(e.target.value);
-          setOpen(true);
+        onClick={() => {
+          if (open) collapse();
+          else expand();
         }}
-        onFocus={() => setOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            if (
-              filteredSuggestions.length > 0 &&
-              draft.trim() &&
-              filteredSuggestions[0].toLowerCase() === draft.trim().toLowerCase()
-            ) {
-              pickSuggestion(filteredSuggestions[0]);
-              return;
-            }
-            commitDraft();
-          } else if (e.key === "Escape") {
-            setOpen(false);
-          } else if (e.key === "Backspace" && !draft && values.length > 0) {
-            onChange(values.slice(0, -1));
-          }
-        }}
-        placeholder={placeholder}
-        className={fieldClass}
-      />
-      {showSuggestions && filteredSuggestions.length > 0 ? (
-        <ul
-          id={listId}
-          className="absolute left-0 right-0 z-30 mt-1 max-h-48 overflow-y-auto border border-slate-200 bg-white py-1 shadow-sm"
-        >
-          {filteredSuggestions.map((s) => (
-            <li key={s}>
-              <button
-                type="button"
-                onClick={() => pickSuggestion(s)}
-                className="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-              >
-                {s}
-              </button>
-            </li>
-          ))}
-        </ul>
+        className="flex w-full items-center gap-2 border-0 border-b border-slate-200 py-2 text-left transition hover:border-slate-400"
+      >
+        <span className="min-w-0 flex-1 truncate">
+          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            {label}
+          </span>
+          <span className="mt-0.5 block truncate text-sm text-slate-600">
+            {keywordSummary(values)}
+          </span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-slate-400 transition ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        />
+      </button>
+
+      {open ? (
+        <div id={listId} className="mt-3 border-b border-slate-100 pb-3">
+          <div className="mb-2 flex items-end gap-3 border-b border-slate-100">
+            <div
+              className="flex min-w-0 flex-1 gap-4"
+              role="tablist"
+              aria-label={`${label} mode`}
+            >
+              {(
+                [
+                  {
+                    id: "include" as const,
+                    label: "Included",
+                    count: includedCount,
+                  },
+                  {
+                    id: "exclude" as const,
+                    label: "Excluded",
+                    count: excludedCount,
+                  },
+                ] as const
+              ).map((item) => {
+                const active = tab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => {
+                      setTab(item.id);
+                      setAdding(false);
+                      setDraft("");
+                    }}
+                    className={`-mb-px border-b-2 pb-1.5 text-xs font-medium transition ${
+                      active
+                        ? item.id === "exclude"
+                          ? "border-rose-400 text-rose-700"
+                          : "border-emerald-500 text-emerald-700"
+                        : "border-transparent text-slate-400 hover:text-slate-600"
+                    }`}
+                  >
+                    {item.label}
+                    <span className="ml-1 tabular-nums opacity-70">
+                      {item.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              aria-label={
+                tab === "include" ? "Add to included" : "Add to excluded"
+              }
+              aria-pressed={adding}
+              onClick={() => {
+                if (adding) {
+                  setAdding(false);
+                  setDraft("");
+                } else {
+                  setAdding(true);
+                }
+              }}
+              className={`mb-1 flex h-6 w-6 shrink-0 items-center justify-center border transition ${
+                adding
+                  ? "border-slate-900 text-slate-900"
+                  : "border-slate-200 text-slate-400 hover:border-slate-400 hover:text-slate-700"
+              }`}
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={2.25} />
+            </button>
+          </div>
+
+          {adding ? (
+            <div className="mb-2">
+              <input
+                ref={addInputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitCustom();
+                  }
+                }}
+                placeholder={
+                  tab === "include" ? "Add to included…" : "Add to excluded…"
+                }
+                className="w-full border-0 border-b border-slate-200 bg-transparent py-1.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-slate-900"
+              />
+            </div>
+          ) : null}
+
+          <ul className="max-h-52 overflow-y-auto">
+            {tabRows.length === 0 ? (
+              <li className="py-2 text-sm text-slate-400">
+                {tab === "include" ? "Nothing included" : "Nothing excluded"}
+              </li>
+            ) : (
+              tabRows.map(({ term, on }) => {
+                const isCustom = !presetKeys.has(term.toLowerCase());
+                return (
+                  <li key={`${tab}-${term.toLowerCase()}`}>
+                    <button
+                      type="button"
+                      onClick={() => toggleOnTab(term, on)}
+                      title={
+                        on
+                          ? tab === "include"
+                            ? "Included — click to remove"
+                            : "Excluded — click to remove"
+                          : tab === "include"
+                            ? "Click to include"
+                            : "Click to exclude"
+                      }
+                      className="flex w-full items-center gap-2.5 py-1.5 text-left text-sm transition hover:bg-slate-50/80"
+                    >
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center ${
+                          on
+                            ? tab === "include"
+                              ? "text-emerald-600"
+                              : "text-rose-500"
+                            : "text-slate-300"
+                        }`}
+                        aria-hidden
+                      >
+                        {on ? (
+                          tab === "include" ? (
+                            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          ) : (
+                            <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          )
+                        ) : (
+                          <span className="h-3 w-3 rounded-full border border-slate-300" />
+                        )}
+                      </span>
+                      <span
+                        className={`min-w-0 flex-1 truncate ${
+                          on
+                            ? tab === "include"
+                              ? "text-slate-900"
+                              : "text-rose-700"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {term}
+                      </span>
+                      {isCustom && on ? (
+                        <span className="shrink-0 text-[10px] uppercase tracking-wide text-slate-300">
+                          custom
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })
+            )}
+          </ul>
+        </div>
       ) : null}
     </div>
   );
@@ -637,11 +787,29 @@ const DEFAULT_JOB_TITLE_KEYWORDS: FilterKeyword[] = defaultJobTitleKeywords();
 const DEFAULT_COMPANY_KEYWORDS: FilterKeyword[] = defaultCompanyKeywords();
 const DEFAULT_TEAM_SIZES = ["11-50"];
 
+const COMPANY_KEYWORD_PRESETS: readonly string[] = [
+  ...BASE_SEARCH_COMPANY_EXCLUDES,
+];
+
+const JOB_TITLE_KEYWORD_PRESETS: readonly string[] = [
+  ...BASE_SEARCH_TITLE_INCLUDES,
+  ...BASE_SEARCH_TITLE_EXCLUDES,
+  ...LEADROCKS_JOB_TITLE_PRESETS,
+];
+
 type SourceTab = "database" | "sales_nav";
 
 export function LeadFinderClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const importRunFromUrl = searchParams.get("importRun")?.trim() || null;
+  const [openImportRunId, setOpenImportRunId] = useState<string | null>(
+    () => importRunFromUrl
+  );
   const [allowed, setAllowed] = useState<boolean | null>(null);
-  const [sourceTab, setSourceTab] = useState<SourceTab>("database");
+  const [sourceTab, setSourceTab] = useState<SourceTab>(() =>
+    importRunFromUrl ? "sales_nav" : "database"
+  );
   const [jobTitleKeywords, setJobTitleKeywords] = useState<FilterKeyword[]>(
     DEFAULT_JOB_TITLE_KEYWORDS
   );
@@ -662,10 +830,16 @@ export function LeadFinderClient() {
     "2",
     "3",
   ]);
-  const [salesNavPreset, setSalesNavPreset] = useState<
-    "uk_base" | "warm_1st" | null
-  >("uk_base");
-  const [copiedSalesNav, setCopiedSalesNav] = useState(false);
+  const [salesNavPostedOnLinkedIn, setSalesNavPostedOnLinkedIn] =
+    useState(false);
+  const [salesNavRecentlyChangedJobs, setSalesNavRecentlyChangedJobs] =
+    useState(false);
+  const [salesNavYearsAtCompany, setSalesNavYearsAtCompany] = useState<
+    SalesNavYearsAtCompanyId[]
+  >([]);
+  /** Sales Nav top Keywords bar (boolean). Mutually exclusive with company includes. */
+  const [salesNavKeywordsBoolean, setSalesNavKeywordsBoolean] = useState("");
+  const [salesNavImportNonce, setSalesNavImportNonce] = useState(0);
   const [pageSize, setPageSize] = useState<number>(LEAD_FINDER_PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
@@ -690,6 +864,25 @@ export function LeadFinderClient() {
     } catch {
       // ignore
     }
+  }, []);
+
+  useEffect(() => {
+    if (!importRunFromUrl) return;
+    setSourceTab("sales_nav");
+    setOpenImportRunId(importRunFromUrl);
+  }, [importRunFromUrl]);
+
+  useEffect(() => {
+    function onResume(e: Event) {
+      const id = (e as CustomEvent<{ id?: string }>).detail?.id?.trim();
+      if (!id) return;
+      setSourceTab("sales_nav");
+      setOpenImportRunId(id);
+    }
+    window.addEventListener(SALES_NAV_IMPORT_RESUME_EVENT, onResume);
+    return () => {
+      window.removeEventListener(SALES_NAV_IMPORT_RESUME_EVENT, onResume);
+    };
   }, []);
 
   useEffect(() => {
@@ -780,6 +973,7 @@ export function LeadFinderClient() {
         .map((k) => k.term),
       teamSizes,
       revenueRanges,
+      yearsAtCompanyBuckets: salesNavYearsAtCompany,
       requireContacts,
     };
   }
@@ -855,6 +1049,7 @@ export function LeadFinderClient() {
         ).map((k) => k.term),
         teamSizes: DEFAULT_TEAM_SIZES,
         revenueRanges: [],
+        yearsAtCompanyBuckets: [],
         requireContacts: [],
       },
       1,
@@ -868,13 +1063,18 @@ export function LeadFinderClient() {
         titleKeywords: jobTitleKeywords,
         companyKeywords: [
           ...companyKeywords,
-          ...(industry.trim()
+          // Only append free-text industry when not using Keywords (playbook mutual exclusion).
+          ...(industry.trim() && !salesNavKeywordsBoolean.trim()
             ? [{ term: industry.trim(), mode: "include" as const }]
             : []),
         ],
         teamSizes,
         location: salesNavLocation,
         degrees: salesNavDegrees,
+        postedOnLinkedIn: salesNavPostedOnLinkedIn,
+        recentlyChangedJobs: salesNavRecentlyChangedJobs,
+        yearsAtCurrentCompany: salesNavYearsAtCompany,
+        keywordsBoolean: salesNavKeywordsBoolean,
       }),
     [
       jobTitleKeywords,
@@ -883,11 +1083,24 @@ export function LeadFinderClient() {
       teamSizes,
       salesNavLocation,
       salesNavDegrees,
+      salesNavPostedOnLinkedIn,
+      salesNavRecentlyChangedJobs,
+      salesNavYearsAtCompany,
+      salesNavKeywordsBoolean,
     ]
   );
 
+  function applyStrategy(strategy: ProspectSearchStrategy) {
+    const next = applyProspectSearchStrategy(strategy);
+    setCompanyKeywords(next.companyKeywords);
+    setJobTitleKeywords(next.jobTitleKeywords);
+    setSalesNavKeywordsBoolean(next.keywordsBoolean);
+    setTeamSizes(next.teamSizes);
+    setSalesNavDegrees(next.degrees);
+    if (next.clearIndustry) setIndustry("");
+  }
+
   function toggleSalesNavDegree(degree: SalesNavDegree) {
-    setSalesNavPreset(null);
     setSalesNavDegrees((prev) => {
       if (prev.includes(degree)) {
         const next = prev.filter((d) => d !== degree);
@@ -897,29 +1110,11 @@ export function LeadFinderClient() {
     });
   }
 
-  function applySalesNavPreset(preset: "uk_base" | "warm_1st") {
-    setSalesNavPreset(preset);
-    setJobTitleKeywords(DEFAULT_JOB_TITLE_KEYWORDS);
-    setCompanyKeywords(DEFAULT_COMPANY_KEYWORDS);
-    setTeamSizes(DEFAULT_TEAM_SIZES);
-    setIndustry("");
-    if (preset === "uk_base") {
-      setSalesNavLocation("United Kingdom");
-      setSalesNavDegrees(["2", "3"]);
-    } else {
-      setSalesNavLocation("");
-      setSalesNavDegrees(["1"]);
-    }
-  }
-
-  async function copySalesNavUrl() {
-    try {
-      await navigator.clipboard.writeText(salesNavUrl);
-      setCopiedSalesNav(true);
-      window.setTimeout(() => setCopiedSalesNav(false), 2000);
-    } catch {
-      setError("Could not copy link.");
-    }
+  function toggleYearsAtCompany(id: SalesNavYearsAtCompanyId) {
+    setSalesNavYearsAtCompany((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      return [...prev, id].sort() as SalesNavYearsAtCompanyId[];
+    });
   }
 
   async function handleSearch(e?: React.FormEvent) {
@@ -1054,7 +1249,11 @@ export function LeadFinderClient() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">
-      <StickyPageHeader title="Lead Finder" tabs={<ToolkitHubTabs />} />
+      <StickyPageHeader
+        title="Get Clients"
+        description="Search and reveal leads from the database or Sales Navigator."
+        tabs={<CoachToolsHubTabs hub="get-clients" />}
+      />
 
       <div className="border-b border-slate-200 px-5 pt-3 sm:px-6">
         <PageHeaderUnderlineTabs
@@ -1086,30 +1285,27 @@ export function LeadFinderClient() {
 
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col lg:flex-row">
         {/* Filters */}
-        <aside className="w-full shrink-0 border-b border-slate-200 lg:w-[17.5rem] lg:border-b-0 lg:border-r lg:border-slate-200">
+        <aside className="w-full shrink-0 border-b border-slate-200 lg:w-[18.75rem] lg:border-b-0 lg:border-r lg:border-slate-200">
           <form
             onSubmit={(e) => void handleSearch(e)}
             className="sticky top-0 space-y-6 p-5 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto"
           >
-            <KeywordChipField
+            <KeywordFilterMenu
               label="Company"
-              placeholder="Type, then Enter"
               values={companyKeywords}
+              presets={COMPANY_KEYWORD_PRESETS}
               onChange={(next) => {
-                setSalesNavPreset(null);
                 setCompanyKeywords(next);
               }}
             />
 
-            <KeywordChipField
+            <KeywordFilterMenu
               label="Job title"
-              placeholder="Owner, MD, or type your own"
               values={jobTitleKeywords}
+              presets={JOB_TITLE_KEYWORD_PRESETS}
               onChange={(next) => {
-                setSalesNavPreset(null);
                 setJobTitleKeywords(next);
               }}
-              suggestions={LEADROCKS_JOB_TITLE_PRESETS}
             />
 
             {sourceTab === "database" ? (
@@ -1162,7 +1358,6 @@ export function LeadFinderClient() {
                     className={fieldClass}
                     value={salesNavLocation}
                     onChange={(e) => {
-                      setSalesNavPreset(null);
                       setSalesNavLocation(e.target.value);
                     }}
                     placeholder="United Kingdom, New York…"
@@ -1214,6 +1409,62 @@ export function LeadFinderClient() {
                     })}
                   </div>
                 </div>
+
+                <div>
+                  <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                    Activity
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(
+                      [
+                        {
+                          key: "posted" as const,
+                          label: "Posted · 30d",
+                          on: salesNavPostedOnLinkedIn,
+                          toggle: () =>
+                            setSalesNavPostedOnLinkedIn((v) => !v),
+                        },
+                        {
+                          key: "changed" as const,
+                          label: "Changed jobs · 90d",
+                          on: salesNavRecentlyChangedJobs,
+                          toggle: () =>
+                            setSalesNavRecentlyChangedJobs((v) => !v),
+                        },
+                      ] as const
+                    ).map((f) => {
+                      if (f.on) {
+                        return (
+                          <span
+                            key={f.key}
+                            className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-100 pl-2.5 pr-1 py-0.5 text-xs font-medium text-emerald-800"
+                          >
+                            <span>{f.label}</span>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${f.label}`}
+                              className="shrink-0 rounded-full p-1 text-emerald-700 hover:bg-emerald-200/70 hover:text-emerald-950"
+                              onClick={f.toggle}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        );
+                      }
+                      return (
+                        <button
+                          key={f.key}
+                          type="button"
+                          onClick={f.toggle}
+                          className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
+                        >
+                          <Plus className="h-3 w-3" strokeWidth={2.25} />
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </>
             )}
 
@@ -1224,11 +1475,61 @@ export function LeadFinderClient() {
                 label: t,
               }))}
               values={teamSizes}
-              onChange={(next) => {
-                setSalesNavPreset(null);
-                setTeamSizes(next);
-              }}
+              onChange={setTeamSizes}
             />
+
+            <div>
+              <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                Years at company
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  Object.values(YEARS_AT_CURRENT_COMPANY) as Array<{
+                    id: SalesNavYearsAtCompanyId;
+                    label: string;
+                    text: string;
+                  }>
+                ).map((bucket) => {
+                  const on = salesNavYearsAtCompany.includes(bucket.id);
+                  if (on) {
+                    return (
+                      <span
+                        key={bucket.id}
+                        className="inline-flex items-center gap-0.5 rounded-full border border-emerald-300 bg-emerald-100 pl-2.5 pr-1 py-0.5 text-xs font-medium text-emerald-800"
+                        title={bucket.text}
+                      >
+                        <span>{bucket.label}</span>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${bucket.text}`}
+                          className="shrink-0 rounded-full p-1 text-emerald-700 hover:bg-emerald-200/70 hover:text-emerald-950"
+                          onClick={() => toggleYearsAtCompany(bucket.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={bucket.id}
+                      type="button"
+                      title={bucket.text}
+                      onClick={() => toggleYearsAtCompany(bucket.id)}
+                      className="inline-flex items-center gap-1 rounded-full border border-dashed border-slate-300 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-500 transition hover:border-slate-400 hover:text-slate-700"
+                    >
+                      <Plus className="h-3 w-3" strokeWidth={2.25} />
+                      {bucket.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {sourceTab === "database" ? (
+                <p className="mt-1.5 text-[11px] text-slate-400">
+                  Only applies to leads you’ve imported via Sales Navigator.
+                </p>
+              ) : null}
+            </div>
 
             {sourceTab === "database" ? (
               <>
@@ -1266,12 +1567,31 @@ export function LeadFinderClient() {
                 className={fieldClass}
                 value={industry}
                 onChange={(e) => {
-                  setSalesNavPreset(null);
                   setIndustry(e.target.value);
                 }}
                 placeholder="Construction, Dental…"
               />
             </label>
+
+            {sourceTab === "sales_nav" ? (
+              <label className="block">
+                <span className="mb-2 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  Keywords (boolean)
+                </span>
+                <textarea
+                  className={`${fieldClass} min-h-[4rem] resize-y`}
+                  value={salesNavKeywordsBoolean}
+                  onChange={(e) => {
+                    setSalesNavKeywordsBoolean(e.target.value);
+                  }}
+                  placeholder='spirits AND (whiskey OR gin) — clear company includes first'
+                />
+                <span className="mt-1 block text-[11px] leading-snug text-slate-400">
+                  Scans the whole profile. Don’t combine with company-name
+                  includes.
+                </span>
+              </label>
+            ) : null}
 
             {sourceTab === "database" ? (
               <button
@@ -1293,27 +1613,23 @@ export function LeadFinderClient() {
               </button>
             ) : (
               <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setSalesNavImportNonce((n) => n + 1)}
+                  className="flex w-full items-center justify-center gap-2 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import
+                </button>
                 <a
                   href={salesNavUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex w-full items-center justify-center gap-2 bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+                  className="flex w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   <ExternalLink className="h-4 w-4" />
                   Open in Sales Navigator
                 </a>
-                <button
-                  type="button"
-                  onClick={() => void copySalesNavUrl()}
-                  className="flex w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                >
-                  {copiedSalesNav ? (
-                    <Check className="h-4 w-4 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                  {copiedSalesNav ? "Copied" : "Copy link"}
-                </button>
               </div>
             )}
           </form>
@@ -1322,78 +1638,26 @@ export function LeadFinderClient() {
         {/* Results */}
         <section className="min-w-0 flex-1">
           {sourceTab === "sales_nav" ? (
-            <div className="flex flex-1 flex-col px-5 py-8 sm:px-6">
-              <div className="mx-auto w-full max-w-lg space-y-6">
-                <div>
-                  <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
-                    Sales Navigator
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Set your filters on the left, then open the search in Sales
-                    Navigator — or copy the link to paste into Connect AI.
-                  </p>
-                </div>
-
-                <div>
-                  <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-                    Recommended
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => applySalesNavPreset("uk_base")}
-                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                        salesNavPreset === "uk_base"
-                          ? "border-sky-300 bg-sky-50 text-sky-800"
-                          : "border-slate-200 text-slate-700 hover:border-slate-300"
-                      }`}
-                    >
-                      UK base search
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => applySalesNavPreset("warm_1st")}
-                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                        salesNavPreset === "warm_1st"
-                          ? "border-sky-300 bg-sky-50 text-sky-800"
-                          : "border-slate-200 text-slate-700 hover:border-slate-300"
-                      }`}
-                    >
-                      People I already know
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <a
-                    href={salesNavUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Open in Sales Navigator
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => void copySalesNavUrl()}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-                  >
-                    {copiedSalesNav ? (
-                      <Check className="h-4 w-4 text-emerald-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                    {copiedSalesNav ? "Copied" : "Copy link"}
-                  </button>
-                </div>
-
-                {error ? (
-                  <p className="text-sm text-rose-700" role="alert">
-                    {error}
-                  </p>
-                ) : null}
-              </div>
+            <div className="flex min-h-0 flex-1 flex-col">
+              <SalesNavResultsPanel
+                salesNavUrl={salesNavUrl}
+                importNonce={salesNavImportNonce}
+                openImportRunId={openImportRunId}
+                onOpenImportRunHandled={() => {
+                  // Clear one-shot trigger; keep resume UI running in the panel.
+                  setOpenImportRunId(null);
+                  if (importRunFromUrl) {
+                    router.replace("/admin/lead-finder", { scroll: false });
+                  }
+                }}
+                headerActions={
+                  <SalesNavStrategyPanel
+                    defaultIndustry={industry}
+                    location={salesNavLocation}
+                    onApply={applyStrategy}
+                  />
+                }
+              />
             </div>
           ) : (
             <>

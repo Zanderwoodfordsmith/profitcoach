@@ -11,6 +11,9 @@ export type LeadTeaser = {
   category: string | null;
   teamSize: string | null;
   revenueRange: string | null;
+  /** Sales Nav bucket id `1`–`5` when known from Short import. */
+  yearsAtCompanyBucket: string | null;
+  monthsAtCompany: number | null;
   hasEmail: boolean;
   hasPhone: boolean;
   hasLinkedIn: boolean;

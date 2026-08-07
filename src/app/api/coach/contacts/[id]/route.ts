@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { loadEnrichedProspectById } from "@/lib/prospects/loadEnrichedProspect";
 import {
   updateProspectFields,
   type ProspectFieldPatch,
@@ -7,6 +8,40 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(request: Request, context: RouteContext) {
+  const authCheck = await requireCoachRequest(request);
+  if (authCheck.error || !authCheck.userId) {
+    const status =
+      authCheck.error ===
+      "Admin must pass x-impersonate-coach-id for this resource."
+        ? 400
+        : authCheck.error === "Invalid access token."
+          ? 401
+          : 403;
+    return NextResponse.json(
+      { error: authCheck.error ?? "Unauthorized" },
+      { status }
+    );
+  }
+
+  const { id: contactId } = await context.params;
+  if (!contactId?.trim()) {
+    return NextResponse.json({ error: "Missing contact id." }, { status: 400 });
+  }
+
+  const loaded = await loadEnrichedProspectById(contactId, {
+    coachId: authCheck.userId,
+  });
+  if (!loaded) {
+    return NextResponse.json({ error: "Prospect not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    prospect: loaded.prospect,
+    coachSlug: loaded.coachSlug,
+  });
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const authCheck = await requireCoachRequest(request);

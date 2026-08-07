@@ -620,6 +620,15 @@ button.start-panel__step {
   min-height: 680px;
 }
 
+.start-panel__embed--native {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.start-panel__embed--native > * {
+  min-height: 0;
+}
+
 @media (max-width: 820px) {
   .start-panel__split {
     grid-template-columns: 1fr;

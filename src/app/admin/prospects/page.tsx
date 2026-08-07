@@ -3,7 +3,6 @@
 import { flushSync } from "react-dom";
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
@@ -13,6 +12,7 @@ import {
 } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
 import { ProspectsDailyBarChart } from "@/components/admin/ProspectsDailyBarChart";
+import { prospectWorkspacePath } from "@/lib/prospects/loadEnrichedProspect";
 import { useProspectsPage } from "@/hooks/useProspectsPage";
 
 export default function AdminProspectsPage() {
@@ -25,7 +25,7 @@ export default function AdminProspectsPage() {
       flushSync(() => {
         if (row.coach_id) setImpersonatingCoachId(row.coach_id);
       });
-      router.push(bossProHubPath(row.id, { admin: true }));
+      router.push(prospectWorkspacePath(row.id, { admin: true }));
     },
     [router, setImpersonatingCoachId]
   );

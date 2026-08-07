@@ -7,6 +7,7 @@ import {
   RolePicker,
   TimingPicker,
 } from "@/components/booking/QualifyChoices";
+import { NativeBookingEmbed } from "@/components/booking/NativeBookingEmbed";
 import {
   BCA_DISCOVERY_BOOKING_BASE,
   BCA_DISCOVERY_EMBED_SCRIPT,
@@ -25,6 +26,11 @@ export type { ApplyPrefill };
 const BOOKING_BASE = BCA_DISCOVERY_BOOKING_BASE;
 const EMBED_SCRIPT = BCA_DISCOVERY_EMBED_SCRIPT;
 const LEAD_DEBOUNCE_MS = 20_000;
+
+/** GHL iframe (default) vs native day/time picker after Let’s Talk unlock. */
+export type StartApplyCalendarEngine =
+  | { type: "ghl" }
+  | { type: "native"; slug: string; calendarSlug?: string };
 
 type LeadStage = "phone" | "name" | "email";
 type LeadPayload = {
@@ -237,11 +243,16 @@ type Props = {
   /** Override terms / privacy hrefs (defaults to BCA marketing site). */
   termsHref?: string;
   privacyHref?: string;
+  /**
+   * After Continue: GHL Fit Call iframe (default) or native booking embed.
+   * Use `StartApplyPanelNative` for the native coach-slug flow.
+   */
+  calendar?: StartApplyCalendarEngine;
 };
 
 /**
  * Let’s Talk apply panel — phone + name first, then email + qualify expand,
- * then Continue unlocks the High Level calendar embed (locked preview until then).
+ * then Continue unlocks the calendar (GHL iframe by default; native when `calendar.type === "native"`).
  * URL / session prefill fills the form; user still taps Continue to unlock the calendar.
  */
 export function StartApplyPanel({
@@ -251,6 +262,7 @@ export function StartApplyPanel({
   enableLeadCapture = false,
   termsHref = "https://www.businesscoachacademy.com/terms-and-conditions",
   privacyHref = "https://www.businesscoachacademy.com/privacy-policy",
+  calendar = { type: "ghl" },
 }: Props) {
   const seeded = seedFromPrefill(prefillProp);
   const [countryCode, setCountryCode] = useState(seeded.countryCode);
@@ -327,7 +339,11 @@ export function StartApplyPanel({
     (phoneValid && firstName.trim().length > 0 && lastName.trim().length > 0) ||
     Boolean(email.trim() || role || timing || investment);
   const showCalendar = stage === "calendar";
-  // Start loading High Level as soon as phone + name expand the form
+  const isNative = calendar.type === "native";
+  const nativeSlug = calendar.type === "native" ? calendar.slug : "";
+  const nativeCalendarSlug =
+    calendar.type === "native" ? calendar.calendarSlug ?? "discovery" : "discovery";
+  // Warm the calendar as soon as phone + name expand (GHL iframe or native slots).
   const preloadCalendar = expanded || showCalendar;
 
   const bookingSrc = buildBookingSrc({
@@ -451,7 +467,7 @@ export function StartApplyPanel({
 
   // After reveal, nudge High Level to recount iframe height (preload can leave it short).
   useEffect(() => {
-    if (!showCalendar) return;
+    if (isNative || !showCalendar) return;
     const iframe = document.getElementById(ids.iframe) as HTMLIFrameElement | null;
     if (!iframe) return;
 
@@ -472,7 +488,7 @@ export function StartApplyPanel({
       window.clearTimeout(t2);
       window.clearTimeout(t3);
     };
-  }, [showCalendar, ids.iframe]);
+  }, [isNative, showCalendar, ids.iframe]);
 
   function clearLeadTimer() {
     if (leadTimerRef.current) {
@@ -826,7 +842,7 @@ export function StartApplyPanel({
         </div>
       ) : null}
 
-      {/* Keep the iframe mounted from expand → Continue so it doesn’t remount on reveal. */}
+      {/* Keep calendar mounted from expand → Continue so it doesn’t remount on reveal. */}
       {preloadCalendar ? (
         <div
           className={`start-panel__booking${
@@ -839,20 +855,42 @@ export function StartApplyPanel({
               <h2 className="start-panel__title">
                 {firstName.trim() ? `Thanks ${firstName.trim()} — pick a time` : "Pick a time"}
               </h2>
-              <p className="start-panel__lead">15-Minute Fit Call · Zoom · No pressure</p>
+              <p className="start-panel__lead">
+                {isNative
+                  ? "Discovery call · Video · No pressure"
+                  : "15-Minute Fit Call · Zoom · No pressure"}
+              </p>
             </div>
           ) : null}
-          <div className="start-panel__embed">
-            <iframe
-              src={bookingSrc}
-              title="Book a 15-Minute Fit Call"
-              allow="payment"
-              scrolling={showCalendar ? "yes" : "no"}
-              id={ids.iframe}
-              tabIndex={showCalendar ? undefined : -1}
-            />
-          </div>
-          <Script src={EMBED_SCRIPT} strategy="afterInteractive" />
+          {isNative ? (
+            <div className="start-panel__embed start-panel__embed--native">
+              <NativeBookingEmbed
+                slug={nativeSlug}
+                calendarSlug={nativeCalendarSlug}
+                embedded
+                contact={{
+                  firstName: firstName.trim(),
+                  lastName: lastName.trim(),
+                  email: bookingEmail.trim() || email.trim(),
+                  phone: phoneE164,
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="start-panel__embed">
+                <iframe
+                  src={bookingSrc}
+                  title="Book a 15-Minute Fit Call"
+                  allow="payment"
+                  scrolling={showCalendar ? "yes" : "no"}
+                  id={ids.iframe}
+                  tabIndex={showCalendar ? undefined : -1}
+                />
+              </div>
+              <Script src={EMBED_SCRIPT} strategy="afterInteractive" />
+            </>
+          )}
         </div>
       ) : null}
     </div>

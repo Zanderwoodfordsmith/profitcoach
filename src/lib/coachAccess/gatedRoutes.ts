@@ -46,6 +46,13 @@ export const GATED_ROUTES: GatedRoute[] = [
       "Track every lead in one pipeline and know exactly who needs a follow-up, so opportunities stop slipping through the cracks.",
   },
   {
+    prefix: "/coach/pipeline",
+    feature: "nav.marketing",
+    title: "Pipeline",
+    description:
+      "See every prospect on a simple board — who’s new, who’s in calls, and who needs a follow-up.",
+  },
+  {
     prefix: "/coach/calls",
     feature: "nav.marketing",
     title: "Calls",

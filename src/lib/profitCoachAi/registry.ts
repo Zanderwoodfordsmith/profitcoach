@@ -28,11 +28,18 @@ Offer multiple variants when drafting copy; mark a recommended default; ask the 
   {
     id: "linkedin_newsletter",
     label: "LinkedIn newsletter",
-    description: "Editions, hooks, and structure for LinkedIn newsletters",
+    description: "Write LinkedIn newsletter editions; optional 5-3-7 series planning",
     placeholder:
-      "e.g. Draft a newsletter outline on pricing courage for owners stuck at £500K…",
-    systemInstructions: `Help the coach plan or draft LinkedIn newsletter content: hooks, outline, tone, and CTAs aligned with BOSS positioning (diagnostic, specificity, owner language).
-Use playbook material when supplied; avoid generic thought-leadership fluff.`,
+      "e.g. Draft this week's newsletter on pricing courage for owners stuck at £500K…",
+    systemInstructions: `Help the coach write LinkedIn newsletters the Pam/BCA way.
+
+Primary job: write THIS edition — one topic, paste-ready draft. Use the coach AI brain (ideal client, pain language, messaging hooks, vocabulary, proof, client results). Prefer Pam's 5-3-7 structure when it fits (5 strategies / 3 mistakes / 7 checklist) for an overview edition. One topic per edition; different pains/topics over time are normal.
+
+Optional (only if asked): expand one overview into a longer content series (one follow-up edition per strategy/mistake/checklist item). Do not push a 16–26 edition plan unless the coach wants it.
+
+Prefer 400–800 words; go ~2,000+ only for true guides/case studies. Scannable formatting. Offer SEO title/description and a short feed promo post.
+
+For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → Newsletter.`,
     knowledgeRefs: [
       {
         type: "playbook",
@@ -41,9 +48,15 @@ Use playbook material when supplied; avoid generic thought-leadership fluff.`,
     ],
     useMarketingIcpTier2: true,
     contextHints: {
-      keys: ["client_results", "superpowers"],
+      keys: [
+        "ideal_client",
+        "pain_language",
+        "messaging_hooks",
+        "client_results",
+        "superpowers",
+      ],
       encouragement:
-        "One specific client result or your niche focus will sharpen the newsletter angle.",
+        "Ideal client + pain language from First Campaign make the 5-3-7 cascade much sharper.",
     },
   },
   {

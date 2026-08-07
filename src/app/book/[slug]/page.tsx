@@ -1,16 +1,12 @@
-import { PublicBookClient } from "@/components/booking/PublicBookClient";
+import { redirect } from "next/navigation";
 
-export default async function PublicBookPage({
+/** `/book/[slug]` → Discovery calendar. */
+export default async function PublicBookIndexPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const clean = (slug ?? "").trim().toLowerCase();
-
-  return (
-    <div className="app-canvas-bg min-h-screen px-4 py-10 sm:px-6">
-      <PublicBookClient slug={clean || "unknown"} />
-    </div>
-  );
+  const clean = (slug ?? "").trim().toLowerCase() || "unknown";
+  redirect(`/book/${encodeURIComponent(clean)}/discovery`);
 }

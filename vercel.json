@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/linkedin/publish-due",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/admin/lead-finder/sales-nav-import-jobs/tick",
+      "schedule": "* * * * *"
+    }
+  ]
+}

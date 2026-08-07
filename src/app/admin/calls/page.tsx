@@ -8,7 +8,8 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { CallsTable, type CallRow } from "@/components/calls/CallsTable";
+import { CallsHub } from "@/components/calls/CallsHub";
+import type { CallRow } from "@/lib/callRow";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 
 export default function AdminCallsPage() {
@@ -17,6 +18,8 @@ export default function AdminCallsPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appOrigin, setAppOrigin] = useState("");
+  const [coachFilter, setCoachFilter] = useState<string | "all">("all");
   const [coaches, setCoaches] = useState<
     Array<{
       id: string;
@@ -24,6 +27,10 @@ export default function AdminCallsPage() {
       coach_business_name: string | null;
     }>
   >([]);
+
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,24 +170,24 @@ export default function AdminCallsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Get Clients"
-        description="Discovery calls booked across all coaches, synced from GoHighLevel."
+        description="Calendar view, call list, and booking calendars across coaches."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
-      <div className="flex w-full flex-col gap-4">
-        {loading && <p className="text-sm text-slate-600">Loading…</p>}
-        {error && <p className="text-sm text-rose-600">{error}</p>}
-
-        <CallsTable
-          calls={calls}
-          loading={loading}
-          error={error}
-          showCoachColumn={true}
-          coachFilterOptions={coachOptions}
-          onRowClick={navigateToCall}
-          emptyMessage="No calls found. Bookings from GHL calendars will appear here."
-        />
-      </div>
+      <CallsHub
+        calls={calls}
+        loading={loading}
+        error={error}
+        showCoachColumn={true}
+        appOrigin={appOrigin}
+        callsBasePath="/admin/calls"
+        onCallsChange={setCalls}
+        coachFilterOptions={coachOptions}
+        coachFilter={coachFilter}
+        onCoachFilterChange={setCoachFilter}
+        onRowClick={navigateToCall}
+        emptyMessage="No calls found. Bookings from native calendars and GHL will appear here."
+      />
     </div>
   );
 }

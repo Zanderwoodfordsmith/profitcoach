@@ -15,6 +15,9 @@ export type BookingSettingsRow = {
   booking_window_days: number;
   is_enabled: boolean;
   title: string;
+  location_mode: "google_meet" | "phone" | "custom";
+  location_phone: string | null;
+  location_custom: string | null;
 };
 
 export type AvailabilityRuleRow = {
@@ -163,4 +166,7 @@ export const DEFAULT_BOOKING_SETTINGS: Omit<
   booking_window_days: 14,
   is_enabled: false,
   title: "15-Minute Discovery Call",
+  location_mode: "google_meet",
+  location_phone: null,
+  location_custom: null,
 };

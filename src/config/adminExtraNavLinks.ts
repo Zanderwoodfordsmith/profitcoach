@@ -30,6 +30,11 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Boss Score landing views, opt-ins, and per-coach breakdown",
   },
   {
+    href: "/admin/sales-nav-imports",
+    label: "Sales Nav imports",
+    hint: "Apify scrape runs: who, counts, new vs updated, estimated cost",
+  },
+  {
     href: "/assessment",
     label: "BOSS Scorecard",
     hint: "Default route redirects to /assessment/BCA (13-question funnel)",
@@ -55,13 +60,13 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Also under Coaches hub tabs",
   },
   {
-    href: "/admin/discovery-calendar",
-    label: "BCA Let’s Talk / discovery calendar",
-    hint: "Staff preview of the gated book-a-call panel (not applied to coaches)",
+    href: "/admin/funnel-settings",
+    label: "My native booking (hours)",
+    hint: "Set your own availability — no impersonation. Book link appears after save.",
   },
   {
-    href: "/book/profit-coach-snapshot",
-    label: "Native book page (snapshot)",
-    hint: "Enable under Get Clients → Funnel settings → Native discovery booking",
+    href: "/zander",
+    label: "My public book page (/zander)",
+    hint: "Enable booking under Funnel settings first, then share this URL.",
   },
 ];

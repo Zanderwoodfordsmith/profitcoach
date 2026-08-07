@@ -38,6 +38,7 @@ export async function GET(request: Request) {
         email: string | null;
         business_name: string | null;
         job_title: string | null;
+        linkedin_url: string | null;
         prospect_status: string | null;
         phone: string | null;
         crm_contact_id: string | null;
@@ -57,7 +58,7 @@ export async function GET(request: Request) {
           return query;
         },
         "id, full_name, email, business_name, job_title, prospect_status, type, created_at",
-        ["crm_contact_id"]
+        ["crm_contact_id", "linkedin_url"]
       ),
       supabaseAdmin
         .from("coaches")
@@ -86,6 +87,7 @@ export async function GET(request: Request) {
     prospect_status: c.prospect_status ?? null,
     email: c.email ?? null,
     business_name: c.business_name ?? null,
+    linkedin_url: c.linkedin_url ?? null,
     phone: c.phone ?? null,
     type: c.type ?? "prospect",
     coach_id: coachId,

@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     companyExcludes?: string | string[];
     teamSizes?: string | string[];
     revenueRanges?: string | string[];
+    yearsAtCompanyBuckets?: string | string[];
     requireContacts?: string | string[];
     teamSize?: string;
     revenueRange?: string;
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
         companyExcludes: toList(body.companyExcludes),
         teamSizes: toList(body.teamSizes),
         revenueRanges: toList(body.revenueRanges),
+        yearsAtCompanyBuckets: toList(body.yearsAtCompanyBuckets),
         requireContacts: toList(body.requireContacts).filter(
           (v): v is "email" | "phone" | "linkedin" =>
             v === "email" || v === "phone" || v === "linkedin"

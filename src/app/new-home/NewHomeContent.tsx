@@ -402,7 +402,7 @@ export function NewHomeContent() {
 
       <main>
         {/* ─── Hero ─── */}
-        <section className="relative overflow-hidden bg-[#061a2e] pt-24 text-white md:pt-28">
+        <section className="relative overflow-hidden bg-[#061a2e] pt-20 text-white md:pt-24">
           <div
             className="pointer-events-none absolute inset-0 nh-fade"
             aria-hidden
@@ -417,36 +417,36 @@ export function NewHomeContent() {
             <div className="absolute left-1/2 top-0 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[#42a1ee]/20 blur-[120px]" />
           </div>
 
-          <div className="relative mx-auto grid max-w-[1180px] items-center gap-12 px-5 pb-14 pt-8 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:pb-16 lg:pt-12">
+          <div className="relative mx-auto grid max-w-[1180px] items-center gap-8 px-5 pb-10 pt-6 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8 lg:pb-12 lg:pt-8">
             <div className="nh-rise" style={{ animationDelay: "60ms" }}>
               <Eyebrow onDark>One-to-One Business Coaching</Eyebrow>
               <DisplayHeading
                 as="h1"
-                className="mt-5 max-w-xl text-[clamp(2.5rem,5vw,4rem)] text-white [&_em]:text-[#75c1ff]"
+                className="mt-4 max-w-xl text-[clamp(2.35rem,4.6vw,3.65rem)] text-white [&_em]:text-[#75c1ff]"
               >
                 Transform your business.
                 <br />
                 <em>Reclaim your life.</em>
               </DisplayHeading>
-              <p className="mt-6 max-w-lg text-[17px] font-normal leading-relaxed text-white/65 sm:text-[18px]">
+              <p className="mt-5 max-w-lg text-[16px] font-normal leading-relaxed text-white/65 sm:text-[17px]">
                 Personalised coaching for business owners doing £200K–£5M.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <PrimaryCta />
                 <SecondaryCta dark />
               </div>
             </div>
 
             <div
-              className="nh-rise relative mx-auto w-full max-w-[480px] lg:mx-0 lg:max-w-none"
+              className="nh-rise relative mx-auto w-full max-w-[440px] lg:mx-0 lg:max-w-none"
               style={{ animationDelay: "160ms" }}
             >
-              <div className="relative overflow-hidden rounded-[14px] border border-white/15 bg-white/5 p-4 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.65)] backdrop-blur-sm sm:p-6">
+              <div className="relative overflow-hidden rounded-[14px] border border-white/15 bg-white/5 p-3 shadow-[0_40px_80px_-30px_rgba(0,0,0,0.65)] backdrop-blur-sm sm:p-5">
                 <BossWheelBlock
                   onDark
                   className="!border-0 !bg-transparent !p-0 !shadow-none"
                 />
-                <p className="mt-3 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
+                <p className="mt-2 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-white/45">
                   BOSS Diagnostic preview
                 </p>
               </div>

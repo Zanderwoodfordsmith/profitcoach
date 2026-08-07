@@ -28,6 +28,7 @@ const CLASSROOM_HUB_PATH = path.join(
 );
 
 let classroomHubCache: ClassroomHubCatalog | null = null;
+let classroomHubCacheMtimeMs = 0;
 
 /**
  * Classroom hub cards (product names). Storage `course_id`s may still use older
@@ -49,7 +50,10 @@ export const CLASSROOM_PATH_COURSE_IDS = [
 export const CLASSROOM_OS_COURSE_ID = "profit-coach-os" as const;
 
 export function loadClassroomHub(): ClassroomHubCatalog {
-  if (classroomHubCache) return classroomHubCache;
+  const mtimeMs = fs.statSync(CLASSROOM_HUB_PATH).mtimeMs;
+  if (classroomHubCache && classroomHubCacheMtimeMs === mtimeMs) {
+    return classroomHubCache;
+  }
 
   const raw = fs.readFileSync(CLASSROOM_HUB_PATH, "utf8");
   const data = JSON.parse(raw) as ClassroomHubCatalog;
@@ -99,6 +103,7 @@ export function loadClassroomHub(): ClassroomHubCatalog {
       winClients,
     ],
   };
+  classroomHubCacheMtimeMs = mtimeMs;
   return classroomHubCache;
 }
 

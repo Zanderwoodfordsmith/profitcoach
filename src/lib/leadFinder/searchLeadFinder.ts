@@ -20,9 +20,9 @@ export { LEAD_FINDER_MAX_ITEMS, LEAD_FINDER_PAGE_SIZE };
 export type { LeadReveal, LeadTeaser };
 
 const LEAD_SELECT =
-  "id, full_name, first_name, last_name, job_title, email, email_2, phone, phone_2, linkedin_url, company, company_website, location, state, industry, category, category_slug, team_size, revenue_range, exported_at, raw";
+  "id, full_name, first_name, last_name, job_title, email, email_2, phone, phone_2, linkedin_url, company, company_website, location, state, industry, category, category_slug, team_size, revenue_range, months_at_company, months_in_role, years_at_company_bucket, exported_at, raw";
 
-/** Fallback select before email_2 / phone_2 / exported_at migration is applied. */
+/** Fallback select before email_2 / phone_2 / exported_at / tenure migrations. */
 const LEAD_SELECT_LEGACY =
   "id, full_name, first_name, last_name, job_title, email, phone, linkedin_url, company, company_website, location, state, industry, category, category_slug, team_size, revenue_range, raw";
 
@@ -46,6 +46,9 @@ type LeadrocksLeadRow = {
   category_slug: string | null;
   team_size: string | null;
   revenue_range: string | null;
+  months_at_company?: number | null;
+  months_in_role?: number | null;
+  years_at_company_bucket?: string | null;
   exported_at?: string | null;
   raw?: Record<string, unknown> | null;
 };
@@ -121,6 +124,9 @@ function rowToTeaser(row: LeadrocksLeadRow): LeadTeaser {
     category: row.category,
     teamSize: row.team_size,
     revenueRange: row.revenue_range,
+    yearsAtCompanyBucket: row.years_at_company_bucket?.trim() || null,
+    monthsAtCompany:
+      typeof row.months_at_company === "number" ? row.months_at_company : null,
     hasEmail: Boolean(email || email2),
     hasPhone: Boolean(phone || phone2),
     hasLinkedIn: Boolean(row.linkedin_url?.trim()),
@@ -156,6 +162,12 @@ function hasValues(list?: string[]): boolean {
 }
 
 function isLocalCorpusOnly(input: LeadFinderSearchInput): boolean {
+  const tenureBuckets = (input.yearsAtCompanyBuckets ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Tenure only exists on Sales Nav cache rows — never Apify-fill for this.
+  if (tenureBuckets.length > 0) return true;
+
   const categories = (input.categories ?? [])
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
@@ -179,7 +191,10 @@ async function selectLeads(
   if (
     result.error?.message?.includes("email_2") ||
     result.error?.message?.includes("phone_2") ||
-    result.error?.message?.includes("exported_at")
+    result.error?.message?.includes("exported_at") ||
+    result.error?.message?.includes("months_at_company") ||
+    result.error?.message?.includes("months_in_role") ||
+    result.error?.message?.includes("years_at_company_bucket")
   ) {
     leadSelectColumns = LEAD_SELECT_LEGACY;
     result = await build(leadSelectColumns);
@@ -340,6 +355,15 @@ function applyLeadFilters(q: any, input: LeadFinderSearchInput): any {
     q = q.or(
       teamSizes.map((t) => `team_size.ilike.%${escapeIlike(t)}%`).join(",")
     );
+  }
+
+  const yearsAtBuckets = (input.yearsAtCompanyBuckets ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (yearsAtBuckets.length === 1) {
+    q = q.eq("years_at_company_bucket", yearsAtBuckets[0]!);
+  } else if (yearsAtBuckets.length > 1) {
+    q = q.in("years_at_company_bucket", yearsAtBuckets);
   }
 
   const revenueRanges = [

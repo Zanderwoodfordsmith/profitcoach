@@ -28,6 +28,7 @@ type NativeBookingRecord = {
   id: string;
   contact_id: string | null;
   coach_id: string | null;
+  calendar_id: string | null;
   prospect_name: string | null;
   prospect_email: string | null;
   prospect_phone: string | null;
@@ -35,6 +36,11 @@ type NativeBookingRecord = {
   status: string;
   starts_at: string | null;
   ends_at: string | null;
+  meeting_join_url: string | null;
+  coach_calendars?: {
+    name?: string | null;
+    slug?: string | null;
+  } | null;
   contacts?: {
     full_name?: string | null;
     email?: string | null;
@@ -83,6 +89,8 @@ function mapAppointmentRow(
 ): CallRow {
   const contact = row.contacts ?? null;
   const coach = row.coach_id ? coachById[row.coach_id] : undefined;
+  const status =
+    row.status_normalized === "invalid" ? "other" : row.status_normalized;
 
   return {
     id: row.id,
@@ -98,12 +106,16 @@ function mapAppointmentRow(
     prospect_phone: contact?.phone ?? row.prospect_phone ?? null,
     business_name: contact?.business_name ?? null,
     calendar_name: row.calendar_name ?? null,
+    calendar_id: null,
+    calendar_slug: null,
     title: row.title ?? null,
-    status_normalized: row.status_normalized,
+    status_normalized: status,
     status_raw: row.status_raw ?? null,
     start_time: row.start_time ?? null,
     end_time: row.end_time ?? null,
     match_status: row.match_status,
+    source: "ghl",
+    meeting_join_url: null,
   };
 }
 
@@ -116,10 +128,17 @@ function mapNativeBookingRow(
 ): CallRow {
   const contact = row.contacts ?? null;
   const coach = row.coach_id ? coachById[row.coach_id] : undefined;
-  const kindLabel =
-    row.kind === "discovery"
+  const calName =
+    row.coach_calendars?.name?.trim() ||
+    (row.kind === "discovery"
       ? "Discovery call"
-      : row.kind?.trim() || "Booking";
+      : row.kind?.trim() || "Booking");
+  const calSlug = row.coach_calendars?.slug?.trim() || row.kind?.trim() || null;
+
+  // Normalize native booked → confirmed for UI consistency with GHL
+  let status = row.status;
+  if (status === "booked") status = "confirmed";
+  if (status === "noshow") status = "noshow";
 
   return {
     id: row.id,
@@ -134,13 +153,17 @@ function mapNativeBookingRow(
     prospect_email: contact?.email ?? row.prospect_email ?? null,
     prospect_phone: contact?.phone ?? row.prospect_phone ?? null,
     business_name: contact?.business_name ?? null,
-    calendar_name: "Native booking",
-    title: kindLabel,
-    status_normalized: row.status === "noshow" ? "noshow" : row.status,
+    calendar_name: calName,
+    calendar_id: row.calendar_id,
+    calendar_slug: calSlug,
+    title: calName,
+    status_normalized: status,
     status_raw: row.status,
     start_time: row.starts_at ?? null,
     end_time: row.ends_at ?? null,
     match_status: row.contact_id ? "matched" : "unmatched_contact",
+    source: "native",
+    meeting_join_url: row.meeting_join_url ?? null,
   };
 }
 
@@ -195,6 +218,7 @@ async function loadNativeBookingRows(
         id,
         contact_id,
         coach_id,
+        calendar_id,
         prospect_name,
         prospect_email,
         prospect_phone,
@@ -202,6 +226,8 @@ async function loadNativeBookingRows(
         status,
         starts_at,
         ends_at,
+        meeting_join_url,
+        coach_calendars ( name, slug ),
         contacts ( full_name, email, business_name, phone )
       `
     )
@@ -214,7 +240,37 @@ async function loadNativeBookingRows(
   const { data, error } = await query;
   if (error) {
     if (error.code === "42P01" || isMissingColumnError(error)) {
-      return [];
+      // Retry without join if calendar_id / FK missing
+      let fallback = supabase
+        .from("bookings")
+        .select(
+          `
+            id,
+            contact_id,
+            coach_id,
+            prospect_name,
+            prospect_email,
+            prospect_phone,
+            kind,
+            status,
+            starts_at,
+            ends_at,
+            contacts ( full_name, email, business_name, phone )
+          `
+        )
+        .order("starts_at", { ascending: false, nullsFirst: true });
+      if (coachId) fallback = fallback.eq("coach_id", coachId);
+      const { data: fb, error: fbErr } = await fallback;
+      if (fbErr) {
+        if (fbErr.code === "42P01" || isMissingColumnError(fbErr)) return [];
+        throw fbErr;
+      }
+      return (fb ?? []).map((r) => ({
+        ...((r as unknown) as NativeBookingRecord),
+        calendar_id: null,
+        meeting_join_url: null,
+        coach_calendars: null,
+      }));
     }
     throw error;
   }

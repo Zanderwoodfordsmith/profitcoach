@@ -11,6 +11,7 @@ import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachI
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
+import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
@@ -374,6 +375,7 @@ export default function CoachLayout({
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>
+      <SalesNavImportToast />
     </div>
   );
 }

@@ -20,14 +20,14 @@ const siteToolsLinks = [
     hint: "All grid components (transposed, default, glass, bordered).",
   },
   {
-    href: "/admin/discovery-calendar",
-    label: "BCA Let’s Talk / discovery calendar",
-    hint: "Staff preview of the gated book-a-call panel (not applied to coaches).",
+    href: "/admin/funnel-settings",
+    label: "My native booking (hours)",
+    hint: "Set your own availability — no impersonation. Book link appears on that page after save.",
   },
   {
-    href: "/book/profit-coach-snapshot",
-    label: "Native book page (snapshot)",
-    hint: "Enable under Funnel settings → Native discovery booking, then open this URL.",
+    href: "/zander",
+    label: "My public book page (/zander)",
+    hint: "Enable Native discovery booking on Funnel settings, then share this URL.",
   },
 ] as const;
 

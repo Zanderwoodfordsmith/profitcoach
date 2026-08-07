@@ -71,8 +71,10 @@ function imageUrlFromUnknown(value: unknown): string | null {
 }
 
 /**
- * Accepts common LinkedIn profile URL shapes and returns a canonical
- * https://www.linkedin.com/in/{slug} URL, or null if invalid.
+ * Accepts common LinkedIn profile URL shapes and returns a canonical URL:
+ * - https://www.linkedin.com/in/{slug}
+ * - https://www.linkedin.com/sales/lead|people/{memberId}
+ * or null if invalid.
  */
 export function normalizeLinkedInProfileUrl(input: string): string | null {
   const raw = input.trim();
@@ -92,12 +94,33 @@ export function normalizeLinkedInProfileUrl(input: string): string | null {
 
   const parts = url.pathname.split("/").filter(Boolean);
   const inIdx = parts.findIndex((p) => p.toLowerCase() === "in");
-  if (inIdx < 0 || !parts[inIdx + 1]) return null;
+  if (inIdx >= 0 && parts[inIdx + 1]) {
+    const slug = parts[inIdx + 1].replace(/\/+$/, "");
+    if (slug && /^[a-zA-Z0-9\-_%]+$/.test(slug)) {
+      return `https://www.linkedin.com/in/${decodeURIComponent(slug)}`;
+    }
+  }
 
-  const slug = parts[inIdx + 1].replace(/\/+$/, "");
-  if (!slug || !/^[a-zA-Z0-9\-_%]+$/.test(slug)) return null;
+  // Sales Navigator lead / people pages (extension + imports).
+  const salesIdx = parts.findIndex((p) => p.toLowerCase() === "sales");
+  if (salesIdx >= 0) {
+    const kind = (parts[salesIdx + 1] || "").toLowerCase();
+    const idRaw = parts[salesIdx + 2];
+    if ((kind === "lead" || kind === "people") && idRaw) {
+      let id = idRaw.replace(/\/+$/, "");
+      try {
+        id = decodeURIComponent(id);
+      } catch {
+        // keep raw
+      }
+      id = id.split(",")[0].trim();
+      if (id && /^[A-Za-z0-9_-]+$/.test(id)) {
+        return `https://www.linkedin.com/sales/${kind}/${id}`;
+      }
+    }
+  }
 
-  return `https://www.linkedin.com/in/${decodeURIComponent(slug)}`;
+  return null;
 }
 
 function mapExperience(item: unknown): LinkedInExperience {

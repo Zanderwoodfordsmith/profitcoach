@@ -15,12 +15,12 @@ export type ProspectNextCall = {
 const UPCOMING_STATUSES = new Set(["booked", "confirmed", "other"]);
 
 const STATUS_LABELS: Record<string, string> = {
-  booked: "Booked",
+  booked: "Confirmed",
   confirmed: "Confirmed",
   cancelled: "Cancelled",
-  showed: "Showed",
-  noshow: "No show",
-  invalid: "Invalid",
+  showed: "Completed",
+  completed: "Completed",
+  noshow: "No-show",
   other: "Scheduled",
 };
 
@@ -69,10 +69,11 @@ export function getCallStatusLabel(
 export function callStatusClass(status: string | null | undefined): string {
   switch (status) {
     case "confirmed":
-    case "showed":
-      return "bg-emerald-50 text-emerald-700";
     case "booked":
       return "bg-sky-50 text-sky-700";
+    case "showed":
+    case "completed":
+      return "bg-emerald-50 text-emerald-700";
     case "cancelled":
       return "bg-rose-50 text-rose-700";
     case "noshow":
@@ -81,6 +82,26 @@ export function callStatusClass(status: string | null | undefined): string {
       return "bg-slate-100 text-slate-500";
     default:
       return "bg-slate-100 text-slate-600";
+  }
+}
+
+/** Block colour for week calendar. */
+export function callStatusCalendarClass(
+  status: string | null | undefined
+): string {
+  switch (status) {
+    case "confirmed":
+    case "booked":
+      return "border-sky-600 bg-sky-500 text-white";
+    case "showed":
+    case "completed":
+      return "border-emerald-700 bg-emerald-600 text-white";
+    case "cancelled":
+      return "border-rose-700 bg-rose-500 text-white line-through opacity-80";
+    case "noshow":
+      return "border-amber-700 bg-amber-500 text-white";
+    default:
+      return "border-slate-500 bg-slate-400 text-white";
   }
 }
 

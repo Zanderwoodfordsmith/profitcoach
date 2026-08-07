@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Profit Coach</title>
+    <link rel="stylesheet" href="sidepanel.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <p class="brand">Profit Coach</p>
+        <h1>This profile</h1>
+      </div>
+      <button id="reloadBtn" type="button" class="icon-btn" title="Re-read profile">
+        Refresh
+      </button>
+    </header>
+
+    <p id="authStatus" class="pill">Checking login…</p>
+
+    <label id="coachWrap" class="stage coach-wrap hidden">
+      Act as coach
+      <select id="coachSelect"></select>
+    </label>
+
+    <section id="profileCard" class="card">
+      <div id="profileEmpty" class="empty">
+        <p>Reading LinkedIn…</p>
+      </div>
+      <div id="profileBlock" class="hidden">
+        <p id="pName" class="name"></p>
+        <p id="pMeta" class="meta"></p>
+        <div id="fitBlock" class="fit hidden">
+          <div class="fit-head">
+            <span id="fitLabel" class="fit-label">–</span>
+            <span id="fitScore" class="fit-score">–</span>
+          </div>
+          <div class="fit-bar" aria-hidden="true">
+            <div class="fit-bar-track"></div>
+            <div id="fitMarker" class="fit-bar-marker"></div>
+          </div>
+          <div class="fit-ticks">
+            <span>Very weak</span>
+            <span>Weak</span>
+            <span>Okay</span>
+            <span>Strong</span>
+            <span>Ideal</span>
+          </div>
+          <ul id="fitWhy" class="fit-list"></ul>
+          <ul id="fitNot" class="fit-list muted-list"></ul>
+          <p id="fitStatus" class="msg"></p>
+        </div>
+        <div class="actions-primary">
+          <label class="stage">
+            Stage
+            <select id="stage">
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="follow_up">Follow-up</option>
+            </select>
+          </label>
+          <button id="saveBtn" type="button" class="primary">
+            Save to pipeline
+          </button>
+        </div>
+        <p id="saveStatus" class="msg"></p>
+        <p id="workspaceLink" class="hidden link"></p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Write a note</h2>
+      <div class="split">
+        <button id="draftConnector" type="button" class="secondary">
+          Connection note
+        </button>
+        <button id="draftDm" type="button" class="secondary">Message</button>
+      </div>
+      <p id="draftStatus" class="msg"></p>
+      <div id="drafts" class="drafts"></div>
+    </section>
+
+    <details class="adv">
+      <summary>Advanced</summary>
+      <label class="stage">
+        Profit Coach site
+        <select id="origin"></select>
+      </label>
+      <p class="hint">
+        Leave on <strong>Live site</strong> unless you’re developing locally.
+        Keep Profit Coach open and signed in in another tab.
+      </p>
+    </details>
+
+    <script src="config.js"></script>
+    <script src="sidepanel.js"></script>
+  </body>
+</html>

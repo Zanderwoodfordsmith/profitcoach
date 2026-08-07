@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   DashboardPageSection,
   StickyPageHeader,
 } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
+import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
 import { NativeBookingSettingsCard } from "@/components/booking/NativeBookingSettingsCard";
 import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
@@ -239,6 +240,15 @@ export function FunnelSettingsClient() {
             onSubmit={(e) => void handleSave(e)}
           />
           <NativeBookingSettingsCard appOrigin={appOrigin} />
+          <Suspense
+            fallback={
+              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="text-sm text-slate-600">Loading Google Calendar…</p>
+              </section>
+            }
+          >
+            <GoogleCalendarBookingCard />
+          </Suspense>
         </div>
       )}
     </DashboardPageSection>

@@ -13,6 +13,7 @@ export function applyProspectPatch(
     phone: body.phone,
     job_title: body.job_title,
     business_name: body.business_name,
+    linkedin_url: body.linkedin_url,
     prospect_status: body.prospect_status,
     status: body.status,
     next_action: body.next_action,

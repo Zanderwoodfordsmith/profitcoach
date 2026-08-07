@@ -11,12 +11,18 @@ import {
   SALES_NAV_MAX_TAKE_PAGES,
   type SalesNavImportedLead,
 } from "@/lib/apify/salesNavigatorTypes";
+import {
+  tenureTotalMonths,
+  yearsAtCompanyBucketFromMonths,
+} from "@/lib/salesNavigator/tenure";
+import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
 
 export {
   SALES_NAV_DEFAULT_TAKE_PAGES,
   SALES_NAV_MAX_TAKE_PAGES,
   type SalesNavImportedLead,
 } from "@/lib/apify/salesNavigatorTypes";
+export { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
 
 const DEFAULT_ACTOR =
   "harvestapi/linkedin-sales-navigator-lead-search-cookie";
@@ -59,11 +65,30 @@ function locationText(value: unknown): string | null {
   );
 }
 
+function firstCurrentPosition(
+  rec: Record<string, unknown>
+): Record<string, unknown> | null {
+  const plural = Array.isArray(rec.currentPositions)
+    ? rec.currentPositions
+    : null;
+  if (plural?.[0]) {
+    const first = asRecord(plural[0]);
+    if (first) return first;
+  }
+  const singular = rec.currentPosition;
+  if (Array.isArray(singular) && singular[0]) {
+    return asRecord(singular[0]);
+  }
+  if (singular && typeof singular === "object" && !Array.isArray(singular)) {
+    return asRecord(singular);
+  }
+  return null;
+}
+
 function currentCompany(rec: Record<string, unknown>): string | null {
-  const current = rec.currentPosition;
-  if (Array.isArray(current) && current[0]) {
-    const first = asRecord(current[0]);
-    if (first) return asString(first.companyName) ?? asString(first.company);
+  const current = firstCurrentPosition(rec);
+  if (current) {
+    return asString(current.companyName) ?? asString(current.company);
   }
   const experience = Array.isArray(rec.experience) ? rec.experience : [];
   const firstExp = asRecord(experience[0]);
@@ -74,6 +99,14 @@ function currentCompany(rec: Record<string, unknown>): string | null {
 }
 
 function currentTitle(rec: Record<string, unknown>): string | null {
+  const current = firstCurrentPosition(rec);
+  if (current) {
+    return (
+      asString(current.title) ??
+      asString(current.position) ??
+      asString(current.jobTitle)
+    );
+  }
   const experience = Array.isArray(rec.experience) ? rec.experience : [];
   const firstExp = asRecord(experience[0]);
   if (firstExp) {
@@ -101,6 +134,60 @@ function profileUrl(rec: Record<string, unknown>): string | null {
   return null;
 }
 
+function photoUrl(rec: Record<string, unknown>): string | null {
+  return (
+    asString(rec.pictureUrl) ??
+    asString(rec.profilePicture) ??
+    asString(rec.photoUrl) ??
+    asString(rec.photo) ??
+    asString(rec.profileImageUrl)
+  );
+}
+
+function formatTenurePart(
+  tenure: Record<string, unknown> | null,
+  suffix: string
+): string | null {
+  if (!tenure) return null;
+  const years = typeof tenure.numYears === "number" ? tenure.numYears : 0;
+  const months = typeof tenure.numMonths === "number" ? tenure.numMonths : 0;
+  if (years <= 0 && months <= 0) return null;
+  const bits: string[] = [];
+  if (years > 0) bits.push(`${years} year${years === 1 ? "" : "s"}`);
+  if (months > 0) bits.push(`${months} month${months === 1 ? "" : "s"}`);
+  return `${bits.join(" ")} ${suffix}`;
+}
+
+function tenureLabel(rec: Record<string, unknown>): string | null {
+  const current = firstCurrentPosition(rec);
+  if (!current) return null;
+  const role = formatTenurePart(asRecord(current.tenureAtPosition), "in role");
+  const company = formatTenurePart(
+    asRecord(current.tenureAtCompany),
+    "in company"
+  );
+  return [role, company].filter(Boolean).join(" · ") || null;
+}
+
+function tenureFields(rec: Record<string, unknown>): {
+  tenureLabel: string | null;
+  monthsAtCompany: number | null;
+  monthsInRole: number | null;
+  yearsAtCompanyBucket: SalesNavImportedLead["yearsAtCompanyBucket"];
+} {
+  const current = firstCurrentPosition(rec);
+  const monthsAtCompany = tenureTotalMonths(
+    asRecord(current?.tenureAtCompany)
+  );
+  const monthsInRole = tenureTotalMonths(asRecord(current?.tenureAtPosition));
+  return {
+    tenureLabel: tenureLabel(rec),
+    monthsAtCompany,
+    monthsInRole,
+    yearsAtCompanyBucket: yearsAtCompanyBucketFromMonths(monthsAtCompany),
+  };
+}
+
 export function normalizeSalesNavItem(item: unknown): SalesNavImportedLead | null {
   const rec = asRecord(item);
   if (!rec) return null;
@@ -117,6 +204,8 @@ export function normalizeSalesNavItem(item: unknown): SalesNavImportedLead | nul
   const linkedinUrl = profileUrl(rec);
   if (!fullName && !linkedinUrl) return null;
 
+  const tenure = tenureFields(rec);
+
   return {
     fullName,
     firstName,
@@ -126,7 +215,11 @@ export function normalizeSalesNavItem(item: unknown): SalesNavImportedLead | nul
     linkedinUrl,
     location: locationText(rec.location),
     email: asString(rec.email) ?? asString(rec.emails),
-    headline: asString(rec.headline),
+    headline: asString(rec.headline) ?? asString(rec.summary),
+    about: asString(rec.about) ?? asString(rec.summary),
+    photoUrl: photoUrl(rec),
+    premium: Boolean(rec.premium),
+    ...tenure,
     raw: rec,
   };
 }
@@ -135,8 +228,8 @@ function normalizeCookieInput(cookie: string): string {
   const trimmed = cookie.trim();
   if (!trimmed) {
     throw new SalesNavScrapeError(
-      "Paste your LinkedIn cookies (Cookie-Editor → Export → JSON).",
-      "invalid_input"
+      "Paste Cookie-Editor JSON (Export as JSON), or set LINKEDIN_SALES_NAV_COOKIE.",
+      "not_configured"
     );
   }
   // Accept already-stringified JSON array, raw JSON array, or li_at=… cookie string.
@@ -151,20 +244,29 @@ function normalizeCookieInput(cookie: string): string {
   return trimmed;
 }
 
-function isSalesNavSearchUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^www\./i, "").toLowerCase();
-    if (host !== "linkedin.com" && !host.endsWith(".linkedin.com")) return false;
-    return u.pathname.includes("/sales/search/people");
-  } catch {
-    return false;
-  }
+function serverSalesNavCookie(): string {
+  return (
+    process.env.LINKEDIN_SALES_NAV_COOKIE?.trim() ||
+    process.env.APIFY_SALES_NAV_COOKIE?.trim() ||
+    ""
+  );
+}
+
+function serverSalesNavUserAgent(): string | undefined {
+  const ua =
+    process.env.LINKEDIN_SALES_NAV_USER_AGENT?.trim() ||
+    process.env.APIFY_SALES_NAV_USER_AGENT?.trim() ||
+    "";
+  return ua || undefined;
 }
 
 export type ScrapeSalesNavSearchInput = {
   salesNavUrl: string;
-  cookie: string;
+  /**
+   * Admin test override (Cookie-Editor JSON). Falls back to
+   * LINKEDIN_SALES_NAV_COOKIE when omitted.
+   */
+  cookie?: string;
   userAgent?: string;
   /** Search pages to scrape (25 leads/page). Clamped to SALES_NAV_MAX_TAKE_PAGES. */
   takePages?: number;
@@ -176,9 +278,14 @@ export type ScrapeSalesNavSearchResult = {
   takePages: number;
 };
 
-export async function scrapeSalesNavSearch(
-  input: ScrapeSalesNavSearchInput
-): Promise<ScrapeSalesNavSearchResult> {
+export type StartSalesNavSearchResult = {
+  apifyRunId: string;
+  apifyDatasetId: string | null;
+  actorId: string;
+  takePages: number;
+};
+
+function requireApifyToken(): string {
   const token = process.env.APIFY_TOKEN?.trim();
   if (!token) {
     throw new SalesNavScrapeError(
@@ -186,7 +293,16 @@ export async function scrapeSalesNavSearch(
       "not_configured"
     );
   }
+  return token;
+}
 
+function resolveActorId(): string {
+  return process.env.APIFY_SALES_NAV_ACTOR?.trim() || DEFAULT_ACTOR;
+}
+
+function buildRunInput(
+  input: ScrapeSalesNavSearchInput
+): { runInput: Record<string, unknown>; takePages: number; salesNavUrl: string } {
   const salesNavUrl = input.salesNavUrl.trim();
   if (!isSalesNavSearchUrl(salesNavUrl)) {
     throw new SalesNavScrapeError(
@@ -195,15 +311,13 @@ export async function scrapeSalesNavSearch(
     );
   }
 
-  const cookie = normalizeCookieInput(input.cookie);
+  const cookie = normalizeCookieInput(
+    input.cookie?.trim() || serverSalesNavCookie()
+  );
   const takePages = Math.min(
     SALES_NAV_MAX_TAKE_PAGES,
     Math.max(1, Math.floor(input.takePages ?? SALES_NAV_DEFAULT_TAKE_PAGES))
   );
-
-  const actorId =
-    process.env.APIFY_SALES_NAV_ACTOR?.trim() || DEFAULT_ACTOR;
-  const client = new ApifyClient({ token });
 
   const runInput: Record<string, unknown> = {
     profileScraperMode: "Short",
@@ -212,13 +326,139 @@ export async function scrapeSalesNavSearch(
     startPage: 1,
     takePages,
   };
-  const ua = input.userAgent?.trim();
+  const ua = input.userAgent?.trim() || serverSalesNavUserAgent();
   if (ua) runInput.userAgent = ua;
+
+  return { runInput, takePages, salesNavUrl };
+}
+
+function leadsFromDatasetItems(items: unknown[]): SalesNavImportedLead[] {
+  return items
+    .map(normalizeSalesNavItem)
+    .filter((l): l is SalesNavImportedLead => Boolean(l));
+}
+
+function emptyResultError(items: unknown[]): SalesNavScrapeError {
+  const errItem = items[0] ? asRecord(items[0]) : null;
+  const apifyError =
+    asString(errItem?.error) ??
+    asString(errItem?.message) ??
+    asString(errItem?.errorDescription);
+  const detail = apifyError
+    ? apifyError
+    : items.length === 0
+      ? "Apify finished but returned 0 profiles. Usually a stale Sales Nav session (re-export Cookie-Editor JSON), or this search has no results — open the same filters in Sales Navigator to check."
+      : `Apify returned ${items.length} row(s) we couldn’t read as leads. Open the latest run in Apify Console and check the dataset.`;
+  return new SalesNavScrapeError(detail, "empty_result");
+}
+
+/** Fire-and-forget Apify run (returns immediately; poll with getApifyRunState). */
+export async function startSalesNavSearch(
+  input: ScrapeSalesNavSearchInput
+): Promise<StartSalesNavSearchResult> {
+  const token = requireApifyToken();
+  const actorId = resolveActorId();
+  const { runInput, takePages } = buildRunInput(input);
+  const client = new ApifyClient({ token });
 
   let run;
   try {
-    // Cookie scrapes can be slow — allow several minutes.
-    run = await client.actor(actorId).call(runInput, { waitSecs: 420 });
+    run = await client.actor(actorId).start(runInput);
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Sales Navigator scrape failed.";
+    throw new SalesNavScrapeError(message, "scrape_failed");
+  }
+
+  if (!run?.id) {
+    throw new SalesNavScrapeError(
+      "Apify did not return a run id.",
+      "scrape_failed"
+    );
+  }
+
+  return {
+    apifyRunId: run.id,
+    apifyDatasetId: run.defaultDatasetId ?? null,
+    actorId,
+    takePages,
+  };
+}
+
+export type ApifyRunState = {
+  status: string;
+  datasetId: string | null;
+  /** Dataset item count when available (may rise while RUNNING). */
+  itemCount: number;
+};
+
+export async function getApifyRunState(
+  apifyRunId: string
+): Promise<ApifyRunState> {
+  const token = requireApifyToken();
+  const client = new ApifyClient({ token });
+  const run = await client.run(apifyRunId).get();
+  if (!run) {
+    throw new SalesNavScrapeError(
+      "Apify run not found.",
+      "scrape_failed"
+    );
+  }
+
+  const datasetId = run.defaultDatasetId ?? null;
+  let itemCount = 0;
+  if (datasetId) {
+    try {
+      const listed = await client.dataset(datasetId).listItems({
+        limit: 0,
+        offset: 0,
+      });
+      itemCount =
+        typeof listed.total === "number" && Number.isFinite(listed.total)
+          ? listed.total
+          : 0;
+    } catch {
+      itemCount = 0;
+    }
+  }
+
+  return {
+    status: String(run.status ?? "UNKNOWN"),
+    datasetId,
+    itemCount,
+  };
+}
+
+export async function fetchSalesNavSearchDataset(opts: {
+  datasetId: string;
+  takePages: number;
+}): Promise<SalesNavImportedLead[]> {
+  const token = requireApifyToken();
+  const client = new ApifyClient({ token });
+  const { items } = await client.dataset(opts.datasetId).listItems({
+    limit: opts.takePages * 25 + 10,
+  });
+  const leads = leadsFromDatasetItems(items);
+  if (leads.length === 0) {
+    throw emptyResultError(items);
+  }
+  return leads;
+}
+
+/** Blocking scrape (legacy / small sync callers). Prefer start + poll for large imports. */
+export async function scrapeSalesNavSearch(
+  input: ScrapeSalesNavSearchInput
+): Promise<ScrapeSalesNavSearchResult> {
+  const token = requireApifyToken();
+  const actorId = resolveActorId();
+  const { runInput, takePages } = buildRunInput(input);
+  const client = new ApifyClient({ token });
+
+  let run;
+  try {
+    // Cookie scrapes scale with pages — Short mode is ~a few sec/page; leave headroom.
+    const waitSecs = Math.min(800, Math.max(420, 90 + takePages * 6));
+    run = await client.actor(actorId).call(runInput, { waitSecs });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Sales Navigator scrape failed.";
@@ -232,21 +472,10 @@ export async function scrapeSalesNavSearch(
     );
   }
 
-  const { items } = await client.dataset(run.defaultDatasetId).listItems({
-    limit: takePages * 25 + 10,
+  const leads = await fetchSalesNavSearchDataset({
+    datasetId: run.defaultDatasetId,
+    takePages,
   });
-
-  const leads = items
-    .map(normalizeSalesNavItem)
-    .filter((l): l is SalesNavImportedLead => Boolean(l));
-
-  if (leads.length === 0) {
-    const errItem = items[0] ? asRecord(items[0]) : null;
-    const detail =
-      asString(errItem?.error) ??
-      "No leads returned. Check cookies are fresh, Sales Nav is active, and the search URL is valid.";
-    throw new SalesNavScrapeError(detail, "empty_result");
-  }
 
   return { leads, scrapedCount: leads.length, takePages };
 }

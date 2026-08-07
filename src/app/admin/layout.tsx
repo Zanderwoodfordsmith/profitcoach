@@ -11,6 +11,7 @@ import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
+import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
@@ -139,6 +140,7 @@ export default function AdminLayout({
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>
+      <SalesNavImportToast />
     </div>
   );
 }

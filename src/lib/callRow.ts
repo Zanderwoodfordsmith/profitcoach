@@ -9,10 +9,14 @@ export type CallRow = {
   prospect_phone: string | null;
   business_name: string | null;
   calendar_name: string | null;
+  calendar_id: string | null;
+  calendar_slug: string | null;
   title: string | null;
   status_normalized: string;
   status_raw: string | null;
   start_time: string | null;
   end_time: string | null;
   match_status: string;
+  source: "native" | "ghl";
+  meeting_join_url: string | null;
 };

@@ -27,6 +27,7 @@ type StatusFilter =
   | "confirmed"
   | "cancelled"
   | "showed"
+  | "completed"
   | "noshow"
   | "other";
 type MatchFilter = "all" | "matched" | "unmatched_contact" | "unmatched_coach";
@@ -85,7 +86,7 @@ const DEFAULT_COLUMN_VISIBILITY: CallColumnVisibility = {
   status: true,
   coach: true,
   match: false,
-  actions: false,
+  actions: true,
 };
 
 const DEFAULT_COLUMN_ORDER: CallColumnKey[] = COLUMN_OPTIONS.map(
@@ -260,11 +261,16 @@ export function CallsTable({
         }
       }
 
-      if (
-        statusFilter !== "all" &&
-        row.status_normalized !== statusFilter
-      ) {
-        return false;
+      if (statusFilter !== "all") {
+        const status = row.status_normalized;
+        const matches =
+          status === statusFilter ||
+          (statusFilter === "confirmed" && status === "booked") ||
+          (statusFilter === "completed" &&
+            (status === "showed" || status === "completed")) ||
+          (statusFilter === "showed" &&
+            (status === "showed" || status === "completed"));
+        if (!matches) return false;
       }
 
       if (matchFilter !== "all" && row.match_status !== matchFilter) {
@@ -494,10 +500,9 @@ export function CallsTable({
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="all">All</option>
-                      <option value="booked">Booked</option>
                       <option value="confirmed">Confirmed</option>
-                      <option value="showed">Showed</option>
-                      <option value="noshow">No show</option>
+                      <option value="completed">Completed</option>
+                      <option value="noshow">No-show</option>
                       <option value="cancelled">Cancelled</option>
                       <option value="other">Other</option>
                     </select>

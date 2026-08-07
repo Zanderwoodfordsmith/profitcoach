@@ -20,6 +20,7 @@ type ContactRecord = {
   prospect_status?: string | null;
   email: string | null;
   business_name: string | null;
+  linkedin_url?: string | null;
   phone?: string | null;
   type: string;
   coach_id?: string | null;
@@ -41,6 +42,7 @@ export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
       job_title: contact.job_title ?? null,
       email: contact.email ?? null,
       business_name: contact.business_name ?? null,
+      linkedin_url: contact.linkedin_url ?? null,
       phone: contact.phone ?? null,
       type: contact.type,
       prospect_status,
@@ -140,6 +142,7 @@ export async function enrichProspectRows(
       job_title: contact.job_title ?? null,
       email: contact.email ?? null,
       business_name: contact.business_name ?? null,
+      linkedin_url: contact.linkedin_url ?? null,
       phone: contact.phone ?? fallbackPhonesByContact[contact.id] ?? null,
       type: contact.type,
       prospect_status,

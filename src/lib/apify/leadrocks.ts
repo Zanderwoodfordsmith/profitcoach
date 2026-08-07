@@ -22,6 +22,11 @@ export type LeadFinderSearchInput = {
   companyExcludes?: string[];
   teamSizes?: string[];
   revenueRanges?: string[];
+  /**
+   * Sales Nav years-at-company bucket ids (`1`–`5`). Local cache only —
+   * LeadRocks Apify fills do not have this field.
+   */
+  yearsAtCompanyBuckets?: string[];
   /** Require these contact fields to be present (AND). */
   requireContacts?: Array<"email" | "phone" | "linkedin">;
   /** @deprecated use teamSizes */

@@ -47,7 +47,9 @@
     "reassign-unassigned-payments": "npx tsx scripts/reassign-unassigned-payments.ts",
     "test-zoom-recording-webhook": "npx tsx scripts/test-zoom-recording-webhook.ts",
     "knip": "knip",
-    "analyze": "ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build",
+    "pack:sales-nav-extension": "npm run pack:linkedin-extension",
+    "pack:linkedin-extension": "mkdir -p extensions/dist && cd extensions/linkedin && zip -r ../dist/profit-coach-linkedin-$(node -p \"require('./manifest.json').version\").zip manifest.json popup.html popup.css popup.js sidepanel.html sidepanel.css sidepanel.js background.js content-bridge.js content-linkedin.js content-sales-nav.js content-engage.js config.js privacy.html icons -x '*.DS_Store' && ls -la ../dist/"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

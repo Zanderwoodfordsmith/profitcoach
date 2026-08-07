@@ -1,29 +1,69 @@
 import { NextResponse } from "next/server";
-import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { isValidIanaTimeZone } from "@/lib/booking/bookingTime";
 import {
+  ensureCoachRowForUser,
   loadBookingSettingsForCoach,
   upsertBookingSettings,
 } from "@/lib/booking/bookingService";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+/**
+ * Booking settings always apply to the signed-in user (admin or coach).
+ * Impersonation is ignored so staff can set their own hours without
+ * switching into another coach’s account.
+ */
+async function requireSelfUser(request: Request) {
+  const authHeader = request.headers.get("authorization") ?? "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : null;
+  if (!token) {
+    return { error: "Missing access token." as const, userId: null };
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) {
+    return { error: "Invalid access token." as const, userId: null };
+  }
+
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
+    return { error: "Not authorized." as const, userId: null };
+  }
+
+  return { error: null, userId: user.id as string };
+}
+
 export async function GET(request: Request) {
-  const auth = await requireCoachRequest(request, { allowAdminSelf: true });
+  const auth = await requireSelfUser(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  const { data: coach } = await supabaseAdmin
-    .from("coaches")
-    .select("slug")
-    .eq("id", auth.userId)
-    .maybeSingle();
+  let coach: { id: string; slug: string };
+  try {
+    coach = await ensureCoachRowForUser(auth.userId);
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json(
+      { error: "Could not set up coach profile for booking." },
+      { status: 500 }
+    );
+  }
 
-  const { settings, rules } = await loadBookingSettingsForCoach(auth.userId);
+  const { settings, rules } = await loadBookingSettingsForCoach(coach.id);
 
   return NextResponse.json({
-    slug: (coach?.slug as string | null) ?? null,
+    slug: coach.slug,
     settings,
     rules,
   });
@@ -37,13 +77,27 @@ type PatchBody = {
   booking_window_days?: number;
   is_enabled?: boolean;
   title?: string;
+  location_mode?: "google_meet" | "phone" | "custom";
+  location_phone?: string | null;
+  location_custom?: string | null;
   rules?: AvailabilityRuleRow[];
 };
 
 export async function PATCH(request: Request) {
-  const auth = await requireCoachRequest(request, { allowAdminSelf: true });
+  const auth = await requireSelfUser(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
+  let coach: { id: string; slug: string };
+  try {
+    coach = await ensureCoachRowForUser(auth.userId);
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json(
+      { error: "Could not set up coach profile for booking." },
+      { status: 500 }
+    );
   }
 
   let body: PatchBody;
@@ -87,19 +141,34 @@ export async function PATCH(request: Request) {
     patch.booking_window_days = body.booking_window_days;
   }
   if (body.is_enabled !== undefined) patch.is_enabled = body.is_enabled;
-  if (body.title !== undefined) patch.title = body.title.trim() || "15-Minute Discovery Call";
+  if (body.title !== undefined) {
+    patch.title = body.title.trim() || "15-Minute Discovery Call";
+  }
+  if (body.location_mode !== undefined) {
+    if (
+      body.location_mode !== "google_meet" &&
+      body.location_mode !== "phone" &&
+      body.location_mode !== "custom"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid location_mode." },
+        { status: 400 }
+      );
+    }
+    patch.location_mode = body.location_mode;
+  }
+  if (body.location_phone !== undefined) {
+    patch.location_phone = body.location_phone?.trim() || null;
+  }
+  if (body.location_custom !== undefined) {
+    patch.location_custom = body.location_custom?.trim() || null;
+  }
   if (body.rules !== undefined) patch.rules = body.rules;
 
-  const result = await upsertBookingSettings(auth.userId, patch);
-
-  const { data: coach } = await supabaseAdmin
-    .from("coaches")
-    .select("slug")
-    .eq("id", auth.userId)
-    .maybeSingle();
+  const result = await upsertBookingSettings(coach.id, patch);
 
   return NextResponse.json({
-    slug: (coach?.slug as string | null) ?? null,
+    slug: coach.slug,
     settings: result.settings,
     rules: result.rules,
   });

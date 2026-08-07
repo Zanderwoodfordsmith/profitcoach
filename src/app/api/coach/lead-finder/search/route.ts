@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     locations?: string | string[];
     teamSizes?: string | string[];
     revenueRanges?: string | string[];
+    yearsAtCompanyBuckets?: string | string[];
     searchQuery?: string;
     teamSize?: string;
     revenueRange?: string;
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
         locations: toList(body.locations),
         teamSizes: toList(body.teamSizes),
         revenueRanges: toList(body.revenueRanges),
+        yearsAtCompanyBuckets: toList(body.yearsAtCompanyBuckets),
         searchQuery: body.searchQuery,
         teamSize: body.teamSize,
         revenueRange: body.revenueRange,

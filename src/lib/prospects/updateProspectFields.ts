@@ -3,6 +3,7 @@ import {
   upsertProspectNextAction,
   type ProspectNextAction,
 } from "@/lib/actionPlans/prospectFollowUp";
+import { normalizeLinkedInProfileUrl } from "@/lib/apify/linkedinProfile";
 import { tryUpdateContactStripping } from "@/lib/contactSchemaSafeInsert";
 import {
   normalizeProspectLabel,
@@ -23,6 +24,7 @@ export type ProspectFieldPatch = {
   phone?: string | null;
   job_title?: string | null;
   business_name?: string | null;
+  linkedin_url?: string | null;
   prospect_status?: string | null;
   crm_contact_id?: string | null;
   next_action?: { text: string; due_at: string | null } | null;
@@ -34,6 +36,7 @@ export type UpdatedProspectFields = {
   phone: string | null;
   job_title: string | null;
   business_name: string | null;
+  linkedin_url: string | null;
   prospect_status: string | null;
   crm_contact_id: string | null;
   status: ProspectStatusDisplay;
@@ -53,16 +56,35 @@ export async function updateProspectFields(
   coachId: string,
   patch: ProspectFieldPatch
 ): Promise<UpdatedProspectFields> {
-  const { data: contact, error: fetchError } = await supabaseAdmin
-    .from("contacts")
-    .select(
-      "id, coach_id, type, full_name, email, phone, job_title, business_name, prospect_status, first_name, last_name"
-    )
-    .eq("id", contactId)
-    .maybeSingle();
-
-  if (fetchError) {
-    throw new Error("Unable to load prospect.");
+  let contact: Record<string, unknown> | null = null;
+  {
+    const withLinkedIn = await supabaseAdmin
+      .from("contacts")
+      .select(
+        "id, coach_id, type, full_name, email, phone, job_title, business_name, linkedin_url, prospect_status, first_name, last_name"
+      )
+      .eq("id", contactId)
+      .maybeSingle();
+    if (
+      withLinkedIn.error &&
+      (withLinkedIn.error.code === "42703" || withLinkedIn.error.code === "PGRST204")
+    ) {
+      const fallback = await supabaseAdmin
+        .from("contacts")
+        .select(
+          "id, coach_id, type, full_name, email, phone, job_title, business_name, prospect_status, first_name, last_name"
+        )
+        .eq("id", contactId)
+        .maybeSingle();
+      if (fallback.error) {
+        throw new Error("Unable to load prospect.");
+      }
+      contact = (fallback.data as Record<string, unknown> | null) ?? null;
+    } else if (withLinkedIn.error) {
+      throw new Error("Unable to load prospect.");
+    } else {
+      contact = (withLinkedIn.data as Record<string, unknown> | null) ?? null;
+    }
   }
   if (!contact || contact.coach_id !== coachId || contact.type !== "prospect") {
     throw new Error("Prospect not found.");
@@ -117,6 +139,33 @@ export async function updateProspectFields(
   if (patch.business_name !== undefined) {
     contactPatch.business_name = normalizeProspectLabel(patch.business_name);
   }
+  if (patch.linkedin_url !== undefined) {
+    const raw = patch.linkedin_url?.trim() || null;
+    if (!raw) {
+      contactPatch.linkedin_url = null;
+    } else {
+      const normalized = normalizeLinkedInProfileUrl(raw);
+      if (!normalized) {
+        throw new Error("Invalid LinkedIn profile URL.");
+      }
+      if (normalized !== (contact.linkedin_url as string | null)) {
+        const { data: duplicate, error: duplicateError } = await supabaseAdmin
+          .from("contacts")
+          .select("id")
+          .eq("coach_id", coachId)
+          .eq("linkedin_url", normalized)
+          .neq("id", contactId)
+          .maybeSingle();
+        if (duplicateError && duplicateError.code !== "42703" && duplicateError.code !== "PGRST204") {
+          throw new Error("Unable to validate LinkedIn URL.");
+        }
+        if (duplicate?.id) {
+          throw new Error("Another contact already uses this LinkedIn URL.");
+        }
+      }
+      contactPatch.linkedin_url = normalized;
+    }
+  }
   if (patch.prospect_status !== undefined) {
     contactPatch.prospect_status = patch.prospect_status?.trim() || null;
   }
@@ -144,16 +193,35 @@ export async function updateProspectFields(
     nextAction = existing[contactId] ?? null;
   }
 
-  const { data: refreshed, error: refreshError } = await supabaseAdmin
-    .from("contacts")
-    .select(
-      "full_name, email, phone, job_title, business_name, prospect_status, crm_contact_id"
-    )
-    .eq("id", contactId)
-    .maybeSingle();
-
-  if (refreshError || !refreshed) {
-    throw new Error("Unable to refresh prospect.");
+  let refreshed: Record<string, unknown> | null = null;
+  {
+    const withLinkedIn = await supabaseAdmin
+      .from("contacts")
+      .select(
+        "full_name, email, phone, job_title, business_name, linkedin_url, prospect_status, crm_contact_id"
+      )
+      .eq("id", contactId)
+      .maybeSingle();
+    if (
+      withLinkedIn.error &&
+      (withLinkedIn.error.code === "42703" || withLinkedIn.error.code === "PGRST204")
+    ) {
+      const fallback = await supabaseAdmin
+        .from("contacts")
+        .select(
+          "full_name, email, phone, job_title, business_name, prospect_status, crm_contact_id"
+        )
+        .eq("id", contactId)
+        .maybeSingle();
+      if (fallback.error || !fallback.data) {
+        throw new Error("Unable to refresh prospect.");
+      }
+      refreshed = fallback.data as Record<string, unknown>;
+    } else if (withLinkedIn.error || !withLinkedIn.data) {
+      throw new Error("Unable to refresh prospect.");
+    } else {
+      refreshed = withLinkedIn.data as Record<string, unknown>;
+    }
   }
 
   const prospect_status = (refreshed.prospect_status as string | null) ?? null;
@@ -171,6 +239,7 @@ export async function updateProspectFields(
     phone: (refreshed.phone as string | null) ?? null,
     job_title: (refreshed.job_title as string | null) ?? null,
     business_name: (refreshed.business_name as string | null) ?? null,
+    linkedin_url: (refreshed.linkedin_url as string | null) ?? null,
     prospect_status,
     crm_contact_id: (refreshed.crm_contact_id as string | null) ?? null,
     status: resolveProspectStatus({

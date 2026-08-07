@@ -34,16 +34,24 @@ The token must be able to run Actors via API (paid / API-capable Apify plan). Th
 
 Snapshots live in `coach_linkedin_profiles` (`snapshot` normalized JSON, `raw` full Apify payload).
 
-## Sales Navigator lead search (cookie)
+## Sales Navigator lead search
 
-Admin Lead Finder → **Sales Navigator** tab: generate a search URL from shared filters, then optionally import via Apify.
+Admin Lead Finder → **Sales Navigator** tab: generate a search URL from shared filters, then import via Apify using BCA’s shared Sales Nav session (server-side only — coaches never paste cookies).
 
 | Setting | Value |
 |---------|-------|
 | **POST** | `/api/admin/lead-finder/sales-nav-import` |
 | Actor | `APIFY_SALES_NAV_ACTOR` or `harvestapi/linkedin-sales-navigator-lead-search-cookie` |
 | Auth | Lead Finder allowlist + Bearer token |
-| Inputs | `salesNavUrl`, `cookie` (Cookie-Editor JSON), optional `userAgent`, `takePages` (max 4) |
-| Save | `{ save: true, leads: [...] }` persists to `coach_lead_lists` (`source: sales_nav`) without re-scraping |
+| Inputs | `salesNavUrl`, optional `takePages` (max 100 ≈ 2,500 leads) |
+| Save | `{ save: true, leads: [...] }` persists to `coach_lead_lists` (`source: sales_nav`) without re-scraping. Cap **250** today — backlog: raise cap + tighter campaign/list integration (shared `leadrocks_leads` cache already gets the full import on every scrape). |
 
-Cookies are not stored. Prefer a secondary LinkedIn / Sales Nav login — cookie scrapes carry account risk.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `LINKEDIN_SALES_NAV_COOKIE` | Optional | Server-wide fallback Cookie-Editor JSON (or `li_at=…`). Prefer per-user sessions via the Chrome extension. |
+| `LINKEDIN_SALES_NAV_USER_AGENT` | No | Browser UA that matches the cookie session |
+| `APIFY_SALES_NAV_COOKIE` / `APIFY_SALES_NAV_USER_AGENT` | No | Aliases for the above |
+
+**Chrome extension** (unpacked): `extensions/linkedin` — Sales Nav session save into `sales_nav_sessions` via `PUT /api/sales-nav-session` (popup). Also Save-to-pipeline / draft notes via `/api/coach/extension/*`. Import order: request cookie → saved user session → env fallback.
+
+Prefer a dedicated BCA Sales Nav account for shared scrapes — cookie scrapes carry account risk.

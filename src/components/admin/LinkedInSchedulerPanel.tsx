@@ -1,351 +1,607 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import {
+  CalendarDays,
+  FolderOpen,
+  ListTodo,
+  Loader2,
+  PenLine,
+  RefreshCw,
+  Settings2,
+} from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { LinkedInCalendarTab } from "./linkedin/LinkedInCalendarTab";
+import { LinkedInComposeTab } from "./linkedin/LinkedInComposeTab";
+import { LinkedInLibraryTab } from "./linkedin/LinkedInLibraryTab";
+import { LinkedInQueueTab } from "./linkedin/LinkedInQueueTab";
+import {
+  displayName,
+  LI_BLUE,
+  LINKEDIN_COMPOSE_SEED_KEY,
+  type LinkedInPostItem,
+  type LinkedInProfilePreview,
+} from "./linkedin/types";
 
-type LinkedInScheduledItem = {
-  id: string;
-  content: string;
-  scheduled_for: string;
-  status: "scheduled" | "published" | "failed" | "cancelled";
-  attempts: number;
-  last_error: string | null;
-};
+type TabId = "compose" | "queue" | "calendar" | "library" | "settings";
+
+const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
+  { id: "compose", label: "Compose", icon: PenLine },
+  { id: "queue", label: "Queue", icon: ListTodo },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "library", label: "Library", icon: FolderOpen },
+  { id: "settings", label: "Settings", icon: Settings2 },
+];
 
 export function LinkedInSchedulerPanel() {
   const searchParams = useSearchParams();
-  const [linkedinConnected, setLinkedinConnected] = useState<boolean | null>(null);
-  const [linkedinScopes, setLinkedinScopes] = useState<string[]>([]);
-  const [linkedinTokenExpiry, setLinkedinTokenExpiry] = useState<string | null>(null);
-  const [composerText, setComposerText] = useState("");
-  const [scheduledAtLocal, setScheduledAtLocal] = useState("");
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [actionTone, setActionTone] = useState<"neutral" | "success" | "error">("neutral");
-  const [connectingLinkedIn, setConnectingLinkedIn] = useState(false);
-  const [postingNow, setPostingNow] = useState(false);
-  const [scheduling, setScheduling] = useState(false);
-  const [publishingDue, setPublishingDue] = useState(false);
-  const [scheduledItems, setScheduledItems] = useState<LinkedInScheduledItem[]>([]);
   const linkedinStatus = searchParams.get("linkedin");
-  const [accountName, setAccountName] = useState<string | null>(null);
-  const [accountFirstName, setAccountFirstName] = useState<string | null>(null);
-  const [accountLastName, setAccountLastName] = useState<string | null>(null);
-  const [accountEmail, setAccountEmail] = useState<string | null>(null);
 
-  async function getAdminBearerToken() {
+  const [tab, setTab] = useState<TabId>("compose");
+  const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState<boolean | null>(null);
+  const [profile, setProfile] = useState<LinkedInProfilePreview>({
+    name: null,
+    headline: null,
+    photoUrl: null,
+    email: null,
+    tokenExpiry: null,
+    scopes: [],
+    websiteLabel: "Visit my website",
+    websiteUrl: null,
+    quoteHandle: "Profit Coach",
+  });
+  const [settingsDraft, setSettingsDraft] = useState({
+    display_headline: "",
+    website_label: "Visit my website",
+    website_url: "",
+    quote_handle: "Profit Coach",
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [items, setItems] = useState<LinkedInPostItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [connecting, setConnecting] = useState(false);
+  const [publishingDue, setPublishingDue] = useState(false);
+  const publishingDueRef = useRef(false);
+  const [seed, setSeed] = useState<LinkedInPostItem | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionTone, setActionTone] = useState<"neutral" | "success" | "error">(
+    "neutral"
+  );
+
+  const getToken = useCallback(async () => {
     const {
       data: { session },
     } = await supabaseClient.auth.getSession();
     const token = session?.access_token ?? "";
     if (!token) throw new Error("Please sign in again.");
     return token;
-  }
+  }, []);
 
-  async function loadPanel() {
+  const onMessage = useCallback(
+    (message: string, tone: "success" | "error" | "neutral") => {
+      setActionMessage(message);
+      setActionTone(tone);
+    },
+    []
+  );
+
+  const loadPanel = useCallback(async () => {
     try {
-      const token = await getAdminBearerToken();
+      const token = await getToken();
       const [statusRes, scheduledRes] = await Promise.all([
-        fetch("/api/linkedin/status", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/linkedin/scheduled", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/linkedin/status", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/linkedin/scheduled", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       ]);
 
       const statusBody = (await statusRes.json().catch(() => ({}))) as {
         connected?: boolean;
         connection?: {
-          linkedin_sub?: string | null;
           scope?: string[];
           token_expires_at?: string | null;
         } | null;
         account?: {
           name?: string | null;
-          first_name?: string | null;
-          last_name?: string | null;
           email?: string | null;
+        } | null;
+        profile?: {
+          name?: string | null;
+          headline?: string | null;
+          photo_url?: string | null;
+          website_label?: string | null;
+          website_url?: string | null;
+          quote_handle?: string | null;
         } | null;
       };
       const scheduledBody = (await scheduledRes.json().catch(() => ({}))) as {
-        items?: LinkedInScheduledItem[];
+        items?: LinkedInPostItem[];
+        categories?: string[];
       };
 
-      setLinkedinConnected(!!statusBody.connected);
-      setLinkedinScopes(statusBody.connection?.scope ?? []);
-      setLinkedinTokenExpiry(statusBody.connection?.token_expires_at ?? null);
-      setScheduledItems(scheduledBody.items ?? []);
-      setAccountName(statusBody.account?.name ?? null);
-      setAccountFirstName(statusBody.account?.first_name ?? null);
-      setAccountLastName(statusBody.account?.last_name ?? null);
-      setAccountEmail(statusBody.account?.email ?? null);
+      setConnected(!!statusBody.connected);
+      const nextProfile: LinkedInProfilePreview = {
+        name: statusBody.profile?.name ?? statusBody.account?.name ?? null,
+        headline: statusBody.profile?.headline ?? null,
+        photoUrl: statusBody.profile?.photo_url ?? null,
+        email: statusBody.account?.email ?? null,
+        tokenExpiry: statusBody.connection?.token_expires_at ?? null,
+        scopes: statusBody.connection?.scope ?? [],
+        websiteLabel: statusBody.profile?.website_label || "Visit my website",
+        websiteUrl: statusBody.profile?.website_url ?? null,
+        quoteHandle: statusBody.profile?.quote_handle || "Profit Coach",
+      };
+      setProfile(nextProfile);
+      setSettingsDraft({
+        display_headline: nextProfile.headline ?? "",
+        website_label: nextProfile.websiteLabel,
+        website_url: nextProfile.websiteUrl ?? "",
+        quote_handle: nextProfile.quoteHandle,
+      });
+      setItems(scheduledBody.items ?? []);
+      setCategories(scheduledBody.categories ?? []);
     } catch {
-      setActionMessage("Could not load LinkedIn scheduler data.");
-      setActionTone("error");
+      onMessage("Could not load LinkedIn workspace.", "error");
+    } finally {
+      setLoading(false);
     }
-  }
+  }, [getToken, onMessage]);
 
   useEffect(() => {
     void loadPanel();
-  }, []);
+  }, [loadPanel]);
 
-  async function handleConnectLinkedIn() {
-    if (connectingLinkedIn) return;
-    setConnectingLinkedIn(true);
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (
+      tabParam === "compose" ||
+      tabParam === "queue" ||
+      tabParam === "calendar" ||
+      tabParam === "library" ||
+      tabParam === "settings"
+    ) {
+      setTab(tabParam);
+    }
+
+    if (tabParam !== "compose" && searchParams.get("compose") == null) return;
     try {
-      const token = await getAdminBearerToken();
+      const raw = sessionStorage.getItem(LINKEDIN_COMPOSE_SEED_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(LINKEDIN_COMPOSE_SEED_KEY);
+      const parsed = JSON.parse(raw) as {
+        content?: string;
+        category?: string | null;
+      };
+      const content = parsed.content?.trim();
+      if (!content) return;
+      setSeed({
+        id: `newsletter-promo-${Date.now()}`,
+        content,
+        scheduled_for: null,
+        status: "published",
+        attempts: 0,
+        last_error: null,
+        linkedin_post_urn: null,
+        published_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        post_type: "text",
+        category: parsed.category ?? "newsletter-promo",
+        article_url: null,
+        media: [],
+      });
+      setTab("compose");
+    } catch {
+      // ignore bad seed payloads
+    }
+  }, [searchParams]);
+
+  async function handleConnect() {
+    if (connecting) return;
+    setConnecting(true);
+    try {
+      const token = await getToken();
       const res = await fetch("/api/linkedin/connect", {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const body = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
-      if (!res.ok || !body.url) throw new Error(body.error || "Could not start LinkedIn connect.");
+      const body = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !body.url) {
+        throw new Error(body.error || "Could not start LinkedIn connect.");
+      }
       window.location.assign(body.url);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Could not start LinkedIn connect.";
-      window.alert(message);
-      setConnectingLinkedIn(false);
+      onMessage(
+        err instanceof Error ? err.message : "Could not start LinkedIn connect.",
+        "error"
+      );
+      setConnecting(false);
     }
   }
 
-  async function handlePostNow() {
-    if (postingNow) return;
-    const content = composerText.trim();
-    if (!content) return setActionMessage("Write some post text first.");
-    setPostingNow(true);
-    setActionMessage(null);
+  async function handleSaveSettings() {
+    if (savingSettings) return;
+    setSavingSettings(true);
     try {
-      const token = await getAdminBearerToken();
-      const res = await fetch("/api/linkedin/post-now", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ content }),
+      const token = await getToken();
+      const res = await fetch("/api/linkedin/status", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(settingsDraft),
       });
-      const raw = await res.text().catch(() => "");
-      let body: { ok?: boolean; error?: string } = {};
-      try {
-        body = raw ? (JSON.parse(raw) as { ok?: boolean; error?: string }) : {};
-      } catch {
-        body = {};
-      }
-      if (!res.ok || !body.ok) {
-        throw new Error(body.error || raw || `Could not publish post (HTTP ${res.status}).`);
-      }
-      setActionMessage("Posted to LinkedIn successfully.");
-      setActionTone("success");
-      setComposerText("");
+      const body = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !body.ok) throw new Error(body.error || "Could not save settings.");
+      onMessage("Composer settings saved.", "success");
       await loadPanel();
     } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "Could not publish post.");
-      setActionTone("error");
+      onMessage(
+        err instanceof Error ? err.message : "Could not save settings.",
+        "error"
+      );
     } finally {
-      setPostingNow(false);
+      setSavingSettings(false);
     }
   }
 
-  async function handleSchedule() {
-    if (scheduling) return;
-    const content = composerText.trim();
-    if (!content) return setActionMessage("Write some post text first.");
-    if (!scheduledAtLocal) return setActionMessage("Choose a schedule date/time.");
-    setScheduling(true);
-    setActionMessage(null);
-    try {
-      const token = await getAdminBearerToken();
-      const res = await fetch("/api/linkedin/scheduled", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          content,
-          scheduled_for: new Date(scheduledAtLocal).toISOString(),
-        }),
-      });
-      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (!res.ok || !body.ok) throw new Error(body.error || "Could not schedule post.");
-      setActionMessage("Post scheduled.");
-      setActionTone("success");
-      setScheduledAtLocal("");
-      setComposerText("");
-      await loadPanel();
-    } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "Could not schedule post.");
-      setActionTone("error");
-    } finally {
-      setScheduling(false);
-    }
-  }
-
-  async function handlePublishDueNow() {
-    if (publishingDue) return;
+  async function handlePublishDue(opts?: { silent?: boolean }) {
+    if (publishingDueRef.current || !connected) return;
+    publishingDueRef.current = true;
     setPublishingDue(true);
-    setActionMessage(null);
     try {
-      const token = await getAdminBearerToken();
+      const token = await getToken();
       const res = await fetch("/api/linkedin/publish-due", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const body = (await res.json().catch(() => ({}))) as { processed?: number; error?: string };
+      const body = (await res.json().catch(() => ({}))) as {
+        processed?: number;
+        published?: number;
+        error?: string;
+      };
       if (!res.ok) throw new Error(body.error || "Could not publish due posts.");
-      setActionMessage(`Processed ${body.processed ?? 0} due post(s).`);
-      setActionTone("success");
-      await loadPanel();
+      const published = body.published ?? body.processed ?? 0;
+      if (!opts?.silent || published > 0) {
+        onMessage(
+          published > 0
+            ? `Published ${published} scheduled post(s) to LinkedIn.`
+            : `No due posts to publish (${body.processed ?? 0} checked).`,
+          published > 0 ? "success" : "neutral"
+        );
+      }
+      if ((body.processed ?? 0) > 0) await loadPanel();
     } catch (err) {
-      setActionMessage(err instanceof Error ? err.message : "Could not publish due posts.");
-      setActionTone("error");
+      if (!opts?.silent) {
+        onMessage(
+          err instanceof Error ? err.message : "Could not publish due posts.",
+          "error"
+        );
+      }
     } finally {
+      publishingDueRef.current = false;
       setPublishingDue(false);
     }
   }
 
+  // Auto-run due posts while this page is open (local/dev without Vercel cron).
+  useEffect(() => {
+    if (!connected) return;
+    void handlePublishDue({ silent: true });
+    const id = window.setInterval(() => {
+      void handlePublishDue({ silent: true });
+    }, 45_000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading LinkedIn workspace…
+      </div>
+    );
+  }
+
+  if (!connected) {
+    return (
+      <div className="mx-auto max-w-lg rounded-3xl border border-slate-200/80 bg-white px-8 py-12 text-center shadow-sm">
+        <div
+          className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-md"
+          style={{ backgroundColor: LI_BLUE }}
+        >
+          in
+        </div>
+        <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">
+          Connect LinkedIn
+        </h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
+          Compose posts that look like LinkedIn, schedule a queue, and keep reusable
+          drafts in your library.
+        </p>
+        <button
+          type="button"
+          disabled={connecting}
+          onClick={() => void handleConnect()}
+          className="mt-7 inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
+          style={{ backgroundColor: LI_BLUE }}
+        >
+          {connecting ? "Redirecting…" : "Connect LinkedIn"}
+        </button>
+        {linkedinStatus && linkedinStatus !== "connected" ? (
+          <p className="mt-4 text-xs text-amber-700">
+            Status: {linkedinStatus.replaceAll("_", " ")}
+          </p>
+        ) : null}
+        {actionMessage ? (
+          <p className={`mt-3 text-xs ${actionTone === "error" ? "text-rose-700" : "text-slate-600"}`}>
+            {actionMessage}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  const draftCount = items.filter((i) => i.status === "draft").length;
+  const scheduledCount = items.filter((i) => i.status === "scheduled").length;
+
   return (
-    <section className="rounded-xl border border-sky-200 bg-sky-50/70 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-slate-900">LinkedIn publishing</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Connect your LinkedIn profile, post instantly, or schedule posts.
-          </p>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Status:{" "}
-            {linkedinConnected == null
-              ? "Loading…"
-              : linkedinConnected
-                ? "Connected"
-                : "Not connected"}
-          </p>
-          {linkedinScopes.length ? (
-            <p className="text-[11px] text-slate-500">Scopes: {linkedinScopes.join(", ")}</p>
-          ) : null}
-          {linkedinConnected ? (
-            <div className="mt-1 text-[11px] text-slate-500">
-              <p>
-                Connected account name:{" "}
-                {accountFirstName || accountLastName
-                  ? `${accountFirstName ?? ""} ${accountLastName ?? ""}`.trim()
-                  : accountName ?? "Unavailable"}
-              </p>
-              {!accountFirstName && !accountLastName && !accountName ? (
-                <p>
-                  LinkedIn did not return profile names for this token. Posting can still work.
-                </p>
-              ) : null}
-              {accountEmail ? <p>Connected account email: {accountEmail}</p> : null}
-            </div>
-          ) : null}
-          {linkedinTokenExpiry ? (
-            <p className="text-[11px] text-slate-500">
-              Token expires: {new Date(linkedinTokenExpiry).toLocaleString()}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => void loadPanel()}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Refresh
-          </button>
-          <button
-            type="button"
-            onClick={handleConnectLinkedIn}
-            disabled={connectingLinkedIn}
-            className="rounded-md bg-sky-600 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {connectingLinkedIn ? "Redirecting…" : "Connect LinkedIn"}
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <label className="text-xs font-semibold text-slate-700">Post text</label>
-        <textarea
-          value={composerText}
-          onChange={(e) => setComposerText(e.target.value)}
-          placeholder="Write a short LinkedIn post..."
-          className="mt-1 h-24 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        />
-        <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
-          <input
-            type="datetime-local"
-            value={scheduledAtLocal}
-            onChange={(e) => setScheduledAtLocal(e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-2 py-2 text-xs text-slate-700"
-          />
-          <button
-            type="button"
-            onClick={handleSchedule}
-            disabled={scheduling || !linkedinConnected}
-            className="rounded-md border border-sky-300 bg-white px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {scheduling ? "Scheduling…" : "Schedule"}
-          </button>
-          <button
-            type="button"
-            onClick={handlePostNow}
-            disabled={postingNow || !linkedinConnected}
-            className="rounded-md bg-sky-700 px-3 py-2 text-xs font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {postingNow ? "Posting…" : "Post now"}
-          </button>
-          <button
-            type="button"
-            onClick={handlePublishDueNow}
-            disabled={publishingDue || !linkedinConnected}
-            className="rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {publishingDue ? "Running…" : "Run due now"}
-          </button>
-        </div>
-      </div>
-
-      {actionMessage ? (
-        <p
-          className={`mt-2 text-xs ${
-            actionTone === "success"
-              ? "text-emerald-700"
+    <div className="space-y-5">
+      {(actionMessage || linkedinStatus === "connected") && (
+        <div
+          className={`rounded-2xl px-4 py-2.5 text-sm ${
+            actionTone === "success" || linkedinStatus === "connected"
+              ? "bg-emerald-50 text-emerald-800"
               : actionTone === "error"
-                ? "text-rose-700"
-                : "text-slate-700"
+                ? "bg-rose-50 text-rose-800"
+                : "bg-slate-100 text-slate-700"
           }`}
         >
-          {actionMessage}
-        </p>
-      ) : null}
-      {linkedinStatus ? (
-        <p
-          className={`mt-2 text-xs ${
-            linkedinStatus === "connected" ? "text-emerald-700" : "text-amber-700"
-          }`}
-        >
-          {linkedinStatus === "connected"
-            ? "LinkedIn connected successfully."
-            : `LinkedIn status: ${linkedinStatus.replaceAll("_", " ")}`}
-        </p>
-      ) : null}
-
-      {scheduledItems.length ? (
-        <div className="mt-3 rounded-md border border-slate-200 bg-white">
-          <p className="border-b border-slate-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            Queue
-          </p>
-          <ul className="max-h-56 overflow-auto">
-            {scheduledItems.map((item) => (
-              <li
-                key={item.id}
-                className="border-b border-slate-100 px-3 py-2 text-xs text-slate-700 last:border-b-0"
-              >
-                <p className="line-clamp-2">{item.content}</p>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  {item.status} • {new Date(item.scheduled_for).toLocaleString()} • attempts:{" "}
-                  {item.attempts}
-                </p>
-                {item.last_error ? (
-                  <p className="mt-1 text-[11px] text-amber-700">{item.last_error}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          {actionMessage || "LinkedIn connected successfully."}
         </div>
-      ) : null}
-    </section>
+      )}
+
+      {/* Floating tab bar — no enclosing card chrome */}
+      <div className="flex flex-wrap items-center gap-2">
+        <nav className="inline-flex flex-wrap gap-1 rounded-full bg-slate-100/90 p-1 shadow-inner">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            const badge =
+              t.id === "library"
+                ? draftCount
+                : t.id === "queue"
+                  ? scheduledCount
+                  : 0;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                  active
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {t.label}
+                {badge > 0 ? (
+                  <span className="rounded-full bg-slate-900/90 px-1.5 text-[10px] font-bold text-white">
+                    {badge}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </nav>
+        <button
+          type="button"
+          onClick={() => void loadPanel()}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
+      </div>
+
+      <div>
+        {tab === "compose" ? (
+          <LinkedInComposeTab
+            connected={!!connected}
+            profile={profile}
+            categories={categories}
+            getToken={getToken}
+            onMessage={onMessage}
+            onRefresh={loadPanel}
+            seed={seed}
+            onSeedConsumed={() => setSeed(null)}
+          />
+        ) : null}
+        {tab === "queue" ? (
+          <LinkedInQueueTab
+            items={items}
+            categories={categories}
+            getToken={getToken}
+            onMessage={onMessage}
+            onRefresh={loadPanel}
+            onEdit={(item) => {
+              setSeed(item);
+              setTab("compose");
+            }}
+          />
+        ) : null}
+        {tab === "calendar" ? (
+          <LinkedInCalendarTab
+            items={items}
+            onSelectPost={() => setTab("queue")}
+          />
+        ) : null}
+        {tab === "library" ? (
+          <LinkedInLibraryTab
+            items={items}
+            getToken={getToken}
+            onMessage={onMessage}
+            onRefresh={loadPanel}
+            onUseInComposer={(item) => {
+              setSeed(item);
+              setTab("compose");
+            }}
+          />
+        ) : null}
+        {tab === "settings" ? (
+          <div className="mx-auto max-w-lg space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 overflow-hidden rounded-full bg-slate-200">
+                {profile.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profile.photoUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="flex h-full w-full items-center justify-center text-sm font-bold text-white"
+                    style={{ backgroundColor: LI_BLUE }}
+                  >
+                    {displayName(profile).slice(0, 1)}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {displayName(profile)}
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  {profile.email || "Connected"}
+                </p>
+              </div>
+              <span className="ml-auto rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                Connected
+              </span>
+            </div>
+
+            <div className="space-y-3 border-t border-slate-100 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Composer preview
+              </p>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                Headline defaults from your LinkedIn profile scrape. Override here
+                only if you want different preview copy.
+              </p>
+              <label className="block text-xs font-semibold text-slate-600">
+                Headline
+                <input
+                  value={settingsDraft.display_headline}
+                  onChange={(e) =>
+                    setSettingsDraft((s) => ({
+                      ...s,
+                      display_headline: e.target.value,
+                    }))
+                  }
+                  placeholder="Helping directors…"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-slate-600">
+                Website button label
+                <input
+                  value={settingsDraft.website_label}
+                  onChange={(e) =>
+                    setSettingsDraft((s) => ({
+                      ...s,
+                      website_label: e.target.value,
+                    }))
+                  }
+                  placeholder="Visit my website"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-slate-600">
+                Website URL
+                <input
+                  value={settingsDraft.website_url}
+                  onChange={(e) =>
+                    setSettingsDraft((s) => ({
+                      ...s,
+                      website_url: e.target.value,
+                    }))
+                  }
+                  placeholder="https://"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block text-xs font-semibold text-slate-600">
+                Quote card subtitle
+                <input
+                  value={settingsDraft.quote_handle}
+                  onChange={(e) =>
+                    setSettingsDraft((s) => ({
+                      ...s,
+                      quote_handle: e.target.value,
+                    }))
+                  }
+                  placeholder="Profit Coach"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                />
+              </label>
+              <p className="text-[11px] text-slate-500">
+                Shown under your name on generated quote images (instead of @handle).
+              </p>
+              <button
+                type="button"
+                disabled={savingSettings}
+                onClick={() => void handleSaveSettings()}
+                className="rounded-full px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                style={{ backgroundColor: LI_BLUE }}
+              >
+                {savingSettings ? "Saving…" : "Save composer settings"}
+              </button>
+            </div>
+
+            {profile.tokenExpiry ? (
+              <p className="text-xs text-slate-500">
+                Token expires {new Date(profile.tokenExpiry).toLocaleString()}
+              </p>
+            ) : null}
+            {profile.scopes.length ? (
+              <p className="text-[11px] text-slate-400">
+                Scopes: {profile.scopes.join(", ")}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => void handleConnect()}
+                disabled={connecting}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {connecting ? "Redirecting…" : "Reconnect"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handlePublishDue()}
+                disabled={publishingDue}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              >
+                {publishingDue ? "Running…" : "Run due posts"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }

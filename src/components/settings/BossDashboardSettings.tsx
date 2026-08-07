@@ -185,16 +185,14 @@ export function BossDashboardSettings({
     const tab = new URLSearchParams(window.location.search).get("tab");
     if (tab === "funnel") {
       router.replace(
-        variant === "admin" ? "/admin/funnel-settings" : "/coach/funnel-settings"
+        variant === "admin" ? "/admin/funnel-settings" : "/coach/calls"
       );
       return;
     }
     if (tab === "workspace") {
-      router.replace(
-        variant === "admin"
-          ? "/admin/message-generator?tab=brain"
-          : "/coach/message-generator?tab=brain"
-      );
+      if (variant === "admin") {
+        router.replace("/admin/message-generator?tab=brain");
+      }
       return;
     }
     if (tab === "profile" || tab === "ladder") {
