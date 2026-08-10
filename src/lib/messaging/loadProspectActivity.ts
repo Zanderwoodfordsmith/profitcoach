@@ -99,14 +99,26 @@ export async function loadProspectActivity(
     console.error("prospect activity landing:", landingRes.error);
   }
 
-  let bookingRows = bookingsRes.data ?? [];
+  type BookingActivityRow = {
+    id: string;
+    kind: string | null;
+    starts_at: string | null;
+    created_at: string;
+    calendar_id: string | null;
+    coach_calendars?:
+      | { name?: string | null; slug?: string | null }
+      | { name?: string | null; slug?: string | null }[]
+      | null;
+  };
+  let bookingRows: BookingActivityRow[] =
+    (bookingsRes.data as BookingActivityRow[] | null) ?? [];
   if (bookingsRes.error) {
     const { data: plainBookings } = await supabaseAdmin
       .from("bookings")
       .select("id, kind, starts_at, created_at, calendar_id")
       .eq("contact_id", id)
       .order("created_at", { ascending: true });
-    bookingRows = plainBookings ?? [];
+    bookingRows = (plainBookings as BookingActivityRow[] | null) ?? [];
   }
 
   const events: ProspectActivityEvent[] = [];
@@ -171,22 +183,19 @@ export async function loadProspectActivity(
   }
 
   for (const row of bookingRows) {
-    const cal = row.coach_calendars as
-      | { name?: string | null; slug?: string | null }
-      | { name?: string | null; slug?: string | null }[]
-      | null;
+    const cal = row.coach_calendars;
     const calRow = Array.isArray(cal) ? cal[0] : cal;
     const label = calendarLabel(
-      (row.kind as string | null) || calRow?.slug || null,
+      row.kind || calRow?.slug || null,
       calRow?.name
     );
     events.push({
       id: `booking-created-${row.id}`,
       type: "call_booked",
-      at: row.created_at as string,
+      at: row.created_at,
       title: `Booked ${label}`,
       detail: row.starts_at
-        ? `Scheduled ${formatShortDateTime(row.starts_at as string)}`
+        ? `Scheduled ${formatShortDateTime(row.starts_at)}`
         : null,
     });
   }
