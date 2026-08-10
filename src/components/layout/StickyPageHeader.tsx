@@ -76,11 +76,11 @@ export function StickyPageHeader({
           <div
             className={
               eyebrow
-                ? `mt-1 flex min-w-0 flex-wrap gap-x-6 gap-y-2 ${tabs ? "items-end" : "items-center"}`
-                : `flex min-w-0 flex-wrap gap-x-6 gap-y-2 ${tabs ? "items-end" : "items-center"}`
+                ? `mt-1 flex min-w-0 flex-nowrap gap-x-6 ${tabs ? "items-end" : "items-center"}`
+                : `flex min-w-0 flex-nowrap gap-x-6 ${tabs ? "items-end" : "items-center"}`
             }
           >
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 shrink-0 items-center gap-2">
               {title != null && title !== "" ? (
                 typeof title === "string" ? (
                   <h1 className="py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
@@ -97,7 +97,7 @@ export function StickyPageHeader({
               ) : null}
             </div>
             {tabs ? (
-              <div className="min-w-0 shrink-0 overflow-x-auto pb-px">
+              <div className="min-w-0 flex-1 overflow-x-auto pb-px">
                 {tabs}
               </div>
             ) : null}

@@ -30,4 +30,5 @@ globalThis.PC_LINKEDIN_EXT = {
   FIT_PATH: "/api/coach/extension/icp-fit",
   ENGAGE_PATH: "/api/coach/extension/draft-engage",
   MEMBERSHIP_PATH: "/coach/membership",
+  INBOX_MIRROR_PATH: "/api/admin/linkedin-inbox",
 };

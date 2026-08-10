@@ -65,7 +65,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const returnToParam = url.searchParams.get("returnTo")?.trim() || "";
   const defaultReturn =
-    auth.role === "admin" ? "/admin/funnel-settings" : "/coach/calls";
+    auth.role === "admin" ? "/admin/funnel-settings" : "/coach/funnel-settings";
   const returnTo =
     returnToParam.startsWith("/") && !returnToParam.startsWith("//")
       ? returnToParam

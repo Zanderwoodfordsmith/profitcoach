@@ -5,6 +5,7 @@ import type { AcademyResourceRow } from "@/lib/academy/resources";
 
 import { AcademyMarkdown } from "./AcademyMarkdown";
 import { LessonActionsPanel } from "./LessonActionsPanel";
+import { LessonBaseSearchCta } from "./LessonBaseSearchCta";
 import { LessonGuideCta } from "./LessonGuideCta";
 import { LessonResourcesPanel } from "./LessonResourcesPanel";
 
@@ -42,6 +43,7 @@ export function LessonOverviewPanel({
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_15.5rem] lg:items-start lg:gap-10 xl:grid-cols-[minmax(0,1fr)_17rem]">
       <div className="min-w-0">
+        <LessonBaseSearchCta lessonId={lessonId} />
         {overview}
         {hasGuide ? <LessonGuideCta /> : null}
       </div>

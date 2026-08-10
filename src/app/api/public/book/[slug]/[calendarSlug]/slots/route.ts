@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { computeBookingSlots } from "@/lib/booking/computeBookingSlots";
+import {
+  bookingWindowLookaheadDays,
+  computeBookingSlots,
+} from "@/lib/booking/computeBookingSlots";
 import { calendarToBookingSettings } from "@/lib/booking/coachCalendars";
 import {
   formatInTimeZone,
@@ -44,7 +47,12 @@ export async function GET(
 
   const now = new Date();
   const windowEnd = new Date(
-    now.getTime() + (settings.booking_window_days + 2) * 24 * 60 * 60 * 1000
+    now.getTime() +
+      bookingWindowLookaheadDays(settings.booking_window_days) *
+        24 *
+        60 *
+        60 *
+        1000
   );
 
   const [existing, googleBusy] = await Promise.all([

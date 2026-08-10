@@ -435,7 +435,9 @@ export function CallsCalendarSettings({ appOrigin, callsBasePath }: Props) {
               />
             </label>
             <label className="block text-sm">
-              <span className="font-medium text-slate-700">Window (days)</span>
+              <span className="font-medium text-slate-700">
+                Open days (rolling)
+              </span>
               <input
                 type="number"
                 min={1}
@@ -455,6 +457,10 @@ export function CallsCalendarSettings({ appOrigin, callsBasePath }: Props) {
                   )
                 }
               />
+              <span className="mt-1 block text-xs text-slate-500">
+                Next days with at least one open slot (skips weekends and fully
+                booked days).
+              </span>
             </label>
             <label className="inline-flex items-center gap-2 text-sm sm:col-span-2">
               <input

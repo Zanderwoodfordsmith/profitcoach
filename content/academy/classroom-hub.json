@@ -89,6 +89,15 @@
               "draft": false
             },
             {
+              "id": "kickstart-welcome-academy-tour",
+              "title": "🎧 Academy Tour",
+              "duration": "",
+              "hasVideo": false,
+              "hasAudio": true,
+              "bodyMarkdown": "## Academy Tour\n\nListen to this draft audio tour of the Academy. Use playback speed in the player to review faster.",
+              "draft": true
+            },
+            {
               "id": "kickstart-welcome-tools-bonuses",
               "title": "🤑 Tools & Bonuses (Optional)",
               "duration": "",

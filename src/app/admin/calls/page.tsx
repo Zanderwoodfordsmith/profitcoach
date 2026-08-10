@@ -18,6 +18,7 @@ export default function AdminCallsPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appOrigin, setAppOrigin] = useState("");
   const [coachFilter, setCoachFilter] = useState<string | "all">("all");
   const [coaches, setCoaches] = useState<
     Array<{
@@ -26,6 +27,10 @@ export default function AdminCallsPage() {
       coach_business_name: string | null;
     }>
   >([]);
+
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +170,7 @@ export default function AdminCallsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Get Clients"
-        description="Booked calls across coaches — native calendars and GoHighLevel."
+        description="Call list for coaches; calendar view and booking settings are admin preview."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
@@ -174,6 +179,8 @@ export default function AdminCallsPage() {
         loading={loading}
         error={error}
         showCoachColumn={true}
+        appOrigin={appOrigin}
+        callsBasePath="/admin/calls"
         onCallsChange={setCalls}
         coachFilterOptions={coachOptions}
         coachFilter={coachFilter}

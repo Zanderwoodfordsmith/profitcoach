@@ -26,6 +26,14 @@ const fitMarker = document.getElementById("fitMarker");
 const fitWhy = document.getElementById("fitWhy");
 const fitNot = document.getElementById("fitNot");
 const fitStatus = document.getElementById("fitStatus");
+const connectStartBtn = document.getElementById("connectStartBtn");
+const connectStopBtn = document.getElementById("connectStopBtn");
+const connectStatus = document.getElementById("connectStatus");
+const connectSentToday = document.getElementById("connectSentToday");
+const connectCapLabel = document.getElementById("connectCapLabel");
+const connectDailyCap = document.getElementById("connectDailyCap");
+const inboxSyncBtn = document.getElementById("inboxSyncBtn");
+const inboxSyncStatus = document.getElementById("inboxSyncStatus");
 
 const FIT_LABELS = {
   very_weak: "Very weak",
@@ -66,6 +74,149 @@ function setSaveStatus(text, kind) {
 function setDraftStatus(text, kind) {
   draftStatus.textContent = text || "";
   draftStatus.className = "msg" + (kind ? ` ${kind}` : "");
+}
+
+function setConnectStatus(text, kind) {
+  connectStatus.textContent = text || "";
+  connectStatus.className = "msg" + (kind ? ` ${kind}` : "");
+}
+
+function renderConnectStats(sentToday, dailyCap, running) {
+  const sent = Number(sentToday) || 0;
+  const cap = Number(dailyCap) || Number(connectDailyCap.value) || 25;
+  connectSentToday.textContent = `Today: ${sent}`;
+  connectCapLabel.textContent = `Cap: ${cap}`;
+  if (document.activeElement !== connectDailyCap) {
+    connectDailyCap.value = String(cap);
+  }
+  connectStartBtn.disabled = Boolean(running);
+  connectStopBtn.disabled = !running;
+}
+
+function applyConnectPayload(payload) {
+  if (!payload) return;
+  const running = Boolean(payload.running);
+  const cap = payload.dailyCap ?? (Number(connectDailyCap.value) || 25);
+  renderConnectStats(payload.sentToday, cap, running);
+  const detail = payload.detail || payload.status || "";
+  let kind = "";
+  if (payload.status === "limit" || payload.status === "error") kind = "err";
+  else if (payload.status === "sent" || payload.status === "done") kind = "ok";
+  else if (payload.status === "waiting" || payload.status === "skipped")
+    kind = "warn";
+  setConnectStatus(detail, kind);
+}
+
+async function refreshConnectStatus() {
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "GET_CONNECT_STATUS" });
+    if (!res?.ok) return;
+    const settings = res.settings || {};
+    const cap = settings.dailyCap || Number(connectDailyCap.value) || 25;
+    const running = Boolean(res.status?.running);
+    renderConnectStats(res.sentToday, cap, running);
+    if (res.status?.detail) applyConnectPayload(res.status);
+  } catch {
+    // ignore
+  }
+}
+
+function setInboxSyncStatus(text, kind) {
+  inboxSyncStatus.textContent = text || "";
+  inboxSyncStatus.className = "msg" + (kind ? ` ${kind}` : "");
+}
+
+async function onInboxSync() {
+  if (!entitlementOk || !accessToken || !apiOrigin) {
+    setInboxSyncStatus("Sign in to Profit Coach first.", "err");
+    return;
+  }
+  inboxSyncBtn.disabled = true;
+  setInboxSyncStatus("Scraping Messaging from this browser…");
+  try {
+    const scraped = await chrome.runtime.sendMessage({
+      type: "SCRAPE_LINKEDIN_INBOX",
+      limit: 3,
+    });
+    if (!scraped?.ok) {
+      throw new Error(scraped?.error || "Scrape failed.");
+    }
+    setInboxSyncStatus("Saving to Profit Coach…");
+    const res = await fetch(`${apiOrigin}${cfg.INBOX_MIRROR_PATH}`, {
+      method: "POST",
+      headers: apiHeaders(true),
+      body: JSON.stringify({
+        conversations: scraped.conversations || [],
+        scrapedAt: scraped.scrapedAt,
+        source: "extension",
+        warning: scraped.warning || null,
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(body.error || `Save failed (${res.status}).`);
+    }
+    const n = Array.isArray(scraped.conversations)
+      ? scraped.conversations.length
+      : 0;
+    setInboxSyncStatus(
+      `Synced ${n} thread${n === 1 ? "" : "s"}. Open Admin → Tools → LI Inbox.`,
+      "ok"
+    );
+  } catch (err) {
+    setInboxSyncStatus(
+      err instanceof Error ? err.message : "Inbox sync failed.",
+      "err"
+    );
+  } finally {
+    inboxSyncBtn.disabled = false;
+  }
+}
+
+async function onConnectStart() {
+  const dailyCap = Math.min(
+    80,
+    Math.max(1, Number(connectDailyCap.value) || 25)
+  );
+  connectDailyCap.value = String(dailyCap);
+  setConnectStatus("Starting…");
+  connectStartBtn.disabled = true;
+  try {
+    const res = await chrome.runtime.sendMessage({
+      type: "SN_CONNECT_START_REQUEST",
+      options: {
+        dailyCap,
+        delayMinMs: 8_000,
+        delayMaxMs: 18_000,
+        maxPerRun: Math.min(dailyCap, 40),
+      },
+    });
+    if (!res?.ok) {
+      setConnectStatus(res?.error || "Could not start.", "err");
+      connectStartBtn.disabled = false;
+      connectStopBtn.disabled = true;
+      return;
+    }
+    setConnectStatus("Running on Sales Nav tab…", "ok");
+    connectStopBtn.disabled = false;
+  } catch (err) {
+    setConnectStatus(
+      err instanceof Error ? err.message : "Could not start.",
+      "err"
+    );
+    connectStartBtn.disabled = false;
+  }
+}
+
+async function onConnectStop() {
+  try {
+    await chrome.runtime.sendMessage({ type: "SN_CONNECT_STOP_REQUEST" });
+    setConnectStatus("Stopped.", "warn");
+    connectStartBtn.disabled = false;
+    connectStopBtn.disabled = true;
+  } catch {
+    setConnectStatus("Stopped.", "warn");
+  }
 }
 
 function apiHeaders(json = false) {
@@ -506,21 +657,41 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message?.type === "PROFILE_UPDATED" && message.profile) {
     renderProfile(message.profile);
   }
+  if (message?.type === "CONNECT_STATUS_UPDATED" && message.payload) {
+    applyConnectPayload(message.payload);
+  }
 });
 
 fillOrigins();
 saveBtn.addEventListener("click", () => void onSave());
 draftConnector.addEventListener("click", () => void onDraft("connector"));
 draftDm.addEventListener("click", () => void onDraft("dm"));
+inboxSyncBtn.addEventListener("click", () => void onInboxSync());
+connectStartBtn.addEventListener("click", () => void onConnectStart());
+connectStopBtn.addEventListener("click", () => void onConnectStop());
+connectDailyCap.addEventListener("change", () => {
+  const dailyCap = Math.min(
+    80,
+    Math.max(1, Number(connectDailyCap.value) || 25)
+  );
+  connectDailyCap.value = String(dailyCap);
+  connectCapLabel.textContent = `Cap: ${dailyCap}`;
+  void chrome.storage.local.get(["connectSettings"], (stored) => {
+    void chrome.storage.local.set({
+      connectSettings: { ...(stored.connectSettings || {}), dailyCap },
+    });
+  });
+});
 reloadBtn.addEventListener("click", () => {
   void (async () => {
     await refreshProfile();
     await refreshAuth();
+    await refreshConnectStatus();
   })();
 });
 
 void (async () => {
   await new Promise((r) => setTimeout(r, 50));
   if (!originEl.value) originEl.value = cfg.DEFAULT_ORIGIN;
-  await Promise.all([refreshProfile(), refreshAuth()]);
+  await Promise.all([refreshProfile(), refreshAuth(), refreshConnectStatus()]);
 })();

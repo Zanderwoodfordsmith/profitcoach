@@ -9,6 +9,7 @@ import {
   StickyPageHeader,
 } from "@/components/layout";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
+import { FunnelSettingsClient } from "@/components/settings/FunnelSettingsClient";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
 import {
   ProfileFieldRow,
@@ -50,7 +51,7 @@ type ProfileData = {
   directory_level: string | null;
 };
 
-export type BossDashboardSettingsTabId = "profile" | "ladder";
+export type BossDashboardSettingsTabId = "profile" | "ladder" | "funnel";
 
 export type BossDashboardSettingsProps = {
   variant: "coach" | "admin";
@@ -183,19 +184,13 @@ export function BossDashboardSettings({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read ?tab= from URL on coach settings
     const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "funnel") {
-      router.replace(
-        variant === "admin" ? "/admin/funnel-settings" : "/coach/calls"
-      );
-      return;
-    }
     if (tab === "workspace") {
       if (variant === "admin") {
         router.replace("/admin/message-generator?tab=brain");
       }
       return;
     }
-    if (tab === "profile" || tab === "ladder") {
+    if (tab === "profile" || tab === "ladder" || tab === "funnel") {
       setInternalTab(tab);
     }
   }, [router, variant]);
@@ -490,12 +485,13 @@ export function BossDashboardSettings({
   const tabDefs: { id: BossDashboardSettingsTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
     { id: "ladder", label: "My Ladder" },
+    { id: "funnel", label: "Get Clients" },
   ];
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Your profile, directory listing, and ladder progress."
+      description="Your profile, directory listing, ladder, and Get Clients setup."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -740,6 +736,8 @@ export function BossDashboardSettings({
 
       {activeTab === "ladder" ? <MyLadderTab /> : null}
 
+      {activeTab === "funnel" ? <FunnelSettingsClient embed /> : null}
+
       <MapLocationPickerModal
         open={mapModalOpen}
         initialLatitude={profile.latitude ?? null}
@@ -756,14 +754,14 @@ export function BossDashboardSettings({
     );
   }
 
+  const wideTab = activeTab === "ladder" || activeTab === "funnel";
+
   return (
     <DashboardPageSection
       gapClass="gap-6"
       header={settingsHeader}
-      contentMaxWidthClass={activeTab === "ladder" ? "max-w-6xl" : "max-w-4xl"}
-      contentClassName={
-        activeTab === "ladder" ? "mx-0 mr-auto w-full" : ""
-      }
+      contentMaxWidthClass={wideTab ? "max-w-6xl" : "max-w-4xl"}
+      contentClassName={wideTab ? "mx-0 mr-auto w-full" : ""}
     >
       {settingsBody}
     </DashboardPageSection>

@@ -7,12 +7,13 @@ import {
   coachClientsTabActive,
   coachClientsTabItems,
   getClientsTabItems,
+  isGetClientsContentPath,
+  isGetClientsCreatePath,
   navLinkActive,
   type CoachClientsTabItem,
   type ToolsHubTabItem,
 } from "@/components/layout/dashboardNavItems";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
-import { isLeadFinderAllowedEmail } from "@/lib/leadFinderAccess";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type CoachToolsHub = "get-clients" | "coach-clients";
@@ -69,7 +70,6 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const onAdminPath = pathname.startsWith("/admin");
-  const [leadFinderAllowed, setLeadFinderAllowed] = useState(false);
   const [isAdminUser, setIsAdminUser] = useState(onAdminPath);
 
   useEffect(() => {
@@ -100,29 +100,14 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
     };
   }, [onAdminPath]);
 
-  useEffect(() => {
-    if (hub !== "get-clients" || !onAdminPath) return;
-    let cancelled = false;
-    void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      if (!cancelled) {
-        setLeadFinderAllowed(isLeadFinderAllowedEmail(user?.email));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hub, onAdminPath]);
-
   if (hub === "get-clients") {
     const prefix = onAdminPath ? "/admin" : "/coach";
     const items = getClientsTabItems(prefix).filter((item: ToolsHubTabItem) => {
-      if (item.href === "/admin/lead-finder") return leadFinderAllowed;
       if (item.adminPreview && !isAdminUser) return false;
       return true;
     });
+    const createHref = `${prefix}/message-generator`;
+    const contentHref = "/admin/linkedin";
     return (
       <PageHeaderUnderlineTabs
         ariaLabel="Get Clients tools"
@@ -148,11 +133,17 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
           ) : (
             previewTabLabel(item.label, Boolean(item.adminPreview))
           );
+          const active =
+            item.href === createHref
+              ? isGetClientsCreatePath(pathname)
+              : item.href === contentHref
+                ? isGetClientsContentPath(pathname)
+                : navLinkActive(pathname, item.href);
           return {
             kind: "link" as const,
             href: item.href,
             label,
-            active: navLinkActive(pathname, item.href),
+            active,
             scroll: false,
             variant: item.adminPreview
               ? ("subtle" as const)

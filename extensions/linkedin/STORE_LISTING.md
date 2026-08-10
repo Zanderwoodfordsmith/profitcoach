@@ -15,25 +15,26 @@ Use these fields in the [Chrome Developer Dashboard](https://chrome.google.com/w
 ### Detailed description
 
 ```
-Profit Coach for LinkedIn helps Business Coach Academy coaches work faster on LinkedIn — without auto-sending anything.
+Profit Coach for LinkedIn helps Business Coach Academy coaches work faster on LinkedIn.
 
 What you can do
 • Save a LinkedIn profile to your Profit Coach pipeline with one click
 • See ICP fit score + talking points on any profile
-• Draft personalized connection notes, DMs, feed comments, and message replies (you review and click Send)
+• Draft personalized connection notes, DMs, feed comments, and message replies
+• Optionally send connection requests from a Sales Navigator people search or lead list (More → Connect → Send), with a daily cap, from your already-logged-in Chrome tab
 • Optionally sync your Sales Navigator browser session for lead imports in Profit Coach
 
 How to use
 1. Install this extension
 2. Sign in to Profit Coach in Chrome (keep a tab open)
-3. Open a LinkedIn profile
+3. Open a LinkedIn profile or Sales Nav search
 4. Click the floating “Profit Coach” button (or Open side panel from the extension)
-5. Save the prospect or draft a note — then send it yourself on LinkedIn
+5. Save, draft, or start Auto-connect on a Sales Nav list page
 
 Membership
 Save & Draft require a Profit Coach membership that includes marketing tools (programme / Premium / VIP). If you cancel or your tier no longer includes marketing, the extension APIs stop working.
 
-This extension is only for Profit Coach / Business Coach Academy users. It does not auto-connect, auto-comment, or send messages on your behalf.
+This extension is only for Profit Coach / Business Coach Academy users. Feed comments and DMs are never auto-posted — you still click Send. Auto-connect is opt-in and only runs while you keep the Sales Nav tab open.
 ```
 
 ## Privacy policy URL (required)

@@ -30,6 +30,9 @@ export function ToolkitHubTabs() {
   const onSalesNavImports =
     pathname === "/admin/sales-nav-imports" ||
     Boolean(pathname?.startsWith("/admin/sales-nav-imports/"));
+  const onLinkedInInbox =
+    pathname === "/admin/linkedin-inbox" ||
+    Boolean(pathname?.startsWith("/admin/linkedin-inbox/"));
 
   const items = [
     {
@@ -73,6 +76,12 @@ export function ToolkitHubTabs() {
       href: "/admin/sales-nav-imports",
       label: "Sales Nav",
       active: onSalesNavImports,
+    },
+    {
+      kind: "link" as const,
+      href: "/admin/linkedin-inbox",
+      label: "LI Inbox",
+      active: onLinkedInInbox,
     },
   ];
 

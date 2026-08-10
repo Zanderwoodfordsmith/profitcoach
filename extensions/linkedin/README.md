@@ -1,6 +1,6 @@
 # Profit Coach for LinkedIn (Chrome extension)
 
-Save LinkedIn profiles into your Profit Coach pipeline, score ICP fit, draft connect notes / DMs / feed comments / message replies (you always click Send), and optionally sync Sales Navigator cookies for lead imports.
+Save LinkedIn profiles into your Profit Coach pipeline, score ICP fit, draft connect notes / DMs / feed comments / message replies, optionally auto-send connection requests from a Sales Navigator search/list page (your logged-in Chrome tab), and sync Sales Navigator cookies for lead imports.
 
 Lives under `extensions/linkedin/`. Separate Chrome build artifact — not part of the Next.js bundle.
 
@@ -13,6 +13,7 @@ Lives under `extensions/linkedin/`. Separate Chrome build artifact — not part 
 5. Open a LinkedIn profile (`/in/…`) or Sales Nav lead (`/sales/lead/…`) → side panel shows ICP fit + Save / draft notes
 6. On the feed: **PC comment** on a post → Insert → you click Post
 7. In Messaging: **PC reply** → Insert → you click Send
+8. **Auto-connect:** open a Sales Nav people search or lead list → side panel → **Start** (More → Connect → Send without a note). Keep that tab open; daily cap defaults to 25.
 
 After editing extension files, hit **Reload** on the extension card.
 
@@ -36,5 +37,6 @@ npm run pack:linkedin-extension
 ## How it works
 
 - Content scripts on `linkedin.com/in/*` and Sales Nav `sales/lead|people/*` extract visible profile fields
+- `content-sales-nav-connect.js` on `sales/search/people` and `sales/lists/people` paces More → Connect → Send
 - Side panel → `POST /api/coach/extension/save-profile` / `draft-note`
 - Popup can still collect LinkedIn cookies via `chrome.cookies` for Sales Nav imports

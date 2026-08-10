@@ -1,0 +1,17 @@
+{
+  "$schema": "https://apify.com/schemas/v1/actor.ide.json",
+  "actorSpecification": 1,
+  "name": "linkedin-connect",
+  "title": "LinkedIn Connect (Profit Coach)",
+  "description": "Private actor: send LinkedIn connection requests with optional notes using a session cookie. Built for Profit Coach pilots — not published to the Store.",
+  "version": "0.1",
+  "meta": {
+    "templateId": "js-crawlee-playwright-chrome"
+  },
+  "inputSchema": "./input_schema.json",
+  "outputSchema": "./output_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  },
+  "dockerfile": "../Dockerfile"
+}

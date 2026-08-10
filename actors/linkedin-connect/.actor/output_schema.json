@@ -1,0 +1,12 @@
+{
+  "actorOutputSchemaVersion": 1,
+  "title": "LinkedIn Connect output",
+  "description": "One dataset row per profile attempted.",
+  "properties": {
+    "overview": {
+      "type": "string",
+      "title": "Results",
+      "template": "{{links.dataset}}"
+    }
+  }
+}

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
+import { ContentHubSubNav } from "@/components/layout/ContentHubSubNav";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { LinkedInSchedulerPanel } from "@/components/admin/LinkedInSchedulerPanel";
 
@@ -52,6 +53,7 @@ export default function AdminLinkedInPage() {
         title="Get Clients"
         description="Compose, schedule, and reuse LinkedIn content."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
+        below={<ContentHubSubNav />}
       />
       <LinkedInSchedulerPanel />
     </div>

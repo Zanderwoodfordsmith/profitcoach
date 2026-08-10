@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
+import { ContentHubSubNav } from "@/components/layout/ContentHubSubNav";
 import { LinkedInNewsletterPanel } from "@/components/admin/linkedin/LinkedInNewsletterPanel";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -54,6 +55,7 @@ export default function AdminNewsletterPage() {
         title="Get Clients"
         description="Plan your newsletter series and draft each edition."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
+        below={<ContentHubSubNav />}
       />
       <LinkedInNewsletterPanel />
     </div>

@@ -19,6 +19,11 @@ export default function CoachCallsPage() {
   const [calls, setCalls] = useState<CallRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appOrigin, setAppOrigin] = useState("");
+
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +102,8 @@ export default function CoachCallsPage() {
         loading={loading}
         error={error}
         showCoachColumn={false}
+        appOrigin={appOrigin}
+        callsBasePath="/coach/calls"
         onCallsChange={setCalls}
         onRowClick={(row) => {
           if (row.contact_id && clientHubAllowed) {

@@ -81,6 +81,44 @@
       <div id="drafts" class="drafts"></div>
     </section>
 
+    <section class="card" id="inboxCard">
+      <h2>LI Inbox sync</h2>
+      <p class="hint tight">
+        Scrapes your 3 most recent Messaging threads from this browser (your IP),
+        then saves them to Profit Coach admin → LI Inbox.
+      </p>
+      <button id="inboxSyncBtn" type="button" class="primary">
+        Sync LI Inbox
+      </button>
+      <p id="inboxSyncStatus" class="msg">
+        Stay logged into LinkedIn, then sync.
+      </p>
+    </section>
+
+    <section class="card" id="connectCard">
+      <h2>Auto-connect (Sales Nav)</h2>
+      <p class="hint tight">
+        Open a Sales Navigator people search or lead list in Chrome, then start.
+        Stays on that page: More → Connect → Send without a note. Keep the tab
+        open; Chrome can stay in the background.
+      </p>
+      <div class="connect-stats">
+        <span id="connectSentToday">Today: –</span>
+        <span id="connectCapLabel">Cap: 25</span>
+      </div>
+      <label class="stage">
+        Daily cap
+        <input id="connectDailyCap" type="number" min="1" max="80" value="25" />
+      </label>
+      <div class="split">
+        <button id="connectStartBtn" type="button" class="primary">Start</button>
+        <button id="connectStopBtn" type="button" class="secondary" disabled>
+          Stop
+        </button>
+      </div>
+      <p id="connectStatus" class="msg">Idle — open a Sales Nav search first.</p>
+    </section>
+
     <details class="adv">
       <summary>Advanced</summary>
       <label class="stage">
