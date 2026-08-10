@@ -312,7 +312,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     href: `${prefix}/funnel-settings`,
     label: "Settings",
     iconOnly: true,
-    adminPreview: true,
   });
   return items;
 }
