@@ -11,7 +11,7 @@
     dailyCap: 25,
     delayMinMs: 8_000,
     delayMaxMs: 18_000,
-    maxPerRun: 40,
+    maxPerRun: 5,
   };
 
   /** @type {null | { abort: boolean }} */

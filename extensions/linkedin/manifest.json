@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Profit Coach for LinkedIn",
   "short_name": "Profit Coach",
-  "description": "Save LinkedIn prospects, score ICP fit, draft notes, and optionally send Sales Nav connection requests from your logged-in browser.",
-  "version": "2.3.1",
+  "description": "Save LinkedIn prospects, score ICP fit, draft notes, and send connection requests from your logged-in browser.",
+  "version": "2.4.0",
   "homepage_url": "https://www.businesscoachacademy.com",
   "action": {
     "default_title": "Profit Coach for LinkedIn",
@@ -55,7 +55,7 @@
     },
     {
       "matches": ["https://*.linkedin.com/in/*", "https://linkedin.com/in/*"],
-      "js": ["content-linkedin.js"],
+      "js": ["content-linkedin.js", "content-profile-connect.js"],
       "run_at": "document_idle"
     },
     {
@@ -65,7 +65,7 @@
         "https://linkedin.com/sales/lead/*",
         "https://linkedin.com/sales/people/*"
       ],
-      "js": ["content-sales-nav.js"],
+      "js": ["content-sales-nav.js", "content-profile-connect.js"],
       "run_at": "document_idle"
     },
     {

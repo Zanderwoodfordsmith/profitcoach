@@ -10,9 +10,9 @@
     <header class="top">
       <div>
         <p class="brand">Profit Coach</p>
-        <h1>This profile</h1>
+        <h1 id="panelTitle">Profile</h1>
       </div>
-      <button id="reloadBtn" type="button" class="icon-btn" title="Re-read profile">
+      <button id="reloadBtn" type="button" class="icon-btn" title="Refresh">
         Refresh
       </button>
     </header>
@@ -24,112 +24,268 @@
       <select id="coachSelect"></select>
     </label>
 
-    <section id="profileCard" class="card">
-      <div id="profileEmpty" class="empty">
-        <p>Reading LinkedIn…</p>
-      </div>
-      <div id="profileBlock" class="hidden">
-        <p id="pName" class="name"></p>
-        <p id="pMeta" class="meta"></p>
-        <div id="fitBlock" class="fit hidden">
-          <div class="fit-head">
-            <span id="fitLabel" class="fit-label">–</span>
-            <span id="fitScore" class="fit-score">–</span>
+    <main class="panels">
+      <!-- Profile -->
+      <section id="tab-profile" class="tab-panel" data-tab="profile">
+        <section id="profileCard" class="card">
+          <div id="profileEmpty" class="empty">
+            <p>Reading LinkedIn…</p>
           </div>
-          <div class="fit-bar" aria-hidden="true">
-            <div class="fit-bar-track"></div>
-            <div id="fitMarker" class="fit-bar-marker"></div>
+          <div id="profileBlock" class="hidden">
+            <p id="pName" class="name"></p>
+            <p id="pMeta" class="meta"></p>
+            <div id="fitBlock" class="fit hidden">
+              <div class="fit-head">
+                <span id="fitLabel" class="fit-label">–</span>
+                <span id="fitScore" class="fit-score">–</span>
+              </div>
+              <div class="fit-bar" aria-hidden="true">
+                <div class="fit-bar-track"></div>
+                <div id="fitMarker" class="fit-bar-marker"></div>
+              </div>
+              <div class="fit-ticks">
+                <span>Very weak</span>
+                <span>Weak</span>
+                <span>Okay</span>
+                <span>Strong</span>
+                <span>Ideal</span>
+              </div>
+              <ul id="fitWhy" class="fit-list"></ul>
+              <ul id="fitNot" class="fit-list muted-list"></ul>
+              <p id="fitStatus" class="msg"></p>
+            </div>
+            <div class="actions-primary">
+              <label class="stage">
+                Stage
+                <select id="stage">
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="follow_up">Follow-up</option>
+                </select>
+              </label>
+              <button id="saveBtn" type="button" class="primary">
+                Save to pipeline
+              </button>
+            </div>
+            <p id="saveStatus" class="msg"></p>
+            <p id="workspaceLink" class="hidden link"></p>
           </div>
-          <div class="fit-ticks">
-            <span>Very weak</span>
-            <span>Weak</span>
-            <span>Okay</span>
-            <span>Strong</span>
-            <span>Ideal</span>
+        </section>
+
+        <section class="card">
+          <h2>Write a note</h2>
+          <div class="split">
+            <button id="draftConnector" type="button" class="secondary">
+              Connection note
+            </button>
+            <button id="draftDm" type="button" class="secondary">Message</button>
           </div>
-          <ul id="fitWhy" class="fit-list"></ul>
-          <ul id="fitNot" class="fit-list muted-list"></ul>
-          <p id="fitStatus" class="msg"></p>
-        </div>
-        <div class="actions-primary">
-          <label class="stage">
-            Stage
-            <select id="stage">
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="follow_up">Follow-up</option>
-            </select>
+          <p id="draftStatus" class="msg"></p>
+          <div id="drafts" class="drafts"></div>
+        </section>
+      </section>
+
+      <!-- Connect -->
+      <section id="tab-connect" class="tab-panel hidden" data-tab="connect">
+        <section class="card" id="thisProfileConnectCard">
+          <h2>This profile</h2>
+          <p class="hint tight">
+            Open any LinkedIn profile (/in/…) or Sales Nav lead, then send one
+            connection request from here. Best way to test Connect.
+          </p>
+          <label class="check-row">
+            <input id="connectWithNote" type="checkbox" />
+            Include a note
           </label>
-          <button id="saveBtn" type="button" class="primary">
-            Save to pipeline
+          <textarea
+            id="connectNoteText"
+            class="note-area hidden"
+            rows="3"
+            maxlength="300"
+            placeholder="Keep under 300 characters…"
+          ></textarea>
+          <button id="connectThisBtn" type="button" class="primary">
+            Connect this profile
           </button>
-        </div>
-        <p id="saveStatus" class="msg"></p>
-        <p id="workspaceLink" class="hidden link"></p>
-      </div>
-    </section>
+          <p id="connectThisStatus" class="msg">
+            Open a profile page, then connect.
+          </p>
+        </section>
 
-    <section class="card">
-      <h2>Write a note</h2>
-      <div class="split">
-        <button id="draftConnector" type="button" class="secondary">
-          Connection note
-        </button>
-        <button id="draftDm" type="button" class="secondary">Message</button>
-      </div>
-      <p id="draftStatus" class="msg"></p>
-      <div id="drafts" class="drafts"></div>
-    </section>
+        <section class="card" id="connectCard">
+          <h2>Sales Nav auto-connect</h2>
+          <p class="hint tight">
+            Open a people search or lead list, then start. Walks More → Connect →
+            Send. Keep that tab open (Chrome can stay in the background).
+          </p>
+          <div class="connect-stats">
+            <span id="connectSentToday">Today: –</span>
+            <span id="connectCapLabel">Cap: 25</span>
+          </div>
+          <div class="field-grid">
+            <label class="stage">
+              Daily cap
+              <input
+                id="connectDailyCap"
+                type="number"
+                min="1"
+                max="80"
+                value="25"
+              />
+            </label>
+            <label class="stage">
+              Max this run
+              <input
+                id="connectMaxPerRun"
+                type="number"
+                min="1"
+                max="40"
+                value="5"
+              />
+            </label>
+            <label class="stage">
+              Delay min (s)
+              <input
+                id="connectDelayMin"
+                type="number"
+                min="3"
+                max="120"
+                value="8"
+              />
+            </label>
+            <label class="stage">
+              Delay max (s)
+              <input
+                id="connectDelayMax"
+                type="number"
+                min="3"
+                max="180"
+                value="18"
+              />
+            </label>
+          </div>
+          <div class="split">
+            <button id="connectStartBtn" type="button" class="primary">
+              Start
+            </button>
+            <button id="connectStopBtn" type="button" class="secondary" disabled>
+              Stop
+            </button>
+          </div>
+          <p id="connectStatus" class="msg">
+            Idle — open a Sales Nav search first.
+          </p>
+        </section>
 
-    <section class="card" id="inboxCard">
-      <h2>LI Inbox sync</h2>
-      <p class="hint tight">
-        Scrapes your 3 most recent Messaging threads from this browser (your IP),
-        then saves them to Profit Coach admin → LI Inbox.
-      </p>
-      <button id="inboxSyncBtn" type="button" class="primary">
-        Sync LI Inbox
+        <section class="card">
+          <div class="card-head">
+            <h2>Activity</h2>
+            <button id="clearConnectLogBtn" type="button" class="text-btn">
+              Clear
+            </button>
+          </div>
+          <ol id="connectLog" class="activity-log">
+            <li class="muted">No activity yet.</li>
+          </ol>
+        </section>
+      </section>
+
+      <!-- Tools -->
+      <section id="tab-tools" class="tab-panel hidden" data-tab="tools">
+        <section class="card" id="inboxCard">
+          <h2>LI Inbox sync</h2>
+          <p class="hint tight">
+            Scrapes your 3 most recent Messaging threads from this browser, then
+            saves them to Profit Coach admin → LI Inbox.
+          </p>
+          <button id="inboxSyncBtn" type="button" class="primary">
+            Sync LI Inbox
+          </button>
+          <p id="inboxSyncStatus" class="msg">
+            Stay logged into LinkedIn, then sync.
+          </p>
+        </section>
+        <section class="card">
+          <h2>Coming soon</h2>
+          <p class="hint tight">
+            Follow-up DMs after connects will live here once Connect is solid.
+          </p>
+        </section>
+      </section>
+
+      <!-- Settings -->
+      <section id="tab-settings" class="tab-panel hidden" data-tab="settings">
+        <section class="card">
+          <h2>Profit Coach site</h2>
+          <label class="stage">
+            Site
+            <select id="origin"></select>
+          </label>
+          <p class="hint">
+            Leave on <strong>Live site</strong> unless you’re developing locally.
+            Keep Profit Coach open and signed in in another tab.
+          </p>
+        </section>
+        <section class="card">
+          <h2>How to test Connect</h2>
+          <ol class="howto">
+            <li>Sign into LinkedIn in Chrome.</li>
+            <li>Open a 2nd/3rd-degree profile you can invite.</li>
+            <li>Open this panel → <strong>Connect</strong> tab.</li>
+            <li>Tap <strong>Connect this profile</strong> (optionally with a note).</li>
+            <li>
+              For batch: open Sales Nav search → set a low “Max this run” →
+              Start.
+            </li>
+          </ol>
+        </section>
+      </section>
+    </main>
+
+    <nav class="app-nav" aria-label="Sections">
+      <button
+        type="button"
+        class="nav-item active"
+        data-tab="profile"
+        aria-current="page"
+      >
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="8" r="3.2" />
+            <path d="M5.5 19c1.4-3.2 3.8-4.8 6.5-4.8S16.6 15.8 18.5 19" />
+          </svg>
+        </span>
+        <span class="nav-label">Profile</span>
       </button>
-      <p id="inboxSyncStatus" class="msg">
-        Stay logged into LinkedIn, then sync.
-      </p>
-    </section>
-
-    <section class="card" id="connectCard">
-      <h2>Auto-connect (Sales Nav)</h2>
-      <p class="hint tight">
-        Open a Sales Navigator people search or lead list in Chrome, then start.
-        Stays on that page: More → Connect → Send without a note. Keep the tab
-        open; Chrome can stay in the background.
-      </p>
-      <div class="connect-stats">
-        <span id="connectSentToday">Today: –</span>
-        <span id="connectCapLabel">Cap: 25</span>
-      </div>
-      <label class="stage">
-        Daily cap
-        <input id="connectDailyCap" type="number" min="1" max="80" value="25" />
-      </label>
-      <div class="split">
-        <button id="connectStartBtn" type="button" class="primary">Start</button>
-        <button id="connectStopBtn" type="button" class="secondary" disabled>
-          Stop
-        </button>
-      </div>
-      <p id="connectStatus" class="msg">Idle — open a Sales Nav search first.</p>
-    </section>
-
-    <details class="adv">
-      <summary>Advanced</summary>
-      <label class="stage">
-        Profit Coach site
-        <select id="origin"></select>
-      </label>
-      <p class="hint">
-        Leave on <strong>Live site</strong> unless you’re developing locally.
-        Keep Profit Coach open and signed in in another tab.
-      </p>
-    </details>
+      <button type="button" class="nav-item" data-tab="connect">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M8.5 12.5a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4Z" />
+            <path d="M15.5 17.9a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" />
+            <path d="M10.2 11.2 13.8 13.2" />
+          </svg>
+        </span>
+        <span class="nav-label">Connect</span>
+      </button>
+      <button type="button" class="nav-item" data-tab="tools">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="5" width="16" height="14" rx="2" />
+            <path d="M8 10h8M8 14h5" />
+          </svg>
+        </span>
+        <span class="nav-label">Tools</span>
+      </button>
+      <button type="button" class="nav-item" data-tab="settings">
+        <span class="nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 4.5v2.2M12 17.3v2.2M4.5 12h2.2M17.3 12h2.2M6.4 6.4l1.6 1.6M16 16l1.6 1.6M17.6 6.4 16 8M8 16l-1.6 1.6" />
+          </svg>
+        </span>
+        <span class="nav-label">Settings</span>
+      </button>
+    </nav>
 
     <script src="config.js"></script>
     <script src="sidepanel.js"></script>

@@ -6,6 +6,7 @@ import {
   formatInTimeZone,
   ymdInTimeZone,
 } from "@/lib/booking/bookingTime";
+import "./native-booking.css";
 
 export type BookingDaySlots = {
   date: string;
@@ -24,7 +25,6 @@ type Props = {
   onSelectDate: (ymd: string) => void;
   selectedSlot: { starts_at: string; ends_at: string } | null;
   onSelectSlot: (slot: { starts_at: string; ends_at: string } | null) => void;
-  /** Optional timezone control rendered in the “What time works?” line. */
   timezoneControl?: ReactNode;
   nowLabel?: string;
   timezoneShort?: string;
@@ -34,13 +34,13 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-/** Monday-first month grid (Mon … Sun). */
-function monthMatrixMonFirst(
+/** Sunday-first month grid (Sun … Sat). */
+function monthMatrixSunFirst(
   year: number,
-  monthIndex0: number
+  monthIndex0: number,
 ): (number | null)[][] {
   const first = new Date(Date.UTC(year, monthIndex0, 1));
-  const startPad = (first.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  const startPad = first.getUTCDay(); // Sun=0
   const daysInMonth = new Date(Date.UTC(year, monthIndex0 + 1, 0)).getUTCDate();
   const cells: (number | null)[] = [];
   for (let i = 0; i < startPad; i++) cells.push(null);
@@ -71,15 +71,19 @@ function weekdayShort(ymd: string): string {
   });
 }
 
-function dayMonthLabel(ymd: string): string {
+function dayNumber(ymd: string): number {
+  return Number(ymd.split("-")[2]);
+}
+
+function monthShort(ymd: string): string {
   const [y, m, d] = ymd.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
-    day: "numeric",
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-US", {
     month: "short",
     timeZone: "UTC",
   });
 }
 
+/** Add calendar days to a YYYY-MM-DD string (no TZ). */
 function daysBetween(a: string, b: string): number {
   const [ay, am, ad] = a.split("-").map(Number);
   const [by, bm, bd] = b.split("-").map(Number);
@@ -89,9 +93,9 @@ function daysBetween(a: string, b: string): number {
 }
 
 const PREVIEW_SLOT_COUNT = 9;
-const MONTH_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+const MONTH_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
-/** Pick up to `count` slots spread evenly across the day (by index order). */
+/** Pick up to `count` slots spread evenly across the day. */
 function sampleSpreadSlots<T>(slots: T[], count: number): T[] {
   if (slots.length <= count) return slots;
   const indices = new Set<number>();
@@ -107,9 +111,40 @@ function sampleSpreadSlots<T>(slots: T[], count: number): T[] {
     .map((i) => slots[i]!);
 }
 
+function Chevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="nb-picker__chevron"
+    >
+      {dir === "left" ? (
+        <path
+          d="M14.5 5.5 8 12l6.5 6.5"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path
+          d="M9.5 5.5 16 12l-6.5 6.5"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+}
+
 /**
- * Chili Piper–style day + time picker: week strip by default (today on the left),
- * with a month toggle for further-out dates.
+ * Chili Piper–style day + time picker.
+ * Week strip by default (Sun–Sat); month view tucked behind a quiet link.
  */
 export function BookingDateTimePicker({
   timezone,
@@ -126,15 +161,15 @@ export function BookingDateTimePicker({
 }: Props) {
   const todayYmd = useMemo(
     () => ymdInTimeZone(new Date(), timezone),
-    [timezone]
+    [timezone],
   );
   const availableSet = useMemo(
     () => new Set(days.map((d) => d.date)),
-    [days]
+    [days],
   );
   const selectedDay = useMemo(
     () => days.find((d) => d.date === selectedDate) ?? null,
-    [days, selectedDate]
+    [days, selectedDate],
   );
 
   const [mode, setMode] = useState<DateMode>("week");
@@ -159,6 +194,7 @@ export function BookingDateTimePicker({
     if (delta >= 0) setWeekOffset(Math.floor(delta / 7));
   }, [selectedDate, todayYmd]);
 
+  // Rolling 7 days with today on the left (not a Sun–Sat calendar week).
   const weekDays = useMemo(() => {
     const start = addDaysYmd(todayYmd, weekOffset * 7);
     return Array.from({ length: 7 }, (_, i) => addDaysYmd(start, i));
@@ -171,7 +207,7 @@ export function BookingDateTimePicker({
   }, [selectedDay, showAllSlots]);
 
   const hasMoreSlots = Boolean(
-    selectedDay && selectedDay.slots.length > PREVIEW_SLOT_COUNT && !showAllSlots
+    selectedDay && selectedDay.slots.length > PREVIEW_SLOT_COUNT && !showAllSlots,
   );
 
   function pickDate(ymd: string) {
@@ -195,257 +231,226 @@ export function BookingDateTimePicker({
 
   const monthLabel = new Date(Date.UTC(viewYear, viewMonth, 1)).toLocaleString(
     "en-GB",
-    { month: "long", year: "numeric", timeZone: "UTC" }
+    { month: "long", year: "numeric", timeZone: "UTC" },
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-lg border border-slate-200 p-0.5 text-xs font-semibold">
+    <div className="nb-picker">
+      {mode === "week" ? (
+        <div className="nb-picker__week-wrap">
           <button
             type="button"
-            className={`rounded-md px-2.5 py-1 ${
-              mode === "week"
-                ? "bg-slate-900 text-white"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-            onClick={() => switchMode("week")}
+            aria-label="Previous week"
+            disabled={weekOffset <= 0}
+            onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
+            className="nb-picker__nav"
           >
-            Week
+            <Chevron dir="left" />
           </button>
-          <button
-            type="button"
-            className={`rounded-md px-2.5 py-1 ${
-              mode === "month"
-                ? "bg-slate-900 text-white"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-            onClick={() => switchMode("month")}
-          >
-            Month
-          </button>
-        </div>
-      </div>
 
-      <div className={mode === "week" ? "relative px-10" : undefined}>
-        {mode === "week" ? (
-          <>
-            <button
-              type="button"
-              aria-label="Previous week"
-              disabled={weekOffset <= 0}
-              onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
-              className="absolute left-0 top-[1.35rem] z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35 sm:top-[1.5rem]"
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              aria-label="Next week"
-              onClick={() => setWeekOffset((o) => o + 1)}
-              className="absolute right-0 top-[1.35rem] z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 sm:top-[1.5rem]"
-            >
-              ›
-            </button>
-          </>
-        ) : null}
-
-        {loading ? (
-          <p className="text-center text-sm text-slate-500">
-            Loading availability…
-          </p>
-        ) : mode === "week" ? (
-          <div className="overflow-hidden rounded-lg border border-slate-200">
-            <div className="grid grid-cols-7 divide-x divide-slate-100">
-              {weekDays.map((ymd) => {
-                const available = availableSet.has(ymd);
-                const selected = selectedDate === ymd;
-                return (
-                  <button
-                    key={ymd}
-                    type="button"
-                    disabled={!available}
-                    onClick={() => pickDate(ymd)}
-                    className={`flex flex-col items-center gap-0.5 px-1 py-2.5 text-center transition sm:py-3 ${
-                      selected
-                        ? "bg-[var(--brand-teal,#1ca0c2)] text-white"
-                        : available
-                          ? "bg-white text-slate-900 hover:bg-slate-50"
-                          : "bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    <span
-                      className={`text-[10px] font-medium uppercase tracking-wide sm:text-[11px] ${
-                        selected
-                          ? "text-white/85"
-                          : available
-                            ? "text-slate-500"
-                            : "text-slate-400"
-                      }`}
-                    >
-                      {weekdayShort(ymd)}
-                    </span>
-                    <span
-                      className={`text-xs font-semibold leading-tight sm:text-sm ${
-                        available && !selected ? "text-slate-900" : ""
-                      }`}
-                    >
-                      {dayMonthLabel(ymd)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg border border-slate-200">
-            <div className="flex items-stretch divide-x divide-slate-100 border-b border-slate-200">
-              <button
-                type="button"
-                aria-label="Previous month"
-                className="flex w-9 shrink-0 items-center justify-center bg-white text-slate-500 transition hover:bg-slate-50"
-                onClick={() => {
-                  const d = new Date(Date.UTC(viewYear, viewMonth - 1, 1));
-                  setViewYear(d.getUTCFullYear());
-                  setViewMonth(d.getUTCMonth());
-                }}
-              >
-                ‹
-              </button>
-              <div className="flex min-w-0 flex-1 items-center justify-center bg-white px-2 py-2.5 text-sm font-semibold text-slate-900">
-                {monthLabel}
+          {loading ? (
+            <p className="nb-picker__status">Loading availability…</p>
+          ) : (
+            <div className="nb-picker__strip">
+              <div className="nb-picker__strip-wd" aria-hidden>
+                {weekDays.map((ymd) => (
+                  <span key={`wd-${ymd}`}>{weekdayShort(ymd)}</span>
+                ))}
               </div>
-              <button
-                type="button"
-                aria-label="Next month"
-                className="flex w-9 shrink-0 items-center justify-center bg-white text-slate-500 transition hover:bg-slate-50"
-                onClick={() => {
-                  const d = new Date(Date.UTC(viewYear, viewMonth + 1, 1));
-                  setViewYear(d.getUTCFullYear());
-                  setViewMonth(d.getUTCMonth());
-                }}
-              >
-                ›
-              </button>
+              <div className="nb-picker__strip-row">
+                {weekDays.map((ymd) => {
+                  const available = availableSet.has(ymd) && ymd >= todayYmd;
+                  const selected = selectedDate === ymd;
+                  return (
+                    <button
+                      key={ymd}
+                      type="button"
+                      aria-disabled={!available}
+                      aria-label={
+                        available
+                          ? undefined
+                          : `No available times, ${weekdayShort(ymd)} ${dayNumber(ymd)} ${monthShort(ymd)}`
+                      }
+                      data-tip={!available ? "No available times" : undefined}
+                      tabIndex={0}
+                      onClick={() => {
+                        if (!available) return;
+                        pickDate(ymd);
+                      }}
+                      className={`nb-picker__day${selected ? " is-selected" : ""}${
+                        available ? " is-available" : " is-unavailable"
+                      }`}
+                    >
+                      <span className="nb-picker__day-num">{dayNumber(ymd)}</span>
+                      <span className="nb-picker__day-mo">{monthShort(ymd)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-7 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50">
-              {MONTH_WEEKDAYS.map((d) => (
-                <div
-                  key={d}
-                  className="py-1.5 text-center text-[10px] font-medium uppercase tracking-wide text-slate-500"
-                >
-                  {d}
-                </div>
-              ))}
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {monthMatrixMonFirst(viewYear, viewMonth).map((row, ri) => (
-                <div
-                  key={ri}
-                  className="grid grid-cols-7 divide-x divide-slate-100"
-                >
-                  {row.map((day, ci) => {
-                    if (day == null) {
-                      return (
-                        <div
-                          key={`${ri}-${ci}`}
-                          className="bg-slate-50 py-2"
-                          aria-hidden
-                        />
-                      );
-                    }
-                    const ymd = ymdFromParts(viewYear, viewMonth, day);
-                    const available = availableSet.has(ymd) && ymd >= todayYmd;
-                    const selected = selectedDate === ymd;
-                    return (
-                      <button
-                        key={ymd}
-                        type="button"
-                        disabled={!available}
-                        onClick={() => pickDate(ymd)}
-                        className={`py-2 text-center text-xs font-semibold transition sm:text-sm ${
-                          selected
-                            ? "bg-[var(--brand-teal,#1ca0c2)] text-white"
-                            : available
-                              ? "bg-white text-slate-900 hover:bg-slate-50"
-                              : "bg-slate-100 text-slate-400"
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-5 text-center">
-          <h3 className="text-base font-semibold text-slate-900">
-            What time works?
-          </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            {meetingDurationMinutes} minute meeting
-            {timezoneShort || timezoneControl ? (
-              <>
-                {" • "}
-                {timezoneControl ?? (
-                  <span>
-                    {timezoneShort ?? timezone}
-                    {nowLabel ? ` (${nowLabel})` : ""}
-                  </span>
-                )}
-              </>
-            ) : null}
-          </p>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {!selectedDay ? (
-              <p className="col-span-full text-sm text-slate-500">
-                Select an available day.
-              </p>
-            ) : selectedDay.slots.length === 0 ? (
-              <p className="col-span-full text-sm text-slate-500">
-                No times this day.
-              </p>
-            ) : (
-              visibleSlots.map((slot) => {
-                const active = selectedSlot?.starts_at === slot.starts_at;
-                return (
-                  <button
-                    key={slot.starts_at}
-                    type="button"
-                    onClick={() =>
-                      onSelectSlot({
-                        starts_at: slot.starts_at,
-                        ends_at: slot.ends_at,
-                      })
-                    }
-                    className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-                      active
-                        ? "border-[var(--brand-teal,#1ca0c2)] bg-teal-50 text-teal-950"
-                        : "border-slate-200 bg-white text-slate-900 hover:border-slate-300"
-                    }`}
-                  >
-                    {formatSlotLabel(slot.starts_at, timezone)}
-                  </button>
-                );
-              })
-            )}
-          </div>
-          {hasMoreSlots ? (
+          <button
+            type="button"
+            aria-label="Next week"
+            onClick={() => setWeekOffset((o) => o + 1)}
+            className="nb-picker__nav"
+          >
+            <Chevron dir="right" />
+          </button>
+        </div>
+      ) : loading ? (
+        <p className="nb-picker__status">Loading availability…</p>
+      ) : (
+        <div className="nb-picker__month">
+          <div className="nb-picker__month-head">
             <button
               type="button"
-              onClick={() => setShowAllSlots(true)}
-              className="mt-3 w-full rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              aria-label="Previous month"
+              className="nb-picker__month-nav"
+              onClick={() => {
+                const d = new Date(Date.UTC(viewYear, viewMonth - 1, 1));
+                setViewYear(d.getUTCFullYear());
+                setViewMonth(d.getUTCMonth());
+              }}
             >
-              Show more
+              <Chevron dir="left" />
             </button>
-          ) : null}
+            <div className="nb-picker__month-label">{monthLabel}</div>
+            <button
+              type="button"
+              aria-label="Next month"
+              className="nb-picker__month-nav"
+              onClick={() => {
+                const d = new Date(Date.UTC(viewYear, viewMonth + 1, 1));
+                setViewYear(d.getUTCFullYear());
+                setViewMonth(d.getUTCMonth());
+              }}
+            >
+              <Chevron dir="right" />
+            </button>
+          </div>
+
+          <div className="nb-picker__month-wd">
+            {MONTH_WEEKDAYS.map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          <div className="nb-picker__month-body">
+            {monthMatrixSunFirst(viewYear, viewMonth).map((row, ri) => (
+              <div key={ri} className="nb-picker__month-row">
+                {row.map((day, ci) => {
+                  if (day == null) {
+                    return (
+                      <div
+                        key={`${ri}-${ci}`}
+                        className="nb-picker__month-empty"
+                        aria-hidden
+                      />
+                    );
+                  }
+                  const ymd = ymdFromParts(viewYear, viewMonth, day);
+                  const available = availableSet.has(ymd) && ymd >= todayYmd;
+                  const selected = selectedDate === ymd;
+                  return (
+                    <button
+                      key={ymd}
+                      type="button"
+                      aria-disabled={!available}
+                      aria-label={
+                        available
+                          ? undefined
+                          : `No available times, ${day} ${monthShort(ymd)}`
+                      }
+                      data-tip={!available ? "No available times" : undefined}
+                      tabIndex={0}
+                      onClick={() => {
+                        if (!available) return;
+                        pickDate(ymd);
+                      }}
+                      className={`nb-picker__month-day${
+                        selected ? " is-selected" : ""
+                      }${available ? " is-available" : " is-unavailable"}`}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      <p className="nb-picker__view-switch">
+        {mode === "week" ? (
+          <button type="button" onClick={() => switchMode("month")}>
+            Browse by month
+          </button>
+        ) : (
+          <button type="button" onClick={() => switchMode("week")}>
+            Back to week
+          </button>
+        )}
+      </p>
+
+      <div className="nb-picker__times">
+        <h3 className="nb-picker__times-title">What time works?</h3>
+        <p className="nb-picker__times-meta">
+          {meetingDurationMinutes} minute meeting
+          {timezoneShort || timezoneControl ? (
+            <>
+              {" · "}
+              {timezoneControl ?? (
+                <span>
+                  {timezoneShort ?? timezone}
+                  {nowLabel ? ` (${nowLabel})` : ""}
+                </span>
+              )}
+            </>
+          ) : null}
+        </p>
+
+        <div className="nb-picker__slot-grid">
+          {!selectedDay ? (
+            <p className="nb-picker__status nb-picker__status--full">
+              Select an available day.
+            </p>
+          ) : selectedDay.slots.length === 0 ? (
+            <p className="nb-picker__status nb-picker__status--full">
+              No times this day.
+            </p>
+          ) : (
+            visibleSlots.map((slot) => {
+              const active = selectedSlot?.starts_at === slot.starts_at;
+              return (
+                <button
+                  key={slot.starts_at}
+                  type="button"
+                  onClick={() =>
+                    onSelectSlot({
+                      starts_at: slot.starts_at,
+                      ends_at: slot.ends_at,
+                    })
+                  }
+                  className={`nb-picker__slot${active ? " is-selected" : ""}`}
+                >
+                  {formatSlotLabel(slot.starts_at, timezone)}
+                </button>
+              );
+            })
+          )}
+        </div>
+        {hasMoreSlots ? (
+          <button
+            type="button"
+            onClick={() => setShowAllSlots(true)}
+            className="nb-picker__more"
+          >
+            Show more
+          </button>
+        ) : null}
       </div>
     </div>
   );

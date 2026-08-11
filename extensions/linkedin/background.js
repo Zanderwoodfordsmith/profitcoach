@@ -147,6 +147,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "PROFILE_CONNECT_REQUEST") {
+    void sendProfileConnect(message.tabId, message.options)
+      .then((res) => sendResponse(res))
+      .catch((err) =>
+        sendResponse({
+          ok: false,
+          status: "error",
+          error: err instanceof Error ? err.message : "Could not connect.",
+          detail: err instanceof Error ? err.message : "Could not connect.",
+        })
+      );
+    return true;
+  }
+
   if (message?.type === "CONNECT_STATUS") {
     void chrome.storage.session
       .set({
@@ -216,6 +230,104 @@ function isSalesNavSearchUrl(url) {
   }
 }
 
+function isConnectableProfileUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)linkedin\.com$/i.test(u.hostname)) return false;
+    return (
+      /\/in\//i.test(u.pathname) || /\/sales\/(lead|people)\//i.test(u.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function resolveConnectableProfileTabId(preferredId) {
+  if (typeof preferredId === "number") {
+    try {
+      const tab = await chrome.tabs.get(preferredId);
+      if (tab?.id && isConnectableProfileUrl(tab.url)) return tab.id;
+    } catch {
+      // fall through
+    }
+  }
+  const [active] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+  if (active?.id && isConnectableProfileUrl(active.url)) return active.id;
+  const profiles = await chrome.tabs.query({
+    url: [
+      "*://www.linkedin.com/in/*",
+      "*://linkedin.com/in/*",
+      "*://www.linkedin.com/sales/lead/*",
+      "*://www.linkedin.com/sales/people/*",
+      "*://linkedin.com/sales/lead/*",
+      "*://linkedin.com/sales/people/*",
+    ],
+  });
+  return profiles[0]?.id ?? null;
+}
+
+async function ensureProfileConnectScript(tabId) {
+  try {
+    const ping = await chrome.tabs.sendMessage(tabId, {
+      type: "PROFILE_CONNECT_PING",
+    });
+    if (ping?.ok) return true;
+  } catch {
+    // inject
+  }
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["content-profile-connect.js"],
+  });
+  return true;
+}
+
+async function sendProfileConnect(preferredTabId, options) {
+  const tabId = await resolveConnectableProfileTabId(preferredTabId);
+  if (typeof tabId !== "number") {
+    return {
+      ok: false,
+      status: "error",
+      detail:
+        "Open a LinkedIn profile (/in/…) or Sales Nav lead page first, then try again.",
+      error:
+        "Open a LinkedIn profile (/in/…) or Sales Nav lead page first, then try again.",
+    };
+  }
+  await ensureProfileConnectScript(tabId);
+  const res = await chrome.tabs.sendMessage(tabId, {
+    type: "PROFILE_CONNECT_SEND",
+    options: options || {},
+  });
+  if (res?.ok || res?.status) {
+    const payload = {
+      running: false,
+      status: res.status || (res.ok ? "sent" : "error"),
+      detail: res.detail || "",
+      sentToday: res.sentToday,
+      lastName: res.name,
+      source: "profile",
+    };
+    await chrome.storage.session.set({
+      lastConnectStatus: { ...payload, at: Date.now() },
+    });
+    chrome.runtime
+      .sendMessage({ type: "CONNECT_STATUS_UPDATED", payload })
+      .catch(() => {});
+  }
+  return (
+    res || {
+      ok: false,
+      status: "error",
+      detail: "No response from the LinkedIn tab.",
+    }
+  );
+}
+
 async function resolveSalesNavSearchTabId() {
   const [active] = await chrome.tabs.query({
     active: true,
@@ -267,6 +379,9 @@ async function startSalesNavConnect(options) {
     }
     if (Number.isFinite(Number(options.delayMaxMs))) {
       settings.delayMaxMs = Number(options.delayMaxMs);
+    }
+    if (Number.isFinite(Number(options.maxPerRun))) {
+      settings.maxPerRun = Math.min(40, Math.max(1, Number(options.maxPerRun)));
     }
     if (Object.keys(settings).length) {
       const prev = await chrome.storage.local.get(["connectSettings"]);

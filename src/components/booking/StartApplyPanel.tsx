@@ -343,8 +343,8 @@ export function StartApplyPanel({
   const nativeSlug = calendar.type === "native" ? calendar.slug : "";
   const nativeCalendarSlug =
     calendar.type === "native" ? calendar.calendarSlug ?? "discovery" : "discovery";
-  // Warm the calendar as soon as phone + name expand (GHL iframe or native slots).
-  const preloadCalendar = expanded || showCalendar;
+  // GHL iframe only — native mounts after Continue (no preload / no duplicate chrome).
+  const preloadCalendar = !isNative && (expanded || showCalendar);
 
   const bookingSrc = buildBookingSrc({
     firstName: firstName.trim(),
@@ -842,7 +842,26 @@ export function StartApplyPanel({
         </div>
       ) : null}
 
-      {/* Keep calendar mounted from expand → Continue so it doesn’t remount on reveal. */}
+      {/* Native picker — shown only after Continue (header lives inside NativeBookingEmbed). */}
+      {isNative && showCalendar ? (
+        <div className="start-panel__booking">
+          <div className="start-panel__native">
+            <NativeBookingEmbed
+              slug={nativeSlug}
+              calendarSlug={nativeCalendarSlug}
+              embedded
+              contact={{
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                email: bookingEmail.trim() || email.trim(),
+                phone: phoneE164,
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {/* Keep the GHL iframe mounted from expand → Continue so it doesn’t remount on reveal. */}
       {preloadCalendar ? (
         <div
           className={`start-panel__booking${
@@ -853,44 +872,26 @@ export function StartApplyPanel({
           {showCalendar ? (
             <div className="start-panel__booking-intro">
               <h2 className="start-panel__title">
-                {firstName.trim() ? `Thanks ${firstName.trim()} — pick a time` : "Pick a time"}
+                {firstName.trim()
+                  ? `Thanks ${firstName.trim()} — pick a time`
+                  : "Pick a time"}
               </h2>
               <p className="start-panel__lead">
-                {isNative
-                  ? "Discovery call · Video · No pressure"
-                  : "15-Minute Fit Call · Zoom · No pressure"}
+                15-Minute Fit Call · Zoom · No pressure
               </p>
             </div>
           ) : null}
-          {isNative ? (
-            <div className="start-panel__embed start-panel__embed--native">
-              <NativeBookingEmbed
-                slug={nativeSlug}
-                calendarSlug={nativeCalendarSlug}
-                embedded
-                contact={{
-                  firstName: firstName.trim(),
-                  lastName: lastName.trim(),
-                  email: bookingEmail.trim() || email.trim(),
-                  phone: phoneE164,
-                }}
-              />
-            </div>
-          ) : (
-            <>
-              <div className="start-panel__embed">
-                <iframe
-                  src={bookingSrc}
-                  title="Book a 15-Minute Fit Call"
-                  allow="payment"
-                  scrolling={showCalendar ? "yes" : "no"}
-                  id={ids.iframe}
-                  tabIndex={showCalendar ? undefined : -1}
-                />
-              </div>
-              <Script src={EMBED_SCRIPT} strategy="afterInteractive" />
-            </>
-          )}
+          <div className="start-panel__embed">
+            <iframe
+              src={bookingSrc}
+              title="Book a 15-Minute Fit Call"
+              allow="payment"
+              scrolling={showCalendar ? "yes" : "no"}
+              id={ids.iframe}
+              tabIndex={showCalendar ? undefined : -1}
+            />
+          </div>
+          <Script src={EMBED_SCRIPT} strategy="afterInteractive" />
         </div>
       ) : null}
     </div>

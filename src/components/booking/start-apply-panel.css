@@ -620,6 +620,18 @@ button.start-panel__step {
   min-height: 680px;
 }
 
+.start-panel__native {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  padding: 1rem 1rem 1.25rem;
+}
+
+.start-panel--calendar .start-panel__native {
+  padding: 1.1rem 1.25rem 1.5rem;
+}
+
 .start-panel__embed--native {
   overflow: auto;
   -webkit-overflow-scrolling: touch;

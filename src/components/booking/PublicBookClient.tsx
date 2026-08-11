@@ -11,6 +11,7 @@ import {
 } from "@/lib/communityCalendarTimezones";
 import { formatInTimeZone } from "@/lib/booking/bookingTime";
 import { BookingDateTimePicker } from "@/components/booking/BookingDateTimePicker";
+import "./native-booking.css";
 
 type BookMeta = {
   slug: string;
@@ -510,13 +511,13 @@ export function PublicBookClient({ slug }: Props) {
           </button>
         </form>
       ) : (
-        <div className="flex flex-col p-6">
-          <p className="mb-1 text-center text-sm font-medium text-slate-500">
-            {meta.title} · Video · {meta.meeting_duration_minutes} min
-          </p>
-          <p className="mb-4 text-center text-base font-semibold text-slate-900">
-            Thanks! What time works best for a quick call?
-          </p>
+        <div className="nb-embed">
+          <header className="nb-embed__head">
+            <h2 className="nb-embed__thanks">
+              {firstName.trim() ? `Thanks ${firstName.trim()}` : "Thanks"}
+            </h2>
+            <p className="nb-embed__question">What time works best for you?</p>
+          </header>
           <BookingDateTimePicker
             timezone={tz}
             meetingDurationMinutes={meta.meeting_duration_minutes}
@@ -529,29 +530,23 @@ export function PublicBookClient({ slug }: Props) {
             nowLabel={nowLabel}
             timezoneShort={tzShort}
             timezoneControl={
-              <span className="relative inline-block">
+              <span className="nb-tz">
                 <button
                   type="button"
+                  className="nb-tz__btn"
                   onClick={() => setTzOpen((o) => !o)}
-                  className="inline-flex items-center gap-1 font-medium text-slate-700 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
                 >
                   {accountTimezoneOptionLabel(tz)}
                   {nowLabel ? ` (${nowLabel})` : ""}
-                  <span aria-hidden className="text-[10px]">
-                    ▾
-                  </span>
+                  <span aria-hidden> ▾</span>
                 </button>
                 {tzOpen ? (
-                  <div className="absolute left-0 z-20 mt-2 max-h-56 w-64 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                  <div className="nb-tz__menu">
                     {ACCOUNT_SETTING_TIMEZONES.map((z) => (
                       <button
                         key={z}
                         type="button"
-                        className={`block w-full rounded-lg px-3 py-2 text-left text-xs ${
-                          z === tz
-                            ? "bg-teal-50 font-semibold text-teal-900"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
+                        className={`nb-tz__option${z === tz ? " is-on" : ""}`}
                         onClick={() => {
                           setTz(z);
                           setTzOpen(false);
@@ -567,15 +562,13 @@ export function PublicBookClient({ slug }: Props) {
           />
 
           {selectedSlot ? (
-            <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
-              {bookError ? (
-                <p className="text-sm text-rose-600">{bookError}</p>
-              ) : null}
+            <div className="nb-embed__confirm">
+              {bookError ? <p className="nb-embed__error">{bookError}</p> : null}
               <button
                 type="button"
                 disabled={submitting}
                 onClick={() => void confirmBooking()}
-                className="w-full rounded-xl bg-[var(--brand-teal,#1ca0c2)] py-2.5 text-sm font-semibold text-white hover:brightness-95 disabled:opacity-60"
+                className="nb-embed__book"
               >
                 {submitting ? "Booking…" : "Confirm"}
               </button>
