@@ -134,6 +134,7 @@ export async function createGuestProgrammeJoinCheckoutSession(input: {
     success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/join/canceled`,
     billing_address_collection: "auto",
+    phone_number_collection: { enabled: true },
     customer_creation: "always",
     metadata: {
       product: "programme_join",

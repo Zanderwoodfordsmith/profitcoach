@@ -115,6 +115,12 @@ const programmeOnboardingLinks = [
     hint: "Post-checkout welcome (password optional). Continue into Start Here without Stripe.",
   },
   {
+    href:
+      "/welcome?first_name=Alex&last_name=Coach&email=alex@example.com&phone=%2B447700900123&linkedin=https%3A%2F%2Fwww.linkedin.com%2Fin%2Fexample",
+    label: "GHL welcome link (prefill test)",
+    hint: "No login required. Prefills name, email, phone, LinkedIn for booking + intake.",
+  },
+  {
     href: "/coach/academy/classroom/start-here/start-here-welcome-welcome-program-overview",
     label: "Start Here (first lesson)",
     hint: "Skip welcome; jump straight into the first classroom screen after payment.",

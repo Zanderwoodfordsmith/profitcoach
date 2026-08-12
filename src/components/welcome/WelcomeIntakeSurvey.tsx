@@ -189,10 +189,29 @@ function TimeGlyph() {
 const pictureBtn =
   "flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2 py-3 text-slate-800 transition hover:border-[#42a1ee]/50 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#42a1ee]/30";
 const pictureBtnOn =
-  "border-emerald-400 bg-emerald-50 shadow-[0_0_0_3px_rgba(16,185,129,0.15)]";
+  "border-[#42a1ee] bg-[#e8f4fc] text-[#0c5290] shadow-[0_0_0_3px_rgba(66,161,238,0.28)]";
 const pictureIcon =
   "inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-white text-[#0c5290] shadow-sm ring-1 ring-slate-200/80";
-const pictureIconOn = "bg-emerald-100 text-emerald-700 ring-emerald-200";
+const pictureIconOn = "bg-[#42a1ee] text-white ring-[#42a1ee]";
+
+function SelectedCheck() {
+  return (
+    <span
+      className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#42a1ee] text-white shadow-sm"
+      aria-hidden
+    >
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none">
+        <path
+          d="M6 12.5 10 16.5 18 8"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
 
 type Props = {
   situation: ProgrammeIntakeSituation | "";
@@ -288,8 +307,9 @@ export function WelcomeIntakeSurvey({
                 onClick={() =>
                   selectAndAdvance(() => onSituation(option.value))
                 }
-                className={`${pictureBtn} ${selected ? pictureBtnOn : ""}`}
+                className={`relative ${pictureBtn} ${selected ? pictureBtnOn : ""}`}
               >
+                {selected ? <SelectedCheck /> : null}
                 <span
                   className={`${pictureIcon} ${selected ? pictureIconOn : ""}`}
                 >
@@ -320,8 +340,9 @@ export function WelcomeIntakeSurvey({
                   aria-pressed={selected}
                   disabled={busy}
                   onClick={() => onToggleGoal(option.value)}
-                  className={`${pictureBtn} ${selected ? pictureBtnOn : ""}`}
+                  className={`relative ${pictureBtn} ${selected ? pictureBtnOn : ""}`}
                 >
+                  {selected ? <SelectedCheck /> : null}
                   <span
                     className={`${pictureIcon} ${selected ? pictureIconOn : ""}`}
                   >
@@ -363,8 +384,9 @@ export function WelcomeIntakeSurvey({
                 onClick={() =>
                   selectAndAdvance(() => onTimeCommitment(option.value))
                 }
-                className={`${pictureBtn} ${selected ? pictureBtnOn : ""}`}
+                className={`relative ${pictureBtn} ${selected ? pictureBtnOn : ""}`}
               >
+                {selected ? <SelectedCheck /> : null}
                 <span
                   className={`${pictureIcon} ${selected ? pictureIconOn : ""}`}
                 >

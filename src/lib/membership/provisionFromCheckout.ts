@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { findAuthUserIdByEmail } from "@/lib/auth/findAuthUserIdByEmail";
 import { allocateCoachSlug } from "@/lib/coachSlug";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
+import { notifyProgrammeJoinGhl } from "@/lib/membership/notifyProgrammeJoinGhl";
 import {
   linkStripeCustomerToCoach,
   syncCoachMembershipFromSubscription,
@@ -342,6 +343,48 @@ export async function provisionCoachFromCheckoutSession(input: {
     coachId: user.id,
     customerId,
   });
+
+  const isProgrammeJoin = session.metadata?.product === "programme_join";
+  const alreadyNotifiedGhl =
+    typeof session.metadata?.ghl_programme_join_notified === "string" &&
+    session.metadata.ghl_programme_join_notified.trim().length > 0;
+
+  if (isProgrammeJoin && !alreadyNotifiedGhl) {
+    const phone =
+      session.customer_details?.phone?.trim() ||
+      (typeof session.customer === "object" &&
+      session.customer &&
+      !session.customer.deleted
+        ? session.customer.phone?.trim() || null
+        : null) ||
+      null;
+
+    const notify = await notifyProgrammeJoinGhl({
+      email,
+      fullName,
+      phone,
+      coachId: user.id,
+      slug,
+      stripeSessionId: session.id,
+    });
+
+    if (notify.ok) {
+      try {
+        await stripeServer.checkout.sessions.update(session.id, {
+          metadata: {
+            ...(session.metadata ?? {}),
+            coach_id: user.id,
+            ghl_programme_join_notified: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        console.warn(
+          "provisionFromCheckout: ghl notify metadata stamp failed:",
+          error
+        );
+      }
+    }
+  }
 
   let tokenHash: string | null = null;
   if (input.includeLoginToken) {

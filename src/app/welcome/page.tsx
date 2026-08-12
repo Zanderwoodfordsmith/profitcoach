@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -14,6 +14,7 @@ import type {
   ProgrammeIntakeSituation,
   ProgrammeIntakeTimeCommitment,
 } from "@/config/programmeIntake";
+import { parseProgrammeWelcomePrefill } from "@/config/programmeWelcome";
 import { START_HERE_WELCOME_PATH } from "@/lib/academy/classroomIds";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -24,9 +25,12 @@ type WelcomeState =
       status: "ready";
       email: string;
       fullName: string;
+      phone: string;
+      linkedinUrl: string;
       createdAccount: boolean;
       continuePath: string;
       preview: boolean;
+      guest: boolean;
     };
 
 function WelcomeInner() {
@@ -37,6 +41,10 @@ function WelcomeInner() {
   const isPreview =
     searchParams.get("preview") === "1" ||
     searchParams.get("preview") === "true";
+  const ghlPrefill = useMemo(
+    () => parseProgrammeWelcomePrefill(searchParams),
+    [searchParams]
+  );
 
   const [state, setState] = useState<WelcomeState>({ status: "loading" });
   const [password, setPassword] = useState("");
@@ -83,9 +91,12 @@ function WelcomeInner() {
           status: "ready",
           email: user.email ?? "",
           fullName: profileName || metaName || "Zander",
+          phone: "",
+          linkedinUrl: "",
           createdAccount: true,
           continuePath: START_HERE_WELCOME_PATH,
           preview: true,
+          guest: false,
         });
       } catch (error) {
         if (cancelled) return;
@@ -140,9 +151,12 @@ function WelcomeInner() {
           status: "ready",
           email: body.email ?? "",
           fullName: body.fullName ?? "there",
+          phone: "",
+          linkedinUrl: "",
           createdAccount: Boolean(body.createdAccount),
           continuePath: body.continuePath ?? START_HERE_WELCOME_PATH,
           preview: false,
+          guest: false,
         });
       } catch (error) {
         if (cancelled) return;
@@ -156,22 +170,40 @@ function WelcomeInner() {
       }
     }
 
+    function runGuest() {
+      if (!ghlPrefill) {
+        setState({
+          status: "error",
+          message:
+            "Missing checkout session. If you just paid, open the link from your receipt or contact support.",
+        });
+        return;
+      }
+      setState({
+        status: "ready",
+        email: ghlPrefill.email,
+        fullName: ghlPrefill.fullName || "there",
+        phone: ghlPrefill.phone,
+        linkedinUrl: ghlPrefill.linkedinUrl,
+        createdAccount: false,
+        continuePath: START_HERE_WELCOME_PATH,
+        preview: false,
+        guest: true,
+      });
+    }
+
     if (isPreview) {
       void runPreview();
-    } else if (!sessionId) {
-      setState({
-        status: "error",
-        message:
-          "Missing checkout session. If you just paid, open the link from your receipt or contact support.",
-      });
-    } else {
+    } else if (sessionId) {
       void runCheckout();
+    } else {
+      runGuest();
     }
 
     return () => {
       cancelled = true;
     };
-  }, [clearImpersonation, isPreview, sessionId]);
+  }, [clearImpersonation, ghlPrefill, isPreview, sessionId]);
 
   async function handleSaveIntake(input: {
     linkedinUrl: string;
@@ -179,7 +211,7 @@ function WelcomeInner() {
     goals: ProgrammeIntakeGoal[];
     timeCommitment: ProgrammeIntakeTimeCommitment | "";
   }) {
-    if (state.status !== "ready" || state.preview) return;
+    if (state.status !== "ready" || state.preview || state.guest) return;
 
     const {
       data: { session },
@@ -208,17 +240,30 @@ function WelcomeInner() {
     if (state.status !== "ready") return;
     setPasswordError(null);
 
-    if (!state.preview) {
-      if (password.length < 8) {
-        setPasswordError("Set a password with at least 8 characters.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setPasswordError("Passwords do not match.");
-        return;
-      }
-
+    if (state.guest) {
       setContinueBusy(true);
+      const login = new URL("/login", window.location.origin);
+      if (state.email.trim()) {
+        login.searchParams.set("email", state.email.trim());
+      }
+      login.searchParams.set("next", state.continuePath);
+      router.push(`${login.pathname}${login.search}`);
+      return;
+    }
+
+    if (password.length < 8) {
+      setPasswordError("Set a password with at least 8 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    setContinueBusy(true);
+
+    // Preview shows the same password UI; do not change the admin account.
+    if (!state.preview) {
       try {
         const { error } = await supabaseClient.auth.updateUser({ password });
         if (error) throw error;
@@ -231,7 +276,6 @@ function WelcomeInner() {
       }
     }
 
-    setContinueBusy(true);
     router.push(state.continuePath);
   }
 
@@ -242,7 +286,9 @@ function WelcomeInner() {
         subtitle={
           isPreview
             ? "Loading post-payment welcome preview…"
-            : "Payment confirmed. We’re signing you in…"
+            : sessionId
+              ? "Payment confirmed. We’re signing you in…"
+              : "Loading your welcome…"
         }
       >
         <p className="text-sm text-slate-600">This usually takes a few seconds.</p>
@@ -281,6 +327,9 @@ function WelcomeInner() {
       firstName={firstName}
       fullName={state.fullName}
       email={state.email}
+      phone={state.phone}
+      initialLinkedinUrl={state.linkedinUrl}
+      guest={state.guest}
       preview={state.preview}
       continueBusy={continueBusy}
       passwordError={passwordError}

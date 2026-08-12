@@ -20,9 +20,12 @@ import {
   PROGRAMME_ORIENTATION_BOOK_SLUG,
   PROGRAMME_ORIENTATION_CALENDAR_SLUG,
 } from "@/config/programmeOrientationCalendar";
-import { PROGRAMME_WELCOME_VIDEO_URL } from "@/config/programmeWelcome";
+import {
+  PROGRAMME_WELCOME_VIDALYTICS_BASE_URL,
+  PROGRAMME_WELCOME_VIDALYTICS_EMBED_ID,
+} from "@/config/programmeWelcome";
+import { VidalyticsEmbed } from "@/components/welcome/VidalyticsEmbed";
 import { splitFullName } from "@/lib/splitFullName";
-import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
 
 const CONFETTI_COLORS = [
   "#0c5290",
@@ -95,40 +98,13 @@ function WelcomeConfetti({ active }: { active: boolean }) {
 }
 
 function WelcomeVideo() {
-  const embed = PROGRAMME_WELCOME_VIDEO_URL
-    ? parseLessonVideoEmbed(PROGRAMME_WELCOME_VIDEO_URL)
-    : null;
-
   return (
     <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-slate-900 shadow-[0_24px_60px_-28px_rgba(12,82,144,0.55)] ring-1 ring-slate-900/10">
-      <div className="relative aspect-video w-full">
-        {embed ? (
-          <iframe
-            title="Welcome to Profit Coach"
-            src={`${embed.embedUrl}?rel=0&modestbranding=1`}
-            className="absolute inset-0 h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-[#0c5290] via-[#0a4274] to-[#063056] px-6 text-center">
-            <span
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25"
-              aria-hidden
-            >
-              <svg viewBox="0 0 24 24" className="h-7 w-7 fill-current pl-0.5">
-                <path d="M8 5.14v13.72L19 12 8 5.14z" />
-              </svg>
-            </span>
-            <p className="text-lg font-semibold tracking-tight text-white">
-              Welcome message
-            </p>
-            <p className="max-w-sm text-sm text-white/75">
-              Your congratulations video will play here once it&apos;s linked.
-            </p>
-          </div>
-        )}
-      </div>
+      <VidalyticsEmbed
+        embedId={PROGRAMME_WELCOME_VIDALYTICS_EMBED_ID}
+        embedBaseUrl={PROGRAMME_WELCOME_VIDALYTICS_BASE_URL}
+        title="Welcome to Profit Coach"
+      />
     </div>
   );
 }
@@ -189,6 +165,10 @@ export type WelcomeCelebrationProps = {
   firstName: string;
   fullName: string;
   email: string;
+  phone?: string;
+  initialLinkedinUrl?: string;
+  /** GHL / share link — no Stripe session; booking + intake still work locally. */
+  guest?: boolean;
   preview: boolean;
   continueBusy: boolean;
   passwordError: string | null;
@@ -209,6 +189,9 @@ export function WelcomeCelebration({
   firstName,
   fullName,
   email,
+  phone = "",
+  initialLinkedinUrl = "",
+  guest = false,
   preview,
   continueBusy,
   passwordError,
@@ -224,7 +207,7 @@ export function WelcomeCelebration({
   const [booked, setBooked] = useState(false);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [portalOpen, setPortalOpen] = useState(false);
-  const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [linkedinUrl, setLinkedinUrl] = useState(initialLinkedinUrl);
   const [situation, setSituation] = useState<ProgrammeIntakeSituation | "">("");
   const [goals, setGoals] = useState<ProgrammeIntakeGoal[]>([]);
   const [timeCommitment, setTimeCommitment] = useState<
@@ -240,8 +223,9 @@ export function WelcomeCelebration({
       firstName: (split.first_name || firstName || "").trim(),
       lastName: (split.last_name || "").trim(),
       email: email.trim(),
+      phone: phone.trim() || undefined,
     };
-  }, [email, firstName, fullName]);
+  }, [email, firstName, fullName, phone]);
 
   const showIntakeBody = !intakeDone && (intakeOpen || booked);
   const showPortalBody = portalOpen || intakeDone;
@@ -268,7 +252,7 @@ export function WelcomeCelebration({
 
   async function handleSaveIntake() {
     setIntakeError(null);
-    if (preview) {
+    if (preview || guest) {
       setIntakeDone(true);
       return;
     }
@@ -306,7 +290,9 @@ export function WelcomeCelebration({
           role="status"
         >
           <p className="font-medium">Admin preview</p>
-          <p className="mt-0.5 text-amber-900/85">Stripe skipped</p>
+          <p className="mt-0.5 text-amber-900/85">
+            Stripe skipped · password not saved
+          </p>
         </div>
       ) : null}
 
@@ -468,8 +454,9 @@ export function WelcomeCelebration({
                     Access the portal
                   </h2>
                   <p className="mt-0.5 text-sm text-slate-600">
-                    Set a password and open Start Here — available even if you
-                    book later.
+                    {guest
+                      ? "Sign in to open Start Here — available even if you book later."
+                      : "Set a password and open Start Here — available even if you book later."}
                   </p>
                 </div>
                 {showPortalBody ? (
@@ -481,58 +468,78 @@ export function WelcomeCelebration({
 
               {showPortalBody ? (
                 <div className="mt-5 space-y-3">
-                  {preview ? (
-                    <p className="text-sm text-slate-600">
-                      Password set is skipped in admin preview so your login
-                      stays unchanged.
-                    </p>
+                  {guest ? (
+                    <>
+                      <p className="text-sm text-slate-600">
+                        Use the email from your welcome link
+                        {email.trim() ? (
+                          <>
+                            {" "}
+                            (<span className="font-medium text-slate-900">
+                              ({email.trim()})
+                            </span>
+                          </>
+                        ) : null}{" "}
+                        to sign in, then continue into Start Here.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={onContinue}
+                        disabled={continueBusy}
+                        className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {continueBusy ? "Opening…" : "Sign in to Start Here"}
+                      </button>
+                    </>
                   ) : (
-                    <div className="grid gap-2.5 sm:grid-cols-2">
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-medium text-slate-600">
-                          New password
-                        </span>
-                        <input
-                          type="password"
-                          autoComplete="new-password"
-                          value={password}
-                          onChange={(e) => onPasswordChange(e.target.value)}
-                          className={inputClassName}
-                          placeholder="At least 8 characters"
-                          disabled={continueBusy}
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-1.5 block text-xs font-medium text-slate-600">
-                          Confirm password
-                        </span>
-                        <input
-                          type="password"
-                          autoComplete="new-password"
-                          value={confirmPassword}
-                          onChange={(e) =>
-                            onConfirmPasswordChange(e.target.value)
-                          }
-                          className={inputClassName}
-                          placeholder="Confirm"
-                          disabled={continueBusy}
-                        />
-                      </label>
-                    </div>
+                    <>
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                            New password
+                          </span>
+                          <input
+                            type="password"
+                            autoComplete="new-password"
+                            value={password}
+                            onChange={(e) => onPasswordChange(e.target.value)}
+                            className={inputClassName}
+                            placeholder="At least 8 characters"
+                            disabled={continueBusy}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                            Confirm password
+                          </span>
+                          <input
+                            type="password"
+                            autoComplete="new-password"
+                            value={confirmPassword}
+                            onChange={(e) =>
+                              onConfirmPasswordChange(e.target.value)
+                            }
+                            className={inputClassName}
+                            placeholder="Confirm"
+                            disabled={continueBusy}
+                          />
+                        </label>
+                      </div>
+                      {passwordError ? (
+                        <p className="text-sm text-rose-600" role="alert">
+                          {passwordError}
+                        </p>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={onContinue}
+                        disabled={continueBusy}
+                        className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {continueBusy ? "Opening portal…" : "Open Start Here"}
+                      </button>
+                    </>
                   )}
-                  {passwordError ? (
-                    <p className="text-sm text-rose-600" role="alert">
-                      {passwordError}
-                    </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={onContinue}
-                    disabled={continueBusy}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-wait disabled:opacity-60"
-                  >
-                    {continueBusy ? "Opening portal…" : "Open Start Here"}
-                  </button>
                 </div>
               ) : null}
             </div>
