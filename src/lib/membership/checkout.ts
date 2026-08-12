@@ -119,7 +119,7 @@ export async function createGuestMembershipCheckoutSession(input: {
 }
 
 /**
- * One-time programme join Checkout (e.g. BCA enrolment / £1 test product).
+ * Programme join Checkout (one-time or limited recurring e.g. 2 × £1).
  * Success returns to /welcome so we can provision + sign them in.
  */
 export async function createGuestProgrammeJoinCheckoutSession(input: {
@@ -127,6 +127,56 @@ export async function createGuestProgrammeJoinCheckoutSession(input: {
   request: Request;
 }): Promise<{ url: string }> {
   const baseUrl = getAppBaseUrl(input.request);
+  const {
+    programmeJoinPaymentCount,
+    recurringIntervalSeconds,
+  } = await import("@/config/programmeJoin");
+
+  const price = await stripeServer.prices.retrieve(input.priceId);
+  const joinMeta = {
+    product: "programme_join",
+    access_tier: "programme",
+  };
+
+  if (price.type === "recurring") {
+    const payments = programmeJoinPaymentCount(price.metadata) ?? 1;
+    const interval = price.recurring?.interval ?? "month";
+    const intervalCount = price.recurring?.interval_count ?? 1;
+    const joinMetaWithPlan = {
+      ...joinMeta,
+      programme_join_payments: String(payments),
+    };
+
+    // N charges: invoice now + renewals, then cancel shortly after the last renewal.
+    const cancelAt =
+      payments <= 1
+        ? undefined
+        : Math.floor(Date.now() / 1000) +
+          recurringIntervalSeconds(interval, intervalCount) * (payments - 1) +
+          2 * 24 * 60 * 60;
+
+    const session = await stripeServer.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: input.priceId, quantity: 1 }],
+      success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/join/canceled`,
+      billing_address_collection: "auto",
+      phone_number_collection: { enabled: true },
+      customer_creation: "always",
+      metadata: joinMetaWithPlan,
+      subscription_data: {
+        metadata: joinMetaWithPlan,
+        ...(cancelAt ? { cancel_at: cancelAt } : {}),
+      },
+      allow_promotion_codes: true,
+    });
+
+    if (!session.url) {
+      throw new Error("Checkout session missing URL.");
+    }
+
+    return { url: session.url };
+  }
 
   const session = await stripeServer.checkout.sessions.create({
     mode: "payment",
@@ -136,15 +186,9 @@ export async function createGuestProgrammeJoinCheckoutSession(input: {
     billing_address_collection: "auto",
     phone_number_collection: { enabled: true },
     customer_creation: "always",
-    metadata: {
-      product: "programme_join",
-      access_tier: "programme",
-    },
+    metadata: joinMeta,
     payment_intent_data: {
-      metadata: {
-        product: "programme_join",
-        access_tier: "programme",
-      },
+      metadata: joinMeta,
     },
     allow_promotion_codes: true,
   });

@@ -8,6 +8,10 @@ import {
   authPrimaryButtonClassName,
 } from "@/components/auth/AuthSplitShell";
 import { WelcomeCelebration } from "@/components/welcome/WelcomeCelebration";
+import {
+  WelcomeSetupLoading,
+  type WelcomeSetupPhase,
+} from "@/components/welcome/WelcomeSetupLoading";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import type {
   ProgrammeIntakeGoal,
@@ -47,6 +51,9 @@ function WelcomeInner() {
   );
 
   const [state, setState] = useState<WelcomeState>({ status: "loading" });
+  const [setupPhase, setSetupPhase] = useState<WelcomeSetupPhase>(
+    sessionId ? "confirm" : "provision"
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [continueBusy, setContinueBusy] = useState(false);
@@ -57,6 +64,7 @@ function WelcomeInner() {
 
     async function runPreview() {
       try {
+        setSetupPhase("provision");
         const {
           data: { user },
         } = await supabaseClient.auth.getUser();
@@ -112,6 +120,12 @@ function WelcomeInner() {
 
     async function runCheckout() {
       try {
+        setSetupPhase("confirm");
+        // Brief beat so "Payment confirmed" reads as a real first step.
+        await new Promise((r) => window.setTimeout(r, 350));
+        if (cancelled) return;
+
+        setSetupPhase("provision");
         const res = await fetch("/api/membership/welcome", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -135,6 +149,9 @@ function WelcomeInner() {
             "Login token missing. Please try signing in from the login page."
           );
         }
+
+        if (cancelled) return;
+        setSetupPhase("sign_in");
 
         const { error: otpError } = await supabaseClient.auth.verifyOtp({
           token_hash: body.tokenHash,
@@ -281,18 +298,16 @@ function WelcomeInner() {
 
   if (state.status === "loading") {
     return (
-      <AuthSplitShell
-        title="Setting up your account"
-        subtitle={
+      <WelcomeSetupLoading
+        phase={setupPhase}
+        detail={
           isPreview
-            ? "Loading post-payment welcome preview…"
+            ? "Loading the post-payment welcome preview…"
             : sessionId
-              ? "Payment confirmed. We’re signing you in…"
+              ? "Payment confirmed — finishing your account so you can get started."
               : "Loading your welcome…"
         }
-      >
-        <p className="text-sm text-slate-600">This usually takes a few seconds.</p>
-      </AuthSplitShell>
+      />
     );
   }
 
@@ -347,12 +362,10 @@ export default function WelcomePage() {
   return (
     <Suspense
       fallback={
-        <AuthSplitShell
-          title="Setting up your account"
-          subtitle="Payment confirmed. We’re signing you in…"
-        >
-          <p className="text-sm text-slate-600">Loading…</p>
-        </AuthSplitShell>
+        <WelcomeSetupLoading
+          phase="confirm"
+          detail="Payment confirmed — finishing your account so you can get started."
+        />
       }
     >
       <WelcomeInner />

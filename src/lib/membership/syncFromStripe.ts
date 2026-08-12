@@ -165,12 +165,17 @@ export async function syncCoachMembershipFromSubscription(
     currentTier === "early_exit";
 
   if (!preserveTier) {
+    const isProgrammeJoinPlan =
+      subscription.metadata?.product === "programme_join";
+
     if (
       subscription.status === "active" ||
       subscription.status === "trialing" ||
       subscription.status === "past_due"
     ) {
-      if (tierFromPrice) {
+      if (isProgrammeJoinPlan) {
+        updates.access_tier = "programme";
+      } else if (tierFromPrice) {
         updates.access_tier = tierFromPrice;
       }
     } else if (
@@ -178,7 +183,10 @@ export async function syncCoachMembershipFromSubscription(
       subscription.status === "unpaid" ||
       subscription.status === "incomplete_expired"
     ) {
-      updates.access_tier = "alumni" satisfies CoachAccessTier;
+      // Finished multi-pay programme plans should keep programme access.
+      if (!isProgrammeJoinPlan) {
+        updates.access_tier = "alumni" satisfies CoachAccessTier;
+      }
     }
   }
 

@@ -6,7 +6,7 @@ import { resolveProgrammeJoinPriceId } from "@/config/programmeJoin";
  * GET /api/join/checkout
  * GET /api/join/checkout?price=price_xxx
  *
- * Starts one-time Stripe Checkout for any active price on the programme product,
+ * Starts Stripe Checkout for a programme price (one-time or limited multi-pay),
  * then returns to /welcome for account + auto sign-in.
  */
 export async function GET(request: Request) {

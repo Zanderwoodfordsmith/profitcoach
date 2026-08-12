@@ -205,6 +205,7 @@ export function WelcomeCelebration({
   const [showConfetti, setShowConfetti] = useState(true);
   const [previewToastVisible, setPreviewToastVisible] = useState(preview);
   const [booked, setBooked] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(true);
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [portalOpen, setPortalOpen] = useState(false);
   const [linkedinUrl, setLinkedinUrl] = useState(initialLinkedinUrl);
@@ -227,6 +228,7 @@ export function WelcomeCelebration({
     };
   }, [email, firstName, fullName, phone]);
 
+  const showBookingBody = !booked && bookingOpen;
   const showIntakeBody = !intakeDone && (intakeOpen || booked);
   const showPortalBody = portalOpen || intakeDone;
 
@@ -320,7 +322,9 @@ export function WelcomeCelebration({
             className={
               booked
                 ? "border-emerald-200 bg-emerald-50/70"
-                : "ring-1 ring-[#0c5290]/10"
+                : showBookingBody
+                  ? "ring-1 ring-[#0c5290]/10"
+                  : ""
             }
           >
             {booked ? (
@@ -337,8 +341,13 @@ export function WelcomeCelebration({
               </div>
             ) : (
               <div className="p-4 sm:p-5">
-                <div className="flex gap-3">
-                  <StepBadge n={1} active />
+                <button
+                  type="button"
+                  onClick={() => setBookingOpen((v) => !v)}
+                  className="flex w-full items-start gap-3 text-left"
+                  aria-expanded={showBookingBody}
+                >
+                  <StepBadge n={1} active={showBookingBody} />
                   <div className="min-w-0 flex-1">
                     <h2 className="text-base font-semibold text-slate-900">
                       Book your orientation call
@@ -347,21 +356,28 @@ export function WelcomeCelebration({
                       Pick a time. Nothing else is required.
                     </p>
                   </div>
-                </div>
+                  {showBookingBody ? (
+                    <ChevronUp className="mt-1 h-5 w-5 shrink-0 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="mt-1 h-5 w-5 shrink-0 text-slate-400" />
+                  )}
+                </button>
 
-                <div className="mt-4">
-                  <NativeBookingEmbed
-                    slug={PROGRAMME_ORIENTATION_BOOK_SLUG}
-                    calendarSlug={PROGRAMME_ORIENTATION_CALENDAR_SLUG}
-                    contact={bookingContact}
-                    embedded
-                    confirmLabel="Confirm My Orientation Call"
-                    hideSuccessPanel
-                    hideThanks
-                    question="What time works best for you?"
-                    onBooked={() => setBooked(true)}
-                  />
-                </div>
+                {showBookingBody ? (
+                  <div className="mt-4">
+                    <NativeBookingEmbed
+                      slug={PROGRAMME_ORIENTATION_BOOK_SLUG}
+                      calendarSlug={PROGRAMME_ORIENTATION_CALENDAR_SLUG}
+                      contact={bookingContact}
+                      embedded
+                      confirmLabel="Confirm My Orientation Call"
+                      hideSuccessPanel
+                      hideThanks
+                      question="What time works best for you?"
+                      onBooked={() => setBooked(true)}
+                    />
+                  </div>
+                ) : null}
               </div>
             )}
           </StepCard>

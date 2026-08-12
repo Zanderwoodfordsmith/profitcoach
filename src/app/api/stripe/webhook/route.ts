@@ -150,7 +150,21 @@ export async function POST(request: Request) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
+        let subscription = event.data.object as Stripe.Subscription;
+        if (event.type === "customer.subscription.created") {
+          try {
+            const { ensureProgrammeJoinLimitedPayments } = await import(
+              "@/lib/membership/ensureProgrammeJoinLimitedPayments"
+            );
+            subscription =
+              await ensureProgrammeJoinLimitedPayments(subscription);
+          } catch (error) {
+            console.warn(
+              "stripe webhook: limited payment plan cancel_at failed:",
+              error
+            );
+          }
+        }
         const customerEmail = await customerEmailFromStripe(subscription.customer);
         await syncCoachMembershipFromSubscription(
           supabaseAdmin,

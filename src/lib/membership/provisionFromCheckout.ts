@@ -300,20 +300,65 @@ export async function provisionCoachFromCheckoutSession(input: {
     await linkStripeCustomerToCoach(supabaseAdmin, user.id, customerId);
   }
 
+  const isProgrammeJoinCheckout =
+    session.metadata?.product === "programme_join" ||
+    (typeof session.subscription === "object" &&
+      session.subscription &&
+      "metadata" in session.subscription &&
+      session.subscription.metadata?.product === "programme_join");
+
   if (session.mode === "subscription" && session.subscription) {
-    const subscription =
+    let subscription =
       typeof session.subscription === "string"
         ? await stripeServer.subscriptions.retrieve(session.subscription)
         : session.subscription;
+
+    try {
+      const { ensureProgrammeJoinLimitedPayments } = await import(
+        "@/lib/membership/ensureProgrammeJoinLimitedPayments"
+      );
+      subscription = await ensureProgrammeJoinLimitedPayments(subscription);
+    } catch (error) {
+      console.warn(
+        "provisionFromCheckout: limited payment plan cancel_at failed:",
+        error
+      );
+    }
+
     await syncCoachMembershipFromSubscription(
       supabaseAdmin,
       subscription,
       email
     );
-  } else if (
-    session.mode === "payment" &&
-    session.metadata?.product === "programme_join"
-  ) {
+
+    // Programme join payment plans are not mapped membership prices — force programme tier.
+    if (
+      isProgrammeJoinCheckout ||
+      subscription.metadata?.product === "programme_join"
+    ) {
+      const { data: coachRow } = await supabaseAdmin
+        .from("coaches")
+        .select("access_tier, access_tier_locked")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const locked = Boolean(coachRow?.access_tier_locked);
+      const tier = (coachRow?.access_tier as string | null) ?? null;
+      if (
+        !locked &&
+        tier !== "do_not_contact" &&
+        tier !== "early_exit"
+      ) {
+        await supabaseAdmin
+          .from("coaches")
+          .update({
+            access_tier: "programme",
+            recurring_payment_status: "first_6_months",
+          })
+          .eq("id", user.id);
+      }
+    }
+  } else if (session.mode === "payment" && isProgrammeJoinCheckout) {
     // One-time programme enrolment — keep / restore programme access.
     const { data: coachRow } = await supabaseAdmin
       .from("coaches")
