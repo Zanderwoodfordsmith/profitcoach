@@ -60,13 +60,15 @@ export function CoachRouteAccessGuard({ children }: Props) {
   }, []);
 
   const previewRoute = adminPreviewCoachRouteForPath(pathname);
+  // Admins “View as coach” should match the coach product surface: no preview routes.
+  const canAccessAdminPreview = isAdmin && !impersonatingCoachId;
 
   useEffect(() => {
-    if (roleLoading || isAdmin || !previewRoute) return;
+    if (roleLoading || canAccessAdminPreview || !previewRoute) return;
     router.replace(previewRoute.fallback);
-  }, [roleLoading, isAdmin, previewRoute, router]);
+  }, [roleLoading, canAccessAdminPreview, previewRoute, router]);
 
-  if (previewRoute && (roleLoading || !isAdmin)) {
+  if (previewRoute && (roleLoading || !canAccessAdminPreview)) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center px-4">
         <p className="text-sm text-slate-600">
@@ -76,7 +78,13 @@ export function CoachRouteAccessGuard({ children }: Props) {
     );
   }
 
-  if (loading) {
+  if (loading || roleLoading) {
+    return <>{children}</>;
+  }
+
+  // Admins browsing the coach surface as themselves are not gated.
+  // Use “View as coach” to see real membership locks for a specific coach.
+  if (isAdmin && !impersonatingCoachId) {
     return <>{children}</>;
   }
 

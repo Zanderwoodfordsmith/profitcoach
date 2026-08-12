@@ -10,6 +10,8 @@ import {
   formatCommunityTimezoneShort,
 } from "@/lib/communityCalendarTimezones";
 import { formatInTimeZone } from "@/lib/booking/bookingTime";
+import { BookingDateTimePicker } from "@/components/booking/BookingDateTimePicker";
+import "./native-booking.css";
 
 type BookMeta = {
   slug: string;
@@ -43,35 +45,6 @@ type Props = {
 };
 
 type Step = "form" | "book";
-
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-function monthMatrix(year: number, monthIndex0: number): (number | null)[][] {
-  const first = new Date(Date.UTC(year, monthIndex0, 1));
-  const startPad = first.getUTCDay(); // Sun=0
-  const daysInMonth = new Date(Date.UTC(year, monthIndex0 + 1, 0)).getUTCDate();
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < startPad; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-  while (cells.length % 7 !== 0) cells.push(null);
-  const rows: (number | null)[][] = [];
-  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-  return rows;
-}
-
-function ymdFromParts(year: number, monthIndex0: number, day: number): string {
-  return `${year}-${pad2(monthIndex0 + 1)}-${pad2(day)}`;
-}
-
-function formatSlotLabel(iso: string, tz: string, hour12: boolean): string {
-  return formatInTimeZone(new Date(iso), tz, {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12,
-  });
-}
 
 function buildGoogleCalendarUrl(input: {
   title: string;
@@ -145,11 +118,8 @@ export function PublicBookClient({ slug }: Props) {
   const [metaError, setMetaError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("form");
   const [tz, setTz] = useState(() => defaultCommunityCalendarTimezone());
-  const [hour12, setHour12] = useState(true);
   const [days, setDays] = useState<DaySlots[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => new Date().getMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{
     starts_at: string;
@@ -201,11 +171,7 @@ export function PublicBookClient({ slug }: Props) {
     setDays(nextDays);
     setSelectedSlot(null);
     if (nextDays.length > 0) {
-      const first = nextDays[0]!;
-      setSelectedDate(first.date);
-      const [y, m] = first.date.split("-").map(Number);
-      setViewYear(y);
-      setViewMonth(m - 1);
+      setSelectedDate(nextDays[0]!.date);
     } else {
       setSelectedDate(null);
     }
@@ -214,16 +180,6 @@ export function PublicBookClient({ slug }: Props) {
   useEffect(() => {
     if (step === "book") void loadSlots();
   }, [step, loadSlots]);
-
-  const availableSet = useMemo(
-    () => new Set(days.map((d) => d.date)),
-    [days]
-  );
-
-  const selectedDay = useMemo(
-    () => days.find((d) => d.date === selectedDate) ?? null,
-    [days, selectedDate]
-  );
 
   const nowLabel = useMemo(() => {
     try {
@@ -555,49 +511,42 @@ export function PublicBookClient({ slug }: Props) {
           </button>
         </form>
       ) : (
-        <div className="grid md:grid-cols-[minmax(200px,0.9fr)_minmax(240px,1.1fr)_minmax(180px,0.85fr)]">
-          {/* Left: event meta */}
-          <div className="border-b border-slate-100 p-6 md:border-b-0 md:border-r">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-              {meta.title}
-            </h1>
-            <ul className="mt-5 space-y-3 text-sm text-slate-600">
-              <li className="flex items-center gap-2.5">
-                <VideoIcon />
-                Video call
-              </li>
-              <li className="flex items-center gap-2.5">
-                <ClockIcon />
-                {meta.meeting_duration_minutes} minutes
-              </li>
-              <li className="relative">
+        <div className="nb-embed">
+          <header className="nb-embed__head">
+            <h2 className="nb-embed__thanks">
+              {firstName.trim() ? `Thanks ${firstName.trim()}` : "Thanks"}
+            </h2>
+            <p className="nb-embed__question">What time works best for you?</p>
+          </header>
+          <BookingDateTimePicker
+            timezone={tz}
+            meetingDurationMinutes={meta.meeting_duration_minutes}
+            days={days}
+            loading={slotsLoading}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            selectedSlot={selectedSlot}
+            onSelectSlot={setSelectedSlot}
+            nowLabel={nowLabel}
+            timezoneShort={tzShort}
+            timezoneControl={
+              <span className="nb-tz">
                 <button
                   type="button"
+                  className="nb-tz__btn"
                   onClick={() => setTzOpen((o) => !o)}
-                  className="flex w-full items-start gap-2.5 rounded-lg text-left hover:bg-slate-50"
                 >
-                  <GlobeIcon />
-                  <span>
-                    <span className="block font-medium text-slate-800">
-                      {accountTimezoneOptionLabel(tz)}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {tzShort}
-                      {nowLabel ? ` (${nowLabel})` : ""}
-                    </span>
-                  </span>
+                  {accountTimezoneOptionLabel(tz)}
+                  {nowLabel ? ` (${nowLabel})` : ""}
+                  <span aria-hidden> ▾</span>
                 </button>
                 {tzOpen ? (
-                  <div className="absolute left-0 right-0 z-20 mt-2 max-h-56 overflow-auto rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+                  <div className="nb-tz__menu">
                     {ACCOUNT_SETTING_TIMEZONES.map((z) => (
                       <button
                         key={z}
                         type="button"
-                        className={`block w-full rounded-lg px-3 py-2 text-left text-xs ${
-                          z === tz
-                            ? "bg-sky-50 font-semibold text-sky-900"
-                            : "text-slate-700 hover:bg-slate-50"
-                        }`}
+                        className={`nb-tz__option${z === tz ? " is-on" : ""}`}
                         onClick={() => {
                           setTz(z);
                           setTzOpen(false);
@@ -608,177 +557,23 @@ export function PublicBookClient({ slug }: Props) {
                     ))}
                   </div>
                 ) : null}
-              </li>
-            </ul>
-            <p className="mt-6 text-xs text-slate-400">
-              Booking as {firstName} {lastName}
-            </p>
-          </div>
+              </span>
+            }
+          />
 
-          {/* Middle: month calendar */}
-          <div className="border-b border-slate-100 p-6 md:border-b-0 md:border-r">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-slate-900">
-                {new Date(Date.UTC(viewYear, viewMonth, 1)).toLocaleString(
-                  "en-GB",
-                  { month: "long", year: "numeric", timeZone: "UTC" }
-                )}
-              </h2>
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  aria-label="Previous month"
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-                  onClick={() => {
-                    const d = new Date(Date.UTC(viewYear, viewMonth - 1, 1));
-                    setViewYear(d.getUTCFullYear());
-                    setViewMonth(d.getUTCMonth());
-                  }}
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  aria-label="Next month"
-                  className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
-                  onClick={() => {
-                    const d = new Date(Date.UTC(viewYear, viewMonth + 1, 1));
-                    setViewYear(d.getUTCFullYear());
-                    setViewMonth(d.getUTCMonth());
-                  }}
-                >
-                  ›
-                </button>
-              </div>
+          {selectedSlot ? (
+            <div className="nb-embed__confirm">
+              {bookError ? <p className="nb-embed__error">{bookError}</p> : null}
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => void confirmBooking()}
+                className="nb-embed__book"
+              >
+                {submitting ? "Booking…" : "Confirm"}
+              </button>
             </div>
-
-            {slotsLoading ? (
-              <p className="mt-8 text-sm text-slate-500">Loading availability…</p>
-            ) : (
-              <>
-                <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-400">
-                  {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d) => (
-                    <div key={d}>{d}</div>
-                  ))}
-                </div>
-                <div className="mt-1 grid grid-cols-7 gap-1">
-                  {monthMatrix(viewYear, viewMonth).flatMap((row, ri) =>
-                    row.map((day, ci) => {
-                      if (day == null) {
-                        return <div key={`${ri}-${ci}`} className="aspect-square" />;
-                      }
-                      const ymd = ymdFromParts(viewYear, viewMonth, day);
-                      const available = availableSet.has(ymd);
-                      const selected = selectedDate === ymd;
-                      return (
-                        <button
-                          key={ymd}
-                          type="button"
-                          disabled={!available}
-                          onClick={() => {
-                            setSelectedDate(ymd);
-                            setSelectedSlot(null);
-                          }}
-                          className={`relative flex aspect-square items-center justify-center rounded-full text-sm transition ${
-                            selected
-                              ? "bg-sky-700 font-semibold text-white"
-                              : available
-                                ? "bg-sky-100 font-medium text-sky-900 hover:bg-sky-200"
-                                : "text-slate-300"
-                          }`}
-                        >
-                          {day}
-                          {selected ? (
-                            <span className="absolute bottom-1 h-1 w-1 rounded-full bg-white" />
-                          ) : null}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Right: times */}
-          <div className="flex max-h-[420px] flex-col p-6">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-base font-semibold text-slate-900">
-                {selectedDay
-                  ? selectedDay.label
-                  : selectedDate
-                    ? selectedDate
-                    : "Pick a day"}
-              </h2>
-              <div className="inline-flex rounded-lg border border-slate-200 p-0.5 text-xs font-semibold">
-                <button
-                  type="button"
-                  className={`rounded-md px-2 py-1 ${
-                    hour12 ? "bg-sky-600 text-white" : "text-slate-500"
-                  }`}
-                  onClick={() => setHour12(true)}
-                >
-                  12h
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-md px-2 py-1 ${
-                    !hour12 ? "bg-sky-600 text-white" : "text-slate-500"
-                  }`}
-                  onClick={() => setHour12(false)}
-                >
-                  24h
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 flex-1 space-y-2 overflow-y-auto pr-1">
-              {!selectedDay ? (
-                <p className="text-sm text-slate-500">Select an available day.</p>
-              ) : selectedDay.slots.length === 0 ? (
-                <p className="text-sm text-slate-500">No times this day.</p>
-              ) : (
-                selectedDay.slots.map((slot) => {
-                  const active = selectedSlot?.starts_at === slot.starts_at;
-                  return (
-                    <button
-                      key={slot.starts_at}
-                      type="button"
-                      onClick={() =>
-                        setSelectedSlot({
-                          starts_at: slot.starts_at,
-                          ends_at: slot.ends_at,
-                        })
-                      }
-                      className={`w-full rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
-                        active
-                          ? "border-sky-600 bg-sky-50 text-sky-900"
-                          : "border-slate-200 text-slate-800 hover:border-slate-300"
-                      }`}
-                    >
-                      {formatSlotLabel(slot.starts_at, tz, hour12)}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-
-            {selectedSlot ? (
-              <div className="mt-4 space-y-2 border-t border-slate-100 pt-4">
-                {bookError ? (
-                  <p className="text-sm text-rose-600">{bookError}</p>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => void confirmBooking()}
-                  className="w-full rounded-xl bg-sky-600 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
-                >
-                  {submitting ? "Booking…" : "Confirm"}
-                </button>
-              </div>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       )}
     </div>
@@ -795,28 +590,6 @@ function ClockIcon() {
         strokeWidth="1.8"
         strokeLinecap="round"
       />
-    </svg>
-  );
-}
-
-function GlobeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-0.5 shrink-0">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M3 12h18M12 3c2.5 2.8 3.8 5.8 3.8 9s-1.3 6.2-3.8 9c-2.5-2.8-3.8-5.8-3.8-9s1.3-6.2 3.8-9Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function VideoIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <rect x="3" y="6" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M15 10.5 21 7v10l-6-3.5V10.5Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
   );
 }

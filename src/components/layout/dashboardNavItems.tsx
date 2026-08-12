@@ -156,7 +156,7 @@ function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
 }
 
 function callsNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
-  return { href: `${prefix}/calls`, label: "Calls", icon: IconPhoneCall };
+  return { href: `${prefix}/calls`, label: "Calendar", icon: IconPhoneCall };
 }
 
 function IconPhoneCall({ className }: { className?: string }) {
@@ -194,12 +194,16 @@ export function marketingNavItems(
     items.push(bossScoreNavItem(prefix));
   }
   if (options?.includeAi !== false) {
-    items.push({ href: `${prefix}/message-generator`, label: "AI", icon: IconSparkles });
+    items.push({
+      href: `${prefix}/message-generator`,
+      label: "Create",
+      icon: IconSparkles,
+    });
   }
   return items;
 }
 
-/** Marketing links shown to coaches (Boss Pro, prospects, funnel — no AI). */
+/** Marketing links shown to coaches (Boss Pro, prospects, funnel — no Create hub). */
 export function coachMarketingNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   return marketingNavItems(prefix, { includeBossScore: true, includeAi: false });
 }
@@ -231,7 +235,9 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
 
 /** Tabs inside the Get Clients hub (former Marketing links). */
 export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
-  return getClientsTabItems(prefix).map((item) => item.href);
+  return getClientsTabItems(prefix)
+    .filter((item) => !item.iconOnly)
+    .map((item) => item.href);
 }
 
 /** Tabs inside the Coach Clients hub (former Delivery links). */
@@ -255,8 +261,9 @@ export type ToolsHubTabItem = {
   /** Gear-only tab at the end of the Get Clients hub. */
   iconOnly?: boolean;
   /**
-   * Not released to coaches yet. Shown only for admins (subtle/grey + lock).
-   * Coaches never see these tabs; direct /coach URLs redirect away.
+   * Not released to coaches yet. Shown only for admins on the admin surface
+   * (subtle/grey + lock). Coaches and admins “View as coach” never see these
+   * tabs; direct /coach URLs redirect away.
    */
   adminPreview?: boolean;
 };
@@ -269,43 +276,36 @@ export type CoachClientsTabItem = {
   adminPreview?: boolean;
 };
 
+/**
+ * Get Clients peer tabs — GHL-style order:
+ * Conversations → Calendar → Prospects → Pipeline → Content → …
+ * Infrequent setup / AI writers live under Create.
+ */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
-  /** Funnel order: Prospects → Pipeline → Calls stay clustered. */
   const items: ToolsHubTabItem[] = [
     {
-      href: `${prefix}/first-campaign`,
-      label: "First Campaign",
+      href: `${prefix}/conversations`,
+      label: "Conversations",
       adminPreview: true,
     },
+    { href: `${prefix}/calls`, label: "Calendar" },
+    { href: `${prefix}/prospects`, label: "Prospects" },
+    { href: `${prefix}/pipeline`, label: "Pipeline", adminPreview: true },
   ];
   if (prefix === "/admin") {
     items.push({
-      href: "/admin/lead-finder",
-      label: "Lead Finder",
+      href: "/admin/linkedin",
+      label: "Content",
       adminPreview: true,
     });
   }
   items.push(
-    { href: `${prefix}/prospects`, label: "Prospects" },
-    { href: `${prefix}/pipeline`, label: "Pipeline", adminPreview: true },
-    { href: `${prefix}/calls`, label: "Calls" },
-    { href: `${prefix}/boss-pro`, label: "Boss Pro" }
-  );
-  if (prefix === "/admin") {
-    items.push({
-      href: "/admin/linkedin",
-      label: "Content planner",
-      adminPreview: true,
-    });
-    items.push({
-      href: "/admin/newsletter",
-      label: "Newsletter",
-      adminPreview: true,
-    });
-    items.push({
+    { href: `${prefix}/boss-pro`, label: "Boss Pro" },
+    {
       href: `${prefix}/message-generator`,
-      label: "AI",
+      label: "Create",
       adminPreview: true,
+<<<<<<< HEAD
     });
   }
   items.push({
@@ -313,7 +313,63 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     label: "Settings",
     iconOnly: true,
   });
+=======
+    },
+    {
+      href:
+        prefix === "/admin"
+          ? "/admin/account?tab=funnel"
+          : "/coach/settings?tab=funnel",
+      label: "Settings",
+      iconOnly: true,
+    }
+  );
+>>>>>>> academy-classroom-overhaul
   return items;
+}
+
+/** Paths that belong to Get Clients (tabs + Create / Content satellites). */
+export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
+  const paths = [
+    ...getClientsTabHrefs(prefix),
+    `${prefix}/funnel-settings`,
+    `${prefix}/first-campaign`,
+    `${prefix}/message-generator`,
+  ];
+  if (prefix === "/admin") {
+    paths.push(
+      "/admin/lead-finder",
+      "/admin/linkedin",
+      "/admin/newsletter"
+    );
+  }
+  return Array.from(new Set(paths));
+}
+
+/** Content tab stays active on planner + newsletter. */
+export function isGetClientsContentPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathMatches(pathname, "/admin/linkedin") ||
+    pathMatches(pathname, "/admin/newsletter")
+  );
+}
+
+/** Create tab stays active on writers / setup tools (not Content). */
+export function isGetClientsCreatePath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathMatches(pathname, "/coach/message-generator") ||
+    pathMatches(pathname, "/admin/message-generator") ||
+    pathMatches(pathname, "/coach/first-campaign") ||
+    pathMatches(pathname, "/admin/first-campaign") ||
+    pathMatches(pathname, "/admin/lead-finder")
+  );
+}
+
+/** @deprecated Use isGetClientsCreatePath */
+export function isGetClientsStudioPath(pathname: string | null): boolean {
+  return isGetClientsCreatePath(pathname);
 }
 
 export function coachClientsTabItems(
@@ -469,7 +525,9 @@ export function isToolkitHubPath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/time-tracker") ||
     pathMatches(pathname, "/admin/landing-analytics") ||
     pathMatches(pathname, "/admin/lesson-import") ||
-    pathMatches(pathname, "/admin/funnel-analyzer")
+    pathMatches(pathname, "/admin/funnel-analyzer") ||
+    pathMatches(pathname, "/admin/sales-nav-imports") ||
+    pathMatches(pathname, "/admin/linkedin-inbox")
   );
 }
 

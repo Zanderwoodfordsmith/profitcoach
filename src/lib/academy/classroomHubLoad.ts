@@ -4,6 +4,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
+  CLASSROOM_OS_COURSE_ID,
+  CLASSROOM_PATH_COURSE_IDS,
+  CLASSROOM_START_COURSE_IDS,
+  GET_CLIENTS_SOURCE_COURSE_ID,
+} from "@/lib/academy/classroomIds";
+import {
   findLessonInCourse,
   type HubCatalog,
   type HubCourse,
@@ -30,24 +36,11 @@ const CLASSROOM_HUB_PATH = path.join(
 let classroomHubCache: ClassroomHubCatalog | null = null;
 let classroomHubCacheMtimeMs = 0;
 
-/**
- * Classroom hub cards (product names). Storage `course_id`s may still use older
- * programme prefixes (e.g. kickstart → Start Here).
- */
-export const CLASSROOM_START_COURSE_IDS = [
-  "kickstart",
-  "coach-action-plan",
-  "going-pro",
-] as const;
-
-/** Get Calls, Win Clients, Coach Clients. */
-export const CLASSROOM_PATH_COURSE_IDS = [
-  "get-calls",
-  "win-clients",
-  "profit-coach-system",
-] as const;
-
-export const CLASSROOM_OS_COURSE_ID = "profit-coach-os" as const;
+export {
+  CLASSROOM_OS_COURSE_ID,
+  CLASSROOM_PATH_COURSE_IDS,
+  CLASSROOM_START_COURSE_IDS,
+};
 
 export function loadClassroomHub(): ClassroomHubCatalog {
   const mtimeMs = fs.statSync(CLASSROOM_HUB_PATH).mtimeMs;
@@ -64,41 +57,47 @@ export function loadClassroomHub(): ClassroomHubCatalog {
     throw new Error("classroom-hub.json: expected startHere.courseId");
   }
 
-  const clientAcquisition = data.courses.find((course) => course.id === "client-acquisition");
-  if (!clientAcquisition) {
-    throw new Error("classroom-hub.json: expected client-acquisition course");
+  const getClientsSource = data.courses.find(
+    (course) => course.id === GET_CLIENTS_SOURCE_COURSE_ID
+  );
+  if (!getClientsSource) {
+    throw new Error(
+      `classroom-hub.json: expected ${GET_CLIENTS_SOURCE_COURSE_ID} course`
+    );
   }
 
   const getCalls = buildDerivedCourse({
-    source: clientAcquisition,
+    source: getClientsSource,
     id: "get-calls",
     title: "Get Calls",
     description:
       "Find ideal clients, build your list, and start real conversations that lead to calls.",
     sectionIds: [
-      "client-acquisition-get-calls-overview",
-      "client-acquisition-step-1-choose-understand-ideal-clients",
-      "client-acquisition-step-2-build-prospect-list",
-      "client-acquisition-step-4-top-100-conversations",
+      "get-calls-overview",
+      "get-calls-step-1-choose-understand-ideal-clients",
+      "get-calls-step-2-build-prospect-list",
+      "get-calls-step-4-top-100-conversations",
     ],
   });
   const winClients = buildDerivedCourse({
-    source: clientAcquisition,
+    source: getClientsSource,
     id: "win-clients",
     title: "Win Clients",
     description:
       "Build your offer and pricing, then book and run value sessions and roadmap calls that turn prospects into clients.",
     sectionIds: [
-      "client-acquisition-win-clients-overview",
-      "client-acquisition-offer-sales-foundations",
-      "client-acquisition-value-sessions",
-      "client-acquisition-client-closing-objections",
+      "win-clients-overview",
+      "win-clients-offer-sales-foundations",
+      "win-clients-value-sessions",
+      "win-clients-client-closing-objections",
     ],
   });
   classroomHubCache = {
     ...data,
     courses: [
-      ...data.courses.filter((course) => course.id !== "client-acquisition"),
+      ...data.courses.filter(
+        (course) => course.id !== GET_CLIENTS_SOURCE_COURSE_ID
+      ),
       getCalls,
       winClients,
     ],

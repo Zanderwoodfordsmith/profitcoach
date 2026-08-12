@@ -20,7 +20,7 @@ import {
   adminSectionNavItems,
   coachClientsTabHrefs,
   coachToolsNavItems,
-  getClientsTabHrefs,
+  getClientsHubPaths,
   isToolsHubPath,
   mainNavItems,
   mobileMoreNavItems,
@@ -149,7 +149,7 @@ export function DashboardSidebar({
   const mobilePrimary = mobilePrimaryNavItems(prefix);
   const mobileMore = mobileMoreNavItems(prefix);
   const toolsNavItems = coachToolsNavItems(prefix);
-  const getClientsHrefs = getClientsTabHrefs(prefix);
+  const getClientsHrefs = getClientsHubPaths(prefix);
   const coachClientsHrefs = coachClientsTabHrefs(prefix);
   const isToolsNavActive = (itemHref: string) => {
     if (itemHref === `${prefix}/prospects`) {
@@ -460,7 +460,7 @@ export function DashboardSidebar({
                   onClick={() => setAccountMenuOpen(false)}
                 >
                   <Settings className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                  Profile settings
+                  Settings
                 </Link>
                 <button
                   type="button"
@@ -683,7 +683,7 @@ export function DashboardSidebar({
                 }`}
               >
                 <Settings className="h-5 w-5 shrink-0 opacity-95" />
-                Profile settings
+                Settings
               </Link>
               <button
                 type="button"

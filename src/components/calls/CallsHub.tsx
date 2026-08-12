@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Lock } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import { CallsTable } from "@/components/calls/CallsTable";
 import { CallsWeekView } from "@/components/calls/CallsWeekView";
-import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
 import type { CallRow } from "@/lib/callRow";
 import {
   callStatusClass,
@@ -15,7 +16,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 
-type HubTab = "calendar" | "list" | "settings";
+type HubTab = "calendar" | "list";
 
 type Props = {
   calls: CallRow[];
@@ -32,13 +33,23 @@ type Props = {
   emptyMessage?: string;
 };
 
+function previewTabLabel(label: string): ReactNode {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {label}
+      <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+      <span className="sr-only">(admin preview — not released to coaches)</span>
+    </span>
+  );
+}
+
 export function CallsHub({
   calls,
   loading,
   error,
   showCoachColumn = false,
-  appOrigin,
-  callsBasePath,
+  appOrigin: _appOrigin,
+  callsBasePath: _callsBasePath,
   onRowClick,
   onCallsChange,
   coachFilterOptions,
@@ -46,6 +57,9 @@ export function CallsHub({
   onCoachFilterChange,
   emptyMessage,
 }: Props) {
+  const pathname = usePathname() ?? "";
+  const onAdminPath = pathname.startsWith("/admin");
+  const [isAdminUser, setIsAdminUser] = useState(onAdminPath);
   const [tab, setTab] = useState<HubTab>("list");
   const [manageOpen, setManageOpen] = useState(true);
   const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(
@@ -53,6 +67,40 @@ export function CallsHub({
   );
   const [detail, setDetail] = useState<CallRow | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
+
+  useEffect(() => {
+    if (onAdminPath) {
+      setIsAdminUser(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user || cancelled) return;
+      const roleRes = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        role?: string;
+      };
+      if (!cancelled) {
+        setIsAdminUser(roleBody.role === "admin");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [onAdminPath]);
+
+  useEffect(() => {
+    if (!isAdminUser && tab === "calendar") {
+      setTab("list");
+    }
+  }, [isAdminUser, tab]);
 
   const calendarNames = useMemo(() => {
     const names = new Set<string>();
@@ -138,25 +186,65 @@ export function CallsHub({
   }
 
   const listFiltered = useMemo(() => {
-    if (selectedCalendars.size === 0) return calls;
+    if (!isAdminUser || selectedCalendars.size === 0) return calls;
     return calls.filter((c) => {
       const n = c.calendar_name ?? c.title ?? "";
       return selectedCalendars.has(n);
     });
-  }, [calls, selectedCalendars]);
+  }, [calls, selectedCalendars, isAdminUser]);
+
+  const callList = (
+    <CallsTable
+      calls={listFiltered}
+      loading={loading}
+      error={error}
+      showCoachColumn={showCoachColumn}
+      onRowClick={onRowClick}
+      emptyMessage={emptyMessage}
+      coachFilterOptions={coachFilterOptions}
+      coachFilter={coachFilter}
+      onCoachFilterChange={onCoachFilterChange}
+      renderRowActions={(row) =>
+        row.source === "native" ? (
+          <select
+            className="rounded border border-slate-200 px-1.5 py-1 text-xs"
+            disabled={statusBusy}
+            value={
+              row.status_normalized === "confirmed"
+                ? "booked"
+                : row.status_normalized === "completed"
+                  ? "completed"
+                  : row.status_normalized
+            }
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const v = e.target.value as
+                | "booked"
+                | "cancelled"
+                | "completed"
+                | "noshow";
+              void updateNativeStatus(row, v);
+            }}
+          >
+            <option value="booked">Confirmed</option>
+            <option value="completed">Completed</option>
+            <option value="noshow">No-show</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        ) : null
+      }
+    />
+  );
+
+  if (!isAdminUser) {
+    return callList;
+  }
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeaderUnderlineTabs
         ariaLabel="Calls sections"
         items={[
-          {
-            kind: "button",
-            id: "calendar",
-            label: "Calendar view",
-            active: tab === "calendar",
-            onClick: () => setTab("calendar"),
-          },
           {
             kind: "button",
             id: "list",
@@ -166,20 +254,14 @@ export function CallsHub({
           },
           {
             kind: "button",
-            id: "settings",
-            label: "Calendar settings",
-            active: tab === "settings",
-            onClick: () => setTab("settings"),
+            id: "calendar",
+            label: previewTabLabel("Calendar view"),
+            active: tab === "calendar",
+            onClick: () => setTab("calendar"),
+            variant: "subtle",
           },
         ]}
       />
-
-      {tab === "settings" ? (
-        <CallsCalendarSettings
-          appOrigin={appOrigin}
-          callsBasePath={callsBasePath}
-        />
-      ) : null}
 
       {tab === "calendar" ? (
         <div className="flex flex-col gap-4 lg:flex-row">
@@ -278,48 +360,7 @@ export function CallsHub({
         </div>
       ) : null}
 
-      {tab === "list" ? (
-        <CallsTable
-          calls={listFiltered}
-          loading={loading}
-          error={error}
-          showCoachColumn={showCoachColumn}
-          onRowClick={onRowClick}
-          emptyMessage={emptyMessage}
-          coachFilterOptions={coachFilterOptions}
-          coachFilter={coachFilter}
-          onCoachFilterChange={onCoachFilterChange}
-          renderRowActions={(row) =>
-            row.source === "native" ? (
-              <select
-                className="rounded border border-slate-200 px-1.5 py-1 text-xs"
-                disabled={statusBusy}
-                value={
-                  row.status_normalized === "confirmed"
-                    ? "booked"
-                    : row.status_normalized === "completed"
-                      ? "completed"
-                      : row.status_normalized
-                }
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  const v = e.target.value as
-                    | "booked"
-                    | "cancelled"
-                    | "completed"
-                    | "noshow";
-                  void updateNativeStatus(row, v);
-                }}
-              >
-                <option value="booked">Confirmed</option>
-                <option value="completed">Completed</option>
-                <option value="noshow">No-show</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            ) : null
-          }
-        />
-      ) : null}
+      {tab === "list" ? callList : null}
 
       {detail ? (
         <div

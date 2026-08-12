@@ -22,6 +22,10 @@ export async function GET(request: Request) {
       email: string | null;
       business_name: string | null;
       phone: string | null;
+      job_title: string | null;
+      linkedin_url: string | null;
+      photo_url: string | null;
+      headline: string | null;
       type: string;
       created_at: string;
     }>(
@@ -32,7 +36,8 @@ export async function GET(request: Request) {
           .eq("coach_id", coachId)
           .eq("type", "client")
           .order("created_at", { ascending: false }),
-      "id, full_name, email, business_name, type, created_at"
+      "id, full_name, email, business_name, job_title, linkedin_url, type, created_at",
+      ["photo_url", "headline"]
     );
 
   if (contactsError) {
@@ -43,7 +48,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const clients = await enrichProspectRows(
+  const enriched = await enrichProspectRows(
     supabaseAdmin,
     contacts.map((c) => ({
       id: c.id,
@@ -51,9 +56,24 @@ export async function GET(request: Request) {
       email: c.email ?? null,
       business_name: c.business_name ?? null,
       phone: c.phone ?? null,
+      job_title: c.job_title ?? null,
+      linkedin_url: c.linkedin_url ?? null,
       type: c.type ?? "client",
     }))
   );
+
+  const photoById = new Map(
+    contacts.map((c) => [c.id, { photo_url: c.photo_url, headline: c.headline }])
+  );
+
+  const clients = enriched.map((row) => {
+    const extra = photoById.get(row.id);
+    return {
+      ...row,
+      photo_url: extra?.photo_url ?? null,
+      headline: extra?.headline ?? null,
+    };
+  });
 
   return NextResponse.json({ clients });
 }

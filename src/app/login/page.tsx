@@ -29,6 +29,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get("email")?.trim();
+    if (emailParam) setEmail(emailParam);
     if (params.get("reason") === "prospect_portal") {
       setError(PROSPECT_PORTAL_MESSAGE);
       setSuccessMessage(null);

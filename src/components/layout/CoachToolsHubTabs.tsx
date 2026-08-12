@@ -7,12 +7,14 @@ import {
   coachClientsTabActive,
   coachClientsTabItems,
   getClientsTabItems,
+  isGetClientsContentPath,
+  isGetClientsCreatePath,
   navLinkActive,
   type CoachClientsTabItem,
   type ToolsHubTabItem,
 } from "@/components/layout/dashboardNavItems";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
-import { isLeadFinderAllowedEmail } from "@/lib/leadFinderAccess";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 export type CoachToolsHub = "get-clients" | "coach-clients";
@@ -22,6 +24,45 @@ type Props = {
   /** When set, coaching tool tabs deep-link to this client’s workspace. */
   contactId?: string | null;
 };
+
+/**
+ * Unreleased tabs: admins on the admin surface see them grey + locked.
+ * Coaches — and admins “View as coach” — never see them.
+ */
+function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
+  const { impersonatingCoachId } = useImpersonation();
+  const [isAdminUser, setIsAdminUser] = useState(onAdminPath);
+
+  useEffect(() => {
+    if (onAdminPath) {
+      setIsAdminUser(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user || cancelled) return;
+      const roleRes = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        role?: string;
+      };
+      if (!cancelled) {
+        setIsAdminUser(roleBody.role === "admin");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [onAdminPath]);
+
+  return isAdminUser && !impersonatingCoachId;
+}
 
 function previewTabLabel(label: ReactNode, adminPreview: boolean): ReactNode {
   if (!adminPreview) return label;
@@ -55,10 +96,16 @@ function CoachClientsTabsNav({
       items={items.map((item) => ({
         kind: "link" as const,
         href: item.href,
-        label: previewTabLabel(item.label, Boolean(item.adminPreview)),
+        label: previewTabLabel(
+          item.label,
+          Boolean(item.adminPreview && showAdminPreview)
+        ),
         active: coachClientsTabActive(pathname, search, item.key),
         scroll: false,
-        variant: item.adminPreview ? ("subtle" as const) : ("default" as const),
+        variant:
+          item.adminPreview && showAdminPreview
+            ? ("subtle" as const)
+            : ("default" as const),
       }))}
     />
   );
@@ -69,65 +116,22 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const onAdminPath = pathname.startsWith("/admin");
-  const [leadFinderAllowed, setLeadFinderAllowed] = useState(false);
-  const [isAdminUser, setIsAdminUser] = useState(onAdminPath);
-
-  useEffect(() => {
-    if (onAdminPath) {
-      setIsAdminUser(true);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      if (!user || cancelled) return;
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
-        role?: string;
-      };
-      if (!cancelled) {
-        setIsAdminUser(roleBody.role === "admin");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [onAdminPath]);
-
-  useEffect(() => {
-    if (hub !== "get-clients" || !onAdminPath) return;
-    let cancelled = false;
-    void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      if (!cancelled) {
-        setLeadFinderAllowed(isLeadFinderAllowedEmail(user?.email));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hub, onAdminPath]);
+  const showAdminPreview = useShowAdminPreviewTabs(onAdminPath);
 
   if (hub === "get-clients") {
     const prefix = onAdminPath ? "/admin" : "/coach";
     const items = getClientsTabItems(prefix).filter((item: ToolsHubTabItem) => {
-      if (item.href === "/admin/lead-finder") return leadFinderAllowed;
-      if (item.adminPreview && !isAdminUser) return false;
+      if (item.adminPreview && !showAdminPreview) return false;
       return true;
     });
+    const createHref = `${prefix}/message-generator`;
+    const contentHref = "/admin/linkedin";
     return (
       <PageHeaderUnderlineTabs
         ariaLabel="Get Clients tools"
         items={items.map((item) => {
           const iconOnly = Boolean(item.iconOnly);
+          const preview = Boolean(item.adminPreview && showAdminPreview);
           const label = iconOnly ? (
             <span
               className="inline-flex items-center gap-1"
@@ -135,28 +139,30 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
               aria-label={item.label}
             >
               <Settings className="h-4 w-4" aria-hidden />
-              {item.adminPreview ? (
+              {preview ? (
                 <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
               ) : null}
               <span className="sr-only">
                 {item.label}
-                {item.adminPreview
-                  ? " (admin preview — not released to coaches)"
-                  : ""}
+                {preview ? " (admin preview — not released to coaches)" : ""}
               </span>
             </span>
           ) : (
-            previewTabLabel(item.label, Boolean(item.adminPreview))
+            previewTabLabel(item.label, preview)
           );
+          const active =
+            item.href === createHref
+              ? isGetClientsCreatePath(pathname)
+              : item.href === contentHref
+                ? isGetClientsContentPath(pathname)
+                : navLinkActive(pathname, item.href);
           return {
             kind: "link" as const,
             href: item.href,
             label,
-            active: navLinkActive(pathname, item.href),
+            active,
             scroll: false,
-            variant: item.adminPreview
-              ? ("subtle" as const)
-              : ("default" as const),
+            variant: preview ? ("subtle" as const) : ("default" as const),
           };
         })}
       />
@@ -168,7 +174,7 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
       pathname={pathname}
       search={search}
       contactId={contactId}
-      showAdminPreview={isAdminUser}
+      showAdminPreview={showAdminPreview}
     />
   );
 }
@@ -179,6 +185,10 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
  */
 export function CoachToolsHubTabs(props: Props) {
   const pathname = usePathname() ?? "";
+  const { impersonatingCoachId } = useImpersonation();
+  // Prefer coach product surface while impersonating; avoid flashing locked tabs.
+  const fallbackShowAdminPreview =
+    pathname.startsWith("/admin") && !impersonatingCoachId;
 
   // Coach Clients: never flash an empty nav — Suspense fallback still lists every tab.
   if (props.hub === "coach-clients") {
@@ -189,7 +199,7 @@ export function CoachToolsHubTabs(props: Props) {
             pathname={pathname}
             search=""
             contactId={props.contactId}
-            showAdminPreview={pathname.startsWith("/admin")}
+            showAdminPreview={fallbackShowAdminPreview}
           />
         }
       >

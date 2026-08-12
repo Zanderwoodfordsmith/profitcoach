@@ -1,0 +1,61 @@
+{
+  "title": "LinkedIn Connect",
+  "type": "object",
+  "schemaVersion": 1,
+  "properties": {
+    "cookies": {
+      "title": "LinkedIn cookies",
+      "type": "string",
+      "description": "Cookie-Editor JSON export (array), or a cookie header string that includes li_at (and ideally JSESSIONID).",
+      "editor": "textarea"
+    },
+    "userAgent": {
+      "title": "User-Agent",
+      "type": "string",
+      "description": "Optional. Match the browser that created the cookie session.",
+      "editor": "textfield",
+      "default": ""
+    },
+    "profiles": {
+      "title": "Profiles to connect",
+      "type": "array",
+      "description": "LinkedIn profile URLs. Optional per-profile connection note (Premium; ~300 chars).",
+      "editor": "json",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Profile URL",
+            "description": "https://www.linkedin.com/in/…",
+            "editor": "textfield"
+          },
+          "message": {
+            "type": "string",
+            "title": "Connection note",
+            "description": "Optional note (about 300 characters max).",
+            "editor": "textarea",
+            "default": ""
+          }
+        },
+        "required": ["url"]
+      }
+    },
+    "delaySeconds": {
+      "title": "Delay between profiles (seconds)",
+      "type": "integer",
+      "description": "Base delay; actual wait is random between delay and 2× delay.",
+      "editor": "number",
+      "default": 8,
+      "minimum": 2
+    },
+    "dryRun": {
+      "title": "Dry run",
+      "type": "boolean",
+      "description": "Open profiles and find Connect, but do not click Send.",
+      "editor": "checkbox",
+      "default": false
+    }
+  },
+  "required": ["cookies", "profiles"]
+}

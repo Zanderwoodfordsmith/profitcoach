@@ -1060,7 +1060,7 @@ export function DashboardTopActions({
               className="block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
               onClick={() => setAvatarMenuOpen(false)}
             >
-              Profile settings
+              Settings
             </Link>
             <button
               type="button"

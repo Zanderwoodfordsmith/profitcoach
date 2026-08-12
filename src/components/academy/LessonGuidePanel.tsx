@@ -4,6 +4,7 @@ import {
 } from "@/lib/academy/lessonGuideOutline";
 
 import { AcademyMarkdown } from "./AcademyMarkdown";
+import { LessonBaseSearchCta } from "./LessonBaseSearchCta";
 import { LessonGuideToc } from "./LessonGuideToc";
 
 /** Below this a guide reads fine top to bottom and a section list is clutter. */
@@ -11,6 +12,7 @@ const MIN_SECTIONS_FOR_OUTLINE = 4;
 
 type Props = {
   guideMarkdown: string;
+  lessonId?: string;
 };
 
 /**
@@ -19,7 +21,7 @@ type Props = {
  * Wide screens get a sticky table of contents in the margin; narrower ones get
  * the same sections as a jump list above the prose.
  */
-export function LessonGuidePanel({ guideMarkdown }: Props) {
+export function LessonGuidePanel({ guideMarkdown, lessonId }: Props) {
   if (!guideMarkdown.trim()) return null;
 
   const outline = lessonGuideSections(lessonGuideOutline(guideMarkdown));
@@ -34,6 +36,7 @@ export function LessonGuidePanel({ guideMarkdown }: Props) {
       }
     >
       <div className="min-w-0">
+        {lessonId ? <LessonBaseSearchCta lessonId={lessonId} /> : null}
         {showSections ? (
           <nav
             aria-label="Guide sections"

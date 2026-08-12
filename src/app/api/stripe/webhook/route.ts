@@ -73,6 +73,22 @@ export async function POST(request: Request) {
             ? session.metadata.coach_id
             : null;
 
+        // Guest (and any) paid checkout: ensure coach account exists before membership sync.
+        try {
+          const { provisionCoachFromCheckoutSession } = await import(
+            "@/lib/membership/provisionFromCheckout"
+          );
+          await provisionCoachFromCheckoutSession({
+            sessionId: session.id,
+            includeLoginToken: false,
+          });
+        } catch (provisionError) {
+          console.error(
+            "stripe webhook provision from checkout failed:",
+            provisionError
+          );
+        }
+
         if (session.mode === "subscription" && session.subscription) {
           const subscriptionId =
             typeof session.subscription === "string"
@@ -103,6 +119,17 @@ export async function POST(request: Request) {
             (session.created ?? Math.floor(Date.now() / 1000)) * 1000
           );
 
+          // Re-read metadata in case provision stamped coach_id.
+          let metadataCoachId = coachId;
+          try {
+            const fresh = await stripeServer.checkout.sessions.retrieve(session.id);
+            if (typeof fresh.metadata?.coach_id === "string") {
+              metadataCoachId = fresh.metadata.coach_id;
+            }
+          } catch {
+            // keep original
+          }
+
           await upsertCoachPaymentFromStripe(supabaseAdmin, directory, {
             stripePaymentIntentId:
               typeof session.payment_intent === "string"
@@ -114,7 +141,7 @@ export async function POST(request: Request) {
             currency: session.currency ?? "gbp",
             status: "succeeded",
             paidAtIso: paidAt.toISOString(),
-            metadataCoachId: coachId,
+            metadataCoachId,
             notes: "synced via checkout.session.completed",
           });
         }

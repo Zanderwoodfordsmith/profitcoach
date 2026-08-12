@@ -1,0 +1,21 @@
+{
+  "actorSpecification": 1,
+  "fields": {},
+  "views": {
+    "overview": {
+      "title": "Connect results",
+      "transformation": {
+        "fields": ["url", "status", "detail", "hasNote"]
+      },
+      "display": {
+        "component": "table",
+        "properties": {
+          "url": { "label": "Profile", "format": "text" },
+          "status": { "label": "Status", "format": "text" },
+          "detail": { "label": "Detail", "format": "text" },
+          "hasNote": { "label": "Note", "format": "boolean" }
+        }
+      }
+    }
+  }
+}

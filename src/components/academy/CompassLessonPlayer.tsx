@@ -158,7 +158,10 @@ export function CompassLessonPlayer({
               showGuide={Boolean(guideMarkdown.trim())}
               guide={
                 guideMarkdown.trim() ? (
-                  <LessonGuidePanel guideMarkdown={guideMarkdown} />
+                  <LessonGuidePanel
+                    guideMarkdown={guideMarkdown}
+                    lessonId={lesson.id}
+                  />
                 ) : null
               }
               qa={

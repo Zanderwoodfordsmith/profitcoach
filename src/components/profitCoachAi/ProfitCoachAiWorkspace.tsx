@@ -21,6 +21,7 @@ import {
   PROFIT_COACH_ROLES,
 } from "@/lib/profitCoachAi/registry";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
+import { studioDisplayTitle } from "@/lib/profitCoachAi/studioHub";
 
 import { ProfitCoachAiBrainForm } from "./ProfitCoachAiBrainForm";
 
@@ -76,11 +77,14 @@ function formatChatRelativeTime(iso: string): string {
 type WorkspaceProps = {
   activeTab: ProfitCoachAiTab;
   basePath: string;
+  /** When set (from Studio hub), lock to that skill and hide the skill picker. */
+  lockedOutputId?: string | null;
 };
 
 export function ProfitCoachAiWorkspace({
   activeTab,
   basePath,
+  lockedOutputId = null,
 }: WorkspaceProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,7 +94,9 @@ export function ProfitCoachAiWorkspace({
   const [chats, setChats] = useState<ChatRow[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MsgRow[]>([]);
-  const [outputId, setOutputId] = useState(getDefaultOutputId());
+  const [outputId, setOutputId] = useState(
+    () => lockedOutputId || getDefaultOutputId()
+  );
   const [roleId, setRoleId] = useState<string | null>(null);
   const [aiContext, setAiContext] = useState<CoachAiContext>({});
 
@@ -119,6 +125,10 @@ export function ProfitCoachAiWorkspace({
   const historyRailHydrated = useRef(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (lockedOutputId) setOutputId(lockedOutputId);
+  }, [lockedOutputId]);
 
   const authHeaders = useCallback(async (): Promise<Record<
     string,
@@ -423,31 +433,33 @@ export function ProfitCoachAiWorkspace({
                 </p>
               ) : null}
 
-              <div className="flex flex-wrap justify-center gap-2">
-                {PROFIT_COACH_OUTPUTS.map((o) => {
-                  const dimmed =
-                    roleId &&
-                    !PROFIT_COACH_ROLES.find((r) => r.id === roleId)?.outputIds.includes(
-                      o.id
+              {lockedOutputId ? null : (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {PROFIT_COACH_OUTPUTS.map((o) => {
+                    const dimmed =
+                      roleId &&
+                      !PROFIT_COACH_ROLES.find((r) => r.id === roleId)?.outputIds.includes(
+                        o.id
+                      );
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setOutputId(o.id)}
+                        className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                          outputId === o.id
+                            ? "bg-sky-700 text-white"
+                            : dimmed
+                              ? "bg-slate-100 text-slate-400 ring-1 ring-slate-200"
+                              : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {o.label}
+                      </button>
                     );
-                  return (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => setOutputId(o.id)}
-                      className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                        outputId === o.id
-                          ? "bg-sky-700 text-white"
-                          : dimmed
-                            ? "bg-slate-100 text-slate-400 ring-1 ring-slate-200"
-                            : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  );
-                })}
-              </div>
+                  })}
+                </div>
+              )}
 
               <div className="flex min-h-[min(28rem,50vh)] flex-col overflow-hidden rounded-2xl border border-white/60 bg-white/90 shadow-lg backdrop-blur-xl">
                 {selectedChatId && loadingMessages ? (
@@ -458,17 +470,35 @@ export function ProfitCoachAiWorkspace({
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
                   {messages.length === 0 && !loadingMessages ? (
                     <p className="py-10 text-center text-sm leading-relaxed text-slate-500">
-                      Pick a skill above and an optional role below, then type
-                      your message. Use the{" "}
-                      <button
-                        type="button"
-                        className="font-medium text-sky-700 underline hover:text-sky-800"
-                        onClick={expandHistoryRail}
-                      >
-                        chats panel
-                      </button>{" "}
-                      on the right (expand with the chevron if it&apos;s
-                      hidden) to open a previous thread.
+                      {lockedOutputId ? (
+                        <>
+                          Tell us what you need for{" "}
+                          <span className="font-medium text-slate-700">
+                            {studioDisplayTitle(lockedOutputId).toLowerCase()}
+                          </span>
+                          , or open a past draft from the{" "}
+                          <button
+                            type="button"
+                            className="font-medium text-sky-700 underline hover:text-sky-800"
+                            onClick={expandHistoryRail}
+                          >
+                            chats panel
+                          </button>
+                          .
+                        </>
+                      ) : (
+                        <>
+                          Pick a tool above, then type your request. Use the{" "}
+                          <button
+                            type="button"
+                            className="font-medium text-sky-700 underline hover:text-sky-800"
+                            onClick={expandHistoryRail}
+                          >
+                            chats panel
+                          </button>{" "}
+                          on the right to open a previous draft.
+                        </>
+                      )}
                     </p>
                   ) : (
                     <div className="mx-auto flex max-w-xl flex-col gap-5">
@@ -548,7 +578,7 @@ export function ProfitCoachAiWorkspace({
                       onKeyDown={onKeyDown}
                       placeholder={
                         PROFIT_COACH_OUTPUTS.find((o) => o.id === outputId)
-                          ?.placeholder ?? "Ask the assistant…"
+                          ?.placeholder ?? "What do you need to write…"
                       }
                       disabled={streaming}
                       className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-[15px] text-slate-900 placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-400/20 disabled:opacity-60"
@@ -572,32 +602,34 @@ export function ProfitCoachAiWorkspace({
                 </form>
               </div>
 
-              <div>
-                <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Role (optional)
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {PROFIT_COACH_ROLES.map((r) => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => setRoleId(roleId === r.id ? null : r.id)}
-                      className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
-                        roleId === r.id
-                          ? "border-sky-400 bg-sky-50"
-                          : "border-slate-200 bg-white hover:border-slate-300"
-                      }`}
-                    >
-                      <span className="font-semibold text-slate-900">
-                        {r.label}
-                      </span>
-                      <span className="mt-1 block text-slate-600">
-                        {r.description}
-                      </span>
-                    </button>
-                  ))}
+              {lockedOutputId ? null : (
+                <div>
+                  <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Role (optional)
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {PROFIT_COACH_ROLES.map((r) => (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setRoleId(roleId === r.id ? null : r.id)}
+                        className={`rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
+                          roleId === r.id
+                            ? "border-sky-400 bg-sky-50"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <span className="font-semibold text-slate-900">
+                          {r.label}
+                        </span>
+                        <span className="mt-1 block text-slate-600">
+                          {r.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

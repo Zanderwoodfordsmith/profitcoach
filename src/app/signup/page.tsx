@@ -16,7 +16,6 @@ export default function CoachSignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [slug, setSlug] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -36,7 +35,6 @@ export default function CoachSignupPage() {
           businessName,
           email,
           password,
-          slug,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -140,24 +138,6 @@ export default function CoachSignupPage() {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="slug" className={authLabelClassName}>
-            Coach link slug
-          </label>
-          <input
-            id="slug"
-            type="text"
-            required
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="e.g. alex-smith"
-            className={authInputClassName}
-          />
-          <p className="text-xs leading-relaxed text-slate-500">
-            Your public assessment link uses this slug (letters, numbers, and
-            hyphens only).
-          </p>
         </div>
 
         {error ? (

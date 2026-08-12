@@ -1,14 +1,12 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   DashboardPageSection,
   StickyPageHeader,
 } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
-import { NativeBookingSettingsCard } from "@/components/booking/NativeBookingSettingsCard";
 import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -23,10 +21,15 @@ type FunnelProfileData = {
   landing_copy_overrides?: Record<string, string> | null;
 };
 
+type FunnelSettingsClientProps = {
+  /** When true, render body only (no Get Clients hub header) — e.g. Settings → Get Clients tab. */
+  embed?: boolean;
+};
+
 /**
  * Get Clients → Settings: share links, slug, CRM, and funnel landing copy.
  */
-export function FunnelSettingsClient() {
+export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProps = {}) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
@@ -81,7 +84,7 @@ export function FunnelSettingsClient() {
       return;
     }
     if (roleBody.role === "admin" && !isAdmin && !impersonatingCoachId) {
-      router.replace("/admin/funnel-settings");
+      router.replace("/admin/account?tab=funnel");
       return;
     }
     if (!isAdmin && roleBody.role !== "coach" && roleBody.role !== "admin") {
@@ -89,7 +92,7 @@ export function FunnelSettingsClient() {
       return;
     }
     if (isAdmin && roleBody.role !== "admin") {
-      router.replace("/coach/funnel-settings");
+      router.replace("/coach/settings?tab=funnel");
       return;
     }
 
@@ -198,6 +201,41 @@ export function FunnelSettingsClient() {
     }
   }
 
+  const body = loading ? (
+    <p className="text-sm text-slate-600">Loading…</p>
+  ) : error ? (
+    <p className="text-sm text-rose-600">{error}</p>
+  ) : (
+    <div className="flex flex-col gap-6">
+      <FunnelSettingsTab
+        appOrigin={appOrigin}
+        prospectsHref={isAdmin ? "/admin/prospects" : "/coach/prospects"}
+        coachSlug={coachSlug}
+        onCoachSlugChange={setCoachSlug}
+        landingEyebrow={landingEyebrow}
+        onLandingEyebrowChange={setLandingEyebrow}
+        crmProfileName={crmProfileName}
+        onCrmProfileNameChange={setCrmProfileName}
+        crmLocationId={crmLocationId}
+        onCrmLocationIdChange={setCrmLocationId}
+        calendarEmbedCode={calendarEmbedCode}
+        onCalendarEmbedCodeChange={setCalendarEmbedCode}
+        leadWebhookUrl={leadWebhookUrl}
+        onLeadWebhookUrlChange={setLeadWebhookUrl}
+        calendarSyncStatus={calendarSyncStatus}
+        impersonatingCoachId={impersonatingCoachId}
+        saving={saving}
+        saveMessage={saveMessage}
+        saveError={saveError}
+        onSubmit={(e) => void handleSave(e)}
+      />
+    </div>
+  );
+
+  if (embed) {
+    return <div className="flex w-full min-w-0 flex-col gap-6">{body}</div>;
+  }
+
   return (
     <DashboardPageSection
       gapClass="gap-6"
@@ -211,46 +249,7 @@ export function FunnelSettingsClient() {
       contentMaxWidthClass="max-w-6xl"
       contentClassName="mx-0 mr-auto w-full"
     >
-      {loading ? (
-        <p className="text-sm text-slate-600">Loading…</p>
-      ) : error ? (
-        <p className="text-sm text-rose-600">{error}</p>
-      ) : (
-        <div className="flex flex-col gap-6">
-          <FunnelSettingsTab
-            appOrigin={appOrigin}
-            prospectsHref={isAdmin ? "/admin/prospects" : "/coach/prospects"}
-            coachSlug={coachSlug}
-            onCoachSlugChange={setCoachSlug}
-            landingEyebrow={landingEyebrow}
-            onLandingEyebrowChange={setLandingEyebrow}
-            crmProfileName={crmProfileName}
-            onCrmProfileNameChange={setCrmProfileName}
-            crmLocationId={crmLocationId}
-            onCrmLocationIdChange={setCrmLocationId}
-            calendarEmbedCode={calendarEmbedCode}
-            onCalendarEmbedCodeChange={setCalendarEmbedCode}
-            leadWebhookUrl={leadWebhookUrl}
-            onLeadWebhookUrlChange={setLeadWebhookUrl}
-            calendarSyncStatus={calendarSyncStatus}
-            impersonatingCoachId={impersonatingCoachId}
-            saving={saving}
-            saveMessage={saveMessage}
-            saveError={saveError}
-            onSubmit={(e) => void handleSave(e)}
-          />
-          <NativeBookingSettingsCard appOrigin={appOrigin} />
-          <Suspense
-            fallback={
-              <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <p className="text-sm text-slate-600">Loading Google Calendar…</p>
-              </section>
-            }
-          >
-            <GoogleCalendarBookingCard />
-          </Suspense>
-        </div>
-      )}
+      {body}
     </DashboardPageSection>
   );
 }

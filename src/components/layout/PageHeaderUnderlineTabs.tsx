@@ -5,13 +5,13 @@ import Link from "next/link";
 
 /** Matches admin Coaches hub tabs (Coaches / Client success / Revenue). */
 const tabBase =
-  "-mb-px border-b-[3px] pb-2 text-sm font-semibold leading-tight transition-colors sm:text-base";
+  "-mb-px shrink-0 whitespace-nowrap border-b-[3px] pb-2 text-sm font-semibold leading-tight transition-colors sm:text-base";
 const tabActive = "border-sky-600 text-sky-700";
 const tabInactive =
   "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800";
 
 const tabSubtleBase =
-  "-mb-px border-b-[3px] pb-2 text-sm font-medium leading-tight transition-colors";
+  "-mb-px shrink-0 whitespace-nowrap border-b-[3px] pb-2 text-sm font-medium leading-tight transition-colors";
 const tabSubtleActive = "border-slate-400 text-slate-600";
 const tabSubtleInactive =
   "border-transparent text-slate-400 hover:border-slate-200 hover:text-slate-600";
@@ -56,7 +56,7 @@ export function PageHeaderUnderlineTabs({
 }: PageHeaderUnderlineTabsProps) {
   return (
     <nav
-      className="flex flex-wrap items-end justify-start gap-x-4 gap-y-1 sm:gap-x-5"
+      className="flex flex-nowrap items-end justify-start gap-x-4 sm:gap-x-5"
       aria-label={ariaLabel}
     >
       {items.map((item) => {

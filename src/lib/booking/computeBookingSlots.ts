@@ -49,8 +49,21 @@ function overlaps(
 }
 
 /**
+ * Calendar days to scan when collecting a rolling window of open days
+ * (skips weekends / fully booked days). Capped at 90.
+ */
+export function bookingWindowLookaheadDays(bookingWindowDays: number): number {
+  const n = Math.max(1, Math.floor(bookingWindowDays));
+  return Math.min(90, Math.max(n * 4, n + 21));
+}
+
+/**
  * Compute bookable slots in UTC for a coach window.
  * Availability rule times are wall-clock in coach timezone.
+ *
+ * `booking_window_days` is a rolling count of days that still have at least
+ * one open slot (not a raw calendar span from today). Late Friday with a
+ * 3-day window and Mon–Fri rules → Mon/Tue/Wed, not Fri/Sat/Sun.
  */
 export function computeBookingSlots(input: {
   settings: BookingSettingsRow;
@@ -66,10 +79,11 @@ export function computeBookingSlots(input: {
   const minNoticeMs = input.settings.min_notice_hours * 3_600_000;
   const earliestMs = now.getTime() + minNoticeMs;
 
+  const openDaysTarget = Math.max(1, Math.floor(input.settings.booking_window_days));
   const coachToday = ymdInTimeZone(now, coachTz);
-  const windowEndYmd = addDaysYmd(
+  const scanEndYmd = addDaysYmd(
     coachToday,
-    Math.max(0, input.settings.booking_window_days - 1)
+    bookingWindowLookaheadDays(openDaysTarget) - 1
   );
 
   const existingMs = input.existing.map((b) => {
@@ -87,8 +101,9 @@ export function computeBookingSlots(input: {
 
   const slots: SlotOffer[] = [];
   let cursorYmd = coachToday;
+  let openDaysFound = 0;
 
-  while (cursorYmd <= windowEndYmd) {
+  while (cursorYmd <= scanEndYmd && openDaysFound < openDaysTarget) {
     const [y, m, d] = cursorYmd.split("-").map(Number);
     // Noon UTC probe to read weekday in coach TZ for this calendar date
     const probe = zonedLocalToUtc({
@@ -102,6 +117,7 @@ export function computeBookingSlots(input: {
     const weekday = utcToZonedParts(probe, coachTz).weekday;
     const dayRules = rulesByWeekday.get(weekday) ?? [];
 
+    const daySlots: SlotOffer[] = [];
     for (const rule of dayRules) {
       const startMin = parseTimeToMinutes(rule.start_time.slice(0, 5));
       const endMin = parseTimeToMinutes(rule.end_time.slice(0, 5));
@@ -123,21 +139,20 @@ export function computeBookingSlots(input: {
         if (starts.getTime() < earliestMs) continue;
 
         const taken = existingMs.some((ex) =>
-          overlaps(
-            starts.getTime(),
-            ends.getTime(),
-            ex.s,
-            ex.e,
-            bufferMs
-          )
+          overlaps(starts.getTime(), ends.getTime(), ex.s, ex.e, bufferMs)
         );
         if (taken) continue;
 
-        slots.push({
+        daySlots.push({
           startsAt: starts.toISOString(),
           endsAt: ends.toISOString(),
         });
       }
+    }
+
+    if (daySlots.length > 0) {
+      slots.push(...daySlots);
+      openDaysFound += 1;
     }
 
     cursorYmd = addDaysYmd(cursorYmd, 1);

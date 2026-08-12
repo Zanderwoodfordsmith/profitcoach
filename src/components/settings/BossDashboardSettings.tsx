@@ -1,14 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DashboardPageSection,
   PageHeaderUnderlineTabs,
   StickyPageHeader,
 } from "@/components/layout";
+import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
+import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
+import { DirectorySettingsTab } from "@/components/settings/DirectorySettingsTab";
+import { FunnelSettingsClient } from "@/components/settings/FunnelSettingsClient";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
 import {
   ProfileFieldRow,
@@ -39,18 +42,38 @@ type ProfileData = {
   linkedin_url: string | null;
   bio: string | null;
   community_bio: string | null;
-  directory_summary: string | null;
-  directory_bio: string | null;
   location: string | null;
   timezone?: string | null;
   latitude?: number | null;
   longitude?: number | null;
   location_geocoded_source?: string | null;
-  directory_listed: boolean;
-  directory_level: string | null;
 };
 
-export type BossDashboardSettingsTabId = "profile" | "ladder";
+export type BossDashboardSettingsTabId =
+  | "profile"
+  | "directory"
+  | "ladder"
+  | "funnel"
+  | "calendar";
+
+const SETTINGS_TAB_IDS: BossDashboardSettingsTabId[] = [
+  "profile",
+  "directory",
+  "funnel",
+  "calendar",
+  "ladder",
+];
+
+function parseSettingsTab(
+  raw: string | null
+): BossDashboardSettingsTabId | null {
+  if (!raw) return null;
+  if (raw === "get-clients") return "funnel";
+  if (SETTINGS_TAB_IDS.includes(raw as BossDashboardSettingsTabId)) {
+    return raw as BossDashboardSettingsTabId;
+  }
+  return null;
+}
 
 export type BossDashboardSettingsProps = {
   variant: "coach" | "admin";
@@ -63,6 +86,7 @@ export function BossDashboardSettings({
   embed,
 }: BossDashboardSettingsProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { impersonatingCoachId } = useImpersonation();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,8 +97,6 @@ export function BossDashboardSettings({
   const [businessName, setBusinessName] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [communityBio, setCommunityBio] = useState("");
-  const [directorySummary, setDirectorySummary] = useState("");
-  const [directoryBio, setDirectoryBio] = useState("");
   const [location, setLocation] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(null);
@@ -82,9 +104,6 @@ export function BossDashboardSettings({
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
-  const [directoryListed, setDirectoryListed] = useState(false);
-  const [directoryToggleBusy, setDirectoryToggleBusy] = useState(false);
-  const [directoryError, setDirectoryError] = useState<string | null>(null);
 
   const [linkedinImport, setLinkedinImport] =
     useState<LinkedInImportProfile | null>(null);
@@ -98,6 +117,8 @@ export function BossDashboardSettings({
     useState<BossDashboardSettingsTabId>("profile");
   const activeTab = embed?.activeTab ?? internalTab;
   const [mapModalOpen, setMapModalOpen] = useState(false);
+  const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
+  const [viewerIsAdmin, setViewerIsAdmin] = useState(variant === "admin");
 
   const loadProfile = useCallback(async () => {
     const {
@@ -150,15 +171,11 @@ export function BossDashboardSettings({
     }
     const data = (await res.json()) as ProfileData;
     setProfile(data);
-    setDirectoryListed(!!data.directory_listed);
-    setDirectoryError(null);
     setFirstName(data.first_name ?? "");
     setLastName(data.last_name ?? "");
     setBusinessName(data.coach_business_name ?? "");
     setLinkedinUrl(data.linkedin_url ?? "");
     setCommunityBio(data.community_bio ?? data.bio ?? "");
-    setDirectorySummary(data.directory_summary ?? data.bio ?? "");
-    setDirectoryBio(data.directory_bio ?? "");
     setLocation(data.location ?? "");
 
     setLinkedinImportLoading(true);
@@ -181,24 +198,25 @@ export function BossDashboardSettings({
   }, [router, impersonatingCoachId, variant]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- read ?tab= from URL on coach settings
-    const tab = new URLSearchParams(window.location.search).get("tab");
-    if (tab === "funnel") {
-      router.replace(
-        variant === "admin" ? "/admin/funnel-settings" : "/coach/calls"
-      );
-      return;
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep Settings tab in sync with ?tab=
+    const tab = searchParams.get("tab");
     if (tab === "workspace") {
       if (variant === "admin") {
         router.replace("/admin/message-generator?tab=brain");
       }
       return;
     }
-    if (tab === "profile" || tab === "ladder") {
-      setInternalTab(tab);
+    const parsed = parseSettingsTab(tab);
+    if (parsed) {
+      setInternalTab(parsed);
     }
-  }, [router, variant]);
+  }, [router, variant, searchParams]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.origin) {
+      setAppOrigin(window.location.origin);
+    }
+  }, []);
 
   const selectTab = useCallback(
     (tab: BossDashboardSettingsTabId) => {
@@ -217,6 +235,34 @@ export function BossDashboardSettings({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data bootstrap after async profile-role + coach profile fetches
     void loadProfile();
   }, [loadProfile]);
+
+  useEffect(() => {
+    if (variant === "admin") {
+      setViewerIsAdmin(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      if (!user || cancelled) return;
+      const roleRes = await fetch("/api/profile-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const roleBody = (await roleRes.json().catch(() => ({}))) as {
+        role?: string;
+      };
+      if (!cancelled) {
+        setViewerIsAdmin(roleBody.role === "admin");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [variant]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -245,8 +291,6 @@ export function BossDashboardSettings({
         coach_business_name: businessName.trim() || null,
         linkedin_url: linkedinUrl.trim() || null,
         community_bio: communityBio.trim() || null,
-        directory_summary: directorySummary.trim() || null,
-        directory_bio: directoryBio.trim() || null,
         location: location.trim() || null,
       }),
     });
@@ -303,6 +347,8 @@ export function BossDashboardSettings({
         return;
       }
       notifyAcademyTrackedActionsChanged();
+      // Avatar may have been set from LinkedIn photo when profile had none
+      await loadProfile();
     } catch {
       setLinkedinImportError("Could not import LinkedIn profile.");
     } finally {
@@ -434,41 +480,6 @@ export function BossDashboardSettings({
     }
   }
 
-  async function handleDirectoryToggle(next: boolean) {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return;
-
-    setDirectoryError(null);
-    setDirectoryToggleBusy(true);
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-    if (impersonatingCoachId) {
-      headers["x-impersonate-coach-id"] = impersonatingCoachId;
-    }
-
-    const prev = directoryListed;
-    setDirectoryListed(next);
-    const res = await fetch("/api/coach/profile", {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ directory_listed: next }),
-    });
-    setDirectoryToggleBusy(false);
-    if (!res.ok) {
-      setDirectoryListed(prev);
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
-      setDirectoryError(body.error ?? "Could not update directory preference.");
-      return;
-    }
-    setProfile((p) =>
-      p ? { ...p, directory_listed: next } : null
-    );
-  }
-
   if (loading) {
     return <p className="text-sm text-slate-600">Loading…</p>;
   }
@@ -487,13 +498,16 @@ export function BossDashboardSettings({
 
   const tabDefs: { id: BossDashboardSettingsTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
+    { id: "directory", label: "Directory" },
+    { id: "funnel", label: "Get Clients" },
+    { id: "calendar", label: "Calendar" },
     { id: "ladder", label: "My Ladder" },
   ];
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Your profile, directory listing, and ladder progress."
+      description="Profile, directory, Get Clients, calendar, and ladder."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -650,74 +664,6 @@ export function BossDashboardSettings({
           />
         </ProfileSectionCard>
 
-        <ProfileSectionCard
-          title="Profit Coach Directory"
-          description={
-            <>
-              How you appear on the{" "}
-              <Link
-                href="/directory"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-sky-700 hover:text-sky-900 hover:underline"
-              >
-                public coach directory
-              </Link>
-              .
-            </>
-          }
-        >
-          <ProfileFieldRow label="Listed">
-            <label className="inline-flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                checked={directoryListed}
-                disabled={directoryToggleBusy}
-                onChange={(e) => void handleDirectoryToggle(e.target.checked)}
-              />
-              <span className="text-sm text-slate-700">
-                Show in the Profit Coach Directory
-              </span>
-            </label>
-            {directoryToggleBusy ? (
-              <p className="mt-1 text-[11px] text-slate-500">Updating…</p>
-            ) : null}
-            {directoryError ? (
-              <p className="mt-1 text-sm text-rose-600" role="alert">
-                {directoryError}
-              </p>
-            ) : null}
-          </ProfileFieldRow>
-          <ProfileFieldRow
-            label="Short summary"
-            htmlFor="directory_summary"
-            alignTop
-            hint="A brief intro on directory cards."
-          >
-            <ProfileMinimalTextarea
-              id="directory_summary"
-              rows={2}
-              value={directorySummary}
-              onChange={(e) => setDirectorySummary(e.target.value)}
-            />
-          </ProfileFieldRow>
-          <ProfileFieldRow
-            label="Detailed bio"
-            htmlFor="directory_bio"
-            alignTop
-            hint="Optional longer copy for your directory profile page."
-            last
-          >
-            <ProfileMinimalTextarea
-              id="directory_bio"
-              rows={4}
-              value={directoryBio}
-              onChange={(e) => setDirectoryBio(e.target.value)}
-            />
-          </ProfileFieldRow>
-        </ProfileSectionCard>
-
         <div className="flex items-center gap-4 pt-1">
           <button
             type="submit"
@@ -734,6 +680,37 @@ export function BossDashboardSettings({
           ) : null}
         </div>
       </form>
+      ) : null}
+
+      {activeTab === "directory" ? (
+        <DirectorySettingsTab
+          variant={variant}
+          onEditProfile={() => selectTab("profile")}
+        />
+      ) : null}
+
+      {activeTab === "funnel" ? <FunnelSettingsClient embed /> : null}
+
+      {activeTab === "calendar" ? (
+        <div className="flex w-full min-w-0 flex-col gap-10">
+          {viewerIsAdmin ? (
+            <CallsCalendarSettings
+              appOrigin={appOrigin}
+              callsBasePath={
+                variant === "admin" ? "/admin/calls" : "/coach/calls"
+              }
+            />
+          ) : null}
+          <Suspense
+            fallback={
+              <section className="rounded-xl border border-slate-200/80 bg-white p-4">
+                <p className="text-sm text-slate-600">Loading integrations…</p>
+              </section>
+            }
+          >
+            <GoogleCalendarBookingCard />
+          </Suspense>
+        </div>
       ) : null}
 
       {activeTab === "ladder" ? <MyLadderTab /> : null}
@@ -754,14 +731,18 @@ export function BossDashboardSettings({
     );
   }
 
+  const wideTab =
+    activeTab === "ladder" ||
+    activeTab === "funnel" ||
+    activeTab === "calendar" ||
+    activeTab === "directory";
+
   return (
     <DashboardPageSection
       gapClass="gap-6"
       header={settingsHeader}
-      contentMaxWidthClass={activeTab === "ladder" ? "max-w-6xl" : "max-w-4xl"}
-      contentClassName={
-        activeTab === "ladder" ? "mx-0 mr-auto w-full" : ""
-      }
+      contentMaxWidthClass={wideTab ? "max-w-6xl" : "max-w-4xl"}
+      contentClassName={wideTab ? "mx-0 mr-auto w-full" : ""}
     >
       {settingsBody}
     </DashboardPageSection>

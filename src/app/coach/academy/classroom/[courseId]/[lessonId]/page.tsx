@@ -1,20 +1,43 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlayer";
 import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
+import {
+  classroomIdsNeedRedirect,
+  resolveClassroomCourseId,
+  resolveClassroomLessonId,
+} from "@/lib/academy/classroomIdAliases";
 import { findHubCourse, findLessonInCourse } from "@/lib/academy/hubCatalog";
+import {
+  classroomCourseIdForLesson,
+  loadClassroomHub,
+} from "@/lib/academy/classroomHubLoad";
 import { loadClassroomCourseWithContent } from "@/lib/academy/lessonContent";
 import { loadLessonResources } from "@/lib/academy/resources";
 import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
-import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
 
 const BASE = "/coach/academy/classroom";
 
 type Props = { params: Promise<{ courseId: string; lessonId: string }> };
 
 export default async function CoachAcademyClassroomLessonPage({ params }: Props) {
-  const { courseId, lessonId } = await params;
+  const { courseId: rawCourseId, lessonId: rawLessonId } = await params;
+  const lessonId = resolveClassroomLessonId(rawLessonId);
   const data = loadClassroomHub();
+  const courseId =
+    classroomCourseIdForLesson(data, lessonId) ??
+    resolveClassroomCourseId(rawCourseId);
+
+  if (
+    classroomIdsNeedRedirect(rawCourseId, rawLessonId) ||
+    courseId !== rawCourseId ||
+    lessonId !== rawLessonId
+  ) {
+    redirect(
+      `${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`
+    );
+  }
+
   const baseCourse = findHubCourse(data, courseId);
   if (!baseCourse) notFound();
 

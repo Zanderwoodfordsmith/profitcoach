@@ -7,12 +7,12 @@ export const ACADEMY_ACTIONS_GROUP_TEXT = "Academy";
  * recognized so older flat headers can be redistributed on reorganize.
  */
 export const CLASSROOM_PATH_CARD_GROUPS = [
-  { id: "kickstart", title: "Start Here" },
+  { id: "start-here", title: "Start Here" },
   { id: "coach-action-plan", title: "Coach Action Plan" },
   { id: "going-pro", title: "Going Pro" },
   { id: "get-calls", title: "Get Calls" },
   { id: "win-clients", title: "Win Clients" },
-  { id: "profit-coach-system", title: "Coach Clients" },
+  { id: "coach-clients", title: "Coach Clients" },
   { id: "profit-coach-os", title: "Profit Coach OS" },
 ] as const;
 
@@ -57,15 +57,17 @@ export const TITLE_BY_HUB_ID = new Map<string, string>(
 );
 
 export const TITLE_BY_PROGRAMME_ID: Record<string, string> = {
+  "start-here": "Start Here",
   kickstart: "Start Here",
   "coach-action-plan": "Coach Action Plan",
   "going-pro": "Going Pro",
   "get-calls": "Get Calls",
   "win-clients": "Win Clients",
-  // Do not map all of `client-acquisition` → Get Calls: Win Clients lessons
-  // share that programme id. Hub card lookup must win for those.
+  "get-clients": "Get Calls",
+  "coach-clients": "Coach Clients",
   "profit-coach-system": "Coach Clients",
   "client-delivery": "Coach Clients",
+  "client-acquisition": "Get Calls",
   "profit-coach-certification": "Coach Clients",
   "profit-coach-os": "Profit Coach OS",
 };
@@ -74,6 +76,7 @@ export const TITLE_BY_PROGRAMME_ID: Record<string, string> = {
 export const SECTION_GROUPED_HUB_COURSE_IDS = new Set([
   "get-calls",
   "win-clients",
+  "coach-clients",
   "profit-coach-system",
 ]);
 

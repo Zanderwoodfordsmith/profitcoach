@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveCoachAccessForUserId } from "@/lib/coachAccess/resolveCoachAccess";
+import { PREMIUM_EQUIVALENT_FEATURES } from "@/lib/coachAccess/tiers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
@@ -34,6 +35,17 @@ export async function GET(request: Request) {
   const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
   const effectiveId =
     profile.role === "admin" && impersonateId ? impersonateId : user.id;
+
+  // Admins browsing as themselves get full product access. Tier locks only
+  // apply when “View as coach” targets a specific coach.
+  if (profile.role === "admin" && !impersonateId) {
+    return NextResponse.json({
+      tier: "vip",
+      tierLocked: false,
+      features: [...PREMIUM_EQUIVALENT_FEATURES, "directory.featured"],
+      enforcementEnabled: true,
+    });
+  }
 
   const access = await resolveCoachAccessForUserId(effectiveId);
 

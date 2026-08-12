@@ -986,7 +986,10 @@ export function ClassroomLessonPlayer({
                     showGuide={Boolean(guideMarkdown.trim())}
                     guide={
                       guideMarkdown.trim() ? (
-                        <LessonGuidePanel guideMarkdown={guideMarkdown} />
+                        <LessonGuidePanel
+                          guideMarkdown={guideMarkdown}
+                          lessonId={lesson.id}
+                        />
                       ) : null
                     }
                     showRelated={Boolean(satelliteSiblings?.length)}

@@ -53,3 +53,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Apify actor local deps / run storage
+/actors/**/node_modules/
+/actors/**/storage/

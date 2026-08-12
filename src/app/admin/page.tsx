@@ -50,6 +50,7 @@ import {
   TableCsvExportButton,
   type CsvExportScope,
 } from "@/components/table/TableCsvExportButton";
+import { coachSlugFromFullName } from "@/lib/coachSlug";
 import { isSystemCoachSlug } from "@/lib/primaryCoach";
 import { exportCoachesToCsv } from "@/lib/exportCoachesCsv";
 import { formatPersonName } from "@/lib/formatPersonName";
@@ -1471,19 +1472,24 @@ export default function AdminPage() {
           fullName: newFullName,
           businessName: newBusinessName,
           email: newEmail,
-          slug: newSlug,
+          slug: newSlug.trim() || undefined,
         }),
       });
 
       const body = await res.json().catch(() => ({})) as {
         error?: string;
+        slug?: string;
       };
 
       if (!res.ok) {
         throw new Error(body?.error ?? "Unable to create coach.");
       }
 
-      setCreateSuccess("Coach created and invite email sent.");
+      setCreateSuccess(
+        body.slug
+          ? `Coach created (${body.slug}) and invite email sent.`
+          : "Coach created and invite email sent."
+      );
       setNewFullName("");
       setNewBusinessName("");
       setNewEmail("");
@@ -2365,7 +2371,18 @@ export default function AdminPage() {
                 type="text"
                 required
                 value={newFullName}
-                onChange={(e) => setNewFullName(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setNewFullName(value);
+                  const auto = coachSlugFromFullName(value);
+                  setNewSlug((current) => {
+                    const previousAuto = coachSlugFromFullName(newFullName);
+                    if (!current.trim() || current === previousAuto) {
+                      return auto;
+                    }
+                    return current;
+                  });
+                }}
                 className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -2405,21 +2422,20 @@ export default function AdminPage() {
                 htmlFor="coachSlug"
                 className="block text-xs font-medium text-slate-700"
               >
-                Coach link slug
+                Coach link slug{" "}
+                <span className="font-normal text-slate-500">(optional)</span>
               </label>
               <input
                 id="coachSlug"
                 type="text"
-                required
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
                 className="block w-full rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                placeholder="e.g. alex-smith"
+                placeholder="Auto from name, e.g. alex-smith"
               />
               <p className="text-[0.7rem] text-slate-500">
-                Their landing link will be e.g.{" "}
-                <code>/landing/a?coach=alex-smith</code>. Use only lowercase
-                letters, numbers, and hyphens.
+                Defaults to firstname-lastname. Leave blank to auto-assign (adds
+                -2, -3… if taken). They can change it later in settings.
               </p>
             </div>
             <div className="mt-2 flex flex-col gap-2 md:col-span-2 md:flex-row md:items-center md:justify-between">

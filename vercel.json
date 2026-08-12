@@ -7,6 +7,14 @@
     {
       "path": "/api/admin/lead-finder/sales-nav-import-jobs/tick",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/booking-reminders",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/bird-inbound",
+      "schedule": "* * * * *"
     }
   ]
 }

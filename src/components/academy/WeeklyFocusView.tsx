@@ -24,9 +24,7 @@ export function WeeklyFocusView({ basePath, weekId }: Props) {
       : null) ?? current;
   const isCurrent = selected.id === current.id;
   const past = getPastWeeklyFocuses(catalog, current.id);
-  const relatedPathHref = `${basePath}/${encodeURIComponent(
-    selected.pathId === "coach-clients" ? "profit-coach-system" : selected.pathId,
-  )}`;
+  const relatedPathHref = `${basePath}/${encodeURIComponent(selected.pathId)}`;
 
   return (
     <div className="mx-auto flex w-[80%] max-w-3xl flex-col gap-8">

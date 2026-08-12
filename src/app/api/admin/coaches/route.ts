@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { deriveCurrentLevelId } from "@/lib/ladder";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
+import { allocateCoachSlug } from "@/lib/coachSlug";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
 import { splitFullName } from "@/lib/splitFullName";
 import {
@@ -29,7 +30,8 @@ type Body = {
   fullName: string;
   businessName?: string;
   email: string;
-  slug: string;
+  /** Optional; defaults to firstname-lastname (with uniqueness suffix). */
+  slug?: string;
 };
 
 export async function GET(request: Request) {
@@ -417,16 +419,16 @@ export async function POST(request: Request) {
   const fullName = body.fullName?.trim();
   const businessName = body.businessName?.trim() || null;
   const email = body.email?.trim().toLowerCase();
-  const slug = body.slug?.toLowerCase().trim();
+  const preferredSlug = body.slug?.toLowerCase().trim() || "";
 
-  if (!fullName || !email || !slug) {
+  if (!fullName || !email) {
     return NextResponse.json(
-      { error: "Please fill in name, email, and slug." },
+      { error: "Please fill in name and email." },
       { status: 400 }
     );
   }
 
-  if (!/^[a-z0-9-]+$/.test(slug)) {
+  if (preferredSlug && !/^[a-z0-9-]+$/.test(preferredSlug)) {
     return NextResponse.json(
       {
         error:
@@ -437,6 +439,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    const slug = await allocateCoachSlug(supabaseAdmin, fullName, {
+      preferred: preferredSlug || null,
+    });
+
     let userId: string | null = null;
 
     const {

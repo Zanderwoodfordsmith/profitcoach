@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { computeBookingSlots } from "@/lib/booking/computeBookingSlots";
+import {
+  bookingWindowLookaheadDays,
+  computeBookingSlots,
+} from "@/lib/booking/computeBookingSlots";
 import { calendarToBookingSettings } from "@/lib/booking/coachCalendars";
 import { isValidIanaTimeZone } from "@/lib/booking/bookingTime";
 import {
@@ -14,6 +17,7 @@ import {
   createGoogleBookingEvent,
   fetchGoogleBusyIntervals,
 } from "@/lib/booking/googleCalendar";
+import { sendBookingConfirmations } from "@/lib/messaging/bookingConfirmations";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(
@@ -122,7 +126,11 @@ export async function POST(
   const windowStart = new Date();
   const windowEnd = new Date(
     windowStart.getTime() +
-      (settings.booking_window_days + 2) * 24 * 60 * 60 * 1000
+      bookingWindowLookaheadDays(settings.booking_window_days) *
+        24 *
+        60 *
+        60 *
+        1000
   );
 
   const [existing, googleBusy] = await Promise.all([
@@ -243,13 +251,6 @@ export async function POST(
     return NextResponse.json({ error: "Could not create booking." }, { status: 500 });
   }
 
-  const startDate = new Date(chosen.startsAt);
-  const endDate = new Date(chosen.endsAt);
-  const timeOpts: Intl.DateTimeFormatOptions = {
-    hour: "numeric",
-    minute: "2-digit",
-  };
-
   let whereLabel = "Details by email";
   if (calendar.location_mode === "google_meet") {
     whereLabel = meetingJoinUrl ? "Google Meet" : "Google Meet (invite by email)";
@@ -258,6 +259,39 @@ export async function POST(
   } else if (calendar.location_mode === "custom" && meetingInstructions) {
     whereLabel = meetingInstructions;
   }
+
+  if (booking?.id) {
+    try {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(
+        coach.id
+      );
+      await sendBookingConfirmations({
+        bookingId: booking.id as string,
+        coachId: coach.id,
+        coachName: coach.displayName,
+        coachEmail: authUser.user?.email ?? null,
+        contactId,
+        calendarTitle: calendar.name,
+        prospectName: guestName,
+        prospectEmail: email,
+        prospectPhone: phone,
+        startsAtIso: chosen.startsAt,
+        endsAtIso: chosen.endsAt,
+        timezone: prospectTz,
+        locationLabel: whereLabel,
+        meetingJoinUrl,
+      });
+    } catch (notifyErr) {
+      console.error("booking confirmation notify:", notifyErr);
+    }
+  }
+
+  const startDate = new Date(chosen.startsAt);
+  const endDate = new Date(chosen.endsAt);
+  const timeOpts: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+  };
 
   return NextResponse.json({
     id: booking?.id,

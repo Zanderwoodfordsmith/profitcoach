@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import type { CoachAccessTier, CoachFeature } from "@/lib/coachAccess/tiers";
+import {
+  PREMIUM_EQUIVALENT_FEATURES,
+  type CoachAccessTier,
+  type CoachFeature,
+} from "@/lib/coachAccess/tiers";
 
 export type CoachAccessState = {
   tier: CoachAccessTier;
@@ -61,8 +65,15 @@ export function useCoachAccess(impersonatingCoachId: string | null) {
   }, [refresh]);
 
   const hasFeature = useCallback(
-    (feature: CoachFeature) => access.features.includes(feature),
-    [access.features]
+    (feature: CoachFeature) => {
+      // Match server coachHasFeature: when tiers are not enforced, everyone
+      // gets Premium-equivalent access (do not rely on an empty features[]).
+      if (!access.enforcementEnabled) {
+        return PREMIUM_EQUIVALENT_FEATURES.includes(feature);
+      }
+      return access.features.includes(feature);
+    },
+    [access.features, access.enforcementEnabled]
   );
 
   return { access, loading, refresh, hasFeature };

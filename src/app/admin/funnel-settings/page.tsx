@@ -1,1 +1,5 @@
-export { default } from "@/app/coach/funnel-settings/page";
+import { redirect } from "next/navigation";
+
+export default function AdminFunnelSettingsPage() {
+  redirect("/admin/account?tab=funnel");
+}

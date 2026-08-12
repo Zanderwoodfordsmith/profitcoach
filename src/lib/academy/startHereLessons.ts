@@ -1,11 +1,18 @@
+import {
+  START_HERE_COURSE_ID,
+  START_HERE_WELCOME_LESSON_ID,
+  START_HERE_WELCOME_PATH,
+} from "@/lib/academy/classroomIds";
 import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
 
-/** Content / progress course id for Start Here lessons. */
-export const START_HERE_COURSE_ID = "kickstart";
+export {
+  START_HERE_COURSE_ID,
+  START_HERE_WELCOME_LESSON_ID,
+  START_HERE_WELCOME_PATH,
+};
 
-/** Welcome lesson that holds the “complete every Start Here lesson” action. */
-export const START_HERE_WELCOME_LESSON_ID =
-  "kickstart-welcome-welcome-program-overview";
+/** Post-payment / welcome CTA destination. */
+export const POST_PAYMENT_CONTINUE_PATH = START_HERE_WELCOME_PATH;
 
 /** Every lesson id under the Start Here hub course (including satellites). */
 export function listStartHereLessonIds(): string[] {
