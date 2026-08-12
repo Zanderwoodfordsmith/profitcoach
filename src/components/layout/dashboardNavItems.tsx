@@ -305,15 +305,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       href: `${prefix}/message-generator`,
       label: "Create",
       adminPreview: true,
-<<<<<<< HEAD
-    });
-  }
-  items.push({
-    href: `${prefix}/funnel-settings`,
-    label: "Settings",
-    iconOnly: true,
-  });
-=======
     },
     {
       href:
@@ -324,7 +315,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       iconOnly: true,
     }
   );
->>>>>>> academy-classroom-overhaul
   return items;
 }
 
