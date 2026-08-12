@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 
+import { resolveClassroomLessonId } from "@/lib/academy/classroomIdAliases";
 import {
   defaultCompanyKeywords,
   defaultJobTitleKeywords,
@@ -7,7 +8,7 @@ import {
 import { buildSalesNavSearchUrl } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 
 const BASE_SEARCH_LESSON_ID =
-  "client-acquisition-ideal-clients-linkedin-sales-navigator-build-your-base-search";
+  "get-calls-ideal-clients-linkedin-sales-navigator-build-your-base-search";
 
 /** Pre-filled Classroom base search (UK, owners/CEOs, 1–200, 2nd+3rd). */
 const SALES_NAV_BASE_SEARCH_URL = buildSalesNavSearchUrl({
@@ -20,7 +21,7 @@ const SALES_NAV_BASE_SEARCH_URL = buildSalesNavSearchUrl({
 
 /** Shown only on the Build Your Base Search lesson — Overview + Guide. */
 export function LessonBaseSearchCta({ lessonId }: { lessonId: string }) {
-  if (lessonId !== BASE_SEARCH_LESSON_ID) return null;
+  if (resolveClassroomLessonId(lessonId) !== BASE_SEARCH_LESSON_ID) return null;
 
   return (
     <a

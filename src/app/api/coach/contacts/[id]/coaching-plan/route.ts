@@ -15,7 +15,13 @@ async function loadContactForPlan(contactId: string): Promise<{
     id: string;
     full_name: string;
     email: string | null;
+    phone: string | null;
     business_name: string | null;
+    job_title: string | null;
+    linkedin_url: string | null;
+    photo_url: string | null;
+    headline: string | null;
+    location: string | null;
     type: string;
     coach_id: string | null;
     coaching_plan: unknown;
@@ -24,8 +30,9 @@ async function loadContactForPlan(contactId: string): Promise<{
   error: string | null;
 }> {
   const withPlan =
-    "id, full_name, email, business_name, type, coach_id, coaching_plan";
-  const withoutPlan = "id, full_name, email, business_name, type, coach_id";
+    "id, full_name, email, phone, business_name, job_title, linkedin_url, photo_url, headline, location, type, coach_id, coaching_plan";
+  const withoutPlan =
+    "id, full_name, email, business_name, type, coach_id";
 
   const full = await supabaseAdmin
     .from("contacts")
@@ -40,7 +47,13 @@ async function loadContactForPlan(contactId: string): Promise<{
         id: row.id as string,
         full_name: row.full_name as string,
         email: (row.email as string | null) ?? null,
+        phone: (row.phone as string | null) ?? null,
         business_name: (row.business_name as string | null) ?? null,
+        job_title: (row.job_title as string | null) ?? null,
+        linkedin_url: (row.linkedin_url as string | null) ?? null,
+        photo_url: (row.photo_url as string | null) ?? null,
+        headline: (row.headline as string | null) ?? null,
+        location: (row.location as string | null) ?? null,
         type: (row.type as string) ?? "client",
         coach_id: (row.coach_id as string | null) ?? null,
         coaching_plan: row.coaching_plan ?? null,
@@ -68,7 +81,13 @@ async function loadContactForPlan(contactId: string): Promise<{
         id: row.id as string,
         full_name: row.full_name as string,
         email: (row.email as string | null) ?? null,
+        phone: null,
         business_name: (row.business_name as string | null) ?? null,
+        job_title: null,
+        linkedin_url: null,
+        photo_url: null,
+        headline: null,
+        location: null,
         type: (row.type as string) ?? "client",
         coach_id: (row.coach_id as string | null) ?? null,
         coaching_plan: null,
@@ -119,7 +138,13 @@ export async function GET(request: Request, context: RouteContext) {
       id: contact.id,
       fullName: contact.full_name,
       email: contact.email,
+      phone: contact.phone,
       businessName: contact.business_name,
+      jobTitle: contact.job_title,
+      linkedinUrl: contact.linkedin_url,
+      photoUrl: contact.photo_url,
+      headline: contact.headline,
+      location: contact.location,
       type: contact.type,
     },
     plan,

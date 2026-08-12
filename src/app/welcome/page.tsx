@@ -1,0 +1,312 @@
+"use client";
+
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import {
+  AuthSplitShell,
+  authPrimaryButtonClassName,
+} from "@/components/auth/AuthSplitShell";
+import { WelcomeCelebration } from "@/components/welcome/WelcomeCelebration";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import type {
+  ProgrammeIntakeGoal,
+  ProgrammeIntakeSituation,
+  ProgrammeIntakeTimeCommitment,
+} from "@/config/programmeIntake";
+import { START_HERE_WELCOME_PATH } from "@/lib/academy/classroomIds";
+import { supabaseClient } from "@/lib/supabaseClient";
+
+type WelcomeState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | {
+      status: "ready";
+      email: string;
+      fullName: string;
+      createdAccount: boolean;
+      continuePath: string;
+      preview: boolean;
+    };
+
+function WelcomeInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { clearImpersonation } = useImpersonation();
+  const sessionId = searchParams.get("session_id")?.trim() ?? "";
+  const isPreview =
+    searchParams.get("preview") === "1" ||
+    searchParams.get("preview") === "true";
+
+  const [state, setState] = useState<WelcomeState>({ status: "loading" });
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [continueBusy, setContinueBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function runPreview() {
+      try {
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
+        if (!user) {
+          throw new Error("Sign in as admin first, then open this preview link.");
+        }
+
+        const roleRes = await fetch("/api/profile-role", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id }),
+        });
+        const roleBody = (await roleRes.json().catch(() => ({}))) as {
+          role?: string;
+          full_name?: string | null;
+        };
+        if (!roleRes.ok || roleBody.role !== "admin") {
+          throw new Error("This preview is only available to admins.");
+        }
+
+        clearImpersonation();
+
+        const profileName =
+          typeof roleBody.full_name === "string" ? roleBody.full_name.trim() : "";
+        const metaName =
+          typeof user.user_metadata?.full_name === "string"
+            ? user.user_metadata.full_name.trim()
+            : "";
+
+        if (cancelled) return;
+        setState({
+          status: "ready",
+          email: user.email ?? "",
+          fullName: profileName || metaName || "Zander",
+          createdAccount: true,
+          continuePath: START_HERE_WELCOME_PATH,
+          preview: true,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        setState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to open welcome preview.",
+        });
+      }
+    }
+
+    async function runCheckout() {
+      try {
+        const res = await fetch("/api/membership/welcome", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          email?: string;
+          fullName?: string;
+          createdAccount?: boolean;
+          tokenHash?: string | null;
+          continuePath?: string;
+        };
+
+        if (!res.ok) {
+          throw new Error(body.error ?? "Unable to open your account.");
+        }
+
+        if (!body.tokenHash) {
+          throw new Error(
+            "Login token missing. Please try signing in from the login page."
+          );
+        }
+
+        const { error: otpError } = await supabaseClient.auth.verifyOtp({
+          token_hash: body.tokenHash,
+          type: "email",
+        });
+
+        if (otpError) {
+          throw new Error(otpError.message);
+        }
+
+        if (cancelled) return;
+
+        setState({
+          status: "ready",
+          email: body.email ?? "",
+          fullName: body.fullName ?? "there",
+          createdAccount: Boolean(body.createdAccount),
+          continuePath: body.continuePath ?? START_HERE_WELCOME_PATH,
+          preview: false,
+        });
+      } catch (error) {
+        if (cancelled) return;
+        setState({
+          status: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Unable to complete your welcome setup.",
+        });
+      }
+    }
+
+    if (isPreview) {
+      void runPreview();
+    } else if (!sessionId) {
+      setState({
+        status: "error",
+        message:
+          "Missing checkout session. If you just paid, open the link from your receipt or contact support.",
+      });
+    } else {
+      void runCheckout();
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clearImpersonation, isPreview, sessionId]);
+
+  async function handleSaveIntake(input: {
+    linkedinUrl: string;
+    situation: ProgrammeIntakeSituation | "";
+    goals: ProgrammeIntakeGoal[];
+    timeCommitment: ProgrammeIntakeTimeCommitment | "";
+  }) {
+    if (state.status !== "ready" || state.preview) return;
+
+    const {
+      data: { session },
+    } = await supabaseClient.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("Session expired. Refresh and try again.");
+
+    const res = await fetch("/api/membership/welcome-intake", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        linkedinUrl: input.linkedinUrl || null,
+        situation: input.situation || null,
+        goals: input.goals,
+        timeCommitment: input.timeCommitment || null,
+      }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) throw new Error(body.error ?? "Unable to save intake.");
+  }
+
+  async function handleContinue() {
+    if (state.status !== "ready") return;
+    setPasswordError(null);
+
+    if (!state.preview) {
+      if (password.length < 8) {
+        setPasswordError("Set a password with at least 8 characters.");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setPasswordError("Passwords do not match.");
+        return;
+      }
+
+      setContinueBusy(true);
+      try {
+        const { error } = await supabaseClient.auth.updateUser({ password });
+        if (error) throw error;
+      } catch (error) {
+        setPasswordError(
+          error instanceof Error ? error.message : "Unable to save password."
+        );
+        setContinueBusy(false);
+        return;
+      }
+    }
+
+    setContinueBusy(true);
+    router.push(state.continuePath);
+  }
+
+  if (state.status === "loading") {
+    return (
+      <AuthSplitShell
+        title="Setting up your account"
+        subtitle={
+          isPreview
+            ? "Loading post-payment welcome preview…"
+            : "Payment confirmed. We’re signing you in…"
+        }
+      >
+        <p className="text-sm text-slate-600">This usually takes a few seconds.</p>
+      </AuthSplitShell>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <AuthSplitShell
+        title="Almost there"
+        subtitle={
+          isPreview
+            ? "We couldn’t open the welcome preview."
+            : "We couldn’t finish automatic sign-in from this checkout link."
+        }
+      >
+        <p className="text-sm text-rose-600" role="alert">
+          {state.message}
+        </p>
+        <button
+          type="button"
+          className={authPrimaryButtonClassName}
+          onClick={() => router.push(isPreview ? "/admin/links" : "/login")}
+        >
+          {isPreview ? "Back to admin links" : "Go to login"}
+        </button>
+      </AuthSplitShell>
+    );
+  }
+
+  const firstName = state.fullName.trim().split(/\s+/)[0] || "there";
+
+  return (
+    <WelcomeCelebration
+      firstName={firstName}
+      fullName={state.fullName}
+      email={state.email}
+      preview={state.preview}
+      continueBusy={continueBusy}
+      passwordError={passwordError}
+      password={password}
+      confirmPassword={confirmPassword}
+      onPasswordChange={setPassword}
+      onConfirmPasswordChange={setConfirmPassword}
+      onContinue={() => void handleContinue()}
+      onSaveIntake={handleSaveIntake}
+    />
+  );
+}
+
+export default function WelcomePage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthSplitShell
+          title="Setting up your account"
+          subtitle="Payment confirmed. We’re signing you in…"
+        >
+          <p className="text-sm text-slate-600">Loading…</p>
+        </AuthSplitShell>
+      }
+    >
+      <WelcomeInner />
+    </Suspense>
+  );
+}

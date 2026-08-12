@@ -20,14 +20,14 @@ const siteToolsLinks = [
     hint: "All grid components (transposed, default, glass, bordered).",
   },
   {
-    href: "/admin/funnel-settings",
+    href: "/admin/account?tab=calendar",
     label: "My native booking (hours)",
     hint: "Set your own availability — no impersonation. Book link appears on that page after save.",
   },
   {
     href: "/zander",
     label: "My public book page (/zander)",
-    hint: "Enable Native discovery booking on Funnel settings, then share this URL.",
+    hint: "Enable Native discovery booking in Settings → Calendar, then share this URL.",
   },
 ] as const;
 
@@ -104,6 +104,25 @@ const bossProgrammeLinks = [
     href: "/admin/landing-analytics",
     label: "Landing analytics",
     hint: "Boss Score landing views, opt-ins, and per-coach breakdown.",
+  },
+] as const;
+
+/** Post-Stripe onboarding — skip payment, walk the real screens. */
+const programmeOnboardingLinks = [
+  {
+    href: "/welcome?preview=1",
+    label: "Just paid → welcome",
+    hint: "Post-checkout welcome (password optional). Continue into Start Here without Stripe.",
+  },
+  {
+    href: "/coach/academy/classroom/start-here/start-here-welcome-welcome-program-overview",
+    label: "Start Here (first lesson)",
+    hint: "Skip welcome; jump straight into the first classroom screen after payment.",
+  },
+  {
+    href: "/join",
+    label: "Real join checkout",
+    hint: "Live Stripe path when you do want to test payment end-to-end.",
   },
 ] as const;
 
@@ -207,7 +226,7 @@ export default function AdminLinksPage() {
       header={
         <StickyPageHeader
           title="Links"
-          description="Site tools, quick links, report previews, and pages outside the sidebar."
+          description="Post-payment onboarding preview at the top, then site tools, report previews, and pages outside the sidebar."
           tabs={<ToolkitHubTabs />}
         />
       }
@@ -216,6 +235,12 @@ export default function AdminLinksPage() {
         <p className="text-sm text-slate-600">Checking access…</p>
       ) : (
         <div className="flex flex-col gap-4">
+          <LinkGroup
+            title="Test post-payment onboarding"
+            items={programmeOnboardingLinks}
+            origin={origin}
+            openInSameTab
+          />
           <LinkGroup
             title="Site tools"
             items={siteToolsLinks}

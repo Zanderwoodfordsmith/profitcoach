@@ -3,10 +3,10 @@ import {
   QA_CATEGORY_LABEL,
 } from "@/lib/coachAccess/tiers";
 
-/** Kickstart onboarding lessons that post into a dedicated community channel. */
-export const MEMBER_WINS_LESSON_ID = "kickstart-welcome-member-wins";
+/** Start Here onboarding lessons that post into a dedicated community channel. */
+export const MEMBER_WINS_LESSON_ID = "start-here-welcome-member-wins";
 export const INTRODUCE_YOURSELF_LESSON_ID =
-  "kickstart-welcome-introduce-yourself";
+  "start-here-welcome-introduce-yourself";
 
 const WINS_CATEGORY_SLUG = "wins";
 const INTROS_CATEGORY_SLUG = "intros";

@@ -42,9 +42,9 @@ export async function loadProspectActivity(
 
   let contactQuery = supabaseAdmin
     .from("contacts")
-    .select("id, created_at, full_name")
+    .select("id, created_at, full_name, type")
     .eq("id", id)
-    .eq("type", "prospect")
+    .in("type", ["prospect", "client"])
     .limit(1);
   if (options?.coachId) {
     contactQuery = contactQuery.eq("coach_id", options.coachId);
@@ -55,9 +55,12 @@ export async function loadProspectActivity(
         id: string;
         created_at: string;
         full_name: string | null;
+        type: string | null;
       }
     | undefined;
   if (!contact) return [];
+
+  const isClient = contact.type === "client";
 
   const [assessmentsRes, bookingsRes, ghlRes, landingRes] = await Promise.all([
     supabaseAdmin
@@ -127,7 +130,7 @@ export async function loadProspectActivity(
     id: `prospect-created-${contact.id}`,
     type: "prospect_created",
     at: contact.created_at,
-    title: "Prospect created",
+    title: isClient ? "Client added" : "Prospect created",
     detail: contact.full_name || null,
   });
 

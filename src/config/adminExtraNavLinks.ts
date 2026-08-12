@@ -50,23 +50,29 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Open coach signup (same flow as /signup)",
   },
   {
+    href: "/welcome?preview=1",
+    label: "Just paid → welcome (preview)",
+    hint: "Admin only — post-checkout onboarding without Stripe",
+  },
+  {
     href: "/signup",
     label: "Signup",
     hint: "Open coach signup",
   },
+
   {
     href: "/admin/client-success",
     label: "Client success matrix",
     hint: "Also under Coaches hub tabs",
   },
   {
-    href: "/admin/funnel-settings",
+    href: "/admin/account?tab=calendar",
     label: "My native booking (hours)",
     hint: "Set your own availability — no impersonation. Book link appears after save.",
   },
   {
     href: "/zander",
     label: "My public book page (/zander)",
-    hint: "Enable booking under Funnel settings first, then share this URL.",
+    hint: "Enable booking under Settings → Calendar first, then share this URL.",
   },
 ];

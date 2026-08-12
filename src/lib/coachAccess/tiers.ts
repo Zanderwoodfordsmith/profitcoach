@@ -55,17 +55,24 @@ const TIER_FEATURES: Record<CoachAccessTier, ReadonlySet<CoachFeature>> = {
   // Love-it-or-leave-it / guarantee opt-out — no product access; not alumni.
   early_exit: new Set(),
   alumni: new Set([
-    // Classroom nav is visible, but only a few starter courses are unlocked
-    // (see ALUMNI_FREE_COURSE_IDS). No live ecosystem access.
+    // Temporary: ecosystem stays open without paid membership.
+    // Marketing/delivery tools still require Core+.
+    "community.feed",
+    "community.feedback_channel",
+    "calendar.momentum_only",
+    "calendar.all_events",
     "nav.classroom",
+    "classroom.full",
   ]),
   programme: PREMIUM_FEATURE_SET,
   core: new Set([
     "community.feed",
+    "community.feedback_channel",
     "nav.classroom",
     "classroom.full",
     "nav.delivery",
     "calendar.momentum_only",
+    "calendar.all_events",
   ]),
   premium: PREMIUM_FEATURE_SET,
   vip: new Set([
@@ -135,11 +142,12 @@ export function minimumTierForFeature(
   return ordered.find((tier) => TIER_FEATURES[tier].has(feature)) ?? null;
 }
 
-/** Treat programme coaches as Premium for tag-based visibility. */
+/** Treat programme + alumni as Premium for tag-based calendar visibility. */
 export function effectiveCalendarAccessTier(
   tier: CoachAccessTier
 ): CoachAccessTier {
-  return tier === "programme" ? "premium" : tier;
+  if (tier === "programme" || tier === "alumni") return "premium";
+  return tier;
 }
 
 export function calendarEventVisibleToTier(

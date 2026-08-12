@@ -7,27 +7,22 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
-import { AddClientForm } from "@/components/clients/AddClientForm";
+import { AddClientPanel } from "@/components/clients/AddClientPanel";
 import {
-  ProspectsTable,
-  type ProspectRow,
-} from "@/components/prospects/ProspectsTable";
+  ClientsRoster,
+  type ClientRosterItem,
+} from "@/components/clients/ClientsRoster";
 import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
+import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
 export default function CoachClientsPage() {
   const router = useRouter();
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
-  const [prospects, setProspects] = useState<ProspectRow[]>([]);
+  const [clients, setClients] = useState<ClientRosterItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAddClient, setShowAddClient] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
-  const [createdContactId, setCreatedContactId] = useState<string | null>(null);
-  const [newFullName, setNewFullName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newBusinessName, setNewBusinessName] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -82,8 +77,20 @@ export default function CoachClientsPage() {
         return;
       }
 
-      const body = (await res.json()) as { clients?: ProspectRow[] };
-      setProspects(body.clients ?? []);
+      const body = (await res.json()) as {
+        clients?: Array<{
+          id: string;
+          full_name: string;
+          email: string | null;
+          business_name: string | null;
+          job_title?: string | null;
+          photo_url?: string | null;
+          headline?: string | null;
+          linkedin_url?: string | null;
+          last_score?: number | null;
+        }>;
+      };
+      setClients(body.clients ?? []);
       setLoading(false);
     }
 
@@ -93,54 +100,16 @@ export default function CoachClientsPage() {
     };
   }, [router, impersonatingCoachId, refreshKey]);
 
-  async function handleCreateClient(e: React.FormEvent) {
-    e.preventDefault();
-    setCreateError(null);
-    setCreateSuccess(null);
-    setCreating(true);
-    setCreatedContactId(null);
-    try {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error("You must be signed in to add a client.");
-      }
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      };
-      if (impersonatingCoachId) {
-        headers["x-impersonate-coach-id"] = impersonatingCoachId;
-      }
-      const res = await fetch("/api/coach/contacts", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          fullName: newFullName,
-          email: newEmail || undefined,
-          businessName: newBusinessName || undefined,
-          type: "client",
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        contactId?: string;
-        error?: string;
-      };
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Unable to create client.");
-      }
-      setCreateSuccess("Client created.");
-      setCreatedContactId(data.contactId ?? null);
-      setNewFullName("");
-      setNewEmail("");
-      setNewBusinessName("");
-      setRefreshKey((k) => k + 1);
-    } catch (err: unknown) {
-      setCreateError(err instanceof Error ? err.message : "Unable to create client.");
-    } finally {
-      setCreating(false);
+  async function authHeaders() {
+    const token = await getValidSupabaseAccessToken();
+    if (!token) return null;
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+    };
+    if (impersonatingCoachId) {
+      headers["x-impersonate-coach-id"] = impersonatingCoachId;
     }
+    return headers;
   }
 
   function handleViewAsClient(contactId: string) {
@@ -148,66 +117,43 @@ export default function CoachClientsPage() {
     router.push("/client");
   }
 
+  function handleCreated(contactId: string) {
+    setRefreshKey((k) => k + 1);
+    setShowAdd(false);
+    router.push(clientWorkspacePath(contactId));
+  }
+
   return (
     <CoachClientHubGate>
-    <div className="flex flex-col gap-4">
-      <StickyPageHeader
-        title="Coach Clients"
-        description="View your clients. Add clients or move prospects to clients when they convert."
-        below={<CoachToolsHubTabs hub="coach-clients" />}
-      />
-
-      <div className="flex w-full flex-col gap-4">
-      {showAddClient && (
-        <AddClientForm
-          fullName={newFullName}
-          email={newEmail}
-          businessName={newBusinessName}
-          onFullNameChange={setNewFullName}
-          onEmailChange={setNewEmail}
-          onBusinessNameChange={setNewBusinessName}
-          onSubmit={handleCreateClient}
-          onClose={() => setShowAddClient(false)}
-          creating={creating}
-          createError={createError}
-          createSuccess={createSuccess}
-          createdContactId={createdContactId}
-          onViewAsClient={handleViewAsClient}
+      <div className="flex flex-col gap-4">
+        <StickyPageHeader
+          title="Clients"
+          description="Your coaching roster — sessions, notes, and delivery tools."
+          below={<CoachToolsHubTabs hub="coach-clients" />}
         />
-      )}
 
-      {loading && (
-        <p className="text-sm text-slate-600">Loading…</p>
-      )}
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+        <div className="flex w-full flex-col gap-4">
+          {showAdd ? (
+            <AddClientPanel
+              onClose={() => setShowAdd(false)}
+              authHeaders={authHeaders}
+              onImported={handleCreated}
+              onManualCreated={handleCreated}
+            />
+          ) : null}
 
-      <ProspectsTable
-        prospects={prospects}
-        loading={loading}
-        error={error}
-        showCoachColumn={false}
-        showTypeColumn={true}
-        onAddClick={() => setShowAddClient((open) => !open)}
-        addActive={showAddClient}
-        addLabel={showAddClient ? "Cancel" : "Add"}
-        onRowClick={
-          impersonatingCoachId
-            ? (id) => router.push(clientWorkspacePath(id))
-            : undefined
-        }
-        emptyMessage="No clients yet."
-        renderRowActions={(row) => (
-          <button
-            type="button"
-            onClick={() => handleViewAsClient(row.id)}
-            className="rounded-md bg-sky-100 px-2 py-1 text-xs font-medium text-sky-800 hover:bg-sky-200"
-          >
-            View as client
-          </button>
-        )}
-      />
+          <ClientsRoster
+            clients={clients}
+            loading={loading}
+            error={error}
+            search={search}
+            onSearchChange={setSearch}
+            onAddClick={() => setShowAdd((open) => !open)}
+            addActive={showAdd}
+            onViewAsClient={handleViewAsClient}
+          />
+        </div>
       </div>
-    </div>
     </CoachClientHubGate>
   );
 }

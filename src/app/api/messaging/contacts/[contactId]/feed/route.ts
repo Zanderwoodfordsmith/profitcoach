@@ -46,7 +46,7 @@ export async function GET(
     .from("contacts")
     .select("id, coach_id, full_name, email, phone, type")
     .eq("id", contactId)
-    .eq("type", "prospect")
+    .in("type", ["prospect", "client"])
     .limit(1);
   if (access.coachId) {
     contactQuery = contactQuery.eq("coach_id", access.coachId);
@@ -54,7 +54,7 @@ export async function GET(
   const { data: contacts } = await contactQuery;
   const contact = contacts?.[0];
   if (!contact) {
-    return NextResponse.json({ error: "Prospect not found." }, { status: 404 });
+    return NextResponse.json({ error: "Contact not found." }, { status: 404 });
   }
 
   const coachId = (contact.coach_id as string | null) ?? access.coachId;

@@ -24,7 +24,7 @@ const COURSE_COVERS: Record<
   string,
   { coverImageUrl: string; eyebrow: string; eyebrowClassName: string; accentClassName: string }
 > = {
-  kickstart: {
+  "start-here": {
     coverImageUrl: "/academy/classroom/start-here.jpg",
     eyebrow: "Onboarding",
     eyebrowClassName: "text-[#0c5290]",
@@ -54,7 +54,7 @@ const COURSE_COVERS: Record<
     eyebrowClassName: "text-[#42a1ee]",
     accentClassName: "bg-gradient-to-br from-[#5b3df5] via-[#7b54ff] to-[#b17aff]",
   },
-  "profit-coach-system": {
+  "coach-clients": {
     coverImageUrl: "/academy/classroom/coach-clients.jpg",
     eyebrow: "Delivery",
     eyebrowClassName: "text-[#1ca0c2]",

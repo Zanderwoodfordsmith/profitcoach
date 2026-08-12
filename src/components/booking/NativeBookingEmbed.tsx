@@ -56,6 +56,16 @@ type Props = {
   contact: NativeBookingContact;
   /** Compact layout inside Let’s Talk unlock panel. */
   embedded?: boolean;
+  /** Confirm CTA label (default: Confirm). */
+  confirmLabel?: string;
+  /** Called after a successful booking. */
+  onBooked?: () => void;
+  /** When true, skip the full success panel and rely on the parent. */
+  hideSuccessPanel?: boolean;
+  /** Hide the “Thanks {name}” line above the question. */
+  hideThanks?: boolean;
+  /** Override the question under Thanks (default: What time works best for you?). */
+  question?: string;
 };
 
 function buildGoogleCalendarUrl(input: {
@@ -134,6 +144,11 @@ export function NativeBookingEmbed({
   calendarSlug = "discovery",
   contact,
   embedded = false,
+  confirmLabel = "Confirm",
+  onBooked,
+  hideSuccessPanel = false,
+  hideThanks = false,
+  question = "What time works best for you?",
 }: Props) {
   const calPath = `${encodeURIComponent(slug)}/${encodeURIComponent(calendarSlug)}`;
   const [meta, setMeta] = useState<BookMeta | null>(null);
@@ -212,6 +227,10 @@ export function NativeBookingEmbed({
 
   async function confirmBooking() {
     if (!selectedSlot || !meta) return;
+    if (!contact.firstName.trim() || !contact.email.trim()) {
+      setBookError("Name and email are required.");
+      return;
+    }
     setSubmitting(true);
     setBookError(null);
     const res = await fetch(`/api/public/book/${calPath}`, {
@@ -263,6 +282,7 @@ export function NativeBookingEmbed({
       where_label: body.location?.label ?? "Details by email",
       join_url: body.location?.join_url ?? null,
     });
+    onBooked?.();
   }
 
   if (metaError) {
@@ -282,6 +302,17 @@ export function NativeBookingEmbed({
   }
 
   if (success) {
+    if (hideSuccessPanel) {
+      return (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-center text-sm text-emerald-900">
+          <p className="font-semibold">Orientation call booked</p>
+          <p className="mt-1 text-emerald-800/90">
+            {success.date} · {success.time_range}
+          </p>
+        </div>
+      );
+    }
+
     const googleUrl = buildGoogleCalendarUrl({
       title: success.title,
       startsAt: success.starts_at,
@@ -423,12 +454,16 @@ export function NativeBookingEmbed({
   return (
     <div className={`nb-embed${embedded ? " nb-embed--embedded" : ""}`}>
       <header className="nb-embed__head">
-        <h2 className="nb-embed__thanks">
-          {contact.firstName.trim()
-            ? `Thanks ${contact.firstName.trim()}`
-            : "Thanks"}
-        </h2>
-        <p className="nb-embed__question">What time works best for you?</p>
+        {hideThanks ? null : (
+          <h2 className="nb-embed__thanks">
+            {contact.firstName.trim()
+              ? `Thanks ${contact.firstName.trim()}`
+              : "Thanks"}
+          </h2>
+        )}
+        <p className={hideThanks ? "nb-embed__thanks" : "nb-embed__question"}>
+          {question}
+        </p>
       </header>
       <BookingDateTimePicker
         timezone={tz}
@@ -482,7 +517,7 @@ export function NativeBookingEmbed({
             onClick={() => void confirmBooking()}
             className="nb-embed__book"
           >
-            {submitting ? "Booking…" : "Confirm"}
+            {submitting ? "Booking…" : confirmLabel}
           </button>
         </div>
       ) : null}

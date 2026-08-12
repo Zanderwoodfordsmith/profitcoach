@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { findAuthUserIdByEmail } from "@/lib/auth/findAuthUserIdByEmail";
 import { tierFromStripePriceId } from "@/config/membershipPlans";
 import type { CoachAccessTier } from "@/lib/coachAccess/tiers";
 import type { CoachRecurringPaymentStatus } from "@/lib/coachBilling";
@@ -97,20 +98,15 @@ export async function findCoachForStripeCustomer(
   const email = customerEmail?.trim().toLowerCase();
   if (!email) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (!profile?.id) return null;
+  const profileId = await findAuthUserIdByEmail(email);
+  if (!profileId) return null;
 
   const { data: byProfile } = await supabase
     .from("coaches")
     .select(
       "id, access_tier, access_tier_locked, stripe_customer_id, stripe_subscription_id, membership_status, membership_interval, membership_current_period_end, membership_cancel_at_period_end, recurring_payment_status"
     )
-    .eq("id", profile.id)
+    .eq("id", profileId)
     .maybeSingle();
 
   return (byProfile as CoachMembershipRow | null) ?? null;

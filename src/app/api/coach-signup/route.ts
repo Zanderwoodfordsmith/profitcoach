@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { looksLikeBotSignup } from "@/lib/coachSignupGuard";
+import { allocateCoachSlug } from "@/lib/coachSlug";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
 import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -9,7 +10,8 @@ type Body = {
   businessName: string;
   email: string;
   password: string;
-  slug: string;
+  /** Optional; defaults to firstname-lastname (with uniqueness suffix). */
+  slug?: string;
 };
 
 export async function POST(request: Request) {
@@ -19,20 +21,35 @@ export async function POST(request: Request) {
   const businessName = body.businessName?.trim();
   const email = body.email?.trim().toLowerCase();
   const password = body.password;
-  const slug = body.slug?.toLowerCase().trim();
+  const preferredSlug = body.slug?.toLowerCase().trim() || "";
 
-  if (!fullName || !email || !password || !slug) {
+  if (!fullName || !email || !password) {
     return NextResponse.json(
       { error: "Please fill in all required fields." },
       { status: 400 }
     );
   }
 
-  if (!/^[a-z0-9-]+$/.test(slug)) {
+  if (preferredSlug && !/^[a-z0-9-]+$/.test(preferredSlug)) {
     return NextResponse.json(
       {
         error:
           "Slug can only contain lowercase letters, numbers, and hyphens.",
+      },
+      { status: 400 }
+    );
+  }
+
+  let slug: string;
+  try {
+    slug = await allocateCoachSlug(supabaseAdmin, fullName, {
+      preferred: preferredSlug || null,
+    });
+  } catch (err: unknown) {
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error ? err.message : "Unable to allocate coach slug.",
       },
       { status: 400 }
     );
@@ -77,7 +94,7 @@ export async function POST(request: Request) {
       throw new Error(coachError);
     }
 
-    return NextResponse.json({ ok: true }, { status: 201 });
+    return NextResponse.json({ ok: true, slug }, { status: 201 });
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message ?? "Unexpected error." },

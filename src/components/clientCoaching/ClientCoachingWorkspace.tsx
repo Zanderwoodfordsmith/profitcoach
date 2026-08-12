@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ClientOverviewPanel } from "@/components/clientCoaching/ClientOverviewPanel";
 import { ComingSoonPanel } from "@/components/clientCoaching/ComingSoonPanel";
 import { NinetyDayPlanPanel } from "@/components/clientCoaching/NinetyDayPlanPanel";
 import { ThreeYearPlanPanel } from "@/components/clientCoaching/ThreeYearPlanPanel";
+import { ClientNotesPanel } from "@/components/clients/ClientNotesPanel";
 import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
@@ -27,6 +28,8 @@ type Props = {
 
 export function ClientCoachingWorkspace({ contactId }: Props) {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
+  const isAdmin = pathname.startsWith("/admin");
   const searchParams = useSearchParams();
   const tab = parseClientWorkspaceTab(searchParams.get("tab"));
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
@@ -139,8 +142,8 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
     <CoachClientHubGate>
       <div className="flex flex-col gap-4">
         <StickyPageHeader
-          title="Coach Clients"
-          description="Per-client coaching workspace — plan, delivery tools, and links."
+          title="Clients"
+          description="Coaching workspace — sessions, notes, plans, and activity."
           below={
             <div className="flex flex-col gap-2">
               <CoachToolsHubTabs hub="coach-clients" contactId={contactId} />
@@ -170,7 +173,10 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
             {tab === "overview" ? (
               <ClientOverviewPanel
                 contact={contact}
+                contactId={contactId}
                 onViewAsClient={handleViewAsClient}
+                impersonateCoachId={impersonatingCoachId}
+                isAdmin={isAdmin}
               />
             ) : null}
             {tab === "plan" ? (
@@ -213,9 +219,9 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
               />
             ) : null}
             {tab === "notes" ? (
-              <ComingSoonPanel
-                title="Coaching notes"
-                description="A lightweight coaching sheet for session notes. Full digital coaching sheet comes later."
+              <ClientNotesPanel
+                contactId={contactId}
+                impersonateCoachId={impersonatingCoachId}
               />
             ) : null}
           </div>

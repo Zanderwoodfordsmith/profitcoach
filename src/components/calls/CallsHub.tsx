@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import { CallsTable } from "@/components/calls/CallsTable";
 import { CallsWeekView } from "@/components/calls/CallsWeekView";
-import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
 import type { CallRow } from "@/lib/callRow";
 import {
   callStatusClass,
@@ -17,7 +16,7 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 
-type HubTab = "calendar" | "list" | "settings";
+type HubTab = "calendar" | "list";
 
 type Props = {
   calls: CallRow[];
@@ -49,8 +48,8 @@ export function CallsHub({
   loading,
   error,
   showCoachColumn = false,
-  appOrigin,
-  callsBasePath,
+  appOrigin: _appOrigin,
+  callsBasePath: _callsBasePath,
   onRowClick,
   onCallsChange,
   coachFilterOptions,
@@ -98,7 +97,7 @@ export function CallsHub({
   }, [onAdminPath]);
 
   useEffect(() => {
-    if (!isAdminUser && (tab === "calendar" || tab === "settings")) {
+    if (!isAdminUser && tab === "calendar") {
       setTab("list");
     }
   }, [isAdminUser, tab]);
@@ -261,23 +260,8 @@ export function CallsHub({
             onClick: () => setTab("calendar"),
             variant: "subtle",
           },
-          {
-            kind: "button",
-            id: "settings",
-            label: previewTabLabel("Calendar settings"),
-            active: tab === "settings",
-            onClick: () => setTab("settings"),
-            variant: "subtle",
-          },
         ]}
       />
-
-      {tab === "settings" ? (
-        <CallsCalendarSettings
-          appOrigin={appOrigin}
-          callsBasePath={callsBasePath}
-        />
-      ) : null}
 
       {tab === "calendar" ? (
         <div className="flex flex-col gap-4 lg:flex-row">

@@ -91,6 +91,12 @@ export type ClientWorkspaceContact = {
   id: string;
   fullName: string;
   email: string | null;
+  phone: string | null;
   businessName: string | null;
+  jobTitle: string | null;
+  linkedinUrl: string | null;
+  photoUrl: string | null;
+  headline: string | null;
+  location: string | null;
   type: string;
 };

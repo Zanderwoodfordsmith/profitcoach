@@ -1,14 +1,12 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   DashboardPageSection,
   StickyPageHeader,
 } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
-import { NativeBookingSettingsCard } from "@/components/booking/NativeBookingSettingsCard";
 import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
 import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -24,7 +22,7 @@ type FunnelProfileData = {
 };
 
 type FunnelSettingsClientProps = {
-  /** When true, render body only (no Get Clients hub header) — e.g. Profile settings tab. */
+  /** When true, render body only (no Get Clients hub header) — e.g. Settings → Get Clients tab. */
   embed?: boolean;
 };
 
@@ -86,7 +84,7 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
       return;
     }
     if (roleBody.role === "admin" && !isAdmin && !impersonatingCoachId) {
-      router.replace("/admin/funnel-settings");
+      router.replace("/admin/account?tab=funnel");
       return;
     }
     if (!isAdmin && roleBody.role !== "coach" && roleBody.role !== "admin") {
@@ -94,7 +92,7 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
       return;
     }
     if (isAdmin && roleBody.role !== "admin") {
-      router.replace("/coach/funnel-settings");
+      router.replace("/coach/settings?tab=funnel");
       return;
     }
 
@@ -231,16 +229,6 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
         saveError={saveError}
         onSubmit={(e) => void handleSave(e)}
       />
-      {isAdmin ? <NativeBookingSettingsCard appOrigin={appOrigin} /> : null}
-      <Suspense
-        fallback={
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-slate-600">Loading Google Calendar…</p>
-          </section>
-        }
-      >
-        <GoogleCalendarBookingCard />
-      </Suspense>
     </div>
   );
 

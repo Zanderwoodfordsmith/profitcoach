@@ -235,7 +235,9 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
 
 /** Tabs inside the Get Clients hub (former Marketing links). */
 export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
-  return getClientsTabItems(prefix).map((item) => item.href);
+  return getClientsTabItems(prefix)
+    .filter((item) => !item.iconOnly)
+    .map((item) => item.href);
 }
 
 /** Tabs inside the Coach Clients hub (former Delivery links). */
@@ -259,8 +261,9 @@ export type ToolsHubTabItem = {
   /** Gear-only tab at the end of the Get Clients hub. */
   iconOnly?: boolean;
   /**
-   * Not released to coaches yet. Shown only for admins (subtle/grey + lock).
-   * Coaches never see these tabs; direct /coach URLs redirect away.
+   * Not released to coaches yet. Shown only for admins on the admin surface
+   * (subtle/grey + lock). Coaches and admins “View as coach” never see these
+   * tabs; direct /coach URLs redirect away.
    */
   adminPreview?: boolean;
 };
@@ -304,7 +307,10 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       adminPreview: true,
     },
     {
-      href: `${prefix}/funnel-settings`,
+      href:
+        prefix === "/admin"
+          ? "/admin/account?tab=funnel"
+          : "/coach/settings?tab=funnel",
       label: "Settings",
       iconOnly: true,
     }
@@ -316,6 +322,7 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
 export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
   const paths = [
     ...getClientsTabHrefs(prefix),
+    `${prefix}/funnel-settings`,
     `${prefix}/first-campaign`,
     `${prefix}/message-generator`,
   ];

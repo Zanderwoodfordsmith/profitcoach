@@ -22,13 +22,20 @@ import { CLASSROOM_PATH_CARD_GROUPS } from "@/lib/actionPlans/classroomActionGro
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const CLASSROOM_CONTENT_COURSE_IDS = [
-  "kickstart",
+  "start-here",
   "coach-action-plan",
   "going-pro",
+  "get-clients",
+  "get-calls",
+  "win-clients",
+  "coach-clients",
+  "profit-coach-os",
+  // Legacy rows until migration fully applied
+  "kickstart",
   "client-acquisition",
   "client-delivery",
   "profit-coach-certification",
-  "profit-coach-os",
+  "profit-coach-system",
 ] as const;
 
 const PATH_TITLE_TO_ID = new Map(

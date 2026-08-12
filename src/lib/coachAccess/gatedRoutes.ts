@@ -121,24 +121,29 @@ export function gatedRouteForPath(pathname: string | null): GatedRoute | null {
  * membership (classroom.full).
  * ------------------------------------------------------------------------ */
 
-/** Programmes any coach (incl. Alumni) can open without membership. */
+/** Programmes open without paid membership (alumni keep these if classroom.full is ever removed). */
 export const ALUMNI_FREE_COURSE_IDS: ReadonlySet<string> = new Set([
   "coach-action-plan",
   "going-pro",
+  "coach-clients",
+  // Legacy id kept until bookmarks/caches clear
   "profit-coach-certification",
 ]);
 
 /** Client-safe course id → title map (kept in sync with archive-hub.json). */
 export const ACADEMY_COURSE_TITLES: Record<string, string> = {
+  "start-here": "Start Here",
   kickstart: "Start Here",
   "coach-action-plan": "Coach Action Plan",
   "going-pro": "Going Pro",
   "get-calls": "Get Calls",
   "win-clients": "Win Clients",
+  "get-clients": "Get Clients",
+  "coach-clients": "Coach Clients",
   "profit-coach-certification": "Profit Coach Certification",
   "client-acquisition": "Client Acquisition",
   "client-delivery": "Client Delivery",
-  "profit-coach-system": "Profit Coach System",
+  "profit-coach-system": "Coach Clients",
   "profit-coach-os": "Profit Coach OS",
   "profit-brand-framework": "PROFIT Brand & Framework",
   "not-in-classroom": "Archive",

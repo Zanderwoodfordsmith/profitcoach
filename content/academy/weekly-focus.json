@@ -34,7 +34,7 @@
     {
       "id": "week-04",
       "weekOfYear": 4,
-      "pathId": "profit-coach-system",
+      "pathId": "coach-clients",
       "pathLabel": "Coach Clients",
       "title": "Reinforce one client habit",
       "description": "A fast coaching rep that strengthens delivery quality without needing a full planning session.",
@@ -64,7 +64,7 @@
     {
       "id": "week-07",
       "weekOfYear": 7,
-      "pathId": "profit-coach-system",
+      "pathId": "coach-clients",
       "pathLabel": "Coach Clients",
       "title": "Close the loop on actions",
       "description": "A delivery discipline rep that stops coaching from becoming interesting conversation with no follow-through.",
@@ -94,7 +94,7 @@
     {
       "id": "week-10",
       "weekOfYear": 10,
-      "pathId": "profit-coach-system",
+      "pathId": "coach-clients",
       "pathLabel": "Coach Clients",
       "title": "Improve one session opening",
       "description": "A delivery polish rep. Better openings create better sessions.",

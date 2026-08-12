@@ -12,6 +12,7 @@ import {
   hasInAppLessonContent,
   type LessonInAppContent,
 } from "./lessonContentUtils";
+import { classroomLessonIdLookupKeys } from "./classroomIdAliases";
 import { contentSourceCourseId } from "./programmeContentSource";
 import {
   applyCatalogVisibility,
@@ -252,7 +253,9 @@ export async function loadClassroomCourseWithContent(
     ...new Set(
       flattenSections(course.sections).flatMap((section) =>
         section.lessons.flatMap((lesson) =>
-          lessonWithSatellites(lesson).map((l) => contentSourceCourseId(l.id))
+          lessonWithSatellites(lesson).flatMap((l) =>
+            classroomLessonIdLookupKeys(l.id).map((id) => contentSourceCourseId(id))
+          )
         )
       )
     ),
@@ -269,8 +272,17 @@ export async function loadClassroomCourseWithContent(
   const byLesson = new Map<string, AcademyLessonContentRow>();
   for (const row of rows ?? []) {
     const r = row as AcademyLessonContentRow;
+    // Accept current + legacy course_id keys during rename rollout.
     const expected = contentSourceCourseId(r.lesson_id);
-    if (r.course_id !== expected) continue;
+    const legacyKeys = classroomLessonIdLookupKeys(r.lesson_id);
+    const expectedSet = new Set(
+      legacyKeys.map((id) => contentSourceCourseId(id)).concat(expected)
+    );
+    if (!expectedSet.has(r.course_id)) continue;
+    // Index under every known id for this lesson so either hub can merge.
+    for (const key of legacyKeys) {
+      if (!byLesson.has(key)) byLesson.set(key, r);
+    }
     byLesson.set(r.lesson_id, r);
   }
 

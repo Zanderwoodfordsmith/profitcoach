@@ -100,12 +100,51 @@ export async function createGuestMembershipCheckoutSession(input: {
   const session = await stripeServer.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: input.priceId, quantity: 1 }],
-    success_url: `${baseUrl}/membership?success=1`,
+    success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/membership?canceled=1`,
+    billing_address_collection: "auto",
+    customer_creation: "always",
     subscription_data: {
       metadata: { plan_key: input.planKey },
     },
     metadata: { plan_key: input.planKey },
+    allow_promotion_codes: true,
+  });
+
+  if (!session.url) {
+    throw new Error("Checkout session missing URL.");
+  }
+
+  return { url: session.url };
+}
+
+/**
+ * One-time programme join Checkout (e.g. BCA enrolment / £1 test product).
+ * Success returns to /welcome so we can provision + sign them in.
+ */
+export async function createGuestProgrammeJoinCheckoutSession(input: {
+  priceId: string;
+  request: Request;
+}): Promise<{ url: string }> {
+  const baseUrl = getAppBaseUrl(input.request);
+
+  const session = await stripeServer.checkout.sessions.create({
+    mode: "payment",
+    line_items: [{ price: input.priceId, quantity: 1 }],
+    success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${baseUrl}/join/canceled`,
+    billing_address_collection: "auto",
+    customer_creation: "always",
+    metadata: {
+      product: "programme_join",
+      access_tier: "programme",
+    },
+    payment_intent_data: {
+      metadata: {
+        product: "programme_join",
+        access_tier: "programme",
+      },
+    },
     allow_promotion_codes: true,
   });
 

@@ -1,7 +1,5 @@
-"use client";
-
-import { FunnelSettingsClient } from "@/components/settings/FunnelSettingsClient";
+import { redirect } from "next/navigation";
 
 export default function CoachFunnelSettingsPage() {
-  return <FunnelSettingsClient />;
+  redirect("/coach/settings?tab=funnel");
 }

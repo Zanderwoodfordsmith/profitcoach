@@ -21,7 +21,7 @@ export function ProfileSectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
       {title ? (
         <div className="border-b border-slate-100 px-5 py-3.5">
           <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
