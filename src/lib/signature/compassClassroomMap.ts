@@ -50,3 +50,18 @@ export const COMPASS_CLASSROOM_TARGETS: Partial<
     sectionId: "coach-clients-retention",
   },
 };
+
+export type ResolvedCompassClassroomLink = {
+  moduleId: SignatureModuleId;
+  courseId: string;
+  sectionId: string;
+  lessonId: string;
+};
+
+export function classroomHrefForLink(
+  basePath: string,
+  link: Pick<ResolvedCompassClassroomLink, "courseId" | "lessonId">,
+): string {
+  const base = basePath.replace(/\/$/, "");
+  return `${base}/${encodeURIComponent(link.courseId)}/${encodeURIComponent(link.lessonId)}`;
+}
