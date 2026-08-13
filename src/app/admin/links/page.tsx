@@ -141,16 +141,6 @@ const programmeOnboardingLinks = [
     hint: "Clean split checkout. CTA shows Pay 2 × £1; only two payments then stops.",
   },
   {
-    href: "/join/3x3300",
-    label: "Join — 3 × £3,300",
-    hint: "Closer link. Custom Elements checkout. No plan switcher.",
-  },
-  {
-    href: "/join/3x3300/embed",
-    label: "Join — 3 × £3,300 (Embedded preview)",
-    hint: "Same left summary; Stripe Embedded Checkout on the right.",
-  },
-  {
     href: "/join/3x1",
     label: "Join — 3 × £1 (test)",
     hint: "Same checkout as 3 × £3,300, using the £1 × 3 Stripe price.",
@@ -159,6 +149,66 @@ const programmeOnboardingLinks = [
     href: "/join/3x1/embed",
     label: "Join — 3 × £1 (Embedded preview)",
     hint: "Embedded Checkout preview for the £1 × 3 test price.",
+  },
+  {
+    href: "/join/9900",
+    label: "Join — 1 × £9,900",
+    hint: "UK closer link. One payment of £9,900.",
+  },
+  {
+    href: "/join/2x4950",
+    label: "Join — 2 × £4,950",
+    hint: "UK closer link. Two payments of £4,950 (total £9,900).",
+  },
+  {
+    href: "/join/3x3300",
+    label: "Join — 3 × £3,300",
+    hint: "UK closer link. Three payments of £3,300 (total £9,900).",
+  },
+  {
+    href: "/join/4x2600",
+    label: "Join — 4 × £2,600",
+    hint: "UK closer link. Four payments of £2,600 (total £10,400).",
+  },
+  {
+    href: "/join/6x1750",
+    label: "Join — 6 × £1,750",
+    hint: "UK closer link. Six payments of £1,750 (total £10,500).",
+  },
+  {
+    href: "/join/12900",
+    label: "Join — 1 × $12,900",
+    hint: "US closer link. One payment of $12,900.",
+  },
+  {
+    href: "/join/2x6450",
+    label: "Join — 2 × $6,450",
+    hint: "US closer link. Two payments of $6,450 (total $12,900).",
+  },
+  {
+    href: "/join/3x4300",
+    label: "Join — 3 × $4,300",
+    hint: "US closer link. Three payments of $4,300 (total $12,900).",
+  },
+  {
+    href: "/join/4x3400",
+    label: "Join — 4 × $3,400",
+    hint: "US closer link. Four payments of $3,400 (total $13,600).",
+  },
+  {
+    href: "/join/6x2300",
+    label: "Join — 6 × $2,300",
+    hint: "US closer link. Six payments of $2,300 (total $13,800).",
+  },
+  {
+    href: "/join/9900/embed",
+    label: "Join — £9,900 (Embedded preview)",
+    hint: "Same left summary; Stripe Embedded Checkout on the right.",
+  },
+  {
+    href: "/join/3x3300/embed",
+    label: "Join — 3 × £3,300 (Embedded preview)",
+    hint: "Same left summary; Stripe Embedded Checkout on the right.",
   },
   {
     href: "/join",

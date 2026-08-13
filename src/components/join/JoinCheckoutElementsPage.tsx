@@ -629,7 +629,7 @@ export function JoinCheckoutElementsPage({
     lastName: "",
     email: "",
     businessName: "",
-    country: "GB",
+    country: offer.defaultCountry ?? "GB",
     postalCode: "",
   });
   const [clientSecret, setClientSecret] = useState<string | null>(null);

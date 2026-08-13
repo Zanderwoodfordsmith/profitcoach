@@ -36,7 +36,9 @@ export function programmeJoinCheckoutHref(priceId?: string | null): string {
 export function programmeJoinPaymentCount(
   metadata: Record<string, string> | null | undefined
 ): number | null {
-  const raw = metadata?.programme_join_payments?.trim();
+  const raw =
+    metadata?.programme_join_payments?.trim() ||
+    metadata?.installments?.trim();
   if (!raw) return null;
   const n = Number.parseInt(raw, 10);
   if (!Number.isFinite(n) || n < 1 || n > 36) return null;
