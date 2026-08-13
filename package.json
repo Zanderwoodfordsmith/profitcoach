@@ -16,7 +16,6 @@
     "backfill-locations-from-linkedin:dry-run": "npx tsx scripts/backfill-locations-from-linkedin.ts --dry-run",
     "backfill-community-bios-from-linkedin": "npx tsx scripts/backfill-community-bios-from-linkedin.ts",
     "backfill-community-bios-from-linkedin:dry-run": "npx tsx scripts/backfill-community-bios-from-linkedin.ts --dry-run",
-
     "backfill-stripe-payments": "npx tsx scripts/backfill-stripe-payments.ts",
     "import-stripe-payments": "npx tsx scripts/import-stripe-payments-from-csv.ts",
     "import-revolut-payments": "npx tsx scripts/import-revolut-payments-from-csv.ts",
@@ -61,6 +60,8 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@stripe/react-stripe-js": "^6.8.1",
+    "@stripe/stripe-js": "^9.13.0",
     "@supabase/supabase-js": "^2.48.0",
     "@vercel/speed-insights": "^2.0.0",
     "apify-client": "^2.24.0",

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
   AuthSplitShell,
@@ -10,11 +11,17 @@ import {
   authPrimaryButtonClassName,
 } from "@/components/auth/AuthSplitShell";
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordInner() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    const prefill = searchParams.get("email")?.trim();
+    if (prefill) setEmail(prefill);
+  }, [searchParams]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -86,5 +93,22 @@ export default function ForgotPasswordPage() {
         </form>
       )}
     </AuthSplitShell>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthSplitShell
+          title="Reset your password"
+          subtitle="Enter the email you use to sign in. We will send you a reset link."
+        >
+          <div className="h-24 animate-pulse rounded-xl bg-slate-100" />
+        </AuthSplitShell>
+      }
+    >
+      <ForgotPasswordInner />
+    </Suspense>
   );
 }

@@ -34,7 +34,14 @@ export async function GET(request: Request) {
     const result = await createGuestProgrammeJoinCheckoutSession({
       priceId: resolved.priceId,
       request,
+      uiMode: "hosted",
     });
+    if (!("url" in result)) {
+      return NextResponse.json(
+        { error: "Hosted checkout did not return a URL." },
+        { status: 500 }
+      );
+    }
     return NextResponse.redirect(result.url, 303);
   } catch (error) {
     console.error("programme join checkout error:", error);

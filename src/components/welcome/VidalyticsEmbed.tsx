@@ -12,8 +12,8 @@ type Props = {
 };
 
 /**
- * Official Vidalytics embed (div + loader). Runs their published bootstrap
- * once the mount node is in the DOM.
+ * Official Vidalytics embed (div + loader). Matches the BCA site bootstrap
+ * that plays reliably there.
  */
 export function VidalyticsEmbed({
   embedId,
@@ -24,70 +24,47 @@ export function VidalyticsEmbed({
   useEffect(() => {
     const base = embedBaseUrl.endsWith("/") ? embedBaseUrl : `${embedBaseUrl}/`;
 
-    (function (
-      v: Window & typeof globalThis,
-      i: Document,
-      d: string,
-      a: string,
-      l: string,
-      y?: string,
-      t?: unknown,
-      c?: string,
-      s?: HTMLScriptElement
-    ) {
-      y = `_${d.toLowerCase()}`;
-      c = `${d}L`;
-      const bag = v as unknown as Record<string, Record<string, unknown>>;
-      if (!bag[d]) bag[d] = {};
-      if (!bag[c]) bag[c] = {};
-      if (!bag[y]) bag[y] = {};
-
+    // Official Vidalytics embed bootstrap (logic unchanged from their snippet).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (function (v: any, i: Document, d: string, a: string, l: string, y?: any, t?: any, c?: any, s?: any) {
+      y = "_" + d.toLowerCase();
+      c = d + "L";
+      if (!v[d]) v[d] = {};
+      if (!v[c]) v[c] = {};
+      if (!v[y]) v[y] = {};
       const vl = "Loader";
-      let vli = bag[y][vl] as
-        | { loadScript: (u: string, cb: () => void) => void }
-        | undefined;
-      let vsl = bag[c][`${vl}Script`] as
-        | ((u: string, cb: () => void) => void)
-        | undefined;
-      let vlf = bag[c][`${vl}Loaded`];
+      let vli = v[y][vl];
+      let vsl = v[c][vl + "Script"];
+      let vlf = v[c][vl + "Loaded"];
       const ve = "Embed";
-
       if (!vsl) {
-        vsl = (u, cb) => {
+        vsl = function (u: string, cb: () => void) {
           if (t) {
             cb();
             return;
           }
           s = i.createElement("script");
           s.type = "text/javascript";
-          s.async = true;
+          s.async = 1;
           s.src = u;
-          s.onload = () => {
+          s.onload = function () {
             vlf = 1;
-            bag[c!][`${vl}Loaded`] = 1;
             cb();
           };
           i.getElementsByTagName("head")[0].appendChild(s);
         };
-        bag[c][`${vl}Script`] = vsl;
+        v[c][vl + "Script"] = vsl;
       }
-
-      vsl(`${l}loader.min.js`, () => {
+      vsl(l + "loader.min.js", function () {
         if (!vli) {
-          const LoaderCtor = bag[c!][vl] as
-            | (new () => { loadScript: (u: string, cb: () => void) => void })
-            | undefined;
-          if (!LoaderCtor) return;
-          vli = new LoaderCtor();
-          bag[y!][vl] = vli;
+          const vlc = v[c][vl];
+          vli = new vlc();
+          v[y][vl] = vli;
         }
-        vli.loadScript(`${l}player.min.js`, () => {
-          const EmbedCtor = bag[d][ve] as
-            | (new () => { run: (id: string) => void })
-            | undefined;
-          if (!EmbedCtor) return;
-          t = new EmbedCtor();
-          (t as { run: (id: string) => void }).run(a);
+        vli.loadScript(l + "player.min.js", function () {
+          const vec = v[d][ve];
+          t = new vec();
+          t.run(a);
         });
       });
     })(window, document, "Vidalytics", embedId, base);

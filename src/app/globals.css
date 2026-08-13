@@ -67,6 +67,18 @@ body {
   color: var(--foreground);
 }
 
+/*
+ * Tailwind preflight sets `img, video { max-width: 100%; height: auto }`,
+ * which breaks Vidalytics (poster shows, play overlay works, media stays stuck).
+ * BCA site has no Tailwind — undo the preflight inside Vidalytics mounts only.
+ */
+[id^="vidalytics_embed_"] video,
+[id^="vidalytics_embed_"] img {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+}
+
 .app-canvas-bg {
   background-color: var(--app-canvas-base);
   background-image: var(--app-canvas-glow), var(--app-canvas-gradient);

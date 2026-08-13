@@ -188,20 +188,13 @@ function WelcomeInner() {
     }
 
     function runGuest() {
-      if (!ghlPrefill) {
-        setState({
-          status: "error",
-          message:
-            "Missing checkout session. If you just paid, open the link from your receipt or contact support.",
-        });
-        return;
-      }
+      // Open backup path: video + booking + login help without a fresh checkout.
       setState({
         status: "ready",
-        email: ghlPrefill.email,
-        fullName: ghlPrefill.fullName || "there",
-        phone: ghlPrefill.phone,
-        linkedinUrl: ghlPrefill.linkedinUrl,
+        email: ghlPrefill?.email ?? "",
+        fullName: ghlPrefill?.fullName || "there",
+        phone: ghlPrefill?.phone ?? "",
+        linkedinUrl: ghlPrefill?.linkedinUrl ?? "",
         createdAccount: false,
         continuePath: START_HERE_WELCOME_PATH,
         preview: false,
@@ -253,15 +246,16 @@ function WelcomeInner() {
     if (!res.ok) throw new Error(body.error ?? "Unable to save intake.");
   }
 
-  async function handleContinue() {
+  async function handleContinue(opts?: { email?: string }) {
     if (state.status !== "ready") return;
     setPasswordError(null);
 
     if (state.guest) {
       setContinueBusy(true);
       const login = new URL("/login", window.location.origin);
-      if (state.email.trim()) {
-        login.searchParams.set("email", state.email.trim());
+      const guestEmail = (opts?.email ?? state.email).trim();
+      if (guestEmail) {
+        login.searchParams.set("email", guestEmail);
       }
       login.searchParams.set("next", state.continuePath);
       router.push(`${login.pathname}${login.search}`);
@@ -352,7 +346,7 @@ function WelcomeInner() {
       confirmPassword={confirmPassword}
       onPasswordChange={setPassword}
       onConfirmPasswordChange={setConfirmPassword}
-      onContinue={() => void handleContinue()}
+      onContinue={(opts) => void handleContinue(opts)}
       onSaveIntake={handleSaveIntake}
     />
   );

@@ -3,10 +3,10 @@
  */
 
 export const PROGRAMME_WELCOME_VIDALYTICS_EMBED_ID =
-  "vidalytics_embed_3IYlKg8mXKnmU9DF";
+  "vidalytics_embed_jlQzP_2rQRW2N8QK";
 
 export const PROGRAMME_WELCOME_VIDALYTICS_BASE_URL =
-  "https://fast.vidalytics.com/embeds/Wb70Vokr/3IYlKg8mXKnmU9DF/";
+  "https://fast.vidalytics.com/embeds/Wb70Vokr/jlQzP_2rQRW2N8QK/";
 
 /** @deprecated Prefer Vidalytics embed constants above. */
 export const PROGRAMME_WELCOME_VIDEO_URL =

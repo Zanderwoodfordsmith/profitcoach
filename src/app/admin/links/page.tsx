@@ -110,6 +110,11 @@ const bossProgrammeLinks = [
 /** Post-Stripe onboarding — skip payment, walk the real screens. */
 const programmeOnboardingLinks = [
   {
+    href: "/welcome",
+    label: "Welcome (open / backup)",
+    hint: "No checkout required — video, booking, and login help if something went wrong.",
+  },
+  {
     href: "/welcome?preview=1",
     label: "Just paid → welcome",
     hint: "Post-checkout welcome (password optional). Continue into Start Here without Stripe.",
@@ -126,9 +131,24 @@ const programmeOnboardingLinks = [
     hint: "Skip welcome; jump straight into the first classroom screen after payment.",
   },
   {
+    href: "/join/pay-in-full",
+    label: "Join — pay in full (£2 test)",
+    hint: "Clean split checkout. Closer-only link — no plan switcher.",
+  },
+  {
+    href: "/join/two-pay",
+    label: "Join — 2-pay (£1 × 2 test)",
+    hint: "Clean split checkout. CTA shows Pay 2 × £1; only two payments then stops.",
+  },
+  {
+    href: "/join/three-pay",
+    label: "Join — 3-pay hybrid (£3,300 × 3 preview)",
+    hint: "Branded summary + Stripe Embedded. Schedule copy shows 3 × £3,300.",
+  },
+  {
     href: "/join",
-    label: "Real join checkout",
-    hint: "Live Stripe path when you do want to test payment end-to-end.",
+    label: "Join — default hosted checkout",
+    hint: "Redirects straight into Stripe Checkout (no offer page).",
   },
 ] as const;
 

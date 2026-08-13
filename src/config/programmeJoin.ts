@@ -3,9 +3,12 @@ import { stripeServer } from "@/lib/stripeServer";
 /**
  * Programme join Checkout — used for BCA enrolment.
  * Supports:
- * - one-time prices on this product
- * - recurring prices with metadata `programme_join_payments` (e.g. "2" for 2 × £1)
- * Test product: Business Coach Academy (prod_V3fJctbqpWxz9N).
+ * - one-time prices on the default programme product
+ * - recurring prices with metadata `programme_join_payments` (e.g. "2")
+ *   on the default product OR any product tagged `metadata.product=programme_join`
+ *
+ * Closer-facing plan copy lives on /join/pay-in-full and /join/two-pay.
+ * Product: Business Coach Academy (prod_V3fJctbqpWxz9N).
  */
 export const PROGRAMME_JOIN_PRODUCT_ID =
   process.env.STRIPE_PRODUCT_PROGRAMME_JOIN?.trim() || "prod_V3fJctbqpWxz9N";
@@ -14,6 +17,14 @@ export const PROGRAMME_JOIN_PRODUCT_ID =
 export const PROGRAMME_JOIN_DEFAULT_PRICE_ID =
   process.env.STRIPE_PRICE_PROGRAMME_JOIN?.trim() ||
   "price_1U3XyzEz5QxIrr4nB7msL5nf";
+
+/** @deprecated Prefer PROGRAMME_JOIN_TWO_PAY_PRICE_ID in programmeJoinOffers. */
+export const PROGRAMME_JOIN_TWO_PAY_TEST_PRICE_ID =
+  "price_1U3cjcEz5QxIrr4nhVqo5Jrf";
+
+/** @deprecated Prefer /join/two-pay for closer links. */
+export const PROGRAMME_JOIN_TWO_PAY_TEST_PAYMENT_LINK =
+  "https://buy.stripe.com/dRm8wPfcDdPsa588WucZa0a";
 
 export function programmeJoinCheckoutHref(priceId?: string | null): string {
   const params = new URLSearchParams();
@@ -74,7 +85,9 @@ export async function resolveProgrammeJoinPriceId(
     if (!price.active) {
       return { error: "That price is not active.", status: 400 };
     }
-    if (productId !== PROGRAMME_JOIN_PRODUCT_ID) {
+
+    const taggedProgrammeJoin = price.metadata?.product === "programme_join";
+    if (productId !== PROGRAMME_JOIN_PRODUCT_ID && !taggedProgrammeJoin) {
       return {
         error: "That price does not belong to the programme join product.",
         status: 400,

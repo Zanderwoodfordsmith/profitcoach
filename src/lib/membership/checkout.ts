@@ -121,16 +121,23 @@ export async function createGuestMembershipCheckoutSession(input: {
 /**
  * Programme join Checkout (one-time or limited recurring e.g. 2 × £1).
  * Success returns to /welcome so we can provision + sign them in.
+ *
+ * - hosted (default): redirect to Stripe-hosted Checkout (`url`)
+ * - embedded: full Stripe Checkout iframe on our page (`clientSecret`)
+ * - elements: Payment Element on our custom form (`clientSecret`)
  */
 export async function createGuestProgrammeJoinCheckoutSession(input: {
   priceId: string;
   request: Request;
-}): Promise<{ url: string }> {
+  uiMode?: "hosted" | "embedded" | "elements";
+  /** Shown next to the pay button inside hosted/embedded Checkout. */
+  customSubmitMessage?: string;
+  customerName?: string;
+  customerPhone?: string;
+}): Promise<{ url: string } | { clientSecret: string; sessionId: string }> {
   const baseUrl = getAppBaseUrl(input.request);
-  const {
-    programmeJoinPaymentCount,
-    recurringIntervalSeconds,
-  } = await import("@/config/programmeJoin");
+  const uiMode = input.uiMode ?? "hosted";
+  const { programmeJoinPaymentCount } = await import("@/config/programmeJoin");
 
   const price = await stripeServer.prices.retrieve(input.priceId);
   const joinMeta = {
@@ -138,38 +145,79 @@ export async function createGuestProgrammeJoinCheckoutSession(input: {
     access_tier: "programme",
   };
 
+  const customerName = input.customerName?.trim() || undefined;
+  const customerPhone = input.customerPhone?.trim() || undefined;
+
+  const returnOrHosted =
+    uiMode === "embedded" || uiMode === "elements"
+      ? ({
+          ui_mode:
+            uiMode === "embedded"
+              ? ("embedded_page" as const)
+              : ("elements" as const),
+          return_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+        } as const)
+      : ({
+          success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/join/canceled`,
+        } as const);
+
+  // Elements: collect email/name in our UI (confirm()).
+  // Use billing_address_collection: "auto" like hosted/embedded Checkout —
+  // "required" forces a full street address via Address Element.
+  // Do NOT set customer_email — confirm() would reject updating it.
+  const stripeCollect =
+    uiMode === "elements"
+      ? {
+          billing_address_collection: "auto" as const,
+        }
+      : {
+          billing_address_collection: "auto" as const,
+          phone_number_collection: { enabled: true },
+          name_collection: {
+            individual: { enabled: true, optional: false },
+            business: { enabled: true, optional: true },
+          },
+          ...(input.customSubmitMessage?.trim()
+            ? {
+                custom_text: {
+                  submit: {
+                    message: input.customSubmitMessage.trim().slice(0, 1200),
+                  },
+                },
+              }
+            : {}),
+        };
+
   if (price.type === "recurring") {
     const payments = programmeJoinPaymentCount(price.metadata) ?? 1;
-    const interval = price.recurring?.interval ?? "month";
-    const intervalCount = price.recurring?.interval_count ?? 1;
     const joinMetaWithPlan = {
       ...joinMeta,
       programme_join_payments: String(payments),
+      ...(customerName ? { customer_name: customerName } : {}),
+      ...(customerPhone ? { customer_phone: customerPhone } : {}),
     };
 
-    // N charges: invoice now + renewals, then cancel shortly after the last renewal.
-    const cancelAt =
-      payments <= 1
-        ? undefined
-        : Math.floor(Date.now() / 1000) +
-          recurringIntervalSeconds(interval, intervalCount) * (payments - 1) +
-          2 * 24 * 60 * 60;
-
+    // Do not set subscription_data.cancel_at — embedded/elements reject it.
+    // Webhook + provision call ensureProgrammeJoinLimitedPayments after pay.
     const session = await stripeServer.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: input.priceId, quantity: 1 }],
-      success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/join/canceled`,
-      billing_address_collection: "auto",
-      phone_number_collection: { enabled: true },
-      customer_creation: "always",
+      ...returnOrHosted,
+      ...stripeCollect,
       metadata: joinMetaWithPlan,
       subscription_data: {
         metadata: joinMetaWithPlan,
-        ...(cancelAt ? { cancel_at: cancelAt } : {}),
       },
-      allow_promotion_codes: true,
+      allow_promotion_codes: false,
     });
+
+    if (uiMode === "embedded" || uiMode === "elements") {
+      if (!session.client_secret) {
+        throw new Error("Checkout session missing client_secret.");
+      }
+      return { clientSecret: session.client_secret, sessionId: session.id };
+    }
 
     if (!session.url) {
       throw new Error("Checkout session missing URL.");
@@ -181,17 +229,26 @@ export async function createGuestProgrammeJoinCheckoutSession(input: {
   const session = await stripeServer.checkout.sessions.create({
     mode: "payment",
     line_items: [{ price: input.priceId, quantity: 1 }],
-    success_url: `${baseUrl}/welcome?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/join/canceled`,
-    billing_address_collection: "auto",
-    phone_number_collection: { enabled: true },
-    customer_creation: "always",
-    metadata: joinMeta,
+    ...returnOrHosted,
+    ...stripeCollect,
+    ...(uiMode !== "elements" ? { customer_creation: "always" as const } : {}),
+    metadata: {
+      ...joinMeta,
+      ...(customerName ? { customer_name: customerName } : {}),
+      ...(customerPhone ? { customer_phone: customerPhone } : {}),
+    },
     payment_intent_data: {
       metadata: joinMeta,
     },
-    allow_promotion_codes: true,
+    allow_promotion_codes: false,
   });
+
+  if (uiMode === "embedded" || uiMode === "elements") {
+    if (!session.client_secret) {
+      throw new Error("Checkout session missing client_secret.");
+    }
+    return { clientSecret: session.client_secret, sessionId: session.id };
+  }
 
   if (!session.url) {
     throw new Error("Checkout session missing URL.");

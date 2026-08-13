@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -60,7 +61,7 @@ function WelcomeConfetti({ active }: { active: boolean }) {
   if (!active) return null;
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-20 overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[1] overflow-hidden"
       aria-hidden
     >
       {CONFETTI_PIECES.map((piece, i) => {
@@ -98,8 +99,10 @@ function WelcomeConfetti({ active }: { active: boolean }) {
 }
 
 function WelcomeVideo() {
+  // No overflow-hidden / transform on the wrapper — those clip Vidalytics
+  // chrome and can make the player look soft or half-rendered.
   return (
-    <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl bg-slate-900 shadow-[0_24px_60px_-28px_rgba(12,82,144,0.55)] ring-1 ring-slate-900/10">
+    <div className="relative z-20 mx-auto w-full max-w-3xl bg-slate-900 shadow-[0_24px_60px_-28px_rgba(12,82,144,0.55)] ring-1 ring-slate-900/10">
       <VidalyticsEmbed
         embedId={PROGRAMME_WELCOME_VIDALYTICS_EMBED_ID}
         embedBaseUrl={PROGRAMME_WELCOME_VIDALYTICS_BASE_URL}
@@ -176,7 +179,7 @@ export type WelcomeCelebrationProps = {
   confirmPassword: string;
   onPasswordChange: (value: string) => void;
   onConfirmPasswordChange: (value: string) => void;
-  onContinue: () => void;
+  onContinue: (opts?: { email?: string }) => void;
   onSaveIntake: (input: {
     linkedinUrl: string;
     situation: ProgrammeIntakeSituation | "";
@@ -217,8 +220,28 @@ export function WelcomeCelebration({
   const [intakeBusy, setIntakeBusy] = useState(false);
   const [intakeDone, setIntakeDone] = useState(false);
   const [intakeError, setIntakeError] = useState<string | null>(null);
+  const [guestEmail, setGuestEmail] = useState(email);
+  const [guestFirstName, setGuestFirstName] = useState(
+    firstName === "there" ? "" : firstName
+  );
+  const [guestLastName, setGuestLastName] = useState(() => {
+    const split = splitFullName(fullName);
+    return split.last_name || "";
+  });
+
+  useEffect(() => {
+    setGuestEmail(email);
+  }, [email]);
 
   const bookingContact = useMemo(() => {
+    if (guest) {
+      return {
+        firstName: guestFirstName.trim() || firstName.trim() || "there",
+        lastName: guestLastName.trim(),
+        email: guestEmail.trim(),
+        phone: phone.trim() || undefined,
+      };
+    }
     const split = splitFullName(fullName);
     return {
       firstName: (split.first_name || firstName || "").trim(),
@@ -226,7 +249,25 @@ export function WelcomeCelebration({
       email: email.trim(),
       phone: phone.trim() || undefined,
     };
-  }, [email, firstName, fullName, phone]);
+  }, [
+    email,
+    firstName,
+    fullName,
+    guest,
+    guestEmail,
+    guestFirstName,
+    guestLastName,
+    phone,
+  ]);
+
+  const displayFirstName =
+    (guest ? guestFirstName.trim() : "") ||
+    (firstName === "there" ? "" : firstName) ||
+    "there";
+
+  const forgotPasswordHref = guestEmail.trim()
+    ? `/login/forgot-password?email=${encodeURIComponent(guestEmail.trim())}`
+    : "/login/forgot-password";
 
   const showBookingBody = !booked && bookingOpen;
   const showIntakeBody = !intakeDone && (intakeOpen || booked);
@@ -284,7 +325,8 @@ export function WelcomeCelebration({
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[radial-gradient(120%_80%_at_50%_-10%,#dbebff_0%,#f8fafc_42%,#f1f5f9_100%)]">
-      <WelcomeConfetti active={showConfetti} />
+      {/* Confetti stays under content/video so it can’t wash out the player. */}
+      <WelcomeConfetti active={showConfetti && !guest} />
 
       {preview && previewToastVisible ? (
         <div
@@ -301,14 +343,19 @@ export function WelcomeCelebration({
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-16 pt-10 sm:px-6 sm:pt-14">
         <header className="text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#0c5290]">
-            Payment confirmed
+            {guest ? "Welcome" : "Payment confirmed"}
           </p>
           <h1 className="mt-3 text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-            Congratulations, {firstName}
+            {guest
+              ? displayFirstName === "there"
+                ? "You’re in the right place"
+                : `Welcome, ${displayFirstName}`
+              : `Congratulations, ${displayFirstName}`}
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-pretty text-base leading-relaxed text-slate-600 sm:text-lg">
-            Book your orientation call when you can — intake and portal access
-            are available below if you need them first.
+            {guest
+              ? "Watch the welcome video, book your orientation call, and get into the portal."
+              : "Book your orientation call when you can — intake and portal access are available below if you need them first."}
           </p>
         </header>
 
@@ -364,7 +411,50 @@ export function WelcomeCelebration({
                 </button>
 
                 {showBookingBody ? (
-                  <div className="mt-4">
+                  <div className="mt-4 space-y-4">
+                    {guest ? (
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        <label className="block sm:col-span-1">
+                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                            First name
+                          </span>
+                          <input
+                            type="text"
+                            autoComplete="given-name"
+                            value={guestFirstName}
+                            onChange={(e) => setGuestFirstName(e.target.value)}
+                            className={inputClassName}
+                            placeholder="Alex"
+                          />
+                        </label>
+                        <label className="block sm:col-span-1">
+                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                            Last name
+                          </span>
+                          <input
+                            type="text"
+                            autoComplete="family-name"
+                            value={guestLastName}
+                            onChange={(e) => setGuestLastName(e.target.value)}
+                            className={inputClassName}
+                            placeholder="Coach"
+                          />
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="mb-1.5 block text-xs font-medium text-slate-600">
+                            Email for booking
+                          </span>
+                          <input
+                            type="email"
+                            autoComplete="email"
+                            value={guestEmail}
+                            onChange={(e) => setGuestEmail(e.target.value)}
+                            className={inputClassName}
+                            placeholder="you@example.com"
+                          />
+                        </label>
+                      </div>
+                    ) : null}
                     <NativeBookingEmbed
                       slug={PROGRAMME_ORIENTATION_BOOK_SLUG}
                       calendarSlug={PROGRAMME_ORIENTATION_CALENDAR_SLUG}
@@ -467,11 +557,11 @@ export function WelcomeCelebration({
                 <StepBadge n={3} active={showPortalBody} />
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-semibold text-slate-900">
-                    Access the portal
+                    {guest ? "Sign in to the portal" : "Access the portal"}
                   </h2>
                   <p className="mt-0.5 text-sm text-slate-600">
                     {guest
-                      ? "Sign in to open Start Here — available even if you book later."
+                      ? "We’ll help you get in with the email on your account — even if you never got a password."
                       : "Set a password and open Start Here — available even if you book later."}
                   </p>
                 </div>
@@ -486,29 +576,59 @@ export function WelcomeCelebration({
                 <div className="mt-5 space-y-3">
                   {guest ? (
                     <>
-                      <p className="text-sm text-slate-600">
-                        Use the email from your welcome link
-                        {email.trim() ? (
-                          <>
-                            {" "}
-                            (<span className="font-medium text-slate-900">
-                              ({email.trim()})
-                            </span>
-                          </>
-                        ) : null}{" "}
-                        to sign in, then continue into Start Here.
-                      </p>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                          Your login email
+                        </p>
+                        <label className="mt-2 block">
+                          <span className="sr-only">Login email</span>
+                          <input
+                            type="email"
+                            autoComplete="email"
+                            value={guestEmail}
+                            onChange={(e) => setGuestEmail(e.target.value)}
+                            className={inputClassName}
+                            placeholder="you@example.com"
+                          />
+                        </label>
+                        <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                          Use the email you paid with
+                          {email.trim()
+                            ? " (shown above if we already have it)"
+                            : ""}
+                          . If you never set a password, reset it first, then
+                          sign in.
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        onClick={onContinue}
-                        disabled={continueBusy}
-                        className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-wait disabled:opacity-60"
+                        onClick={() =>
+                          onContinue({ email: guestEmail.trim() })
+                        }
+                        disabled={continueBusy || !guestEmail.trim()}
+                        className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {continueBusy ? "Opening…" : "Sign in to Start Here"}
                       </button>
+                      <p className="text-center text-sm text-slate-600">
+                        <Link
+                          href={forgotPasswordHref}
+                          className="font-medium text-[#0c5290] underline-offset-2 hover:underline"
+                        >
+                          Forgot password? Reset it here
+                        </Link>
+                      </p>
                     </>
                   ) : (
                     <>
+                      {email.trim() ? (
+                        <p className="text-sm text-slate-600">
+                          Signed in as{" "}
+                          <span className="font-medium text-slate-900">
+                            {email.trim()}
+                          </span>
+                        </p>
+                      ) : null}
                       <div className="grid gap-2.5 sm:grid-cols-2">
                         <label className="block">
                           <span className="mb-1.5 block text-xs font-medium text-slate-600">
@@ -548,7 +668,7 @@ export function WelcomeCelebration({
                       ) : null}
                       <button
                         type="button"
-                        onClick={onContinue}
+                        onClick={() => onContinue()}
                         disabled={continueBusy}
                         className="inline-flex w-full items-center justify-center rounded-full bg-[#0c5290] px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0a4274] disabled:cursor-wait disabled:opacity-60"
                       >
