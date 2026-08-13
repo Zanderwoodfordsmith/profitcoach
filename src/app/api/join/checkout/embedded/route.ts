@@ -8,7 +8,7 @@ import {
 
 /**
  * POST /api/join/checkout/embedded
- * Body: { offer: "pay-in-full" | "two-pay" | "three-pay" } or { price: "price_xxx" }
+ * Body: { offer: ProgrammeJoinOfferSlug } or { price: "price_xxx" }
  *
  * Creates an embedded Checkout Session and returns { clientSecret }.
  */
@@ -65,7 +65,11 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-    return NextResponse.json({ clientSecret: result.clientSecret });
+    return NextResponse.json({
+      clientSecret: result.clientSecret,
+      priceId: resolved.priceId,
+      priceNickname: resolved.nickname,
+    });
   } catch (error) {
     console.error("programme join embedded checkout error:", error);
     const detail =

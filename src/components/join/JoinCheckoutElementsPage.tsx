@@ -14,11 +14,14 @@ import {
   PROGRAMME_JOIN_OFFERS,
   type ProgrammeJoinOffer,
 } from "@/config/programmeJoinOffers";
+import { BCA_BUSINESS_CONTACT } from "@/config/businessContact";
+import { JoinPriceCheckDot } from "@/components/join/JoinPriceCheckDot";
 
 type Contact = {
   firstName: string;
   lastName: string;
   email: string;
+  businessName: string;
   country: string;
   postalCode: string;
 };
@@ -105,20 +108,20 @@ function TrustMarks({ tone }: { tone: "light" | "dark" }) {
   const label = tone === "dark" ? "text-white/85" : "text-slate-500";
 
   return (
-    <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-[12px] ${label}`}>
+    <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 text-sm ${label}`}>
       <span className="inline-flex items-center gap-1.5">
         <span
-          className={`flex h-6 w-6 items-center justify-center rounded-full ${iconWrap}`}
+          className={`flex h-7 w-7 items-center justify-center rounded-full ${iconWrap}`}
         >
-          <ShieldIcon className="h-3.5 w-3.5" />
+          <ShieldIcon className="h-4 w-4" />
         </span>
         Secure checkout
       </span>
       <span className="inline-flex items-center gap-1.5">
         <span
-          className={`flex h-6 w-6 items-center justify-center rounded-full ${iconWrap}`}
+          className={`flex h-7 w-7 items-center justify-center rounded-full ${iconWrap}`}
         >
-          <LockIcon className="h-3.5 w-3.5" />
+          <LockIcon className="h-4 w-4" />
         </span>
         Encrypted by Stripe
       </span>
@@ -131,13 +134,13 @@ function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
 
   return (
     <aside className={`flex h-full flex-col ${summaryPanelClassName}`}>
-      <div className="flex flex-1 flex-col px-8 py-10 lg:px-11 lg:py-12">
+      <div className="flex flex-1 flex-col px-[76px] py-10 lg:px-[96px] lg:py-12">
         <Image
-          src="/profit-coach-logo.svg"
+          src="/brand/profit-coach-logo-white.svg"
           alt="Profit Coach"
           width={200}
           height={56}
-          className="mb-8 h-auto w-[148px] brightness-0 invert"
+          className="-ml-[15px] mb-8 h-auto w-[148px]"
           priority
         />
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
@@ -146,13 +149,13 @@ function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
         <h2 className="mt-2 text-balance text-[1.625rem] font-semibold tracking-tight">
           {offer.headline}
         </h2>
-        <p className="mt-1 text-sm text-white/70">{offer.title}</p>
+        <p className="mt-1 text-[15px] text-white/70">{offer.title}</p>
 
-        <div className="mt-7 space-y-4 border-t border-white/15 pt-5 text-sm">
+        <div className="mt-7 space-y-4 border-t border-white/15 pt-5 text-base">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-medium text-white">Today&apos;s payment</p>
-              <p className="mt-0.5 text-[13px] text-white/65">{offer.headline}</p>
+              <p className="mt-0.5 text-[15px] text-white/65">{offer.headline}</p>
             </div>
             <p className="shrink-0 font-semibold tabular-nums">
               {offer.todayAmountLabel}
@@ -163,25 +166,61 @@ function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-medium text-white">Future payments</p>
-                <p className="mt-0.5 text-[13px] text-white/65">
+                <p className="mt-0.5 text-[15px] text-white/65">
                   {offer.futurePaymentsDetail}
                 </p>
               </div>
               <p className="shrink-0 font-semibold tabular-nums">
-                {offer.todayAmountLabel}
+                {offer.futureAmountLabel}
               </p>
             </div>
           ) : null}
+
+          <div className="flex items-start justify-between gap-4 border-t border-white/15 pt-4">
+            <p className="font-medium text-white">Total</p>
+            <p className="shrink-0 text-lg font-semibold tabular-nums">
+              {offer.totalAmountLabel}
+            </p>
+          </div>
         </div>
 
-        {offer.scheduleNote ? (
-          <p className="mt-5 text-[13px] leading-snug text-white/65">
-            {offer.scheduleNote}
-          </p>
-        ) : null}
-
-        <div className="mt-auto pt-10">
-          <TrustMarks tone="dark" />
+        <div className="mt-auto pt-12 text-[13px] leading-relaxed text-white/70">
+          <p>Need help with this order?</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <a
+              href={BCA_BUSINESS_CONTACT.phoneTelHref}
+              className="inline-flex items-center gap-2 text-[15px] font-medium text-white/90 hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4 shrink-0"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M7 3.75h3.2l1.1 3.3-1.85 1.1a12.6 12.6 0 006.4 6.4l1.1-1.85 3.3 1.1V17a1.75 1.75 0 01-1.75 1.75A14.25 14.25 0 015.25 4.5 1.75 1.75 0 017 3.75z"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {BCA_BUSINESS_CONTACT.phoneDisplay}
+            </a>
+            <span className="text-[12px] font-medium uppercase tracking-wide text-white/50">
+              or
+            </span>
+            <a
+              href={BCA_BUSINESS_CONTACT.whatsAppHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#1a9e4f] px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm hover:bg-[#1db058]"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden>
+                <path d="M12.04 2C6.5 2 2 6.37 2 11.76c0 1.72.46 3.4 1.34 4.88L2 22l5.53-1.45a10.2 10.2 0 004.51 1.05h.01c5.54 0 10.04-4.37 10.04-9.76C22.09 6.37 17.58 2 12.04 2zm5.84 13.77c-.24.68-1.4 1.25-1.93 1.33-.5.07-1.13.1-1.82-.11-.42-.13-.95-.31-1.64-.6-2.89-1.25-4.77-4.16-4.92-4.35-.14-.2-1.18-1.57-1.18-3 0-1.42.75-2.12 1.01-2.41.25-.28.55-.35.73-.35h.53c.17 0 .4-.06.63.48.24.56.8 1.95.87 2.1.07.14.12.3.02.49-.1.2-.14.32-.28.49-.14.17-.3.38-.42.51-.14.14-.28.29-.12.56.16.28.72 1.19 1.55 1.93 1.07.95 1.97 1.25 2.25 1.39.28.14.44.12.6-.07.17-.2.7-.81.88-1.09.19-.28.37-.23.63-.14.25.1 1.6.76 1.87.89.28.14.46.2.53.31.07.11.07.64-.17 1.32z" />
+              </svg>
+              WhatsApp us
+            </a>
+          </div>
         </div>
       </div>
     </aside>
@@ -190,7 +229,7 @@ function OrderSummaryPanel({ offer }: { offer: ProgrammeJoinOffer }) {
 
 function MobileOrderSummary({ offer }: { offer: ProgrammeJoinOffer }) {
   return (
-    <div className={`rounded-2xl px-5 py-4 ${summaryPanelClassName} lg:hidden`}>
+    <div className={`rounded-2xl px-6 py-4 ${summaryPanelClassName} lg:hidden`}>
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70">
@@ -205,15 +244,19 @@ function MobileOrderSummary({ offer }: { offer: ProgrammeJoinOffer }) {
         </p>
       </div>
       {offer.futurePaymentsDetail ? (
-        <p className="mt-2 text-[13px] text-white/70">
-          Future: {offer.futurePaymentsDetail} · {offer.todayAmountLabel}
-        </p>
+        <div className="mt-3 flex items-start justify-between gap-4 text-[13px]">
+          <p className="text-white/70">{offer.futurePaymentsDetail}</p>
+          <p className="shrink-0 font-semibold tabular-nums">
+            {offer.futureAmountLabel}
+          </p>
+        </div>
       ) : null}
-      {offer.scheduleNote ? (
-        <p className="mt-1.5 text-[13px] leading-snug text-white/65">
-          {offer.scheduleNote}
+      <div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3">
+        <p className="text-sm font-medium">Total</p>
+        <p className="text-sm font-semibold tabular-nums">
+          {offer.totalAmountLabel}
         </p>
-      ) : null}
+      </div>
     </div>
   );
 }
@@ -231,10 +274,27 @@ function CheckoutForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expressVisible, setExpressVisible] = useState(false);
+  const [showBusinessName, setShowBusinessName] = useState(false);
+  const [expressReady, setExpressReady] = useState(false);
+  const [paymentWallets, setPaymentWallets] = useState<{
+    applePay: "auto" | "never";
+    googlePay: "auto" | "never";
+  }>({ applePay: "auto", googlePay: "auto" });
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setExpressReady((ready) => ready || true);
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   async function applyBillingAddress() {
     if (checkoutState.type !== "success") return { ok: false as const };
-    const fullName = [contact.firstName, contact.lastName]
+    const fullName = [
+      contact.firstName,
+      contact.lastName,
+      showBusinessName ? contact.businessName : "",
+    ]
       .map((s) => s.trim())
       .filter(Boolean)
       .join(" ");
@@ -337,6 +397,52 @@ function CheckoutForm({
 
   return (
     <form onSubmit={(e) => void handlePay(e)} className="space-y-7">
+      <div>
+        <ExpressCheckoutElement
+          options={{
+            buttonHeight: 48,
+            buttonTheme: undefined,
+            buttonType: undefined,
+            layout: { maxColumns: 2, maxRows: 2, overflow: "auto" },
+            paymentMethodOrder: ["link", "applePay", "googlePay", "paypal"],
+            paymentMethods: {
+              applePay: "always",
+              googlePay: "always",
+              paypal: "auto",
+              link: "auto",
+            },
+          }}
+          onReady={(event) => {
+            const methods = event.availablePaymentMethods;
+            setExpressVisible(
+              Boolean(
+                methods &&
+                  (methods.link ||
+                    methods.applePay ||
+                    methods.paypal ||
+                    methods.googlePay)
+              )
+            );
+            // If Express Checkout didn't get Google/Apple Pay (common on
+            // localhost — embed runs those wallets on Stripe's domain),
+            // show them on the Payment Element instead.
+            setPaymentWallets({
+              applePay: methods?.applePay ? "never" : "auto",
+              googlePay: methods?.googlePay ? "never" : "auto",
+            });
+            setExpressReady(true);
+          }}
+          onConfirm={() => {
+            void handleExpressConfirm();
+          }}
+        />
+        {expressVisible ? (
+          <p className="my-4 text-center text-[12px] font-medium uppercase tracking-wide text-slate-400">
+            or
+          </p>
+        ) : null}
+      </div>
+
       <section>
         <h1 className="text-xl font-semibold tracking-tight text-slate-900 sm:text-[1.375rem]">
           Contact details
@@ -387,6 +493,32 @@ function CheckoutForm({
               placeholder="you@example.com"
             />
           </label>
+          <div className="sm:col-span-2">
+            {showBusinessName ? (
+              <label className="block">
+                <span className="mb-1 block text-[13px] font-medium text-slate-700">
+                  Business name
+                </span>
+                <input
+                  autoComplete="organization"
+                  value={contact.businessName}
+                  onChange={(e) =>
+                    setContact((c) => ({ ...c, businessName: e.target.value }))
+                  }
+                  className={inputClassName}
+                  placeholder="Company or trading name"
+                />
+              </label>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowBusinessName(true)}
+                className="text-[13px] font-medium text-[#0c5290] hover:underline"
+              >
+                Want to add a business name?
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
@@ -395,64 +527,32 @@ function CheckoutForm({
           Payment details
         </h2>
         <div className="mt-3.5">
-          <ExpressCheckoutElement
-            options={{
-              buttonHeight: undefined,
-              buttonTheme: undefined,
-              buttonType: undefined,
-              layout: undefined,
-              paymentMethodOrder: ["applePay", "googlePay", "paypal"],
-              paymentMethods: {
-                applePay: "always",
-                paypal: "auto",
-                googlePay: "auto",
-                link: "never",
-              },
-            }}
-            onReady={(event) => {
-              const methods = event.availablePaymentMethods;
-              setExpressVisible(
-                Boolean(
-                  methods &&
-                    (methods.applePay || methods.paypal || methods.googlePay)
-                )
-              );
-            }}
-            onConfirm={() => {
-              void handleExpressConfirm();
-            }}
-          />
-          {expressVisible ? (
-            <p className="my-3 text-center text-[12px] text-slate-400">
-              or pay with card
-            </p>
-          ) : null}
-          <PaymentElement
-            options={{
-              layout: {
-                type: "accordion",
-                defaultCollapsed: false,
-                radios: "auto",
-                spacedAccordionItems: true,
-              },
-              wallets: {
-                // Link stays available as a collapsible method (not a huge Express button).
-                link: "auto",
-                applePay: "never",
-                googlePay: "never",
-              },
-              paymentMethodOrder: ["card", "link", "paypal"],
-              terms: { card: "never", applePay: "never", googlePay: "never" },
-              fields: {
-                billingDetails: {
-                  name: "never",
-                  email: "never",
-                  phone: "never",
-                  address: "never",
+          {expressReady ? (
+            <PaymentElement
+              options={{
+                layout: "tabs",
+                wallets: {
+                  link: "never",
+                  applePay: paymentWallets.applePay,
+                  googlePay: paymentWallets.googlePay,
                 },
-              },
-            }}
-          />
+                paymentMethodOrder: ["googlePay", "applePay", "card", "paypal"],
+                terms: { card: "never", applePay: "never", googlePay: "never" },
+                fields: {
+                  billingDetails: {
+                    name: "never",
+                    email: "never",
+                    phone: "never",
+                    address: "never",
+                  },
+                },
+              }}
+            />
+          ) : (
+            <div className="py-8 text-center text-sm text-slate-500">
+              Loading payment methods…
+            </div>
+          )}
           <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-[13px] font-medium text-slate-700">
@@ -528,10 +628,13 @@ export function JoinCheckoutElementsPage({
     firstName: "",
     lastName: "",
     email: "",
+    businessName: "",
     country: "GB",
     postalCode: "",
   });
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [sessionPriceId, setSessionPriceId] = useState<string | null>(null);
+  const [priceNickname, setPriceNickname] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const stripePromise = useMemo(
@@ -544,6 +647,8 @@ export function JoinCheckoutElementsPage({
 
     let cancelled = false;
     setClientSecret(null);
+    setSessionPriceId(null);
+    setPriceNickname(null);
     setLoadError(null);
 
     (async () => {
@@ -555,12 +660,18 @@ export function JoinCheckoutElementsPage({
         });
         const body = (await res.json().catch(() => ({}))) as {
           clientSecret?: string;
+          priceId?: string;
+          priceNickname?: string | null;
           error?: string;
         };
         if (!res.ok || !body.clientSecret) {
           throw new Error(body.error ?? "Could not start checkout.");
         }
-        if (!cancelled) setClientSecret(body.clientSecret);
+        if (!cancelled) {
+          setClientSecret(body.clientSecret);
+          setSessionPriceId(body.priceId ?? offer.priceId);
+          setPriceNickname(body.priceNickname ?? null);
+        }
       } catch (err) {
         if (!cancelled) {
           setLoadError(
@@ -584,7 +695,7 @@ export function JoinCheckoutElementsPage({
       </div>
 
       <div className="relative flex flex-col">
-        <div className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:py-10">
+        <div className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10 lg:pb-10 lg:pt-14">
           <div className="mb-5 flex justify-center sm:mb-6 lg:hidden">
             <Image
               src="/profit-coach-logo.svg"
@@ -673,6 +784,10 @@ export function JoinCheckoutElementsPage({
           </div>
         </div>
       </div>
+      <JoinPriceCheckDot
+        nickname={priceNickname}
+        priceId={sessionPriceId ?? offer.priceId}
+      />
     </div>
   );
 }

@@ -141,9 +141,24 @@ const programmeOnboardingLinks = [
     hint: "Clean split checkout. CTA shows Pay 2 × £1; only two payments then stops.",
   },
   {
-    href: "/join/three-pay",
-    label: "Join — 3-pay hybrid (£3,300 × 3 preview)",
-    hint: "Branded summary + Stripe Embedded. Schedule copy shows 3 × £3,300.",
+    href: "/join/3x3300",
+    label: "Join — 3 × £3,300",
+    hint: "Closer link. Custom Elements checkout. No plan switcher.",
+  },
+  {
+    href: "/join/3x3300/embed",
+    label: "Join — 3 × £3,300 (Embedded preview)",
+    hint: "Same left summary; Stripe Embedded Checkout on the right.",
+  },
+  {
+    href: "/join/3x1",
+    label: "Join — 3 × £1 (test)",
+    hint: "Same checkout as 3 × £3,300, using the £1 × 3 Stripe price.",
+  },
+  {
+    href: "/join/3x1/embed",
+    label: "Join — 3 × £1 (Embedded preview)",
+    hint: "Embedded Checkout preview for the £1 × 3 test price.",
   },
   {
     href: "/join",

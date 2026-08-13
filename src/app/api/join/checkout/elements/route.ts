@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { resolveProgrammeJoinPriceId } from "@/config/programmeJoin";
-import { PROGRAMME_JOIN_OFFERS } from "@/config/programmeJoinOffers";
+import {
+  PROGRAMME_JOIN_OFFERS,
+  isProgrammeJoinOfferSlug,
+} from "@/config/programmeJoinOffers";
 
 /**
  * POST /api/join/checkout/elements
- * Body: { offer: "two-pay" | "pay-in-full" }
+ * Body: { offer: ProgrammeJoinOfferSlug } — any configured join offer page.
  *
  * Creates a Checkout Session with ui_mode=elements.
  * Email/name are collected in the client form and passed to checkout.confirm() —
@@ -29,19 +32,14 @@ export async function POST(request: Request) {
   const record =
     body && typeof body === "object" ? (body as Record<string, unknown>) : {};
 
-  const offerSlug =
-    record.offer === "pay-in-full" || record.offer === "two-pay"
-      ? record.offer
-      : null;
-
-  if (!offerSlug) {
+  if (!isProgrammeJoinOfferSlug(record.offer)) {
     return NextResponse.json(
-      { error: "offer must be pay-in-full or two-pay." },
+      { error: "Unknown join offer." },
       { status: 400 }
     );
   }
 
-  const offer = PROGRAMME_JOIN_OFFERS[offerSlug];
+  const offer = PROGRAMME_JOIN_OFFERS[record.offer];
   const resolved = await resolveProgrammeJoinPriceId(offer.priceId);
   if ("error" in resolved) {
     return NextResponse.json(
@@ -68,6 +66,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       clientSecret: result.clientSecret,
       sessionId: result.sessionId,
+      priceId: resolved.priceId,
+      priceNickname: resolved.nickname,
     });
   } catch (error) {
     console.error("programme join elements checkout error:", error);

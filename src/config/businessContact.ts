@@ -5,7 +5,7 @@ export const BCA_BUSINESS_PHONE_E164 = "+447897024555";
 export const BCA_BUSINESS_PHONE_DISPLAY = "+44 7897 024 555";
 
 /** Short link that opens a WhatsApp chat with BCA. */
-export const BCA_WHATSAPP_URL = "https://businesscoachacademy.com/whatsup";
+export const BCA_WHATSAPP_URL = "https://businesscoachacademy.com/whatsapp";
 
 export const BCA_SUPPORT_EMAIL = "support@businesscoachacademy.com";
 

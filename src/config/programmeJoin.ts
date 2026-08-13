@@ -71,7 +71,9 @@ export function recurringIntervalSeconds(
  */
 export async function resolveProgrammeJoinPriceId(
   requestedPriceId?: string | null
-): Promise<{ priceId: string } | { error: string; status: number }> {
+): Promise<
+  { priceId: string; nickname: string | null } | { error: string; status: number }
+> {
   const priceId = (requestedPriceId?.trim() || PROGRAMME_JOIN_DEFAULT_PRICE_ID).trim();
   if (!priceId.startsWith("price_")) {
     return { error: "Invalid price id.", status: 400 };
@@ -95,7 +97,7 @@ export async function resolveProgrammeJoinPriceId(
     }
 
     if (price.type === "one_time") {
-      return { priceId: price.id };
+      return { priceId: price.id, nickname: price.nickname };
     }
 
     if (price.type === "recurring") {
@@ -107,7 +109,7 @@ export async function resolveProgrammeJoinPriceId(
           status: 400,
         };
       }
-      return { priceId: price.id };
+      return { priceId: price.id, nickname: price.nickname };
     }
 
     return {
