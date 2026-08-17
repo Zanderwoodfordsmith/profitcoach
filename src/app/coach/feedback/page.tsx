@@ -1,9 +1,5 @@
-import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
+import { redirect } from "next/navigation";
 
-export default function CoachFeedbackPage() {
-  return (
-    <div className="mx-auto w-full max-w-3xl pt-5 lg:pt-6">
-      <FeedbackFormCard />
-    </div>
-  );
+export default function CoachFeedbackRedirectPage() {
+  redirect("/coach/support");
 }

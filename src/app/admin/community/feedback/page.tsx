@@ -3,8 +3,10 @@
 import { ArrowUpDown, ChevronDown, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
+import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { notifyFeedbackCountsChanged } from "@/components/layout/useNewFeedbackCount";
+import { formatSupportTicketId } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type FeedbackStatus = "new" | "in_review" | "resolved";
@@ -16,6 +18,7 @@ type FeedbackRow = {
   id: string;
   created_at: string;
   created_by: string;
+  ticket_number: number;
   type: FeedbackType;
   title: string | null;
   details: string;
@@ -301,6 +304,7 @@ export default function AdminCommunityFeedbackPage() {
         id,
         created_at,
         created_by,
+        ticket_number,
         type,
         title,
         details,
@@ -748,9 +752,25 @@ export default function AdminCommunityFeedbackPage() {
                                   </button>
                                 </p>
                                 {expanded ? (
-                                  <p className="mt-2 break-words whitespace-pre-wrap text-xs text-slate-500">
-                                    {capitalizeFirstWord(row.details)}
-                                  </p>
+                                  <div className="mt-2 space-y-2">
+                                    <p className="text-[11px] font-medium text-slate-400">
+                                      {formatSupportTicketId(row.ticket_number)}
+                                      {row.page_path
+                                        ? ` · ${row.page_path}`
+                                        : ""}
+                                    </p>
+                                    <p className="break-words whitespace-pre-wrap text-xs text-slate-500">
+                                      {capitalizeFirstWord(row.details)}
+                                    </p>
+                                    <AdminTicketReplies
+                                      reportId={row.id}
+                                      reportStatus={row.status}
+                                      onStatusTouched={() => {
+                                        void loadFeedback();
+                                        notifyFeedbackCountsChanged();
+                                      }}
+                                    />
+                                  </div>
                                 ) : null}
                               </td>
                               <td

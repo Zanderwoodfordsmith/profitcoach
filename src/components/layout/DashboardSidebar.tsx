@@ -12,9 +12,7 @@ import {
   MessagesSquare,
   CreditCard,
   Settings,
-  X,
 } from "lucide-react";
-import { FeedbackFormCard } from "@/components/feedback/FeedbackFormCard";
 import {
   adminSectionNavItemActive,
   adminSectionNavItems,
@@ -89,7 +87,8 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const supportHref = `${prefix}/support`;
+  const supportActive = Boolean(pathname?.startsWith(supportHref));
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [adminNavExpanded, setAdminNavExpanded] = useState(false);
@@ -188,11 +187,6 @@ export function DashboardSidebar({
 
   const closeMobileSheets = () => {
     setMobileMoreOpen(false);
-  };
-
-  const openFeedback = () => {
-    setAccountMenuOpen(false);
-    setFeedbackOpen(true);
   };
 
   const renderFeedbackInboxBadge = (href: string) => {
@@ -422,7 +416,7 @@ export function DashboardSidebar({
               aria-label="Account menu"
               onClick={() => setAccountMenuOpen((open) => !open)}
               className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[0.9375rem] leading-snug ${
-                accountMenuOpen || settingsActive || feedbackOpen
+                accountMenuOpen || settingsActive || supportActive
                   ? SIDEBAR_NAV_ACTIVE
                   : "text-slate-100/90 hover:bg-white/10"
               }`}
@@ -462,15 +456,15 @@ export function DashboardSidebar({
                   <Settings className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   Settings
                 </Link>
-                <button
-                  type="button"
+                <Link
+                  href={supportHref}
                   role="menuitem"
-                  onClick={openFeedback}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                  onClick={() => setAccountMenuOpen(false)}
                 >
                   <MessagesSquare className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                  Feedback
-                </button>
+                  Support
+                </Link>
                 <button
                   type="button"
                   role="menuitem"
@@ -685,17 +679,18 @@ export function DashboardSidebar({
                 <Settings className="h-5 w-5 shrink-0 opacity-95" />
                 Settings
               </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  closeMobileSheets();
-                  setFeedbackOpen(true);
-                }}
-                className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] text-slate-100/90 hover:bg-white/10"
+              <Link
+                href={supportHref}
+                onClick={closeMobileSheets}
+                className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                  supportActive
+                    ? SIDEBAR_NAV_ACTIVE
+                    : "text-slate-100/90 hover:bg-white/10"
+                }`}
               >
                 <MessagesSquare className="h-5 w-5 shrink-0 opacity-95" />
-                Feedback
-              </button>
+                Support
+              </Link>
               <button
                 type="button"
                 onClick={() => {
@@ -709,31 +704,6 @@ export function DashboardSidebar({
                 {signingOut ? "Signing out..." : "Log out"}
               </button>
             </div>
-          </div>
-        </div>
-      ) : null}
-
-      {feedbackOpen ? (
-        <div
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4"
-          onClick={() => setFeedbackOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Feedback"
-        >
-          <div
-            className="relative w-full max-w-[38.4rem]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setFeedbackOpen(false)}
-              className="absolute -right-1 -top-1 z-10 rounded-full border border-slate-200 bg-white p-1 text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
-              aria-label="Close feedback"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <FeedbackFormCard />
           </div>
         </div>
       ) : null}
