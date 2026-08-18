@@ -1,0 +1,16 @@
+---
+description: Always apply Supabase migrations after creating or changing them
+alwaysApply: true
+---
+
+# Apply Supabase migrations
+
+Whenever you create or edit a file under `supabase/migrations/`:
+
+1. **Apply it immediately** — do not leave it for the user to run later.
+2. Prefer `npx supabase db push` from the repo root against the linked remote (needs `supabase login` / `SUPABASE_ACCESS_TOKEN`, and project linked).
+3. If CLI push is unavailable, run the migration SQL another way: Dashboard SQL Editor (browser), `psql` with `DATABASE_URL`, or Management API.
+4. Confirm success before ending the turn. If blocked, say exactly what’s missing (token, link, DB URL) and the one next step.
+5. Never treat “create migration file” as done — repo SQL ≠ applied schema.
+
+Deploying the Next.js app does **not** run migrations.
