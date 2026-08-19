@@ -25,11 +25,8 @@ import { loadEnvConfig } from "@next/env";
 import { createClient } from "@supabase/supabase-js";
 
 import { parseLessonDocFile, type ParsedLessonDoc } from "../src/lib/academy/parseLessonDocs";
-import { loadArchiveHub } from "../src/lib/academy/archiveHubLoad";
-import {
-  buildLegacyLessonIndex,
-  matchDocTitleToLesson,
-} from "../src/lib/academy/legacyLessonMatcher";
+import { loadImportLessonIndex } from "../src/lib/academy/importHubLoad";
+import { matchDocTitleToLesson } from "../src/lib/academy/legacyLessonMatcher";
 import { normalizeMatchText } from "../src/lib/academy/normalizeMatchText";
 import { normalizeLessonMarkdown } from "../src/lib/academy/normalizeLessonMarkdown";
 import {
@@ -59,6 +56,8 @@ const argv = process.argv.slice(2);
 const dryRun = argv.includes("--dry-run");
 const apply = argv.includes("--apply");
 const hostImages = !argv.includes("--no-host-images");
+const mergeUnmatched = !argv.includes("--no-merge-unmatched");
+const onlyLessonId = argValue("--only-lesson-id");
 
 function argValues(flag: string): string[] {
   const out: string[] = [];
@@ -118,6 +117,40 @@ type Resolved = {
   fileRefDefs: Map<string, ImageRef>;
 };
 
+type MergeRecord = {
+  target: OverrideTarget;
+  orphanTitle: string;
+  orphanSourceLine: number;
+  orphanScore: number;
+};
+
+/**
+ * Known `#` headings that are section titles inside a lesson tab, not separate
+ * Google Docs tabs. Only these get merged into the previous matched lesson.
+ * (A broad "any short unmatched title" rule incorrectly glued unrelated lessons
+ * onto neighbours — e.g. Lead Generation Workflow onto Designing Your Banner.)
+ */
+const INTERNAL_SECTION_TITLES = new Set(
+  [
+    "How To Do It",
+    "How Do You Do It?",
+    "Introduction",
+    "Client Connect AI Prompt Template",
+    "Congratulations! In this list are your future clients.",
+  ].map((t) => normalizeMatchText(t))
+);
+
+function isInternalSectionHeading(title: string): boolean {
+  const n = normalizeMatchText(title);
+  if (INTERNAL_SECTION_TITLES.has(n)) return true;
+  if (n.includes("congratulations") && n.includes("future clients")) return true;
+  return false;
+}
+
+function shouldMergeUnmatchedIntoPrevious(orphan: { title: string; score: number }): boolean {
+  return isInternalSectionHeading(orphan.title);
+}
+
 /**
  * Light pre-clean of a source-doc body. Base64 images are left intact here —
  * they are hosted to storage (or stripped) in the finalize pass.
@@ -172,36 +205,64 @@ async function main() {
     process.exit(1);
   }
 
-  const index = buildLegacyLessonIndex(loadArchiveHub());
+  const index = loadImportLessonIndex();
   const { byExact, byNormalized } = loadOverrides();
 
   const resolved: Resolved[] = [];
+  const merges: MergeRecord[] = [];
   for (const file of files) {
     const fileText = fs.readFileSync(file, "utf8");
     const fileRefDefs = collectImageRefDefs(fileText);
     const lessons = parseLessonDocFile(file);
     console.log(`Parsed ${lessons.length} lessons from ${path.basename(file)}`);
+
+    // Used to merge "orphan" internal headings (unmatched) back into the
+    // previous resolved lesson.
+    let lastResolvedWithTarget: Resolved | null = null;
+
     for (const lesson of lessons) {
       const precleanBody = cleanImportedBody(lesson.bodyMarkdown);
       const imageCount = countEmbeddedImages(precleanBody, fileRefDefs);
       const base = { precleanBody, cleanedBody: "", imageCount, fileRefDefs };
 
+      // Known in-lesson `#` headings (e.g. `# **How To Do It**`) must never become
+      // their own lesson — merge before override/fuzzy matching.
+      if (
+        mergeUnmatched &&
+        lastResolvedWithTarget &&
+        isInternalSectionHeading(lesson.title)
+      ) {
+        lastResolvedWithTarget.precleanBody = `${lastResolvedWithTarget.precleanBody}\n\n${precleanBody}`;
+        lastResolvedWithTarget.imageCount += imageCount;
+        merges.push({
+          target: lastResolvedWithTarget.target!,
+          orphanTitle: lesson.title,
+          orphanSourceLine: lesson.sourceLine,
+          orphanScore: 0,
+        });
+        continue;
+      }
+
       const override =
         byExact.get(lesson.title) ?? byNormalized.get(normalizeMatchText(lesson.title));
       if (override) {
-        resolved.push({ lesson, kind: "override", target: override, score: 1, ...base });
+        const r: Resolved = { lesson, kind: "override", target: override, score: 1, ...base };
+        resolved.push(r);
+        lastResolvedWithTarget = r;
         continue;
       }
 
       const match = matchDocTitleToLesson(lesson.title, index, { minScore });
       if (match.status === "matched") {
-        resolved.push({
+        const r: Resolved = {
           lesson,
           kind: "matched",
           target: { courseId: match.match.courseId, lessonId: match.match.lessonId },
           score: match.match.score,
           ...base,
-        });
+        };
+        resolved.push(r);
+        lastResolvedWithTarget = r;
       } else if (match.status === "ambiguous") {
         resolved.push({
           lesson,
@@ -212,6 +273,25 @@ async function main() {
           ...base,
         });
       } else {
+        // If it's an internal section heading that got incorrectly split, merge
+        // its chunk into the last matched lesson instead of dropping it.
+        if (
+          mergeUnmatched &&
+          lastResolvedWithTarget &&
+          shouldMergeUnmatchedIntoPrevious({ title: lesson.title, score: match.bestScore })
+        ) {
+          // Merge *raw body markdown* before we host/normalize.
+          lastResolvedWithTarget.precleanBody = `${lastResolvedWithTarget.precleanBody}\n\n${precleanBody}`;
+          lastResolvedWithTarget.imageCount += imageCount;
+          merges.push({
+            target: lastResolvedWithTarget.target!,
+            orphanTitle: lesson.title,
+            orphanSourceLine: lesson.sourceLine,
+            orphanScore: match.bestScore,
+          });
+          continue;
+        }
+
         resolved.push({
           lesson,
           kind: "unmatched",
@@ -340,6 +420,31 @@ async function main() {
   console.log(
     `\nSummary: ${resolved.length} lessons, ${willWrite} resolved (${willFill} new, ${willOverwrite} reformat), ${unresolved.length} need attention (ambiguous/unmatched).`
   );
+
+  if (merges.length > 0) {
+    const byTarget = new Map<string, { target: OverrideTarget; n: number; orphans: string[] }>();
+    for (const m of merges) {
+      const key = `${m.target.courseId}:${m.target.lessonId}`;
+      const prev = byTarget.get(key);
+      if (!prev) {
+        byTarget.set(key, { target: m.target, n: 1, orphans: [m.orphanTitle] });
+      } else {
+        prev.n += 1;
+        prev.orphans.push(m.orphanTitle);
+      }
+    }
+    const entries = Array.from(byTarget.values()).sort((a, b) => b.n - a.n);
+    console.log("\nMerged orphan section(s) into previous lesson(s):");
+    for (const e of entries) {
+      console.log(`  - ${e.target.lessonId} (+${e.n} orphan chunks)`);
+      // Keep output readable; show up to 5 distinct orphan titles.
+      const uniq = Array.from(new Set(e.orphans)).slice(0, 5);
+      console.log(`      orphans: ${uniq.join(", ")}${e.orphans.length > uniq.length ? " ..." : ""}`);
+    }
+  } else {
+    console.log("\nMerged orphan section(s): none.");
+  }
+
   if (unresolved.length > 0) {
     console.log(
       "  Resolve these by adding a `titles` entry to scripts/academy-lesson-body-overrides.json"
@@ -377,7 +482,7 @@ async function main() {
   }
 
   // ---- Apply ----
-  const writes = resolved.filter((r) => r.target);
+  const writes = resolved.filter((r) => r.target && (!onlyLessonId || r.target.lessonId === onlyLessonId));
 
   // Back up any existing rows we are about to change.
   const backups = writes
@@ -410,6 +515,11 @@ async function main() {
         failed += 1;
       } else {
         updated += 1;
+        existingByKey.set(keyOf(target), {
+          course_id: target.courseId,
+          lesson_id: target.lessonId,
+          body_markdown: r.cleanedBody,
+        });
       }
     } else {
       const { error } = await supabase.from("academy_lesson_content").insert({
@@ -423,6 +533,11 @@ async function main() {
         failed += 1;
       } else {
         inserted += 1;
+        existingByKey.set(keyOf(target), {
+          course_id: target.courseId,
+          lesson_id: target.lessonId,
+          body_markdown: r.cleanedBody,
+        });
       }
     }
   }

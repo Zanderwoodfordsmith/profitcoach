@@ -46,13 +46,6 @@ export function StudioHubOverview({ basePath }: Props) {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-1 pb-10 pt-2 sm:px-2">
-      <div className="max-w-xl">
-        <p className="text-sm leading-relaxed text-slate-600">
-          Draft outreach and content when you need help. Setup and list-building
-          tools are here too — publishing lives under Content.
-        </p>
-      </div>
-
       <div className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
           <StudioHubCard

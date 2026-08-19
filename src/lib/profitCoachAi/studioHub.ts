@@ -25,68 +25,30 @@ export type StudioHubCard = {
 };
 
 /**
- * Outcome-first tools for the Create hub.
- * Daily writers first; infrequent setup / find tools after.
- * Content planner + newsletter series live under the Content tab.
+ * Create hub tools — who you help, then profile, list, outreach, nurture, content.
  */
 export const STUDIO_HUB_CARDS: StudioHubCard[] = [
   {
-    id: "outreach",
-    eyebrow: "Outreach",
-    title: "Outreach messages",
+    id: "ideal-client",
+    eyebrow: "Target",
+    title: "Ideal Client Selector",
     description:
-      "Connection notes and follow-ups for the people you want on a call.",
-    accentClassName: "bg-gradient-to-br from-[#0b4f8a] via-[#1166aa] to-[#2d9ce1]",
-    eyebrowClassName: "text-[#0c5290]",
-    outputId: "linkedin_connector",
-  },
-  {
-    id: "vip",
-    eyebrow: "Nurture",
-    title: "Warm replies",
-    description: "Clear, unpushy replies when a warm lead messages you.",
-    accentClassName: "bg-gradient-to-br from-[#1d5f8a] via-[#2b86b8] to-[#54b2dd]",
-    eyebrowClassName: "text-[#0c5290]",
-    outputId: "vip_nurture",
-  },
-  {
-    id: "posts",
-    eyebrow: "Draft",
-    title: "LinkedIn posts",
-    description: "Hooks, short posts, and ideas that sound like you.",
-    accentClassName: "bg-gradient-to-br from-[#0e7f9c] via-[#1ca0c2] to-[#4ec0db]",
-    eyebrowClassName: "text-[#0e7f9c]",
-    outputId: "linkedin_content",
-  },
-  {
-    id: "newsletter",
-    eyebrow: "Draft",
-    title: "Newsletter draft",
-    description:
-      "Draft this week’s LinkedIn newsletter edition in your voice.",
-    accentClassName: "bg-gradient-to-br from-[#134e7d] via-[#1b74ad] to-[#37a3d8]",
-    eyebrowClassName: "text-[#0c5290]",
-    outputId: "linkedin_newsletter",
-  },
-  {
-    id: "plan",
-    eyebrow: "Draft",
-    title: "Content ideas",
-    description: "Themes and cadence so you always know what to publish next.",
-    accentClassName: "bg-gradient-to-br from-[#134e7d] via-[#0a6bb5] to-[#1483c8]",
-    eyebrowClassName: "text-[#0c5290]",
-    outputId: "content_planning",
-  },
-  {
-    id: "first-campaign",
-    eyebrow: "Setup",
-    title: "First Campaign",
-    description:
-      "One-time setup to get your first outreach system live — not a daily tool.",
+      "Import your LinkedIn, pick who you help first, then lock the Ideal Client.",
     accentClassName: "bg-gradient-to-br from-[#0e5a8a] via-[#1478b0] to-[#3a9fd0]",
     eyebrowClassName: "text-[#0c5290]",
     outputId: null,
-    dedicatedPath: "/first-campaign",
+    dedicatedPath: "/ideal-client",
+  },
+  {
+    id: "linkedin-profile",
+    eyebrow: "Profile",
+    title: "LinkedIn Profile Optimizer",
+    description:
+      "Rewrite your headline, About, and experience so the right owners stop and read.",
+    accentClassName: "bg-gradient-to-br from-[#0e7f9c] via-[#1ca0c2] to-[#4ec0db]",
+    eyebrowClassName: "text-[#0e7f9c]",
+    outputId: null,
+    dedicatedPath: "/linkedin-profile",
   },
   {
     id: "lead-finder",
@@ -99,6 +61,44 @@ export const STUDIO_HUB_CARDS: StudioHubCard[] = [
     dedicatedPath: "/lead-finder",
     adminOnly: true,
     requireLeadFinderAccess: true,
+  },
+  {
+    id: "outreach",
+    eyebrow: "Outreach",
+    title: "First Campaign Outreach Messages",
+    description:
+      "Connection notes and follow-ups for the people you want on a call.",
+    accentClassName: "bg-gradient-to-br from-[#0b4f8a] via-[#1166aa] to-[#2d9ce1]",
+    eyebrowClassName: "text-[#0c5290]",
+    outputId: "linkedin_connector",
+  },
+  {
+    id: "vip",
+    eyebrow: "Nurture",
+    title: "Warm Replies",
+    description: "Clear, unpushy replies when a warm lead messages you.",
+    accentClassName: "bg-gradient-to-br from-[#1d5f8a] via-[#2b86b8] to-[#54b2dd]",
+    eyebrowClassName: "text-[#0c5290]",
+    outputId: "vip_nurture",
+  },
+  {
+    id: "plan",
+    eyebrow: "Draft",
+    title: "Content Ideas",
+    description: "Themes and cadence so you always know what to publish next.",
+    accentClassName: "bg-gradient-to-br from-[#134e7d] via-[#0a6bb5] to-[#1483c8]",
+    eyebrowClassName: "text-[#0c5290]",
+    outputId: "content_planning",
+  },
+  {
+    id: "newsletter",
+    eyebrow: "Draft",
+    title: "Newsletter Draft",
+    description:
+      "Draft this week’s LinkedIn newsletter edition in your voice.",
+    accentClassName: "bg-gradient-to-br from-[#134e7d] via-[#1b74ad] to-[#37a3d8]",
+    eyebrowClassName: "text-[#0c5290]",
+    outputId: "linkedin_newsletter",
   },
 ];
 

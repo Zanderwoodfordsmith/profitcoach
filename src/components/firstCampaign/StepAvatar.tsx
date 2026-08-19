@@ -149,11 +149,14 @@ export function StepAvatar({
   avatar,
   onSaved,
   onContinue,
+  afterSave = "messages",
 }: {
   icp: ChosenIcp | null;
   avatar: AvatarState | null;
   onSaved: (avatar: AvatarState) => void;
   onContinue: () => void;
+  /** Full campaign hands off to messages; isolated Ideal Client just saves. */
+  afterSave?: "messages" | "done";
 }) {
   const hasApprovedAvatar = Boolean(avatar?.approvedAt && (avatar.edited || avatar.generated));
 
@@ -562,14 +565,22 @@ export function StepAvatar({
               };
           },
         },
-        { id: "messages", label: "Warming up outreach drafts", minMs: 900 },
-        { id: "handoff", label: "Opening messages", minMs: 600 },
+        ...(afterSave === "messages"
+          ? [
+              { id: "messages", label: "Warming up outreach drafts", minMs: 900 },
+              { id: "handoff", label: "Opening messages", minMs: 600 },
+            ]
+          : [{ id: "handoff", label: "Saving your Ideal Client", minMs: 600 }]),
       ]);
 
       if (!savedHolder.avatar) throw new Error("Couldn't save.");
       onSaved(savedHolder.avatar);
       await new Promise((r) => setTimeout(r, 350));
-      onContinue();
+      if (afterSave === "messages") {
+        onContinue();
+      } else {
+        setPhase("avatar_review");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't save.");
       setPhase("avatar_review");
@@ -1016,9 +1027,11 @@ export function StepAvatar({
     return (
       <div className="flex flex-col gap-5">
         <AiNote>
-          This Avatar was built from the Profile you locked. Confirm the human
-          bits that drive messaging — then save to your brain and we&apos;ll
-          draft outreach.
+          {afterSave === "messages"
+            ? "This Avatar was built from the Profile you locked. Confirm the human bits that drive messaging — then save to your brain and we’ll draft outreach."
+            : hasApprovedAvatar
+              ? "This Ideal Client is saved. Outreach and content tools will use it. Reconfirm below if you want to update it."
+              : "This Avatar was built from the Profile you locked. Confirm the human bits, then save — this is what outreach and content will use."}
         </AiNote>
         {error ? <ErrorNote>{error}</ErrorNote> : null}
 
@@ -1219,7 +1232,9 @@ export function StepAvatar({
               onClick={() => void handleFinalConfirm()}
               disabled={!avatarAllConfirmed}
             >
-              Confirm &amp; continue to messages
+              {afterSave === "messages"
+                ? "Confirm & continue to messages"
+                : "Confirm and save"}
             </PrimaryButton>
           </div>
           {!avatarAllConfirmed ? (

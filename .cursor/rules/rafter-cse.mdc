@@ -1,23 +1,17 @@
 ---
-description: Run Rafter Code Security Engine in the design/implement/review loop on every meaningful change
+description: Do not auto-run Rafter. Scans only when the user explicitly asks.
 alwaysApply: true
 ---
 
 # Rafter Code Security Engine (this project)
 
-Security is part of the feedback loop, not a later step. This repo has `RAFTER_API_KEY` in `.env.local`. Use the **remote** Code Security Engine — do not stop at local secret scanning.
+**Do not run Rafter as part of normal implementation.** Do not scan after every meaningful change, before marking work done, before a commit, or before a PR — unless the user explicitly asks (e.g. “run rafter”, “security scan”, “scan this”).
 
-## When
+Keep shipping. Rafter is a select-times tool, not an in-loop gate.
 
-**Meaningful change** = new/changed app behavior, APIs, SQL, auth, payments, webhooks, file/upload paths, user data, deps/lockfiles, infra, or agent config. Skip CSE for comments, formatting, and docs-only edits.
+## When the user asks to scan
 
-## Loop
-
-1. **Design** (auth, payments, credentials, sessions, uploads, user data, deletion, network endpoints): walk `rafter-secure-design` *before* writing code.
-2. **Implement**: keep untrusted input, authz, and secrets in mind while coding. After the first working diff, scan — do not wait for a PR.
-3. **Review / done**: walk `rafter-code-review` on security-surface diffs, run CSE, **fix findings**, then re-scan. Do not mark done, commit, or open a PR with unfixed critical/high issues.
-
-## Commands (load the key first)
+This repo has `RAFTER_API_KEY` in `.env.local`. Use the **remote** Code Security Engine — do not stop at local secret scanning.
 
 Rafter's CLI reads `.env`, not `.env.local`. Export **only** `RAFTER_API_KEY` — do not `source` `.env.local` (other secrets, and unquoted values, will leak into the shell). Never pass `--api-key`. Never print the key.
 
@@ -25,15 +19,15 @@ Rafter's CLI reads `.env`, not `.env.local`. Export **only** `RAFTER_API_KEY` �
 export RAFTER_API_KEY="$(grep -E '^RAFTER_API_KEY=' .env.local | cut -d= -f2- | tr -d "'\"")"
 rafter secrets .                         # local working tree (uncommitted)
 rafter run --format json                 # remote SAST + SCA + secrets (GitHub ref)
-rafter run --format json --mode plus     # agentic deep-dive — pre-approved here
+rafter run --format json --mode plus     # agentic deep-dive
 ```
 
-- Default after a meaningful change: `rafter run` (fast — SAST + SCA + secrets).
-- Also run `--mode plus` when quota remains **and** (the diff touches a security surface, fast mode flagged something, or you are about to call the work done). Plus is **pre-authorized** here (`.rafter.yml`). If `rafter usage` shows plus remaining = 0, run fast, say plus was skipped for quota, and do not block.
+- Default when asked: `rafter run` (fast — SAST + SCA + secrets).
+- Add `--mode plus` only if the user asks for a deep-dive, or quota remains and they want a thorough pass. If `rafter usage` shows plus remaining = 0, run fast and say plus was skipped.
 - `rafter secrets` is **not** a code scan. Never report "Rafter passed" from secrets-only.
-- Remote `rafter run` analyzes the **pushed GitHub ref**, not uncommitted files. Run `rafter secrets` locally always; push or scan the branch that contains the commits you want CSE to see.
+- Remote `rafter run` analyzes the **pushed GitHub ref**, not uncommitted files.
 - If `RAFTER_API_KEY` is missing, say so and do not claim a full scan.
 
-## Findings
+## Findings (when a scan was requested)
 
-Fix critical and high (high confidence) before finishing. Investigate high/medium. Do not suppress without a written reason in `.rafter.yml` `ignore`. Delegate "is this safe?" to the `rafter` sub-agent.
+Fix critical and high (high confidence) before calling that scan done. Investigate high/medium. Do not suppress without a written reason in `.rafter.yml` `ignore`.

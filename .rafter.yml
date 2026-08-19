@@ -1,14 +1,13 @@
 version: "1"
 
 # Profit Coach — Rafter project policy.
-# Remote CSE (SAST + SCA + secrets + plus) is part of the agent loop.
+# Scans are on-demand (user asks). Not part of the agent implement loop.
 risk_level: moderate
 
 command_policy:
   mode: approve-dangerous
 
 scan:
-  # User pre-authorized paid Plus scans for this repo's agent loop.
   plus_requires_approval: false
   exclude_paths:
     - "Import/"
@@ -18,6 +17,6 @@ scan:
 
 docs:
   - id: rafter-cse
-    description: Code Security Engine in the agent loop
+    description: Code Security Engine — run only when asked
     path: .cursor/rules/rafter-cse.mdc
     tags: [threat-model, secure-coding]

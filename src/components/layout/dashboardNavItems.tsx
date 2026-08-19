@@ -324,7 +324,9 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     ...getClientsTabHrefs(prefix),
     `${prefix}/funnel-settings`,
     `${prefix}/first-campaign`,
+    `${prefix}/ideal-client`,
     `${prefix}/message-generator`,
+    `${prefix}/linkedin-profile`,
   ];
   if (prefix === "/admin") {
     paths.push(
@@ -353,6 +355,10 @@ export function isGetClientsCreatePath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/message-generator") ||
     pathMatches(pathname, "/coach/first-campaign") ||
     pathMatches(pathname, "/admin/first-campaign") ||
+    pathMatches(pathname, "/coach/ideal-client") ||
+    pathMatches(pathname, "/admin/ideal-client") ||
+    pathMatches(pathname, "/coach/linkedin-profile") ||
+    pathMatches(pathname, "/admin/linkedin-profile") ||
     pathMatches(pathname, "/admin/lead-finder")
   );
 }

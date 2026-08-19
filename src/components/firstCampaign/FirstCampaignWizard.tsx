@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CampaignStepPanel } from "@/components/firstCampaign/CampaignStepPanel";
@@ -40,7 +42,7 @@ const STEP_META: {
     label: "LinkedIn",
     title: "LinkedIn",
     description:
-      "Import your profile so we can ground the campaign in your real background.",
+      "Import your profile so we can ground this in your real background.",
     railHint: "Import your profile",
   },
   {
@@ -75,11 +77,49 @@ const STEP_META: {
   },
 ];
 
-export function FirstCampaignWizard() {
+export type CampaignWizardVariant = "full" | "ideal-client";
+
+type Props = {
+  variant?: CampaignWizardVariant;
+};
+
+export function FirstCampaignWizard({ variant = "full" }: Props) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-4">
+          <StickyPageHeader title="Get Clients" tabs={<CoachToolsHubTabs hub="get-clients" />} />
+          <p className="px-1 text-sm text-slate-500">Loading your campaign setup…</p>
+        </div>
+      }
+    >
+      <FirstCampaignWizardInner variant={variant} />
+    </Suspense>
+  );
+}
+
+function parseCampaignStepParam(
+  raw: string | null,
+  max: CampaignStep
+): CampaignStep | null {
+  if (raw === "1" || raw === "2" || raw === "3" || raw === "4" || raw === "5") {
+    const n = Number(raw) as CampaignStep;
+    return n <= max ? n : null;
+  }
+  return null;
+}
+
+function FirstCampaignWizardInner({ variant }: { variant: CampaignWizardVariant }) {
+  const pathname = usePathname() ?? "";
+  const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
+  const searchParams = useSearchParams();
+  const lastStep: CampaignStep = variant === "ideal-client" ? 3 : 5;
+  const stepMeta = STEP_META.filter((s) => s.id <= lastStep);
+  const requestedStep = parseCampaignStepParam(searchParams.get("step"), lastStep);
   const [loading, setLoading] = useState(true);
   const [linkedin, setLinkedin] = useState<LinkedInImportProfile | null>(null);
   const [setup, setSetup] = useState<CampaignSetupState>(EMPTY_CAMPAIGN_STATE);
-  const [activeStep, setActiveStep] = useState<CampaignStep>(1);
+  const [activeStep, setActiveStep] = useState<CampaignStep>(requestedStep ?? 1);
   const [icpProposals, setIcpProposals] = useState<IcpProposal[] | null>(null);
 
   useEffect(() => {
@@ -97,14 +137,14 @@ export function FirstCampaignWizard() {
         : EMPTY_CAMPAIGN_STATE;
       setSetup(normalized);
       setActiveStep(
-        computeInitialStep(importedProfile, normalized)
+        requestedStep ?? computeInitialStep(importedProfile, normalized, variant)
       );
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [requestedStep, variant]);
 
   const completed = useMemo(
     () => ({
@@ -119,15 +159,18 @@ export function FirstCampaignWizard() {
 
   const maxUnlocked = useMemo<CampaignStep>(() => {
     let m: CampaignStep = 1;
-    for (const step of STEP_META) {
+    for (const step of stepMeta) {
       if (completed[step.id]) {
-        m = (Math.min(5, step.id + 1) as CampaignStep);
+        m = (Math.min(lastStep, step.id + 1) as CampaignStep);
       }
     }
+    if (requestedStep && requestedStep > m && requestedStep <= lastStep) {
+      return requestedStep;
+    }
     return m;
-  }, [completed]);
+  }, [completed, requestedStep, stepMeta, lastStep]);
 
-  const railItems: StepRailItem[] = STEP_META.map((step) => {
+  const railItems: StepRailItem[] = stepMeta.map((step) => {
     let status: StepStatus;
     if (completed[step.id]) status = "complete";
     else if (step.id === activeStep) status = "active";
@@ -186,24 +229,44 @@ export function FirstCampaignWizard() {
     );
   }
 
-  const activeMeta = STEP_META.find((s) => s.id === activeStep) ?? STEP_META[0]!;
+  const activeMeta = stepMeta.find((s) => s.id === activeStep) ?? stepMeta[0]!;
+  const isIdealClient = variant === "ideal-client";
 
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="First Campaign"
-        description="A guided setup that takes you from ‘I've joined’ to a working outreach campaign — LinkedIn, ICP, avatar, messages, and a starter list."
+        title={isIdealClient ? "Ideal Client Selector" : "First Campaign"}
+        description={
+          isIdealClient
+            ? "Import your LinkedIn, pick who you help first, then lock the Ideal Client Profile and Avatar."
+            : "A guided setup that takes you from ‘I've joined’ to a working outreach campaign — LinkedIn, ICP, avatar, messages, and a starter list."
+        }
         tabs={<CoachToolsHubTabs hub="get-clients" />}
+        below={
+          isIdealClient ? (
+            <Link
+              href={`${prefix}/message-generator`}
+              className="w-fit text-sm font-medium text-sky-800 hover:text-sky-950"
+            >
+              ← All tools
+            </Link>
+          ) : undefined
+        }
       />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[15rem_1fr] lg:gap-8">
         <aside className="lg:sticky lg:top-24 lg:h-fit">
-          <FirstCampaignStepRail items={railItems} onSelect={goToStep} />
+          <FirstCampaignStepRail
+            items={railItems}
+            onSelect={goToStep}
+            ariaLabel={isIdealClient ? "Ideal Client steps" : "First Campaign steps"}
+          />
         </aside>
 
         <div className="min-w-0 pt-1 lg:pt-0">
           <CampaignStepPanel
             step={activeMeta.id}
+            total={lastStep}
             title={activeMeta.title}
             description={activeMeta.description}
           >
@@ -230,9 +293,10 @@ export function FirstCampaignWizard() {
                 avatar={setup.avatar}
                 onSaved={handleAvatarSaved}
                 onContinue={() => goToStep(4)}
+                afterSave={isIdealClient ? "done" : "messages"}
               />
             ) : null}
-            {activeStep === 4 ? (
+            {!isIdealClient && activeStep === 4 ? (
               <StepMessages
                 icp={setup.icp}
                 avatar={setup.avatar}
@@ -241,7 +305,7 @@ export function FirstCampaignWizard() {
                 onContinue={() => goToStep(5)}
               />
             ) : null}
-            {activeStep === 5 ? (
+            {!isIdealClient && activeStep === 5 ? (
               <StepStarterList
                 icp={setup.icp}
                 leadList={setup.leadList}
@@ -257,8 +321,14 @@ export function FirstCampaignWizard() {
 
 function computeInitialStep(
   linkedin: LinkedInImportProfile | null,
-  setup: CampaignSetupState
+  setup: CampaignSetupState,
+  variant: CampaignWizardVariant
 ): CampaignStep {
+  if (variant === "ideal-client") {
+    if (setup.avatar?.approvedAt || setup.icp) return 3;
+    if (linkedin) return 2;
+    return 1;
+  }
   if (setup.leadList) return 5;
   if (setup.messages?.approvedAt) return 5;
   if (setup.avatar?.approvedAt) return 4;

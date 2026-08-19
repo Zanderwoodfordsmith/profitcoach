@@ -420,7 +420,7 @@ export function ProfitCoachAiWorkspace({
 
   return (
     <div
-      className={`${outfit.variable} flex min-h-[calc(100dvh-8rem)] w-full min-w-0 flex-col gap-0 text-slate-900`}
+      className={`${outfit.variable} flex min-h-[calc(100dvh-8rem)] w-full min-w-0 flex-1 flex-col gap-0 text-slate-900`}
       style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
     >
       {activeTab === "chat" ? (
@@ -810,34 +810,24 @@ export function ProfitCoachAiWorkspace({
       ) : null}
 
       {activeTab === "brain" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto py-5">
-          <div className="mx-auto w-full max-w-2xl px-3 pb-8 sm:px-4">
-            <h2 className="mb-1 text-lg font-semibold text-slate-900">
-              My brain
-            </h2>
-            <p className="mb-5 text-sm text-slate-600">
-              Your private knowledge base for this AI coach.
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          {brainSaveOk ? (
+            <p className="shrink-0 border-b border-emerald-200/80 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">
+              Saved. This context will be included on your next message.
             </p>
-            {brainSaveOk ? (
-              <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-                Saved. This context will be included on your next message.
-              </p>
-            ) : null}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <ProfitCoachAiBrainForm
-                key={brainFormKey}
-                compassHref={compassHref}
-                initialContext={aiContext}
-                draftFromChat={brainDraftFromChat}
-                saving={brainSaving}
-                saveError={brainSaveError}
-                onSave={(next) => {
-                  void saveBrainPatch(next);
-                }}
-                variant="page"
-              />
-            </div>
-          </div>
+          ) : null}
+          <ProfitCoachAiBrainForm
+            key={brainFormKey}
+            compassHref={compassHref}
+            initialContext={aiContext}
+            draftFromChat={brainDraftFromChat}
+            saving={brainSaving}
+            saveError={brainSaveError}
+            onSave={(next) => {
+              void saveBrainPatch(next);
+            }}
+            variant="page"
+          />
         </div>
       ) : null}
     </div>

@@ -26,6 +26,38 @@ Offer multiple variants when drafting copy; mark a recommended default; ask the 
     },
   },
   {
+    id: "linkedin_profile",
+    label: "LinkedIn Profile Optimizer",
+    description: "Headline, About, banner, and experience copy for your profile",
+    placeholder:
+      "e.g. Rewrite my headline and About for UK manufacturing owners stuck at £1–10M…",
+    systemInstructions: `You help a BCA coach optimise their own LinkedIn profile so the right business owners recognise themselves and want to talk.
+
+Write copy the coach can paste into LinkedIn. Default to:
+1. Headline — who they help + the outcome, in owner language. Not “Business Coach | Helping leaders transform”. Keep it scannable; offer 3–5 options and mark a recommended default.
+2. About — written TO the ideal client (you/your), not a CV. Pain in their words → mechanism (BOSS as a system, not therapy) → proof from the brain (never invent results) → clear next step (connect, newsletter, or a call). Short paragraphs.
+3. Experience — current role framed as client outcomes, not job history. Optionally tighten 1–2 past roles if asked.
+4. Banner / Featured — what to put on the banner (who + result) and what to feature (newsletter, proof, lead magnet). Do not generate images; give the words.
+
+If current profile copy is missing, ask them to paste headline + About (one ask). Use the brain’s ideal client, pain language, and proof. Offer variants; let the coach choose.`,
+    knowledgeRefs: [
+      {
+        type: "playbook",
+        path: "2. Defined Strategy/3.2 Positioning/Action 03 - Category Strategy.md",
+      },
+      {
+        type: "playbook",
+        path: "5. Revenue & Marketing/5.5 Branding/Action 01 - Brand Promise Definition.md",
+      },
+    ],
+    useMarketingIcpTier2: true,
+    contextHints: {
+      keys: ["ideal_client", "pain_language", "superpowers", "client_results"],
+      encouragement:
+        "Ideal client + a real client win make headline and About much sharper.",
+    },
+  },
+  {
     id: "linkedin_newsletter",
     label: "LinkedIn newsletter",
     description: "Write LinkedIn newsletter editions; optional 5-3-7 series planning",
@@ -141,6 +173,7 @@ export const PROFIT_COACH_ROLES: ProfitCoachRoleDefinition[] = [
     label: "Marketing & content",
     description: "Newsletters, posts, nurture, and campaigns",
     outputIds: [
+      "linkedin_profile",
       "linkedin_connector",
       "linkedin_newsletter",
       "linkedin_content",

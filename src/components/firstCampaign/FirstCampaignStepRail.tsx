@@ -15,12 +15,14 @@ export type StepRailItem = {
 export function FirstCampaignStepRail({
   items,
   onSelect,
+  ariaLabel = "First Campaign steps",
 }: {
   items: StepRailItem[];
   onSelect: (step: CampaignStep) => void;
+  ariaLabel?: string;
 }) {
   return (
-    <nav aria-label="First Campaign steps" className="flex flex-col gap-1">
+    <nav aria-label={ariaLabel} className="flex flex-col gap-1">
       {items.map((item, idx) => {
         const disabled = item.status === "locked";
         return (

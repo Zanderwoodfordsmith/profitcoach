@@ -39,6 +39,13 @@ export const GATED_ROUTES: GatedRoute[] = [
       "A guided setup that takes you from LinkedIn import to ICP, avatar, messages, and a starter list of named prospects.",
   },
   {
+    prefix: "/coach/ideal-client",
+    feature: "nav.marketing",
+    title: "Ideal Client Selector",
+    description:
+      "Import your LinkedIn, pick who you help first, then lock the Ideal Client Profile and Avatar.",
+  },
+  {
     prefix: "/coach/prospects",
     feature: "nav.marketing",
     title: "Prospects",
@@ -86,6 +93,13 @@ export const GATED_ROUTES: GatedRoute[] = [
     title: "AI Message Generator",
     description:
       "Draft high-converting outreach and follow-ups in seconds, tailored to each prospect.",
+  },
+  {
+    prefix: "/coach/linkedin-profile",
+    feature: "nav.marketing",
+    title: "LinkedIn Profile Optimizer",
+    description:
+      "Rewrite your headline, About, experience, and banner so the right owners stop and read.",
   },
   {
     prefix: "/coach/clients",

@@ -16,10 +16,12 @@ export type AdminPreviewCoachRoute = {
 
 export const ADMIN_PREVIEW_COACH_ROUTES: AdminPreviewCoachRoute[] = [
   { prefix: "/coach/first-campaign", fallback: "/coach/prospects" },
+  { prefix: "/coach/ideal-client", fallback: "/coach/prospects" },
   { prefix: "/coach/pipeline", fallback: "/coach/prospects" },
   { prefix: "/coach/conversations", fallback: "/coach/prospects" },
   { prefix: "/coach/funnel-analyzer", fallback: "/coach/prospects" },
   { prefix: "/coach/message-generator", fallback: "/coach/prospects" },
+  { prefix: "/coach/linkedin-profile", fallback: "/coach/prospects" },
   { prefix: "/coach/clients/coaching", fallback: "/coach/clients" },
   {
     match: (pathname) => CLIENT_WORKSPACE_PATH.test(pathname),

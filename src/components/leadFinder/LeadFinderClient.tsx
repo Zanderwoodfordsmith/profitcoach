@@ -32,9 +32,11 @@ import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import { SalesNavResultsPanel } from "@/components/leadFinder/SalesNavResultsPanel";
+import { SavedSearchesPanel } from "@/components/leadFinder/SavedSearchesPanel";
 import { SalesNavStrategyPanel } from "@/components/leadFinder/SalesNavStrategyPanel";
 import { isLeadFinderAllowedEmail } from "@/lib/leadFinderAccess";
 import { SALES_NAV_IMPORT_RESUME_EVENT } from "@/lib/salesNavigator/importJobWatch";
+import type { AppliedDefaultSearch } from "@/lib/salesNavigator/defaultSearches";
 import { applyProspectSearchStrategy } from "@/lib/salesNavigator/prospectSearch/applyStrategy";
 import type { ProspectSearchStrategy } from "@/lib/salesNavigator/prospectSearch/types";
 import {
@@ -1100,6 +1102,27 @@ export function LeadFinderClient() {
     if (next.clearIndustry) setIndustry("");
   }
 
+  function applyDefaultSearch(search: AppliedDefaultSearch) {
+    setSourceTab("sales_nav");
+    setCompanyKeywords(search.companyKeywords);
+    setJobTitleKeywords(search.jobTitleKeywords);
+    setSalesNavKeywordsBoolean(search.keywordsBoolean);
+    setTeamSizes(search.teamSizes);
+    setSalesNavDegrees(search.degrees);
+    setSalesNavLocation(search.location);
+    if (search.clearIndustry) setIndustry("");
+    else if (search.industry) setIndustry(search.industry);
+    setCountry(search.market === "US" ? "US" : "GB");
+    if (search.market === "US") {
+      setStates(search.stateCode ? [search.stateCode] : []);
+    }
+    if (search.id === "base-town" || search.id === "base-postcode") {
+      setLocation(search.location);
+    } else if (search.id === "base-country" || search.id === "base-1st") {
+      setLocation("");
+    }
+  }
+
   function toggleSalesNavDegree(degree: SalesNavDegree) {
     setSalesNavDegrees((prev) => {
       if (prev.includes(degree)) {
@@ -1282,6 +1305,8 @@ export function LeadFinderClient() {
           ]}
         />
       </div>
+
+      <SavedSearchesPanel onApply={applyDefaultSearch} />
 
       <div className="mx-auto flex w-full max-w-[90rem] flex-1 flex-col lg:flex-row">
         {/* Filters */}

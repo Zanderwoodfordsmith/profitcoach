@@ -15,6 +15,11 @@ const siteToolsLinks = [
     hint: "Control how the Coaching AI behaves for clients.",
   },
   {
+    href: "/admin/settings/linkedin-profile",
+    label: "LinkedIn Profile Optimizer prompt",
+    hint: "Rewrite voice for headline, About, Featured, experience, and banner.",
+  },
+  {
     href: "/admin/settings/boss-grid",
     label: "Boss Grid variations",
     hint: "All grid components (transposed, default, glass, bordered).",

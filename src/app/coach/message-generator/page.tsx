@@ -69,7 +69,7 @@ function StudioPageContent() {
         : "Your brain";
 
   const description = showHub
-    ? "Choose a tool — outreach, drafts, First Campaign, and more."
+    ? undefined
     : activeTab === "brain"
       ? "Saved context every tool here can use: superpowers, proof, and who you help."
       : "Draft, tweak, and save. Open past work from the chats panel.";
