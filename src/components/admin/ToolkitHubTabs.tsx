@@ -21,9 +21,6 @@ export function ToolkitHubTabs() {
   const onLanding =
     pathname === "/admin/landing-analytics" ||
     Boolean(pathname?.startsWith("/admin/landing-analytics/"));
-  const onLessonImport =
-    pathname === "/admin/lesson-import" ||
-    Boolean(pathname?.startsWith("/admin/lesson-import/"));
   const onFunnelAnalyzer =
     pathname === "/admin/funnel-analyzer" ||
     Boolean(pathname?.startsWith("/admin/funnel-analyzer/"));
@@ -58,12 +55,6 @@ export function ToolkitHubTabs() {
       href: "/admin/landing-analytics",
       label: "Landing",
       active: onLanding,
-    },
-    {
-      kind: "link" as const,
-      href: "/admin/lesson-import",
-      label: "Lesson import",
-      active: onLessonImport,
     },
     {
       kind: "link" as const,

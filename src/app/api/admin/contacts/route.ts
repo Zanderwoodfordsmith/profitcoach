@@ -46,6 +46,7 @@ export async function GET(request: Request) {
         prospect_status: string | null;
         phone: string | null;
         crm_contact_id: string | null;
+        prospect_funnel: string | null;
         type: string;
         created_at: string;
       }>(async (columns) => {
@@ -68,6 +69,7 @@ export async function GET(request: Request) {
       }, "id, coach_id, full_name, email, business_name, job_title, prospect_status, type, created_at", [
         "crm_contact_id",
         "linkedin_url",
+        "prospect_funnel",
       ]);
 
     if (contactsError) {
@@ -152,6 +154,7 @@ export async function GET(request: Request) {
         crm_contact_id: c.crm_contact_id ?? null,
         crm_location_id: coachMeta.crm_location_id ?? null,
         created_at: c.created_at ?? null,
+        prospect_funnel: c.prospect_funnel ?? null,
       };
     });
 

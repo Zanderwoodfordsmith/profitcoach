@@ -1878,7 +1878,8 @@
                   "title": "Set Up & Update Your Directory Profile",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 }
               ]
             }
@@ -1899,28 +1900,32 @@
                   "title": "BOSS / BOSS Pro Overview",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 },
                 {
                   "id": "get-calls-boss-assessment-marketing-how-to-use-the-boss-score-assessment",
                   "title": "How to Use the BOSS Score Assessment",
                   "duration": "",
                   "hasVideo": true,
-                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum",
+                  "draft": true
                 },
                 {
                   "id": "profit-coach-os-boss-suite-use-boss-pro-in-value-sessions",
                   "title": "How to Use BOSS Pro in Value Sessions",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 },
                 {
                   "id": "profit-coach-os-boss-suite-templates-resources",
                   "title": "BOSS Templates & Resources",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 }
               ]
             },
@@ -1933,28 +1938,32 @@
                   "title": "CRM Overview",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 },
                 {
                   "id": "profit-coach-os-crm-setup-usage-set-up-pipeline-stages",
                   "title": "How to Set Up Your Pipeline & Stages",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 },
                 {
                   "id": "profit-coach-os-crm-setup-usage-track-prospects-clients-sessions",
                   "title": "How to Track Prospects, Clients & Sessions",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 },
                 {
                   "id": "profit-coach-os-crm-setup-usage-crm-automations",
                   "title": "CRM Automations",
                   "duration": "",
                   "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/"
+                  "academyUrl": "https://academy.businesscoachacademy.com/",
+                  "draft": true
                 }
               ]
             },
@@ -1986,14 +1995,16 @@
                       "title": "How to Export a Sales Nav List to CSV",
                       "duration": "",
                       "hasVideo": false,
-                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum",
+                      "draft": true
                     },
                     {
                       "id": "get-calls-lead-generation-ai-automation-how-to-remove-undesired-profiles-blocklist-people",
                       "title": "How to remove undesired profiles & blocklist people",
                       "duration": "",
                       "hasVideo": false,
-                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum",
+                      "draft": true
                     }
                   ]
                 },
@@ -2041,7 +2052,8 @@
                       "title": "How To Add More Prospects to a Connector Campaign",
                       "duration": "",
                       "hasVideo": false,
-                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum",
+                      "draft": true
                     }
                   ]
                 },
@@ -2075,7 +2087,8 @@
                       "title": "How to Remove Connections from a Campaign",
                       "duration": "",
                       "hasVideo": false,
-                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+                      "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum",
+                      "draft": true
                     }
                   ]
                 }

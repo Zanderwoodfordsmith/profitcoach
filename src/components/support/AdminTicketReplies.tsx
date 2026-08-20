@@ -52,6 +52,7 @@ export function AdminTicketReplies({
         report_id,
         created_by,
         body,
+        community_comment_id,
         author:profiles!created_by ( id, full_name, first_name, last_name, role )
       `
       )
@@ -72,6 +73,7 @@ export function AdminTicketReplies({
         report_id: raw.report_id,
         created_by: raw.created_by,
         body: raw.body,
+        community_comment_id: raw.community_comment_id ?? null,
         author: normalizeAuthor(raw.author),
       }))
     );
@@ -112,6 +114,7 @@ export function AdminTicketReplies({
           report_id,
           created_by,
           body,
+          community_comment_id,
           author:profiles!created_by ( id, full_name, first_name, last_name, role )
         `
         )
@@ -125,6 +128,7 @@ export function AdminTicketReplies({
         report_id: data.report_id,
         created_by: data.created_by,
         body: data.body,
+        community_comment_id: data.community_comment_id ?? null,
         author: normalizeAuthor(data.author),
       };
       setReplies((current) => [...current, reply]);

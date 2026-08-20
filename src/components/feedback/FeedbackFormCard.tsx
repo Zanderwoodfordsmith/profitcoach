@@ -1,29 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { Bug, Lightbulb, MessageSquare } from "lucide-react";
+import { Bug, Lightbulb, MessageCircleQuestion } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { notifyFeedbackCountsChanged } from "@/components/layout/useNewFeedbackCount";
+import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
+import type { SupportTicketType } from "@/lib/support/tickets";
 
 type FeedbackFormCardProps = {
   onSubmitted?: () => void;
 };
 
-type FeedbackType = "bug" | "feature" | "general";
-
 const FEEDBACK_DETAILS_PLACEHOLDER =
-  "Bug: what happened and what you expected.\nFeature idea: what you'd like added and how you'd use it.";
+  "Question: what you need help with.\nBug: what happened and what you expected.\nIdea: what you'd like added and how you'd use it.";
 
 const FEEDBACK_TYPE_OPTIONS: {
-  value: FeedbackType;
+  value: SupportTicketType;
   label: string;
   icon: typeof Bug;
   selectedClassName: string;
   unselectedClassName: string;
 }[] = [
   {
-    value: "feature",
-    label: "Feature",
+    value: "question",
+    label: "Question",
+    icon: MessageCircleQuestion,
+    selectedClassName:
+      "bg-violet-100 text-violet-800 ring-violet-300/80 hover:bg-violet-100",
+    unselectedClassName:
+      "bg-white text-slate-600 ring-slate-200 hover:bg-violet-50/70 hover:text-violet-800",
+  },
+  {
+    value: "idea",
+    label: "Idea",
     icon: Lightbulb,
     selectedClassName:
       "bg-sky-100 text-sky-800 ring-sky-300/80 hover:bg-sky-100",
@@ -39,19 +47,10 @@ const FEEDBACK_TYPE_OPTIONS: {
     unselectedClassName:
       "bg-white text-slate-600 ring-slate-200 hover:bg-rose-50/70 hover:text-rose-800",
   },
-  {
-    value: "general",
-    label: "General",
-    icon: MessageSquare,
-    selectedClassName:
-      "bg-violet-100 text-violet-800 ring-violet-300/80 hover:bg-violet-100",
-    unselectedClassName:
-      "bg-white text-slate-600 ring-slate-200 hover:bg-violet-50/70 hover:text-violet-800",
-  },
 ];
 
 export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>("feature");
+  const [feedbackType, setFeedbackType] = useState<SupportTicketType>("question");
   const [feedbackTitle, setFeedbackTitle] = useState("");
   const [feedbackDetails, setFeedbackDetails] = useState("");
   const [feedbackBusy, setFeedbackBusy] = useState(false);
@@ -60,11 +59,9 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-2xl font-semibold text-slate-900">
-        💡 Got an idea?
-      </h2>
+      <h2 className="text-2xl font-semibold text-slate-900">New support ticket</h2>
       <p className="mt-2 text-base leading-relaxed text-slate-600">
-        Share feedback, suggest a feature, or report an issue.
+        Ask a question, share an idea, or report a bug.
       </p>
 
       <form
@@ -96,15 +93,15 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
                     typeof navigator !== "undefined" ? navigator.userAgent : null,
                 });
               if (error) throw error;
-              setFeedbackSuccess("Thanks — your feedback has been submitted.");
-              setFeedbackType("feature");
+              setFeedbackSuccess("Thanks — your ticket has been submitted.");
+              setFeedbackType("question");
               setFeedbackTitle("");
               setFeedbackDetails("");
-              notifyFeedbackCountsChanged();
+              notifySupportCountsChanged();
               onSubmitted?.();
             } catch (err) {
               const msg =
-                err instanceof Error ? err.message : "Could not submit feedback.";
+                err instanceof Error ? err.message : "Could not submit ticket.";
               setFeedbackError(msg);
             } finally {
               setFeedbackBusy(false);
@@ -152,7 +149,7 @@ export function FeedbackFormCard({ onSubmitted }: FeedbackFormCardProps = {}) {
             </span>
             <div
               role="radiogroup"
-              aria-label="Feedback type"
+              aria-label="Ticket type"
               className="flex flex-wrap gap-2"
             >
               {FEEDBACK_TYPE_OPTIONS.map(

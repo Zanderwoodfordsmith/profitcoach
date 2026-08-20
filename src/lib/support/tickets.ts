@@ -1,5 +1,11 @@
 export type SupportTicketStatus = "new" | "in_review" | "resolved";
-export type SupportTicketType = "bug" | "feature" | "general";
+export type SupportTicketType = "question" | "bug" | "idea";
+
+export type SupportTicketSource =
+  | "direct"
+  | "lesson_private"
+  | "public_form"
+  | "admin_created";
 
 export type SupportTicketAuthor = {
   id: string;
@@ -12,13 +18,24 @@ export type SupportTicketAuthor = {
 export type SupportTicket = {
   id: string;
   created_at: string;
-  created_by: string;
+  created_by: string | null;
   ticket_number: number;
   type: SupportTicketType;
   title: string | null;
   details: string;
   page_path: string | null;
   status: SupportTicketStatus;
+  source: SupportTicketSource;
+  assigned_to: string | null;
+  community_post_id: string | null;
+  created_by_admin: string | null;
+  contact_email: string | null;
+  submitter_name: string | null;
+  importance: number | null;
+  ease: number | null;
+  coach_last_read_at?: string | null;
+  author?: SupportTicketAuthor | null;
+  assignee?: SupportTicketAuthor | null;
 };
 
 export type SupportReply = {
@@ -27,13 +44,21 @@ export type SupportReply = {
   report_id: string;
   created_by: string;
   body: string;
+  community_comment_id: string | null;
   author: SupportTicketAuthor | null;
 };
 
 export const SUPPORT_TYPE_LABELS: Record<SupportTicketType, string> = {
-  bug: "Bug Report",
-  feature: "Feature Request",
-  general: "General",
+  question: "Question",
+  bug: "Bug",
+  idea: "Idea",
+};
+
+export const SUPPORT_SOURCE_LABELS: Record<SupportTicketSource, string> = {
+  direct: "Direct ticket",
+  lesson_private: "Private lesson",
+  public_form: "Public form",
+  admin_created: "Created by team",
 };
 
 export const SUPPORT_STATUS_USER_LABELS: Record<SupportTicketStatus, string> = {
@@ -42,11 +67,24 @@ export const SUPPORT_STATUS_USER_LABELS: Record<SupportTicketStatus, string> = {
   resolved: "Resolved",
 };
 
+export const SUPPORT_STATUS_ADMIN_LABELS: Record<SupportTicketStatus, string> = {
+  new: "New",
+  in_review: "In review",
+  resolved: "Resolved",
+};
+
 export function formatSupportTicketId(ticketNumber: number): string {
   return `SUP-${String(ticketNumber).padStart(4, "0")}`;
 }
 
-export function authorDisplayName(author: SupportTicketAuthor | null | undefined): string {
+export type SupportPersonName = Pick<
+  SupportTicketAuthor,
+  "full_name" | "first_name" | "last_name"
+>;
+
+export function authorDisplayName(
+  author: SupportPersonName | null | undefined
+): string {
   if (!author) return "Unknown";
   return (
     author.full_name?.trim() ||
@@ -55,7 +93,9 @@ export function authorDisplayName(author: SupportTicketAuthor | null | undefined
   );
 }
 
-export function isSupportStaffAuthor(author: SupportTicketAuthor | null | undefined): boolean {
+export function isSupportStaffAuthor(
+  author: SupportTicketAuthor | null | undefined
+): boolean {
   return author?.role === "admin";
 }
 
@@ -95,4 +135,32 @@ export function formatSupportTicketDate(iso: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+export function supportTicketScore(ticket: Pick<SupportTicket, "importance" | "ease">): number | null {
+  if (ticket.importance == null || ticket.ease == null) return null;
+  return ticket.importance + ticket.ease;
+}
+
+/** Map legacy DB values when reading old rows before migration applied. */
+export function normalizeSupportTicketType(raw: string): SupportTicketType {
+  if (raw === "feature") return "idea";
+  if (raw === "general") return "question";
+  if (raw === "bug" || raw === "idea" || raw === "question") return raw;
+  return "question";
+}
+
+/** True when the ticket has staff replies the coach has not opened since. */
+export function ticketHasUnreadStaffReply(
+  ticket: Pick<SupportTicket, "coach_last_read_at">,
+  replies: SupportReply[],
+  viewerId: string
+): boolean {
+  const staffReplies = replies.filter((reply) => reply.created_by !== viewerId);
+  if (staffReplies.length === 0) return false;
+  if (!ticket.coach_last_read_at) return true;
+  const lastRead = new Date(ticket.coach_last_read_at).getTime();
+  return staffReplies.some(
+    (reply) => new Date(reply.created_at).getTime() > lastRead
+  );
 }

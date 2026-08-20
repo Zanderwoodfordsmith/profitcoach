@@ -9,7 +9,7 @@ import {
   ChevronUp,
   Lock,
   LogOut,
-  MessagesSquare,
+  CircleHelp,
   CreditCard,
   Settings,
 } from "lucide-react";
@@ -33,7 +33,7 @@ import {
 } from "@/lib/membership/preview";
 import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
-import { useNewFeedbackCount } from "@/components/layout/useNewFeedbackCount";
+import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
 /** Selected nav pill — restrained cooler-blue gradient (between solid sky and full wash). */
@@ -132,6 +132,7 @@ export function DashboardSidebar({
   const { profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
   const newFeedbackCount = useNewFeedbackCount(variant === "admin");
+  const coachUnreadSupportCount = useCoachUnreadSupportCount(variant === "coach");
 
   // Soft-gate model: gated items stay visible with a lock badge; clicking
   // through shows the upgrade gate on the page itself.
@@ -189,11 +190,13 @@ export function DashboardSidebar({
     setMobileMoreOpen(false);
   };
 
-  const renderFeedbackInboxBadge = (href: string) => {
-    if (href !== "/admin/community/feedback" || newFeedbackCount <= 0) return null;
+  const renderSupportBadge = () => {
+    const count =
+      variant === "admin" ? newFeedbackCount : coachUnreadSupportCount;
+    if (count <= 0) return null;
     return (
       <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white">
-        {newFeedbackCount > 99 ? "99+" : newFeedbackCount}
+        {count > 99 ? "99+" : count}
       </span>
     );
   };
@@ -371,7 +374,6 @@ export function DashboardSidebar({
                         >
                           <Icon className="h-5 w-5 shrink-0 opacity-95" />
                           <span className="min-w-0 flex-1">{item.label}</span>
-                          {renderFeedbackInboxBadge(item.href)}
                         </Link>
                       </li>
                     );
@@ -408,7 +410,19 @@ export function DashboardSidebar({
               Membership
             </Link>
           ) : null}
-          <div className="relative" ref={accountMenuRef}>
+          <Link
+            href={supportHref}
+            className={`mb-1 flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+              supportActive
+                ? SIDEBAR_NAV_ACTIVE
+                : "text-slate-100/90 hover:bg-white/10"
+            }`}
+          >
+            <CircleHelp className="h-5 w-5 shrink-0 opacity-95" />
+            Support
+            {renderSupportBadge()}
+          </Link>
+          <div className="relative mt-2 border-t border-white/15 pt-2" ref={accountMenuRef}>
             <button
               type="button"
               aria-expanded={accountMenuOpen}
@@ -455,15 +469,6 @@ export function DashboardSidebar({
                 >
                   <Settings className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   Settings
-                </Link>
-                <Link
-                  href={supportHref}
-                  role="menuitem"
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                  onClick={() => setAccountMenuOpen(false)}
-                >
-                  <MessagesSquare className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-                  Support
                 </Link>
                 <button
                   type="button"
@@ -622,7 +627,6 @@ export function DashboardSidebar({
                             >
                               <Icon className="h-5 w-5 shrink-0 opacity-95" />
                               <span className="min-w-0 flex-1">{item.label}</span>
-                              {renderFeedbackInboxBadge(item.href)}
                             </Link>
                           </li>
                         );
@@ -668,6 +672,19 @@ export function DashboardSidebar({
                 Settings
               </p>
               <Link
+                href={supportHref}
+                onClick={closeMobileSheets}
+                className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                  supportActive
+                    ? SIDEBAR_NAV_ACTIVE
+                    : "text-slate-100/90 hover:bg-white/10"
+                }`}
+              >
+                <CircleHelp className="h-5 w-5 shrink-0 opacity-95" />
+                Support
+                {renderSupportBadge()}
+              </Link>
+              <Link
                 href={settingsHref}
                 onClick={closeMobileSheets}
                 className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
@@ -678,18 +695,6 @@ export function DashboardSidebar({
               >
                 <Settings className="h-5 w-5 shrink-0 opacity-95" />
                 Settings
-              </Link>
-              <Link
-                href={supportHref}
-                onClick={closeMobileSheets}
-                className={`mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
-                  supportActive
-                    ? SIDEBAR_NAV_ACTIVE
-                    : "text-slate-100/90 hover:bg-white/10"
-                }`}
-              >
-                <MessagesSquare className="h-5 w-5 shrink-0 opacity-95" />
-                Support
               </Link>
               <button
                 type="button"

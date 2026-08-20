@@ -1,5 +1,5 @@
 import { AdminAcademyImportStatus } from "@/components/academy/AdminAcademyImportStatus";
-import { ToolkitHubTabs } from "@/components/admin/ToolkitHubTabs";
+import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { loadAcademyImportOverrides } from "@/lib/academy/academyImportOverrides";
 import { loadLatestAcademyBodyImportUnresolved } from "@/lib/academy/bodyImportReport";
@@ -21,13 +21,13 @@ export default async function AdminLessonImportPage() {
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
-        title="Lesson import"
+        title="Lessons"
         description={
           <span className="text-lg leading-relaxed text-slate-600">
-            Track video and transcript import from Old Academy Drive against each programme lesson.
+            Track video, content, and transcript coverage for each Classroom lesson.
           </span>
         }
-        tabs={<ToolkitHubTabs />}
+        tabs={<LessonImportTabs />}
       />
       <AdminAcademyImportStatus
         status={status}

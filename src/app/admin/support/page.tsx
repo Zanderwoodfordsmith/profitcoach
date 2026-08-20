@@ -1,5 +1,5 @@
-import { SupportTicketsPage } from "@/components/support/SupportTicketsPage";
+import { AdminSupportPage } from "@/components/support/AdminSupportPage";
 
-export default function AdminSupportPage() {
-  return <SupportTicketsPage prefix="/admin" />;
+export default function AdminSupportRoutePage() {
+  return <AdminSupportPage />;
 }

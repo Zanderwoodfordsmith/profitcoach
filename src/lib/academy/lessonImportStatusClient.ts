@@ -44,12 +44,35 @@ export type LessonImportFilter =
   | "missingContent"
   | "missingTranscript";
 
+/** Nested hub section tree (categories can contain sub-sections). */
+export type LessonImportCatalogSection = {
+  id: string;
+  title: string;
+  presentation?: "accordion" | "rule";
+  lessonIds: string[];
+  sections?: LessonImportCatalogSection[];
+};
+
+/** Programme / section / lesson order from classroom-hub.json (serializable). */
+export type LessonImportCatalogOrder = {
+  courses: Array<{
+    id: string;
+    title: string;
+    sections: LessonImportCatalogSection[];
+  }>;
+};
+
 export type LessonImportSectionGroup = {
+  sectionId: string;
   sectionTitle: string;
   sectionKey: string;
+  presentation?: "accordion" | "rule";
   lessons: LessonImportStatusRow[];
-  /** Gaps in this module (missing video and/or transcript), regardless of list filter. */
+  sections: LessonImportSectionGroup[];
+  /** Gaps in this module + nested children (missing video/content/transcript). */
   gapCount: number;
+  /** Visible lessons in this module + nested children (after list filter). */
+  lessonCount: number;
 };
 
 export type LessonImportCourseGroup = {
@@ -58,15 +81,6 @@ export type LessonImportCourseGroup = {
   sections: LessonImportSectionGroup[];
   lessonCount: number;
   gapCount: number;
-};
-
-/** Programme / section / lesson order from archive-hub.json (serializable). */
-export type LessonImportCatalogOrder = {
-  courses: Array<{
-    id: string;
-    title: string;
-    sections: Array<{ id: string; title: string; lessonIds: string[] }>;
-  }>;
 };
 
 export type LessonImportStatusReport = {
@@ -103,7 +117,46 @@ function lessonHasGap(row: LessonImportStatusRow): boolean {
   return row.missingVideo || row.missingContent || row.missingTranscript;
 }
 
-/** Build programme → section → lessons tree in legacy-hub catalogue order. */
+function buildSectionGroup(
+  courseId: string,
+  section: LessonImportCatalogSection,
+  byKey: Map<string, LessonImportStatusRow>,
+  filter: LessonImportFilter,
+): LessonImportSectionGroup | null {
+  const lessons: LessonImportStatusRow[] = [];
+  let directGapCount = 0;
+
+  for (const lessonId of section.lessonIds) {
+    const row = byKey.get(lessonKey(courseId, lessonId));
+    if (!row) continue;
+    if (lessonHasGap(row)) directGapCount += 1;
+    if (lessonMatchesImportFilter(row, filter)) lessons.push(row);
+  }
+
+  const childSections: LessonImportSectionGroup[] = [];
+  for (const child of section.sections ?? []) {
+    const built = buildSectionGroup(courseId, child, byKey, filter);
+    if (built) childSections.push(built);
+  }
+
+  if (lessons.length === 0 && childSections.length === 0) return null;
+
+  const nestedLessonCount = childSections.reduce((n, s) => n + s.lessonCount, 0);
+  const nestedGapCount = childSections.reduce((n, s) => n + s.gapCount, 0);
+
+  return {
+    sectionId: section.id,
+    sectionTitle: section.title,
+    sectionKey: `${courseId}:${section.id}`,
+    presentation: section.presentation,
+    lessons,
+    sections: childSections,
+    gapCount: directGapCount + nestedGapCount,
+    lessonCount: lessons.length + nestedLessonCount,
+  };
+}
+
+/** Build programme → category → sub-section → lessons tree in classroom order. */
 export function buildOrderedCourseGroups(
   lessons: LessonImportStatusRow[],
   catalogOrder: LessonImportCatalogOrder,
@@ -118,52 +171,51 @@ export function buildOrderedCourseGroups(
 
   for (const hubCourse of catalogOrder.courses) {
     const sections: LessonImportSectionGroup[] = [];
-    let courseGapCount = 0;
-
     for (const section of hubCourse.sections) {
-      const sectionLessons: LessonImportStatusRow[] = [];
-      let sectionGapCount = 0;
-      for (const lessonId of section.lessonIds) {
-        const row = byKey.get(lessonKey(hubCourse.id, lessonId));
-        if (!row) continue;
-        if (lessonHasGap(row)) {
-          sectionGapCount++;
-          courseGapCount++;
-        }
-        if (lessonMatchesImportFilter(row, filter)) {
-          sectionLessons.push(row);
-        }
-      }
-      if (sectionLessons.length > 0) {
-        sections.push({
-          sectionTitle: section.title,
-          sectionKey: `${hubCourse.id}:${section.id}`,
-          lessons: sectionLessons,
-          gapCount: sectionGapCount,
-        });
-      }
+      const built = buildSectionGroup(hubCourse.id, section, byKey, filter);
+      if (built) sections.push(built);
     }
-
     if (sections.length === 0) continue;
-
-    const lessonCount = sections.reduce((n, s) => n + s.lessons.length, 0);
 
     result.push({
       courseId: hubCourse.id,
       courseTitle: hubCourse.title,
       sections,
-      lessonCount,
-      gapCount: courseGapCount,
+      lessonCount: sections.reduce((n, s) => n + s.lessonCount, 0),
+      gapCount: sections.reduce((n, s) => n + s.gapCount, 0),
     });
   }
 
   return result;
 }
 
+/** Collect every expandable section key in a course tree (for expand-all). */
+export function collectSectionKeys(sections: LessonImportSectionGroup[]): string[] {
+  const keys: string[] = [];
+  for (const section of sections) {
+    keys.push(section.sectionKey);
+    keys.push(...collectSectionKeys(section.sections));
+  }
+  return keys;
+}
+
 export type ImportLinkLessonPickGroup = {
   label: string;
   keys: string[];
 };
+
+function walkCatalogLessonIds(
+  courseId: string,
+  sections: LessonImportCatalogSection[],
+  visit: (courseId: string, lessonId: string) => void,
+) {
+  for (const section of sections) {
+    for (const lessonId of section.lessonIds) visit(courseId, lessonId);
+    if (section.sections?.length) {
+      walkCatalogLessonIds(courseId, section.sections, visit);
+    }
+  }
+}
 
 /** Gap-prioritised lesson lists for linking Drive video/transcript files in the admin import UI. */
 export function buildImportLinkLessonPickGroups(
@@ -177,16 +229,14 @@ export function buildImportLinkLessonPickGroups(
   const exclude = excludeKeys ?? new Set<string>();
 
   for (const course of catalogOrder.courses) {
-    for (const section of course.sections) {
-      for (const lessonId of section.lessonIds) {
-        const key = lessonKey(course.id, lessonId);
-        if (exclude.has(key)) continue;
-        const row = lessonsByKey.get(key);
-        if (!row) continue;
-        if (row.missingVideo) missingVideoKeys.push(key);
-        else if (row.missingTranscript) missingTranscriptKeys.push(key);
-      }
-    }
+    walkCatalogLessonIds(course.id, course.sections, (courseId, lessonId) => {
+      const key = lessonKey(courseId, lessonId);
+      if (exclude.has(key)) return;
+      const row = lessonsByKey.get(key);
+      if (!row) return;
+      if (row.missingVideo) missingVideoKeys.push(key);
+      else if (row.missingTranscript) missingTranscriptKeys.push(key);
+    });
   }
 
   if (fileKind === "video") {

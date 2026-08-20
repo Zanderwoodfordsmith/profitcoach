@@ -11,8 +11,8 @@ import {
   Shield,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { notifyFeedbackCountsChanged } from "@/components/layout/useNewFeedbackCount";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { notifyCoachSupportReadChanged, notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
@@ -23,6 +23,8 @@ import {
   formatSupportTicketDate,
   formatSupportTicketId,
   isSupportStaffAuthor,
+  normalizeSupportTicketType,
+  ticketHasUnreadStaffReply,
   type SupportReply,
   type SupportTicket,
   type SupportTicketStatus,
@@ -39,9 +41,9 @@ type TicketWithReplies = SupportTicket & {
 };
 
 const TYPE_OPTIONS: { value: SupportTicketType; label: string }[] = [
-  { value: "bug", label: "Bug report" },
-  { value: "feature", label: "Feature request" },
-  { value: "general", label: "General" },
+  { value: "question", label: "Question" },
+  { value: "bug", label: "Bug" },
+  { value: "idea", label: "Idea" },
 ];
 
 function StatusBadge({ status }: { status: SupportTicketStatus }) {
@@ -91,7 +93,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const [subject, setSubject] = useState("");
-  const [type, setType] = useState<SupportTicketType>("bug");
+  const [type, setType] = useState<SupportTicketType>("question");
   const [description, setDescription] = useState("");
   const [submitBusy, setSubmitBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -134,7 +136,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
     const { data: reports, error: reportsError } = await supabaseClient
       .from("community_feedback_reports")
       .select(
-        "id, created_at, created_by, ticket_number, type, title, details, page_path, status"
+        "id, created_at, created_by, ticket_number, type, title, details, page_path, status, coach_last_read_at"
       )
       .eq("created_by", user.id)
       .order("created_at", { ascending: false });
@@ -146,7 +148,12 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       return;
     }
 
-    const list = (reports ?? []) as SupportTicket[];
+    const list = ((reports ?? []) as Array<Omit<SupportTicket, "type"> & { type: string }>).map(
+      (row) => ({
+        ...row,
+        type: normalizeSupportTicketType(row.type),
+      })
+    );
     if (list.length === 0) {
       setTickets([]);
       setLoading(false);
@@ -163,6 +170,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         report_id,
         created_by,
         body,
+        community_comment_id,
         author:profiles!created_by ( id, full_name, first_name, last_name, role )
       `
       )
@@ -184,6 +192,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         report_id: raw.report_id,
         created_by: raw.created_by,
         body: raw.body,
+        community_comment_id: raw.community_comment_id ?? null,
         author: normalizeAuthor(raw.author),
       };
       const bucket = repliesByReport.get(reply.report_id) ?? [];
@@ -198,6 +207,24 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       }))
     );
     setLoading(false);
+  }, []);
+
+  const markTicketRead = useCallback(async (ticketId: string) => {
+    const readAt = new Date().toISOString();
+    const { error: readError } = await supabaseClient.rpc(
+      "mark_support_ticket_read",
+      { p_report_id: ticketId }
+    );
+    if (readError) return;
+
+    setTickets((current) =>
+      current.map((ticket) =>
+        ticket.id === ticketId
+          ? { ...ticket, coach_last_read_at: readAt }
+          : ticket
+      )
+    );
+    notifyCoachSupportReadChanged();
   }, []);
 
   useEffect(() => {
@@ -242,11 +269,11 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       const created = data as SupportTicket;
       setTickets((current) => [{ ...created, replies: [] }, ...current]);
       setSubject("");
-      setType("bug");
+      setType("question");
       setDescription("");
       setComposeOpen(false);
       setExpandedId(created.id);
-      notifyFeedbackCountsChanged();
+      notifySupportCountsChanged();
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Could not send ticket."
@@ -278,6 +305,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
           report_id,
           created_by,
           body,
+          community_comment_id,
           author:profiles!created_by ( id, full_name, first_name, last_name, role )
         `
         )
@@ -291,6 +319,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         report_id: data.report_id,
         created_by: data.created_by,
         body: data.body,
+        community_comment_id: data.community_comment_id ?? null,
         author: normalizeAuthor(data.author),
       };
 
@@ -315,33 +344,19 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
 
   const empty = !loading && tickets.length === 0;
 
-  const headerActions = useMemo(
-    () => (
-      <button
-        type="button"
-        onClick={() => setComposeOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
-      >
-        <Plus className="h-4 w-4" aria-hidden />
-        Raise new ticket
-      </button>
-    ),
-    []
-  );
-
   return (
-    <div className="mx-auto w-full max-w-3xl pt-5 lg:pt-6">
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
-            Support
-          </h1>
-          <p className="mt-1.5 text-base text-slate-600">
-            Raise a ticket and we&apos;ll get back to you. Track open
-            conversations below.
-          </p>
-        </div>
-        {headerActions}
+    <div className="pt-2">
+      <div className="mb-4 flex justify-end">
+        {!composeOpen ? (
+          <button
+            type="button"
+            onClick={() => setComposeOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Raise new ticket
+          </button>
+        ) : null}
       </div>
 
       {composeOpen ? (
@@ -496,6 +511,9 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
             const draft = draftByTicket[ticket.id] ?? "";
             const replyBusy = replyBusyId === ticket.id;
             const replyError = replyErrorByTicket[ticket.id];
+            const hasUnread =
+              userId != null &&
+              ticketHasUnreadStaffReply(ticket, ticket.replies, userId);
 
             return (
               <li
@@ -541,15 +559,24 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
                   <button
                     type="button"
                     aria-expanded={expanded}
-                    onClick={() =>
-                      setExpandedId((current) =>
-                        current === ticket.id ? null : ticket.id
-                      )
-                    }
+                    onClick={() => {
+                      setExpandedId((current) => {
+                        const next = current === ticket.id ? null : ticket.id;
+                        if (next === ticket.id && hasUnread) {
+                          void markTicketRead(ticket.id);
+                        }
+                        return next;
+                      });
+                    }}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   >
                     <MessageSquare className="h-4 w-4 text-slate-500" aria-hidden />
                     Chat
+                    {hasUnread ? (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white">
+                        New
+                      </span>
+                    ) : null}
                     {expanded ? (
                       <ChevronUp className="h-4 w-4 text-slate-400" aria-hidden />
                     ) : (

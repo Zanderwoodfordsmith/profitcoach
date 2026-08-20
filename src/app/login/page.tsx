@@ -174,7 +174,13 @@ export default function LoginPage() {
               </span>
             </p>
           </div>
-          <div className="flex justify-end pt-0.5">
+          <div className="flex flex-col items-end gap-1 pt-0.5">
+            <Link
+              href="/support"
+              className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"
+            >
+              Can&apos;t sign in? Contact support
+            </Link>
             <Link
               href="/login/forgot-password"
               className="text-sm font-semibold text-[var(--landing-navy)] underline-offset-4 hover:underline"

@@ -2,6 +2,7 @@ import type React from "react";
 import {
   Archive,
   CalendarDays,
+  FileDown,
   LayoutGrid,
   MessagesSquare,
   PhoneCall,
@@ -73,6 +74,10 @@ function IconMessagesSquare({ className }: { className?: string }) {
 
 function IconArchive({ className }: { className?: string }) {
   return <Archive className={className} />;
+}
+
+function IconLessonImport({ className }: { className?: string }) {
+  return <FileDown className={className} />;
 }
 
 function IconUsers({ className }: { className?: string }) {
@@ -482,11 +487,15 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     toolkitHub: true,
   },
   {
+    href: "/admin/lesson-import",
+    label: "Lessons",
+    icon: IconLessonImport,
+  },
+  {
     href: "/admin/academy/archive",
     label: "Archive",
     icon: IconArchive,
   },
-  { href: "/admin/community/feedback", label: "Inbox", icon: IconMessagesSquare },
 ];
 
 function pathMatches(pathname: string | null, href: string): boolean {
@@ -520,7 +529,6 @@ export function isToolkitHubPath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/signature/scorecard") ||
     pathMatches(pathname, "/admin/time-tracker") ||
     pathMatches(pathname, "/admin/landing-analytics") ||
-    pathMatches(pathname, "/admin/lesson-import") ||
     pathMatches(pathname, "/admin/funnel-analyzer") ||
     pathMatches(pathname, "/admin/sales-nav-imports") ||
     pathMatches(pathname, "/admin/linkedin-inbox")

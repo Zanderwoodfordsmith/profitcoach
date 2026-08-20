@@ -10,7 +10,9 @@ import type { AcademyBodyImportReportRow } from "@/lib/academy/bodyImportReport"
 import { AdminAcademyImportUnmatchedTable } from "@/components/academy/AdminAcademyImportUnmatchedTable";
 import {
   buildOrderedCourseGroups,
+  collectSectionKeys,
   type LessonImportFilter,
+  type LessonImportSectionGroup,
   type LessonImportStatusReport,
   type LessonImportStatusRow,
 } from "@/lib/academy/lessonImportStatusClient";
@@ -27,7 +29,8 @@ type Props = {
 
 type ImportCellState = "ok" | "missing" | "na";
 
-const STATUS_COL_WIDTH = "w-[9.5rem]";
+const STATUS_COLS =
+  "grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_5.5rem] sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_6.5rem]";
 
 function bodyRowKey(row: AcademyBodyImportReportRow): string {
   return `${row.sourceFile}:${row.sourceLine}:${row.title}`;
@@ -64,38 +67,174 @@ function ImportStatusCell({
   );
 }
 
-function LessonImportStatusColumns({ row }: { row: LessonImportStatusRow }) {
-  const videoState: ImportCellState =
-    row.videoStatus === "video_ready"
-      ? "ok"
-      : row.videoStatus === "video_missing"
-        ? "missing"
-        : "na";
-
-  const transcriptState: ImportCellState =
-    row.legacyExpectsVideo || row.hasInAppVideo
-      ? row.hasTranscript
+function lessonStatusStates(row: LessonImportStatusRow): {
+  content: ImportCellState;
+  video: ImportCellState;
+  transcript: ImportCellState;
+} {
+  return {
+    content: row.hasContent ? "ok" : "missing",
+    video:
+      row.videoStatus === "video_ready"
         ? "ok"
-        : "missing"
-      : "na";
+        : row.videoStatus === "video_missing"
+          ? "missing"
+          : "na",
+    transcript:
+      row.legacyExpectsVideo || row.hasInAppVideo
+        ? row.hasTranscript
+          ? "ok"
+          : "missing"
+        : "na",
+  };
+}
+
+function Scorecard({
+  label,
+  value,
+  tone = "neutral",
+}: {
+  label: string;
+  value: number;
+  tone?: "neutral" | "good" | "warn" | "bad";
+}) {
+  const valueClass =
+    tone === "good"
+      ? "text-emerald-700"
+      : tone === "warn"
+        ? "text-amber-700"
+        : tone === "bad"
+          ? "text-rose-700"
+          : "text-slate-900";
 
   return (
-    <div className={`grid shrink-0 ${STATUS_COL_WIDTH} grid-cols-3 gap-1`}>
-      <ImportStatusCell state={row.hasContent ? "ok" : "missing"} label="Content" />
-      <ImportStatusCell state={videoState} label="Video" />
-      <ImportStatusCell state={transcriptState} label="Transcript" />
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className={`mt-1 text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
     </div>
   );
 }
 
-function LessonImportStatusHeader() {
+function TableStatusHeader() {
   return (
     <div
-      className={`grid shrink-0 ${STATUS_COL_WIDTH} grid-cols-3 gap-1 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-400`}
+      className={`grid ${STATUS_COLS} items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2`}
     >
-      <span>Content</span>
-      <span>Video</span>
-      <span>Transcript</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        Lesson
+      </span>
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        Content
+      </span>
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        Video
+      </span>
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        Transcript
+      </span>
+    </div>
+  );
+}
+
+function LessonStatusRow({ row, depth }: { row: LessonImportStatusRow; depth: number }) {
+  const states = lessonStatusStates(row);
+  return (
+    <div
+      className={`grid ${STATUS_COLS} items-center gap-2 border-t border-slate-100 px-3 py-2.5 hover:bg-slate-50/80`}
+    >
+      <Link
+        href={row.adminLessonHref}
+        className="min-w-0 truncate text-sm text-slate-700 hover:text-sky-800"
+        style={{ paddingLeft: `${depth * 16}px` }}
+      >
+        {row.lessonTitle}
+      </Link>
+      <div className="flex justify-center">
+        <ImportStatusCell state={states.content} label="Content" />
+      </div>
+      <div className="flex justify-center">
+        <ImportStatusCell state={states.video} label="Video" />
+      </div>
+      <div className="flex justify-center">
+        <ImportStatusCell state={states.transcript} label="Transcript" />
+      </div>
+    </div>
+  );
+}
+
+function SectionTree({
+  section,
+  depth,
+  openSections,
+  toggleSection,
+}: {
+  section: LessonImportSectionGroup;
+  depth: number;
+  openSections: Set<string>;
+  toggleSection: (key: string) => void;
+}) {
+  const open = openSections.has(section.sectionKey);
+  const isRule = section.presentation === "rule";
+  const hasChildren = section.sections.length > 0 || section.lessons.length > 0;
+
+  return (
+    <div className={depth === 0 ? "" : "border-t border-slate-100"}>
+      <button
+        type="button"
+        onClick={() => toggleSection(section.sectionKey)}
+        className={`flex w-full items-center justify-between gap-3 py-2.5 pr-3 text-left hover:bg-slate-50/80 ${
+          isRule ? "bg-slate-50/60" : ""
+        }`}
+        style={{ paddingLeft: `${12 + depth * 16}px` }}
+        aria-expanded={open}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          {hasChildren ? (
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
+              aria-hidden
+            />
+          ) : (
+            <span className="inline-block w-3.5" />
+          )}
+          <span
+            className={
+              isRule
+                ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500"
+                : depth === 0
+                  ? "text-sm font-semibold text-slate-800"
+                  : "text-sm font-medium text-slate-700"
+            }
+          >
+            {section.sectionTitle}
+          </span>
+        </span>
+        <span className="shrink-0 text-xs tabular-nums text-slate-500">
+          {section.lessonCount} lesson{section.lessonCount === 1 ? "" : "s"}
+          {section.gapCount > 0 ? (
+            <span className="ml-2 font-medium text-rose-600">{section.gapCount} gaps</span>
+          ) : null}
+        </span>
+      </button>
+
+      {open ? (
+        <div>
+          {section.lessons.map((row) => (
+            <LessonStatusRow key={row.lessonId} row={row} depth={depth + 1} />
+          ))}
+          {section.sections.map((child) => (
+            <SectionTree
+              key={child.sectionKey}
+              section={child}
+              depth={depth + 1}
+              openSections={openSections}
+              toggleSection={toggleSection}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -115,8 +254,7 @@ export function AdminAcademyImportStatus({
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
 
   const courses = useMemo(
-    () =>
-      status.catalogOrder.courses.map((c) => [c.id, c.title] as const),
+    () => status.catalogOrder.courses.map((c) => [c.id, c.title] as const),
     [status.catalogOrder]
   );
 
@@ -260,55 +398,40 @@ export function AdminAcademyImportStatus({
   }
 
   function expandAll() {
-    const courses = new Set(courseGroups.map((c) => c.courseId));
-    const sections = new Set(courseGroups.flatMap((c) => c.sections.map((s) => s.sectionKey)));
-    setOpenCourses(courses);
-    setOpenSections(sections);
+    setOpenCourses(new Set(courseGroups.map((c) => c.courseId)));
+    setOpenSections(new Set(courseGroups.flatMap((c) => collectSectionKeys(c.sections))));
+  }
+
+  function collapseAll() {
+    setOpenCourses(new Set());
+    setOpenSections(new Set());
   }
 
   return (
     <div className="w-full max-w-[110rem] space-y-8 pb-12">
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Import progress (programmes)</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Legacy <code className="text-xs">hasVideo</code> vs in-app video, lesson content, and
-          transcripts on each lesson.
-        </p>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <dt className="text-xs text-slate-500">Lessons</dt>
-            <dd className="text-lg font-semibold text-slate-900">{summary.lessonCount}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-slate-500">Video in app</dt>
-            <dd className="text-lg font-semibold text-emerald-700">{summary.inAppVideoCount}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-slate-500">Missing video</dt>
-            <dd className="text-lg font-semibold text-rose-700">{summary.missingVideoCount}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-slate-500">Missing content</dt>
-            <dd className="text-lg font-semibold text-amber-700">{summary.missingContentCount}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-slate-500">Missing transcript</dt>
-            <dd className="text-lg font-semibold text-amber-700">
-              {summary.missingTranscriptCount}
-            </dd>
-          </div>
-        </dl>
-        <p className="mt-4 text-xs text-slate-500">
-          <Check className="mr-1 inline h-3.5 w-3.5 text-emerald-600" aria-hidden />
-          ready ·
-          <X className="mx-1 inline h-3.5 w-3.5 text-rose-600" aria-hidden />
-          missing ·
-          <Minus className="mx-1 inline h-3.5 w-3.5 text-slate-300" aria-hidden />
-          not applicable
-        </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <Scorecard label="Lessons" value={summary.lessonCount} />
+        <Scorecard label="Ready" value={summary.readyCount} tone="good" />
+        <Scorecard label="Video in app" value={summary.inAppVideoCount} tone="good" />
+        <Scorecard label="Missing video" value={summary.missingVideoCount} tone="bad" />
+        <Scorecard label="Missing content" value={summary.missingContentCount} tone="warn" />
+        <Scorecard
+          label="Missing transcript"
+          value={summary.missingTranscriptCount}
+          tone="warn"
+        />
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <p className="text-xs text-slate-500">
+        <Check className="mr-1 inline h-3.5 w-3.5 text-emerald-600" aria-hidden />
+        ready ·
+        <X className="mx-1 inline h-3.5 w-3.5 text-rose-600" aria-hidden />
+        missing ·
+        <Minus className="mx-1 inline h-3.5 w-3.5 text-slate-300" aria-hidden />
+        not applicable
+      </p>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
           <div>
             <label htmlFor="import-filter" className="block text-xs font-medium text-slate-600">
@@ -329,7 +452,7 @@ export function AdminAcademyImportStatus({
           </div>
           <div>
             <label htmlFor="course-filter" className="block text-xs font-medium text-slate-600">
-              Programme
+              Course
             </label>
             <select
               id="course-filter"
@@ -337,7 +460,7 @@ export function AdminAcademyImportStatus({
               onChange={(e) => setCourseFilter(e.target.value)}
               className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
             >
-              <option value="all">All programmes</option>
+              <option value="all">All courses</option>
               {courses.map(([id, title]) => (
                 <option key={id} value={id}>
                   {title}
@@ -352,17 +475,19 @@ export function AdminAcademyImportStatus({
           >
             Expand all
           </button>
+          <button
+            type="button"
+            onClick={collapseAll}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Collapse all
+          </button>
           <p className="ml-auto text-sm text-slate-500">{filteredLessonCount} lessons</p>
         </div>
 
-        <div className="hidden border-b border-slate-100 bg-slate-50/80 px-4 py-2 sm:grid sm:grid-cols-[1fr_auto] sm:items-center sm:gap-3">
-          <span className="pl-12 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Lesson
-          </span>
-          <LessonImportStatusHeader />
-        </div>
+        <TableStatusHeader />
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-200">
           {courseGroups.map((course) => {
             const courseOpen = openCourses.has(course.courseId);
             return (
@@ -370,7 +495,7 @@ export function AdminAcademyImportStatus({
                 <button
                   type="button"
                   onClick={() => toggleCourse(course.courseId)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-slate-50/80"
+                  className="flex w-full items-center justify-between gap-3 bg-slate-50/90 px-3 py-3.5 text-left hover:bg-slate-100/80"
                   aria-expanded={courseOpen}
                 >
                   <span className="flex min-w-0 items-center gap-2">
@@ -382,68 +507,27 @@ export function AdminAcademyImportStatus({
                     />
                     <span className="font-semibold text-slate-900">{course.courseTitle}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-slate-500">
+                  <span className="shrink-0 text-xs tabular-nums text-slate-500">
                     {course.lessonCount} lessons
                     {course.gapCount > 0 ? (
-                      <span className="ml-2 font-medium text-rose-600">{course.gapCount} gaps</span>
+                      <span className="ml-2 font-medium text-rose-600">
+                        {course.gapCount} gaps
+                      </span>
                     ) : null}
                   </span>
                 </button>
 
                 {courseOpen ? (
-                  <div className="border-t border-slate-100 bg-slate-50/50">
-                    {course.sections.map((section) => {
-                      const secOpen = openSections.has(section.sectionKey);
-                      return (
-                        <div key={section.sectionKey} className="border-b border-slate-100 last:border-0">
-                          <button
-                            type="button"
-                            onClick={() => toggleSection(section.sectionKey)}
-                            className="flex w-full items-center justify-between gap-3 py-2.5 pl-8 pr-4 text-left hover:bg-white/60"
-                            aria-expanded={secOpen}
-                          >
-                            <span className="flex min-w-0 items-center gap-2">
-                              <ChevronDown
-                                className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
-                                  secOpen ? "rotate-180" : ""
-                                }`}
-                                aria-hidden
-                              />
-                              <span className="text-sm font-medium text-slate-800">
-                                {section.sectionTitle}
-                              </span>
-                            </span>
-                            <span className="text-xs text-slate-500">
-                              {section.lessons.length} lessons
-                              {section.gapCount > 0 ? (
-                                <span className="ml-2 font-medium text-rose-600">
-                                  {section.gapCount} gaps
-                                </span>
-                              ) : null}
-                            </span>
-                          </button>
-
-                          {secOpen ? (
-                            <ul className="space-y-0 bg-white pb-2">
-                              {section.lessons.map((row) => (
-                                <li
-                                  key={row.lessonId}
-                                  className="grid grid-cols-1 items-center gap-2 border-t border-slate-50 py-2.5 pl-16 pr-4 hover:bg-slate-50/50 sm:grid-cols-[1fr_auto] sm:gap-3"
-                                >
-                                  <Link
-                                    href={row.adminLessonHref}
-                                    className="min-w-0 text-sm font-normal text-slate-700 hover:text-sky-800"
-                                  >
-                                    {row.lessonTitle}
-                                  </Link>
-                                  <LessonImportStatusColumns row={row} />
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
-                        </div>
-                      );
-                    })}
+                  <div className="bg-white">
+                    {course.sections.map((section) => (
+                      <SectionTree
+                        key={section.sectionKey}
+                        section={section}
+                        depth={0}
+                        openSections={openSections}
+                        toggleSection={toggleSection}
+                      />
+                    ))}
                   </div>
                 ) : null}
               </div>
@@ -563,100 +647,104 @@ export function AdminAcademyImportStatus({
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-2.5">Confirm</th>
-                  <th className="px-3 py-2.5">Kind</th>
-                  <th className="px-3 py-2.5">Score</th>
-                  <th className="px-3 py-2.5">Doc title</th>
-                  <th className="px-3 py-2.5">Lesson selection</th>
-                  <th className="px-3 py-2.5">Candidates</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {bodyImportUnresolved.map((row) => (
-                  <tr key={`${row.sourceFile}:${row.sourceLine}:${row.title}`} className="align-top">
-                    <td className="whitespace-nowrap px-3 py-2.5">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-slate-300 text-sky-600"
-                        checked={Boolean(bodySelections[bodyRowKey(row)]?.confirmed)}
-                        onChange={(e) => {
-                          const rowKey = bodyRowKey(row);
-                          setBodySelections((prev) => ({
-                            ...prev,
-                            [rowKey]: {
-                              lessonKey: prev[rowKey]?.lessonKey ?? defaultBodySelections[rowKey] ?? "",
-                              confirmed: e.target.checked,
-                            },
-                          }));
-                        }}
-                      />
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5">
-                      <span
-                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                          row.kind === "ambiguous"
-                            ? "bg-amber-50 text-amber-900"
-                            : "bg-rose-50 text-rose-800"
-                        }`}
-                      >
-                        {row.kind}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
-                      {Math.round(row.score * 100)}%
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <p className="font-medium text-slate-900">{row.title}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {row.sourceFile}:{row.sourceLine}
-                      </p>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <select
-                        value={bodySelections[bodyRowKey(row)]?.lessonKey ?? defaultBodySelections[bodyRowKey(row)] ?? ""}
-                        onChange={(e) => {
-                          const rowKey = bodyRowKey(row);
-                          setBodySelections((prev) => ({
-                            ...prev,
-                            [rowKey]: {
-                              lessonKey: e.target.value,
-                              confirmed: false,
-                            },
-                          }));
-                        }}
-                        className="w-full min-w-[18rem] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
-                      >
-                        <option value="">Select lesson…</option>
-                        {lessonOptionGroups.map((group) => (
-                          <optgroup key={group.label} label={group.label}>
-                            {group.options.map((option) => (
-                              <option key={option.key} value={option.key}>
-                                {option.title}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-slate-700">
-                      {row.candidates?.length ? (
-                        row.candidates.map((c) => (
-                          <p key={`${row.title}:${c.lessonId}`}>
-                            {Math.round(c.score * 100)}% · <code>{c.lessonId}</code>
-                          </p>
-                        ))
-                      ) : (
-                        <span className="text-slate-400">No candidate</span>
-                      )}
-                    </td>
+              <table className="w-full divide-y divide-slate-200 text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2.5">Confirm</th>
+                    <th className="px-3 py-2.5">Kind</th>
+                    <th className="px-3 py-2.5">Score</th>
+                    <th className="px-3 py-2.5">Doc title</th>
+                    <th className="px-3 py-2.5">Lesson selection</th>
+                    <th className="px-3 py-2.5">Candidates</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {bodyImportUnresolved.map((row) => (
+                    <tr key={`${row.sourceFile}:${row.sourceLine}:${row.title}`} className="align-top">
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300 text-sky-600"
+                          checked={Boolean(bodySelections[bodyRowKey(row)]?.confirmed)}
+                          onChange={(e) => {
+                            const rowKey = bodyRowKey(row);
+                            setBodySelections((prev) => ({
+                              ...prev,
+                              [rowKey]: {
+                                lessonKey: prev[rowKey]?.lessonKey ?? defaultBodySelections[rowKey] ?? "",
+                                confirmed: e.target.checked,
+                              },
+                            }));
+                          }}
+                        />
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            row.kind === "ambiguous"
+                              ? "bg-amber-50 text-amber-900"
+                              : "bg-rose-50 text-rose-800"
+                          }`}
+                        >
+                          {row.kind}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
+                        {Math.round(row.score * 100)}%
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <p className="font-medium text-slate-900">{row.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {row.sourceFile}:{row.sourceLine}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <select
+                          value={
+                            bodySelections[bodyRowKey(row)]?.lessonKey ??
+                            defaultBodySelections[bodyRowKey(row)] ??
+                            ""
+                          }
+                          onChange={(e) => {
+                            const rowKey = bodyRowKey(row);
+                            setBodySelections((prev) => ({
+                              ...prev,
+                              [rowKey]: {
+                                lessonKey: e.target.value,
+                                confirmed: false,
+                              },
+                            }));
+                          }}
+                          className="w-full min-w-[18rem] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
+                        >
+                          <option value="">Select lesson…</option>
+                          {lessonOptionGroups.map((group) => (
+                            <optgroup key={group.label} label={group.label}>
+                              {group.options.map((option) => (
+                                <option key={option.key} value={option.key}>
+                                  {option.title}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs text-slate-700">
+                        {row.candidates?.length ? (
+                          row.candidates.map((c) => (
+                            <p key={`${row.title}:${c.lessonId}`}>
+                              {Math.round(c.score * 100)}% · <code>{c.lessonId}</code>
+                            </p>
+                          ))
+                        ) : (
+                          <span className="text-slate-400">No candidate</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

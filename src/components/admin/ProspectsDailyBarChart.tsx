@@ -14,6 +14,15 @@ import {
   formatProspectLabel,
   formatProspectPersonName,
 } from "@/lib/prospectDisplayFormat";
+import {
+  emptyProspectSourceTotals,
+  PROSPECT_SOURCE_ACCENT,
+  PROSPECT_SOURCE_CHART_STACK_ORDER,
+  prospectSourceKindChartClass,
+  prospectSourceKindLabel,
+  resolveProspectSourceKind,
+  type ProspectSourceKind,
+} from "@/lib/prospectSourceKind";
 
 export type ProspectForChart = {
   id: string;
@@ -23,18 +32,26 @@ export type ProspectForChart = {
   coach_name?: string | null;
   coach_business_name?: string | null;
   created_at?: string | null;
+  prospect_funnel?: string | null;
+  linkedin_url?: string | null;
 };
 
 export type ProspectDayBucket = {
   key: string;
   label: string;
   count: number;
+  bySource: Record<ProspectSourceKind, { count: number }>;
 };
 
 type CoachProspectGroup = {
   key: string;
   coachLabel: string;
   prospects: Array<{ id: string; displayName: string }>;
+};
+
+type ChartHover = {
+  dayKey: string;
+  source?: ProspectSourceKind;
 };
 
 type ChartRange = "7" | "14" | "30" | "90";
@@ -113,6 +130,29 @@ function coachDisplayLabel(prospect: ProspectForChart): string {
   );
 }
 
+function visibleBucketCount(
+  bucket: ProspectDayBucket,
+  hiddenSources: Set<ProspectSourceKind>
+): number {
+  return PROSPECT_SOURCE_CHART_STACK_ORDER.reduce(
+    (sum, kind) =>
+      hiddenSources.has(kind) ? sum : sum + bucket.bySource[kind].count,
+    0
+  );
+}
+
+function sourceBreakdownLines(
+  bucket: ProspectDayBucket,
+  hiddenSources: Set<ProspectSourceKind>
+): string[] {
+  return PROSPECT_SOURCE_CHART_STACK_ORDER.filter(
+    (kind) => !hiddenSources.has(kind) && bucket.bySource[kind].count > 0
+  ).map(
+    (kind) =>
+      `${prospectSourceKindLabel(kind)}: ${bucket.bySource[kind].count}`
+  );
+}
+
 export function buildProspectsByDayKey(
   prospects: ProspectForChart[]
 ): Map<string, ProspectForChart[]> {
@@ -122,6 +162,25 @@ export function buildProspectsByDayKey(
     if (!prospect.created_at) continue;
     const key = dayKeyFromIso(prospect.created_at);
     if (!key) continue;
+    const list = map.get(key) ?? [];
+    list.push(prospect);
+    map.set(key, list);
+  }
+
+  return map;
+}
+
+export function buildProspectsByDayAndSource(
+  prospects: ProspectForChart[]
+): Map<string, ProspectForChart[]> {
+  const map = new Map<string, ProspectForChart[]>();
+
+  for (const prospect of prospects) {
+    if (!prospect.created_at) continue;
+    const dayKey = dayKeyFromIso(prospect.created_at);
+    if (!dayKey) continue;
+    const source = resolveProspectSourceKind(prospect);
+    const key = `${dayKey}:${source}`;
     const list = map.get(key) ?? [];
     list.push(prospect);
     map.set(key, list);
@@ -161,24 +220,48 @@ export function buildProspectDailyBuckets(
   prospects: ProspectForChart[],
   rangeDays: number
 ): ProspectDayBucket[] {
-  const countByDay = new Map<string, number>();
+  const countByDay = new Map<string, ProspectDayBucket>();
 
   for (const prospect of prospects) {
     if (!prospect.created_at) continue;
     const key = dayKeyFromIso(prospect.created_at);
     if (!key) continue;
-    countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
+    const source = resolveProspectSourceKind(prospect);
+    const existing = countByDay.get(key);
+    if (existing) {
+      existing.count += 1;
+      existing.bySource[source].count += 1;
+      continue;
+    }
+    const bySource = emptyProspectSourceTotals();
+    bySource[source].count = 1;
+    countByDay.set(key, {
+      key,
+      label: dayLabelFromKey(key),
+      count: 1,
+      bySource,
+    });
   }
 
   const endKey = todayDayKey();
   const startKey = addDaysToKey(endKey, -(rangeDays - 1));
   const compact = rangeDays >= 30;
 
-  return dayKeysBetween(startKey, endKey).map((key) => ({
-    key,
-    label: dayLabelFromKey(key, compact),
-    count: countByDay.get(key) ?? 0,
-  }));
+  return dayKeysBetween(startKey, endKey).map((key) => {
+    const existing = countByDay.get(key);
+    if (existing) {
+      return {
+        ...existing,
+        label: dayLabelFromKey(key, compact),
+      };
+    }
+    return {
+      key,
+      label: dayLabelFromKey(key, compact),
+      count: 0,
+      bySource: emptyProspectSourceTotals(),
+    };
+  });
 }
 
 function niceAxisMaxCount(max: number): number {
@@ -202,6 +285,8 @@ function valueToBottomPx(value: number, axisMax: number): number {
 
 function DayBarPopover({
   dayLabel,
+  sourceLabel,
+  accentColor,
   groups,
   isActive,
   onOpenChange,
@@ -209,6 +294,8 @@ function DayBarPopover({
   className = "",
 }: {
   dayLabel: string;
+  sourceLabel?: string;
+  accentColor?: string;
   groups: CoachProspectGroup[];
   isActive: boolean;
   onOpenChange: (open: boolean) => void;
@@ -296,12 +383,17 @@ function DayBarPopover({
         onMouseEnter={show}
         onMouseLeave={scheduleHide}
       >
-        <div className="h-2.5 w-full bg-sky-500" aria-hidden />
+        <div
+          className="h-2.5 w-full"
+          style={{ backgroundColor: accentColor ?? "#0ea5e9" }}
+          aria-hidden
+        />
         <div className="px-3 py-2.5">
           <p className="text-sm font-semibold leading-tight text-slate-900">
             {dayLabel}
           </p>
           <p className="mt-0.5 text-[11px] text-slate-500">
+            {sourceLabel ? `${sourceLabel} · ` : ""}
             {prospectCount} prospect{prospectCount === 1 ? "" : "s"} ·{" "}
             {groups.length} coach{groups.length === 1 ? "" : "es"}
           </p>
@@ -365,12 +457,15 @@ type Props = {
 
 export function ProspectsDailyBarChart({ prospects, loading }: Props) {
   const [range, setRange] = useState<ChartRange>("30");
-  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const [hover, setHover] = useState<ChartHover | null>(null);
+  const [hiddenSources, setHiddenSources] = useState<Set<ProspectSourceKind>>(
+    () => new Set()
+  );
 
   const rangeDays = Number(range);
 
-  const prospectsByDay = useMemo(
-    () => buildProspectsByDayKey(prospects),
+  const prospectsByDayAndSource = useMemo(
+    () => buildProspectsByDayAndSource(prospects),
     [prospects]
   );
 
@@ -380,16 +475,24 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
   );
 
   const maxValue = useMemo(
-    () => Math.max(...buckets.map((b) => b.count), 0),
-    [buckets]
+    () =>
+      Math.max(
+        ...buckets.map((b) => visibleBucketCount(b, hiddenSources)),
+        0
+      ),
+    [buckets, hiddenSources]
   );
 
   const axisMax = useMemo(() => niceAxisMaxCount(maxValue), [maxValue]);
   const yTicks = useMemo(() => buildYAxisTicks(axisMax, 4), [axisMax]);
 
   const periodTotal = useMemo(
-    () => buckets.reduce((sum, b) => sum + b.count, 0),
-    [buckets]
+    () =>
+      buckets.reduce(
+        (sum, b) => sum + visibleBucketCount(b, hiddenSources),
+        0
+      ),
+    [buckets, hiddenSources]
   );
 
   const prospectsWithDate = useMemo(
@@ -397,9 +500,99 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
     [prospects]
   );
 
-  const hoveredDay = buckets.find((b) => b.key === hoveredKey) ?? null;
+  const hoveredDay = hover
+    ? buckets.find((b) => b.key === hover.dayKey) ?? null
+    : null;
 
   const showEveryNthLabel = rangeDays >= 90 ? 7 : rangeDays >= 30 ? 3 : 1;
+
+  const toggleSourceVisibility = useCallback((kind: ProspectSourceKind) => {
+    setHiddenSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
+  }, []);
+
+  const renderBarColumn = (bucket: ProspectDayBucket) => {
+    const visibleCount = visibleBucketCount(bucket, hiddenSources);
+    const barHeightPx = Math.max(
+      visibleCount > 0 ? 2 : 0,
+      valueToBottomPx(visibleCount, axisMax)
+    );
+    const breakdownTitle = sourceBreakdownLines(bucket, hiddenSources).join("\n");
+
+    return (
+      <div
+        key={bucket.key}
+        className="flex min-w-0 flex-1 flex-col items-center justify-end"
+        onMouseLeave={() => setHover(null)}
+      >
+        {visibleCount > 0 ? (
+          <span
+            className={`mb-0.5 max-w-full truncate px-0.5 text-center text-[9px] font-semibold leading-tight sm:text-[10px] ${
+              hover?.dayKey === bucket.key ? "text-slate-900" : "text-slate-700"
+            }`}
+            title={breakdownTitle || undefined}
+            onMouseEnter={() => setHover({ dayKey: bucket.key })}
+          >
+            {visibleCount}
+          </span>
+        ) : (
+          <span className="mb-0.5 h-[14px]" aria-hidden />
+        )}
+        <div
+          className="flex w-full max-w-[2.75rem] flex-col justify-end overflow-hidden rounded-t-sm"
+          style={{ height: barHeightPx }}
+          title={breakdownTitle || undefined}
+        >
+          {PROSPECT_SOURCE_CHART_STACK_ORDER.map((kind) => {
+            if (hiddenSources.has(kind)) return null;
+            const segment = bucket.bySource[kind];
+            if (segment.count <= 0) return null;
+            const segmentHeightPx = Math.max(
+              1,
+              valueToBottomPx(segment.count, axisMax)
+            );
+            const segmentProspects =
+              prospectsByDayAndSource.get(`${bucket.key}:${kind}`) ?? [];
+            const coachGroups = groupProspectsByCoach(segmentProspects);
+            const isSegmentHovered =
+              hover?.dayKey === bucket.key && hover.source === kind;
+
+            return (
+              <div
+                key={kind}
+                className="w-full"
+                style={{ height: segmentHeightPx }}
+              >
+                <DayBarPopover
+                  dayLabel={dayLabelFromKey(bucket.key)}
+                  sourceLabel={prospectSourceKindLabel(kind)}
+                  accentColor={PROSPECT_SOURCE_ACCENT[kind]}
+                  groups={coachGroups}
+                  isActive={isSegmentHovered}
+                  onOpenChange={(open) =>
+                    setHover(open ? { dayKey: bucket.key, source: kind } : null)
+                  }
+                >
+                  <div
+                    className={`h-full w-full ${prospectSourceKindChartClass(kind)} ${
+                      isSegmentHovered ? "opacity-100" : "opacity-90"
+                    }`}
+                    onMouseEnter={() =>
+                      setHover({ dayKey: bucket.key, source: kind })
+                    }
+                  />
+                </DayBarPopover>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -414,22 +607,65 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
             {prospectsWithDate.length === 1 ? "" : "s"} with a date).
             {hoveredDay ? (
               <span className="ml-1 font-medium text-slate-800">
-                {hoveredDay.label}: {hoveredDay.count} new
+                {hoveredDay.label}:{" "}
+                {visibleBucketCount(hoveredDay, hiddenSources)} new
+                {hover?.source
+                  ? ` (${prospectSourceKindLabel(hover.source)})`
+                  : ""}
               </span>
             ) : null}
           </p>
+          {hoveredDay && !hover?.source ? (
+            <ul className="mt-1 space-y-0.5 text-xs text-slate-600">
+              {sourceBreakdownLines(hoveredDay, hiddenSources).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
-        <select
-          value={range}
-          onChange={(e) => setRange(e.target.value as ChartRange)}
-          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
-          aria-label="Day range"
-        >
-          <option value="7">Last 7 days</option>
-          <option value="14">Last 14 days</option>
-          <option value="30">Last 30 days</option>
-          <option value="90">Last 90 days</option>
-        </select>
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <div
+            className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600"
+            role="group"
+            aria-label="Prospect source legend"
+          >
+            {PROSPECT_SOURCE_CHART_STACK_ORDER.map((kind) => {
+              const isHidden = hiddenSources.has(kind);
+              return (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => toggleSourceVisibility(kind)}
+                  aria-pressed={!isHidden}
+                  className={`inline-flex items-center gap-1.5 rounded px-1 py-0.5 transition-colors hover:bg-slate-100 ${
+                    isHidden
+                      ? "text-slate-400 line-through"
+                      : "text-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-2.5 w-2.5 rounded-sm ${prospectSourceKindChartClass(kind)} ${
+                      isHidden ? "opacity-30" : ""
+                    }`}
+                    aria-hidden
+                  />
+                  {prospectSourceKindLabel(kind)}
+                </button>
+              );
+            })}
+          </div>
+          <select
+            value={range}
+            onChange={(e) => setRange(e.target.value as ChartRange)}
+            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-900"
+            aria-label="Day range"
+          >
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -448,7 +684,7 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
           <div
             className="mt-4 flex gap-2"
             role="img"
-            aria-label="Daily new prospect counts"
+            aria-label="Daily new prospect counts stacked by source"
           >
             <div
               className="flex shrink-0 flex-col justify-between pr-1 text-right"
@@ -482,66 +718,13 @@ export function ProspectsDailyBarChart({ prospects, loading }: Props) {
                 })}
 
                 <div className="absolute inset-0 flex items-end gap-px px-0.5 sm:gap-1 sm:px-1">
-                  {buckets.map((bucket) => {
-                    const value = bucket.count;
-                    const barHeightPx = Math.max(
-                      value > 0 ? 2 : 0,
-                      valueToBottomPx(value, axisMax)
-                    );
-                    const isHovered = hoveredKey === bucket.key;
-                    const dayProspects = prospectsByDay.get(bucket.key) ?? [];
-                    const coachGroups = groupProspectsByCoach(dayProspects);
-
-                    const bar = (
-                      <>
-                        {value > 0 ? (
-                          <span
-                            className={`mb-0.5 max-w-full truncate px-0.5 text-center text-[9px] font-semibold leading-tight sm:text-[10px] ${
-                              isHovered ? "text-slate-900" : "text-slate-700"
-                            }`}
-                          >
-                            {value}
-                          </span>
-                        ) : (
-                          <span className="mb-0.5 h-[14px]" aria-hidden />
-                        )}
-                        <div
-                          className={`w-full rounded-t-sm bg-sky-500 ${
-                            isHovered ? "opacity-100" : "opacity-90"
-                          }`}
-                          style={{ height: barHeightPx }}
-                        />
-                      </>
-                    );
-
-                    return (
-                      <div
-                        key={bucket.key}
-                        className="flex min-w-0 flex-1 flex-col items-center justify-end"
-                      >
-                        {value > 0 ? (
-                          <DayBarPopover
-                            dayLabel={dayLabelFromKey(bucket.key)}
-                            groups={coachGroups}
-                            isActive={isHovered}
-                            onOpenChange={(open) =>
-                              setHoveredKey(open ? bucket.key : null)
-                            }
-                          >
-                            {bar}
-                          </DayBarPopover>
-                        ) : (
-                          bar
-                        )}
-                      </div>
-                    );
-                  })}
+                  {buckets.map((bucket) => renderBarColumn(bucket))}
                 </div>
               </div>
 
               <div className="mt-1 flex gap-px px-0.5 sm:gap-1 sm:px-1">
                 {buckets.map((bucket, index) => {
-                  const isHovered = hoveredKey === bucket.key;
+                  const isHovered = hover?.dayKey === bucket.key;
                   const showLabel =
                     index % showEveryNthLabel === 0 ||
                     index === buckets.length - 1;
