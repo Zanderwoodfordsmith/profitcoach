@@ -20,6 +20,7 @@ import {
   ProfileMinimalTextarea,
   ProfileSectionCard,
 } from "@/components/settings/ProfileFormLayout";
+import { ProfileVoiceCard } from "@/components/settings/ProfileVoiceCard";
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
 import { MyLadderTab } from "@/components/compass/MyLadderTab";
 import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
@@ -564,6 +565,14 @@ export function BossDashboardSettings({
             />
           }
         />
+
+        {/* Admin-only for now; visible when impersonating so you can QA coach UX (e.g. Pam). */}
+        {variant === "admin" || impersonatingCoachId ? (
+          <ProfileVoiceCard
+            impersonatingCoachId={impersonatingCoachId}
+            profileRevision={`${firstName}|${lastName}|${location}|${profile.full_name ?? ""}`}
+          />
+        ) : null}
 
         <ProfileSectionCard title="Community">
           <ProfileFieldRow label="LinkedIn" htmlFor="linkedin_url" alignTop>
