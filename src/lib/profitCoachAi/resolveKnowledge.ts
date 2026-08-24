@@ -52,10 +52,12 @@ function expandRefToFiles(ref: KnowledgeRef): string[] {
 
 /**
  * Load markdown/CSV text for knowledge refs; caps total characters.
+ * `overrides` (Admin → Brand → Core brain) replace file content by filename.
  */
 export function resolveKnowledgeRefs(
   refs: KnowledgeRef[],
-  maxChars: number = DEFAULT_MAX_CHARS
+  maxChars: number = DEFAULT_MAX_CHARS,
+  overrides?: Record<string, string> | null
 ): string {
   const seen = new Set<string>();
   const parts: string[] = [];
@@ -66,7 +68,11 @@ export function resolveKnowledgeRefs(
     for (const file of files) {
       if (seen.has(file)) continue;
       seen.add(file);
-      let body = fs.readFileSync(file, "utf8");
+      const override =
+        ref.type === "ai-knowledge" || ref.type === "legacy-knowledge"
+          ? overrides?.[path.basename(file)]
+          : undefined;
+      let body = override ?? fs.readFileSync(file, "utf8");
       const rel = path.relative(ROOT, file);
       if (file.endsWith(".csv")) {
         if (body.length > MAX_CSV_CHARS) {

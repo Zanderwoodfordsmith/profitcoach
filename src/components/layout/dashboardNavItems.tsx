@@ -4,7 +4,10 @@ import {
   CalendarDays,
   FileDown,
   LayoutGrid,
+  ListTodo,
   MessagesSquare,
+  Newspaper,
+  Palette,
   PhoneCall,
   Rocket,
   Sparkles,
@@ -78,6 +81,18 @@ function IconArchive({ className }: { className?: string }) {
 
 function IconLessonImport({ className }: { className?: string }) {
   return <FileDown className={className} />;
+}
+
+function IconRoadmap({ className }: { className?: string }) {
+  return <ListTodo className={className} />;
+}
+
+function IconBrand({ className }: { className?: string }) {
+  return <Palette className={className} />;
+}
+
+function IconBlog({ className }: { className?: string }) {
+  return <Newspaper className={className} />;
 }
 
 function IconUsers({ className }: { className?: string }) {
@@ -284,7 +299,7 @@ export type CoachClientsTabItem = {
 /**
  * Get Clients peer tabs — GHL-style order:
  * Conversations → Calendar → Prospects → Pipeline → Content → …
- * Infrequent setup / AI writers live under Create.
+ * Create tools live in Profit Coach AI (fullscreen Create tab).
  */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
   const items: ToolsHubTabItem[] = [
@@ -306,11 +321,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
   }
   items.push(
     { href: `${prefix}/boss-pro`, label: "Boss Pro" },
-    {
-      href: `${prefix}/message-generator`,
-      label: "Create",
-      adminPreview: true,
-    },
     {
       href:
         prefix === "/admin"
@@ -343,13 +353,10 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
   return Array.from(new Set(paths));
 }
 
-/** Content tab stays active on planner + newsletter. */
+/** Content tab is the LinkedIn planner. */
 export function isGetClientsContentPath(pathname: string | null): boolean {
   if (!pathname) return false;
-  return (
-    pathMatches(pathname, "/admin/linkedin") ||
-    pathMatches(pathname, "/admin/newsletter")
-  );
+  return pathMatches(pathname, "/admin/linkedin");
 }
 
 /** Create tab stays active on writers / setup tools (not Content). */
@@ -358,6 +365,7 @@ export function isGetClientsCreatePath(pathname: string | null): boolean {
   return (
     pathMatches(pathname, "/coach/message-generator") ||
     pathMatches(pathname, "/admin/message-generator") ||
+    pathMatches(pathname, "/admin/newsletter") ||
     pathMatches(pathname, "/coach/first-campaign") ||
     pathMatches(pathname, "/admin/first-campaign") ||
     pathMatches(pathname, "/coach/ideal-client") ||
@@ -485,6 +493,21 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     label: "Tools and links",
     icon: IconSiteTools,
     toolkitHub: true,
+  },
+  {
+    href: "/admin/roadmap",
+    label: "Roadmap",
+    icon: IconRoadmap,
+  },
+  {
+    href: "/admin/brand",
+    label: "Brand",
+    icon: IconBrand,
+  },
+  {
+    href: "/admin/blog",
+    label: "Blog",
+    icon: IconBlog,
   },
   {
     href: "/admin/lesson-import",

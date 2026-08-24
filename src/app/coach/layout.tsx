@@ -5,12 +5,15 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { Sparkles } from "lucide-react";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
+import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
+import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
@@ -174,7 +177,33 @@ export default function CoachLayout({
   const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
   const playbooksReader = fullBleed;
   const sidebarVisible = sidebarOpen && !playbooksReader;
-  const shellPadClass = sidebarVisible ? "md:pl-56" : "pl-0";
+
+  /**
+   * Docked AI panel (admin preview). ClickUp-style: pushes the canvas from
+   * the right instead of overlaying it; can expand to full screen.
+   */
+  const { profile: viewerProfile, profileLoading } = useDashboardProfile();
+  const aiPanelAvailable = viewerProfile?.role === "admin";
+  const showAiSparkles = profileLoading || aiPanelAvailable;
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [aiPanelFullscreen, setAiPanelFullscreen] = useState(false);
+  useEffect(() => {
+    setAiPanelOpen(window.localStorage.getItem("coach-ai-panel-open") === "1");
+  }, []);
+  const setAiOpen = (open: boolean) => {
+    setAiPanelOpen(open);
+    if (!open) setAiPanelFullscreen(false);
+    try {
+      window.localStorage.setItem("coach-ai-panel-open", open ? "1" : "0");
+    } catch {
+      /* noop */
+    }
+  };
+  const aiPanelDocked = aiPanelAvailable && aiPanelOpen && !aiPanelFullscreen;
+
+  const shellPadClass = `${sidebarVisible ? "md:pl-56" : "pl-0"} ${
+    aiPanelDocked ? "md:pr-[28rem]" : ""
+  } transition-[padding] duration-200`;
   const topClusterMaxW = sidebarVisible
     ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-15rem)]"
     : "max-w-[calc(100vw-1.5rem)]";
@@ -200,7 +229,8 @@ export default function CoachLayout({
 
   return (
     <div
-      className={`min-h-screen overflow-x-hidden ${shellPadClass} text-slate-900 ${
+      data-ai-docked={aiPanelDocked ? true : undefined}
+      className={`group/appshell min-h-screen overflow-x-hidden ${shellPadClass} text-slate-900 ${
         membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
     >
@@ -300,6 +330,24 @@ export default function CoachLayout({
                   }
                   className="!static !right-auto !top-auto z-0 shrink-0"
                 />
+                {showAiSparkles ? (
+                  <button
+                    type="button"
+                    aria-label={
+                      aiPanelOpen ? "Close AI panel" : "Open AI panel"
+                    }
+                    title="Profit Coach AI"
+                    disabled={profileLoading}
+                    onClick={() => setAiOpen(!aiPanelOpen)}
+                    className={`rounded-full p-2 transition disabled:cursor-wait disabled:opacity-60 ${
+                      aiPanelOpen
+                        ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
+                        : "bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Sparkles className="h-6 w-6" />
+                  </button>
+                ) : null}
               </div>
             {isImpersonatingCoach ? (
               <div
@@ -376,6 +424,15 @@ export default function CoachLayout({
         </main>
       </BossWorkshopChromeContext.Provider>
       <SalesNavImportToast />
+      {aiPanelAvailable && aiPanelOpen ? (
+        <CoachAiPanel
+          onClose={() => setAiOpen(false)}
+          fullscreen={aiPanelFullscreen}
+          onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
+          createHubHref="/admin/message-generator"
+          sidebarVisible={sidebarVisible}
+        />
+      ) : null}
     </div>
   );
 }

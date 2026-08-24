@@ -1,0 +1,22 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/profitCoachAi/CoachAiPanel.tsx"
+        ],
+        "createdAt": "2026-08-22T13:24:01.678Z",
+        "reason": "False positive: base text-slate-600 pairs with hover:bg-sky-50, but hover also sets hover:text-sky-900 so gray text never renders on the sky background; detector cannot correlate hover: variants"
+      },
+      {
+        "rule": "src/app/admin/brand/page.tsx",
+        "value": "734 gray-on-color delete button sits on white card footer below image, not on photo",
+        "createdAt": "2026-08-23T06:18:45.223Z"
+      }
+    ]
+  }
+}

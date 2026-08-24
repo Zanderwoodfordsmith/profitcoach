@@ -15,14 +15,24 @@ const ROUTER_PATH = path.join(
 );
 const ROUTER_MAX_CHARS = 6_000;
 
+/**
+ * Always-loaded brand canon, synced from Drive (_brand/Profit Coach) via
+ * scripts/sync-brand-knowledge-from-drive.ts; DB overrides win where set.
+ */
 const BRAND_FILES_TIER1 = [
-  "brand-core-methodology.md",
-  "brand-icp-compact.md",
-  "brand-business-profile.md",
-  "brand-voice-interim.md",
+  "methodology.md",
+  "icp.md",
+  "business-profile.md",
+  "brand-voice.md",
+  "offer-stack.md",
+  "writing-rules.md",
 ] as const;
 
-const MARKETING_ICP_TIER2 = "icp-deep-dive-marketing.md";
+/** Loaded for outward-facing copy skills (useMarketingIcpTier2). */
+const MARKETING_TIER2_FILES = [
+  "avatar-profile.md",
+  "copywriter-knowledge.md",
+] as const;
 
 export type AssembleProfitCoachPromptArgs = {
   outputId: string;
@@ -30,22 +40,41 @@ export type AssembleProfitCoachPromptArgs = {
   playbookExcerptText: string;
   brain: CoachAiContext | null | undefined;
   compassContext: string;
+  /** One-line "where the coach is right now" from the docked panel. */
+  screenContext?: string | null;
+  /**
+   * DB overrides for brand knowledge files (Admin → Brand → Canon),
+   * keyed by filename. Falls back to repo files when absent.
+   */
+  brandOverrides?: Record<string, string> | null;
 };
 
-function readCapped(filePath: string, max: number): string {
-  const raw = fs.readFileSync(filePath, "utf8");
+function capText(raw: string, max: number): string {
   if (raw.length <= max) return raw;
   return raw.slice(0, max) + "\n\n[Truncated.]";
 }
 
-function loadRouterMarkdown(): string {
+function readCapped(filePath: string, max: number): string {
+  return capText(fs.readFileSync(filePath, "utf8"), max);
+}
+
+function loadRouterMarkdown(
+  overrides?: Record<string, string> | null
+): string {
+  const override = overrides?.["PROFIT_COACH_AI_ROUTER.md"];
+  if (override) return capText(override, ROUTER_MAX_CHARS);
   return readCapped(ROUTER_PATH, ROUTER_MAX_CHARS);
 }
 
-function loadBrandTier1(): string {
+function loadBrandTier1(overrides?: Record<string, string> | null): string {
   const dir = path.join(ROOT, "content", "ai-knowledge");
   const parts: string[] = [];
   for (const f of BRAND_FILES_TIER1) {
+    const override = overrides?.[f];
+    if (override) {
+      parts.push(`### ${f}\n\n${capText(override, 12_000)}`);
+      continue;
+    }
     const p = path.join(dir, f);
     if (!fs.existsSync(p)) continue;
     parts.push(`### ${f}\n\n${readCapped(p, 12_000)}`);
@@ -53,10 +82,22 @@ function loadBrandTier1(): string {
   return parts.join("\n\n");
 }
 
-function loadMarketingTier2(): string {
-  const p = path.join(ROOT, "content", "ai-knowledge", MARKETING_ICP_TIER2);
-  if (!fs.existsSync(p)) return "";
-  return readCapped(p, 8_000);
+function loadMarketingTier2(
+  overrides?: Record<string, string> | null
+): string {
+  const dir = path.join(ROOT, "content", "ai-knowledge");
+  const parts: string[] = [];
+  for (const f of MARKETING_TIER2_FILES) {
+    const override = overrides?.[f];
+    if (override) {
+      parts.push(`### ${f}\n\n${capText(override, 8_000)}`);
+      continue;
+    }
+    const p = path.join(dir, f);
+    if (!fs.existsSync(p)) continue;
+    parts.push(`### ${f}\n\n${readCapped(p, 8_000)}`);
+  }
+  return parts.join("\n\n");
 }
 
 function formatBrain(ctx: CoachAiContext | null | undefined): string {
@@ -124,13 +165,15 @@ export function assembleProfitCoachSystemPrompt(
       ? `### Brain status (for this skill)\n${statusLines.join("\n")}`
       : "";
 
-  const brandTier1 = loadBrandTier1();
-  const brandTier2 = out.useMarketingIcpTier2 ? loadMarketingTier2() : "";
+  const brandTier1 = loadBrandTier1(args.brandOverrides);
+  const brandTier2 = out.useMarketingIcpTier2
+    ? loadMarketingTier2(args.brandOverrides)
+    : "";
 
   const sections: string[] = [];
 
   sections.push(
-    `# Router + identity\n\n${loadRouterMarkdown()}\n\n${SAFETY_BLOCK}`
+    `# Router + identity\n\n${loadRouterMarkdown(args.brandOverrides)}\n\n${SAFETY_BLOCK}`
   );
 
   sections.push(
@@ -140,6 +183,12 @@ export function assembleProfitCoachSystemPrompt(
   );
 
   sections.push(`# Skill contract\n${out.systemInstructions}`);
+
+  if (args.screenContext) {
+    sections.push(
+      `# Where the coach is right now\n${args.screenContext}\nWhen it helps, tailor suggestions to this screen; do not mention the screen tracking itself.`
+    );
+  }
 
   if (brainStatus || out.contextHints) {
     sections.push(
@@ -171,8 +220,11 @@ export function assembleProfitCoachSystemPrompt(
 /**
  * Build playbook excerpt from registry output knowledge refs.
  */
-export function playbookExcerptForOutput(outputId: string): string {
+export function playbookExcerptForOutput(
+  outputId: string,
+  brandOverrides?: Record<string, string> | null
+): string {
   const out = getOutputById(outputId);
   if (!out) return "";
-  return resolveKnowledgeRefs(out.knowledgeRefs);
+  return resolveKnowledgeRefs(out.knowledgeRefs, undefined, brandOverrides);
 }

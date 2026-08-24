@@ -5,6 +5,7 @@ import {
   assembleProfitCoachSystemPrompt,
   playbookExcerptForOutput,
 } from "@/lib/profitCoachAi/assemblePrompt";
+import { loadBrandKnowledgeOverrides } from "@/lib/profitCoachAi/brandKnowledge";
 import { getDefaultOutputId, getOutputById } from "@/lib/profitCoachAi/registry";
 import {
   loadCoachAiContextRow,
@@ -14,12 +15,22 @@ import { resolveAnthropicModel } from "@/lib/anthropicModel";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 import { requireCoachEffectiveId } from "./_auth";
+import {
+  executeRoadmapTool,
+  ROADMAP_TOOLS,
+  ROADMAP_TOOLS_SYSTEM_SECTION,
+} from "./roadmapTools";
 
 export const runtime = "nodejs";
 
+/** Max model turns per request when tools are in play. */
+const MAX_TOOL_TURNS = 6;
+
 type ClientMessage = { role: "user" | "assistant"; content: string };
 
-function toAnthropicMessages(messages: ClientMessage[]) {
+function toAnthropicMessages(
+  messages: ClientMessage[]
+): Anthropic.Messages.MessageParam[] {
   return messages.map((m) => ({
     role: m.role as "user" | "assistant",
     content: m.content,
@@ -54,6 +65,10 @@ export async function POST(request: Request) {
     chatId?: string;
     outputId?: string;
     roleId?: string | null;
+    /** One-line description of where the coach is in the app (docked panel). */
+    screenContext?: string;
+    /** Current app pathname (docked panel), e.g. /admin/linkedin. */
+    screenPath?: string;
   };
 
   const messages = b.messages;
@@ -93,6 +108,24 @@ export async function POST(request: Request) {
 
   const roleId =
     typeof b.roleId === "string" && b.roleId.trim() ? b.roleId.trim() : null;
+
+  const screenPath =
+    typeof b.screenPath === "string" && b.screenPath.startsWith("/")
+      ? b.screenPath.trim().slice(0, 200)
+      : null;
+  const screenContextRaw =
+    typeof b.screenContext === "string" && b.screenContext.trim()
+      ? b.screenContext.trim().slice(0, 300)
+      : null;
+  const screenContext = screenContextRaw
+    ? `${screenContextRaw}${screenPath ? ` (app path: ${screenPath})` : ""}`
+    : screenPath
+      ? `The coach is at app path ${screenPath}.`
+      : null;
+
+  // Roadmap tools are for actual admins only (never impersonated coaches'
+  // sessions run by non-admins; requireCoachEffectiveId checks token role).
+  const toolsEnabled = auth.viewerIsAdmin === true;
 
   let chatId =
     typeof b.chatId === "string" && b.chatId.trim() ? b.chatId.trim() : null;
@@ -134,15 +167,20 @@ export async function POST(request: Request) {
     createdChatId = chatId;
   }
 
-  const [brain, compassText, playbookExcerptText, priorCountRes] = await Promise.all([
-    loadCoachAiContextRow(coachId),
-    loadCompassSummaryForUser(coachId),
-    Promise.resolve(playbookExcerptForOutput(outputId)),
-    supabaseAdmin
-      .from("profit_coach_ai_messages")
-      .select("id", { count: "exact", head: true })
-      .eq("chat_id", chatId!),
-  ]);
+  // Overrides load first so both the core prompt and the per-skill knowledge
+  // excerpt can use edited content from Admin → Brand → Core brain.
+  const brandOverrides = await loadBrandKnowledgeOverrides();
+
+  const [brain, compassText, playbookExcerptText, priorCountRes] =
+    await Promise.all([
+      loadCoachAiContextRow(coachId),
+      loadCompassSummaryForUser(coachId),
+      Promise.resolve(playbookExcerptForOutput(outputId, brandOverrides)),
+      supabaseAdmin
+        .from("profit_coach_ai_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("chat_id", chatId!),
+    ]);
 
   const priorMessageCount = priorCountRes.count ?? 0;
 
@@ -154,6 +192,8 @@ export async function POST(request: Request) {
       playbookExcerptText,
       brain: brain ?? {},
       compassContext: compassText,
+      screenContext,
+      brandOverrides,
     });
   } catch (e) {
     console.error("[profit-coach-ai] assemblePrompt failed:", e);
@@ -163,15 +203,12 @@ export async function POST(request: Request) {
     );
   }
 
+  if (toolsEnabled) {
+    system = `${system}\n\n---\n\n${ROADMAP_TOOLS_SYSTEM_SECTION}`;
+  }
+
   const model = resolveAnthropicModel();
   const anthropic = new Anthropic({ apiKey });
-
-  const stream = anthropic.messages.stream({
-    model,
-    max_tokens: 8192,
-    system,
-    messages: toAnthropicMessages(messages),
-  });
 
   const lastUser = messages[messages.length - 1]!.content;
   let fullAssistant = "";
@@ -198,18 +235,62 @@ export async function POST(request: Request) {
           /* noop */
         }
       }
-
-      stream.on("text", (delta) => {
-        fullAssistant += delta;
+      function emit(text: string) {
+        fullAssistant += text;
         try {
-          controller.enqueue(encoder.encode(delta));
+          controller.enqueue(encoder.encode(text));
         } catch {
           /* dropped */
         }
-      });
-      stream.on("error", fail);
+      }
+
       try {
-        await stream.finalMessage();
+        // Streaming loop: each turn streams text to the client; when the
+        // model requests tools we execute them (roadmap mutation cores) and
+        // continue the conversation until it stops or we hit the turn cap.
+        const convo: Anthropic.Messages.MessageParam[] =
+          toAnthropicMessages(messages);
+
+        for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
+          const stream = anthropic.messages.stream({
+            model,
+            max_tokens: 8192,
+            system,
+            messages: convo,
+            ...(toolsEnabled ? { tools: ROADMAP_TOOLS } : {}),
+          });
+
+          stream.on("text", (delta) => emit(delta));
+
+          const finalMessage = await stream.finalMessage();
+
+          if (!toolsEnabled || finalMessage.stop_reason !== "tool_use") {
+            break;
+          }
+
+          const toolUses = finalMessage.content.filter(
+            (block): block is Anthropic.Messages.ToolUseBlock =>
+              block.type === "tool_use"
+          );
+          if (toolUses.length === 0) break;
+
+          convo.push({ role: "assistant", content: finalMessage.content });
+
+          const results: Anthropic.Messages.ToolResultBlockParam[] = [];
+          for (const toolUse of toolUses) {
+            const output = await executeRoadmapTool(toolUse.name, toolUse.input);
+            results.push({
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: output,
+            });
+          }
+          convo.push({ role: "user", content: results });
+
+          if (fullAssistant && !fullAssistant.endsWith("\n")) {
+            emit("\n\n");
+          }
+        }
 
         const now = new Date().toISOString();
         const chatUpdate: Record<string, unknown> = {

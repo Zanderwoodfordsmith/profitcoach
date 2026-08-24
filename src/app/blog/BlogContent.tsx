@@ -5,29 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ProfitCoachTopMenu } from "@/components/marketing/ProfitCoachTopMenu";
 
-type BlogCategory =
-  | "Owner Performance"
-  | "Strategy & Planning"
-  | "Profit & Cash Flow"
-  | "Revenue & Marketing"
-  | "Ops, Systems & Team";
-
-type BlogPost = {
-  title: string;
-  excerpt: string;
-  href: string;
-  category: BlogCategory;
-  date: string;
-  image: string;
-};
-
-const BLOG_CATEGORIES: readonly BlogCategory[] = [
-  "Owner Performance",
-  "Strategy & Planning",
-  "Profit & Cash Flow",
-  "Revenue & Marketing",
-  "Ops, Systems & Team",
-];
+import {
+  BLOG_CATEGORIES,
+  type BlogCategory,
+  type BlogPost,
+} from "@/lib/articles";
 
 const posts: readonly BlogPost[] = [
   {
@@ -140,15 +122,17 @@ const posts: readonly BlogPost[] = [
   },
 ];
 
-export function BlogContent() {
+export function BlogContent({ dbPosts = [] }: { dbPosts?: BlogPost[] }) {
   const [activeCategory, setActiveCategory] = useState<"All" | BlogCategory>("All");
+
+  const allPosts = useMemo(() => [...dbPosts, ...posts], [dbPosts]);
 
   const visiblePosts = useMemo(
     () =>
       activeCategory === "All"
-        ? posts
-        : posts.filter((post) => post.category === activeCategory),
-    [activeCategory]
+        ? allPosts
+        : allPosts.filter((post) => post.category === activeCategory),
+    [activeCategory, allPosts]
   );
 
   return (

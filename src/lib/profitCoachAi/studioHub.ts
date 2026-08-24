@@ -100,6 +100,17 @@ export const STUDIO_HUB_CARDS: StudioHubCard[] = [
     eyebrowClassName: "text-[#0c5290]",
     outputId: "linkedin_newsletter",
   },
+  {
+    id: "newsletter-planner",
+    eyebrow: "Plan",
+    title: "Newsletter Planner",
+    description: "Plan your newsletter series and schedule each edition.",
+    accentClassName: "bg-gradient-to-br from-[#0e5a8a] via-[#1478b0] to-[#3a9fd0]",
+    eyebrowClassName: "text-[#0c5290]",
+    outputId: null,
+    dedicatedPath: "/newsletter",
+    adminOnly: true,
+  },
 ];
 
 export function getStudioCardByOutputId(

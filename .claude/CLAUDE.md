@@ -36,3 +36,33 @@ When asked to scan:
 
 `rafter run` analyzes the **pushed GitHub ref**. Scan local uncommitted work
 with `rafter secrets`; push the branch if CSE should see those commits.
+
+## Map: where the truth lives
+
+This folder is a map, not a knowledge base. Read the source of truth at these
+paths when needed; do not duplicate their content here or anywhere in `.claude/`.
+
+**Brand and product truth**
+
+- `PRODUCT.md` (repo root) — durable product and brand context for design work.
+  Impeccable reads it before every design command. Zander edits this directly.
+- `content/ai-knowledge/` — the brand brain: `icp.md`, `avatar-profile.md`,
+  `methodology.md`, `offer-stack.md`, `copywriter-knowledge.md`,
+  `business-profile.md`.
+- `content/ai-knowledge/writing-rules.md` — binding for ALL copy. No em dashes.
+
+**Key marketing surfaces**
+
+- `src/app/home-v3/` — new brand homepage (staging URL, noindex until promoted)
+- `src/app/pam/` — Pam's live coach page (theprofitcoach.com/pam)
+- `src/app/score` + `src/app/landing/` — BOSS Score opt-in funnel
+- `src/components/profitSystem/` — brand graphics (roadmap, levels, hexagons)
+- `src/components/BossCharts/BossWheel.tsx` — app wheel (marketing pages use the
+  custom wheel inside `home-v3` instead)
+
+**Design tooling**
+
+- `.claude/skills/impeccable/` and `.cursor/skills/impeccable/` — installed
+  copies of the Impeccable design skill. Managed by `npx impeccable update`;
+  never hand-edit.
+- `.cursor/hooks.json` — pre-edit design-slop detector hook (offline).

@@ -30,7 +30,9 @@ export type StickyPageHeaderProps = {
   className?: string;
   /**
    * Negative horizontal margin + padding so the bar spans the main column.
-   * Set `false` to disable (e.g. nested layouts). Default matches coach/admin `main` horizontal padding.
+   * Set `false` to disable (e.g. nested layouts). Default matches coach/admin `main`
+   * horizontal padding, and when the AI panel is docked (shell has `data-ai-docked`)
+   * also stretches under it so the bar still reaches the viewport's right edge.
    */
   bleedInset?: string | false;
   /** Ref on the outer sticky shell — for measuring height without breaking stickiness. */
@@ -49,12 +51,13 @@ export function StickyPageHeader({
   below,
   actions,
   className,
-  bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px]",
+  // 28rem = docked AI panel width (COACH_AI_PANEL_WIDTH_REM); 60px = main px.
+  bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px_+_28rem)] md:group-data-[ai-docked]/appshell:pr-[calc(60px_+_28rem)]",
   rootRef,
   nowrap = false,
 }: StickyPageHeaderProps) {
   const shell = [
-    "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-2 shadow-sm",
+    "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-2 shadow-sm transition-[margin,padding] duration-200",
     typeof bleedInset === "string" ? bleedInset : "",
     className,
   ]

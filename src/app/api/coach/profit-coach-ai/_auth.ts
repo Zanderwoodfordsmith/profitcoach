@@ -1,8 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function requireCoachEffectiveId(request: Request): Promise<
-  | { error: string; userId: null }
-  | { error: null; userId: string }
+  | { error: string; userId: null; viewerIsAdmin?: false }
+  | { error: null; userId: string; viewerIsAdmin: boolean }
 > {
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ")
@@ -36,5 +36,11 @@ export async function requireCoachEffectiveId(request: Request): Promise<
     return { error: "Not authorized.", userId: null };
   }
 
-  return { error: null, userId: effectiveId as string };
+  return {
+    error: null,
+    userId: effectiveId as string,
+    // Role of the actual token holder (not the impersonated coach) — used to
+    // gate admin-only AI tools.
+    viewerIsAdmin: profile.role === "admin",
+  };
 }

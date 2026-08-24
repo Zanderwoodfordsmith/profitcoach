@@ -752,8 +752,7 @@ export function LinkedInComposeTab({
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
-      <div className="mx-auto w-full max-w-[560px]">
+    <div className="mx-auto w-full max-w-[560px]">
         {editingId || editingCopyOfPublished ? (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-[12px] text-sky-950">
             <p className="font-semibold">
@@ -1362,94 +1361,67 @@ export function LinkedInComposeTab({
         ) : null}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={!connected || !!busy}
-            onClick={() => void handlePostNow()}
-            className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
-            style={{ backgroundColor: LI_BLUE }}
-          >
-            {busy === "post" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            Post
-          </button>
-          <button
-            type="button"
-            disabled={!connected || !!busy}
-            onClick={() => void handleSchedule()}
-            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
-          >
-            {busy === "schedule" ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CalendarClock className="h-4 w-4" />
-            )}
-            {scheduleMode ? (editingId ? "Save schedule" : "Confirm") : "Schedule"}
-          </button>
-          <button
-            type="button"
-            disabled={!connected || !!busy}
-            onClick={() => void handleSaveDraft()}
-            className="rounded-full px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
-          >
-            {busy === "draft" ? "Saving…" : editingId ? "Update draft" : "Save draft"}
-          </button>
-          {editingId ? (
-            <button
-              type="button"
-              disabled={!!busy}
-              onClick={() => resetComposer()}
-              className="rounded-full px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
-            >
-              Cancel edit
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <aside className="space-y-3 lg:pt-1">
-        <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
-            Category
-          </p>
           <input
             list="linkedin-categories"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            placeholder="Authority, Tips…"
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/20"
+            placeholder="Category…"
+            aria-label="Category"
+            className="w-36 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[#0A66C2]/20"
           />
           <datalist id="linkedin-categories">
             {categories.map((c) => (
               <option key={c} value={c} />
             ))}
           </datalist>
-          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-            Optional. Used to group drafts in the library.
-          </p>
-          {categories.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {categories.slice(0, 8).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory(c)}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                    category === c
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          ) : null}
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {editingId ? (
+              <button
+                type="button"
+                disabled={!!busy}
+                onClick={() => resetComposer()}
+                className="rounded-full px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+              >
+                Cancel edit
+              </button>
+            ) : null}
+            <button
+              type="button"
+              disabled={!connected || !!busy}
+              onClick={() => void handleSaveDraft()}
+              className="rounded-full px-3 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50"
+            >
+              {busy === "draft" ? "Saving…" : editingId ? "Update draft" : "Save draft"}
+            </button>
+            <button
+              type="button"
+              disabled={!connected || !!busy}
+              onClick={() => void handleSchedule()}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {busy === "schedule" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CalendarClock className="h-4 w-4" />
+              )}
+              {scheduleMode ? (editingId ? "Save schedule" : "Confirm") : "Schedule"}
+            </button>
+            <button
+              type="button"
+              disabled={!connected || !!busy}
+              onClick={() => void handlePostNow()}
+              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+              style={{ backgroundColor: LI_BLUE }}
+            >
+              {busy === "post" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Post
+            </button>
+          </div>
         </div>
-      </aside>
     </div>
   );
 }

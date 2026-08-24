@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 type Props = {
-  href: string;
+  href?: string;
+  /** When set, renders a button instead of a link (e.g. in-panel skill pick). */
+  onSelect?: () => void;
   eyebrow: string;
   eyebrowClassName?: string;
   title: string;
@@ -12,6 +14,7 @@ type Props = {
 
 export function StudioHubCard({
   href,
+  onSelect,
   eyebrow,
   eyebrowClassName = "text-sky-700",
   title,
@@ -19,11 +22,11 @@ export function StudioHubCard({
   accentClassName,
   ctaLabel = "Open",
 }: Props) {
-  return (
-    <Link
-      href={href}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.24),0_8px_18px_rgba(15,23,42,0.1),0_0_0_1px_rgba(12,82,144,0.12),0_0_22px_rgba(12,82,144,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
-    >
+  const shellClass =
+    "group flex h-full w-full flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 text-left shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.24),0_8px_18px_rgba(15,23,42,0.1),0_0_0_1px_rgba(12,82,144,0.12),0_0_22px_rgba(12,82,144,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400";
+
+  const inner = (
+    <>
       <div className={`relative aspect-[16/9] overflow-hidden ${accentClassName}`}>
         <div
           className="absolute inset-0 opacity-30"
@@ -53,6 +56,20 @@ export function StudioHubCard({
           </span>
         </p>
       </div>
+    </>
+  );
+
+  if (onSelect) {
+    return (
+      <button type="button" onClick={onSelect} className={shellClass}>
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href ?? "#"} className={shellClass}>
+      {inner}
     </Link>
   );
 }

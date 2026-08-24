@@ -1,8 +1,8 @@
-const DEFAULT_MODEL = "v-pro";
+/** Default TTS model. UI selection can come later (v-studio / v-flash / v-lite). */
+export const VOCALLAB_MODEL = "v-pro";
 
 export function getVocallabConfig() {
   const apiKey = process.env.VOCALLAB_API_KEY?.trim();
-  const model = process.env.VOCALLAB_MODEL?.trim() || DEFAULT_MODEL;
 
   if (!apiKey) {
     return null;
@@ -10,6 +10,6 @@ export function getVocallabConfig() {
 
   return {
     apiKey,
-    model,
+    model: VOCALLAB_MODEL,
   };
 }

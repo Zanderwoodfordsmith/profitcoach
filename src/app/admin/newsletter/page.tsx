@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { ContentHubSubNav } from "@/components/layout/ContentHubSubNav";
 import { LinkedInNewsletterPanel } from "@/components/admin/linkedin/LinkedInNewsletterPanel";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -52,10 +52,17 @@ export default function AdminNewsletterPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Get Clients"
+        title="Newsletter"
         description="Plan your newsletter series and draft each edition."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
-        below={<ContentHubSubNav />}
+        below={
+          <Link
+            href="/admin/message-generator"
+            className="w-fit text-sm font-medium text-sky-800 hover:text-sky-950"
+          >
+            ← All tools
+          </Link>
+        }
       />
       <LinkedInNewsletterPanel />
     </div>

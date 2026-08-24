@@ -8,7 +8,6 @@ import {
   coachClientsTabItems,
   getClientsTabItems,
   isGetClientsContentPath,
-  isGetClientsCreatePath,
   navLinkActive,
   type CoachClientsTabItem,
   type ToolsHubTabItem,
@@ -124,7 +123,6 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
       if (item.adminPreview && !showAdminPreview) return false;
       return true;
     });
-    const createHref = `${prefix}/message-generator`;
     const contentHref = "/admin/linkedin";
     return (
       <PageHeaderUnderlineTabs
@@ -151,11 +149,9 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
             previewTabLabel(item.label, preview)
           );
           const active =
-            item.href === createHref
-              ? isGetClientsCreatePath(pathname)
-              : item.href === contentHref
-                ? isGetClientsContentPath(pathname)
-                : navLinkActive(pathname, item.href);
+            item.href === contentHref
+              ? isGetClientsContentPath(pathname)
+              : navLinkActive(pathname, item.href);
           return {
             kind: "link" as const,
             href: item.href,

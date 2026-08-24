@@ -6,19 +6,16 @@ import {
   ArrowRight,
   CheckCircle2,
   LineChart,
-  Menu,
   Sparkles,
   Target,
-  X,
 } from "lucide-react";
-import { useState } from "react";
 import { BossWheel } from "@/components/BossCharts/BossWheel";
+import { MarketingNav, LINK_HOME } from "@/components/marketing/MarketingNav";
 import { ProfitSystemTriadDiagram } from "@/components/marketing/ProfitSystemTriadDiagram";
 import { AREAS, LEVELS } from "@/lib/bossData";
 
 const LINK_DIAGNOSTIC = "/assessment";
 const LINK_COACH = "/directory";
-const LINK_HOME = "/new-home";
 
 const DEMO_AREA_SCORES = [6.2, 5.4, 7.1, 4.9, 6.8, 5.6, 6.3, 6.9, 5.2, 6.5];
 const DEMO_TOTAL = 62;
@@ -107,8 +104,6 @@ function SecondaryCta({
 }
 
 export function HowItWorksContent() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
     <div className="min-h-screen scroll-smooth bg-[#f5f8fc] font-sans text-slate-800 antialiased">
       <div
@@ -131,60 +126,7 @@ export function HowItWorksContent() {
         />
       </div>
 
-      <header className="sticky top-0 z-50 border-b border-white/40 bg-[#f5f8fc]/78 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 md:px-8">
-          <Link
-            href={LINK_HOME}
-            className="text-lg font-semibold tracking-tight text-[#0c5290] md:text-xl"
-          >
-            The Profit Coach
-          </Link>
-          <nav className="hidden items-center gap-7 text-[0.8125rem] font-medium text-slate-600 lg:flex">
-            <Link href={`${LINK_HOME}#profit-system`} className="hover:text-[#0c5290]">
-              The Profit System
-            </Link>
-            <span className="text-[#0c5290]">How It Works</span>
-            <Link href="/blog" className="hover:text-[#0c5290]">
-              Blog
-            </Link>
-            <Link href={LINK_COACH} className="hover:text-[#0c5290]">
-              Find a Coach
-            </Link>
-            <Link href={`${LINK_HOME}#resources`} className="hover:text-[#0c5290]">
-              Resources
-            </Link>
-          </nav>
-          <div className="hidden lg:block">
-            <PrimaryCta className="!py-2.5 !px-5 !text-[0.8125rem]" />
-          </div>
-          <button
-            type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200/80 bg-white/70 text-slate-700 backdrop-blur lg:hidden"
-            aria-expanded={mobileOpen}
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-            onClick={() => setMobileOpen((o) => !o)}
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-        {mobileOpen ? (
-          <div className="border-t border-white/50 bg-[#f5f8fc]/95 px-5 py-6 backdrop-blur-xl lg:hidden">
-            <nav className="flex flex-col gap-4 text-sm font-medium text-slate-700">
-              <Link href={LINK_HOME} onClick={() => setMobileOpen(false)}>
-                Home
-              </Link>
-              <Link href={LINK_COACH} onClick={() => setMobileOpen(false)}>
-                Find a Coach
-              </Link>
-              <Link href="/blog" onClick={() => setMobileOpen(false)}>
-                Blog
-              </Link>
-              <PrimaryCta className="mt-2 w-full" />
-              <SecondaryCta className="w-full" />
-            </nav>
-          </div>
-        ) : null}
-      </header>
+      <MarketingNav variant="solid" />
 
       <main>
         <section className="mx-auto max-w-6xl px-5 pb-14 pt-12 md:px-8 md:pb-20 md:pt-16">
