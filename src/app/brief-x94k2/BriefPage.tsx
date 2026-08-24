@@ -566,6 +566,10 @@ export function BriefPage() {
                     "https://www.theprofitcoach.com/new-home",
                   ],
                   [
+                    "V3 homepage (current design direction)",
+                    "https://www.theprofitcoach.com/home-v3",
+                  ],
+                  [
                     "Free diagnostic opt-in",
                     "https://www.theprofitcoach.com/score",
                   ],
@@ -585,9 +589,8 @@ export function BriefPage() {
                 ))}
               </ul>
               <p className="text-sm text-slate-500">
-                Note: the V3 homepage (the current design direction) is built
-                but not deployed to the live site yet. Zander can share a
-                preview when ready.
+                The V3 homepage is the current design direction. Start there
+                for the latest look and messaging.
               </p>
             </Card>
           </section>
