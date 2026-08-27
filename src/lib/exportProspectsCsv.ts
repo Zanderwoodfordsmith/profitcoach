@@ -11,6 +11,7 @@ import {
   getProspectNextCallStatusLabel,
 } from "@/lib/prospectNextCall";
 import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
+import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import type { ProspectRow } from "@/lib/prospectRow";
 
 export type ProspectTableColumnKey =
@@ -31,7 +32,10 @@ export type ProspectTableColumnKey =
   | "boss_level"
   | "next_call"
   | "next_action"
-  | "status";
+  | "status"
+  | "source"
+  | "linkedin"
+  | "crm";
 
 export type ProspectExportColumnKey =
   | "name"
@@ -39,6 +43,8 @@ export type ProspectExportColumnKey =
   | "business"
   | "email"
   | "phone"
+  | "linkedin"
+  | "source"
   | "coach"
   | "status"
   | "boss_score"
@@ -66,6 +72,8 @@ const EXPORT_COLUMN_DEFS: Array<{
   { key: "business", label: "Business" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "source", label: "Source" },
   { key: "coach", label: "Coach" },
   { key: "status", label: "Status" },
   { key: "boss_score", label: "Boss" },
@@ -91,6 +99,8 @@ const TABLE_KEY_TO_EXPORT: Partial<
   business: ["business"],
   email: ["email"],
   phone: ["phone"],
+  linkedin: ["linkedin"],
+  source: ["source"],
   coach: ["coach"],
   status: ["status"],
   boss_score: ["boss_score", "boss_score_at"],
@@ -122,6 +132,10 @@ function getExportCellValue(
       return row.email;
     case "phone":
       return row.phone;
+    case "linkedin":
+      return row.linkedin_url?.trim() || "";
+    case "source":
+      return resolveProspectSourceLabel(row);
     case "coach":
       return row.coach_name ?? row.coach_business_name ?? "";
     case "status":
@@ -191,7 +205,7 @@ function buildExportColumnKeys(input: ExportProspectsCsvInput): ProspectExportCo
         );
 
   for (const tableKey of tableKeys) {
-    if (tableKey === "actions") continue;
+    if (tableKey === "actions" || tableKey === "crm") continue;
     const mapped = TABLE_KEY_TO_EXPORT[tableKey];
     if (!mapped) continue;
     for (const exportKey of mapped) {

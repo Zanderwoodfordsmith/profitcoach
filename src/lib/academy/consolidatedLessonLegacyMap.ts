@@ -97,13 +97,40 @@ const EARLY_CONSOLIDATIONS: ConsolidatedLessonLegacyEntry[] = [
   },
 ];
 
+function registryEntriesFromJson(value: unknown): RegistryEntry[] {
+  if (!Array.isArray(value)) return [];
+  const entries: RegistryEntry[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const rec = item as Record<string, unknown>;
+    if (
+      typeof rec.courseId !== "string" ||
+      typeof rec.consolidatedLessonId !== "string" ||
+      !rec.legacyChapterByLessonId ||
+      typeof rec.legacyChapterByLessonId !== "object"
+    ) {
+      continue;
+    }
+    const legacyChapterByLessonId: Record<string, string> = {};
+    for (const [legacyLessonId, chapterId] of Object.entries(
+      rec.legacyChapterByLessonId
+    )) {
+      if (typeof chapterId === "string" && chapterId) {
+        legacyChapterByLessonId[legacyLessonId] = chapterId;
+      }
+    }
+    entries.push({
+      courseId: rec.courseId,
+      consolidatedLessonId: rec.consolidatedLessonId,
+      legacyChapterByLessonId,
+    });
+  }
+  return entries;
+}
+
 export const CONSOLIDATED_LESSON_LEGACY_ENTRIES: ConsolidatedLessonLegacyEntry[] = [
   ...EARLY_CONSOLIDATIONS,
-  ...(consolidatedLessonRegistry as RegistryEntry[]).map((entry) => ({
-    courseId: entry.courseId,
-    consolidatedLessonId: entry.consolidatedLessonId,
-    legacyChapterByLessonId: entry.legacyChapterByLessonId,
-  })),
+  ...registryEntriesFromJson(consolidatedLessonRegistry),
 ];
 
 /** Flat lookup: old lesson id → { parent, chapter, course }. */
