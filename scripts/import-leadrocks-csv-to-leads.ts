@@ -34,7 +34,11 @@ type RegionMeta = { category: string; categorySlug: string };
 
 function regionFromFilename(filename: string): RegionMeta {
   const base = path.basename(filename).toLowerCase();
-  if (base.startsWith("leadrocks_usa_") || base.includes("_usa_")) {
+  if (
+    base.startsWith("leadrocks_usa_") ||
+    base.startsWith("leadrocks_us_") ||
+    base.includes("_usa_")
+  ) {
     return { category: "US Business Owners", categorySlug: "us_business_owners" };
   }
   return { category: "UK Business Owners", categorySlug: "uk_business_owners" };
@@ -60,7 +64,7 @@ if (paths.length === 0) {
 
 /** Directory scan: UK/USA owner + revenue/construction exports (not Campaign Prospects). */
 const OWNER_CSV_RE =
-  /^leadrocks_(?:uk|usa)_.+\.csv$/i;
+  /^leadrocks_(?:uk|usa|us)_.+\.csv$/i;
 
 function resolveCsvFiles(inputs: string[]): string[] {
   const out: string[] = [];
@@ -109,8 +113,6 @@ function pickDistinct(
 }
 
 type TeamSizeBand = "1-10" | "11-50" | "51-200" | "201-500";
-
-/** Map LeadRocks headcount / export band → UI team-size buckets. */
 function normalizeTeamSize(
   raw: string | null,
   fileBand: TeamSizeBand | null
@@ -148,6 +150,7 @@ function normalizeRevenue(raw: string | null): string | null {
 
 function bandFromFilename(filename: string): TeamSizeBand | null {
   const base = path.basename(filename).toLowerCase();
+  if (base.includes("_1_10_")) return "1-10";
   if (base.includes("_11_50_")) return "11-50";
   if (base.includes("_51_200_")) return "51-200";
   if (base.includes("_201_500_")) return "201-500";

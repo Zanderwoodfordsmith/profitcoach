@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import {
+  fetchAllSupabasePages,
+  selectContactsWithOptionalPhone,
+} from "@/lib/contactsSchemaSafeSelect";
 import { enrichProspectRows } from "@/lib/loadProspectTableRows";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -30,12 +33,15 @@ export async function GET(request: Request) {
       created_at: string;
     }>(
       async (columns) =>
-        supabaseAdmin
-          .from("contacts")
-          .select(columns)
-          .eq("coach_id", coachId)
-          .eq("type", "client")
-          .order("created_at", { ascending: false }),
+        fetchAllSupabasePages(async (from, to) =>
+          supabaseAdmin
+            .from("contacts")
+            .select(columns)
+            .eq("coach_id", coachId)
+            .eq("type", "client")
+            .order("created_at", { ascending: false })
+            .range(from, to)
+        ),
       "id, full_name, email, business_name, job_title, linkedin_url, type, created_at",
       ["photo_url", "headline"]
     );

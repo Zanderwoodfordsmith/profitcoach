@@ -22,6 +22,11 @@ export type StudioHubCard = {
   adminOnly?: boolean;
   /** Further gate: Lead Finder allow-list (admin Create hub only). */
   requireLeadFinderAccess?: boolean;
+  /**
+   * Related registry skill ids when the card uses a dedicated tool path
+   * instead of outputId (shown in Admin → Brand → Core brain → Create hub).
+   */
+  relatedSkillIds?: string[];
 };
 
 /**
@@ -38,6 +43,7 @@ export const STUDIO_HUB_CARDS: StudioHubCard[] = [
     eyebrowClassName: "text-[#0c5290]",
     outputId: null,
     dedicatedPath: "/ideal-client",
+    relatedSkillIds: ["choose_icp", "ideal_client", "avatar"],
   },
   {
     id: "linkedin-profile",
@@ -49,6 +55,7 @@ export const STUDIO_HUB_CARDS: StudioHubCard[] = [
     eyebrowClassName: "text-[#0e7f9c]",
     outputId: null,
     dedicatedPath: "/linkedin-profile",
+    relatedSkillIds: ["linkedin_profile"],
   },
   {
     id: "lead-finder",
@@ -110,6 +117,7 @@ export const STUDIO_HUB_CARDS: StudioHubCard[] = [
     outputId: null,
     dedicatedPath: "/newsletter",
     adminOnly: true,
+    relatedSkillIds: ["linkedin_newsletter"],
   },
 ];
 

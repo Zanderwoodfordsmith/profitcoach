@@ -1,6 +1,6 @@
 /**
  * Distilled BCA Classroom playbook for building Sales Navigator prospect lists.
- * Sources (Get Clients → Pipeline Setup):
+ * Sources (Get Calls → Client Compass):
  * - Build Your Base Search
  * - Build Your Ideal Prospect List
  * - Find More Prospects with Keyword Search

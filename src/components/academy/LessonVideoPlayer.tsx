@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent } from "react";
 import {
   Check,
   ChevronDown,
+  ListVideo,
   Maximize,
   Minimize,
   Pause,
@@ -12,6 +13,9 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
+import { formatHubDurationLabel } from "@/lib/academy/hubCatalog";
+
+import { LessonProgressChapterMenuTick } from "@/components/academy/LessonProgressControls";
 
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import {
@@ -25,12 +29,40 @@ import {
   storePlaybackPosition,
 } from "@/lib/academy/lessonPlaybackPosition";
 import {
+  chapterSegmentAtRatio,
+  type ChapterTimelineMarker,
+  type ChapterTimelineSegment,
+} from "@/lib/academy/chapterTimeline";
+import {
   PLAYBACK_SPEEDS,
   formatPlaybackSpeed,
   readStoredPlaybackSpeed,
   storePlaybackSpeed,
   type PlaybackSpeed,
 } from "@/lib/academy/playbackSpeed";
+
+export type LessonVideoTimeline = {
+  currentTime: number;
+  duration: number;
+  chapterMarkers?: ChapterTimelineMarker[];
+  chapterSegments?: ChapterTimelineSegment[];
+  bufferedRatio?: number;
+  onSeekRatio: (ratio: number) => void;
+};
+
+export type LessonVideoChapterMenuItem = {
+  id: string;
+  title: string;
+  duration: string | null;
+};
+
+export type LessonVideoChapterMenu = {
+  chapters: LessonVideoChapterMenuItem[];
+  activeIndex: number;
+  onSelectChapter: (index: number) => void;
+  /** When set, chapter rows show progress ticks (coach classroom). */
+  lessonId?: string;
+};
 
 type Props = {
   src: string;
@@ -49,6 +81,13 @@ type Props = {
   onTimeChange?: (seconds: number) => void;
   /** When set, show Watch|Listen in the control bar. */
   onModeChange?: (mode: LessonMediaMode) => void;
+  /** Unified multi-chapter timeline (aggregate scrubber + markers). */
+  timeline?: LessonVideoTimeline;
+  /** Seek within the current file when timeline scrubber jumps inside the active chapter. */
+  forcedSeekTime?: number | null;
+  forcedSeekKey?: number;
+  /** Popover chapter picker in the control bar. */
+  chapterMenu?: LessonVideoChapterMenu;
 };
 
 function formatTime(seconds: number): string {
@@ -63,6 +102,109 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+const CHAPTER_MENU_HEIGHT_RATIO = 0.75;
+
+type ChapterScrubberTrackProps = {
+  progress: number;
+  bufferedRatio: number;
+  markers: ChapterTimelineMarker[];
+  segments: ChapterTimelineSegment[];
+  displayCurrentTime: number;
+  onSeek: (e: ChangeEvent<HTMLInputElement>) => void;
+};
+
+function ChapterScrubberTrack({
+  progress,
+  bufferedRatio,
+  markers,
+  segments,
+  displayCurrentTime,
+  onSeek,
+}: ChapterScrubberTrackProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<ChapterTimelineSegment | null>(null);
+  const [hoverRatio, setHoverRatio] = useState(0);
+
+  function updateHoveredChapter(clientX: number) {
+    const el = trackRef.current;
+    if (!el || segments.length === 0) {
+      setHoveredSegment(null);
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    setHoverRatio(ratio);
+    setHoveredSegment(chapterSegmentAtRatio(ratio, segments));
+  }
+
+  function onTrackMouseMove(event: MouseEvent<HTMLDivElement>) {
+    updateHoveredChapter(event.clientX);
+  }
+
+  return (
+    <div
+      ref={trackRef}
+      className="relative mx-1 flex h-5 min-w-0 flex-1 items-center"
+      onMouseMove={onTrackMouseMove}
+      onMouseLeave={() => setHoveredSegment(null)}
+    >
+      <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/30">
+        <div
+          className="absolute inset-y-0 left-0 bg-white/40"
+          style={{ width: `${bufferedRatio * 100}%` }}
+        />
+        <div
+          className="absolute inset-y-0 left-0 bg-white"
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+
+      {markers.length > 0 ? (
+        <div className="pointer-events-none absolute inset-x-0 flex h-1 items-center">
+          {markers.map((marker) => {
+            const highlighted =
+              hoveredSegment != null &&
+              hoveredSegment.startRatio > 0 &&
+              Math.abs(marker.ratio - hoveredSegment.startRatio) < 0.0001;
+            return (
+              <div
+                key={`${marker.ratio}-${marker.title}`}
+                className={`absolute -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.4)] transition-all ${
+                  highlighted ? "h-3 w-[3px] opacity-100" : "h-2.5 w-[2px] opacity-90"
+                }`}
+                style={{ left: `${marker.ratio * 100}%` }}
+                aria-hidden
+              />
+            );
+          })}
+        </div>
+      ) : null}
+
+      {hoveredSegment ? (
+        <div
+          className="pointer-events-none absolute bottom-full z-10 mb-2 max-w-[min(18rem,calc(100%-0.5rem))] -translate-x-1/2 rounded-md bg-slate-950/95 px-2.5 py-1 text-[10px] font-medium leading-snug text-white shadow-lg ring-1 ring-white/10"
+          style={{ left: `${hoverRatio * 100}%` }}
+          role="tooltip"
+        >
+          {hoveredSegment.title}
+        </div>
+      ) : null}
+
+      <input
+        type="range"
+        min={0}
+        max={1000}
+        step={1}
+        value={Math.round(progress * 1000)}
+        aria-label="Seek"
+        aria-valuetext={formatTime(displayCurrentTime)}
+        onChange={onSeek}
+        className="absolute inset-x-0 h-5 w-full cursor-pointer appearance-none bg-transparent accent-white"
+      />
+    </div>
+  );
+}
+
 export function LessonVideoPlayer({
   src,
   title,
@@ -74,11 +216,16 @@ export function LessonVideoPlayer({
   onEnded,
   onTimeChange,
   onModeChange,
+  timeline,
+  forcedSeekTime = null,
+  forcedSeekKey = 0,
+  chapterMenu,
 }: Props) {
   const storageKey = positionKey ?? src;
   const rootRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const speedMenuRef = useRef<HTMLDivElement>(null);
+  const chapterMenuRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const lastSavedRef = useRef(0);
   const onWatchProgressRef = useRef(onWatchProgress);
@@ -94,6 +241,7 @@ export function LessonVideoPlayer({
 
   const [rate, setRate] = useState<PlaybackSpeed>(1);
   const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [chapterMenuOpen, setChapterMenuOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [started, setStarted] = useState(false);
   const [resumeAt, setResumeAt] = useState<number | null>(null);
@@ -104,6 +252,19 @@ export function LessonVideoPlayer({
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [chapterMenuMaxHeight, setChapterMenuMaxHeight] = useState<number | undefined>();
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const update = () => {
+      setChapterMenuMaxHeight(Math.floor(root.clientHeight * CHAPTER_MENU_HEIGHT_RATIO));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setRate(readStoredPlaybackSpeed());
@@ -116,19 +277,38 @@ export function LessonVideoPlayer({
   }, [src, storageKey]);
 
   useEffect(() => {
+    if (forcedSeekTime == null || forcedSeekKey <= 0) return;
+    const el = videoRef.current;
+    if (!el) return;
+    const max = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : forcedSeekTime;
+    const next = Math.min(max, Math.max(0, forcedSeekTime));
+    el.currentTime = next;
+    setCurrentTime(next);
+    setStarted(true);
+    void el.play();
+  }, [forcedSeekKey, forcedSeekTime]);
+
+  useEffect(() => {
     const el = videoRef.current;
     if (el) el.playbackRate = rate;
   }, [rate, src]);
 
   useEffect(() => {
-    if (!speedMenuOpen) return;
+    if (!speedMenuOpen && !chapterMenuOpen) return;
     function onPointerDown(e: PointerEvent) {
-      if (speedMenuRef.current && !speedMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (speedMenuRef.current && !speedMenuRef.current.contains(target)) {
         setSpeedMenuOpen(false);
+      }
+      if (chapterMenuRef.current && !chapterMenuRef.current.contains(target)) {
+        setChapterMenuOpen(false);
       }
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setSpeedMenuOpen(false);
+      if (e.key === "Escape") {
+        setSpeedMenuOpen(false);
+        setChapterMenuOpen(false);
+      }
     }
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKey);
@@ -136,7 +316,7 @@ export function LessonVideoPlayer({
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [speedMenuOpen]);
+  }, [speedMenuOpen, chapterMenuOpen]);
 
   useEffect(() => {
     function onFullscreenChange() {
@@ -169,7 +349,7 @@ export function LessonVideoPlayer({
 
   function scheduleHideControls(isPlaying = playing) {
     clearHideTimer();
-    if (!isPlaying || speedMenuOpen) return;
+    if (!isPlaying || speedMenuOpen || chapterMenuOpen) return;
     hideTimerRef.current = window.setTimeout(() => {
       setControlsVisible(false);
     }, 2200);
@@ -224,7 +404,12 @@ export function LessonVideoPlayer({
   function onSeekInput(e: ChangeEvent<HTMLInputElement>) {
     const value = Number(e.target.value);
     if (!Number.isFinite(value)) return;
-    seekToRatio(value / 1000);
+    const ratio = value / 1000;
+    if (timeline) {
+      timeline.onSeekRatio(ratio);
+      return;
+    }
+    seekToRatio(ratio);
   }
 
   function toggleMute() {
@@ -275,8 +460,12 @@ export function LessonVideoPlayer({
     setBufferedEnd(el.buffered.end(el.buffered.length - 1) / el.duration);
   }
 
-  const progress = duration > 0 ? currentTime / duration : 0;
-  const showChrome = controlsVisible || !playing || speedMenuOpen;
+  const displayCurrentTime = timeline?.currentTime ?? currentTime;
+  const displayDuration = timeline?.duration ?? duration;
+  const progress =
+    displayDuration > 0 ? Math.min(1, displayCurrentTime / displayDuration) : 0;
+  const displayBuffered = timeline?.bufferedRatio ?? bufferedEnd;
+  const showChrome = controlsVisible || !playing || speedMenuOpen || chapterMenuOpen;
 
   return (
     <div
@@ -284,7 +473,7 @@ export function LessonVideoPlayer({
       className="group/player relative bg-black"
       onMouseMove={revealControls}
       onMouseLeave={() => {
-        if (playing && !speedMenuOpen) setControlsVisible(false);
+        if (playing && !speedMenuOpen && !chapterMenuOpen) setControlsVisible(false);
       }}
       onFocusCapture={revealControls}
     >
@@ -449,34 +638,104 @@ export function LessonVideoPlayer({
           </span>
         </button>
 
-        {/* Scrubber — chapter markers can sit on this track later */}
-        <div className="relative mx-1 flex h-4 min-w-0 flex-1 items-center">
-          <div className="pointer-events-none absolute inset-x-0 h-1 overflow-hidden rounded-full bg-white/30">
-            <div
-              className="absolute inset-y-0 left-0 bg-white/40"
-              style={{ width: `${bufferedEnd * 100}%` }}
-            />
-            <div
-              className="absolute inset-y-0 left-0 bg-white"
-              style={{ width: `${progress * 100}%` }}
-            />
+        {chapterMenu && chapterMenu.chapters.length > 1 ? (
+          <div ref={chapterMenuRef} className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setChapterMenuOpen((open) => !open);
+                setSpeedMenuOpen(false);
+              }}
+              aria-expanded={chapterMenuOpen}
+              aria-haspopup="listbox"
+              aria-label={`Chapters, ${chapterMenu.activeIndex + 1} of ${chapterMenu.chapters.length}`}
+              className="inline-flex h-7 items-center gap-0.5 rounded px-1 text-white transition hover:bg-white/20 sm:px-1.5"
+            >
+              <ListVideo className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="text-[10px] font-semibold tabular-nums">
+                {chapterMenu.activeIndex + 1}/{chapterMenu.chapters.length}
+              </span>
+              <ChevronDown className="h-3 w-3 opacity-80" aria-hidden />
+            </button>
+            {chapterMenuOpen ? (
+              <ul
+                role="listbox"
+                aria-label="Chapters"
+                style={chapterMenuMaxHeight ? { maxHeight: chapterMenuMaxHeight } : undefined}
+                className="absolute bottom-full left-0 mb-2 max-h-[min(28rem,75dvh)] w-[min(20rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-white/10 bg-slate-950/95 py-1.5 shadow-xl backdrop-blur-md"
+              >
+                {chapterMenu.chapters.map((chapter, index) => {
+                  const selected = index === chapterMenu.activeIndex;
+                  const durationLabel = chapter.duration
+                    ? formatHubDurationLabel(chapter.duration)
+                    : null;
+                  return (
+                    <li key={chapter.id} role="option" aria-selected={selected}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          chapterMenu.onSelectChapter(index);
+                          setChapterMenuOpen(false);
+                        }}
+                        className={`flex w-full items-start gap-2.5 px-3.5 py-2.5 text-left transition ${
+                          selected
+                            ? "bg-white/10 text-white"
+                            : "text-slate-200 hover:bg-white/5"
+                        }`}
+                      >
+                        {chapterMenu.lessonId ? (
+                          <span className="mt-0.5 shrink-0">
+                            <LessonProgressChapterMenuTick
+                              lessonId={chapterMenu.lessonId}
+                              chapterId={chapter.id}
+                              selected={selected}
+                            />
+                          </span>
+                        ) : (
+                          <span
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                              selected ? "bg-sky-500 text-white" : "bg-white/10 text-white/70"
+                            }`}
+                            aria-hidden
+                          >
+                            <Play className="h-2.5 w-2.5 fill-current" />
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1">
+                          <span
+                            className={`block text-xs leading-snug ${
+                              selected ? "font-semibold" : "font-medium"
+                            }`}
+                          >
+                            {chapter.title}
+                          </span>
+                        </span>
+                        {durationLabel ? (
+                          <span className="shrink-0 pt-px text-[10px] tabular-nums text-white/50">
+                            {durationLabel}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
           </div>
-          <input
-            type="range"
-            min={0}
-            max={1000}
-            step={1}
-            value={Math.round(progress * 1000)}
-            aria-label="Seek"
-            aria-valuetext={formatTime(currentTime)}
-            onChange={onSeekInput}
-            className="absolute inset-x-0 h-4 w-full cursor-pointer appearance-none bg-transparent accent-white"
-          />
-        </div>
+        ) : null}
+
+        <ChapterScrubberTrack
+          progress={progress}
+          bufferedRatio={displayBuffered}
+          markers={timeline?.chapterMarkers ?? []}
+          segments={timeline?.chapterSegments ?? []}
+          displayCurrentTime={displayCurrentTime}
+          onSeek={onSeekInput}
+        />
 
         <p className="shrink-0 text-[11px] font-medium tabular-nums text-white/95">
-          {formatTime(currentTime)}
-          <span className="text-white/60"> / {formatTime(duration)}</span>
+          {formatTime(displayCurrentTime)}
+          <span className="text-white/60"> / {formatTime(displayDuration)}</span>
         </p>
 
         <button
@@ -513,7 +772,10 @@ export function LessonVideoPlayer({
         <div ref={speedMenuRef} className="relative shrink-0">
           <button
             type="button"
-            onClick={() => setSpeedMenuOpen((open) => !open)}
+            onClick={() => {
+              setSpeedMenuOpen((open) => !open);
+              setChapterMenuOpen(false);
+            }}
             aria-expanded={speedMenuOpen}
             aria-haspopup="listbox"
             aria-label={`Playback speed ${formatPlaybackSpeed(rate)}`}

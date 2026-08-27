@@ -32,6 +32,55 @@ export function normalizePublicLinkedInUrl(input: string | null | undefined): st
   return `https://www.linkedin.com/in/${slug.toLowerCase()}`;
 }
 
+/**
+ * Opaque LinkedIn member-id URLs like /in/ACwAAA... — stable but not
+ * human-readable. Sales Navigator returns these; LeadRocks returns vanity URLs.
+ * The signature is "AC" + one char + "AA" + a long base64url tail (case-insensitive,
+ * since we store them lower-cased). Vanity slugs never match this shape.
+ */
+export function isObfuscatedLinkedInUrl(
+  input: string | null | undefined
+): boolean {
+  const slug = linkedInSlug(input);
+  if (!slug) return false;
+  return /^ac[a-z0-9]aa[a-z0-9_-]{10,}$/i.test(slug);
+}
+
+/** A human-readable vanity /in/ URL (a valid profile URL that isn't a member-id blob). */
+export function isVanityLinkedInUrl(input: string | null | undefined): boolean {
+  return Boolean(normalizePublicLinkedInUrl(input)) && !isObfuscatedLinkedInUrl(input);
+}
+
+/**
+ * Recover a vanity URL from a LeadRocks `linkedin:<url>` dedupe key.
+ * Returns null when the key is email/name based, or the URL is a member-id blob.
+ */
+export function vanityUrlFromDedupeKey(
+  key: string | null | undefined
+): string | null {
+  if (!key?.startsWith("linkedin:")) return null;
+  const url = key.slice("linkedin:".length);
+  return isVanityLinkedInUrl(url) ? normalizePublicLinkedInUrl(url) : null;
+}
+
+/** Extract the raw /in/ slug (not lower-cased, not normalized) or null. */
+function linkedInSlug(input: string | null | undefined): string | null {
+  const raw = input?.trim();
+  if (!raw) return null;
+  let url: URL;
+  try {
+    url = new URL(raw.includes("://") ? raw : `https://${raw}`);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./i, "").toLowerCase();
+  if (host !== "linkedin.com" && !host.endsWith(".linkedin.com")) return null;
+  const parts = url.pathname.split("/").filter(Boolean);
+  const inIdx = parts.findIndex((p) => p.toLowerCase() === "in");
+  if (inIdx < 0 || !parts[inIdx + 1]) return null;
+  return parts[inIdx + 1].replace(/\/+$/, "") || null;
+}
+
 function normPersonPart(value: string | null | undefined): string {
   return (value ?? "")
     .trim()

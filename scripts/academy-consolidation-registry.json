@@ -1,0 +1,174 @@
+[
+  {
+    "courseId": "get-calls",
+    "consolidatedLessonId": "get-calls-lead-generation-lead-gen-foundations",
+    "legacyChapterByLessonId": {
+      "get-calls-lead-generation-intro-traffic-the-best-wat-to-get-leads": "traffic",
+      "get-calls-lead-generation-intro-lead-generation-workflow": "workflow",
+      "get-calls-lead-generation-intro-testing-is-key-to-lead-generation": "testing"
+    }
+  },
+  {
+    "courseId": "get-calls",
+    "consolidatedLessonId": "get-calls-lead-generation-run-your-vip-nurture",
+    "legacyChapterByLessonId": {
+      "get-calls-lead-generation-personalised-vip-nurture-top-100-vip-nurture-overview": "overview",
+      "get-calls-lead-generation-personalised-vip-nurture-top-100-how-to-identify-your-top-100-prospects": "top-100",
+      "get-calls-lead-generation-personalised-vip-nurture-top-100-how-to-craft-personalized-insightful-messages": "messages",
+      "get-calls-lead-generation-personalised-vip-nurture-top-100-how-to-use-multiple-channels-to-engage": "channels"
+    }
+  },
+  {
+    "courseId": "get-calls",
+    "consolidatedLessonId": "get-calls-replying-to-leads-set-up-connector-co-pilot",
+    "legacyChapterByLessonId": {
+      "get-calls-replying-to-leads-how-to-set-up-connector-ai-co-pilot": "setup",
+      "get-calls-replying-to-leads-choosing-between-ai-co-pilot-auto-pilot": "mode",
+      "get-calls-replying-to-leads-how-to-activate-the-ai-and-test": "activate"
+    }
+  },
+  {
+    "courseId": "get-calls",
+    "consolidatedLessonId": "get-calls-lead-generation-get-started-with-connector",
+    "legacyChapterByLessonId": {
+      "get-calls-lead-generation-ai-automation-what-is-connector-how-to-register-for-connector-ai": "register",
+      "get-calls-lead-generation-ai-automation-connector-campaign-overview": "overview",
+      "get-calls-lead-generation-ai-automation-write-a-linkedin-connection-message": "connection-message",
+      "get-calls-lead-generation-ai-automation-connector-campaign-editing-follow-up-message-templates": "follow-up-templates"
+    }
+  },
+  {
+    "courseId": "get-calls",
+    "consolidatedLessonId": "get-calls-lead-generation-launch-your-connector-campaign",
+    "legacyChapterByLessonId": {
+      "get-calls-lead-generation-ai-automation-how-to-create-campaigns-in-connect-ai": "create-campaign",
+      "get-calls-lead-generation-ai-automation-how-to-create-a-campaign-for-prospects-you-are-already-connected-with": "connected-campaign",
+      "get-calls-lead-generation-ai-automation-targeted-open-inmail-craft-open-inmail-message": "open-inmail"
+    }
+  },
+  {
+    "courseId": "win-clients",
+    "consolidatedLessonId": "win-clients-design-your-coaching-offer",
+    "legacyChapterByLessonId": {
+      "coach-action-plan-building-a-world-class-coaching-practice-57m-what-are-people-actually-buying-the-gap": "the-gap",
+      "coach-action-plan-building-a-world-class-coaching-practice-57m-structuring-your-coaching-offer-what-are-you-actually-selling": "structure",
+      "coach-action-plan-building-a-world-class-coaching-practice-57m-pricing-setting-the-right-packages-investment-for-your-coaching": "pricing"
+    }
+  },
+  {
+    "courseId": "win-clients",
+    "consolidatedLessonId": "win-clients-deliver-your-sales-pitch",
+    "legacyChapterByLessonId": {
+      "win-clients-sales-pitch-sales-pitch-overview": "overview",
+      "win-clients-sales-pitch-sales-call-pitching-principles": "principles",
+      "win-clients-sales-pitch-sales-call-transition-into-pitch": "transition",
+      "win-clients-sales-pitch-sales-call-the-pitch": "the-pitch",
+      "win-clients-sales-pitch-sales-call-asking-questions-in-the-pitch": "questions-in-pitch",
+      "win-clients-sales-pitch-sales-pitch-demo-perfecting-your-pitch-performance": "demo",
+      "win-clients-sales-pitch-how-to-share-slides-on-a-sales-call-so-they-don-t-see-your-script": "share-slides"
+    }
+  },
+  {
+    "courseId": "win-clients",
+    "consolidatedLessonId": "win-clients-post-pitch-price-and-close",
+    "legacyChapterByLessonId": {
+      "win-clients-sales-pitch-sales-call-post-pitch-checking-for-questions": "check-questions",
+      "win-clients-sales-pitch-sales-call-post-pitch-framework-for-answering-questions": "answer-framework",
+      "win-clients-sales-pitch-post-pitch-process": "post-pitch-process",
+      "win-clients-sales-pitch-price-pitch": "price-pitch",
+      "win-clients-sales-pitch-sales-process-questions-when-should-you-discuss-price": "when-price"
+    }
+  },
+  {
+    "courseId": "coach-clients",
+    "consolidatedLessonId": "coach-clients-start-and-end-a-coaching-session",
+    "legacyChapterByLessonId": {
+      "coach-clients-coachiing-session-structure-how-to-start-a-coaching-session": "start",
+      "coach-clients-coachiing-session-structure-how-eo-end-a-coaching-session": "end"
+    }
+  },
+  {
+    "courseId": "coach-clients",
+    "consolidatedLessonId": "coach-clients-certification-welcome-to-profit-coach-certification",
+    "legacyChapterByLessonId": {
+      "coach-clients-certification-welcome-to-the-profit-coach-certification-welcome-to-your-coaching-transformation": "welcome",
+      "coach-clients-certification-welcome-to-the-profit-coach-certification-how-to-maximise-your-certification-experience": "maximise",
+      "coach-clients-certification-welcome-to-the-profit-coach-certification-meet-your-faculty-our-coaching-philosophy": "faculty",
+      "coach-clients-certification-welcome-to-the-profit-coach-certification-profit-coacbh-roi-calculator": "roi-calculator",
+      "coach-clients-certification-welcome-to-the-profit-coach-certification-profit-coach-certification-workbook": "workbook"
+    }
+  },
+  {
+    "courseId": "coach-clients",
+    "consolidatedLessonId": "coach-clients-certification-week-1-coach-foundations",
+    "legacyChapterByLessonId": {
+      "coach-clients-certification-coaching-foundations-what-is-coaching": "what-is-coaching",
+      "coach-action-plan-building-a-world-class-coaching-practice-57m-what-is-your-coaching-style-3-traits-that-define-how-you-coach": "coaching-style",
+      "coach-clients-certification-coaching-foundations-the-power-of-effective-feedback": "feedback",
+      "coach-clients-certification-coaching-foundations-the-use-it-or-lose-it-principle": "use-it-or-lose-it",
+      "coach-clients-certification-coaching-foundations-core-skill-active-listening-demo": "active-listening",
+      "coach-clients-certification-coaching-foundations-the-coach-method-overview": "coach-overview",
+      "coach-clients-certification-coaching-foundations-using-the-coach-method": "using-coach",
+      "coach-clients-certification-coaching-foundations-the-coaching-cube": "coaching-cube",
+      "coach-clients-certification-coaching-foundations-client-simulator-coach-practice": "simulator",
+      "coach-clients-certification-coaching-foundations-live-coaching-session-demo": "live-demo",
+      "coach-clients-certification-coaching-foundations-ideal-session-structure": "ideal-structure",
+      "coach-clients-certification-coaching-foundations-how-coach-creates-more-sessions": "more-sessions",
+      "coach-clients-certification-coaching-foundations-coach-foundations-review": "review",
+      "coach-clients-certification-coaching-foundations-week-1-quiz-introduction-and-coach": "week-1-quiz"
+    }
+  },
+  {
+    "courseId": "coach-clients",
+    "consolidatedLessonId": "coach-clients-certification-week-2-powerful-questions",
+    "legacyChapterByLessonId": {
+      "coach-clients-certification-the-exact-questions-to-ask-clients-icf-8-core-competencies": "icf",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-the-power-framework-overview": "power-overview",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-how-to-ask-powerful-questions-exercises": "exercises",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-powerful-vs-transformational-questions": "powerful-vs-transformational",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-communication-skills-assessment": "comm-assessment",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-the-power-framework-detail": "power-detail",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-week-2-coach-superpowers-review": "week-2-review",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-client-simullator-profitabilty-issues-management-consultant": "simulator",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-becoming-a-great-coach-quiz": "great-coach-quiz",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-superpowers-quiz": "superpowers-quiz",
+      "coach-clients-certification-the-exact-questions-to-ask-clients-questioning-and-listening-quiz": "questioning-quiz"
+    }
+  },
+  {
+    "courseId": "coach-clients",
+    "consolidatedLessonId": "coach-clients-certification-week-3-lasting-transformation",
+    "legacyChapterByLessonId": {
+      "coach-clients-certification-create-lasting-transformation-sprint-week-3-overview": "overview",
+      "coach-clients-certification-create-lasting-transformation-creating-sustainable-transformation": "sustainable",
+      "coach-clients-certification-create-lasting-transformation-how-to-continually-add-value": "add-value",
+      "coach-clients-certification-create-lasting-transformation-coaching-mindset": "mindset",
+      "coach-clients-certification-create-lasting-transformation-controlling-your-state-of-mind": "state-of-mind",
+      "coach-clients-certification-create-lasting-transformation-how-psychology-affects-mindset": "psychology",
+      "coach-clients-certification-create-lasting-transformation-use-vocabulary-to-change-perception": "vocabulary",
+      "coach-clients-certification-create-lasting-transformation-coaching-mindset-quiz": "mindset-quiz",
+      "coach-clients-certification-create-lasting-transformation-how-to-use-the-coaching-sheet-in-sessions": "coaching-sheet",
+      "coach-clients-certification-create-lasting-transformation-coachin-a-person-feedback-review": "feedback-review",
+      "coach-clients-certification-create-lasting-transformation-pros-cons-coachin-ai-vs-person": "ai-vs-person",
+      "coach-clients-certification-create-lasting-transformation-advanced-coaching-skills-selling": "advanced-selling",
+      "coach-clients-certification-create-lasting-transformation-sprint-week-3-review-homework": "homework"
+    }
+  },
+  {
+    "courseId": "coach-clients",
+    "consolidatedLessonId": "coach-clients-certification-week-4-world-class-coach",
+    "legacyChapterByLessonId": {
+      "coach-clients-certification-becoming-a-world-class-business-coach-coaching-as-a-leader": "coaching-as-leader",
+      "coach-clients-certification-becoming-a-world-class-business-coach-coaching-as-a-leader-quiz": "leader-quiz",
+      "coach-clients-certification-becoming-a-world-class-business-coach-ethical-dilemmas-and-difficult-situations": "ethics",
+      "coach-clients-certification-becoming-a-world-class-business-coach-ethical-dilemas-quiz": "ethics-quiz",
+      "coach-clients-certification-becoming-a-world-class-business-coach-client-sessions-using-tools": "using-tools",
+      "coach-clients-certification-becoming-a-world-class-business-coach-example-using-tools-coach-method": "tools-example",
+      "coach-clients-certification-becoming-a-world-class-business-coach-master-coach-to-master-selling": "master-selling",
+      "coach-clients-certification-becoming-a-world-class-business-coach-business-coach-certification-assessment": "assessment",
+      "coach-clients-certification-becoming-a-world-class-business-coach-certification-feedback-survey": "feedback-survey",
+      "coach-clients-certification-becoming-a-world-class-business-coach-certificaiton-round-up-next-steps": "round-up",
+      "coach-clients-certification-becoming-a-world-class-business-coach-business-blueprint": "blueprint"
+    }
+  }
+]

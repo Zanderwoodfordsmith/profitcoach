@@ -11,6 +11,7 @@ export type ProspectRow = {
   email: string | null;
   business_name: string | null;
   linkedin_url?: string | null;
+  company_website?: string | null;
   phone: string | null;
   type: string;
   prospect_status: string | null;
@@ -42,6 +43,8 @@ export type ProspectRow = {
   created_at?: string | null;
   /** Last assessment funnel entered (boss scorecard vs boss pro). */
   prospect_funnel?: string | null;
+  /** How this prospect entered the pipeline (Sales Navigator, manual, etc.). */
+  prospect_source?: string | null;
 };
 
 export function latestProspectAssessmentAt(

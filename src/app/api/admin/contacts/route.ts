@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
-import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import {
+  fetchAllSupabasePages,
+  selectContactsWithOptionalPhone,
+} from "@/lib/contactsSchemaSafeSelect";
 import {
   enrichProspectRows,
   toLiteProspectRows,
@@ -43,33 +46,48 @@ export async function GET(request: Request) {
         business_name: string | null;
         job_title: string | null;
         linkedin_url: string | null;
+        company_website: string | null;
         prospect_status: string | null;
         phone: string | null;
         crm_contact_id: string | null;
         prospect_funnel: string | null;
+        prospect_source: string | null;
         type: string;
         created_at: string;
       }>(async (columns) => {
-        let query = supabaseAdmin
-          .from("contacts")
-          .select(columns)
-          .order("created_at", { ascending: false });
-
-        if (typeFilter === "client") {
-          query = query.eq("type", "client");
-        } else if (typeFilter === "prospect") {
-          query = query.eq("type", "prospect");
-        }
-
         if (enrichIds && enrichIds.length > 0) {
-          query = query.in("id", enrichIds);
+          let query = supabaseAdmin
+            .from("contacts")
+            .select(columns)
+            .in("id", enrichIds)
+            .order("created_at", { ascending: false });
+          if (typeFilter === "client") {
+            query = query.eq("type", "client");
+          } else if (typeFilter === "prospect") {
+            query = query.eq("type", "prospect");
+          }
+          return query;
         }
 
-        return query;
+        return fetchAllSupabasePages(async (from, to) => {
+          let query = supabaseAdmin
+            .from("contacts")
+            .select(columns)
+            .order("created_at", { ascending: false })
+            .range(from, to);
+          if (typeFilter === "client") {
+            query = query.eq("type", "client");
+          } else if (typeFilter === "prospect") {
+            query = query.eq("type", "prospect");
+          }
+          return query;
+        });
       }, "id, coach_id, full_name, email, business_name, job_title, prospect_status, type, created_at", [
         "crm_contact_id",
         "linkedin_url",
+        "company_website",
         "prospect_funnel",
+        "prospect_source",
       ]);
 
     if (contactsError) {
@@ -147,6 +165,7 @@ export async function GET(request: Request) {
         email: c.email ?? null,
         business_name: c.business_name ?? null,
         linkedin_url: c.linkedin_url ?? null,
+        company_website: c.company_website ?? null,
         phone: c.phone ?? null,
         type: c.type,
         coach_name: coachMeta.full_name,
@@ -155,6 +174,7 @@ export async function GET(request: Request) {
         crm_location_id: coachMeta.crm_location_id ?? null,
         created_at: c.created_at ?? null,
         prospect_funnel: c.prospect_funnel ?? null,
+        prospect_source: c.prospect_source ?? null,
       };
     });
 

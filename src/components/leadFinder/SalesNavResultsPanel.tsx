@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Check,
+  Download,
   ExternalLink,
   History,
   Loader2,
@@ -12,6 +13,7 @@ import {
 import { Modal } from "@/components/ui/Modal";
 import type { SalesNavImportedLead } from "@/lib/apify/salesNavigatorTypes";
 import { SALES_NAV_MAX_TAKE_PAGES } from "@/lib/apify/salesNavigatorTypes";
+import { downloadSalesNavLeadsCsv } from "@/lib/salesNavigator/exportSalesNavLeadsCsv";
 import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
 import {
   unwatchSalesNavImport,
@@ -47,6 +49,9 @@ type ImportStartResponse = {
   targetCount?: number;
   progressCount?: number;
   estimatedCostUsd?: number;
+  segmented?: boolean;
+  segmentTotal?: number;
+  segmentLabels?: string[];
   async?: boolean;
   error?: string;
 };
@@ -62,6 +67,8 @@ type ImportPollResponse = {
   durationMs?: number | null;
   error?: string | null;
   leads?: SalesNavImportedLead[];
+  /** Full lead_snapshot (unsliced) for CSV export. */
+  exportLeads?: SalesNavImportedLead[];
   run?: {
     name?: string | null;
     salesNavUrl?: string | null;
@@ -72,6 +79,10 @@ type ImportPollResponse = {
     targetCount?: number | null;
     scrapeTargetCount?: number | null;
     phase?: "scraping" | "finalizing" | null;
+    segmented?: boolean;
+    segmentIndex?: number;
+    segmentTotal?: number;
+    segmentLabel?: string | null;
   };
 };
 
@@ -138,6 +149,9 @@ export function SalesNavResultsPanel({
   const [historyRuns, setHistoryRuns] = useState<HistoryRun[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyOpeningId, setHistoryOpeningId] = useState<string | null>(null);
+  const [historyCsvExportingId, setHistoryCsvExportingId] = useState<
+    string | null
+  >(null);
   const [takePages, setTakePages] = useState(4);
   const [urlSource, setUrlSource] = useState<UrlSource>("filters");
   const [pastedUrl, setPastedUrl] = useState("");
@@ -147,6 +161,9 @@ export function SalesNavResultsPanel({
     progressCount: number;
     targetCount: number;
     phase: "scraping" | "finalizing";
+    segmentLabel?: string | null;
+    segmentIndex?: number;
+    segmentTotal?: number;
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -372,7 +389,7 @@ export function SalesNavResultsPanel({
   }
 
   function applyCompletedImport(body: ImportPollResponse) {
-    const nextLeads = body.leads ?? [];
+    const nextLeads = body.exportLeads ?? body.leads ?? [];
     const delivered = body.scrapedCount ?? nextLeads.length;
     const target = body.targetCount ?? body.run?.targetCount ?? null;
     const total = body.scrapedTotal ?? delivered;
@@ -460,6 +477,57 @@ export function SalesNavResultsPanel({
         setImportProgress(null);
       }
     }
+  }
+
+  async function exportHistoryRunCsv(runId: string, runName?: string | null) {
+    setHistoryError(null);
+    setHistoryCsvExportingId(runId);
+    try {
+      const headers = await authHeaders();
+      if (!headers) {
+        setHistoryError("Not signed in.");
+        return;
+      }
+      const res = await fetch(
+        `/api/admin/lead-finder/sales-nav-import-runs/${runId}`,
+        { headers }
+      );
+      const body = (await res.json().catch(() => ({}))) as ImportPollResponse & {
+        error?: string;
+      };
+      if (!res.ok) {
+        setHistoryError(body.error ?? "Could not export import.");
+        return;
+      }
+      const status = body.status ?? "succeeded";
+      if (status === "running" || status === "pending") {
+        setHistoryError("Import still running — try again when it finishes.");
+        return;
+      }
+      if (status === "failed") {
+        setHistoryError(body.error || "That import failed.");
+        return;
+      }
+      const exportLeads = body.exportLeads ?? body.leads ?? [];
+      if (!exportLeads.length) {
+        setHistoryError("No leads to export for that import.");
+        return;
+      }
+      downloadSalesNavLeadsCsv(exportLeads, {
+        name: runName?.trim() || body.run?.name?.trim() || undefined,
+      });
+    } catch {
+      setHistoryError("Could not export CSV.");
+    } finally {
+      setHistoryCsvExportingId(null);
+    }
+  }
+
+  function exportVisibleLeads() {
+    if (!leads?.length) return;
+    downloadSalesNavLeadsCsv(leads, {
+      name: importName.trim() || undefined,
+    });
   }
 
   async function renameHistoryRun(runId: string, nextName: string) {
@@ -558,6 +626,9 @@ export function SalesNavResultsPanel({
           progressCount: progress,
           targetCount: target,
           phase,
+          segmentLabel: body.run?.segmentLabel ?? null,
+          segmentIndex: body.run?.segmentIndex,
+          segmentTotal: body.run?.segmentTotal,
         });
       }
 
@@ -659,10 +730,18 @@ export function SalesNavResultsPanel({
         name: importName.trim() || null,
         targetCount,
       });
+      if (body.segmented && (body.segmentTotal ?? 0) > 1) {
+        setSavedNote(
+          `Running ${body.segmentTotal} team-size segments: ${(body.segmentLabels ?? []).join(", ")}.`
+        );
+      }
       setImportProgress({
         progressCount: 0,
         targetCount,
         phase: "scraping",
+        segmentLabel: body.segmentLabels?.[0] ?? null,
+        segmentIndex: 0,
+        segmentTotal: body.segmentTotal,
       });
 
       const done = await pollImportJob(jobId, headers, targetCount);
@@ -929,7 +1008,9 @@ export function SalesNavResultsPanel({
                     <span>
                       {importProgress.phase === "finalizing"
                         ? `Finishing · ${importProgress.progressCount.toLocaleString()} scraped`
-                        : `In progress · ${importProgress.progressCount.toLocaleString()} / ${importProgress.targetCount.toLocaleString()}`}
+                        : importProgress.segmentTotal && importProgress.segmentTotal > 1
+                          ? `Segment ${(importProgress.segmentIndex ?? 0) + 1}/${importProgress.segmentTotal}${importProgress.segmentLabel ? ` (${importProgress.segmentLabel})` : ""} · ${importProgress.progressCount.toLocaleString()} total`
+                          : `In progress · ${importProgress.progressCount.toLocaleString()} / ${importProgress.targetCount.toLocaleString()}`}
                     </span>
                     <span>
                       {formatApproxImportDuration(
@@ -982,6 +1063,14 @@ export function SalesNavResultsPanel({
                   </span>
                 ) : null}
               </p>
+              <button
+                type="button"
+                onClick={() => exportVisibleLeads()}
+                className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download CSV
+              </button>
               <button
                 type="button"
                 disabled={saving}
@@ -1184,7 +1273,25 @@ export function SalesNavResultsPanel({
                       </button>
                       {historyOpeningId === run.id ? (
                         <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                      ) : canOpen ? (
+                      ) : status === "succeeded" ? (
+                        <button
+                          type="button"
+                          disabled={historyCsvExportingId === run.id}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-sky-700 hover:underline disabled:opacity-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void exportHistoryRunCsv(run.id, run.name);
+                          }}
+                        >
+                          {historyCsvExportingId === run.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Download className="h-3.5 w-3.5" />
+                          )}
+                          CSV
+                        </button>
+                      ) : null}
+                      {historyOpeningId === run.id ? null : canOpen ? (
                         <button
                           type="button"
                           className="text-xs font-medium text-sky-700 hover:underline"

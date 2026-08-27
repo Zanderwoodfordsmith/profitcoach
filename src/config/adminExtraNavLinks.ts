@@ -35,11 +35,6 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Apify scrape runs: who, counts, new vs updated, estimated cost",
   },
   {
-    href: "/admin/brand",
-    label: "Brand hub",
-    hint: "Typography, graphics elements, and the Profit System frameworks (also in the sidebar)",
-  },
-  {
     href: "/assessment",
     label: "BOSS Scorecard",
     hint: "Default route redirects to /assessment/BCA (13-question funnel)",
@@ -48,11 +43,6 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     href: "/assessment-pro",
     label: "Boss Pro assessment",
     hint: "50-question Boss Pro; /diagnostic redirects here",
-  },
-  {
-    href: "/join",
-    label: "Program join",
-    hint: "Open coach signup (same flow as /signup)",
   },
   {
     href: "/welcome?preview=1",

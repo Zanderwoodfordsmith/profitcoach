@@ -35,14 +35,17 @@ function jobPayload(job: SalesNavImportJobRow) {
       Boolean(row && typeof row === "object")
     )
     .map(snapshotToSalesNavImportedLead);
-  // Coach-facing list is capped at what they asked for; surplus stays in cache.
-  const leads = allLeads.slice(0, targetCount);
+  // Segmented imports merge all segments; single runs cap at requested target.
+  const leads = job.segmented ? allLeads : allLeads.slice(0, targetCount);
   const scrapedTotal = job.scraped_count || allLeads.length;
   const deliveredCount = leads.length;
   const progressCount = job.progress_count ?? 0;
+  const segmentIndex = job.segment_index ?? 0;
+  const segmentTotal = job.segment_total ?? 1;
+  const currentSegment = job.segment_plan?.[segmentIndex] ?? null;
   const phase =
     job.status === "pending" || job.status === "running"
-      ? progressCount >= targetCount
+      ? progressCount >= targetCount && !job.segmented
         ? ("finalizing" as const)
         : ("scraping" as const)
       : null;
@@ -72,8 +75,14 @@ function jobPayload(job: SalesNavImportJobRow) {
       cacheInserted: job.cache_inserted ?? 0,
       cacheUpdated: job.cache_updated ?? 0,
       errorMessage: job.error_message,
+      segmented: job.segmented,
+      segmentIndex,
+      segmentTotal,
+      segmentLabel: currentSegment?.label ?? null,
+      segmentPlan: job.segment_plan ?? null,
     },
     leads,
+    exportLeads: allLeads,
     status: job.status,
     progressCount,
     targetCount,

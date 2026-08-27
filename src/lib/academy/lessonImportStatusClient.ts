@@ -10,12 +10,28 @@ export function lessonVideoImportStatus(row: {
   return row.hasInAppVideo ? "video_ready" : "video_missing";
 }
 
+/** How this row appears in the admin lessons tree. */
+export type LessonImportKind = "single" | "chaptered" | "chapter" | "satellite";
+
 export type LessonImportStatusRow = {
   courseId: string;
   courseTitle: string;
   sectionTitle: string;
   lessonId: string;
   lessonTitle: string;
+  /** Single hub lesson, chaptered parent, chapter step, or optional satellite. */
+  kind: LessonImportKind;
+  /** Chapter id when `kind === "chapter"`. */
+  chapterId?: string;
+  /** Parent hub lesson when `kind` is `chapter` or `satellite`. */
+  parentLessonId?: string;
+  parentLessonTitle?: string;
+  /** Set on chaptered parents. */
+  chapterCount?: number;
+  /** Set on parents with optional related extras. */
+  satelliteCount?: number;
+  /** Chapter steps and related satellites nested under a parent lesson. */
+  children?: LessonImportStatusRow[];
   legacyExpectsVideo: boolean;
   hasInAppVideo: boolean;
   hasContent: boolean;
@@ -24,17 +40,26 @@ export type LessonImportStatusRow = {
   missingVideo: boolean;
   missingContent: boolean;
   missingTranscript: boolean;
+  /** True when Classroom treats this lesson as draft (admins only). */
+  isDraft: boolean;
   adminLessonHref: string;
 };
 
 export type LessonImportStatusSummary = {
   lessonCount: number;
+  /** Hub lessons only (excludes nested chapters and satellites). */
+  hubLessonCount: number;
+  chapteredLessonCount: number;
+  chapterStepCount: number;
+  satelliteCount: number;
   legacyVideoCount: number;
   inAppVideoCount: number;
   missingVideoCount: number;
   missingContentCount: number;
   missingTranscriptCount: number;
   readyCount: number;
+  draftCount: number;
+  publishedCount: number;
 };
 
 export type LessonImportFilter =
@@ -42,7 +67,9 @@ export type LessonImportFilter =
   | "gaps"
   | "missingVideo"
   | "missingContent"
-  | "missingTranscript";
+  | "missingTranscript"
+  | "draft"
+  | "published";
 
 /** Nested hub section tree (categories can contain sub-sections). */
 export type LessonImportCatalogSection = {
@@ -62,6 +89,18 @@ export type LessonImportCatalogOrder = {
   }>;
 };
 
+/** Per-column ready / missing counts for Content, Video, Transcript. */
+export type LessonImportColumnTally = {
+  ok: number;
+  missing: number;
+};
+
+export type LessonImportColumnTallies = {
+  content: LessonImportColumnTally;
+  video: LessonImportColumnTally;
+  transcript: LessonImportColumnTally;
+};
+
 export type LessonImportSectionGroup = {
   sectionId: string;
   sectionTitle: string;
@@ -73,6 +112,8 @@ export type LessonImportSectionGroup = {
   gapCount: number;
   /** Visible lessons in this module + nested children (after list filter). */
   lessonCount: number;
+  /** Column tallies for visible lessons in this module + nested children. */
+  columnTallies: LessonImportColumnTallies;
 };
 
 export type LessonImportCourseGroup = {
@@ -81,6 +122,7 @@ export type LessonImportCourseGroup = {
   sections: LessonImportSectionGroup[];
   lessonCount: number;
   gapCount: number;
+  columnTallies: LessonImportColumnTallies;
 };
 
 export type LessonImportStatusReport = {
@@ -91,9 +133,9 @@ export type LessonImportStatusReport = {
   snapshotUpdatedAt: string | null;
 };
 
-export function lessonMatchesImportFilter(
+function rowMatchesImportFilterSelf(
   row: LessonImportStatusRow,
-  filter: LessonImportFilter
+  filter: LessonImportFilter,
 ): boolean {
   switch (filter) {
     case "missingVideo":
@@ -102,6 +144,10 @@ export function lessonMatchesImportFilter(
       return row.missingContent;
     case "missingTranscript":
       return row.missingTranscript;
+    case "draft":
+      return row.isDraft;
+    case "published":
+      return !row.isDraft;
     case "gaps":
       return row.missingVideo || row.missingContent || row.missingTranscript;
     default:
@@ -109,12 +155,99 @@ export function lessonMatchesImportFilter(
   }
 }
 
+export function lessonMatchesImportFilter(
+  row: LessonImportStatusRow,
+  filter: LessonImportFilter
+): boolean {
+  if (rowMatchesImportFilterSelf(row, filter)) return true;
+  return row.children?.some((child) => lessonMatchesImportFilter(child, filter)) ?? false;
+}
+
 function lessonKey(courseId: string, lessonId: string): string {
   return `${courseId}:${lessonId}`;
 }
 
 function lessonHasGap(row: LessonImportStatusRow): boolean {
-  return row.missingVideo || row.missingContent || row.missingTranscript;
+  if (row.missingVideo || row.missingContent || row.missingTranscript) return true;
+  return row.children?.some(lessonHasGap) ?? false;
+}
+
+/** Every row in the tree (parent + nested chapters / satellites). */
+export function flattenLessonImportRows(
+  rows: LessonImportStatusRow[],
+): LessonImportStatusRow[] {
+  const out: LessonImportStatusRow[] = [];
+  for (const row of rows) {
+    out.push(row);
+    if (row.children?.length) out.push(...flattenLessonImportRows(row.children));
+  }
+  return out;
+}
+
+export function emptyColumnTallies(): LessonImportColumnTallies {
+  return {
+    content: { ok: 0, missing: 0 },
+    video: { ok: 0, missing: 0 },
+    transcript: { ok: 0, missing: 0 },
+  };
+}
+
+export function addLessonColumnTallies(
+  tallies: LessonImportColumnTallies,
+  row: LessonImportStatusRow,
+): void {
+  const rows =
+    row.kind === "chaptered" && row.children?.length
+      ? row.children
+      : [row];
+
+  for (const tallyRow of rows) {
+    if (tallyRow.hasContent) tallies.content.ok += 1;
+    else tallies.content.missing += 1;
+
+    if (tallyRow.videoStatus === "video_ready") tallies.video.ok += 1;
+    else if (tallyRow.videoStatus === "video_missing") tallies.video.missing += 1;
+
+    if (tallyRow.legacyExpectsVideo || tallyRow.hasInAppVideo) {
+      if (tallyRow.hasTranscript) tallies.transcript.ok += 1;
+      else tallies.transcript.missing += 1;
+    }
+  }
+}
+
+export function mergeColumnTallies(
+  a: LessonImportColumnTallies,
+  b: LessonImportColumnTallies,
+): LessonImportColumnTallies {
+  return {
+    content: {
+      ok: a.content.ok + b.content.ok,
+      missing: a.content.missing + b.content.missing,
+    },
+    video: {
+      ok: a.video.ok + b.video.ok,
+      missing: a.video.missing + b.video.missing,
+    },
+    transcript: {
+      ok: a.transcript.ok + b.transcript.ok,
+      missing: a.transcript.missing + b.transcript.missing,
+    },
+  };
+}
+
+function visibleImportRowCount(rows: LessonImportStatusRow[]): number {
+  let count = 0;
+  for (const row of rows) {
+    count += 1;
+    if (row.children?.length) count += visibleImportRowCount(row.children);
+  }
+  return count;
+}
+
+function talliesFromLessons(lessons: LessonImportStatusRow[]): LessonImportColumnTallies {
+  const tallies = emptyColumnTallies();
+  for (const row of lessons) addLessonColumnTallies(tallies, row);
+  return tallies;
 }
 
 function buildSectionGroup(
@@ -143,6 +276,10 @@ function buildSectionGroup(
 
   const nestedLessonCount = childSections.reduce((n, s) => n + s.lessonCount, 0);
   const nestedGapCount = childSections.reduce((n, s) => n + s.gapCount, 0);
+  let columnTallies = talliesFromLessons(lessons);
+  for (const child of childSections) {
+    columnTallies = mergeColumnTallies(columnTallies, child.columnTallies);
+  }
 
   return {
     sectionId: section.id,
@@ -152,7 +289,8 @@ function buildSectionGroup(
     lessons,
     sections: childSections,
     gapCount: directGapCount + nestedGapCount,
-    lessonCount: lessons.length + nestedLessonCount,
+    lessonCount: visibleImportRowCount(lessons) + nestedLessonCount,
+    columnTallies,
   };
 }
 
@@ -183,6 +321,10 @@ export function buildOrderedCourseGroups(
       sections,
       lessonCount: sections.reduce((n, s) => n + s.lessonCount, 0),
       gapCount: sections.reduce((n, s) => n + s.gapCount, 0),
+      columnTallies: sections.reduce(
+        (acc, s) => mergeColumnTallies(acc, s.columnTallies),
+        emptyColumnTallies(),
+      ),
     });
   }
 
@@ -234,8 +376,17 @@ export function buildImportLinkLessonPickGroups(
       if (exclude.has(key)) return;
       const row = lessonsByKey.get(key);
       if (!row) return;
-      if (row.missingVideo) missingVideoKeys.push(key);
-      else if (row.missingTranscript) missingTranscriptKeys.push(key);
+      const linkableRows =
+        row.kind === "chaptered"
+          ? flattenLessonImportRows(row.children ?? [])
+          : flattenLessonImportRows([row]);
+      for (const linkRow of linkableRows) {
+        if (linkRow.kind === "chaptered") continue;
+        const linkKey = lessonKey(linkRow.courseId, linkRow.lessonId);
+        if (exclude.has(linkKey)) continue;
+        if (linkRow.missingVideo) missingVideoKeys.push(linkKey);
+        else if (linkRow.missingTranscript) missingTranscriptKeys.push(linkKey);
+      }
     });
   }
 

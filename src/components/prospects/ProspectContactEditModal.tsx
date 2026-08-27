@@ -31,6 +31,7 @@ export function ProspectContactEditModal({
   const [phone, setPhone] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [companyWebsite, setCompanyWebsite] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export function ProspectContactEditModal({
     setPhone(prospect.phone ?? "");
     setJobTitle(prospect.job_title ?? "");
     setBusinessName(prospect.business_name ?? "");
+    setCompanyWebsite(prospect.company_website ?? "");
     setError(null);
   }, [prospect]);
 
@@ -62,6 +64,7 @@ export function ProspectContactEditModal({
       phone: phone.trim() || null,
       job_title: normalizeProspectLabel(jobTitle),
       business_name: normalizeProspectLabel(businessName),
+      company_website: companyWebsite.trim() || null,
     };
 
     try {
@@ -188,6 +191,22 @@ export function ProspectContactEditModal({
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
               placeholder="Business"
+              className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="prospect-website"
+              className="mb-1 block text-sm font-medium text-slate-700"
+            >
+              Website
+            </label>
+            <input
+              id="prospect-website"
+              type="url"
+              value={companyWebsite}
+              onChange={(e) => setCompanyWebsite(e.target.value)}
+              placeholder="https://example.com"
               className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
             />
           </div>

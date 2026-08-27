@@ -27,9 +27,9 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
+  getCoachPickerOutputs,
   getDefaultOutputId,
   getOutputById,
-  PROFIT_COACH_OUTPUTS,
 } from "@/lib/profitCoachAi/registry";
 import {
   deriveAiScreenContext,
@@ -92,10 +92,10 @@ const COMPOSER_MAX_FULLSCREEN_PX = 576; // 36rem
 
 /** Popular skills for the fullscreen empty-state chip row. */
 const CHAT_STARTER_SKILL_IDS = [
+  "choose_icp",
+  "ideal_client",
   "linkedin_connector",
   "linkedin_newsletter",
-  "vip_nurture",
-  "content_planning",
 ] as const;
 
 function formatRecordingClock(seconds: number): string {
@@ -140,6 +140,7 @@ export function CoachAiPanel({
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
   const screen = useMemo(() => deriveAiScreenContext(pathname), [pathname]);
+  const coachPickerOutputs = useMemo(() => getCoachPickerOutputs(), []);
 
   const [messages, setMessages] = useState<PanelMessage[]>([]);
   const [input, setInput] = useState("");
@@ -959,6 +960,7 @@ export function CoachAiPanel({
             basePath={createHubHref}
             onPickSkill={(id) => pickSkill(id, true)}
             onOpenBrain={() => void openBrain()}
+            onNavigate={onClose}
           />
         </div>
       ) : (
@@ -1071,7 +1073,7 @@ export function CoachAiPanel({
                         }}
                         className="max-w-[14rem] rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:border-sky-400 focus:outline-none"
                       >
-                        {PROFIT_COACH_OUTPUTS.map((o) => (
+                        {coachPickerOutputs.map((o) => (
                           <option key={o.id} value={o.id}>
                             {o.label}
                           </option>
@@ -1198,6 +1200,7 @@ export function CoachAiPanel({
                       </button>
                       <Link
                         href={createHubHref}
+                        onClick={onClose}
                         className="text-sm font-medium text-sky-700 hover:text-sky-800"
                       >
                         Open the full Create hub →
@@ -1259,7 +1262,7 @@ export function CoachAiPanel({
                         }}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:border-sky-400 focus:outline-none"
                       >
-                        {PROFIT_COACH_OUTPUTS.map((o) => (
+                        {coachPickerOutputs.map((o) => (
                           <option key={o.id} value={o.id}>
                             {o.label}
                           </option>
@@ -1359,7 +1362,7 @@ export function CoachAiPanel({
                             }}
                             className="max-w-[14rem] rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 focus:border-sky-400 focus:outline-none"
                           >
-                            {PROFIT_COACH_OUTPUTS.map((o) => (
+                            {coachPickerOutputs.map((o) => (
                               <option key={o.id} value={o.id}>
                                 {o.label}
                               </option>

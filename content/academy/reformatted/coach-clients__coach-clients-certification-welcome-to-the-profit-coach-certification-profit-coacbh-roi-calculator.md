@@ -1,0 +1,179 @@
+### What is this?
+
+The **Funnel Multiplier** shows prospects the mathematical ROI of coaching — using their revenue numbers, not theory.
+
+Five levers drive annual revenue: leads, conversion to appointments, close rate, average deal value, and transactions per customer. Improve each lever by the same percentage and they **compound**. A 10% lift on all five is `1.1^5 = 1.61` — a **61% revenue increase**.
+
+Use this in value sessions and sales conversations when someone asks whether coaching is worth the investment.
+
+### How to use this lesson
+
+1. Ask for rough numbers (or use their BOSS diagnostic if they have taken it).
+2. Slide the levers to match their business.
+3. Show the annual uplift, then compare to your coaching fee — the maths does the selling.
+
+```html-embed
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Funnel Multiplier</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(135deg, #0c5290 0%, #073157 60%, #061a2e 100%);
+      color: #fff;
+    }
+    .wrap { padding: 24px 20px 32px; max-width: 960px; margin: 0 auto; }
+    .eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #9fbde7;
+    }
+    h1 {
+      margin: 12px 0 16px; font-size: clamp(24px, 4vw, 36px);
+      font-weight: 300; line-height: 1.1; letter-spacing: -0.03em;
+    }
+    h1 em { font-style: normal; font-weight: 700; color: #fff; }
+    .intro { font-size: 15px; line-height: 1.6; color: #cfdef3; margin: 0 0 20px; }
+    .panel {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 20px;
+    }
+    .panel-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 18px; gap: 12px;
+    }
+    .live {
+      font-size: 10px; font-weight: 600; padding: 4px 8px; border-radius: 999px;
+      background: rgba(16,185,129,0.18); color: #34d399; letter-spacing: 0.06em;
+    }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+    .field label {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;
+    }
+    .field .val { font-size: 13px; font-weight: 700; color: #42a1ee; font-variant-numeric: tabular-nums; }
+    input[type=range] { width: 100%; accent-color: #42a1ee; height: 6px; }
+    .results {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+      padding: 16px; border-radius: 14px;
+      background: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(12,82,144,0.18));
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+    @media (max-width: 520px) { .results { grid-template-columns: 1fr; } }
+    .results > div + div { border-left: 1px solid rgba(255,255,255,0.1); padding-left: 12px; }
+    @media (max-width: 520px) {
+      .results > div + div { border-left: 0; padding-left: 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
+    }
+    .results .k {
+      font-size: 9px; font-weight: 600; color: #9fbde7;
+      letter-spacing: 0.16em; text-transform: uppercase;
+    }
+    .results .n { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .results .uplift .n, .results .uplift .pct { color: #34d399; }
+    .note { margin-top: 12px; font-size: 11px; color: #9fbde7; line-height: 1.5; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow">The Funnel Multiplier</div>
+    <h1>The maths behind <em>30–130% revenue uplift</em></h1>
+    <p class="intro">Five levers run annual revenue: leads, conversion to appointments, close rate, deal value, and transactions per customer. Improve each by the same percentage and they compound.</p>
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="eyebrow">Your numbers</div>
+          <div style="font-size:13px;color:#cfdef3;margin-top:4px">Five levers · one result</div>
+        </div>
+        <div class="live">LIVE</div>
+      </div>
+      <div class="grid" id="sliders"></div>
+      <div class="results">
+        <div>
+          <div class="k">Today (annual)</div>
+          <div class="n" id="baseRev">—</div>
+        </div>
+        <div>
+          <div class="k" id="afterLabel">After uplift</div>
+          <div class="n" id="newRev">—</div>
+        </div>
+        <div class="uplift">
+          <div class="k">Uplift</div>
+          <div class="n" id="upliftAbs">—</div>
+          <div class="pct" id="upliftPct" style="font-size:12px;font-weight:600;margin-top:2px"></div>
+        </div>
+      </div>
+      <div class="note">Illustrative model for sales conversations. Use the prospect's real numbers — or their BOSS diagnostic — for the strongest proof.</div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var state = { leads: 40, conv: 35, close: 40, deal: 8000, tx: 1.4, lift: 10 };
+      var fields = [
+        { key: "leads", label: "Leads / month", min: 5, max: 300, step: 1 },
+        { key: "conv", label: "Lead → appointment %", min: 5, max: 80, step: 1, suffix: "%" },
+        { key: "close", label: "Close rate %", min: 5, max: 80, step: 1, suffix: "%" },
+        { key: "deal", label: "Average deal value", min: 500, max: 50000, step: 100, money: true },
+        { key: "tx", label: "Transactions / customer / yr", min: 1, max: 6, step: 0.1, decimals: 1, suffix: "x" },
+        { key: "lift", label: "% lift on each lever", min: 5, max: 25, step: 1, prefix: "+" , suffix: "%" }
+      ];
+      function fmt(n) { return "£" + Math.round(n).toLocaleString("en-GB"); }
+      function fmtCompact(n) {
+        if (n >= 1e6) return "£" + (n / 1e6).toFixed(2) + "M";
+        if (n >= 1e3) return "£" + Math.round(n / 1e3) + "K";
+        return "£" + Math.round(n);
+      }
+      function formatVal(f, v) {
+        if (f.money) return "£" + v.toLocaleString("en-GB");
+        var s = f.decimals ? v.toFixed(f.decimals) : String(v);
+        return (f.prefix || "") + s + (f.suffix || "");
+      }
+      function renderSliders() {
+        var root = document.getElementById("sliders");
+        root.innerHTML = "";
+        fields.forEach(function (f) {
+          var wrap = document.createElement("div");
+          wrap.className = "field";
+          var valId = "val-" + f.key;
+          wrap.innerHTML = '<label><span>' + f.label + '</span><span class="val" id="' + valId + '"></span></label>';
+          var input = document.createElement("input");
+          input.type = "range";
+          input.min = f.min; input.max = f.max; input.step = f.step;
+          input.value = state[f.key];
+          input.addEventListener("input", function () {
+            state[f.key] = Number(input.value);
+            document.getElementById(valId).textContent = formatVal(f, state[f.key]);
+            recalc();
+          });
+          wrap.appendChild(input);
+          root.appendChild(wrap);
+          document.getElementById(valId).textContent = formatVal(f, state[f.key]);
+        });
+      }
+      function recalc() {
+        var base = state.leads * (state.conv / 100) * (state.close / 100) * state.deal * state.tx * 12;
+        var factor = Math.pow(1 + state.lift / 100, 5);
+        var next = base * factor;
+        var uplift = next - base;
+        document.getElementById("afterLabel").textContent = "After +" + state.lift + "% × 5";
+        document.getElementById("baseRev").textContent = fmtCompact(base);
+        document.getElementById("newRev").textContent = fmtCompact(next);
+        document.getElementById("upliftAbs").textContent = "+" + fmtCompact(uplift);
+        document.getElementById("upliftPct").textContent = "+" + Math.round((factor - 1) * 100) + "%";
+      }
+      renderSliders();
+      recalc();
+    })();
+  </script>
+</body>
+</html>
+```
+
+### Coaching fee comparison
+
+Even a modest uplift often shows **10:1+ ROI in year one** against a typical Profit Coach fee. Pair this with the [Revenue Growth Accelerator](https://docs.google.com/spreadsheets/d/1UUunc5A2WOtgJsKTlZwQ_r6H6gS_DlBs/edit?usp=sharing&ouid=101316149261577060760&rtpof=true&sd=true) once they are a client — that tool tracks progress and justifies ongoing engagement.

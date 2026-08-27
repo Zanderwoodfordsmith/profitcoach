@@ -16,8 +16,9 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getBrainGapBannerText } from "@/lib/profitCoachAi/brainHints";
 import {
+  getCoachPickerOutputs,
   getDefaultOutputId,
-  PROFIT_COACH_OUTPUTS,
+  getOutputById,
   PROFIT_COACH_ROLES,
 } from "@/lib/profitCoachAi/registry";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
@@ -435,7 +436,7 @@ export function ProfitCoachAiWorkspace({
 
               {lockedOutputId ? null : (
                 <div className="flex flex-wrap justify-center gap-2">
-                  {PROFIT_COACH_OUTPUTS.map((o) => {
+                  {getCoachPickerOutputs().map((o) => {
                     const dimmed =
                       roleId &&
                       !PROFIT_COACH_ROLES.find((r) => r.id === roleId)?.outputIds.includes(
@@ -577,7 +578,7 @@ export function ProfitCoachAiWorkspace({
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={onKeyDown}
                       placeholder={
-                        PROFIT_COACH_OUTPUTS.find((o) => o.id === outputId)
+                        getOutputById(outputId)
                           ?.placeholder ?? "What do you need to write…"
                       }
                       disabled={streaming}

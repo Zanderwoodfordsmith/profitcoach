@@ -205,7 +205,7 @@ export function RewritePromptAdminControl() {
                   Reset to default
                 </button>
                 <Link
-                  href="/admin/settings/linkedin-profile"
+                  href="/admin/brand?tab=brain&brainTab=skills&open=linkedin_profile"
                   className="text-sm font-medium text-sky-800 hover:text-sky-950"
                 >
                   Open full editor →

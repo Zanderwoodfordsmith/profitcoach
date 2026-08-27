@@ -1,9 +1,11 @@
 /**
  * Background Sales Nav import jobs backed by sales_nav_import_runs + Apify .start().
+ * Segmented imports split by team size (and years at company when targeting 2,500).
  */
 
 import {
   SalesNavScrapeError,
+  abortApifyRun,
   fetchSalesNavSearchDataset,
   getApifyRunState,
   startSalesNavSearch,
@@ -12,11 +14,16 @@ import {
 import { estimateSalesNavShortCostUsd } from "@/lib/salesNavigator/apifyCost";
 import { toSalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
 import {
+  planSalesNavImportSegments,
+  type SalesNavImportSegmentPlan,
+} from "@/lib/salesNavigator/importSegments";
+import {
   apifyTakePagesForRequest,
   normalizeRequestedTakePages,
   salesNavLeadTarget,
 } from "@/lib/salesNavigator/importSizing";
 import { upsertSalesNavLeadsToCache } from "@/lib/salesNavigator/upsertSalesNavLeadsToCache";
+import { getSalesNavSessionCookie } from "@/lib/salesNavigator/sessionStore";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type SalesNavImportJobStatus =
@@ -31,9 +38,7 @@ export type SalesNavImportJobRow = {
   status: SalesNavImportJobStatus;
   name: string | null;
   sales_nav_url: string | null;
-  /** Pages sent to Apify (may include over-fetch). */
   take_pages: number | null;
-  /** Pages the coach asked for. */
   requested_take_pages: number | null;
   scraped_count: number;
   progress_count: number;
@@ -49,10 +54,14 @@ export type SalesNavImportJobRow = {
   started_at: string | null;
   finished_at: string | null;
   created_at: string;
+  segmented: boolean;
+  segment_index: number;
+  segment_total: number;
+  segment_plan: SalesNavImportSegmentPlan[] | null;
 };
 
 const JOB_SELECT =
-  "id, coach_id, status, name, sales_nav_url, take_pages, requested_take_pages, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, estimated_cost_usd, duration_ms, error_message, apify_run_id, apify_dataset_id, lead_snapshot, started_at, finished_at, created_at";
+  "id, coach_id, status, name, sales_nav_url, take_pages, requested_take_pages, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, estimated_cost_usd, duration_ms, error_message, apify_run_id, apify_dataset_id, lead_snapshot, started_at, finished_at, created_at, segmented, segment_index, segment_total, segment_plan";
 
 const TERMINAL_APIFY = new Set([
   "SUCCEEDED",
@@ -71,6 +80,44 @@ function asStatus(v: unknown): SalesNavImportJobStatus {
     return v;
   }
   return "succeeded";
+}
+
+function parseSegmentPlan(value: unknown): SalesNavImportSegmentPlan[] | null {
+  if (!Array.isArray(value)) return null;
+  const out: SalesNavImportSegmentPlan[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const r = row as Record<string, unknown>;
+    if (typeof r.salesNavUrl !== "string" || !r.salesNavUrl.trim()) continue;
+    out.push({
+      id: typeof r.id === "string" ? r.id : String(out.length),
+      label: typeof r.label === "string" ? r.label : `Segment ${out.length + 1}`,
+      salesNavUrl: r.salesNavUrl,
+      teamSize: typeof r.teamSize === "string" ? r.teamSize : null,
+      yearsAtCompany:
+        r.yearsAtCompany === "1" ||
+        r.yearsAtCompany === "2" ||
+        r.yearsAtCompany === "3" ||
+        r.yearsAtCompany === "4" ||
+        r.yearsAtCompany === "5"
+          ? r.yearsAtCompany
+          : null,
+      status:
+        r.status === "pending" ||
+        r.status === "running" ||
+        r.status === "succeeded" ||
+        r.status === "failed" ||
+        r.status === "skipped"
+          ? r.status
+          : "pending",
+      scrapedCount: Number(r.scrapedCount ?? 0),
+      cacheInserted: Number(r.cacheInserted ?? 0),
+      cacheUpdated: Number(r.cacheUpdated ?? 0),
+      errorMessage:
+        typeof r.errorMessage === "string" ? r.errorMessage : null,
+    });
+  }
+  return out.length > 0 ? out : null;
 }
 
 export function requestedPagesForJob(job: {
@@ -94,70 +141,36 @@ export function targetCountForJob(job: {
   return salesNavLeadTarget(requestedPagesForJob(job));
 }
 
-export async function createSalesNavImportJob(opts: {
-  coachId: string;
-  salesNavUrl: string;
-  name?: string | null;
-  cookie?: string;
-  userAgent?: string;
-  takePages?: number;
-}): Promise<{
-  jobId: string;
-  takePages: number;
-  requestedTakePages: number;
-  estimatedCostUsd: number;
-  targetCount: number;
-}> {
-  const requestedTakePages = normalizeRequestedTakePages(opts.takePages);
-  const apifyTakePages = apifyTakePagesForRequest(requestedTakePages);
-
-  const started = await startSalesNavSearch({
-    salesNavUrl: opts.salesNavUrl,
-    cookie: opts.cookie,
-    userAgent: opts.userAgent,
-    takePages: apifyTakePages,
-  });
-
-  const estimatedCostUsd = estimateSalesNavShortCostUsd(started.takePages);
-  const now = new Date().toISOString();
-
-  const { data, error } = await supabaseAdmin
-    .from("sales_nav_import_runs")
-    .insert({
-      coach_id: opts.coachId,
-      sales_nav_url: opts.salesNavUrl.trim() || null,
-      name: opts.name?.trim() || null,
-      take_pages: started.takePages,
-      requested_take_pages: requestedTakePages,
-      scraped_count: 0,
-      progress_count: 0,
-      cache_inserted: 0,
-      cache_updated: 0,
-      cache_skipped: 0,
-      saved_to_list: false,
-      profile_scraper_mode: "Short",
-      estimated_cost_usd: estimatedCostUsd,
-      status: "running",
-      apify_run_id: started.apifyRunId,
-      apify_dataset_id: started.apifyDatasetId,
-      lead_snapshot: [],
-      started_at: now,
-    })
-    .select("id")
-    .single();
-
-  if (error || !data?.id) {
-    throw new Error(error?.message || "Could not create import job row.");
+function activeSegmentUrl(job: SalesNavImportJobRow): string | null {
+  if (!job.segmented || !job.segment_plan?.length) {
+    return job.sales_nav_url;
   }
-
-  return {
-    jobId: data.id as string,
-    takePages: started.takePages,
-    requestedTakePages,
-    estimatedCostUsd,
-    targetCount: salesNavLeadTarget(requestedTakePages),
-  };
+  const seg = job.segment_plan[job.segment_index];
+  return seg?.salesNavUrl ?? job.sales_nav_url;
 }
+
+function mergeSnapshots(
+  existing: SalesNavImportLeadSnapshot[],
+  incoming: SalesNavImportedLead[]
+): SalesNavImportLeadSnapshot[] {
+  const byKey = new Map<string, SalesNavImportLeadSnapshot>();
+  for (const row of existing) {
+    const key =
+      row.linkedinUrl?.trim().toLowerCase() ||
+      `${row.fullName ?? ""}|${row.company ?? ""}`.toLowerCase();
+    if (key) byKey.set(key, row);
+  }
+  for (const lead of incoming) {
+    const snap = toSalesNavImportLeadSnapshot(lead);
+    const key =
+      snap.linkedinUrl?.trim().toLowerCase() ||
+      `${snap.fullName ?? ""}|${snap.company ?? ""}`.toLowerCase();
+    if (key) byKey.set(key, snap);
+  }
+  return [...byKey.values()];
+}
+
+type SalesNavImportLeadSnapshot = ReturnType<typeof toSalesNavImportLeadSnapshot>;
 
 async function markFailed(
   jobId: string,
@@ -178,6 +191,55 @@ async function markFailed(
       duration_ms: durationMs,
     })
     .eq("id", jobId);
+}
+
+async function startSegmentRun(opts: {
+  jobId: string;
+  segment: SalesNavImportSegmentPlan;
+  segmentIndex: number;
+  segmentPlan: SalesNavImportSegmentPlan[];
+  requestedTakePages: number;
+  segmented: boolean;
+  cookie?: string;
+  userAgent?: string;
+}): Promise<{ apifyRunId: string; apifyDatasetId: string | null; takePages: number }> {
+  const takePages = apifyTakePagesForRequest(opts.requestedTakePages, {
+    skipOverfetch: opts.segmented,
+  });
+  const started = await startSalesNavSearch({
+    salesNavUrl: opts.segment.salesNavUrl,
+    cookie: opts.cookie,
+    userAgent: opts.userAgent,
+    takePages,
+  });
+
+  const nextPlan = opts.segmentPlan.map((seg, idx) =>
+    idx === opts.segmentIndex
+      ? { ...seg, status: "running" as const, errorMessage: null }
+      : seg
+  );
+
+  const { error } = await supabaseAdmin
+    .from("sales_nav_import_runs")
+    .update({
+      status: "running",
+      apify_run_id: started.apifyRunId,
+      apify_dataset_id: started.apifyDatasetId,
+      take_pages: started.takePages,
+      progress_count: 0,
+      segment_index: opts.segmentIndex,
+      segment_plan: nextPlan,
+      error_message: null,
+    })
+    .eq("id", opts.jobId);
+
+  if (error) throw new Error(error.message);
+
+  return {
+    apifyRunId: started.apifyRunId,
+    apifyDatasetId: started.apifyDatasetId,
+    takePages: started.takePages,
+  };
 }
 
 async function finalizeSucceeded(opts: {
@@ -204,10 +266,91 @@ async function finalizeSucceeded(opts: {
     return failed;
   }
 
+  const segmentUrl = activeSegmentUrl(opts.job);
   const cache = await upsertSalesNavLeadsToCache({
     leads,
-    salesNavUrl: opts.job.sales_nav_url,
+    salesNavUrl: segmentUrl,
   });
+
+  const requestedTakePages = requestedPagesForJob(opts.job);
+  const segmentPlan = opts.job.segment_plan ?? [];
+  const segmentIndex = opts.job.segment_index;
+  const updatedPlan = segmentPlan.map((seg, idx) =>
+    idx === segmentIndex
+      ? {
+          ...seg,
+          status: "succeeded" as const,
+          scrapedCount: leads.length,
+          cacheInserted: cache.inserted,
+          cacheUpdated: cache.updated,
+          errorMessage: null,
+        }
+      : seg
+  );
+
+  const priorSnapshot = Array.isArray(opts.job.lead_snapshot)
+    ? (opts.job.lead_snapshot as SalesNavImportLeadSnapshot[])
+    : [];
+  const mergedSnapshot = mergeSnapshots(priorSnapshot, leads);
+
+  const totalInserted =
+    (opts.job.cache_inserted ?? 0) + cache.inserted;
+  const totalUpdated = (opts.job.cache_updated ?? 0) + cache.updated;
+  const totalSkipped = (opts.job.cache_skipped ?? 0) + cache.skipped;
+  const totalScraped = mergedSnapshot.length;
+
+  const hasMoreSegments =
+    opts.job.segmented &&
+    segmentIndex + 1 < (opts.job.segment_total ?? updatedPlan.length);
+
+  if (hasMoreSegments) {
+    const nextIndex = segmentIndex + 1;
+    const nextSegment = updatedPlan[nextIndex];
+    if (!nextSegment) {
+      throw new Error("Missing next import segment.");
+    }
+
+    const { error: midError } = await supabaseAdmin
+      .from("sales_nav_import_runs")
+      .update({
+        status: "running",
+        scraped_count: totalScraped,
+        progress_count: totalScraped,
+        cache_inserted: totalInserted,
+        cache_updated: totalUpdated,
+        cache_skipped: totalSkipped,
+        lead_snapshot: mergedSnapshot,
+        segment_plan: updatedPlan,
+        segment_index: nextIndex,
+        apify_run_id: null,
+        apify_dataset_id: null,
+        estimated_cost_usd: estimateSalesNavShortCostUsd(
+          takePages * (nextIndex + 1)
+        ),
+      })
+      .eq("id", opts.job.id)
+      .in("status", ["pending", "running"]);
+
+    if (midError) {
+      throw new Error(midError.message || "Could not advance import segment.");
+    }
+
+    const session = await getSalesNavSessionCookie(opts.job.coach_id);
+    await startSegmentRun({
+      jobId: opts.job.id,
+      segment: nextSegment,
+      segmentIndex: nextIndex,
+      segmentPlan: updatedPlan,
+      requestedTakePages,
+      segmented: true,
+      cookie: session?.cookie,
+      userAgent: session?.userAgent ?? undefined,
+    });
+
+    const refreshed = await loadImportJob(opts.job.id);
+    if (!refreshed) throw new Error("Could not load import after segment advance.");
+    return refreshed;
+  }
 
   const finishedAt = new Date().toISOString();
   const startMs = opts.job.started_at
@@ -217,21 +360,25 @@ async function finalizeSucceeded(opts: {
     ? Math.max(0, Date.now() - startMs)
     : null;
 
+  const segmentCount = Math.max(1, opts.job.segment_total ?? 1);
+  const estimatedPages = takePages * segmentCount;
+
   const { data, error } = await supabaseAdmin
     .from("sales_nav_import_runs")
     .update({
       status: "succeeded",
-      scraped_count: leads.length,
-      progress_count: leads.length,
-      cache_inserted: cache.inserted,
-      cache_updated: cache.updated,
-      cache_skipped: cache.skipped,
-      lead_snapshot: leads.map(toSalesNavImportLeadSnapshot),
+      scraped_count: totalScraped,
+      progress_count: totalScraped,
+      cache_inserted: totalInserted,
+      cache_updated: totalUpdated,
+      cache_skipped: totalSkipped,
+      lead_snapshot: mergedSnapshot,
+      segment_plan: updatedPlan,
       apify_dataset_id: opts.datasetId,
       error_message: null,
       finished_at: finishedAt,
       duration_ms: durationMs,
-      estimated_cost_usd: estimateSalesNavShortCostUsd(takePages),
+      estimated_cost_usd: estimateSalesNavShortCostUsd(estimatedPages),
     })
     .eq("id", opts.job.id)
     .in("status", ["pending", "running"])
@@ -286,6 +433,103 @@ function mapJobRow(r: Record<string, unknown>): SalesNavImportJobRow {
     started_at: typeof r.started_at === "string" ? r.started_at : null,
     finished_at: typeof r.finished_at === "string" ? r.finished_at : null,
     created_at: String(r.created_at),
+    segmented: Boolean(r.segmented),
+    segment_index: Number(r.segment_index ?? 0),
+    segment_total: Number(r.segment_total ?? 1),
+    segment_plan: parseSegmentPlan(r.segment_plan),
+  };
+}
+
+export async function createSalesNavImportJob(opts: {
+  coachId: string;
+  salesNavUrl: string;
+  name?: string | null;
+  cookie?: string;
+  userAgent?: string;
+  takePages?: number;
+  autoSegment?: boolean;
+}): Promise<{
+  jobId: string;
+  takePages: number;
+  requestedTakePages: number;
+  estimatedCostUsd: number;
+  targetCount: number;
+  segmented: boolean;
+  segmentTotal: number;
+  segmentLabels: string[];
+}> {
+  const requestedTakePages = normalizeRequestedTakePages(opts.takePages);
+  const targetCount = salesNavLeadTarget(requestedTakePages);
+  const segments = planSalesNavImportSegments({
+    salesNavUrl: opts.salesNavUrl,
+    targetLeadCount: targetCount,
+    autoSegment: opts.autoSegment,
+  });
+  const segmented = segments.length > 1;
+  const firstSegment = segments[0]!;
+
+  const takePages = apifyTakePagesForRequest(requestedTakePages, {
+    skipOverfetch: segmented,
+  });
+
+  const started = await startSalesNavSearch({
+    salesNavUrl: firstSegment.salesNavUrl,
+    cookie: opts.cookie,
+    userAgent: opts.userAgent,
+    takePages,
+  });
+
+  const estimatedCostUsd = estimateSalesNavShortCostUsd(
+    takePages * segments.length
+  );
+  const now = new Date().toISOString();
+
+  const segmentPlan = segments.map((seg, idx) =>
+    idx === 0 ? { ...seg, status: "running" as const } : seg
+  );
+
+  const { data, error } = await supabaseAdmin
+    .from("sales_nav_import_runs")
+    .insert({
+      coach_id: opts.coachId,
+      sales_nav_url: opts.salesNavUrl.trim() || null,
+      name: opts.name?.trim() || null,
+      take_pages: started.takePages,
+      requested_take_pages: requestedTakePages,
+      scraped_count: 0,
+      progress_count: 0,
+      cache_inserted: 0,
+      cache_updated: 0,
+      cache_skipped: 0,
+      saved_to_list: false,
+      profile_scraper_mode: "Short",
+      estimated_cost_usd: estimatedCostUsd,
+      status: "running",
+      apify_run_id: started.apifyRunId,
+      apify_dataset_id: started.apifyDatasetId,
+      lead_snapshot: [],
+      started_at: now,
+      segmented,
+      segment_index: 0,
+      segment_total: segments.length,
+      segment_plan: segmentPlan,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data?.id) {
+    throw new Error(error?.message || "Could not create import job row.");
+  }
+
+  return {
+    jobId: data.id as string,
+    takePages: started.takePages,
+    requestedTakePages,
+    estimatedCostUsd,
+    targetCount,
+    segmented,
+    segmentTotal: segments.length,
+    segmentLabels: segments.map((s) => s.label),
   };
 }
 
@@ -337,7 +581,35 @@ export async function syncSalesNavImportJob(
     return job;
   }
 
-  const progressCount = Math.max(job.progress_count, state.itemCount);
+  const priorSnapshotCount = Array.isArray(job.lead_snapshot)
+    ? job.lead_snapshot.length
+    : 0;
+  const progressCount = Math.max(
+    job.progress_count,
+    priorSnapshotCount + state.itemCount
+  );
+
+  const segmentTarget = targetCountForJob(job);
+
+  if (
+    job.segmented &&
+    state.status === "RUNNING" &&
+    state.itemCount >= segmentTarget &&
+    segmentTarget > 0
+  ) {
+    try {
+      await abortApifyRun(job.apify_run_id);
+    } catch {
+      // Best-effort — finalize on next poll if abort fails.
+    }
+  }
+
+  const intentionalAbort =
+    state.status === "ABORTED" &&
+    job.segmented &&
+    state.itemCount >= segmentTarget &&
+    segmentTarget > 0;
+
   if (
     progressCount !== job.progress_count ||
     (state.datasetId && state.datasetId !== job.apify_dataset_id)
@@ -352,14 +624,14 @@ export async function syncSalesNavImportJob(
       .eq("id", job.id);
   }
 
-  if (!TERMINAL_APIFY.has(state.status)) {
+  if (!TERMINAL_APIFY.has(state.status) && !intentionalAbort) {
     const refreshed = await loadImportJob(job.id);
     return (
       refreshed ?? { ...job, progress_count: progressCount, status: "running" }
     );
   }
 
-  if (state.status !== "SUCCEEDED") {
+  if (state.status !== "SUCCEEDED" && !intentionalAbort) {
     await markFailed(
       job.id,
       job.started_at,

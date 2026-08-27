@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { LessonAudioSurface } from "@/components/academy/LessonAudioSurface";
+import { LessonChapterPlayer } from "@/components/academy/LessonChapterPlayer";
 import {
   LessonMediaModeToggle,
   type LessonMediaMode,
@@ -10,19 +11,27 @@ import {
 import { LessonVideoPlayer } from "@/components/academy/LessonVideoPlayer";
 import { LessonYouTubePlayer } from "@/components/academy/LessonYouTubePlayer";
 import { lessonPlaybackKey, storePlaybackPosition } from "@/lib/academy/lessonPlaybackPosition";
+import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
+import { lessonHasVideoChapters, type LessonVideoChapter } from "@/lib/academy/lessonVideoChapters";
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
 import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
+
+export type { LessonSeekRequest };
 
 type Props = {
   courseId: string;
   lessonId: string;
   title: string;
   videoUrl?: string | null;
+  videoChapters?: LessonVideoChapter[];
   audioUrl?: string | null;
   onWatchProgress?: (currentTimeSeconds: number, durationSeconds: number) => void;
   onEnded?: () => void;
+  initialChapterId?: string | null;
   /** When true, show the end-of-video handoff overlay above the watch surface. */
   handoff?: ReactNode;
+  /** Seek the active media to this time when key changes. */
+  seekRequest?: LessonSeekRequest | null;
 };
 
 /**
@@ -33,15 +42,19 @@ export function LessonMediaPlayer({
   lessonId,
   title,
   videoUrl = null,
+  videoChapters = [],
   audioUrl = null,
   onWatchProgress,
   onEnded,
+  initialChapterId = null,
   handoff,
+  seekRequest = null,
 }: Props) {
   const trimmedAudio = audioUrl?.trim() || null;
   const trimmedVideo = videoUrl?.trim() || null;
+  const hasChapterPlayback = lessonHasVideoChapters(videoChapters);
   const hasAudio = Boolean(trimmedAudio);
-  const hasVideo = Boolean(trimmedVideo);
+  const hasVideo = hasChapterPlayback || Boolean(trimmedVideo);
 
   const positionKey = lessonPlaybackKey(courseId, lessonId);
   const videoEmbed = trimmedVideo ? parseLessonVideoEmbed(trimmedVideo) : null;
@@ -95,6 +108,8 @@ export function LessonMediaPlayer({
           onWatchProgress={onWatchProgress}
           onEnded={onEnded}
           onTimeChange={onTimeChange}
+          forcedSeekTime={seekRequest?.seconds ?? null}
+          forcedSeekKey={seekRequest?.key ?? 0}
         />
       </div>
     );
@@ -124,12 +139,33 @@ export function LessonMediaPlayer({
           onEnded={onEnded}
           onTimeChange={onTimeChange}
           onModeChange={modeToggle}
+          forcedSeekTime={seekRequest?.seconds ?? null}
+          forcedSeekKey={seekRequest?.key ?? 0}
         />
       </div>
     );
   }
 
-  // Watch mode
+  // Watch mode — multi-chapter main path
+  if (hasChapterPlayback) {
+    return (
+      <div className="relative overflow-hidden rounded-xl bg-slate-950">
+        <LessonChapterPlayer
+          chapters={videoChapters}
+          title={title}
+          positionKey={positionKey}
+          lessonId={lessonId}
+          initialChapterId={initialChapterId}
+          onWatchProgress={onWatchProgress}
+          onAllChaptersEnded={onEnded}
+          handoff={handoff}
+          seekRequest={seekRequest}
+        />
+      </div>
+    );
+  }
+
+  // Watch mode — single video
   return (
     <div className="relative overflow-hidden rounded-xl bg-slate-950">
       {videoEmbed?.kind === "youtube" ? (
@@ -195,6 +231,8 @@ export function LessonMediaPlayer({
             onEnded={onEnded}
             onTimeChange={onTimeChange}
             onModeChange={modeToggle}
+            forcedSeekTime={seekRequest?.seconds ?? null}
+            forcedSeekKey={seekRequest?.key ?? 0}
           />
           {handoff}
         </>

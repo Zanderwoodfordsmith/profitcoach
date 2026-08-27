@@ -23,6 +23,8 @@ export type HubLesson = {
   satellites?: HubLesson[];
   /** Set when merged from `academy_lesson_content` (in-app lesson). */
   videoUrl?: string | null;
+  /** Ordered main watch path when merged from `academy_lesson_content`. */
+  videoChapters?: import("./lessonVideoChapters").LessonVideoChapter[];
   /** Optional listen-along audio under the video. */
   audioUrl?: string | null;
   /** Overview tab content. */
@@ -62,8 +64,6 @@ export type HubCourse = {
 };
 
 export type HubCatalog = {
-  /** Shown on every lesson panel unless the lesson sets `notice`. */
-  lessonPanelNotice: string;
   courses: HubCourse[];
 };
 
@@ -139,7 +139,7 @@ export function parseDurationMinutes(raw: string): number {
   return Number.isFinite(bare) ? bare : 0;
 }
 
-/** Format total minutes as `45m` or `1h 16m`. */
+/** Format total minutes as `45m` or `1h 16m` (compact storage / admin). */
 export function formatDurationMinutes(totalMinutes: number): string | null {
   if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return null;
   const rounded = Math.round(totalMinutes);
@@ -147,6 +147,31 @@ export function formatDurationMinutes(totalMinutes: number): string | null {
   const h = Math.floor(rounded / 60);
   const m = rounded % 60;
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+function pluralize(count: number, singular: string, plural: string): string {
+  return count === 1 ? singular : plural;
+}
+
+/** Coach-facing duration copy, e.g. `1 hour 48 minutes`. */
+export function formatDurationMinutesLong(totalMinutes: number): string | null {
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return null;
+  const rounded = Math.round(totalMinutes);
+  if (rounded < 60) {
+    return `${rounded} ${pluralize(rounded, "minute", "minutes")}`;
+  }
+  const hours = Math.floor(rounded / 60);
+  const minutes = rounded % 60;
+  const hourPart = `${hours} ${pluralize(hours, "hour", "hours")}`;
+  if (minutes === 0) return hourPart;
+  return `${hourPart} ${minutes} ${pluralize(minutes, "minute", "minutes")}`;
+}
+
+/** Parse a hub/DB duration string and format for sidebar and lesson chrome. */
+export function formatHubDurationLabel(raw: string): string | null {
+  const minutes = parseDurationMinutes(raw);
+  if (minutes <= 0) return null;
+  return formatDurationMinutes(minutes);
 }
 
 /** Sidebar / catalog duration from media length (seconds → `23m` / `1h 5m`). */

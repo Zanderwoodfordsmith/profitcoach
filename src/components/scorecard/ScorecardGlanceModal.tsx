@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { BossScorecardResults } from "@/components/scorecard/BossScorecardResults";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { formatProspectLabel } from "@/lib/prospectDisplayFormat";
+import { formatProspectJobTitle, formatProspectLabel } from "@/lib/prospectDisplayFormat";
 import type { ScorecardResultPayload } from "@/lib/bossScorecardScores";
 import { formatProspectLastAssessed } from "@/lib/prospectNextCall";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -34,7 +34,7 @@ function authHeaders(
 
 function formatContactSubtitle(contact: ScorecardContactSummary): string | null {
   const parts = [
-    formatProspectLabel(contact.job_title),
+    formatProspectJobTitle(contact.job_title),
     formatProspectLabel(contact.business_name),
     contact.email?.trim() || null,
   ].filter(Boolean);

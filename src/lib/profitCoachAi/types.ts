@@ -18,6 +18,9 @@ export type KnowledgeRef =
   | { type: "ai-knowledge"; file: string }
   | { type: "legacy-knowledge"; file: string };
 
+/** DB-backed prompt editors in Admin → Brand → Core brain → Skills. */
+export type ProfitCoachPromptEditor = "coach-ai" | "linkedin-optimizer";
+
 export type ProfitCoachOutputDefinition = {
   id: string;
   label: string;
@@ -33,6 +36,10 @@ export type ProfitCoachOutputDefinition = {
     keys: AiContextKey[];
     encouragement: string;
   };
+  /** Shown in coach Create / AI panel skill picker. Default true. */
+  coachPicker?: boolean;
+  /** Instructions live in the DB; edited in admin instead of code. */
+  promptEditor?: ProfitCoachPromptEditor;
 };
 
 export type ProfitCoachRoleDefinition = {

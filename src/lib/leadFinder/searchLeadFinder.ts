@@ -14,7 +14,12 @@ import {
   LOCAL_US_OWNERS_CATEGORY_SLUG,
 } from "@/lib/leadFinder/leadrocksOptions";
 import type { LeadReveal, LeadTeaser } from "@/lib/leadFinder/types";
-import { maskEmailHint, formatLeadPhone, maskPhoneHint } from "@/lib/leadFinder/display";
+import {
+  maskEmailHint,
+  formatLeadPhone,
+  maskPhoneHint,
+  parseWebsiteCheckStatus,
+} from "@/lib/leadFinder/display";
 
 export { LEAD_FINDER_MAX_ITEMS, LEAD_FINDER_PAGE_SIZE };
 export type { LeadReveal, LeadTeaser };
@@ -118,6 +123,7 @@ function rowToTeaser(row: LeadrocksLeadRow): LeadTeaser {
     jobTitle: row.job_title,
     company: row.company,
     companyWebsite: row.company_website?.trim() || null,
+    websiteStatus: parseWebsiteCheckStatus(row.raw),
     location: row.location,
     state: row.state,
     industry: row.industry,

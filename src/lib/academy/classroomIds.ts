@@ -18,10 +18,15 @@ export const CLASSROOM_PATH_COURSE_IDS = [
   "coach-clients",
 ] as const;
 
+/**
+ * Retired Classroom path. Kept for URL redirects and legacy action/progress
+ * labels — the course is no longer in the hub.
+ */
 export const CLASSROOM_OS_COURSE_ID = "profit-coach-os" as const;
 
-/** Source hub course that is split into Get Calls + Win Clients cards. */
-export const GET_CLIENTS_SOURCE_COURSE_ID = "get-clients";
+export function isRetiredClassroomCourseId(courseId: string): boolean {
+  return courseId === CLASSROOM_OS_COURSE_ID;
+}
 
 export const START_HERE_COURSE_ID = "start-here";
 
@@ -37,7 +42,8 @@ export const START_HERE_WELCOME_PATH =
  */
 export const CLASSROOM_COURSE_ID_ALIASES: Record<string, string> = {
   kickstart: "start-here",
-  "client-acquisition": "get-clients",
+  "client-acquisition": "get-calls",
+  "get-clients": "get-calls",
   "profit-coach-system": "coach-clients",
   "client-delivery": "coach-clients",
   "profit-coach-certification": "coach-clients",

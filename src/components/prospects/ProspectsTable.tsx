@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowUpDown,
-  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
+  Contact,
   Link2,
   Loader2,
   ListTodo,
@@ -17,6 +17,7 @@ import {
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
@@ -36,12 +37,13 @@ import {
 import type { ProspectRow } from "@/lib/prospectRow";
 import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
 import { ProspectContactEditModal } from "@/components/prospects/ProspectContactEditModal";
-import { ProspectCrmLinkModal } from "@/components/prospects/ProspectCrmLinkModal";
 import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import { formatProspectLabel, formatProspectPersonName } from "@/lib/prospectDisplayFormat";
+import { companyWebsiteHref } from "@/lib/leadFinder/display";
+import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
@@ -77,7 +79,6 @@ type ProspectColumnKey =
   | "business"
   | "email"
   | "phone"
-  | "type"
   | "coach"
   | "actions"
   | "boss_score"
@@ -92,7 +93,10 @@ type ProspectColumnKey =
   | "boss_level"
   | "next_call"
   | "next_action"
-  | "status";
+  | "status"
+  | "source"
+  | "linkedin"
+  | "crm";
 
 type ProspectColumnVisibility = Record<ProspectColumnKey, boolean>;
 
@@ -106,7 +110,6 @@ type Props = {
   loading: boolean;
   error: string | null;
   showCoachColumn?: boolean;
-  showTypeColumn?: boolean;
   onRowClick?: (id: string) => void;
   emptyMessage?: string;
   /** Renders actions cell per row (e.g. "View as client" button). Stops row click propagation. */
@@ -146,8 +149,27 @@ type Props = {
   scoresEnriching?: boolean;
 };
 
-const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v6";
-const PROSPECTS_PAGE_SIZE = 50;
+const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v9";
+const PROSPECTS_PAGE_SIZE_STORAGE_KEY = "prospects-table-page-size-v1";
+const PROSPECTS_PAGE_SIZE_OPTIONS = [50, 100, 250, 500] as const;
+type ProspectsPageSize = (typeof PROSPECTS_PAGE_SIZE_OPTIONS)[number];
+const DEFAULT_PROSPECTS_PAGE_SIZE: ProspectsPageSize = 50;
+
+function readStoredPageSize(): ProspectsPageSize {
+  if (typeof window === "undefined") return DEFAULT_PROSPECTS_PAGE_SIZE;
+  try {
+    const raw = window.localStorage.getItem(PROSPECTS_PAGE_SIZE_STORAGE_KEY);
+    const n = Number(raw);
+    if (
+      (PROSPECTS_PAGE_SIZE_OPTIONS as readonly number[]).includes(n)
+    ) {
+      return n as ProspectsPageSize;
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_PROSPECTS_PAGE_SIZE;
+}
 const TABLE_SECTION_PADDING = "px-5 sm:px-6";
 const TABLE_CHECKBOX_CELL = "px-1 text-center";
 const TABLE_CHECKBOX_INPUT =
@@ -163,8 +185,9 @@ const TABLE_EMAIL_CELL = "pl-4 pr-6 min-w-0";
 const TABLE_PHONE_CELL = "whitespace-nowrap";
 
 const TABLE_CHECKBOX_COL_WIDTH = 36;
-const TABLE_LEAD_COL_WIDTH = 220;
-const TABLE_LEFT_RAIL_WIDTH = TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH;
+const TABLE_LEAD_COL_WIDTH = 236;
+const TABLE_LINKEDIN_COL_WIDTH = 52;
+const TABLE_BASE_LEFT_RAIL_WIDTH = TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH;
 const TABLE_PHONE_COL_WIDTH = 168;
 const TABLE_EMAIL_COL_WIDTH = 220;
 const TABLE_EMAIL_COL_WIDTH_EXPANDED = 320;
@@ -202,8 +225,12 @@ function getProspectColumnWidth(
       return 104;
     case "created_at":
       return 120;
-    case "type":
-      return 96;
+    case "source":
+      return 128;
+    case "linkedin":
+      return 52;
+    case "crm":
+      return 52;
     case "business":
       return 160;
     case "actions":
@@ -214,10 +241,12 @@ function getProspectColumnWidth(
 }
 
 const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "crm", label: "CRM" },
   { key: "business", label: "Business" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
-  { key: "type", label: "Type" },
+  { key: "source", label: "Source" },
   { key: "coach", label: "Coach" },
   { key: "actions", label: "Actions" },
   { key: "status", label: "Status" },
@@ -239,7 +268,9 @@ const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
   business: false,
   email: true,
   phone: true,
-  type: true,
+  linkedin: true,
+  crm: false,
+  source: true,
   coach: true,
   actions: false,
   status: true,
@@ -305,60 +336,78 @@ function ProspectNextCallCell({ next }: { next: ProspectNextCall | null | undefi
   );
 }
 
-function ProspectLeadCrmLink({
+function ProspectLeadLinkedInLink({
   row,
-  editable,
-  onLinkClick,
+  onAddClick,
 }: {
   row: ProspectRow;
-  editable: boolean;
-  onLinkClick: (row: ProspectRow) => void;
+  onAddClick?: (row: ProspectRow) => void;
 }) {
-  const url = getProspectCrmContactUrl(row);
+  const url = row.linkedin_url?.trim();
 
   if (url) {
     return (
       <a
         href={url}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         data-row-action
         onClick={(e) => e.stopPropagation()}
-        className="inline-flex shrink-0 rounded p-0.5 text-sky-600 hover:bg-sky-50 hover:text-sky-800"
-        title="Open in CRM"
-        aria-label={`Open ${row.full_name} in CRM`}
+        className="inline-flex shrink-0 rounded text-[#0A66C2] hover:opacity-80"
+        title="Open LinkedIn profile"
+        aria-label={`Open LinkedIn profile for ${row.full_name}`}
       >
-        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+        <LinkedInSolidIcon className="h-3.5 w-3.5" />
       </a>
     );
   }
 
-  if (editable) {
+  if (onAddClick) {
     return (
       <button
         type="button"
         data-row-action
         onClick={(e) => {
           e.stopPropagation();
-          onLinkClick(row);
+          onAddClick(row);
         }}
-        className="inline-flex shrink-0 rounded p-0.5 text-slate-300 hover:bg-slate-50 hover:text-sky-600"
-        title="Link to CRM contact"
-        aria-label={`Link ${row.full_name} to CRM`}
+        className="inline-flex shrink-0 rounded text-slate-300 hover:text-slate-400"
+        title="Add LinkedIn URL on prospect profile"
+        aria-label={`Add LinkedIn for ${row.full_name}`}
       >
-        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+        <LinkedInSolidIcon className="h-3.5 w-3.5" />
       </button>
     );
   }
 
   return (
     <span
-      className="inline-flex shrink-0 p-0.5 text-slate-300"
-      title="Not linked to CRM"
+      className="inline-flex shrink-0 text-slate-300"
+      title="No LinkedIn URL"
       aria-hidden
     >
-      <ArrowUpRight className="h-3.5 w-3.5" />
+      <LinkedInSolidIcon className="h-3.5 w-3.5" />
     </span>
+  );
+}
+
+function ProspectLeadCrmLink({ row }: { row: ProspectRow }) {
+  const url = getProspectCrmContactUrl(row);
+  if (!url) return null;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-row-action
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex shrink-0 rounded text-sky-600 hover:text-sky-800"
+      title="Open in CRM"
+      aria-label={`Open ${row.full_name} in CRM`}
+    >
+      <Contact className="h-3.5 w-3.5" aria-hidden />
+    </a>
   );
 }
 
@@ -392,7 +441,6 @@ export function ProspectsTable({
   loading,
   error,
   showCoachColumn = false,
-  showTypeColumn = true,
   onRowClick,
   emptyMessage = "No prospects found for this selection.",
   renderRowActions,
@@ -456,14 +504,15 @@ export function ProspectsTable({
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
   const [savingFieldById, setSavingFieldById] = useState<
-    Record<string, "next_action" | "status" | "contact" | "crm_link" | null>
+    Record<string, "next_action" | "status" | "contact" | null>
   >({});
   const [editModalProspect, setEditModalProspect] = useState<ProspectRow | null>(
     null
   );
-  const [crmLinkModalProspect, setCrmLinkModalProspect] =
-    useState<ProspectRow | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState<ProspectsPageSize>(
+    DEFAULT_PROSPECTS_PAGE_SIZE
+  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkNextActionOpen, setBulkNextActionOpen] = useState(false);
@@ -553,12 +602,11 @@ export function ProspectsTable({
   const columnMenuOptions = useMemo(
     () =>
       COLUMN_OPTIONS.filter((option) => {
-        if (option.key === "type" && !showTypeColumn) return false;
         if (option.key === "coach" && !showCoachColumn) return false;
         if (option.key === "actions" && !renderRowActions) return false;
         return true;
       }),
-    [showTypeColumn, showCoachColumn, renderRowActions]
+    [showCoachColumn, renderRowActions]
   );
 
   const { shown: shownColumnOptions, hidden: hiddenColumnOptions } = useMemo(
@@ -572,6 +620,14 @@ export function ProspectsTable({
   );
 
   const visibleColumns = shownColumnOptions;
+  const linkedinColumnVisible = columnVisibility.linkedin;
+  const scrollableColumns = useMemo(
+    () => visibleColumns.filter((column) => column.key !== "linkedin"),
+    [visibleColumns]
+  );
+  const leftRailWidth =
+    TABLE_BASE_LEFT_RAIL_WIDTH +
+    (linkedinColumnVisible ? TABLE_LINKEDIN_COL_WIDTH : 0);
 
   const filteredProspects = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -727,13 +783,13 @@ export function ProspectsTable({
 
   const totalPages = Math.max(
     1,
-    Math.ceil(sortedProspects.length / PROSPECTS_PAGE_SIZE)
+    Math.ceil(sortedProspects.length / pageSize)
   );
 
   const paginatedProspects = useMemo(() => {
-    const start = (page - 1) * PROSPECTS_PAGE_SIZE;
-    return sortedProspects.slice(start, start + PROSPECTS_PAGE_SIZE);
-  }, [sortedProspects, page]);
+    const start = (page - 1) * pageSize;
+    return sortedProspects.slice(start, start + pageSize);
+  }, [sortedProspects, page, pageSize]);
 
   const pageNumbers = useMemo(
     () => paginationItems(page, totalPages),
@@ -743,10 +799,30 @@ export function ProspectsTable({
   const paginationRangeLabel =
     sortedProspects.length === 0
       ? "0 prospects"
-      : `${(page - 1) * PROSPECTS_PAGE_SIZE + 1}-${Math.min(
-          page * PROSPECTS_PAGE_SIZE,
+      : `${(page - 1) * pageSize + 1}-${Math.min(
+          page * pageSize,
           sortedProspects.length
         )} of ${sortedProspects.length}`;
+
+  useEffect(() => {
+    setPageSize(readStoredPageSize());
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PROSPECTS_PAGE_SIZE_STORAGE_KEY,
+        String(pageSize)
+      );
+    } catch {
+      // ignore
+    }
+  }, [pageSize]);
+
+  function handlePageSizeChange(next: ProspectsPageSize) {
+    setPageSize(next);
+    setPage(1);
+  }
 
   useEffect(() => {
     setPage(1);
@@ -958,26 +1034,30 @@ export function ProspectsTable({
     }
   }
 
-  const scrollableColCount = 2 + visibleColumns.length;
+  const scrollableColCount =
+    2 + (linkedinColumnVisible ? 1 : 0) + scrollableColumns.length;
   const colCount = scrollableColCount;
 
   const scrollableMiddleMinWidth = useMemo(
     () =>
-      visibleColumns.reduce(
+      scrollableColumns.reduce(
         (sum, column) =>
           sum + getProspectColumnWidth(column.key, emailColumnExpanded),
         0
       ),
-    [visibleColumns, emailColumnExpanded]
+    [scrollableColumns, emailColumnExpanded]
   );
 
-  const tableMinWidth = TABLE_LEFT_RAIL_WIDTH + scrollableMiddleMinWidth;
+  const tableMinWidth = leftRailWidth + scrollableMiddleMinWidth;
 
   function renderLeftRailColGroup() {
     return (
       <colgroup>
         <col style={{ width: TABLE_CHECKBOX_COL_WIDTH }} />
         <col style={{ width: TABLE_LEAD_COL_WIDTH }} />
+        {linkedinColumnVisible ? (
+          <col style={{ width: TABLE_LINKEDIN_COL_WIDTH }} />
+        ) : null}
       </colgroup>
     );
   }
@@ -985,7 +1065,7 @@ export function ProspectsTable({
   function renderScrollableColGroup() {
     return (
       <colgroup>
-        {visibleColumns.map((column) => (
+        {scrollableColumns.map((column) => (
           <col
             key={column.key}
             style={{
@@ -1002,7 +1082,10 @@ export function ProspectsTable({
       <colgroup>
         <col style={{ width: TABLE_CHECKBOX_COL_WIDTH }} />
         <col style={{ width: TABLE_LEAD_COL_WIDTH }} />
-        {visibleColumns.map((column) => (
+        {linkedinColumnVisible ? (
+          <col style={{ width: TABLE_LINKEDIN_COL_WIDTH }} />
+        ) : null}
+        {scrollableColumns.map((column) => (
           <col
             key={column.key}
             style={{
@@ -1070,11 +1153,6 @@ export function ProspectsTable({
   function openContactEdit(prospect: ProspectRow) {
     if (!editable || !onUpdateProspect) return;
     setEditModalProspect(prospect);
-  }
-
-  function openCrmLink(prospect: ProspectRow) {
-    if (!editable || !onUpdateProspect) return;
-    setCrmLinkModalProspect(prospect);
   }
 
   async function copyPersonalisedAssessmentLink(
@@ -1350,11 +1428,28 @@ export function ProspectsTable({
 
   function renderColumnCell(key: ProspectColumnKey, p: ProspectRow) {
     switch (key) {
-      case "business":
-        return renderEditableContactValue(
-          p,
-          formatProspectLabel(p.business_name)
-        );
+      case "business": {
+        const label = formatProspectLabel(p.business_name);
+        const href = companyWebsiteHref(p.company_website);
+        if (href && label) {
+          return (
+            <div className="flex min-w-0 items-center gap-1">
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-row-action
+                onClick={(e) => e.stopPropagation()}
+                className="min-w-0 truncate text-sm text-sky-700 hover:underline"
+                title={`Open ${label} website`}
+              >
+                {label}
+              </a>
+            </div>
+          );
+        }
+        return renderEditableContactValue(p, label);
+      }
       case "email":
         return emailColumnExpanded ? (
           renderEditableContactValue(p, p.email, { truncate: false })
@@ -1365,8 +1460,27 @@ export function ProspectsTable({
         );
       case "phone":
         return renderPhoneCell(p);
-      case "type":
-        return <span className="text-sm text-slate-700">{p.type}</span>;
+      case "linkedin":
+        return (
+          <div className="flex justify-center">
+            <ProspectLeadLinkedInLink
+              row={p}
+              onAddClick={onRowClick ? () => onRowClick(p.id) : undefined}
+            />
+          </div>
+        );
+      case "crm":
+        return (
+          <div className="flex justify-center">
+            <ProspectLeadCrmLink row={p} />
+          </div>
+        );
+      case "source":
+        return (
+          <span className="text-sm text-slate-700 whitespace-nowrap">
+            {resolveProspectSourceLabel(p)}
+          </span>
+        );
       case "coach":
         return (
           <span className="block text-sm text-slate-700 whitespace-nowrap">
@@ -1661,6 +1775,20 @@ export function ProspectsTable({
         );
       case "boss_score":
         return "Boss";
+      case "linkedin":
+        return (
+          <span className="inline-flex w-full justify-center" title="LinkedIn">
+            <LinkedInSolidIcon className="h-3.5 w-3.5 text-[#0A66C2]" />
+            <span className="sr-only">LinkedIn</span>
+          </span>
+        );
+      case "crm":
+        return (
+          <span className="inline-flex w-full justify-center" title="CRM">
+            <Contact className="h-3.5 w-3.5 text-sky-600" aria-hidden />
+            <span className="sr-only">CRM</span>
+          </span>
+        );
       case "boss_score_premium":
         return "Boss Pro";
       case "next_call":
@@ -1707,6 +1835,9 @@ export function ProspectsTable({
     if (key === "phone") {
       return `${base} ${TABLE_CELL_X} ${TABLE_PHONE_CELL}`;
     }
+    if (key === "linkedin" || key === "crm") {
+      return `${base} ${TABLE_CELL_X} w-[52px] px-1 text-center`;
+    }
     if (key === "coach") {
       return `${base} ${TABLE_CELL_X} ${TABLE_COACH_CELL}`;
     }
@@ -1726,6 +1857,9 @@ export function ProspectsTable({
     }
     if (key === "phone") {
       return `${base} ${TABLE_CELL_X} ${TABLE_PHONE_CELL}`;
+    }
+    if (key === "linkedin" || key === "crm") {
+      return `${base} ${TABLE_CELL_X} w-[52px] px-1 text-center`;
     }
     if (key === "coach") {
       return `${base} ${TABLE_CELL_X} ${TABLE_COACH_CELL}`;
@@ -1768,6 +1902,15 @@ export function ProspectsTable({
           <th className={`${TABLE_HEAD_CELL} ${TABLE_LEAD_CELL} text-left`}>
             <div className="flex h-full items-center">Lead</div>
           </th>
+          {linkedinColumnVisible ? (
+            <th
+              className={`${TABLE_HEAD_CELL} ${TABLE_CELL_X} w-[52px] px-1 text-center`}
+            >
+              <div className="flex h-full items-center justify-center">
+                {renderColumnHeader("linkedin")}
+              </div>
+            </th>
+          ) : null}
         </tr>
       </thead>
     );
@@ -1777,7 +1920,7 @@ export function ProspectsTable({
     return (
       <thead className="bg-slate-50 text-sm uppercase tracking-wide text-slate-500">
         <tr>
-          {visibleColumns.map((column) => (
+          {scrollableColumns.map((column) => (
             <th
               key={column.key}
               className={renderColumnHeaderCellClass(column.key)}
@@ -2104,13 +2247,39 @@ export function ProspectsTable({
           />
 
           {!loading && prospects.length > 0 ? (
-            <span className="ml-auto text-xs text-slate-500">
-              {selectedCount > 0
-                ? `${selectedCount} selected`
-                : sortedProspects.length === prospects.length
-                  ? `${prospects.length} prospect${prospects.length === 1 ? "" : "s"}`
-                  : `${sortedProspects.length} of ${prospects.length}`}
-            </span>
+            <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+              <span>
+                {selectedCount > 0
+                  ? `${selectedCount} selected`
+                  : sortedProspects.length === prospects.length
+                    ? `${prospects.length} prospect${prospects.length === 1 ? "" : "s"}`
+                    : `${sortedProspects.length} of ${prospects.length}`}
+              </span>
+              <label className="inline-flex items-center gap-1.5">
+                <span className="text-slate-400">Per page</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) =>
+                    handlePageSizeChange(
+                      Number(e.target.value) as ProspectsPageSize
+                    )
+                  }
+                  className="rounded-md border border-slate-200 bg-white py-1 pl-2 pr-7 text-xs font-medium text-slate-700 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  aria-label="Prospects per page"
+                >
+                  {PROSPECTS_PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {totalPages > 1 ? (
+                <span className="tabular-nums text-slate-400">
+                  {paginationRangeLabel}
+                </span>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </div>
@@ -2234,11 +2403,11 @@ export function ProspectsTable({
         <div className="flex border-b border-slate-200 bg-slate-50">
           <div
             className="shrink-0 bg-slate-50"
-            style={{ width: TABLE_LEFT_RAIL_WIDTH }}
+            style={{ width: leftRailWidth }}
           >
             <table
               className={prospectsTableClassName}
-              style={{ width: TABLE_LEFT_RAIL_WIDTH }}
+              style={{ width: leftRailWidth }}
             >
               {renderLeftRailColGroup()}
               {renderProspectsLeftRailHead()}
@@ -2361,21 +2530,36 @@ export function ProspectsTable({
                             {formatProspectPersonName(p.full_name) || p.full_name}
                           </span>
                         )}
-                        <ProspectLeadCrmLink
-                          row={p}
-                          editable={editable && Boolean(onUpdateProspect)}
-                          onLinkClick={openCrmLink}
-                        />
                       </div>
                       <ProspectLeadSubtitle
                         jobTitle={p.job_title}
                         businessName={p.business_name}
+                        companyWebsite={p.company_website}
                         editable={editable && Boolean(onUpdateProspect)}
                         onEdit={() => openContactEdit(p)}
                       />
                     </div>
                   </td>
-                  {visibleColumns.map((column) => (
+                  {linkedinColumnVisible ? (
+                    <td
+                      className={`${TABLE_STICKY_LEAD_CELL} ${stickyProspectRowBg(isSelected)} ${TABLE_CELL_Y} w-[52px] px-1 text-center align-middle`}
+                      style={{
+                        left: TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH,
+                      }}
+                      data-row-action
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-center">
+                        <ProspectLeadLinkedInLink
+                          row={p}
+                          onAddClick={
+                            onRowClick ? () => onRowClick(p.id) : undefined
+                          }
+                        />
+                      </div>
+                    </td>
+                  ) : null}
+                  {scrollableColumns.map((column) => (
                     <td
                       key={column.key}
                       className={renderColumnBodyCellClass(column.key)}
@@ -2409,90 +2593,86 @@ export function ProspectsTable({
         </div>
       </div>
 
-      {!loading && sortedProspects.length > PROSPECTS_PAGE_SIZE ? (
+      {!loading && sortedProspects.length > 0 ? (
         <nav
           className={`flex flex-col gap-3 border-t border-slate-100 py-3 sm:flex-row sm:items-center sm:justify-between ${TABLE_SECTION_PADDING}`}
           aria-label="Prospects pagination"
         >
           <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
-              Previous
-            </button>
-            <div className="flex flex-wrap items-center gap-1 pl-1">
-              {pageNumbers.map((item, idx) =>
-                item === "ellipsis" ? (
-                  <span
-                    key={`e-${idx}`}
-                    className="px-1.5 text-sm text-slate-500"
-                    aria-hidden
-                  >
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setPage(item)}
-                    className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
-                      item === page
-                        ? "bg-sky-100 text-sky-800"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                    aria-current={item === page ? "page" : undefined}
-                  >
-                    {item}
-                  </button>
-                )
-              )}
-            </div>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-            </button>
+            {totalPages > 1 ? (
+              <>
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                  Previous
+                </button>
+                <div className="flex flex-wrap items-center gap-1 pl-1">
+                  {pageNumbers.map((item, idx) =>
+                    item === "ellipsis" ? (
+                      <span
+                        key={`e-${idx}`}
+                        className="px-1.5 text-sm text-slate-500"
+                        aria-hidden
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => setPage(item)}
+                        className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
+                          item === page
+                            ? "bg-sky-100 text-sky-800"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                        aria-current={item === page ? "page" : undefined}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                </button>
+              </>
+            ) : null}
           </div>
-          <p className="text-sm text-slate-500 sm:text-right">
-            {paginationRangeLabel}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 sm:justify-end">
+            <label className="inline-flex items-center gap-1.5 text-xs">
+              <span className="text-slate-400">Per page</span>
+              <select
+                value={pageSize}
+                onChange={(e) =>
+                  handlePageSizeChange(
+                    Number(e.target.value) as ProspectsPageSize
+                  )
+                }
+                className="rounded-md border border-slate-200 bg-white py-1 pl-2 pr-7 text-xs font-medium text-slate-700 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                aria-label="Prospects per page"
+              >
+                {PROSPECTS_PAGE_SIZE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="tabular-nums sm:text-right">{paginationRangeLabel}</p>
+          </div>
         </nav>
       ) : null}
-
-      <ProspectCrmLinkModal
-        prospect={crmLinkModalProspect}
-        saving={
-          crmLinkModalProspect
-            ? savingFieldById[crmLinkModalProspect.id] === "crm_link"
-            : false
-        }
-        onClose={() => setCrmLinkModalProspect(null)}
-        onSave={async (crmContactId) => {
-          if (!crmLinkModalProspect || !onUpdateProspect) return;
-          setSavingFieldById((prev) => ({
-            ...prev,
-            [crmLinkModalProspect.id]: "crm_link",
-          }));
-          try {
-            await onUpdateProspect(crmLinkModalProspect, {
-              crm_contact_id: crmContactId,
-            });
-          } finally {
-            setSavingFieldById((prev) => ({
-              ...prev,
-              [crmLinkModalProspect.id]: null,
-            }));
-          }
-        }}
-      />
 
       <ProspectContactEditModal
         prospect={editModalProspect}

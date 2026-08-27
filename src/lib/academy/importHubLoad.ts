@@ -21,8 +21,6 @@ const CLASSROOM_HUB_PATH = path.join(
   "content/academy/classroom-hub.json",
 );
 
-const GET_CLIENTS_SOURCE_COURSE_ID = "get-clients";
-
 /** Map hub lesson id → course_id stored in academy_lesson_content. */
 export function importCourseIdForLesson(
   lessonId: string,
@@ -37,93 +35,13 @@ export function importCourseIdForLesson(
   return hubCourseId;
 }
 
-function cloneSection(section: HubSection): HubSection {
-  return {
-    ...section,
-    lessons: section.lessons.map((lesson) => ({ ...lesson })),
-    sections: section.sections?.map(cloneSection),
-  };
-}
-
-function buildDerivedCourse(input: {
-  source: HubCourse;
-  id: string;
-  title: string;
-  description: string;
-  sectionIds: string[];
-}): HubCourse {
-  const pickedSections = input.sectionIds
-    .map((sectionId) =>
-      input.source.sections.find((section) => section.id === sectionId),
-    )
-    .filter((section): section is HubSection => Boolean(section))
-    .map(cloneSection);
-
-  if (pickedSections.length !== input.sectionIds.length) {
-    throw new Error(
-      `classroom-hub.json: missing section for derived course ${input.id}`,
-    );
-  }
-
-  return {
-    id: input.id,
-    title: input.title,
-    description: input.description,
-    sections: pickedSections,
-  };
-}
-
-/** Classroom hub with derived Get Calls / Win Clients courses (mirrors classroomHubLoad). */
+/** Classroom hub (Get Calls / Win Clients are now first-class courses in JSON). */
 export function loadClassroomHubForImport(): HubCatalog {
   const raw = fs.readFileSync(CLASSROOM_HUB_PATH, "utf8");
   const data = JSON.parse(raw) as HubCatalog & {
     startHere?: { courseId: string };
   };
-
-  const getClientsSource = data.courses.find(
-    (course) => course.id === GET_CLIENTS_SOURCE_COURSE_ID,
-  );
-  if (!getClientsSource) {
-    throw new Error(
-      `classroom-hub.json: expected ${GET_CLIENTS_SOURCE_COURSE_ID} course`,
-    );
-  }
-
-  const getCalls = buildDerivedCourse({
-    source: getClientsSource,
-    id: "get-calls",
-    title: "Get Calls",
-    description: getClientsSource.description ?? "",
-    sectionIds: [
-      "get-calls-overview",
-      "get-calls-step-1-choose-understand-ideal-clients",
-      "get-calls-step-2-build-prospect-list",
-      "get-calls-step-4-top-100-conversations",
-    ],
-  });
-  const winClients = buildDerivedCourse({
-    source: getClientsSource,
-    id: "win-clients",
-    title: "Win Clients",
-    description: getClientsSource.description ?? "",
-    sectionIds: [
-      "win-clients-overview",
-      "win-clients-offer-sales-foundations",
-      "win-clients-value-sessions",
-      "win-clients-client-closing-objections",
-    ],
-  });
-
-  return {
-    ...data,
-    courses: [
-      ...data.courses.filter(
-        (course) => course.id !== GET_CLIENTS_SOURCE_COURSE_ID,
-      ),
-      getCalls,
-      winClients,
-    ],
-  };
+  return data;
 }
 
 function walkSectionLessons(

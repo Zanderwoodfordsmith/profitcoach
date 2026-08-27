@@ -32,6 +32,7 @@ import {
   getProspectNextCallStatusLabel,
 } from "@/lib/prospectNextCall";
 import type { ProspectRow } from "@/lib/prospectRow";
+import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import { applyProspectPatch } from "@/lib/prospects/applyProspectPatch";
 import type {
   ProspectFieldPatch,
@@ -315,6 +316,43 @@ export function ProspectWorkspace({ contactId }: Props) {
                   }}
                 />
                 <div>
+                  <div className="text-[11px] text-slate-400">Website</div>
+                  <div className="mt-0.5 flex items-start gap-1.5">
+                    <div className="min-w-0 flex-1">
+                      <InlineEditableText
+                        value={prospect.company_website}
+                        placeholder="Add website"
+                        type="url"
+                        saving={saving}
+                        normalize={(raw) => raw.trim() || null}
+                        onSave={async (next) => {
+                          await handleUpdate({ company_website: next });
+                        }}
+                        display={(v) => (
+                          <span className="break-all text-sm text-slate-800">
+                            {v.replace(/^https?:\/\/(www\.)?/i, "")}
+                          </span>
+                        )}
+                      />
+                    </div>
+                    {prospect.company_website?.trim() ? (
+                      <a
+                        href={
+                          /^https?:\/\//i.test(prospect.company_website.trim())
+                            ? prospect.company_website.trim()
+                            : `https://${prospect.company_website.trim()}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Open website"
+                        className="mt-1 shrink-0 rounded p-1 text-slate-400 hover:bg-slate-50 hover:text-sky-700"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+                <div>
                   <div className="text-[11px] text-slate-400">LinkedIn</div>
                   <div className="mt-0.5 flex items-start gap-1.5">
                     <div className="min-w-0 flex-1">
@@ -346,6 +384,44 @@ export function ProspectWorkspace({ contactId }: Props) {
                       </a>
                     ) : null}
                   </div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-slate-400">CRM</div>
+                  <div className="mt-0.5">
+                    {crmUrl ? (
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <a
+                          href={crmUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-sky-700 hover:underline"
+                        >
+                          Open in CRM
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setCrmOpen(true)}
+                          className="text-xs text-slate-500 hover:text-sky-700 hover:underline"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setCrmOpen(true)}
+                        className="text-sm text-sky-700 hover:underline"
+                      >
+                        Link CRM contact
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <dt className="mb-1 text-[11px] text-slate-400">Source</dt>
+                  <dd className="text-sm text-slate-800">
+                    {resolveProspectSourceLabel(prospect)}
+                  </dd>
                 </div>
                 <div>
                   <dt className="mb-1 text-[11px] text-slate-400">Status</dt>
@@ -478,14 +554,14 @@ export function ProspectWorkspace({ contactId }: Props) {
                   <button
                     type="button"
                     onClick={() => setGlanceOpen(true)}
-                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-sky-300 hover:bg-sky-50/40"
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-sky-900 hover:border-sky-300 hover:bg-sky-50"
                   >
                     Scorecard glance
                   </button>
                 ) : null}
                 <Link
                   href={bossHref}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-sky-300 hover:bg-sky-50/40"
+                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-sky-900 hover:border-sky-300 hover:bg-sky-50"
                 >
                   Boss Pro
                   <ExternalLink className="h-3 w-3" aria-hidden />

@@ -7,8 +7,12 @@ import {
 } from "@/lib/salesNavigator/baseSearchDefaults";
 import { buildSalesNavSearchUrl } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 
-const BASE_SEARCH_LESSON_ID =
-  "get-calls-ideal-clients-linkedin-sales-navigator-build-your-base-search";
+import {
+  SALES_NAV_BASE_SEARCH_LESSON_ID,
+  SALES_NAV_CONSOLIDATED_LESSON_ID,
+} from "@/lib/academy/lessonVideoChapters";
+
+const BASE_SEARCH_LESSON_ID = SALES_NAV_BASE_SEARCH_LESSON_ID;
 
 /** Pre-filled Classroom base search (UK, owners/CEOs, 1–200, 2nd+3rd). */
 const SALES_NAV_BASE_SEARCH_URL = buildSalesNavSearchUrl({
@@ -19,9 +23,15 @@ const SALES_NAV_BASE_SEARCH_URL = buildSalesNavSearchUrl({
   degrees: ["2", "3"],
 });
 
-/** Shown only on the Build Your Base Search lesson — Overview + Guide. */
+/** Shown on Build Your Base Search (legacy or consolidated Sales Nav lesson). */
 export function LessonBaseSearchCta({ lessonId }: { lessonId: string }) {
-  if (resolveClassroomLessonId(lessonId) !== BASE_SEARCH_LESSON_ID) return null;
+  const resolved = resolveClassroomLessonId(lessonId);
+  if (
+    resolved !== BASE_SEARCH_LESSON_ID &&
+    resolved !== SALES_NAV_CONSOLIDATED_LESSON_ID
+  ) {
+    return null;
+  }
 
   return (
     <a

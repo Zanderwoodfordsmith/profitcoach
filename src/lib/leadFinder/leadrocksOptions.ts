@@ -198,6 +198,7 @@ export const LEADROCKS_US_STATES: Array<{ code: string; label: string }> = [
 
 /** Common team-size buckets seen in LeadRocks exports (cache / post-filter). */
 export const LEADROCKS_TEAM_SIZES = [
+  "Self-employed",
   "1-10",
   "11-50",
   "51-200",

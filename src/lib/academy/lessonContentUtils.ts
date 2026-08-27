@@ -1,11 +1,14 @@
 /** Client-safe helpers for in-app lesson content (no Node/fs or Supabase). */
 
 import type { AcademyRecommendedAction } from "./lessonActions";
+import type { LessonVideoChapter } from "./lessonVideoChapters";
 
 export type LessonInAppContent = {
   videoUrl: string | null;
   /** Optional listen-along audio (MP3) under the video. */
   audioUrl: string | null;
+  /** Ordered main watch path when a lesson has multiple videos. */
+  videoChapters: LessonVideoChapter[];
   /** Overview tab (short what / why). */
   bodyMarkdown: string;
   /** Optional Guide tab (longer written walkthrough). */
@@ -44,10 +47,12 @@ export function hasInAppLessonContent(
   bodyMarkdown?: string | null,
   transcriptText?: string | null,
   guideMarkdown?: string | null,
-  audioUrl?: string | null
+  audioUrl?: string | null,
+  videoChapters?: LessonVideoChapter[] | null
 ): boolean {
   return (
     Boolean(videoUrl?.trim()) ||
+    Boolean(videoChapters?.length) ||
     Boolean(audioUrl?.trim()) ||
     Boolean(bodyMarkdown?.trim()) ||
     Boolean(guideMarkdown?.trim()) ||

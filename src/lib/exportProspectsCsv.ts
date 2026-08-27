@@ -10,13 +10,13 @@ import {
   getProspectNextCallName,
   getProspectNextCallStatusLabel,
 } from "@/lib/prospectNextCall";
+import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
 import type { ProspectRow } from "@/lib/prospectRow";
 
 export type ProspectTableColumnKey =
   | "business"
   | "email"
   | "phone"
-  | "type"
   | "coach"
   | "actions"
   | "boss_score"
@@ -39,7 +39,6 @@ export type ProspectExportColumnKey =
   | "business"
   | "email"
   | "phone"
-  | "type"
   | "coach"
   | "status"
   | "boss_score"
@@ -67,7 +66,6 @@ const EXPORT_COLUMN_DEFS: Array<{
   { key: "business", label: "Business" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
-  { key: "type", label: "Type" },
   { key: "coach", label: "Coach" },
   { key: "status", label: "Status" },
   { key: "boss_score", label: "Boss" },
@@ -93,7 +91,6 @@ const TABLE_KEY_TO_EXPORT: Partial<
   business: ["business"],
   email: ["email"],
   phone: ["phone"],
-  type: ["type"],
   coach: ["coach"],
   status: ["status"],
   boss_score: ["boss_score", "boss_score_at"],
@@ -116,7 +113,7 @@ function getExportCellValue(
 ): CsvCell {
   switch (key) {
     case "name":
-      return row.full_name;
+      return formatProspectPersonName(row.full_name) || row.full_name;
     case "title":
       return row.job_title;
     case "business":
@@ -125,8 +122,6 @@ function getExportCellValue(
       return row.email;
     case "phone":
       return row.phone;
-    case "type":
-      return row.type;
     case "coach":
       return row.coach_name ?? row.coach_business_name ?? "";
     case "status":

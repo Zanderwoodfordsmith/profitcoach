@@ -8,6 +8,13 @@
  */
 
 const PROGRAMME_PREFIXES: ReadonlyArray<readonly [string, string]> = [
+  [
+    "profit-coach-os-crm-setup-usage-track-prospects-clients-sessions",
+    "coach-clients",
+  ],
+  ["profit-coach-os-boss-", "win-clients"],
+  ["profit-coach-os-crm-", "win-clients"],
+  // Retired OS path — keep for any leftover content rows under this prefix.
   ["profit-coach-os-", "profit-coach-os"],
   ["coach-clients-", "coach-clients"],
   ["win-clients-", "win-clients"],

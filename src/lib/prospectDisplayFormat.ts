@@ -1,3 +1,13 @@
+/** Strip emoji and other decorative symbols from contact display text. */
+function stripDecorativeChars(text: string): string {
+  return text
+    .replace(/\p{Extended_Pictographic}/gu, "")
+    .replace(/[\uFE0E\uFE0F\u200D\u20E3]/g, "")
+    .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, "") // skin tone modifiers
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Capitalize the first letter of each word; lowercase the rest. */
 function capitalizeWord(word: string): string {
   for (let i = 0; i < word.length; ) {
@@ -17,8 +27,7 @@ function capitalizeWord(word: string): string {
 }
 
 function formatWords(text: string): string {
-  return text
-    .trim()
+  return stripDecorativeChars(text)
     .split(/\s+/)
     .filter(Boolean)
     .map(capitalizeWord)
@@ -39,6 +48,25 @@ export function formatProspectLabel(
 ): string | null {
   if (!text?.trim()) return null;
   return formatWords(text);
+}
+
+const JOB_TITLE_SHORTENINGS: Array<{ pattern: RegExp; replacement: string }> = [
+  { pattern: /\bManaging Director\b/gi, replacement: "MD" },
+  { pattern: /\bBusiness Owner\b/gi, replacement: "Owner" },
+  { pattern: /\bCompany Owner\b/gi, replacement: "Owner" },
+];
+
+/** Display format for job titles — same casing as labels, plus compact shortenings. */
+export function formatProspectJobTitle(
+  text: string | null | undefined
+): string | null {
+  const formatted = formatProspectLabel(text);
+  if (!formatted) return null;
+  let out = formatted;
+  for (const { pattern, replacement } of JOB_TITLE_SHORTENINGS) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
 }
 
 export function normalizeProspectPersonName(

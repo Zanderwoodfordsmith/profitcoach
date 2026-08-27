@@ -1,47 +1,112 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useMemo } from "react";
+
+import type { LessonVideoChapter } from "@/lib/academy/lessonVideoChapters";
+import {
+  buildTranscriptItemsFromChapters,
+  parseTranscriptItems,
+  type TranscriptItem,
+} from "@/lib/academy/transcriptCues";
 
 type Props = {
   transcriptText: string;
+  /** When set, prefer per-chapter transcripts with bold chapter headings. */
+  videoChapters?: LessonVideoChapter[];
+  /** Seek the lesson media to this time (seconds). */
+  onSeekToSeconds?: (seconds: number) => void;
+  className?: string;
 };
 
-export function LessonTranscriptPanel({ transcriptText }: Props) {
-  const [open, setOpen] = useState(false);
-  const trimmed = transcriptText.trim();
-  const lineCount = useMemo(
-    () => (trimmed ? trimmed.split(/\r?\n/).length : 0),
-    [trimmed]
-  );
-
-  if (!trimmed) return null;
-
-  return (
-    <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50">
+function TimeLink({
+  seconds,
+  label,
+  onSeek,
+}: {
+  seconds: number;
+  label: string;
+  onSeek?: (seconds: number) => void;
+}) {
+  if (onSeek) {
+    return (
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-        aria-expanded={open}
+        onClick={() => onSeek(seconds)}
+        className="text-left font-medium tabular-nums leading-relaxed text-sky-700 hover:text-sky-900 hover:underline"
+        aria-label={`Jump to ${label}`}
       >
-        <span className="text-sm font-semibold text-slate-900">Transcript</span>
-        <span className="flex items-center gap-2 text-xs text-slate-500">
-          {open ? "Hide" : "Show"}
-          {lineCount > 0 ? ` · ${lineCount} lines` : null}
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          />
-        </span>
+        {label}
       </button>
-      {open ? (
-        <div className="max-h-96 overflow-y-auto border-t border-slate-200 px-4 py-3">
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-700">
-            {trimmed}
-          </pre>
-        </div>
-      ) : null}
+    );
+  }
+  return (
+    <span className="font-medium tabular-nums leading-relaxed text-sky-700">
+      {label}
+    </span>
+  );
+}
+
+/**
+ * Lesson transcript with speaker labels removed and clickable timestamps.
+ */
+export function LessonTranscriptPanel({
+  transcriptText,
+  videoChapters,
+  onSeekToSeconds,
+  className = "max-h-[min(48rem,70vh)] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 px-5 pb-4 pt-5",
+}: Props) {
+  const items = useMemo<TranscriptItem[]>(() => {
+    const fromChapters = buildTranscriptItemsFromChapters(videoChapters);
+    if (fromChapters.length > 0) return fromChapters;
+    return parseTranscriptItems(transcriptText);
+  }, [transcriptText, videoChapters]);
+
+  if (items.length === 0) {
+    const trimmed = transcriptText.trim();
+    if (!trimmed) return null;
+    return (
+      <pre
+        className={`${className} whitespace-pre-wrap font-sans text-[15px] leading-relaxed text-slate-700`}
+      >
+        {trimmed}
+      </pre>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <ul className="space-y-4 font-sans text-[15px] text-slate-700">
+        {items.map((item, index) => {
+          if (item.type === "chapter") {
+            return (
+              <li
+                key={`chapter-${item.title}-${index}`}
+                className={index === 0 ? "" : "pt-2"}
+              >
+                <p className="font-semibold leading-snug text-slate-900">
+                  {item.title}
+                </p>
+              </li>
+            );
+          }
+
+          return (
+            <li
+              key={`cue-${item.seconds}-${index}`}
+              className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3"
+            >
+              <TimeLink
+                seconds={item.seconds}
+                label={item.label}
+                onSeek={onSeekToSeconds}
+              />
+              <p className="min-w-0 whitespace-pre-wrap leading-relaxed">
+                {item.text}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -86,6 +86,34 @@ export async function loadContactForWorkshopSession(
 }
 
 /**
+ * PostgREST / Supabase default max rows per request is 1000. Page through
+ * `.range()` until the full result set is loaded.
+ */
+export async function fetchAllSupabasePages<T>(
+  fetchPage: (
+    from: number,
+    to: number
+  ) => PromiseLike<{ data: T[] | null; error: SupabaseLikeError }>,
+  pageSize = 1000,
+  maxRows = 100_000
+): Promise<{ data: T[]; error: SupabaseLikeError }> {
+  const all: T[] = [];
+  let from = 0;
+
+  while (from < maxRows) {
+    const to = Math.min(from + pageSize - 1, maxRows - 1);
+    const { data, error } = await fetchPage(from, to);
+    if (error) return { data: [], error };
+    if (!data?.length) break;
+    all.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return { data: all, error: null };
+}
+
+/**
  * Tries selecting contacts with `phone`; falls back without it when the column
  * is missing (migration not applied yet).
  */

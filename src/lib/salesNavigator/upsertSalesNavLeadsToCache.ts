@@ -6,6 +6,8 @@
 
 import type { SalesNavImportedLead } from "@/lib/apify/salesNavigatorTypes";
 import {
+  isObfuscatedLinkedInUrl,
+  isVanityLinkedInUrl,
   nameCompanyIdentityKey,
   normalizePublicLinkedInUrl,
   salesNavDedupeKey,
@@ -202,6 +204,23 @@ export async function upsertSalesNavLeadsToCache(opts: {
       if (lead.tenureLabel) raw.tenure_label = lead.tenureLabel;
       if (lead.raw) raw.sales_nav = lead.raw;
 
+      // Don't clobber a human-readable vanity URL with a Sales Nav member-id
+      // URL — keep the vanity URL and stash the member-id form alongside it.
+      const incomingLi =
+        normalizePublicLinkedInUrl(lead.linkedinUrl) ??
+        lead.linkedinUrl?.trim() ??
+        null;
+      const existingLi = match.linkedin_url?.trim() || null;
+      const incomingIsObfuscated = isObfuscatedLinkedInUrl(lead.linkedinUrl);
+      const keepExistingVanity =
+        incomingIsObfuscated && isVanityLinkedInUrl(existingLi);
+      const nextLinkedInUrl = keepExistingVanity
+        ? existingLi
+        : incomingLi ?? existingLi;
+      if (incomingIsObfuscated && incomingLi) {
+        raw.sales_nav_member_url = incomingLi;
+      }
+
       const patch: Record<string, unknown> = {
         full_name: preferText(lead.fullName, match.full_name),
         first_name: preferText(lead.firstName, match.first_name),
@@ -209,9 +228,7 @@ export async function upsertSalesNavLeadsToCache(opts: {
         job_title: preferText(lead.jobTitle, match.job_title),
         company: preferText(lead.company, match.company),
         location: preferText(lead.location, match.location),
-        linkedin_url:
-          normalizePublicLinkedInUrl(lead.linkedinUrl) ??
-          preferText(lead.linkedinUrl, match.linkedin_url),
+        linkedin_url: nextLinkedInUrl,
         email: preferText(lead.email, match.email),
         last_seen_at: now,
         exported_at: scrapedDate,
@@ -264,6 +281,11 @@ export async function upsertSalesNavLeadsToCache(opts: {
         tenure_label: lead.tenureLabel,
         last_sales_nav_scrape_at: now,
         last_sales_nav_url: opts.salesNavUrl ?? null,
+        sales_nav_member_url: isObfuscatedLinkedInUrl(lead.linkedinUrl)
+          ? normalizePublicLinkedInUrl(lead.linkedinUrl) ??
+            lead.linkedinUrl?.trim() ??
+            null
+          : null,
         sales_nav: lead.raw ?? {},
       },
     });

@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       business_name: businessName,
       linkedin_url: linkedinUrl,
       type: contactType,
+      prospect_source: contactType === "prospect" ? "manual" : undefined,
     });
 
     if (insertError || !inserted) {

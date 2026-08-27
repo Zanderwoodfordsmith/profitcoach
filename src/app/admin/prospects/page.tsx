@@ -80,7 +80,6 @@ export default function AdminProspectsPage() {
           error={page.error}
           stickyTopOffset={page.pageHeaderHeight}
           showCoachColumn={true}
-          showTypeColumn={false}
           coachFilterOptions={page.coachOptions}
           onAddClick={page.openAddProspect}
           addActive={page.showAddProspect}

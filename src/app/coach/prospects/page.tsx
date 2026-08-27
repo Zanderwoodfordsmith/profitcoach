@@ -55,7 +55,6 @@ export default function CoachProspectsPage() {
           error={page.error}
           stickyTopOffset={page.pageHeaderHeight}
           showCoachColumn={false}
-          showTypeColumn={true}
           onAddClick={page.openAddProspect}
           addActive={page.showAddProspect}
           onRowClick={(id) => router.push(prospectWorkspacePath(id))}

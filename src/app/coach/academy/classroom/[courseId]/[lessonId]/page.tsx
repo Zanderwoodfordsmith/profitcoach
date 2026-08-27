@@ -7,6 +7,7 @@ import {
   resolveClassroomCourseId,
   resolveClassroomLessonId,
 } from "@/lib/academy/classroomIdAliases";
+import { isRetiredClassroomCourseId } from "@/lib/academy/classroomIds";
 import { findHubCourse, findLessonInCourse } from "@/lib/academy/hubCatalog";
 import {
   classroomCourseIdForLesson,
@@ -15,18 +16,41 @@ import {
 import { loadClassroomCourseWithContent } from "@/lib/academy/lessonContent";
 import { loadLessonResources } from "@/lib/academy/resources";
 import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
+import {
+  legacyConsolidatedChapterRedirect,
+} from "@/lib/academy/lessonVideoChapters";
 
 const BASE = "/coach/academy/classroom";
 
-type Props = { params: Promise<{ courseId: string; lessonId: string }> };
+type Props = {
+  params: Promise<{ courseId: string; lessonId: string }>;
+  searchParams: Promise<{ chapter?: string }>;
+};
 
-export default async function CoachAcademyClassroomLessonPage({ params }: Props) {
+export default async function CoachAcademyClassroomLessonPage({
+  params,
+  searchParams,
+}: Props) {
   const { courseId: rawCourseId, lessonId: rawLessonId } = await params;
+  const { chapter: initialChapterId } = await searchParams;
   const lessonId = resolveClassroomLessonId(rawLessonId);
   const data = loadClassroomHub();
-  const courseId =
-    classroomCourseIdForLesson(data, lessonId) ??
-    resolveClassroomCourseId(rawCourseId);
+  const remappedCourseId = classroomCourseIdForLesson(data, lessonId);
+  const courseId = remappedCourseId ?? resolveClassroomCourseId(rawCourseId);
+
+  // Retired Profit Coach OS path: send remapped lessons to their new cards,
+  // otherwise drop bookmarks on the classroom catalog.
+  if (
+    isRetiredClassroomCourseId(rawCourseId) ||
+    isRetiredClassroomCourseId(courseId)
+  ) {
+    if (remappedCourseId) {
+      redirect(
+        `${BASE}/${encodeURIComponent(remappedCourseId)}/${encodeURIComponent(lessonId)}`
+      );
+    }
+    redirect(BASE);
+  }
 
   if (
     classroomIdsNeedRedirect(rawCourseId, rawLessonId) ||
@@ -35,6 +59,17 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
   ) {
     redirect(
       `${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`
+    );
+  }
+
+  const legacyRedirect = legacyConsolidatedChapterRedirect(lessonId);
+  if (legacyRedirect) {
+    redirect(
+      `${BASE}/${encodeURIComponent(legacyRedirect.courseId)}/${encodeURIComponent(legacyRedirect.lessonId)}${
+        legacyRedirect.chapter
+          ? `?chapter=${encodeURIComponent(legacyRedirect.chapter)}`
+          : ""
+      }`
     );
   }
 
@@ -49,6 +84,10 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
   if (!lesson) notFound();
 
   const videoUrl = "videoUrl" in lesson ? lesson.videoUrl : null;
+  const videoChapters =
+    "videoChapters" in lesson && Array.isArray(lesson.videoChapters)
+      ? lesson.videoChapters
+      : [];
   const audioUrl = "audioUrl" in lesson ? lesson.audioUrl : null;
   const bodyMarkdown = "bodyMarkdown" in lesson ? lesson.bodyMarkdown : "";
   const guideMarkdown = "guideMarkdown" in lesson ? lesson.guideMarkdown : "";
@@ -64,7 +103,9 @@ export default async function CoachAcademyClassroomLessonPage({ params }: Props)
           basePath={BASE}
           classroomHref={BASE}
           videoUrl={videoUrl}
+          videoChapters={videoChapters}
           audioUrl={audioUrl}
+          initialChapterId={initialChapterId ?? null}
           bodyMarkdown={bodyMarkdown}
           guideMarkdown={guideMarkdown}
           transcriptText={transcriptText}

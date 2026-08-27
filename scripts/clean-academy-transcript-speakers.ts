@@ -1,5 +1,5 @@
 /**
- * Strip "Speaker 1", "Speaker 2", etc. from existing academy_lesson_content.transcript_text.
+ * Strip "Speaker A", "Speaker 1", etc. from existing academy_lesson_content.transcript_text.
  *
  * Safe to run while video import is running (only updates transcript column).
  *
@@ -28,7 +28,8 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const SPEAKER_PATTERN = /Speaker\s*\d+/i;
+  const SPEAKER_PATTERN =
+    /(?:Speaker\s+[A-Za-z0-9]+|(?:^|\n)\s*[A-Z][a-zA-Z'’.-]*(?:\s+[A-Z][a-zA-Z'’.-]*){0,2}\s*[\[(]\d{1,2}:\d{2})/i;
 
 async function main() {
   const { data: rows, error } = await supabase

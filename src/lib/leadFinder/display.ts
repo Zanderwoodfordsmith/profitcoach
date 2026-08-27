@@ -123,6 +123,21 @@ export function formatLeadLocation(
   return kept.join(", ") || "—";
 }
 
+import type { WebsiteCheckStatus } from "@/lib/leadFinder/types";
+
+/** Parse website_check.status from lead raw jsonb. */
+export function parseWebsiteCheckStatus(
+  raw: Record<string, unknown> | null | undefined
+): WebsiteCheckStatus | null {
+  const check = raw?.website_check;
+  if (!check || typeof check !== "object") return null;
+  const status = (check as { status?: unknown }).status;
+  if (status === "live" || status === "dead" || status === "unknown") {
+    return status;
+  }
+  return null;
+}
+
 /** Ensure company website links work when stored without a scheme. */
 export function companyWebsiteHref(
   url: string | null | undefined
@@ -131,6 +146,31 @@ export function companyWebsiteHref(
   if (!raw) return null;
   if (/^https?:\/\//i.test(raw)) return raw;
   return `https://${raw}`;
+}
+
+const MAX_COMPANY_WEBSITE_LENGTH = 2048;
+
+/**
+ * Normalize a company website for storage. Only http(s); strips credentials.
+ * Returns null for empty / invalid / non-http schemes (e.g. javascript:).
+ */
+export function normalizeCompanyWebsiteUrl(
+  input: string | null | undefined
+): string | null {
+  const raw = input?.trim();
+  if (!raw) return null;
+  if (raw.length > MAX_COMPANY_WEBSITE_LENGTH) return null;
+  let url: URL;
+  try {
+    url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  if (!url.hostname) return null;
+  url.username = "";
+  url.password = "";
+  return url.toString();
 }
 
 /** e.g. joh…@acme.com — enough to know it exists without exposing the inbox. */

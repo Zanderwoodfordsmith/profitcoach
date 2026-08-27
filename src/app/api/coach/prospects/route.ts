@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
+import {
+  fetchAllSupabasePages,
+  selectContactsWithOptionalPhone,
+} from "@/lib/contactsSchemaSafeSelect";
 import {
   enrichProspectRows,
   toLiteProspectRows,
@@ -39,6 +42,7 @@ export async function GET(request: Request) {
         business_name: string | null;
         job_title: string | null;
         linkedin_url: string | null;
+        company_website: string | null;
         prospect_status: string | null;
         phone: string | null;
         crm_contact_id: string | null;
@@ -46,19 +50,28 @@ export async function GET(request: Request) {
         created_at: string;
       }>(
         async (columns) => {
-          let query = supabaseAdmin
-            .from("contacts")
-            .select(columns)
-            .eq("coach_id", coachId)
-            .eq("type", "prospect")
-            .order("created_at", { ascending: false });
+          // enrichIds is a small visible page — no need to page the full coach list.
           if (enrichIds && enrichIds.length > 0) {
-            query = query.in("id", enrichIds);
+            return supabaseAdmin
+              .from("contacts")
+              .select(columns)
+              .eq("coach_id", coachId)
+              .eq("type", "prospect")
+              .in("id", enrichIds)
+              .order("created_at", { ascending: false });
           }
-          return query;
+          return fetchAllSupabasePages(async (from, to) =>
+            supabaseAdmin
+              .from("contacts")
+              .select(columns)
+              .eq("coach_id", coachId)
+              .eq("type", "prospect")
+              .order("created_at", { ascending: false })
+              .range(from, to)
+          );
         },
         "id, full_name, email, business_name, job_title, prospect_status, type, created_at",
-        ["crm_contact_id", "linkedin_url"]
+        ["crm_contact_id", "linkedin_url", "company_website", "prospect_funnel", "prospect_source"]
       ),
       supabaseAdmin
         .from("coaches")
@@ -88,12 +101,15 @@ export async function GET(request: Request) {
     email: c.email ?? null,
     business_name: c.business_name ?? null,
     linkedin_url: c.linkedin_url ?? null,
+    company_website: c.company_website ?? null,
     phone: c.phone ?? null,
     type: c.type ?? "prospect",
     coach_id: coachId,
     crm_contact_id: c.crm_contact_id ?? null,
     crm_location_id: crmLocationId,
     created_at: c.created_at ?? null,
+    prospect_funnel: (c as { prospect_funnel?: string | null }).prospect_funnel ?? null,
+    prospect_source: (c as { prospect_source?: string | null }).prospect_source ?? null,
   }));
 
   const prospects =

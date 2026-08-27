@@ -1,3 +1,6 @@
+/** From raw.website_check after HTTP validation (see scripts/validate-lead-websites.ts). */
+export type WebsiteCheckStatus = "live" | "dead" | "unknown";
+
 export type LeadTeaser = {
   id: string;
   fullName: string | null;
@@ -5,6 +8,8 @@ export type LeadTeaser = {
   company: string | null;
   /** Public company site — safe to show without reveal. */
   companyWebsite: string | null;
+  /** null = not checked yet; dead rows have no companyWebsite. */
+  websiteStatus: WebsiteCheckStatus | null;
   location: string | null;
   state: string | null;
   industry: string | null;

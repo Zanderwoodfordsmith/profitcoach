@@ -23,6 +23,7 @@ export async function loadEnrichedProspectById(
     business_name: string | null;
     job_title: string | null;
     linkedin_url: string | null;
+    company_website: string | null;
     prospect_status: string | null;
     phone: string | null;
     crm_contact_id: string | null;
@@ -30,6 +31,7 @@ export async function loadEnrichedProspectById(
     coach_id: string | null;
     created_at: string;
     prospect_funnel: string | null;
+    prospect_source: string | null;
   }>(
     async (columns) => {
       let query = supabaseAdmin
@@ -44,7 +46,7 @@ export async function loadEnrichedProspectById(
       return query;
     },
     "id, full_name, email, business_name, job_title, prospect_status, type, coach_id, created_at",
-    ["crm_contact_id", "prospect_funnel", "linkedin_url"]
+    ["crm_contact_id", "prospect_funnel", "linkedin_url", "company_website", "prospect_source"]
   );
 
   if (error || !contacts?.length) {
@@ -85,6 +87,7 @@ export async function loadEnrichedProspectById(
       email: contact.email ?? null,
       business_name: contact.business_name ?? null,
       linkedin_url: contact.linkedin_url ?? null,
+      company_website: contact.company_website ?? null,
       phone: contact.phone ?? null,
       type: contact.type ?? "prospect",
       coach_id: coachId,
@@ -96,6 +99,7 @@ export async function loadEnrichedProspectById(
       crm_location_id: crmLocationId,
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
+      prospect_source: contact.prospect_source ?? null,
     },
   ]);
 

@@ -4,6 +4,7 @@ import {
   classroomIdsNeedRedirect,
   resolveClassroomCourseId,
 } from "@/lib/academy/classroomIdAliases";
+import { isRetiredClassroomCourseId } from "@/lib/academy/classroomIds";
 import { findHubCourse, firstLessonInCourse } from "@/lib/academy/hubCatalog";
 import { loadClassroomHub } from "@/lib/academy/classroomHubLoad";
 
@@ -16,6 +17,10 @@ export default async function AdminAcademyClassroomCourseEntryPage({
 }: Props) {
   const { courseId: rawCourseId } = await params;
   const courseId = resolveClassroomCourseId(rawCourseId);
+
+  if (isRetiredClassroomCourseId(rawCourseId) || isRetiredClassroomCourseId(courseId)) {
+    redirect(BASE);
+  }
 
   if (classroomIdsNeedRedirect(rawCourseId)) {
     redirect(`${BASE}/${encodeURIComponent(courseId)}`);

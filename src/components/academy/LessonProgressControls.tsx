@@ -13,17 +13,35 @@ import {
 import { Check, FilePenLine } from "lucide-react";
 
 import type { LessonProgressMap, LessonProgressStatus } from "@/lib/academy/lessonProgressTypes";
+import {
+  lessonChapterProgressKey,
+  type LessonChapterProgressMap,
+} from "@/lib/academy/lessonChapterProgress";
 import { hasReachedWatchCompleteThreshold } from "@/lib/academy/lessonWatchComplete";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type LessonProgressContextValue = {
   courseId: string;
   progress: LessonProgressMap;
+  chapterProgress: LessonChapterProgressMap;
   getStatus: (lessonId: string) => LessonProgressStatus;
   setStatus: (lessonId: string, status: LessonProgressStatus) => Promise<void>;
+  isChapterCompleted: (lessonId: string, chapterId: string) => boolean;
+  setChapterCompleted: (
+    lessonId: string,
+    chapterId: string,
+    completed: boolean,
+  ) => Promise<void>;
   /** Called from video players; marks complete once the watch threshold is reached. */
   reportWatchProgress: (
     lessonId: string,
+    currentTimeSeconds: number,
+    durationSeconds: number,
+  ) => void;
+  /** Marks an individual video chapter once its watch threshold is reached. */
+  reportChapterWatchProgress: (
+    lessonId: string,
+    chapterId: string,
     currentTimeSeconds: number,
     durationSeconds: number,
   ) => void;
@@ -56,6 +74,26 @@ export function useReportLessonWatchProgress(lessonId: string | null | undefined
   );
 }
 
+/** Safe for players that may render without a progress provider (e.g. admin preview). */
+export function useReportChapterWatchProgress(
+  lessonId: string | null | undefined,
+  chapterId: string | null | undefined,
+) {
+  const ctx = useLessonProgressContext();
+  return useCallback(
+    (currentTimeSeconds: number, durationSeconds: number) => {
+      if (!ctx || !lessonId || !chapterId) return;
+      ctx.reportChapterWatchProgress(
+        lessonId,
+        chapterId,
+        currentTimeSeconds,
+        durationSeconds,
+      );
+    },
+    [ctx, lessonId, chapterId],
+  );
+}
+
 async function getAccessToken(): Promise<string | null> {
   const {
     data: { session },
@@ -74,11 +112,16 @@ export function LessonProgressProvider({
   children: ReactNode;
 }) {
   const [progress, setProgress] = useState<LessonProgressMap>({});
+  const [chapterProgress, setChapterProgress] = useState<LessonChapterProgressMap>({});
   const [saving, setSaving] = useState(false);
   const progressRef = useRef(progress);
   progressRef.current = progress;
+  const chapterProgressRef = useRef(chapterProgress);
+  chapterProgressRef.current = chapterProgress;
   /** Lessons the member manually unmarked — don't auto-tick again this session. */
   const watchAutoCompleteSuppressedRef = useRef(new Set<string>());
+  /** Chapters manually unmarked — key is `${lessonId}:${chapterId}`. */
+  const chapterAutoCompleteSuppressedRef = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -94,9 +137,13 @@ export function LessonProgressProvider({
 
       if (!response.ok) return;
 
-      const body = (await response.json()) as { progress?: LessonProgressMap };
+      const body = (await response.json()) as {
+        progress?: LessonProgressMap;
+        chapterProgress?: LessonChapterProgressMap;
+      };
       if (!cancelled) {
         setProgress(body.progress ?? {});
+        setChapterProgress(body.chapterProgress ?? {});
       }
     }
 
@@ -202,6 +249,87 @@ export function LessonProgressProvider({
     [courseId],
   );
 
+  const isChapterCompleted = useCallback(
+    (lessonId: string, chapterId: string) =>
+      Boolean(chapterProgress[lessonChapterProgressKey(lessonId, chapterId)]),
+    [chapterProgress],
+  );
+
+  const setChapterCompleted = useCallback(
+    async (lessonId: string, chapterId: string, completed: boolean) => {
+      const key = lessonChapterProgressKey(lessonId, chapterId);
+      const wasCompleted = Boolean(chapterProgressRef.current[key]);
+
+      if (wasCompleted === completed) return;
+
+      if (wasCompleted && !completed) {
+        chapterAutoCompleteSuppressedRef.current.add(key);
+      }
+
+      setChapterProgress((current) => {
+        const next = { ...current };
+        if (completed) next[key] = true;
+        else delete next[key];
+        return next;
+      });
+
+      const token = await getAccessToken();
+      if (!token) {
+        setChapterProgress((current) => {
+          const reverted = { ...current };
+          if (wasCompleted) reverted[key] = true;
+          else delete reverted[key];
+          return reverted;
+        });
+        return;
+      }
+
+      setSaving(true);
+      try {
+        const response = await fetch(
+          `/api/coach/academy/lesson-progress/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}/chapters`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ chapterId, completed }),
+          },
+        );
+
+        if (!response.ok) {
+          setChapterProgress((current) => {
+            const reverted = { ...current };
+            if (wasCompleted) reverted[key] = true;
+            else delete reverted[key];
+            return reverted;
+          });
+          return;
+        }
+
+        const body = (await response.json().catch(() => ({}))) as {
+          parentStatus?: LessonProgressStatus;
+        };
+        if (
+          body.parentStatus === "completed" ||
+          body.parentStatus === "not_started" ||
+          body.parentStatus === "needs_review"
+        ) {
+          setProgress((current) => {
+            const next = { ...current };
+            if (body.parentStatus === "not_started") delete next[lessonId];
+            else next[lessonId] = body.parentStatus!;
+            return next;
+          });
+        }
+      } finally {
+        setSaving(false);
+      }
+    },
+    [courseId],
+  );
+
   const reportWatchProgress = useCallback(
     (lessonId: string, currentTimeSeconds: number, durationSeconds: number) => {
       if (watchAutoCompleteSuppressedRef.current.has(lessonId)) return;
@@ -212,16 +340,47 @@ export function LessonProgressProvider({
     [setStatus],
   );
 
+  const reportChapterWatchProgress = useCallback(
+    (
+      lessonId: string,
+      chapterId: string,
+      currentTimeSeconds: number,
+      durationSeconds: number,
+    ) => {
+      const key = lessonChapterProgressKey(lessonId, chapterId);
+      if (chapterAutoCompleteSuppressedRef.current.has(key)) return;
+      if (chapterProgressRef.current[key]) return;
+      if (!hasReachedWatchCompleteThreshold(currentTimeSeconds, durationSeconds)) return;
+      void setChapterCompleted(lessonId, chapterId, true);
+    },
+    [setChapterCompleted],
+  );
+
   const value = useMemo(
     () => ({
       courseId,
       progress,
+      chapterProgress,
       getStatus,
       setStatus,
+      isChapterCompleted,
+      setChapterCompleted,
       reportWatchProgress,
+      reportChapterWatchProgress,
       saving,
     }),
-    [courseId, progress, getStatus, setStatus, reportWatchProgress, saving],
+    [
+      courseId,
+      progress,
+      chapterProgress,
+      getStatus,
+      setStatus,
+      isChapterCompleted,
+      setChapterCompleted,
+      reportWatchProgress,
+      reportChapterWatchProgress,
+      saving,
+    ],
   );
 
   return (
@@ -247,6 +406,20 @@ function todoToggleClass(done: boolean, size: "sm" | "md", onActiveRow: boolean)
     return `${sizeClass} border-white/55 bg-transparent text-white/40 hover:border-white hover:text-white/70`;
   }
   return `${sizeClass} border-slate-300/90 bg-transparent text-slate-300 hover:border-slate-400 hover:text-slate-400`;
+}
+
+function todoToggleClassVideoMenu(done: boolean, selected: boolean): string {
+  const sizeClass =
+    "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition";
+
+  if (done) {
+    return `${sizeClass} border-emerald-500 bg-emerald-500 text-white shadow-sm hover:border-emerald-400 hover:bg-emerald-400`;
+  }
+
+  if (selected) {
+    return `${sizeClass} border-white/55 bg-transparent text-white/40 hover:border-white hover:text-white/70`;
+  }
+  return `${sizeClass} border-white/30 bg-transparent text-white/30 hover:border-white/50 hover:text-white/50`;
 }
 
 function TodoCheck({
@@ -341,6 +514,40 @@ export function LessonProgressSidebarControl({
         event.preventDefault();
         event.stopPropagation();
         void toggleCompleted(setStatus, lessonId, status);
+      }}
+    >
+      <TodoCheck done={done} size="sm" />
+    </button>
+  );
+}
+
+/** Chapter picker tick — matches sidebar style; toggles without jumping chapters. */
+export function LessonProgressChapterMenuTick({
+  lessonId,
+  chapterId,
+  selected = false,
+}: {
+  lessonId: string;
+  chapterId: string;
+  selected?: boolean;
+}) {
+  const ctx = useLessonProgressContext();
+  if (!ctx) return null;
+
+  const { isChapterCompleted, setChapterCompleted, saving } = ctx;
+  const done = isChapterCompleted(lessonId, chapterId);
+
+  return (
+    <button
+      type="button"
+      className={todoToggleClassVideoMenu(done, selected)}
+      aria-label={done ? "Mark chapter as not watched" : "Mark chapter as watched"}
+      aria-pressed={done}
+      disabled={saving}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void setChapterCompleted(lessonId, chapterId, !done);
       }}
     >
       <TodoCheck done={done} size="sm" />

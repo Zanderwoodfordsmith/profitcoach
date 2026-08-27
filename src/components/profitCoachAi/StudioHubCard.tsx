@@ -4,6 +4,8 @@ type Props = {
   href?: string;
   /** When set, renders a button instead of a link (e.g. in-panel skill pick). */
   onSelect?: () => void;
+  /** Called before following `href` (e.g. close the AI panel overlay). */
+  onNavigate?: () => void;
   eyebrow: string;
   eyebrowClassName?: string;
   title: string;
@@ -15,6 +17,7 @@ type Props = {
 export function StudioHubCard({
   href,
   onSelect,
+  onNavigate,
   eyebrow,
   eyebrowClassName = "text-sky-700",
   title,
@@ -68,7 +71,11 @@ export function StudioHubCard({
   }
 
   return (
-    <Link href={href ?? "#"} className={shellClass}>
+    <Link
+      href={href ?? "#"}
+      className={shellClass}
+      onClick={() => onNavigate?.()}
+    >
       {inner}
     </Link>
   );

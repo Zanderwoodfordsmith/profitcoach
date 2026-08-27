@@ -26,7 +26,7 @@ export const BRAND_KNOWLEDGE_FILES: BrandKnowledgeFileMeta[] = [
     file: "PROFIT_COACH_AI_ROUTER.md",
     label: "AI router & identity",
     description:
-      "Who the AI is and how it routes — loaded first in every prompt.",
+      "Where the AI map lives — skills, knowledge files, Create hub. Keep short; not the canon.",
     group: "core",
   },
   {

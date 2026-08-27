@@ -56,6 +56,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Apify actor local deps / run storage
+# local secrets / one-off import inputs (never commit)
+.local/
+
 /actors/**/node_modules/
 /actors/**/storage/

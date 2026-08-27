@@ -16,6 +16,7 @@ import {
   yearsAtCompanyBucketFromMonths,
 } from "@/lib/salesNavigator/tenure";
 import { isSalesNavSearchUrl } from "@/lib/salesNavigator/isSalesNavSearchUrl";
+import type { SalesNavProfileScraperMode } from "@/lib/salesNavigator/apifyCost";
 
 export {
   SALES_NAV_DEFAULT_TAKE_PAGES,
@@ -270,6 +271,8 @@ export type ScrapeSalesNavSearchInput = {
   userAgent?: string;
   /** Search pages to scrape (25 leads/page). Clamped to SALES_NAV_MAX_TAKE_PAGES. */
   takePages?: number;
+  /** Apify actor mode. Default Short (~$0.002/page). Full opens each profile (~+$0.004/profile). */
+  profileScraperMode?: SalesNavProfileScraperMode;
 };
 
 export type ScrapeSalesNavSearchResult = {
@@ -319,8 +322,9 @@ function buildRunInput(
     Math.max(1, Math.floor(input.takePages ?? SALES_NAV_DEFAULT_TAKE_PAGES))
   );
 
+  const profileScraperMode = input.profileScraperMode?.trim() || "Short";
   const runInput: Record<string, unknown> = {
-    profileScraperMode: "Short",
+    profileScraperMode,
     salesNavUrl,
     cookie,
     startPage: 1,
@@ -392,6 +396,17 @@ export type ApifyRunState = {
   itemCount: number;
 };
 
+export async function abortApifyRun(apifyRunId: string): Promise<void> {
+  const token = requireApifyToken();
+  const client = new ApifyClient({ token });
+  try {
+    await client.run(apifyRunId).abort();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Could not abort Apify run.";
+    throw new SalesNavScrapeError(message, "scrape_failed");
+  }
+}
+
 export async function getApifyRunState(
   apifyRunId: string
 ): Promise<ApifyRunState> {
@@ -435,12 +450,22 @@ export async function fetchSalesNavSearchDataset(opts: {
 }): Promise<SalesNavImportedLead[]> {
   const token = requireApifyToken();
   const client = new ApifyClient({ token });
-  const { items } = await client.dataset(opts.datasetId).listItems({
-    limit: opts.takePages * 25 + 10,
-  });
-  const leads = leadsFromDatasetItems(items);
+  const maxItems = opts.takePages * 25 + 10;
+  const pageSize = 500;
+  const allItems: unknown[] = [];
+  for (let offset = 0; offset < maxItems; offset += pageSize) {
+    const limit = Math.min(pageSize, maxItems - offset);
+    const { items } = await client.dataset(opts.datasetId).listItems({
+      limit,
+      offset,
+    });
+    if (!items.length) break;
+    allItems.push(...items);
+    if (items.length < limit) break;
+  }
+  const leads = leadsFromDatasetItems(allItems);
   if (leads.length === 0) {
-    throw emptyResultError(items);
+    throw emptyResultError(allItems);
   }
   return leads;
 }

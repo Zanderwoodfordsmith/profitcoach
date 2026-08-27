@@ -8,8 +8,9 @@ import {
   useState,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, RotateCcw } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
+import { CoreBrainTab } from "@/components/admin/brand/CoreBrainTab";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { NineStepRoadmap } from "@/components/profitSystem/NineStepRoadmap";
 import { OwnerLevelsDiagram } from "@/components/profitSystem/OwnerLevelsDiagram";
@@ -27,10 +28,6 @@ import {
   type DiagramIcon,
   type PillarKey,
 } from "@/components/profitSystem/profitSystemData";
-import {
-  PROFIT_COACH_OUTPUTS,
-  PROFIT_COACH_ROLES,
-} from "@/lib/profitCoachAi/registry";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const TABS = [
@@ -715,7 +712,7 @@ function ModelTab() {
                     className="aspect-[4/3] w-full bg-slate-100 object-cover"
                   />
                   <div className="flex items-center gap-1 px-2 py-1.5">
-                    <p className="min-w-0 flex-1 truncate text-[11px] text-slate-500">
+                    <p className="min-w-0 flex-1 truncate text-[11px] text-slate-700">
                       {img.caption ?? "—"}
                     </p>
                     <button
@@ -731,7 +728,7 @@ function ModelTab() {
                     <button
                       type="button"
                       onClick={() => void deleteImage(img.path)}
-                      className="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-600"
+                      className="shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold text-rose-700 hover:bg-rose-50"
                     >
                       ✕
                     </button>
@@ -765,376 +762,6 @@ function ModelTab() {
           </div>
         )}
       </Section>
-    </div>
-  );
-}
-
-type CanonFile = {
-  file: string;
-  label: string;
-  description: string;
-  group: "core" | "skill";
-  content: string;
-  overridden: boolean;
-  updated_at: string | null;
-  missing: boolean;
-};
-
-function wordCount(s: string): number {
-  return s.trim() ? s.trim().split(/\s+/).length : 0;
-}
-
-function SkillsSubTab() {
-  const [openSkill, setOpenSkill] = useState<string | null>(null);
-  return (
-    <div className="flex flex-col gap-4">
-      <Section
-        title="AI skills"
-        hint="Every skill the coach AI can run — what it's told to do and which knowledge it loads on top of the core brain. Read-only for now; editable instructions are on the roadmap."
-      >
-        <div className="flex flex-col gap-3">
-          {PROFIT_COACH_OUTPUTS.map((o) => {
-            const roles = PROFIT_COACH_ROLES.filter((r) =>
-              r.outputIds.includes(o.id)
-            ).map((r) => r.label);
-            const open = openSkill === o.id;
-            return (
-              <div
-                key={o.id}
-                className="rounded-xl border border-slate-200 bg-slate-50/50"
-              >
-                <button
-                  type="button"
-                  onClick={() => setOpenSkill(open ? null : o.id)}
-                  className="flex w-full flex-wrap items-center gap-2 px-4 py-3 text-left"
-                >
-                  <span className="text-sm font-semibold text-slate-900">
-                    {o.label}
-                  </span>
-                  <span className="font-mono text-[11px] text-slate-400">
-                    {o.id}
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    — {o.description}
-                  </span>
-                  <span className="ml-auto flex items-center gap-1.5">
-                    {o.useMarketingIcpTier2 ? (
-                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
-                        + marketing ICP
-                      </span>
-                    ) : null}
-                    <span className="text-xs text-slate-400">
-                      {open ? "Hide" : "View"}
-                    </span>
-                  </span>
-                </button>
-                {open ? (
-                  <div className="border-t border-slate-200 px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                      System instructions
-                    </p>
-                    <pre className="mt-1.5 whitespace-pre-wrap rounded-lg bg-white px-3 py-2.5 font-mono text-xs leading-relaxed text-slate-700 ring-1 ring-slate-200">
-                      {o.systemInstructions}
-                    </pre>
-                    <div className="mt-3 flex flex-wrap items-start gap-x-8 gap-y-2">
-                      <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                          Knowledge loaded
-                        </p>
-                        <ul className="mt-1 flex flex-wrap gap-1.5">
-                          {o.knowledgeRefs.map((ref, i) => (
-                            <li
-                              key={i}
-                              className="rounded-full bg-white px-2 py-0.5 font-mono text-[10px] text-slate-500 ring-1 ring-slate-200"
-                            >
-                              {ref.type === "playbook" ? ref.path : ref.file}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      {o.contextHints?.keys?.length ? (
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                            Coach brain keys used
-                          </p>
-                          <p className="mt-1 font-mono text-xs text-slate-500">
-                            {o.contextHints.keys.join(", ")}
-                          </p>
-                        </div>
-                      ) : null}
-                      {roles.length ? (
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-                            In roles
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {roles.join(", ")}
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-4 text-xs text-slate-400">
-          Related prompt controls elsewhere:{" "}
-          <a href="/admin/settings/ai-coach" className="font-medium text-sky-700 hover:underline">
-            AI Coach system prompt
-          </a>{" "}
-          ·{" "}
-          <a href="/admin/settings/linkedin-profile" className="font-medium text-sky-700 hover:underline">
-            LinkedIn Optimizer prompt
-          </a>{" "}
-          — candidates to consolidate here.
-        </p>
-      </Section>
-    </div>
-  );
-}
-
-function CanonTab({ initialBrainTab }: { initialBrainTab?: string | null }) {
-  const [subTab, setSubTab] = useState<"knowledge" | "skills">(
-    initialBrainTab === "skills" ? "skills" : "knowledge"
-  );
-  const [files, setFiles] = useState<CanonFile[]>([]);
-  const [activeFile, setActiveFile] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-
-  const authHeaders = useCallback(async (): Promise<Record<
-    string,
-    string
-  > | null> => {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return null;
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    };
-  }, []);
-
-  useEffect(() => {
-    if (initialBrainTab === "skills" || initialBrainTab === "knowledge") {
-      setSubTab(initialBrainTab);
-    }
-  }, [initialBrainTab]);
-
-  const load = useCallback(async () => {
-    const headers = await authHeaders();
-    if (!headers) return;
-    const res = await fetch("/api/admin/brand-knowledge", { headers });
-    if (!res.ok) {
-      setStatus("Could not load the canon files.");
-      setLoading(false);
-      return;
-    }
-    const body = (await res.json()) as { files?: CanonFile[] };
-    const next = body.files ?? [];
-    setFiles(next);
-    setLoading(false);
-    setActiveFile((current) => current ?? next[0]?.file ?? null);
-  }, [authHeaders]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const active = useMemo(
-    () => files.find((f) => f.file === activeFile) ?? null,
-    [files, activeFile]
-  );
-
-  useEffect(() => {
-    setDraft(active?.content ?? "");
-    setStatus(null);
-  }, [active?.file, active?.content]);
-
-  async function save() {
-    if (!active || saving) return;
-    setSaving(true);
-    setStatus(null);
-    try {
-      const headers = await authHeaders();
-      if (!headers) return;
-      const res = await fetch("/api/admin/brand-knowledge", {
-        method: "PUT",
-        headers,
-        body: JSON.stringify({ file: active.file, content: draft }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setStatus(body.error || "Save failed.");
-        return;
-      }
-      setStatus("Saved — live in the next AI message.");
-      await load();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function resetToRepo() {
-    if (!active || saving) return;
-    if (
-      !window.confirm(
-        "Remove the edited version and fall back to the repo file?"
-      )
-    ) {
-      return;
-    }
-    setSaving(true);
-    try {
-      const headers = await authHeaders();
-      if (!headers) return;
-      await fetch(
-        `/api/admin/brand-knowledge?file=${encodeURIComponent(active.file)}`,
-        { method: "DELETE", headers }
-      );
-      setStatus("Reset to the repo version.");
-      await load();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const dirty = active ? draft !== active.content : false;
-
-  const filePill = (f: CanonFile) => (
-    <button
-      key={f.file}
-      type="button"
-      onClick={() => setActiveFile(f.file)}
-      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-        activeFile === f.file
-          ? "bg-slate-900 text-white"
-          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-      }`}
-    >
-      {f.label}
-      <span
-        className={`ml-1.5 font-normal ${activeFile === f.file ? "text-slate-300" : "text-slate-400"}`}
-      >
-        {wordCount(f.content).toLocaleString()}w
-      </span>
-      {f.overridden ? (
-        <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-sky-400 align-middle" />
-      ) : null}
-    </button>
-  );
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex gap-1.5">
-        {(
-          [
-            ["knowledge", "Knowledge"],
-            ["skills", "Skills"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setSubTab(key)}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
-              subTab === key
-                ? "bg-slate-900 text-white"
-                : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {subTab === "skills" ? (
-        <SkillsSubTab />
-      ) : loading ? (
-        <p className="py-10 text-sm text-slate-500">Loading knowledge…</p>
-      ) : (
-      <Section
-        title="Core brain knowledge"
-        hint="The business's own brain — loaded into every AI prompt before each coach's personal brain. The core six are currently short stubs (word counts on each pill); filling them with the real material is the high-leverage job. Edits go live immediately for every coach's AI."
-      >
-        <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
-          Always loaded — the core
-        </p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {files.filter((f) => f.group === "core").map(filePill)}
-        </div>
-        <p className="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-400">
-          Loaded per skill
-        </p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {files.filter((f) => f.group === "skill").map(filePill)}
-        </div>
-        <p className="mt-3 text-xs text-slate-400">
-          Also loaded per skill: the 50 BOSS playbooks (edited under Coach
-          Clients → Playbooks) and the coach&apos;s own brain.
-        </p>
-
-        {active ? (
-          <div className="mt-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {active.label}
-                  <span className="ml-2 font-mono text-xs font-normal text-slate-400">
-                    {active.file}
-                  </span>
-                </p>
-                <p className="text-xs text-slate-500">{active.description}</p>
-              </div>
-              <p className="text-xs text-slate-400">
-                {active.overridden
-                  ? `Edited version live${active.updated_at ? ` · ${new Date(active.updated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}`
-                  : "Repo version (no edits)"}
-              </p>
-            </div>
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={22}
-              spellCheck={false}
-              className="mt-3 w-full resize-y rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 font-mono text-[13px] leading-relaxed text-slate-800 focus:border-sky-400 focus:bg-white focus:outline-none"
-            />
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void save()}
-                disabled={saving || !dirty || !draft.trim()}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-40"
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Save changes
-              </button>
-              {active.overridden ? (
-                <button
-                  type="button"
-                  onClick={() => void resetToRepo()}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" /> Reset to repo version
-                </button>
-              ) : null}
-              <span className="ml-auto text-xs text-slate-400">
-                {draft.length.toLocaleString()} characters
-              </span>
-            </div>
-            {status ? (
-              <p className="mt-2 text-sm font-medium text-slate-600">{status}</p>
-            ) : null}
-          </div>
-        ) : null}
-      </Section>
-      )}
     </div>
   );
 }
@@ -1202,7 +829,10 @@ function BrandPageInner() {
           <FrameworksTab framework={framework} setFramework={setFramework} />
         ) : null}
         {tab === "brain" ? (
-          <CanonTab initialBrainTab={searchParams.get("brainTab")} />
+          <CoreBrainTab
+            initialBrainTab={searchParams.get("brainTab")}
+            initialOpen={searchParams.get("open")}
+          />
         ) : null}
       </div>
     </div>

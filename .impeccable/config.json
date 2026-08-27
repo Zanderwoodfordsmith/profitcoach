@@ -16,6 +16,15 @@
         "rule": "src/app/admin/brand/page.tsx",
         "value": "734 gray-on-color delete button sits on white card footer below image, not on photo",
         "createdAt": "2026-08-23T06:18:45.223Z"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-500",
+        "files": [
+          "src/app/admin/brand/page.tsx"
+        ],
+        "createdAt": "2026-08-26T19:39:18.185Z",
+        "reason": "pre-existing admin brand page pattern; slate-500 on white/slate-50 card not a colored surface"
       }
     ]
   }

@@ -60,13 +60,13 @@ const SCREEN_RULES: ScreenRule[] = [
   {
     prefix: "/first-campaign",
     label: "First Campaign",
-    suggestedOutputId: "linkedin_connector",
+    suggestedOutputId: "choose_icp",
     describe: "working through First Campaign setup (ICP, avatar, messages, starter list)",
   },
   {
     prefix: "/ideal-client",
     label: "Ideal Client",
-    suggestedOutputId: "linkedin_connector",
+    suggestedOutputId: "ideal_client",
     describe: "choosing or refining their ideal client profile",
   },
   {

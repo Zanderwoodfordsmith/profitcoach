@@ -3,28 +3,13 @@
  * Encoding matches LinkedIn’s List(…) filter query shape.
  */
 
+import {
+  headcountBandForLabel,
+  type SalesNavHeadcountId,
+} from "@/lib/salesNavigator/headcountBands";
 import { resolveSalesNavRegion } from "@/lib/salesNavigator/regions";
 
-export type SalesNavHeadcountId =
-  | "B"
-  | "C"
-  | "D"
-  | "E"
-  | "F"
-  | "G"
-  | "H"
-  | "I";
-
-const HEADCOUNT_FROM_TEAM_SIZE: Record<string, { id: SalesNavHeadcountId; label: string }> = {
-  "1-10": { id: "B", label: "1-10" },
-  "11-50": { id: "C", label: "11-50" },
-  "51-200": { id: "D", label: "51-200" },
-  "201-500": { id: "E", label: "201-500" },
-  "501-1000": { id: "F", label: "501-1000" },
-  "1001-5000": { id: "G", label: "1001-5000" },
-  "5001-10000": { id: "H", label: "5001-10000" },
-  "10001+": { id: "I", label: "10001+" },
-};
+export type { SalesNavHeadcountId } from "@/lib/salesNavigator/headcountBands";
 
 /** LinkedIn Sales Nav RELATIONSHIP filter ids */
 export type SalesNavDegree = "1" | "2" | "3";
@@ -101,7 +86,7 @@ function headcountValues(teamSizes: string[]): string {
   const seen = new Set<string>();
   const parts: string[] = [];
   for (const size of teamSizes) {
-    const mapped = HEADCOUNT_FROM_TEAM_SIZE[size];
+    const mapped = headcountBandForLabel(size);
     if (!mapped || seen.has(mapped.id)) continue;
     seen.add(mapped.id);
     parts.push(

@@ -7,17 +7,8 @@ import type {
   SalesNavDegree,
   SalesNavYearsAtCompanyId,
 } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
-
-const HEADCOUNT_BY_ID: Record<string, string> = {
-  B: "1-10",
-  C: "11-50",
-  D: "51-200",
-  E: "201-500",
-  F: "501-1000",
-  G: "1001-5000",
-  H: "5001-10000",
-  I: "10001+",
-};
+import { headcountBandForId } from "@/lib/salesNavigator/headcountBands";
+import { queryBlobFromSalesNavUrl } from "@/lib/salesNavigator/salesNavUrlRewrite";
 
 const DEGREE_BY_ID: Record<string, SalesNavDegree> = {
   F: "1",
@@ -63,15 +54,6 @@ function fullyDecode(raw: string): string {
   return prev;
 }
 
-function queryBlobFromSalesNavUrl(salesNavUrl: string): string {
-  try {
-    const u = new URL(salesNavUrl);
-    return fullyDecode(u.searchParams.get("query") ?? salesNavUrl);
-  } catch {
-    return fullyDecode(salesNavUrl);
-  }
-}
-
 function filterSection(blob: string, type: string): string | null {
   const re = new RegExp(`type:${type},values:List\\(([\\s\\S]*?)\\)\\)`);
   return blob.match(re)?.[1] ?? null;
@@ -114,12 +96,19 @@ export function teamSizesFromSalesNavUrl(
   if (!section) return [];
 
   const sizes = new Set<string>();
-  for (const m of section.matchAll(/id:([B-I])\b/g)) {
-    const label = HEADCOUNT_BY_ID[m[1]!];
+  for (const m of section.matchAll(/id:([A-I])\b/g)) {
+    const label = headcountBandForId(m[1]!)?.label;
     if (label) sizes.add(label);
   }
-  for (const m of section.matchAll(/text:(\d+-\d+|\d+\+)/g)) {
-    sizes.add(m[1]!);
+  for (const m of section.matchAll(/text:([^,]+),selectionType:INCLUDED/g)) {
+    const raw = fullyDecode(m[1] ?? "").trim();
+    if (/self[- ]?employed/i.test(raw)) {
+      sizes.add("Self-employed");
+      continue;
+    }
+    if (/^\d+-\d+$/.test(raw) || /^\d+\+$/.test(raw)) {
+      sizes.add(raw);
+    }
   }
   return [...sizes];
 }

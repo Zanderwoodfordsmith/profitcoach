@@ -46,9 +46,17 @@ paths when needed; do not duplicate their content here or anywhere in `.claude/`
 
 - `PRODUCT.md` (repo root) — durable product and brand context for design work.
   Impeccable reads it before every design command. Zander edits this directly.
-- `content/ai-knowledge/` — the brand brain: `icp.md`, `avatar-profile.md`,
-  `methodology.md`, `offer-stack.md`, `copywriter-knowledge.md`,
-  `business-profile.md`.
+- `content/ai-knowledge/PROFIT_COACH_AI_ROUTER.md` — **short map only** (skills,
+  knowledge files, Create hub, coach brain keys). Loaded first in every coach AI
+  prompt. Edit in app: **Admin → Brand → Core brain → Knowledge**. Do not bloat
+  it with canon; that lives in the other files below.
+- `content/ai-knowledge/` — brand brain canon: `methodology.md`, `icp.md`,
+  `business-profile.md`, `brand-voice.md`, `offer-stack.md`, `writing-rules.md`
+  (always loaded); `avatar-profile.md`, `copywriter-knowledge.md` (copy skills).
+- `src/lib/profitCoachAi/registry.ts` — skill ids, programme order, instructions.
+- `src/lib/profitCoachAi/studioHub.ts` — Create hub cards and skill links.
+- Admin UI: **Brand → Core brain** — Knowledge (canon files), **Skills & tools**
+  (Create hub cards + linked skills in programme order).
 - `content/ai-knowledge/writing-rules.md` — binding for ALL copy. No em dashes.
 
 **Key marketing surfaces**

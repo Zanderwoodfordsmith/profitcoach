@@ -16,6 +16,7 @@ import { LessonOverviewPanel } from "./LessonOverviewPanel";
 import { LessonPageEyebrow } from "./LessonPageEyebrow";
 import { LessonPlayerTabs } from "./LessonPlayerTabs";
 import { LessonQaPanel } from "./LessonQaPanel";
+import { LessonTranscriptPanel } from "./LessonTranscriptPanel";
 import { LessonVideoHandoff } from "./LessonVideoHandoff";
 import { LessonMediaPlayer } from "./LessonMediaPlayer";
 import {
@@ -23,6 +24,7 @@ import {
   LessonProgressSidebarControl,
   useReportLessonWatchProgress,
 } from "./LessonProgressControls";
+import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
 
 type Props = {
   category: AcademyCategory;
@@ -50,10 +52,22 @@ export function CompassLessonPlayer({
       : null;
   const reportWatchProgress = useReportLessonWatchProgress(lesson.id);
   const [showVideoHandoff, setShowVideoHandoff] = useState(false);
+  const [seekRequest, setSeekRequest] = useState<LessonSeekRequest | null>(null);
 
   useEffect(() => {
     setShowVideoHandoff(false);
   }, [lesson.id]);
+
+  useEffect(() => {
+    setSeekRequest(null);
+  }, [lesson.id]);
+
+  function seekToTranscriptTime(seconds: number) {
+    setSeekRequest((prev) => ({
+      seconds,
+      key: (prev?.key ?? 0) + 1,
+    }));
+  }
 
   const nextLesson = useMemo(
     () =>
@@ -117,6 +131,7 @@ export function CompassLessonPlayer({
                   audioUrl={lesson.audioUrl}
                   onWatchProgress={reportWatchProgress}
                   onEnded={() => setShowVideoHandoff(true)}
+                  seekRequest={seekRequest}
                   handoff={
                     showVideoHandoff &&
                     (videoEmbed?.kind === "youtube" || directVideoUrl) ? (
@@ -176,9 +191,10 @@ export function CompassLessonPlayer({
               showTranscript={Boolean(transcriptText?.trim())}
               transcript={
                 transcriptText?.trim() ? (
-                  <pre className="max-h-[32rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-sans text-sm leading-relaxed text-slate-700">
-                    {transcriptText.trim()}
-                  </pre>
+                  <LessonTranscriptPanel
+                    transcriptText={transcriptText.trim()}
+                    onSeekToSeconds={seekToTranscriptTime}
+                  />
                 ) : null
               }
             />

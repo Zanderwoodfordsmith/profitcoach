@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Check, ChevronDown, ChevronLeft, FilePenLine, Play } from "lucide-react";
+import { ChevronDown, ChevronLeft, FilePenLine, Play } from "lucide-react";
 
 import { AdminLessonSidebarMenu } from "@/components/academy/AdminLessonSidebarMenu";
 import {
@@ -12,11 +12,15 @@ import {
   useLessonProgress,
   useReportLessonWatchProgress,
 } from "@/components/academy/LessonProgressControls";
+import { LessonChapterGuidesPanel } from "@/components/academy/LessonChapterGuidesPanel";
 import { LessonGuidePanel } from "@/components/academy/LessonGuidePanel";
 import { LessonOverviewPanel } from "@/components/academy/LessonOverviewPanel";
 import { LessonPageEyebrow } from "@/components/academy/LessonPageEyebrow";
 import { LessonPlayerTabs } from "@/components/academy/LessonPlayerTabs";
 import { LessonQaPanel } from "@/components/academy/LessonQaPanel";
+import { LessonTranscriptPanel } from "@/components/academy/LessonTranscriptPanel";
+import { LessonMediaPlayer } from "@/components/academy/LessonMediaPlayer";
+import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
 import {
   hasInAppLessonContent,
   splitSectionTitleEyebrow,
@@ -34,16 +38,22 @@ import {
   courseDurationLabel,
   firstLessonInCourse,
   flattenSections,
+  formatHubDurationLabel,
   hubLessonCount,
   lessonContextInCourse,
   nextLessonInCourse,
   sectionContainsLesson,
   sectionDurationLabel,
-  sectionLessonCount,
 } from "@/lib/academy/hubCatalog";
 import { LessonVideoHandoff } from "@/components/academy/LessonVideoHandoff";
-import { LessonMediaPlayer } from "@/components/academy/LessonMediaPlayer";
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
+import {
+  buildLessonTranscriptFromChapters,
+  chapterHasStepContent,
+  lessonHasContentSteps,
+  lessonHasVideoChapters,
+  type LessonVideoChapter,
+} from "@/lib/academy/lessonVideoChapters";
 import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
 
 type Props = {
@@ -53,7 +63,9 @@ type Props = {
   basePath: string;
   classroomHref: string;
   videoUrl?: string | null;
+  videoChapters?: LessonVideoChapter[];
   audioUrl?: string | null;
+  initialChapterId?: string | null;
   bodyMarkdown?: string;
   guideMarkdown?: string;
   transcriptText?: string | null;
@@ -105,8 +117,7 @@ const LESSON_SLAB_BODY_AFTER_VIDEO = `${LESSON_SLAB_GUTTER} pt-3.5 pb-6 md:pt-4 
 const LESSON_SLAB_VIDEO = `${LESSON_SLAB_GUTTER}`;
 
 function durationLabel(raw: string): string | null {
-  const t = raw.trim().replace(/^\(|\)$/g, "").trim();
-  return t || null;
+  return formatHubDurationLabel(raw);
 }
 
 function mapLessonsInCourse(
@@ -193,6 +204,20 @@ function isFlatLessonListCourse(course: HubCourse): boolean {
   return !only.sections?.length && only.lessons.length > 0;
 }
 
+/**
+ * Non-draft (live) lessons anywhere in a section's tree. A section with zero
+ * live lessons has no published content — even if it still holds drafts —
+ * so it is hidden from coaches and greyed for admins.
+ */
+function sectionLiveLessonCount(section: HubSection): number {
+  const nested = (section.sections ?? []).reduce(
+    (sum, child) => sum + sectionLiveLessonCount(child),
+    0,
+  );
+  const own = section.lessons.filter((lesson) => lesson.draft !== true).length;
+  return own + nested;
+}
+
 function CourseProgressSummary({
   course,
   className = "mt-3",
@@ -242,77 +267,6 @@ function CourseProgressSummary({
   );
 }
 
-/** Tiny 12-o'clock dial for category completion (BOSS checklist ring style). */
-function CategoryProgressDial({
-  completed,
-  total,
-}: {
-  completed: number;
-  total: number;
-}) {
-  const size = 16;
-  const stroke = 2;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const ratio = total === 0 ? 0 : completed / total;
-  const allDone = total > 0 && completed === total;
-
-  if (allDone) {
-    return (
-      <span
-        className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"
-        aria-label="Category complete"
-      >
-        <Check className="h-2.5 w-2.5" strokeWidth={3} aria-hidden />
-      </span>
-    );
-  }
-
-  return (
-    <svg
-      className="h-4 w-4 shrink-0 -rotate-90"
-      viewBox={`0 0 ${size} ${size}`}
-      aria-label={`${completed} of ${total} lessons complete`}
-      role="img"
-    >
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={stroke}
-        className="text-slate-200"
-      />
-      {ratio > 0 ? (
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          className="text-emerald-600"
-          strokeDasharray={`${ratio * circumference} ${circumference}`}
-        />
-      ) : null}
-    </svg>
-  );
-}
-
-function CategoryDialForSection({ section }: { section: HubSection }) {
-  const { progress } = useLessonProgress();
-  const total = sectionLessonCount(section);
-  let completed = 0;
-  for (const node of flattenSections([section])) {
-    for (const l of node.lessons) {
-      if (progress[l.id] === "completed") completed += 1;
-    }
-  }
-  return <CategoryProgressDial completed={completed} total={total} />;
-}
-
 function LessonSidebarRow({
   lesson,
   active,
@@ -357,7 +311,7 @@ function LessonSidebarRow({
           minimal
             ? `group/lesson relative ${layer} flex min-w-0 items-center gap-2 py-2 text-sm transition before:pointer-events-none before:absolute before:-inset-x-2 before:inset-y-0 before:z-[-1] before:rounded-md before:content-[''] ${
                 active
-                  ? "text-[15px] font-medium text-slate-900 before:bg-sky-100"
+                  ? "text-[15px] font-medium text-sky-950 before:bg-sky-100"
                   : "font-normal text-slate-700 hover:before:bg-slate-50"
               }`
             : `group/lesson relative ${layer} flex items-center gap-2 rounded-lg px-2 py-2 text-sm transition ${
@@ -449,7 +403,9 @@ export function ClassroomLessonPlayer({
   basePath,
   classroomHref,
   videoUrl = null,
+  videoChapters = [],
   audioUrl = null,
+  initialChapterId = null,
   bodyMarkdown = "",
   guideMarkdown = "",
   transcriptText = null,
@@ -465,11 +421,14 @@ export function ClassroomLessonPlayer({
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
+  const resolvedVideoChapters =
+    videoChapters.length > 0 ? videoChapters : lesson.videoChapters ?? [];
   const [course, setCourse] = useState(courseProp);
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(() =>
     initialOpenSectionIds(courseProp, lesson.id)
   );
   const [showVideoHandoff, setShowVideoHandoff] = useState(false);
+  const [seekRequest, setSeekRequest] = useState<LessonSeekRequest | null>(null);
 
   useEffect(() => {
     setCourse(courseProp);
@@ -478,6 +437,17 @@ export function ClassroomLessonPlayer({
   useEffect(() => {
     setShowVideoHandoff(false);
   }, [lesson.id]);
+
+  useEffect(() => {
+    setSeekRequest(null);
+  }, [lesson.id]);
+
+  function seekToTranscriptTime(seconds: number) {
+    setSeekRequest((prev) => ({
+      seconds,
+      key: (prev?.key ?? 0) + 1,
+    }));
+  }
   const resolveContentCourseId = (lessonId: string) =>
     contentSource === "classroom" ? contentSourceCourseId(lessonId) : course.id;
 
@@ -498,13 +468,37 @@ export function ClassroomLessonPlayer({
   const parentLesson = ctx?.parentLesson ?? null;
   const satelliteSiblings =
     parentLesson?.satellites ?? lesson.satellites ?? null;
-  const noticeText = lesson.notice ?? data.lessonPanelNotice;
+  const hasChapterPlayback = lessonHasVideoChapters(resolvedVideoChapters);
+  const hasContentSteps = lessonHasContentSteps(resolvedVideoChapters);
+  // A chaptered lesson is treated as one recording: stack every chapter's
+  // transcript into a single lesson transcript (no per-chapter/active view).
+  const chapterTranscript = useMemo(
+    () => buildLessonTranscriptFromChapters(resolvedVideoChapters),
+    [resolvedVideoChapters]
+  );
+  const effectiveTranscript = transcriptText?.trim()
+    ? transcriptText.trim()
+    : chapterTranscript;
+  const contentSteps = useMemo(
+    () => resolvedVideoChapters.filter(chapterHasStepContent),
+    [resolvedVideoChapters]
+  );
+  const chapterGuides = useMemo(
+    () => resolvedVideoChapters.filter((chapter) => chapter.guideMarkdown?.trim()),
+    [resolvedVideoChapters]
+  );
+  const showGuideTab =
+    Boolean(guideMarkdown.trim()) ||
+    (hasChapterPlayback && chapterGuides.length > 0) ||
+    hasContentSteps;
+
   const inApp = hasInAppLessonContent(
     videoUrl,
     bodyMarkdown,
     transcriptText,
     guideMarkdown,
-    audioUrl
+    audioUrl,
+    resolvedVideoChapters
   );
   const videoEmbed = videoUrl ? parseLessonVideoEmbed(videoUrl) : null;
   const directVideoUrl =
@@ -590,13 +584,13 @@ export function ClassroomLessonPlayer({
     );
   }
 
-  function renderSatellitePlaylist(satellites: HubLesson[], heading: string) {
+  function renderSatellitePlaylist(satellites: HubLesson[], onSatellitePage: boolean) {
     return (
-      <section className="mt-8 border-t border-slate-200/80 pt-6">
-        <h3 className="text-sm font-semibold text-slate-900">{heading}</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          Optional extras — watch if you need them.
-        </p>
+      <section>
+        <h3 className="text-sm font-semibold text-slate-900">
+          {onSatellitePage ? "More in this lesson" : "Optional extras"}
+        </h3>
+        <p className="mt-1 text-sm text-slate-500">Watch if you need them.</p>
         <ul className="mt-4 space-y-2">
           {satellites.map((sat) => {
             const active = sat.id === lesson.id;
@@ -650,25 +644,21 @@ export function ClassroomLessonPlayer({
   }
 
   /** Tier label only (Core / Premium) — left-aligned, not an accordion. */
-  function renderRuleSection(section: HubSection, depth: number) {
+  function renderRuleSection(section: HubSection, depth: number, muted = false) {
     const hasChildren = Boolean(section.sections?.length);
 
     return (
       <li key={section.id} className="[overflow-anchor:none]">
         <p
-          className={`text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 ${
-            depth === 0 ? "mb-1 mt-5 first:mt-1" : "mb-1 mt-3"
-          }`}
+          className={`text-left text-[11px] font-semibold uppercase tracking-[0.16em] ${
+            muted ? "text-slate-300" : "text-slate-500"
+          } ${depth === 0 ? "mb-1 mt-5 first:mt-1" : "mb-1 mt-3"}`}
         >
           {section.title}
         </p>
         {hasChildren ? (
           <ul className={minimal ? "space-y-1" : "space-y-2"}>
-            {section.sections!.map((child) =>
-              child.presentation === "rule"
-                ? renderRuleSection(child, depth + 1)
-                : renderAccordionSection(child, depth),
-            )}
+            {section.sections!.map((child) => renderSection(child, depth + 1))}
           </ul>
         ) : section.lessons.length > 0 ? (
           renderLessonRows(
@@ -680,7 +670,7 @@ export function ClassroomLessonPlayer({
     );
   }
 
-  function renderAccordionSection(section: HubSection, depth: number) {
+  function renderAccordionSection(section: HubSection, depth: number, muted = false) {
     const secOpen = openSectionIds.has(section.id);
     const hasChildren = Boolean(section.sections?.length);
     const sectionHasActive = sectionContainsLesson(section, lesson.id);
@@ -716,18 +706,21 @@ export function ClassroomLessonPlayer({
           }
           aria-expanded={secOpen}
         >
-          <span className="flex min-w-0 flex-1 items-start gap-2">
-            {minimal ? (
-              <span className="mt-0.5 flex shrink-0">
-                <CategoryDialForSection section={section} />
-              </span>
-            ) : null}
+          <span
+            className={`flex min-w-0 flex-1 items-start gap-2 ${
+              muted ? "text-slate-300" : ""
+            }`}
+          >
             {(() => {
               const parts = splitSectionTitleEyebrow(section.title);
               return (
                 <span className="min-w-0 flex-1 leading-snug">
                   {parts.eyebrow ? (
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    <span
+                      className={`block text-[10px] font-semibold uppercase tracking-[0.14em] ${
+                        muted ? "text-slate-300" : "text-slate-400"
+                      }`}
+                    >
                       {parts.eyebrow}
                     </span>
                   ) : null}
@@ -759,11 +752,7 @@ export function ClassroomLessonPlayer({
         {secOpen ? (
           hasChildren ? (
             <ul className={minimal ? "space-y-1 pb-1" : "space-y-2 px-2 pb-2"}>
-              {section.sections!.map((child) =>
-                child.presentation === "rule"
-                  ? renderRuleSection(child, depth + 1)
-                  : renderAccordionSection(child, depth + 1),
-              )}
+              {section.sections!.map((child) => renderSection(child, depth + 1))}
             </ul>
           ) : section.lessons.length > 0 ? (
             renderLessonRows(
@@ -779,10 +768,15 @@ export function ClassroomLessonPlayer({
   }
 
   function renderSection(section: HubSection, depth: number) {
+    // A section with no live (non-draft) lessons anywhere in its tree has no
+    // published content. Hide it from coaches entirely; show it greyed-out for
+    // admins so they know the placeholder exists and still needs content.
+    const empty = sectionLiveLessonCount(section) === 0;
+    if (empty && !viewerIsAdmin) return null;
     if (section.presentation === "rule") {
-      return renderRuleSection(section, depth);
+      return renderRuleSection(section, depth, empty);
     }
-    return renderAccordionSection(section, depth);
+    return renderAccordionSection(section, depth, empty);
   }
 
   const rolledUpCourseDuration = courseDurationLabel(course);
@@ -914,11 +908,7 @@ export function ClassroomLessonPlayer({
                   </p>
                 ) : null}
                 {!inApp ? (
-                  <p className="mt-2 text-sm text-slate-500">
-                    {lesson.hasVideo
-                      ? "Includes video on Disco"
-                      : "Resource / non-video on Disco"}
-                  </p>
+                  <p className="mt-2 text-sm text-slate-500">Content coming soon</p>
                 ) : null}
               </div>
               <div className="flex shrink-0 items-center gap-2">
@@ -929,19 +919,24 @@ export function ClassroomLessonPlayer({
 
             {inApp ? (
               <>
-                {videoUrl || audioUrl?.trim() ? (
+                {videoUrl || hasChapterPlayback || audioUrl?.trim() ? (
                   <div className={LESSON_SLAB_VIDEO}>
                     <LessonMediaPlayer
                       courseId={resolveContentCourseId(lesson.id)}
                       lessonId={lesson.id}
                       title={lesson.title}
                       videoUrl={videoUrl}
+                      videoChapters={resolvedVideoChapters}
                       audioUrl={audioUrl}
+                      initialChapterId={initialChapterId}
                       onWatchProgress={reportWatchProgress}
                       onEnded={() => setShowVideoHandoff(true)}
+                      seekRequest={seekRequest}
                       handoff={
                         showVideoHandoff &&
-                        (videoEmbed?.kind === "youtube" || directVideoUrl) ? (
+                        (videoEmbed?.kind === "youtube" ||
+                          directVideoUrl ||
+                          hasChapterPlayback) ? (
                           <LessonVideoHandoff
                             nextLessonTitle={nextLesson?.title ?? null}
                             nextLessonHref={nextLessonHref}
@@ -965,7 +960,7 @@ export function ClassroomLessonPlayer({
 
                 <div
                   className={
-                    videoUrl || audioUrl?.trim()
+                    videoUrl || hasChapterPlayback || audioUrl?.trim()
                       ? LESSON_SLAB_BODY_AFTER_VIDEO
                       : LESSON_SLAB_BODY
                   }
@@ -977,15 +972,30 @@ export function ClassroomLessonPlayer({
                         courseId={course.id}
                         lessonId={lesson.id}
                         bodyMarkdown={bodyMarkdown}
-                        hasGuide={Boolean(guideMarkdown.trim())}
+                        hasGuide={showGuideTab}
                         recommendedActions={lesson.recommendedActions ?? []}
                         resources={lessonResources}
                         readOnlyActions={Boolean(viewerIsAdmin)}
                       />
                     }
-                    showGuide={Boolean(guideMarkdown.trim())}
+                    showGuide={showGuideTab}
                     guide={
-                      guideMarkdown.trim() ? (
+                      (hasChapterPlayback && chapterGuides.length > 0) || hasContentSteps ? (
+                        <div className="space-y-6">
+                          {guideMarkdown.trim() ? (
+                            <LessonGuidePanel
+                              guideMarkdown={guideMarkdown}
+                              lessonId={lesson.id}
+                            />
+                          ) : null}
+                          <LessonChapterGuidesPanel
+                            chapters={
+                              hasChapterPlayback ? resolvedVideoChapters : contentSteps
+                            }
+                            initialChapterId={initialChapterId}
+                          />
+                        </div>
+                      ) : guideMarkdown.trim() ? (
                         <LessonGuidePanel
                           guideMarkdown={guideMarkdown}
                           lessonId={lesson.id}
@@ -997,9 +1007,7 @@ export function ClassroomLessonPlayer({
                       satelliteSiblings?.length
                         ? renderSatellitePlaylist(
                             satelliteSiblings,
-                            parentLesson
-                              ? "More in this lesson"
-                              : "Related lessons",
+                            Boolean(parentLesson),
                           )
                         : null
                     }
@@ -1016,12 +1024,16 @@ export function ClassroomLessonPlayer({
                       />
                     }
                     qaLabel={lessonCommunityTabLabel(lesson.id)}
-                    showTranscript={Boolean(transcriptText?.trim())}
+                    showTranscript={Boolean(effectiveTranscript?.trim())}
                     transcript={
-                      transcriptText?.trim() ? (
-                        <pre className="max-h-[32rem] overflow-y-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 font-sans text-sm leading-relaxed text-slate-700">
-                          {transcriptText.trim()}
-                        </pre>
+                      effectiveTranscript?.trim() ? (
+                        <LessonTranscriptPanel
+                          transcriptText={effectiveTranscript.trim()}
+                          videoChapters={
+                            hasChapterPlayback ? resolvedVideoChapters : undefined
+                          }
+                          onSeekToSeconds={seekToTranscriptTime}
+                        />
                       ) : null
                     }
                   />
@@ -1029,19 +1041,15 @@ export function ClassroomLessonPlayer({
               </>
             ) : (
               <div className={LESSON_SLAB_BODY}>
-                <p className="whitespace-pre-wrap text-base leading-relaxed text-slate-600">
-                  {noticeText}
-                </p>
-
-                <div className="mt-8">
-                  <a
-                    href={lesson.academyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex max-w-full items-center justify-center rounded-full bg-sky-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-500"
-                  >
-                    {lesson.title}
-                  </a>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center">
+                  <p className="text-base font-medium text-slate-700">
+                    This lesson’s content is coming soon.
+                  </p>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                    We’re preparing the video and materials for this lesson.
+                    In the meantime, carry on with the rest of the course or ask
+                    the community below.
+                  </p>
                 </div>
 
                 <LessonPlayerTabs
@@ -1055,8 +1063,8 @@ export function ClassroomLessonPlayer({
                       readOnlyActions={Boolean(viewerIsAdmin)}
                       emptyOverview={
                         <p className="text-sm text-slate-500">
-                          Open this lesson on Disco for the full content, or ask
-                          a question below.
+                          This lesson’s content is coming soon. Ask a question
+                          below in the meantime.
                         </p>
                       }
                     />
@@ -1066,9 +1074,7 @@ export function ClassroomLessonPlayer({
                     satelliteSiblings?.length
                       ? renderSatellitePlaylist(
                           satelliteSiblings,
-                          parentLesson
-                            ? "More in this lesson"
-                            : "Related lessons",
+                          Boolean(parentLesson),
                         )
                       : null
                   }

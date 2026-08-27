@@ -22,8 +22,12 @@ export function normalizeRequestedTakePages(takePages?: number): number {
 }
 
 /** Pages to send Apify for a coach request (capped at LinkedIn max). */
-export function apifyTakePagesForRequest(requestedTakePages: number): number {
+export function apifyTakePagesForRequest(
+  requestedTakePages: number,
+  opts?: { skipOverfetch?: boolean }
+): number {
   const requested = normalizeRequestedTakePages(requestedTakePages);
+  if (opts?.skipOverfetch) return requested;
   return clampSalesNavTakePages(
     Math.ceil(requested * SALES_NAV_OVERFETCH_RATIO)
   );

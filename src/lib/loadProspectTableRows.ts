@@ -21,6 +21,7 @@ type ContactRecord = {
   email: string | null;
   business_name: string | null;
   linkedin_url?: string | null;
+  company_website?: string | null;
   phone?: string | null;
   type: string;
   coach_id?: string | null;
@@ -30,6 +31,7 @@ type ContactRecord = {
   crm_location_id?: string | null;
   created_at?: string | null;
   prospect_funnel?: string | null;
+  prospect_source?: string | null;
 };
 
 /** Unenriched prospect rows for fast list paint; enrich later by id. */
@@ -43,6 +45,7 @@ export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
       email: contact.email ?? null,
       business_name: contact.business_name ?? null,
       linkedin_url: contact.linkedin_url ?? null,
+      company_website: contact.company_website ?? null,
       phone: contact.phone ?? null,
       type: contact.type,
       prospect_status,
@@ -76,6 +79,7 @@ export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
       crm_location_id: contact.crm_location_id ?? null,
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
+      prospect_source: contact.prospect_source ?? null,
     };
   });
 }
@@ -143,6 +147,7 @@ export async function enrichProspectRows(
       email: contact.email ?? null,
       business_name: contact.business_name ?? null,
       linkedin_url: contact.linkedin_url ?? null,
+      company_website: contact.company_website ?? null,
       phone: contact.phone ?? fallbackPhonesByContact[contact.id] ?? null,
       type: contact.type,
       prospect_status,
@@ -176,6 +181,7 @@ export async function enrichProspectRows(
       crm_location_id: contact.crm_location_id ?? null,
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
+      prospect_source: contact.prospect_source ?? null,
     };
   });
 }

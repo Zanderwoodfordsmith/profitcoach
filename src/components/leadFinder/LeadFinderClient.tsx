@@ -43,7 +43,11 @@ import {
   LEAD_FINDER_PAGE_SIZE,
   LEAD_FINDER_PAGE_SIZE_OPTIONS,
 } from "@/lib/leadFinder/constants";
-import { formatLeadLocation, companyWebsiteHref } from "@/lib/leadFinder/display";
+import {
+  formatLeadLocation,
+  companyWebsiteHref,
+} from "@/lib/leadFinder/display";
+import type { WebsiteCheckStatus } from "@/lib/leadFinder/types";
 import {
   LEADROCKS_JOB_TITLE_PRESETS,
   LEADROCKS_REVENUE_RANGES,
@@ -637,6 +641,26 @@ function loadColumns(): Record<ColumnKey, boolean> {
   }
 }
 
+function websiteGlobeClass(status: WebsiteCheckStatus | null): string {
+  if (status === "unknown") {
+    return "text-amber-500 hover:text-amber-700";
+  }
+  return "text-slate-400 hover:text-slate-700";
+}
+
+function websiteGlobeTitle(
+  href: string,
+  status: WebsiteCheckStatus | null
+): string {
+  if (status === "unknown") {
+    return `Couldn't verify this site — it may still work in your browser\n${href}`;
+  }
+  if (status === "live") {
+    return href;
+  }
+  return href;
+}
+
 function CompanyCell({ lead }: { lead: LeadTeaser }) {
   const href = companyWebsiteHref(lead.companyWebsite);
   return (
@@ -647,9 +671,9 @@ function CompanyCell({ lead }: { lead: LeadTeaser }) {
           href={href}
           target="_blank"
           rel="noreferrer"
-          title={href}
+          title={websiteGlobeTitle(href, lead.websiteStatus)}
           aria-label={`Open ${lead.company ?? "company"} website`}
-          className="mt-0.5 shrink-0 text-slate-400 transition hover:text-slate-700"
+          className={`mt-0.5 shrink-0 transition ${websiteGlobeClass(lead.websiteStatus)}`}
           onClick={(e) => e.stopPropagation()}
         >
           <Globe className="h-3.5 w-3.5" />

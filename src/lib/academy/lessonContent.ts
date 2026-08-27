@@ -12,6 +12,11 @@ import {
   hasInAppLessonContent,
   type LessonInAppContent,
 } from "./lessonContentUtils";
+import {
+  parseLessonVideoChapters,
+  resolveLessonVideoChapters,
+} from "./lessonVideoChapters";
+import consolidatedLessonRegistry from "./consolidatedLessonRegistry.json";
 import { classroomLessonIdLookupKeys } from "./classroomIdAliases";
 import { contentSourceCourseId } from "./programmeContentSource";
 import {
@@ -22,6 +27,7 @@ import {
 
 export type { LessonInAppContent } from "./lessonContentUtils";
 export { hasInAppLessonContent } from "./lessonContentUtils";
+export type { LessonVideoChapter } from "./lessonVideoChapters";
 export type { AcademyRecommendedAction } from "./lessonActions";
 
 export type AcademyLessonContentRow = {
@@ -38,8 +44,45 @@ export type AcademyLessonContentRow = {
   recommended_actions?: unknown;
   is_draft?: boolean | null;
   is_deleted?: boolean | null;
+  video_chapters?: unknown;
   updated_at: string;
 };
+
+function chapterSourceCourseIds(
+  rows: AcademyLessonContentRow[],
+  primaryCourseId: string,
+  primaryLessonId?: string
+): string[] {
+  const ids = new Set<string>([primaryCourseId]);
+  if (primaryLessonId) {
+    ids.add(contentSourceCourseId(primaryLessonId));
+  }
+  for (const row of rows) {
+    for (const chapter of parseLessonVideoChapters(row.video_chapters)) {
+      if (chapter.source_lesson_id) {
+        ids.add(contentSourceCourseId(chapter.source_lesson_id));
+      }
+    }
+  }
+  return [...ids];
+}
+
+async function loadLessonContentRowsForCourses(
+  courseIds: string[]
+): Promise<Map<string, AcademyLessonContentRow>> {
+  const byLesson = new Map<string, AcademyLessonContentRow>();
+  for (const courseId of courseIds) {
+    const { data } = await supabaseAdmin
+      .from("academy_lesson_content")
+      .select("*")
+      .eq("course_id", courseId);
+    for (const row of data ?? []) {
+      const r = row as AcademyLessonContentRow;
+      byLesson.set(r.lesson_id, r);
+    }
+  }
+  return byLesson;
+}
 
 function titleFromRow(row: AcademyLessonContentRow | null | undefined): string | null {
   const t = row?.title?.trim();
@@ -78,7 +121,8 @@ function recommendedActionsFromRow(
 }
 
 function lessonContentFromRow(
-  row: AcademyLessonContentRow | null | undefined
+  row: AcademyLessonContentRow | null | undefined,
+  lookupSource?: (lessonId: string) => AcademyLessonContentRow | null | undefined
 ): LessonInAppContent | null {
   if (!row) return null;
   const videoUrl = row.video_url;
@@ -87,13 +131,17 @@ function lessonContentFromRow(
   const guideMarkdown = row.guide_markdown ?? "";
   const transcriptText = transcriptFromRow(row);
   const recommendedActions = recommendedActionsFromRow(row);
+  const videoChapters = resolveLessonVideoChapters(row.video_chapters, (lessonId) =>
+    lookupSource?.(lessonId)
+  );
   if (
     !hasInAppLessonContent(
       videoUrl,
       bodyMarkdown,
       transcriptText,
       guideMarkdown,
-      audioUrl
+      audioUrl,
+      videoChapters
     ) &&
     recommendedActions.length === 0
   ) {
@@ -106,6 +154,7 @@ function lessonContentFromRow(
     guideMarkdown,
     transcriptText,
     recommendedActions,
+    videoChapters,
   };
 }
 
@@ -147,7 +196,8 @@ function mergeLesson(base: AcademyLesson, row: AcademyLessonContentRow | undefin
 
 export function mergeLegacyLesson(
   base: HubLesson,
-  row: AcademyLessonContentRow | null | undefined
+  row: AcademyLessonContentRow | null | undefined,
+  lookupSource?: (lessonId: string) => AcademyLessonContentRow | null | undefined
 ): HubLesson & LessonInAppContent {
   const titleOverride = titleFromRow(row ?? undefined);
   const durationOverride = durationFromRow(row ?? undefined);
@@ -158,7 +208,7 @@ export function mergeLegacyLesson(
     ...(durationOverride ? { duration: durationOverride } : {}),
     draft,
   };
-  const content = lessonContentFromRow(row ?? undefined);
+  const content = lessonContentFromRow(row ?? undefined, lookupSource);
   if (!content) {
     return {
       ...merged,
@@ -168,6 +218,7 @@ export function mergeLegacyLesson(
       guideMarkdown: base.guideMarkdown ?? "",
       recommendedActions: base.recommendedActions ?? [],
       transcriptText: null,
+      videoChapters: [],
     };
   }
   return {
@@ -191,12 +242,13 @@ function mergeLegacySectionTree(
   section: HubSection,
   byLesson: Map<string, AcademyLessonContentRow>
 ): HubSection {
+  const lookupSource = (lessonId: string) => byLesson.get(lessonId);
   return {
     ...section,
     lessons: section.lessons.flatMap((lesson) => {
       const row = byLesson.get(lesson.id);
       if (isDeletedRow(row)) return [];
-      const merged = mergeLegacyLesson(lesson, row);
+      const merged = mergeLegacyLesson(lesson, row, lookupSource);
       if (!lesson.satellites?.length) return [merged];
       return [
         {
@@ -204,7 +256,7 @@ function mergeLegacySectionTree(
           satellites: lesson.satellites.flatMap((sat) => {
             const satRow = byLesson.get(sat.id);
             if (isDeletedRow(satRow)) return [];
-            return [mergeLegacyLesson(sat, satRow)];
+            return [mergeLegacyLesson(sat, satRow, lookupSource)];
           }),
         },
       ];
@@ -225,10 +277,20 @@ export async function loadLegacyCourseWithContent(
     .select("*")
     .eq("course_id", course.id);
 
+  const courseRows = (rows ?? []) as AcademyLessonContentRow[];
   const byLesson = new Map<string, AcademyLessonContentRow>();
-  for (const row of rows ?? []) {
-    const r = row as AcademyLessonContentRow;
-    byLesson.set(r.lesson_id, r);
+  for (const row of courseRows) {
+    byLesson.set(row.lesson_id, row);
+  }
+
+  const extraCourseIds = chapterSourceCourseIds(courseRows, course.id).filter(
+    (id) => id !== course.id
+  );
+  if (extraCourseIds.length > 0) {
+    const extraRows = await loadLessonContentRowsForCourses(extraCourseIds);
+    for (const [lessonId, row] of extraRows) {
+      if (!byLesson.has(lessonId)) byLesson.set(lessonId, row);
+    }
   }
 
   const merged: HubCourse = {
@@ -269,21 +331,40 @@ export async function loadClassroomCourseWithContent(
     .select("*")
     .in("course_id", sourceIds);
 
-  const byLesson = new Map<string, AcademyLessonContentRow>();
-  for (const row of rows ?? []) {
-    const r = row as AcademyLessonContentRow;
-    // Accept current + legacy course_id keys during rename rollout.
-    const expected = contentSourceCourseId(r.lesson_id);
-    const legacyKeys = classroomLessonIdLookupKeys(r.lesson_id);
-    const expectedSet = new Set(
-      legacyKeys.map((id) => contentSourceCourseId(id)).concat(expected)
-    );
-    if (!expectedSet.has(r.course_id)) continue;
-    // Index under every known id for this lesson so either hub can merge.
-    for (const key of legacyKeys) {
-      if (!byLesson.has(key)) byLesson.set(key, r);
+  const indexRows = (incoming: AcademyLessonContentRow[]) => {
+    for (const row of incoming) {
+      const expected = contentSourceCourseId(row.lesson_id);
+      const legacyKeys = classroomLessonIdLookupKeys(row.lesson_id);
+      const expectedSet = new Set(
+        legacyKeys.map((id) => contentSourceCourseId(id)).concat(expected)
+      );
+      if (!expectedSet.has(row.course_id)) continue;
+      for (const key of legacyKeys) {
+        if (!byLesson.has(key)) byLesson.set(key, row);
+      }
+      byLesson.set(row.lesson_id, row);
     }
-    byLesson.set(r.lesson_id, r);
+  };
+
+  const byLesson = new Map<string, AcademyLessonContentRow>();
+  indexRows((rows ?? []) as AcademyLessonContentRow[]);
+
+  const indexedRows = [...byLesson.values()];
+  const extraCourseIds = [
+    ...new Set(
+      indexedRows.flatMap((row) =>
+        chapterSourceCourseIds([row], row.course_id).filter(
+          (id) => !sourceIds.includes(id)
+        )
+      )
+    ),
+  ];
+  if (extraCourseIds.length > 0) {
+    const { data: extraRows } = await supabaseAdmin
+      .from("academy_lesson_content")
+      .select("*")
+      .in("course_id", extraCourseIds);
+    indexRows((extraRows ?? []) as AcademyLessonContentRow[]);
   }
 
   const merged: HubCourse = {
@@ -301,7 +382,7 @@ async function fetchLessonContentMapUncached(): Promise<
   const { data: rows } = await supabaseAdmin
     .from("academy_lesson_content")
     .select(
-      "course_id, lesson_id, title, video_url, audio_url, body_markdown, guide_markdown, transcript_text, duration, recommended_actions, is_draft, is_deleted, updated_at"
+      "course_id, lesson_id, title, video_url, audio_url, body_markdown, guide_markdown, transcript_text, duration, recommended_actions, is_draft, is_deleted, video_chapters, updated_at"
     );
   const map = new Map<string, AcademyLessonContentRow>();
   for (const row of rows ?? []) {
@@ -387,7 +468,11 @@ export async function loadLegacyLessonWithContent(
   base: HubLesson
 ): Promise<HubLesson & LessonInAppContent> {
   const row = await loadAcademyLessonContentRow(courseId, lessonId);
-  return mergeLegacyLesson(base, row);
+  const seedRows = row ? [row] : [];
+  const courseIds = chapterSourceCourseIds(seedRows, courseId, lessonId);
+  const byLesson = await loadLessonContentRowsForCourses(courseIds);
+  const lookupSource = (id: string) => byLesson.get(id);
+  return mergeLegacyLesson(base, row, lookupSource);
 }
 
 export async function upsertAcademyLessonContent(input: {

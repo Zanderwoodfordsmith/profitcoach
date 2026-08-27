@@ -1,0 +1,7 @@
+Mode: Short
+Pages: 100 (up to ~2500 leads)
+Est. Apify cost: ~$0.20
+Starting Apify scrape (large imports poll every 25s)…
+Apify run started: wduMA3x9uWRhJUhm6
+  SUCCEEDED · 0 items in dataset
+Scrape failed (empty_result): Apify finished but returned 0 profiles. Usually a stale Sales Nav session (re-export Cookie-Editor JSON), or this search has no results — open the same filters in Sales Navigator to check.

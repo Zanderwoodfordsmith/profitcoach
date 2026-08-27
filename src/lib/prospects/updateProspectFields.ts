@@ -9,6 +9,7 @@ import {
   normalizeProspectLabel,
   normalizeProspectPersonName,
 } from "@/lib/prospectDisplayFormat";
+import { normalizeCompanyWebsiteUrl } from "@/lib/leadFinder/display";
 import { loadLatestProspectAssessmentAtByContactId } from "@/lib/prospectAssessmentSummary";
 import {
   loadLatestPastCallsByContactId,
@@ -25,6 +26,7 @@ export type ProspectFieldPatch = {
   job_title?: string | null;
   business_name?: string | null;
   linkedin_url?: string | null;
+  company_website?: string | null;
   prospect_status?: string | null;
   crm_contact_id?: string | null;
   next_action?: { text: string; due_at: string | null } | null;
@@ -37,6 +39,7 @@ export type UpdatedProspectFields = {
   job_title: string | null;
   business_name: string | null;
   linkedin_url: string | null;
+  company_website: string | null;
   prospect_status: string | null;
   crm_contact_id: string | null;
   status: ProspectStatusDisplay;
@@ -166,6 +169,18 @@ export async function updateProspectFields(
       contactPatch.linkedin_url = normalized;
     }
   }
+  if (patch.company_website !== undefined) {
+    const raw = patch.company_website?.trim() || null;
+    if (!raw) {
+      contactPatch.company_website = null;
+    } else {
+      const normalized = normalizeCompanyWebsiteUrl(raw);
+      if (!normalized) {
+        throw new Error("Invalid website URL.");
+      }
+      contactPatch.company_website = normalized;
+    }
+  }
   if (patch.prospect_status !== undefined) {
     contactPatch.prospect_status = patch.prospect_status?.trim() || null;
   }
@@ -198,7 +213,7 @@ export async function updateProspectFields(
     const withLinkedIn = await supabaseAdmin
       .from("contacts")
       .select(
-        "full_name, email, phone, job_title, business_name, linkedin_url, prospect_status, crm_contact_id"
+        "full_name, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id"
       )
       .eq("id", contactId)
       .maybeSingle();
@@ -240,6 +255,7 @@ export async function updateProspectFields(
     job_title: (refreshed.job_title as string | null) ?? null,
     business_name: (refreshed.business_name as string | null) ?? null,
     linkedin_url: (refreshed.linkedin_url as string | null) ?? null,
+    company_website: (refreshed.company_website as string | null) ?? null,
     prospect_status,
     crm_contact_id: (refreshed.crm_contact_id as string | null) ?? null,
     status: resolveProspectStatus({

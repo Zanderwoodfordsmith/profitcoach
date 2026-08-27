@@ -19,12 +19,15 @@ type Props = {
   onPickSkill?: (outputId: string) => void;
   /** In-panel: open brain tab instead of navigating to message-generator. */
   onOpenBrain?: () => void;
+  /** In-panel: close overlay before following a card link. */
+  onNavigate?: () => void;
 };
 
 export function StudioHubOverview({
   basePath,
   onPickSkill,
   onOpenBrain,
+  onNavigate,
 }: Props) {
   const pathname = usePathname();
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
@@ -66,6 +69,7 @@ export function StudioHubOverview({
               onSelect={
                 useInPanel ? () => onPickSkill(card.outputId!) : undefined
               }
+              onNavigate={onNavigate}
               eyebrow={card.eyebrow}
               eyebrowClassName={card.eyebrowClassName}
               title={card.title}

@@ -54,6 +54,9 @@ type Props = {
   /** Current time for parent sync when flipping modes. */
   onTimeChange?: (seconds: number) => void;
   onModeChange?: (mode: LessonMediaMode) => void;
+  /** Seek within the current file (e.g. transcript timestamp click). */
+  forcedSeekTime?: number | null;
+  forcedSeekKey?: number;
 };
 
 function formatTime(seconds: number): string {
@@ -80,6 +83,8 @@ export function LessonAudioSurface({
   onEnded,
   onTimeChange,
   onModeChange,
+  forcedSeekTime = null,
+  forcedSeekKey = 0,
 }: Props) {
   const storageKey = positionKey ?? src;
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -111,6 +116,18 @@ export function LessonAudioSurface({
   useEffect(() => {
     lastSavedRef.current = 0;
   }, [src, storageKey]);
+
+  useEffect(() => {
+    if (forcedSeekTime == null || forcedSeekKey <= 0) return;
+    const el = audioRef.current;
+    if (!el) return;
+    const max = Number.isFinite(el.duration) && el.duration > 0 ? el.duration : forcedSeekTime;
+    const next = Math.min(max, Math.max(0, forcedSeekTime));
+    el.currentTime = next;
+    setCurrentTime(next);
+    onTimeChangeRef.current?.(next);
+    void el.play();
+  }, [forcedSeekKey, forcedSeekTime]);
 
   useEffect(() => {
     const el = audioRef.current;
@@ -392,7 +409,7 @@ export function LessonAudioSurface({
             type="button"
             onClick={togglePlay}
             aria-label={playing ? "Pause" : "Play"}
-            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-sky-400 text-slate-950 shadow-[0_0_0_8px_rgba(56,189,248,0.18)] transition hover:bg-sky-300 sm:h-16 sm:w-16"
+            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-sky-400 text-black shadow-[0_0_0_8px_rgba(56,189,248,0.18)] transition hover:bg-sky-300 sm:h-16 sm:w-16"
           >
             {playing ? (
               <Pause className="h-6 w-6" fill="currentColor" aria-hidden />

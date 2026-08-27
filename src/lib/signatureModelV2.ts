@@ -119,15 +119,15 @@ export const SIGNATURE_MODEL_V2: { pillars: SignaturePillar[] } = {
           diagramTitle: "Client Compass",
           question:
             "I know exactly who I serve, I can find them easily, and my messaging makes the right people lean in.",
-          onrampHint: "Often green or yellow right after a strong positioning session.",
+          onrampHint: "Often green or yellow once positioning and prospect search are clear.",
         },
         {
           id: "pipeline_setup",
           code: "R2",
           diagramTitle: "Pipeline Setup",
           question:
-            "My prospect list is built, my profile is optimised, and I always know exactly who to talk to next.",
-          onrampHint: "Usually yellow while the list and profile are still being built out.",
+            "My LinkedIn profile is set up, my lead magnets are ready, and booking is simple so prospects can take the next step easily.",
+          onrampHint: "Usually yellow while profile, magnets, and booking setup are still being finished.",
         },
         {
           id: "engine",

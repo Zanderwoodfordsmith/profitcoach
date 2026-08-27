@@ -183,13 +183,21 @@ export default function CoachLayout({
    * the right instead of overlaying it; can expand to full screen.
    */
   const { profile: viewerProfile, profileLoading } = useDashboardProfile();
-  const aiPanelAvailable = viewerProfile?.role === "admin";
-  const showAiSparkles = profileLoading || aiPanelAvailable;
+  /** Admin-only docked panel — hidden while impersonating so "View as coach" matches members. */
+  const aiPanelAvailable =
+    viewerProfile?.role === "admin" && !impersonatingCoachId;
+  const showAiSparkles = aiPanelAvailable;
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiPanelFullscreen, setAiPanelFullscreen] = useState(false);
   useEffect(() => {
     setAiPanelOpen(window.localStorage.getItem("coach-ai-panel-open") === "1");
   }, []);
+  useEffect(() => {
+    if (impersonatingCoachId && aiPanelOpen) {
+      setAiPanelOpen(false);
+      setAiPanelFullscreen(false);
+    }
+  }, [aiPanelOpen, impersonatingCoachId]);
   const setAiOpen = (open: boolean) => {
     setAiPanelOpen(open);
     if (!open) setAiPanelFullscreen(false);
@@ -429,7 +437,7 @@ export default function CoachLayout({
           onClose={() => setAiOpen(false)}
           fullscreen={aiPanelFullscreen}
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
-          createHubHref="/admin/message-generator"
+          createHubHref="/coach/message-generator"
           sidebarVisible={sidebarVisible}
         />
       ) : null}

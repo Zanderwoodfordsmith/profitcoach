@@ -215,6 +215,9 @@ export async function POST(request: Request) {
       targetCount: job.targetCount,
       progressCount: 0,
       estimatedCostUsd: job.estimatedCostUsd,
+      segmented: job.segmented,
+      segmentTotal: job.segmentTotal,
+      segmentLabels: job.segmentLabels,
       async: true,
     });
   } catch (err) {

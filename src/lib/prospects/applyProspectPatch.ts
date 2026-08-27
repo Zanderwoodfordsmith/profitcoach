@@ -14,6 +14,10 @@ export function applyProspectPatch(
     job_title: body.job_title,
     business_name: body.business_name,
     linkedin_url: body.linkedin_url,
+    company_website:
+      body.company_website !== undefined
+        ? body.company_website
+        : row.company_website,
     prospect_status: body.prospect_status,
     status: body.status,
     next_action: body.next_action,

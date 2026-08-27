@@ -1,5 +1,4 @@
 import {
-  CLASSROOM_OS_COURSE_ID,
   CLASSROOM_PATH_COURSE_IDS,
   CLASSROOM_START_COURSE_IDS,
   classroomCourseIdForLesson,
@@ -85,7 +84,7 @@ export function classroomActionPathTitleForLesson(
 
 /**
  * Nested subgroup under a path card, or null when the path stays flat
- * (Start Here, Coach Action Plan, Profit Coach OS).
+ * (Start Here, Coach Action Plan, path cards).
  * - Get Calls / Win Clients / Coach Clients → Classroom section
  * - Going Pro → lesson (PRO Energy, …)
  */
@@ -169,14 +168,13 @@ export function isKnownClassroomSubgroupTitle(text: string): boolean {
 }
 
 /**
- * Global Classroom lesson order (Start Here → … → Profit Coach OS).
+ * Global Classroom lesson order (Start Here → Coach Clients).
  */
 export function buildClassroomLessonOrderIndex(): Map<string, number> {
   const hub = loadClassroomHub();
   const courses = classroomCoursesByIds(hub, [
     ...CLASSROOM_START_COURSE_IDS,
     ...CLASSROOM_PATH_COURSE_IDS,
-    CLASSROOM_OS_COURSE_ID,
   ]);
   const map = new Map<string, number>();
   let index = 0;
@@ -194,5 +192,4 @@ export function buildClassroomLessonOrderIndex(): Map<string, number> {
 export const CLASSROOM_ACTION_COURSE_IDS = [
   ...CLASSROOM_START_COURSE_IDS,
   ...CLASSROOM_PATH_COURSE_IDS,
-  CLASSROOM_OS_COURSE_ID,
 ] as const;

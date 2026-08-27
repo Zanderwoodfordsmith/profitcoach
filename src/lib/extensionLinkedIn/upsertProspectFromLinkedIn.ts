@@ -112,6 +112,7 @@ export async function upsertProspectFromLinkedIn(
     business_name: businessName,
     linkedin_url: linkedinUrl,
     type: "prospect",
+    prospect_source: "linkedin",
   };
   if (email) patch.email = email;
   if (prospectStatus) patch.prospect_status = prospectStatus;

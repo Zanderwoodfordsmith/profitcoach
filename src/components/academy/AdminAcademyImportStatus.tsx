@@ -11,7 +11,11 @@ import { AdminAcademyImportUnmatchedTable } from "@/components/academy/AdminAcad
 import {
   buildOrderedCourseGroups,
   collectSectionKeys,
+  flattenLessonImportRows,
+  type LessonImportColumnTally,
+  type LessonImportColumnTallies,
   type LessonImportFilter,
+  type LessonImportKind,
   type LessonImportSectionGroup,
   type LessonImportStatusReport,
   type LessonImportStatusRow,
@@ -30,10 +34,32 @@ type Props = {
 type ImportCellState = "ok" | "missing" | "na";
 
 const STATUS_COLS =
-  "grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_5.5rem] sm:grid-cols-[minmax(0,1fr)_6.5rem_6.5rem_6.5rem]";
+  "grid-cols-[minmax(0,1fr)_5.5rem_6rem_6rem_6rem] sm:grid-cols-[minmax(0,1fr)_6rem_7rem_7rem_7rem]";
 
 function bodyRowKey(row: AcademyBodyImportReportRow): string {
   return `${row.sourceFile}:${row.sourceLine}:${row.title}`;
+}
+
+function lessonExpandKey(row: LessonImportStatusRow): string {
+  return `${row.courseId}:${row.lessonId}`;
+}
+
+function collectExpandableLessonKeys(rows: LessonImportStatusRow[]): string[] {
+  const keys: string[] = [];
+  for (const row of rows) {
+    if (row.children?.length) keys.push(lessonExpandKey(row));
+  }
+  return keys;
+}
+
+function collectExpandableLessonKeysFromSection(
+  section: LessonImportSectionGroup,
+): string[] {
+  const keys = collectExpandableLessonKeys(section.lessons);
+  for (const child of section.sections) {
+    keys.push(...collectExpandableLessonKeysFromSection(child));
+  }
+  return keys;
 }
 
 function ImportStatusCell({
@@ -89,6 +115,62 @@ function lessonStatusStates(row: LessonImportStatusRow): {
   };
 }
 
+function ColumnTallyCell({
+  tally,
+  label,
+}: {
+  tally: LessonImportColumnTally;
+  label: string;
+}) {
+  if (tally.ok === 0 && tally.missing === 0) {
+    return (
+      <span className="inline-flex justify-center text-slate-300" title={`${label} not applicable`}>
+        <Minus className="h-3.5 w-3.5" aria-hidden />
+        <span className="sr-only">{label} not applicable</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className="inline-flex items-center justify-center gap-1.5 text-xs font-medium tabular-nums"
+      title={`${label}: ${tally.ok} ready, ${tally.missing} missing`}
+    >
+      {tally.ok > 0 ? (
+        <span className="inline-flex items-center gap-0.5 text-emerald-600">
+          <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+          {tally.ok}
+          <span className="sr-only">{label} ready</span>
+        </span>
+      ) : null}
+      {tally.missing > 0 ? (
+        <span className="inline-flex items-center gap-0.5 text-rose-600">
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+          {tally.missing}
+          <span className="sr-only">{label} missing</span>
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function GroupColumnTallies({ tallies }: { tallies: LessonImportColumnTallies }) {
+  return (
+    <>
+      <span aria-hidden />
+      <div className="flex justify-center">
+        <ColumnTallyCell tally={tallies.content} label="Content" />
+      </div>
+      <div className="flex justify-center">
+        <ColumnTallyCell tally={tallies.video} label="Video" />
+      </div>
+      <div className="flex justify-center">
+        <ColumnTallyCell tally={tallies.transcript} label="Transcript" />
+      </div>
+    </>
+  );
+}
+
 function Scorecard({
   label,
   value,
@@ -115,6 +197,53 @@ function Scorecard({
   );
 }
 
+function lessonKindLabel(kind: LessonImportKind): string {
+  switch (kind) {
+    case "chaptered":
+      return "Chaptered";
+    case "chapter":
+      return "Chapter";
+    case "satellite":
+      return "Related";
+    default:
+      return "Single";
+  }
+}
+
+function lessonKindBadgeClass(kind: LessonImportKind): string {
+  switch (kind) {
+    case "chaptered":
+      return "bg-violet-50 text-violet-800 ring-violet-200/80";
+    case "chapter":
+      return "bg-sky-50 text-sky-800 ring-sky-200/80";
+    case "satellite":
+      return "bg-slate-100 text-slate-700 ring-slate-200/80";
+    default:
+      return "bg-white text-slate-600 ring-slate-200/80";
+  }
+}
+
+function LessonKindBadge({ row }: { row: LessonImportStatusRow }) {
+  const label = lessonKindLabel(row.kind);
+  const parts: string[] = [];
+  if (row.kind === "chaptered" && row.chapterCount) {
+    parts.push(`${row.chapterCount} chapters`);
+  }
+  if (row.satelliteCount) {
+    parts.push(`${row.satelliteCount} related`);
+  }
+  const detail = parts.length > 0 ? parts.join(" · ") : null;
+
+  return (
+    <span
+      className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset ${lessonKindBadgeClass(row.kind)}`}
+      title={detail ?? label}
+    >
+      {label}
+    </span>
+  );
+}
+
 function TableStatusHeader() {
   return (
     <div
@@ -122,6 +251,9 @@ function TableStatusHeader() {
     >
       <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         Lesson
+      </span>
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        Type
       </span>
       <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         Content
@@ -136,29 +268,99 @@ function TableStatusHeader() {
   );
 }
 
-function LessonStatusRow({ row, depth }: { row: LessonImportStatusRow; depth: number }) {
+function LessonStatusRow({
+  row,
+  depth,
+  openNestedLessons,
+  toggleNestedLesson,
+}: {
+  row: LessonImportStatusRow;
+  depth: number;
+  openNestedLessons: Set<string>;
+  toggleNestedLesson: (key: string) => void;
+}) {
   const states = lessonStatusStates(row);
+  const childDepth = depth + 1;
+  const hasChildren = Boolean(row.children?.length);
+  const expandKey = lessonExpandKey(row);
+  const open = openNestedLessons.has(expandKey);
+
   return (
-    <div
-      className={`grid ${STATUS_COLS} items-center gap-2 border-t border-slate-100 px-3 py-2.5 hover:bg-slate-50/80`}
-    >
-      <Link
-        href={row.adminLessonHref}
-        className="min-w-0 truncate text-sm text-slate-700 hover:text-sky-800"
-        style={{ paddingLeft: `${depth * 16}px` }}
+    <>
+      <div
+        className={`grid ${STATUS_COLS} items-center gap-2 border-t border-slate-100 px-3 py-2.5 hover:bg-slate-50/80`}
       >
-        {row.lessonTitle}
-      </Link>
-      <div className="flex justify-center">
-        <ImportStatusCell state={states.content} label="Content" />
+        <div
+          className="flex min-w-0 items-center gap-2"
+          style={{ paddingLeft: `${depth * 16}px` }}
+        >
+          {hasChildren ? (
+            <button
+              type="button"
+              onClick={() => toggleNestedLesson(expandKey)}
+              className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              aria-expanded={open}
+              aria-label={open ? "Collapse chapters and related items" : "Expand chapters and related items"}
+            >
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+                aria-hidden
+              />
+            </button>
+          ) : (
+            <span className="inline-block w-4 shrink-0" aria-hidden />
+          )}
+          <Link
+            href={row.adminLessonHref}
+            className="min-w-0 truncate text-sm text-slate-700 hover:text-sky-800"
+          >
+            {row.lessonTitle}
+          </Link>
+          {row.kind === "chaptered" && row.chapterCount ? (
+            <span className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400">
+              {row.chapterCount} chapters
+            </span>
+          ) : null}
+          {row.satelliteCount ? (
+            <span className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400">
+              {row.satelliteCount} related
+            </span>
+          ) : null}
+          {row.isDraft ? (
+            <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 ring-1 ring-inset ring-amber-200/80">
+              Draft
+            </span>
+          ) : row.kind !== "chapter" ? (
+            <span className="shrink-0 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+              Published
+            </span>
+          ) : null}
+        </div>
+        <div className="flex justify-center">
+          <LessonKindBadge row={row} />
+        </div>
+        <div className="flex justify-center">
+          <ImportStatusCell state={states.content} label="Content" />
+        </div>
+        <div className="flex justify-center">
+          <ImportStatusCell state={states.video} label="Video" />
+        </div>
+        <div className="flex justify-center">
+          <ImportStatusCell state={states.transcript} label="Transcript" />
+        </div>
       </div>
-      <div className="flex justify-center">
-        <ImportStatusCell state={states.video} label="Video" />
-      </div>
-      <div className="flex justify-center">
-        <ImportStatusCell state={states.transcript} label="Transcript" />
-      </div>
-    </div>
+      {open
+        ? row.children?.map((child) => (
+            <LessonStatusRow
+              key={`${child.kind}:${child.lessonId}:${child.chapterId ?? ""}`}
+              row={child}
+              depth={childDepth}
+              openNestedLessons={openNestedLessons}
+              toggleNestedLesson={toggleNestedLesson}
+            />
+          ))
+        : null}
+    </>
   );
 }
 
@@ -167,11 +369,15 @@ function SectionTree({
   depth,
   openSections,
   toggleSection,
+  openNestedLessons,
+  toggleNestedLesson,
 }: {
   section: LessonImportSectionGroup;
   depth: number;
   openSections: Set<string>;
   toggleSection: (key: string) => void;
+  openNestedLessons: Set<string>;
+  toggleNestedLesson: (key: string) => void;
 }) {
   const open = openSections.has(section.sectionKey);
   const isRule = section.presentation === "rule";
@@ -182,13 +388,15 @@ function SectionTree({
       <button
         type="button"
         onClick={() => toggleSection(section.sectionKey)}
-        className={`flex w-full items-center justify-between gap-3 py-2.5 pr-3 text-left hover:bg-slate-50/80 ${
+        className={`grid w-full ${STATUS_COLS} items-center gap-2 py-2.5 pr-3 text-left hover:bg-slate-50/80 ${
           isRule ? "bg-slate-50/60" : ""
         }`}
-        style={{ paddingLeft: `${12 + depth * 16}px` }}
         aria-expanded={open}
       >
-        <span className="flex min-w-0 items-center gap-2">
+        <span
+          className="flex min-w-0 items-center gap-2"
+          style={{ paddingLeft: `${12 + depth * 16}px` }}
+        >
           {hasChildren ? (
             <ChevronDown
               className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
@@ -209,20 +417,24 @@ function SectionTree({
             }
           >
             {section.sectionTitle}
+            <span className="ml-1.5 font-normal tabular-nums text-slate-400">
+              ({section.lessonCount})
+            </span>
           </span>
         </span>
-        <span className="shrink-0 text-xs tabular-nums text-slate-500">
-          {section.lessonCount} lesson{section.lessonCount === 1 ? "" : "s"}
-          {section.gapCount > 0 ? (
-            <span className="ml-2 font-medium text-rose-600">{section.gapCount} gaps</span>
-          ) : null}
-        </span>
+        <GroupColumnTallies tallies={section.columnTallies} />
       </button>
 
       {open ? (
         <div>
           {section.lessons.map((row) => (
-            <LessonStatusRow key={row.lessonId} row={row} depth={depth + 1} />
+            <LessonStatusRow
+              key={row.lessonId}
+              row={row}
+              depth={depth + 1}
+              openNestedLessons={openNestedLessons}
+              toggleNestedLesson={toggleNestedLesson}
+            />
           ))}
           {section.sections.map((child) => (
             <SectionTree
@@ -231,6 +443,8 @@ function SectionTree({
               depth={depth + 1}
               openSections={openSections}
               toggleSection={toggleSection}
+              openNestedLessons={openNestedLessons}
+              toggleNestedLesson={toggleNestedLesson}
             />
           ))}
         </div>
@@ -252,6 +466,7 @@ export function AdminAcademyImportStatus({
   const [courseFilter, setCourseFilter] = useState<string>("all");
   const [openCourses, setOpenCourses] = useState<Set<string>>(() => new Set());
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
+  const [openNestedLessons, setOpenNestedLessons] = useState<Set<string>>(() => new Set());
 
   const courses = useMemo(
     () => status.catalogOrder.courses.map((c) => [c.id, c.title] as const),
@@ -266,19 +481,19 @@ export function AdminAcademyImportStatus({
 
   const filteredLessonCount = useMemo(
     () => courseGroups.reduce((n, c) => n + c.lessonCount, 0),
-    [courseGroups]
+    [courseGroups],
   );
 
   const lessonTitles = useMemo(() => {
     const titles: Record<string, string> = {};
-    for (const row of status.lessons) {
+    for (const row of flattenLessonImportRows(status.lessons)) {
       titles[`${row.courseId}:${row.lessonId}`] = row.lessonTitle;
     }
     return titles;
   }, [status.lessons]);
   const lessonKeyByLessonId = useMemo(() => {
     const map = new Map<string, string>();
-    for (const row of status.lessons) {
+    for (const row of flattenLessonImportRows(status.lessons)) {
       const key = `${row.courseId}:${row.lessonId}`;
       if (!map.has(row.lessonId)) map.set(row.lessonId, key);
     }
@@ -289,12 +504,18 @@ export function AdminAcademyImportStatus({
     for (const course of status.catalogOrder.courses) {
       byCourse.set(course.id, { label: course.title, options: [] });
     }
-    for (const row of status.lessons) {
+    for (const row of flattenLessonImportRows(status.lessons)) {
       const group = byCourse.get(row.courseId);
       if (!group) continue;
+      const prefix =
+        row.kind === "chapter"
+          ? "Chapter · "
+          : row.kind === "satellite"
+            ? "Related · "
+            : "";
       group.options.push({
         key: `${row.courseId}:${row.lessonId}`,
-        title: row.lessonTitle,
+        title: `${prefix}${row.lessonTitle}`,
       });
     }
     return Array.from(byCourse.values()).filter((g) => g.options.length > 0);
@@ -397,30 +618,54 @@ export function AdminAcademyImportStatus({
     });
   }
 
+  function toggleNestedLesson(lessonKey: string) {
+    setOpenNestedLessons((prev) => {
+      const next = new Set(prev);
+      if (next.has(lessonKey)) next.delete(lessonKey);
+      else next.add(lessonKey);
+      return next;
+    });
+  }
+
   function expandAll() {
     setOpenCourses(new Set(courseGroups.map((c) => c.courseId)));
     setOpenSections(new Set(courseGroups.flatMap((c) => collectSectionKeys(c.sections))));
+    setOpenNestedLessons(
+      new Set(
+        courseGroups.flatMap((course) =>
+          course.sections.flatMap((section) =>
+            collectExpandableLessonKeysFromSection(section),
+          ),
+        ),
+      ),
+    );
   }
 
   function collapseAll() {
     setOpenCourses(new Set());
     setOpenSections(new Set());
+    setOpenNestedLessons(new Set());
   }
 
   return (
     <div className="w-full max-w-[110rem] space-y-8 pb-12">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Scorecard label="Lessons" value={summary.lessonCount} />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-10">
+        <Scorecard label="All items" value={summary.lessonCount} />
+        <Scorecard label="Hub lessons" value={summary.hubLessonCount} />
+        <Scorecard label="Chaptered" value={summary.chapteredLessonCount} tone="neutral" />
+        <Scorecard label="Chapters" value={summary.chapterStepCount} />
+        <Scorecard label="Related" value={summary.satelliteCount} />
+        <Scorecard label="Published" value={summary.publishedCount} tone="good" />
+        <Scorecard label="Draft" value={summary.draftCount} tone="warn" />
         <Scorecard label="Ready" value={summary.readyCount} tone="good" />
-        <Scorecard label="Video in app" value={summary.inAppVideoCount} tone="good" />
         <Scorecard label="Missing video" value={summary.missingVideoCount} tone="bad" />
         <Scorecard label="Missing content" value={summary.missingContentCount} tone="warn" />
-        <Scorecard
-          label="Missing transcript"
-          value={summary.missingTranscriptCount}
-          tone="warn"
-        />
       </div>
+
+      <p className="text-xs text-slate-500">
+        Hub lessons are the main catalogue entries. Chapters are sequential steps inside a chaptered
+        lesson. Related items are optional satellites shown under the Related tab.
+      </p>
 
       <p className="text-xs text-slate-500">
         <Check className="mr-1 inline h-3.5 w-3.5 text-emerald-600" aria-hidden />
@@ -445,6 +690,8 @@ export function AdminAcademyImportStatus({
             >
               <option value="all">All lessons</option>
               <option value="gaps">Gaps only</option>
+              <option value="draft">Draft only</option>
+              <option value="published">Published only</option>
               <option value="missingVideo">Missing video only</option>
               <option value="missingContent">Missing content only</option>
               <option value="missingTranscript">Missing transcript only</option>
@@ -495,7 +742,7 @@ export function AdminAcademyImportStatus({
                 <button
                   type="button"
                   onClick={() => toggleCourse(course.courseId)}
-                  className="flex w-full items-center justify-between gap-3 bg-slate-50/90 px-3 py-3.5 text-left hover:bg-slate-100/80"
+                  className={`grid w-full ${STATUS_COLS} items-center gap-2 bg-slate-50/90 px-3 py-3.5 text-left hover:bg-slate-100/80`}
                   aria-expanded={courseOpen}
                 >
                   <span className="flex min-w-0 items-center gap-2">
@@ -505,16 +752,14 @@ export function AdminAcademyImportStatus({
                       }`}
                       aria-hidden
                     />
-                    <span className="font-semibold text-slate-900">{course.courseTitle}</span>
-                  </span>
-                  <span className="shrink-0 text-xs tabular-nums text-slate-500">
-                    {course.lessonCount} lessons
-                    {course.gapCount > 0 ? (
-                      <span className="ml-2 font-medium text-rose-600">
-                        {course.gapCount} gaps
+                    <span className="font-semibold text-slate-900">
+                      {course.courseTitle}
+                      <span className="ml-1.5 font-normal tabular-nums text-slate-400">
+                        ({course.lessonCount})
                       </span>
-                    ) : null}
+                    </span>
                   </span>
+                  <GroupColumnTallies tallies={course.columnTallies} />
                 </button>
 
                 {courseOpen ? (
@@ -526,6 +771,8 @@ export function AdminAcademyImportStatus({
                         depth={0}
                         openSections={openSections}
                         toggleSection={toggleSection}
+                        openNestedLessons={openNestedLessons}
+                        toggleNestedLesson={toggleNestedLesson}
                       />
                     ))}
                   </div>

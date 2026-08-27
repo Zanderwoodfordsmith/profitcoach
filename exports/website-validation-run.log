@@ -1,0 +1,213 @@
+[website-validate] start concurrency=24 timeout=15000ms (unchecked only) clear-dead=on
+  update failed 00025166-0e7b-4c91-82a0-73339ac52fdd: TypeError: fetch failed
+  update failed 000210b3-3770-4f08-96c1-835a81f76ee6: TypeError: fetch failed
+  update failed 000bfbd2-8974-4957-ad5c-e00997acb111: TypeError: fetch failed
+  update failed 000bc06d-888e-462e-b3b2-78165fa63c01: TypeError: fetch failed
+  update failed 000b93de-ffeb-4b96-a433-a1f03916b43d: TypeError: fetch failed
+  update failed 000b82cf-8734-4736-a361-0474a7a4ddc3: TypeError: fetch failed
+  update failed 000af2ac-97ef-434a-abcc-e65f6e165e8d: TypeError: fetch failed
+  update failed 000aedd9-fb58-4606-af66-5e6fe7fd3705: TypeError: fetch failed
+  update failed 0009db12-c484-4989-be46-fad5a02a434a: TypeError: fetch failed
+  update failed 00099d3c-c589-4ae3-9f1e-8308f826ecd5: TypeError: fetch failed
+  update failed 00096fa7-2f62-4303-8cbb-d9f04292d4fd: TypeError: fetch failed
+  update failed 00092676-3351-48a6-bb0e-0b7e28b9d313: TypeError: fetch failed
+  update failed 0008f666-ce37-4beb-b30a-c2c478a574e8: TypeError: fetch failed
+  update failed 000876cd-17af-4ba0-8f3d-3be5f2ada92a: TypeError: fetch failed
+  update failed 0008303b-0690-4847-b967-aa54a68cbdfa: TypeError: fetch failed
+  update failed 00082f4e-2afd-4b9b-93b6-a56f483ceaa5: TypeError: fetch failed
+  update failed 0005d7ac-7e68-4782-bb18-94f6b7880ef9: TypeError: fetch failed
+  update failed 00051b5f-cfe2-4e02-820a-f5d59c476aff: TypeError: fetch failed
+  update failed 0004d8dc-4311-4e89-8017-6bacdda96e60: TypeError: fetch failed
+  update failed 0004663a-b613-4ed0-9b06-c32e9a03d2a7: TypeError: fetch failed
+  update failed 00041004-9812-4e4a-bf77-4bdabe5ebd4f: TypeError: fetch failed
+  update failed 000387bf-98ac-40aa-b368-1a1ce295608d: TypeError: fetch failed
+  update failed 00026562-3028-4a80-b2c1-f40627eac818: TypeError: fetch failed
+  update failed 00025312-6bf0-47d2-9712-f56f0183c36a: TypeError: fetch failed
+[website-validate] processed=500 live=260 dead=43 unknown=197 would_clear=43
+[website-validate] processed=1000 live=465 dead=83 unknown=452 would_clear=83
+[website-validate] start concurrency=24 timeout=15000ms (unchecked only) clear-dead=on
+[website-validate] processed=500 live=260 dead=57 unknown=183 cleared=57
+[website-validate] processed=1000 live=577 dead=135 unknown=288 cleared=135
+[website-validate] processed=1500 live=844 dead=182 unknown=474 cleared=182
+[website-validate] processed=2000 live=1136 dead=252 unknown=612 cleared=252
+[website-validate] processed=2500 live=1438 dead=323 unknown=739 cleared=323
+[website-validate] processed=3000 live=1772 dead=381 unknown=847 cleared=381
+[website-validate] processed=3500 live=1886 dead=637 unknown=977 cleared=637
+[website-validate] processed=4000 live=2217 dead=697 unknown=1086 cleared=697
+[website-validate] processed=4500 live=2312 dead=725 unknown=1463 cleared=725
+[website-validate] processed=5000 live=2549 dead=786 unknown=1665 cleared=786
+[website-validate] processed=5500 live=2855 dead=848 unknown=1797 cleared=848
+[website-validate] processed=6000 live=3167 dead=948 unknown=1885 cleared=948
+[website-validate] processed=6500 live=3466 dead=1026 unknown=2008 cleared=1026
+[website-validate] processed=7000 live=3816 dead=1100 unknown=2084 cleared=1100
+[website-validate] processed=7500 live=4169 dead=1180 unknown=2151 cleared=1180
+[website-validate] processed=8000 live=4427 dead=1228 unknown=2345 cleared=1228
+[website-validate] processed=8500 live=4685 dead=1282 unknown=2533 cleared=1282
+[website-validate] processed=9000 live=4867 dead=1327 unknown=2806 cleared=1327
+[website-validate] processed=9500 live=5109 dead=1390 unknown=3001 cleared=1390
+[website-validate] processed=10000 live=5458 dead=1457 unknown=3085 cleared=1457
+[website-validate] processed=10500 live=5712 dead=1521 unknown=3267 cleared=1521
+[website-validate] processed=11000 live=6038 dead=1590 unknown=3372 cleared=1590
+[website-validate] processed=11500 live=6301 dead=1653 unknown=3546 cleared=1653
+[website-validate] processed=12000 live=6630 dead=1744 unknown=3626 cleared=1744
+[website-validate] processed=12500 live=6899 dead=1798 unknown=3803 cleared=1798
+[website-validate] processed=13000 live=7206 dead=1876 unknown=3918 cleared=1876
+[website-validate] processed=13500 live=7449 dead=1946 unknown=4105 cleared=1946
+[website-validate] processed=14000 live=7556 dead=1971 unknown=4473 cleared=1971
+[website-validate] processed=14500 live=7804 dead=2035 unknown=4661 cleared=2035
+[website-validate] processed=15000 live=8159 dead=2117 unknown=4724 cleared=2117
+[website-validate] processed=15500 live=8499 dead=2194 unknown=4807 cleared=2194
+[website-validate] processed=16000 live=8698 dead=2239 unknown=5063 cleared=2239
+[website-validate] processed=16500 live=9041 dead=2318 unknown=5141 cleared=2318
+[website-validate] processed=17000 live=9078 dead=2770 unknown=5152 cleared=2770
+[website-validate] processed=17500 live=9392 dead=2819 unknown=5289 cleared=2819
+[website-validate] processed=18000 live=9719 dead=2886 unknown=5395 cleared=2886
+[website-validate] processed=18500 live=10003 dead=2949 unknown=5548 cleared=2949
+[website-validate] processed=19000 live=10236 dead=3008 unknown=5756 cleared=3008
+[website-validate] processed=19500 live=10534 dead=3083 unknown=5883 cleared=3083
+[website-validate] processed=20000 live=10823 dead=3146 unknown=6031 cleared=3146
+[website-validate] processed=20500 live=11156 dead=3221 unknown=6123 cleared=3221
+[website-validate] processed=21000 live=11408 dead=3285 unknown=6307 cleared=3285
+[website-validate] processed=21500 live=11692 dead=3342 unknown=6466 cleared=3342
+[website-validate] processed=22000 live=11929 dead=3406 unknown=6665 cleared=3406
+[website-validate] processed=22500 live=12187 dead=3460 unknown=6853 cleared=3460
+[website-validate] processed=23000 live=12480 dead=3533 unknown=6987 cleared=3533
+[website-validate] processed=23500 live=12731 dead=3590 unknown=7179 cleared=3590
+[website-validate] processed=24000 live=12934 dead=3637 unknown=7429 cleared=3637
+[website-validate] processed=24500 live=13220 dead=3701 unknown=7579 cleared=3701
+[website-validate] processed=25000 live=13567 dead=3769 unknown=7664 cleared=3769
+[website-validate] processed=25500 live=13850 dead=3835 unknown=7815 cleared=3835
+[website-validate] processed=26000 live=14176 dead=3911 unknown=7913 cleared=3911
+[website-validate] processed=26500 live=14479 dead=3985 unknown=8036 cleared=3985
+[website-validate] processed=27000 live=14677 dead=4035 unknown=8288 cleared=4035
+[website-validate] processed=27500 live=14858 dead=4097 unknown=8545 cleared=4097
+[website-validate] processed=28000 live=15136 dead=4158 unknown=8706 cleared=4158
+[website-validate] processed=28500 live=15423 dead=4220 unknown=8857 cleared=4220
+[website-validate] processed=29000 live=15708 dead=4275 unknown=9017 cleared=4275
+[website-validate] processed=29500 live=15757 dead=4712 unknown=9031 cleared=4712
+[website-validate] processed=30000 live=16000 dead=4771 unknown=9229 cleared=4771
+[website-validate] processed=30500 live=16294 dead=4845 unknown=9361 cleared=4845
+[website-validate] processed=31000 live=16501 dead=4893 unknown=9606 cleared=4893
+[website-validate] processed=31500 live=16788 dead=4955 unknown=9757 cleared=4955
+[website-validate] processed=32000 live=17025 dead=5015 unknown=9960 cleared=5015
+[website-validate] processed=32500 live=17381 dead=5082 unknown=10037 cleared=5082
+[website-validate] processed=33000 live=17691 dead=5150 unknown=10159 cleared=5150
+[website-validate] processed=33500 live=17960 dead=5212 unknown=10328 cleared=5212
+[website-validate] processed=34000 live=18211 dead=5279 unknown=10510 cleared=5279
+[website-validate] processed=34500 live=18475 dead=5334 unknown=10691 cleared=5334
+[website-validate] processed=35000 live=18786 dead=5416 unknown=10798 cleared=5416
+[website-validate] processed=35500 live=19086 dead=5480 unknown=10934 cleared=5480
+[website-validate] processed=36000 live=19314 dead=5537 unknown=11149 cleared=5537
+[website-validate] processed=36500 live=19547 dead=5600 unknown=11353 cleared=5600
+[website-validate] processed=37000 live=19729 dead=5638 unknown=11633 cleared=5638
+[website-validate] processed=37500 live=20003 dead=5710 unknown=11787 cleared=5710
+[website-validate] processed=38000 live=20008 dead=6202 unknown=11790 cleared=6202
+[website-validate] processed=38500 live=20223 dead=6258 unknown=12019 cleared=6258
+[website-validate] processed=39000 live=20536 dead=6320 unknown=12144 cleared=6320
+[website-validate] processed=39500 live=20799 dead=6380 unknown=12321 cleared=6380
+[website-validate] processed=40000 live=21129 dead=6452 unknown=12419 cleared=6452
+[website-validate] processed=40500 live=21373 dead=6490 unknown=12637 cleared=6490
+[website-validate] processed=41000 live=21652 dead=6548 unknown=12800 cleared=6548
+[website-validate] processed=41500 live=21929 dead=6602 unknown=12969 cleared=6602
+[website-validate] processed=42000 live=21999 dead=6790 unknown=13211 cleared=6790
+[website-validate] processed=42500 live=22307 dead=6849 unknown=13344 cleared=6849
+[website-validate] processed=43000 live=22542 dead=6899 unknown=13559 cleared=6899
+[website-validate] processed=43500 live=22854 dead=6969 unknown=13677 cleared=6969
+[website-validate] processed=44000 live=23193 dead=7030 unknown=13777 cleared=7030
+[website-validate] processed=44500 live=23498 dead=7101 unknown=13901 cleared=7101
+[website-validate] processed=45000 live=23777 dead=7172 unknown=14051 cleared=7172
+[website-validate] processed=45500 live=24043 dead=7247 unknown=14210 cleared=7247
+[website-validate] processed=46000 live=24238 dead=7287 unknown=14475 cleared=7287
+[website-validate] processed=46500 live=24583 dead=7352 unknown=14565 cleared=7352
+[website-validate] processed=47000 live=24803 dead=7400 unknown=14797 cleared=7400
+[website-validate] processed=47500 live=25092 dead=7449 unknown=14959 cleared=7449
+[website-validate] processed=48000 live=25437 dead=7527 unknown=15036 cleared=7527
+[website-validate] processed=48500 live=25780 dead=7595 unknown=15125 cleared=7595
+  update failed 70c706f3-4f87-459a-80e3-ee47f1d6d80d: TypeError: fetch failed
+  update failed 70c7cfa0-7699-4991-9da7-239d3f25704d: TypeError: fetch failed
+  update failed 70c95094-1d5e-43e9-bd2e-b372212fa813: TypeError: fetch failed
+  update failed 70c95909-be2d-4846-bcd9-fe888837ca7d: TypeError: fetch failed
+  update failed 70c96432-4c63-4af1-9620-c1094390c4fc: TypeError: fetch failed
+  update failed 70c70502-73cf-4489-86ec-fe081a0338ff: TypeError: fetch failed
+[website-validate] processed=49000 live=26111 dead=7680 unknown=15209 cleared=7680
+  update failed 70c706f3-4f87-459a-80e3-ee47f1d6d80d: TypeError: fetch failed
+  update failed 70c7cfa0-7699-4991-9da7-239d3f25704d: TypeError: fetch failed
+  update failed 70c95094-1d5e-43e9-bd2e-b372212fa813: TypeError: fetch failed
+  update failed 70c95909-be2d-4846-bcd9-fe888837ca7d: TypeError: fetch failed
+  update failed 70c96432-4c63-4af1-9620-c1094390c4fc: TypeError: fetch failed
+  update failed 70c70502-73cf-4489-86ec-fe081a0338ff: TypeError: fetch failed
+[website-validate] processed=49500 live=26298 dead=7719 unknown=15483 cleared=7719
+[website-validate] processed=50000 live=26646 dead=7787 unknown=15567 cleared=7787
+[website-validate] processed=50500 live=26979 dead=7859 unknown=15662 cleared=7859
+[website-validate] processed=51000 live=27276 dead=7944 unknown=15780 cleared=7944
+[website-validate] processed=51500 live=27486 dead=7995 unknown=16019 cleared=7995
+[website-validate] processed=52000 live=27856 dead=8069 unknown=16075 cleared=8069
+[website-validate] processed=52500 live=28140 dead=8118 unknown=16242 cleared=8118
+[website-validate] processed=53000 live=28401 dead=8179 unknown=16420 cleared=8179
+[website-validate] processed=53500 live=28669 dead=8244 unknown=16587 cleared=8244
+[website-validate] processed=54000 live=28991 dead=8346 unknown=16663 cleared=8346
+[website-validate] processed=54500 live=29281 dead=8429 unknown=16790 cleared=8429
+[website-validate] processed=55000 live=29343 dead=8447 unknown=17210 cleared=8447
+[website-validate] processed=55500 live=29455 dead=8795 unknown=17250 cleared=8795
+[website-validate] processed=56000 live=29710 dead=8854 unknown=17436 cleared=8854
+[website-validate] processed=56500 live=30032 dead=8920 unknown=17548 cleared=8920
+[website-validate] processed=57000 live=30359 dead=8993 unknown=17648 cleared=8993
+[website-validate] processed=57500 live=30652 dead=9066 unknown=17782 cleared=9066
+[website-validate] processed=58000 live=30946 dead=9131 unknown=17923 cleared=9131
+[website-validate] processed=58500 live=31237 dead=9199 unknown=18064 cleared=9199
+[website-validate] processed=59000 live=31418 dead=9263 unknown=18319 cleared=9263
+[website-validate] processed=59500 live=31675 dead=9306 unknown=18519 cleared=9306
+[website-validate] processed=60000 live=31816 dead=9601 unknown=18583 cleared=9601
+[website-validate] processed=60500 live=32085 dead=9674 unknown=18741 cleared=9674
+[website-validate] processed=61000 live=32419 dead=9749 unknown=18832 cleared=9749
+[website-validate] processed=61500 live=32751 dead=9823 unknown=18926 cleared=9823
+[website-validate] processed=62000 live=33045 dead=9888 unknown=19067 cleared=9888
+[website-validate] processed=62500 live=33292 dead=9952 unknown=19256 cleared=9952
+[website-validate] processed=63000 live=33484 dead=9995 unknown=19521 cleared=9995
+[website-validate] processed=63500 live=33799 dead=10062 unknown=19639 cleared=10062
+[website-validate] processed=64000 live=34045 dead=10118 unknown=19837 cleared=10118
+[website-validate] processed=64500 live=34312 dead=10179 unknown=20009 cleared=10179
+[website-validate] processed=65000 live=34560 dead=10227 unknown=20213 cleared=10227
+[website-validate] processed=65500 live=34802 dead=10273 unknown=20425 cleared=10273
+[website-validate] processed=66000 live=35100 dead=10341 unknown=20559 cleared=10341
+[website-validate] processed=66500 live=35380 dead=10405 unknown=20715 cleared=10405
+[website-validate] processed=67000 live=35499 dead=10441 unknown=21060 cleared=10441
+[website-validate] processed=67500 live=35694 dead=10478 unknown=21328 cleared=10478
+[website-validate] processed=68000 live=35987 dead=10549 unknown=21464 cleared=10549
+[website-validate] processed=68500 live=36265 dead=10627 unknown=21608 cleared=10627
+[website-validate] processed=69000 live=36602 dead=10706 unknown=21692 cleared=10706
+[website-validate] processed=69500 live=36885 dead=10769 unknown=21846 cleared=10769
+[website-validate] processed=70000 live=37210 dead=10855 unknown=21935 cleared=10855
+[website-validate] processed=70500 live=37503 dead=10948 unknown=22049 cleared=10948
+[website-validate] processed=71000 live=37856 dead=11024 unknown=22120 cleared=11024
+[website-validate] processed=71500 live=37964 dead=11054 unknown=22482 cleared=11054
+[website-validate] processed=72000 live=38176 dead=11109 unknown=22715 cleared=11109
+[website-validate] processed=72500 live=38443 dead=11163 unknown=22894 cleared=11163
+[website-validate] processed=73000 live=38741 dead=11221 unknown=23038 cleared=11221
+[website-validate] processed=73500 live=39073 dead=11291 unknown=23136 cleared=11291
+[website-validate] processed=74000 live=39263 dead=11332 unknown=23405 cleared=11332
+[website-validate] processed=74500 live=39513 dead=11378 unknown=23609 cleared=11378
+[website-validate] processed=75000 live=39778 dead=11437 unknown=23785 cleared=11437
+[website-validate] processed=75500 live=40084 dead=11507 unknown=23909 cleared=11507
+[website-validate] processed=76000 live=40393 dead=11564 unknown=24043 cleared=11564
+[website-validate] processed=76500 live=40714 dead=11640 unknown=24146 cleared=11640
+[website-validate] processed=77000 live=41053 dead=11702 unknown=24245 cleared=11702
+  update failed b178f309-c9d0-49a2-b268-5c7937415b95: TypeError: fetch failed
+  update failed b1797341-0ff6-4841-96d4-0e4afe335d09: TypeError: fetch failed
+  update failed b179e25f-f1de-4caa-8fec-97610df4ad67: TypeError: fetch failed
+  update failed b17c1b94-c205-4cfa-a920-0f4211832109: TypeError: fetch failed
+  update failed b17c57a8-c41e-4e8b-895e-2e14fe41ca74: TypeError: fetch failed
+  update failed b177e19c-99b5-4428-b279-a53d3a21a79c: TypeError: fetch failed
+[website-validate] processed=77500 live=41307 dead=11756 unknown=24437 cleared=11754
+[website-validate] processed=78000 live=41518 dead=11818 unknown=24664 cleared=11816
+[website-validate] processed=78500 live=41854 dead=11873 unknown=24773 cleared=11871
+[website-validate] processed=79000 live=42158 dead=11943 unknown=24899 cleared=11941
+[website-validate] processed=79500 live=42520 dead=12016 unknown=24964 cleared=12014
+[website-validate] processed=80000 live=42811 dead=12094 unknown=25095 cleared=12092
+[website-validate] processed=80500 live=42988 dead=12148 unknown=25364 cleared=12146
+[website-validate] processed=81000 live=43233 dead=12322 unknown=25445 cleared=12320
+[website-validate] processed=81500 live=43390 dead=12359 unknown=25751 cleared=12357
+[website-validate] processed=82000 live=43732 dead=12440 unknown=25828 cleared=12438
+[website-validate] processed=82500 live=44110 dead=12509 unknown=25881 cleared=12507
+[website-validate] processed=83000 live=44359 dead=12560 unknown=26081 cleared=12558
+[website-validate] processed=83500 live=44662 dead=12611 unknown=26227 cleared=12609
