@@ -35,6 +35,11 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Apify scrape runs: who, counts, new vs updated, estimated cost",
   },
   {
+    href: "/admin/academy/classroom/working/core-client",
+    label: "Working lesson (Core Client)",
+    hint: "Prototype: classroom layout with the artifact-first AI format",
+  },
+  {
     href: "/assessment",
     label: "BOSS Scorecard",
     hint: "Default route redirects to /assessment/BCA (13-question funnel)",

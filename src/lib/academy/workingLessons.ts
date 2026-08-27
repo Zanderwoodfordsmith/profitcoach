@@ -15,6 +15,7 @@ export type WorkingLessonDef = {
   overviewMarkdown: string;
   guideMarkdown: string;
   introTitle: string;
+  introBody: string;
   introSeconds: number;
   kind: WorkingLessonKind;
 };
@@ -31,6 +32,8 @@ export const WORKING_LESSONS: WorkingLessonDef[] = [
     classroomLessonId: "get-calls-ideal-clients-how-to-choose-your-core-client",
     kind: "working",
     introTitle: "Why you pick one core client",
+    introBody:
+      "One market to start. Then you check the recommendation and lock it. Skip if you already know why you are here.",
     introSeconds: 28,
     overviewMarkdown: `This lesson locks who you market to first. It does not limit who you can take as a client. It focuses the outreach so the message feels written for them.
 
@@ -53,6 +56,8 @@ Picking a core client is not forever. Stay with it for six months before you cha
     classroomLessonId: "get-calls-ideal-clients-understand-your-ideal-client",
     kind: "sketch",
     introTitle: "Why their words matter more than yours",
+    introBody:
+      "The market is locked. This lesson fills the words they actually use. Check the draft and lock the lines you will reuse.",
     introSeconds: 24,
     overviewMarkdown: `Once the core client is locked, this lesson fills the language they actually use: pains, vocabulary, and hooks.
 
@@ -66,6 +71,8 @@ Never invent proof. If a story is thin, add one real example before you lock the
     title: "Your Buyer Avatar",
     kind: "sketch",
     introTitle: "Write to one person, not a market",
+    introBody:
+      "A one-page person inside the market. Check the snapshot, tweak a line, and lock it.",
     introSeconds: 22,
     overviewMarkdown: `The avatar is the person inside the market: a day in their life, what they fear, what they want instead, and the phrases to mirror in copy.
 
@@ -80,6 +87,8 @@ Write to them (you / your), not about them.`,
     classroomLessonId: "get-calls-linkedin-optimization-set-up-your-linkedin-profile",
     kind: "sketch",
     introTitle: "Your profile has to finish the sentence",
+    introBody:
+      "Headline and About, written to the locked core client. Pick the variant that sounds like you.",
     introSeconds: 26,
     overviewMarkdown: `Headline and About, written to the locked core client. Someone who gets your connection request will open this. It has to say why you are for them.
 
@@ -94,6 +103,8 @@ Offer variants. Let them choose.`,
     classroomLessonId: "get-calls-connector-launch-your-connector-campaign",
     kind: "sketch",
     introTitle: "Five messages, one conversation",
+    introBody:
+      "Connection note and follow-ups using the locked market, their words, and your proof. Tweak a line, then lock the set.",
     introSeconds: 20,
     overviewMarkdown: `Connection note and follow-ups for the people who match the locked core client.
 

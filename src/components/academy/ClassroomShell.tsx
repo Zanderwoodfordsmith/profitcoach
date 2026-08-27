@@ -100,6 +100,13 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         </span>
       );
     }
+    if (pathname.startsWith(`${classroomRoot}/working`)) {
+      return (
+        <span className="text-lg leading-relaxed text-slate-600">
+          Working lessons. Check a recommendation, tweak what is off, and lock it. Video is optional.
+        </span>
+      );
+    }
     if (pathname.startsWith(classroomRoot)) {
       return (
         <span className="text-lg leading-relaxed text-slate-600">

@@ -5,6 +5,7 @@ import { Pause, Play } from "lucide-react";
 
 type Props = {
   title: string;
+  body: string;
   seconds: number;
 };
 
@@ -14,7 +15,7 @@ function formatClock(total: number) {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export function WorkingLessonIntro({ title, seconds }: Props) {
+export function WorkingLessonIntro({ title, body, seconds }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -98,8 +99,7 @@ export function WorkingLessonIntro({ title, seconds }: Props) {
             {title}
           </p>
           <p className="mt-2 max-w-lg text-sm leading-relaxed text-white/80">
-            One market to start. Then you check the recommendation and lock it.
-            Skip if you already know why you are here.
+            {body}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
