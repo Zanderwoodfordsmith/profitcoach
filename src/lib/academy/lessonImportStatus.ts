@@ -235,7 +235,7 @@ function rowFromChapter(
     title: chapter.title,
     // Chapters are video steps: missing video is a real gap, not inherited N/A.
     hasVideo: true,
-    duration: undefined,
+    duration: "",
   };
 
   const content: ContentRow | undefined = sourceContent
