@@ -4,6 +4,7 @@ import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlaye
 import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
 import {
   classroomIdsNeedRedirect,
+  classroomLessonQueryString,
   resolveClassroomCourseId,
   resolveClassroomLessonId,
 } from "@/lib/academy/classroomIdAliases";
@@ -24,7 +25,7 @@ const BASE = "/coach/academy/classroom";
 
 type Props = {
   params: Promise<{ courseId: string; lessonId: string }>;
-  searchParams: Promise<{ chapter?: string }>;
+  searchParams: Promise<{ chapter?: string; t?: string }>;
 };
 
 export default async function CoachAcademyClassroomLessonPage({
@@ -32,11 +33,16 @@ export default async function CoachAcademyClassroomLessonPage({
   searchParams,
 }: Props) {
   const { courseId: rawCourseId, lessonId: rawLessonId } = await params;
-  const { chapter: initialChapterId } = await searchParams;
+  const { chapter: initialChapterId, t: seekSeconds } = await searchParams;
   const lessonId = resolveClassroomLessonId(rawLessonId);
   const data = loadClassroomHub();
   const remappedCourseId = classroomCourseIdForLesson(data, lessonId);
   const courseId = remappedCourseId ?? resolveClassroomCourseId(rawCourseId);
+  const keepQuery = (chapter?: string | null) =>
+    classroomLessonQueryString({
+      chapter: chapter ?? initialChapterId,
+      t: seekSeconds,
+    });
 
   // Retired Profit Coach OS path: send remapped lessons to their new cards,
   // otherwise drop bookmarks on the classroom catalog.
@@ -46,7 +52,7 @@ export default async function CoachAcademyClassroomLessonPage({
   ) {
     if (remappedCourseId) {
       redirect(
-        `${BASE}/${encodeURIComponent(remappedCourseId)}/${encodeURIComponent(lessonId)}`
+        `${BASE}/${encodeURIComponent(remappedCourseId)}/${encodeURIComponent(lessonId)}${keepQuery()}`
       );
     }
     redirect(BASE);
@@ -58,18 +64,16 @@ export default async function CoachAcademyClassroomLessonPage({
     lessonId !== rawLessonId
   ) {
     redirect(
-      `${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}`
+      `${BASE}/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}${keepQuery()}`
     );
   }
 
   const legacyRedirect = legacyConsolidatedChapterRedirect(lessonId);
   if (legacyRedirect) {
     redirect(
-      `${BASE}/${encodeURIComponent(legacyRedirect.courseId)}/${encodeURIComponent(legacyRedirect.lessonId)}${
+      `${BASE}/${encodeURIComponent(legacyRedirect.courseId)}/${encodeURIComponent(legacyRedirect.lessonId)}${keepQuery(
         legacyRedirect.chapter
-          ? `?chapter=${encodeURIComponent(legacyRedirect.chapter)}`
-          : ""
-      }`
+      )}`
     );
   }
 

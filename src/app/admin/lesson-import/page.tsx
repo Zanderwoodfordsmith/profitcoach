@@ -2,7 +2,6 @@ import { AdminAcademyImportStatus } from "@/components/academy/AdminAcademyImpor
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout";
 import { loadAcademyImportOverrides } from "@/lib/academy/academyImportOverrides";
-import { loadLatestAcademyBodyImportUnresolved } from "@/lib/academy/bodyImportReport";
 import { loadAcademyImportSnapshot } from "@/lib/academy/academyImportSnapshot";
 import { loadLessonImportStatusReport } from "@/lib/academy/lessonImportStatus";
 
@@ -10,12 +9,11 @@ import { loadLessonImportStatusReport } from "@/lib/academy/lessonImportStatus";
 export const dynamic = "force-dynamic";
 
 export default async function AdminLessonImportPage() {
-  const [status, { report: snapshot, updatedAt: snapshotUpdatedAt }, importOverrides, bodyImport] =
+  const [status, { report: snapshot, updatedAt: snapshotUpdatedAt }, importOverrides] =
     await Promise.all([
       loadLessonImportStatusReport(),
       loadAcademyImportSnapshot(),
       loadAcademyImportOverrides().catch(() => []),
-      Promise.resolve(loadLatestAcademyBodyImportUnresolved()),
     ]);
 
   return (
@@ -34,9 +32,6 @@ export default async function AdminLessonImportPage() {
         snapshot={snapshot}
         snapshotUpdatedAt={snapshotUpdatedAt ?? status.snapshotUpdatedAt}
         importOverrides={importOverrides}
-        bodyImportUnresolved={bodyImport.unresolved}
-        bodyImportReportFile={bodyImport.reportFile}
-        bodyImportTotalRows={bodyImport.totalRows}
       />
     </div>
   );

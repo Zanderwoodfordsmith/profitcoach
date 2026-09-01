@@ -448,6 +448,16 @@ export function ClassroomLessonPlayer({
       key: (prev?.key ?? 0) + 1,
     }));
   }
+
+  /** Deep-link from global search: `?tab=transcript&t=123` seeks media. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = new URLSearchParams(window.location.search).get("t");
+    if (raw == null || raw === "") return;
+    const seconds = Number(raw);
+    if (!Number.isFinite(seconds) || seconds < 0) return;
+    seekToTranscriptTime(seconds);
+  }, [lesson.id]);
   const resolveContentCourseId = (lessonId: string) =>
     contentSource === "classroom" ? contentSourceCourseId(lessonId) : course.id;
 

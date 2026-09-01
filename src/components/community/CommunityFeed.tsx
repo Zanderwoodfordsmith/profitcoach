@@ -2104,7 +2104,7 @@ export function CommunityFeed() {
                     type="button"
                     onClick={() => setComposeOpen(true)}
                     disabled={Boolean(loadError) || visibleCategories.length === 0}
-                    className="mb-2 flex w-full items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 text-left shadow-[0_1px_2px_rgb(15_23_42/0.18),0_4px_10px_-2px_rgb(15_23_42/0.30)] transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {composeAvatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -2121,7 +2121,7 @@ export function CommunityFeed() {
                         </span>
                       </span>
                     )}
-                    <span className="min-w-0 flex-1 text-base text-slate-500">Write something…</span>
+                    <span className="min-w-0 flex-1 text-lg font-medium text-slate-700">Write something…</span>
                   </button>
                 )}
               </div>

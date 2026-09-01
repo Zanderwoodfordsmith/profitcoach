@@ -12,6 +12,7 @@ import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachI
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
+import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
@@ -323,6 +324,7 @@ export default function CoachLayout({
                 {bossWorkshopPage && workshopTopRightSlot ? (
                   <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
                 ) : null}
+                <SearchTopBarTrigger className="shrink-0" />
                 <DashboardTopActions
                   variant="coach"
                   signingOut={signingOut}

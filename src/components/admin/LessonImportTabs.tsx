@@ -12,6 +12,7 @@ export function LessonImportTabs() {
   const onOldLinks =
     pathname === "/admin/lesson-import/old-academy-links" ||
     Boolean(pathname?.startsWith("/admin/lesson-import/old-academy-links/"));
+  const onCurriculum = Boolean(pathname?.startsWith("/admin/lesson-import/curriculum"));
 
   return (
     <PageHeaderUnderlineTabs
@@ -22,6 +23,12 @@ export function LessonImportTabs() {
           href: "/admin/lesson-import",
           label: "Import status",
           active: onImport,
+        },
+        {
+          kind: "link" as const,
+          href: "/admin/lesson-import/curriculum",
+          label: "Curriculum",
+          active: onCurriculum,
         },
         {
           kind: "link" as const,

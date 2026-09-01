@@ -94,17 +94,25 @@ export function formatCommunityRelativeFutureLong(
 }
 
 export type CommunityEventHappeningWhen = {
-  /** e.g. "at 4:00 PM today" or "in 45 minutes" */
+  /** e.g. "at 4pm today" or "in 45 minutes" */
   label: string;
   /** Short zone for clock-time labels (e.g. "SAST"); null for relative copy. */
   timezoneShort: string | null;
 };
 
+/** Clock time for feed copy: "5pm", "4:30pm". */
+function formatCommunityEventClockTime(start: DateTime): string {
+  const hour = start.toFormat("h");
+  const meridiem = start.toFormat("a").toLowerCase().replace(/\s/g, "");
+  if (start.minute === 0) return `${hour}${meridiem}`;
+  return `${hour}:${start.toFormat("mm")}${meridiem}`;
+}
+
 /**
  * Feed copy for an upcoming calendar event, in the viewer's local timezone.
  * Under 1h: "in 45 minutes" (urgency).
- * Within a week: clock time + day — "at 4:00 PM today", "at 4:00 PM tomorrow",
- * "at 4:00 PM Monday" — with a short timezone abbreviation.
+ * Within a week: clock time + day — "at 4pm today", "at 4pm tomorrow",
+ * "at 4:30pm Monday" — with a short timezone abbreviation.
  * Further out: "in 12 days".
  */
 export function formatCommunityEventHappeningWhen(
@@ -130,7 +138,7 @@ export function formatCommunityEventHappeningWhen(
   }
 
   if (diff < WEEK_MS) {
-    const time = start.toFormat("h:mm a");
+    const time = formatCommunityEventClockTime(start);
     const timezoneShort = formatCommunityTimezoneShort(
       zone,
       new Date(start.toMillis())

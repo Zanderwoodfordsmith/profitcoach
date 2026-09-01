@@ -12,6 +12,9 @@ import {
   upsertAcademyLessonContent,
 } from "./lessonContent";
 import { contentSourceCourseId } from "./programmeContentSource";
+import {
+  type LessonVideoChapter,
+} from "./lessonVideoChapters";
 
 type Body = {
   title?: string | null;
@@ -22,7 +25,23 @@ type Body = {
   transcriptText?: string | null;
   duration?: string | null;
   recommendedActions?: { id: string; text: string }[] | null;
+  /**
+   * When set, write Overview/Guide to this chapter source row instead of the
+   * hub parent. Must be a `sourceLessonId` on one of the parent's steps.
+   */
+  contentLessonId?: string | null;
 };
+
+function allowedChapterSourceLessonIds(
+  chapters: LessonVideoChapter[] | undefined
+): Set<string> {
+  const ids = new Set<string>();
+  for (const chapter of chapters ?? []) {
+    const sourceId = chapter.sourceLessonId?.trim();
+    if (sourceId) ids.add(sourceId);
+  }
+  return ids;
+}
 
 /**
  * Save an admin edit to a hub lesson (programmes archive or simplified hub).
@@ -52,11 +71,30 @@ export async function patchHubLessonContent(
   }
 
   const body = (await request.json()) as Body;
+  const contentLessonId = body.contentLessonId?.trim() || null;
+
+  let writeLessonId = lessonId;
+  if (contentLessonId && contentLessonId !== lessonId) {
+    // Need resolved chapters from DB-merged course, not hub stub.
+    const mergedForAuth = await loadClassroomCourseWithContent(course, {
+      includeDrafts: true,
+    });
+    const authLesson =
+      findLessonInCourse(mergedForAuth, lessonId) ?? baseLesson;
+    const allowed = allowedChapterSourceLessonIds(authLesson.videoChapters);
+    if (!allowed.has(contentLessonId)) {
+      return NextResponse.json(
+        { error: "That step is not part of this lesson." },
+        { status: 400 }
+      );
+    }
+    writeLessonId = contentLessonId;
+  }
 
   try {
     await upsertAcademyLessonContent({
-      courseId: contentSourceCourseId(lessonId),
-      lessonId,
+      courseId: contentSourceCourseId(writeLessonId),
+      lessonId: writeLessonId,
       title: body.title,
       videoUrl: body.videoUrl,
       audioUrl: body.audioUrl,

@@ -192,10 +192,17 @@ export function LessonChapterPlayer({
   seekAggregateRef.current = seekAggregate;
 
   useEffect(() => {
-    if (!seekRequest || seekRequest.key <= 0 || totalDurationSeconds <= 0) return;
+    if (!seekRequest || seekRequest.key <= 0) return;
+    if (initialChapterId) {
+      setAutoplay(true);
+      setForcedSeekTime(Math.max(0, seekRequest.seconds));
+      setForcedSeekKey((key) => key + 1);
+      return;
+    }
+    if (totalDurationSeconds <= 0) return;
     const ratio = Math.min(1, Math.max(0, seekRequest.seconds / totalDurationSeconds));
     seekAggregateRef.current(ratio);
-  }, [seekRequest, totalDurationSeconds]);
+  }, [initialChapterId, seekRequest, totalDurationSeconds]);
 
   const timeline = useMemo<LessonVideoTimeline | undefined>(() => {
     if (totalDurationSeconds <= 0) return undefined;

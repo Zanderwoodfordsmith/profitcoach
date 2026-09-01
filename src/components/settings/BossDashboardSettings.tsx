@@ -10,6 +10,7 @@ import {
 import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
 import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
+import { BillingSettingsTab } from "@/components/settings/BillingSettingsTab";
 import { DirectorySettingsTab } from "@/components/settings/DirectorySettingsTab";
 import { FunnelSettingsClient } from "@/components/settings/FunnelSettingsClient";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
@@ -52,6 +53,7 @@ type ProfileData = {
 
 export type BossDashboardSettingsTabId =
   | "profile"
+  | "billing"
   | "directory"
   | "ladder"
   | "funnel"
@@ -59,6 +61,7 @@ export type BossDashboardSettingsTabId =
 
 const SETTINGS_TAB_IDS: BossDashboardSettingsTabId[] = [
   "profile",
+  "billing",
   "directory",
   "funnel",
   "calendar",
@@ -66,10 +69,12 @@ const SETTINGS_TAB_IDS: BossDashboardSettingsTabId[] = [
 ];
 
 function parseSettingsTab(
-  raw: string | null
+  raw: string | null,
+  variant: BossDashboardSettingsProps["variant"]
 ): BossDashboardSettingsTabId | null {
   if (!raw) return null;
   if (raw === "get-clients") return "funnel";
+  if (raw === "billing" && variant !== "coach") return null;
   if (SETTINGS_TAB_IDS.includes(raw as BossDashboardSettingsTabId)) {
     return raw as BossDashboardSettingsTabId;
   }
@@ -207,7 +212,7 @@ export function BossDashboardSettings({
       }
       return;
     }
-    const parsed = parseSettingsTab(tab);
+    const parsed = parseSettingsTab(tab, variant);
     if (parsed) {
       setInternalTab(parsed);
     }
@@ -499,6 +504,9 @@ export function BossDashboardSettings({
 
   const tabDefs: { id: BossDashboardSettingsTabId; label: string }[] = [
     { id: "profile", label: "Profile" },
+    ...(variant === "coach"
+      ? [{ id: "billing" as const, label: "Billing" }]
+      : []),
     { id: "directory", label: "Directory" },
     { id: "funnel", label: "Get Clients" },
     { id: "calendar", label: "Calendar" },
@@ -508,7 +516,7 @@ export function BossDashboardSettings({
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, directory, Get Clients, calendar, and ladder."
+      description="Profile, billing, directory, Get Clients, calendar, and ladder."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -696,6 +704,10 @@ export function BossDashboardSettings({
           variant={variant}
           onEditProfile={() => selectTab("profile")}
         />
+      ) : null}
+
+      {activeTab === "billing" && variant === "coach" ? (
+        <BillingSettingsTab />
       ) : null}
 
       {activeTab === "funnel" ? <FunnelSettingsClient embed /> : null}

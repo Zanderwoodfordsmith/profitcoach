@@ -329,67 +329,50 @@
         {
           "id": "get-calls-step-4-top-100-conversations",
           "title": "Lead Engine: Run Your Lead Generation System",
-          "lessons": [],
-          "sections": [
+          "lessons": [
             {
-              "id": "get-calls-lead-engine-foundations",
+              "id": "get-calls-lead-generation-lead-gen-foundations",
               "title": "Lead Gen Foundations",
-              "lessons": [
-                {
-                  "id": "get-calls-lead-generation-lead-gen-foundations",
-                  "title": "Lead Gen Foundations",
-                  "duration": "",
-                  "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-                }
-              ]
+              "duration": "",
+              "hasVideo": false,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             },
             {
-              "id": "get-calls-lead-engine-vip-conversations",
-              "title": "VIP & Conversations",
-              "lessons": [
+              "id": "get-calls-lead-generation-run-your-vip-nurture",
+              "title": "Run Your VIP Nurture",
+              "duration": "",
+              "hasVideo": false,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+            },
+            {
+              "id": "get-calls-lead-generation-get-started-with-connector",
+              "title": "Set Up & Launch Connector",
+              "duration": "22m",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum",
+              "satellites": [
                 {
-                  "id": "get-calls-lead-generation-run-your-vip-nurture",
-                  "title": "Run Your VIP Nurture",
-                  "duration": "",
-                  "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-                },
-                {
-                  "id": "get-calls-replying-to-leads-mistakse-to-avoid-when-replying-to-prospects",
-                  "title": "Mistakes To Avoid When Replying To Prospects",
-                  "duration": "12m",
+                  "id": "get-calls-lead-generation-ai-automation-how-to-export-a-sales-nav-list-to-csv",
+                  "title": "Download Sales Navigator Profiles to CSV",
+                  "duration": "2m",
                   "hasVideo": true,
                   "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
                 }
               ]
             },
             {
-              "id": "get-calls-connector-ai",
-              "title": "Connector AI",
-              "lessons": [
-                {
-                  "id": "get-calls-lead-generation-get-started-with-connector",
-                  "title": "Get Started With Connector",
-                  "duration": "",
-                  "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-                },
-                {
-                  "id": "get-calls-lead-generation-launch-your-connector-campaign",
-                  "title": "Launch Your Connector Campaign",
-                  "duration": "6m",
-                  "hasVideo": true,
-                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-                },
-                {
-                  "id": "get-calls-replying-to-leads-set-up-connector-co-pilot",
-                  "title": "Set Up Connector Co-Pilot",
-                  "duration": "",
-                  "hasVideo": false,
-                  "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
-                }
-              ]
+              "id": "get-calls-replying-to-leads-set-up-connector-co-pilot",
+              "title": "Set Up Connector Co-Pilot",
+              "duration": "11m",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
+            },
+            {
+              "id": "get-calls-replying-to-leads-mistakse-to-avoid-when-replying-to-prospects",
+              "title": "Mistakes To Avoid When Replying To Prospects",
+              "duration": "12m",
+              "hasVideo": true,
+              "academyUrl": "https://academy.businesscoachacademy.com/p/getting-clients/curriculum"
             }
           ]
         }

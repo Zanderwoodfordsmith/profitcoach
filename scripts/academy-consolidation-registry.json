@@ -34,16 +34,12 @@
       "get-calls-lead-generation-ai-automation-what-is-connector-how-to-register-for-connector-ai": "register",
       "get-calls-lead-generation-ai-automation-connector-campaign-overview": "overview",
       "get-calls-lead-generation-ai-automation-write-a-linkedin-connection-message": "connection-message",
-      "get-calls-lead-generation-ai-automation-connector-campaign-editing-follow-up-message-templates": "follow-up-templates"
-    }
-  },
-  {
-    "courseId": "get-calls",
-    "consolidatedLessonId": "get-calls-lead-generation-launch-your-connector-campaign",
-    "legacyChapterByLessonId": {
+      "get-calls-lead-generation-ai-automation-connector-campaign-editing-follow-up-message-templates": "follow-up-templates",
       "get-calls-lead-generation-ai-automation-how-to-create-campaigns-in-connect-ai": "create-campaign",
       "get-calls-lead-generation-ai-automation-how-to-create-a-campaign-for-prospects-you-are-already-connected-with": "connected-campaign",
-      "get-calls-lead-generation-ai-automation-targeted-open-inmail-craft-open-inmail-message": "open-inmail"
+      "get-calls-lead-generation-ai-automation-targeted-open-inmail-craft-open-inmail-message": "open-inmail",
+      "get-calls-lead-generation-launch-your-connector-campaign": "create-campaign",
+      "get-calls-faq-how-to-add-more-prospects-to-a-connector-campaign": "add-prospects"
     }
   },
   {

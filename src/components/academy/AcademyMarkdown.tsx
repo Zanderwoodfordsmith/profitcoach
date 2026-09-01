@@ -11,6 +11,7 @@ import {
   academyGuideProseClassName,
   academyProseClassName,
 } from "@/components/academy/academyProseClassName";
+import { ExpandableAcademyImage } from "@/components/academy/ExpandableAcademyImage";
 import { LessonHtmlEmbed } from "@/components/academy/LessonHtmlEmbed";
 import { LESSON_EMBED_LANG } from "@/lib/academy/lessonHtmlEmbed";
 import { headingLabel, headingSlug } from "@/lib/academy/lessonGuideOutline";
@@ -89,6 +90,7 @@ export function AcademyMarkdown({
             }
             return <pre {...rest}>{children}</pre>;
           },
+          img: ExpandableAcademyImage,
           h1: heading("h1"),
           h2: heading("h2"),
           h3: heading("h3"),

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Video } from "lucide-react";
+import { CalendarDays, Video, X } from "lucide-react";
 import { DateTime } from "luxon";
 
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -58,6 +58,8 @@ type CallItem = {
   start: DateTime;
   end: DateTime;
   isPast: boolean;
+  isCancelled: boolean;
+  cancellationReason: string | null;
   isLive: boolean;
   hasRecording: boolean;
 };
@@ -128,19 +130,20 @@ export function ThisWeeksCallsCard() {
       exceptions
     );
 
-    const active = occurrences.filter((o) => !o.isCancelled);
-
-    return active.map((o) => {
+    return occurrences.map((o) => {
       const start = DateTime.fromISO(o.startsAtIso, { zone: "utc" }).setZone(
         tz
       );
       const end = DateTime.fromISO(o.endsAtIso, { zone: "utc" }).setZone(tz);
       const isPast = end <= now;
+      const reason = o.cancellationReason?.trim() || null;
       return {
         occurrence: o,
         start,
         end,
         isPast,
+        isCancelled: Boolean(o.isCancelled),
+        cancellationReason: reason,
         isLive: isLiveCommunityCalendarOccurrence(o),
         hasRecording: communityCalendarHasRecording(o),
       };
@@ -178,19 +181,23 @@ export function ThisWeeksCallsCard() {
         ) : (
           <ul className="mt-3 space-y-2.5">
             {calls.map((c) => {
-              const borderTone = c.isLive
-                ? "border-red-200"
-                : "border-slate-200";
+              const borderTone = c.isCancelled
+                ? "border-[#CC0000]/30"
+                : c.isLive
+                  ? "border-red-200"
+                  : "border-slate-200";
               const timeText = c.isLive
                 ? "text-red-600"
                 : c.isPast
                   ? "text-slate-400"
                   : "text-slate-500";
-              const dayBar = c.isLive
-                ? "bg-red-500 text-white"
-                : c.isPast
-                  ? "bg-slate-200 text-slate-500"
-                  : "bg-sky-600 text-white";
+              const dayBar = c.isCancelled
+                ? "bg-[#CC0000] text-white"
+                : c.isLive
+                  ? "bg-red-500 text-white"
+                  : c.isPast
+                    ? "bg-slate-200 text-slate-500"
+                    : "bg-sky-600 text-white";
 
               return (
                 <li
@@ -199,7 +206,11 @@ export function ThisWeeksCallsCard() {
                 >
                   <div
                     className={`flex h-11 w-11 shrink-0 flex-col overflow-hidden rounded-lg border bg-white text-center leading-none ${borderTone}`}
-                    aria-label={`${formatDayAbbrev(c.start)} ${formatStartTime(c.start)}`}
+                    aria-label={
+                      c.isCancelled
+                        ? `${formatDayAbbrev(c.start)} cancelled`
+                        : `${formatDayAbbrev(c.start)} ${formatStartTime(c.start)}`
+                    }
                   >
                     <div
                       className={`shrink-0 py-0.5 text-[9px] font-semibold tracking-wide ${dayBar}`}
@@ -207,25 +218,40 @@ export function ThisWeeksCallsCard() {
                       {formatDayAbbrev(c.start)}
                     </div>
                     <div className="flex min-h-0 flex-1 items-center justify-center px-0.5">
-                      <span
-                        className={`text-[10px] font-medium tabular-nums leading-none ${timeText}`}
-                      >
-                        {formatStartTime(c.start)}
-                      </span>
+                      {c.isCancelled ? (
+                        <X
+                          className="h-3.5 w-3.5 text-[#CC0000]"
+                          strokeWidth={2.75}
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className={`text-[10px] font-medium tabular-nums leading-none ${timeText}`}
+                        >
+                          {formatStartTime(c.start)}
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <div className="min-w-0 flex-1 self-center">
                     <p
                       className={`truncate text-[0.8125rem] font-semibold leading-snug ${
-                        c.isPast && !c.isLive
+                        c.isPast && !c.isLive && !c.isCancelled
                           ? "text-slate-400"
                           : "text-slate-900"
                       }`}
                     >
                       {c.occurrence.title}
                     </p>
-                    {c.isLive ? (
+                    {c.isCancelled ? (
+                      <p className="mt-0.5 truncate text-[11px] font-medium leading-snug text-[#CC0000]">
+                        Cancelled
+                        {c.cancellationReason
+                          ? `: ${c.cancellationReason}`
+                          : null}
+                      </p>
+                    ) : c.isLive ? (
                       <span className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
                         <span
                           className="h-1.5 w-1.5 rounded-full bg-white"

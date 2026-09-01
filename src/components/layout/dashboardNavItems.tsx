@@ -10,6 +10,7 @@ import {
   Palette,
   PhoneCall,
   Rocket,
+  Route,
   Sparkles,
   Wallet,
   Wrench,
@@ -85,6 +86,10 @@ function IconLessonImport({ className }: { className?: string }) {
 
 function IconRoadmap({ className }: { className?: string }) {
   return <ListTodo className={className} />;
+}
+
+function IconGrowthSystem({ className }: { className?: string }) {
+  return <Route className={className} />;
 }
 
 function IconBrand({ className }: { className?: string }) {
@@ -498,6 +503,11 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     href: "/admin/roadmap",
     label: "Roadmap",
     icon: IconRoadmap,
+  },
+  {
+    href: "/admin/growth-system",
+    label: "Growth System",
+    icon: IconGrowthSystem,
   },
   {
     href: "/admin/brand",

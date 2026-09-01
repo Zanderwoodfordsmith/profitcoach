@@ -25,6 +25,33 @@
         ],
         "createdAt": "2026-08-26T19:39:18.185Z",
         "reason": "pre-existing admin brand page pattern; slate-500 on white/slate-50 card not a colored surface"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-500",
+        "createdAt": "2026-09-01T07:51:07.461Z",
+        "reason": "Pre-existing admin edit pencil affordance: slate icon on white control; hover swaps to sky — not gray-on-color washout"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-600",
+        "createdAt": "2026-09-01T07:52:15.680Z",
+        "reason": "Admin form labels and helper copy on white surfaces; not washed-out gray-on-color"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-700",
+        "createdAt": "2026-09-01T07:53:40.015Z",
+        "reason": "Admin form labels and cancel/pencil controls on white cards — standard Operate UI, not washed gray-on-color"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/academy/AdminClassroomLessonEditor.tsx"
+        ],
+        "createdAt": "2026-09-01T07:53:48.352Z",
+        "reason": "Agent: Operate admin editor reuses existing cancel/save/error card patterns (slate on white, rose text on rose-50); gray-on-color false-positives blocked the edit-step fix"
       }
     ]
   }

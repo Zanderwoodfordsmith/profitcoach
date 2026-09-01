@@ -19,6 +19,7 @@ import { refreshCoachProgrammeStatus } from "@/lib/coachAccess/refreshProgrammeS
 import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { stripeServer } from "@/lib/stripeServer";
 
 type CoachMembershipRow = {
   id: string;
@@ -47,6 +48,8 @@ function buildCatalogPayload(options?: { publicView?: boolean }) {
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
     },
+    paymentMethod: null,
+    payments: [],
     recurringPaymentStatus: null,
     recurringActive: false,
     needsPaymentChoice: false,
@@ -139,6 +142,43 @@ export async function GET(request: Request) {
     row.membership_status === "trialing" ||
     row.membership_status === "past_due";
 
+  let paymentMethod: {
+    type: string;
+    brand: string | null;
+    last4: string | null;
+    expMonth: number | null;
+    expYear: number | null;
+  } | null = null;
+
+  if (row.stripe_customer_id && process.env.STRIPE_SECRET_KEY) {
+    try {
+      const customer = await stripeServer.customers.retrieve(row.stripe_customer_id);
+      if (!customer.deleted) {
+        const defaultPaymentMethod = customer.invoice_settings
+          .default_payment_method;
+        const paymentMethodId =
+          typeof defaultPaymentMethod === "string"
+            ? defaultPaymentMethod
+            : defaultPaymentMethod?.id;
+        const stripePaymentMethod = paymentMethodId
+          ? await stripeServer.paymentMethods.retrieve(paymentMethodId)
+          : null;
+        if (stripePaymentMethod) {
+          const card = stripePaymentMethod.card;
+          paymentMethod = {
+            type: stripePaymentMethod.type,
+            brand: card?.brand ?? null,
+            last4: card?.last4 ?? null,
+            expMonth: card?.exp_month ?? null,
+            expYear: card?.exp_year ?? null,
+          };
+        }
+      }
+    } catch {
+      console.error("membership payment method lookup failed");
+    }
+  }
+
   const needsPaymentChoice =
     tier !== "do_not_contact" &&
     !isProgrammeTier(tier) &&
@@ -184,9 +224,18 @@ export async function GET(request: Request) {
       currentPeriodEnd: row.membership_current_period_end,
       cancelAtPeriodEnd: Boolean(row.membership_cancel_at_period_end),
     },
+    paymentMethod,
     recurringPaymentStatus: row.recurring_payment_status,
     recurringActive,
     needsPaymentChoice,
+    payments: (payments ?? []).map((payment) => ({
+      id: payment.id as string,
+      amountCents: payment.amount_cents as number,
+      currency: (payment.currency as string) ?? "gbp",
+      status: payment.status as string,
+      paidAt: payment.paid_at as string,
+      billingKind: payment.billing_kind_override as string | null,
+    })),
     plans,
     stripeConfigured: MEMBERSHIP_PLAN_ORDER.some(
       (key) => MEMBERSHIP_PLANS[key].monthlyPriceId

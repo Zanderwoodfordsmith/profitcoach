@@ -19,7 +19,9 @@ import {
   type LessonVideoChapterInput,
 } from "./lessonVideoChapters";
 import {
+  formatImportDurationMinutes,
   lessonVideoImportStatus,
+  resolveImportDuration,
   type LessonImportCatalogOrder,
   type LessonImportCatalogSection,
   type LessonImportKind,
@@ -57,6 +59,7 @@ type ContentRow = {
   body_markdown: string | null;
   transcript_text: string | null;
   guide_markdown: string | null;
+  duration: string | null;
   video_chapters: unknown;
   is_draft: boolean | null;
   is_deleted: boolean | null;
@@ -139,6 +142,8 @@ function importStatusFromContent(
     lessonTitle?: string;
     lessonId?: string;
     adminLessonHref?: string;
+    /** Prefer this duration label over content/hub when set (e.g. chapter duration). */
+    durationOverride?: string | null;
     /** When false, parent overview body does not count as missing content. */
     trackContent?: boolean;
     /** When false, parent video columns are N/A (video lives in chapters). */
@@ -156,16 +161,25 @@ function importStatusFromContent(
   const trackContent = options?.trackContent ?? true;
   const trackVideo = options?.trackVideo ?? true;
   const hasInAppVideo = Boolean(content?.video_url?.trim());
-  const hasContent = trackContent ? Boolean(content?.body_markdown?.trim()) : true;
+  const hasContent = trackContent
+    ? Boolean(content?.body_markdown?.trim() || content?.guide_markdown?.trim())
+    : true;
   const hasTranscript = Boolean(content?.transcript_text?.trim());
   const legacyExpectsVideo = trackVideo ? lesson.hasVideo : false;
   const missingVideo = trackVideo && legacyExpectsVideo && !hasInAppVideo;
   const missingContent = trackContent && !hasContent;
-  const missingTranscript =
-    trackVideo && (hasInAppVideo || legacyExpectsVideo) && !hasTranscript;
+  // Only a transcript gap when a video exists and has not been transcribed.
+  // Expected-but-missing video is a video issue, not a transcript issue.
+  const missingTranscript = trackVideo && hasInAppVideo && !hasTranscript;
   const videoStatus = trackVideo
     ? lessonVideoImportStatus({ legacyExpectsVideo, hasInAppVideo })
     : "no_video";
+  const durationRaw =
+    options?.durationOverride?.trim() ||
+    content?.duration?.trim() ||
+    lesson.duration?.trim() ||
+    null;
+  const { durationLabel, durationMinutes } = resolveImportDuration(durationRaw);
 
   return {
     lessonId: options?.lessonId ?? lesson.id,
@@ -184,6 +198,8 @@ function importStatusFromContent(
     missingTranscript,
     isDraft: isDraftLesson(lesson.draft, content),
     adminLessonHref: options?.adminLessonHref ?? "",
+    durationLabel,
+    durationMinutes,
   };
 }
 
@@ -207,17 +223,27 @@ function rowFromChapter(
 
   if (!hasResolvableContent) return null;
 
+  const hasChapterVideo = Boolean(directVideo || sourceVideo);
+  // Chapter time comes only from the chapter / source lesson — never the parent
+  // (parent duration is the sum of chapter times).
+  const chapterDuration =
+    chapter.duration?.trim() || sourceContent?.duration?.trim() || null;
+
   const pseudoLesson: HubLesson = {
     ...parentLesson,
     id: chapter.source_lesson_id ?? `${parentLesson.id}#${chapter.id}`,
     title: chapter.title,
-    hasVideo: Boolean(directVideo || sourceVideo || parentLesson.hasVideo),
+    // Chapters are video steps: missing video is a real gap, not inherited N/A.
+    hasVideo: true,
+    duration: undefined,
   };
 
   const content: ContentRow | undefined = sourceContent
     ? {
         ...sourceContent,
         video_url: directVideo ?? sourceContent.video_url,
+        // Avoid parent fall-through; only this chapter's own duration counts.
+        duration: chapterDuration,
       }
     : directVideo
       ? {
@@ -227,6 +253,7 @@ function rowFromChapter(
           body_markdown: null,
           transcript_text: null,
           guide_markdown: null,
+          duration: chapterDuration,
           video_chapters: null,
           is_draft: null,
           is_deleted: null,
@@ -241,10 +268,16 @@ function rowFromChapter(
     lessonTitle: chapter.title,
     lessonId: chapter.source_lesson_id ?? `${parentLesson.id}#${chapter.id}`,
     adminLessonHref: `${adminBasePath}/${course.id}/${parentLesson.id}?chapter=${encodeURIComponent(chapter.id)}`,
+    // Only show time when this chapter actually has a video.
+    durationOverride: hasChapterVideo ? chapterDuration : null,
   });
 
   return {
     ...base,
+    // No video → no time (don't keep a duration label from stray source data).
+    ...(hasChapterVideo
+      ? {}
+      : { durationLabel: null, durationMinutes: 0 }),
     isDraft: isDraftLesson(undefined, content),
     courseId: course.id,
     courseTitle: course.title,
@@ -299,12 +332,26 @@ function rowFromLesson(
   const base = importStatusFromContent(lesson, content, {
     kind: isChaptered ? "chaptered" : "single",
     adminLessonHref: `${adminBasePath}/${course.id}/${lesson.id}`,
-    trackContent: true,
+    // Overview lives in chapters / related for chaptered lessons.
+    trackContent: !isChaptered,
     trackVideo: !isChaptered,
   });
 
+  // Chaptered parents roll up time from chapters that have video (+ duration).
+  let durationLabel = base.durationLabel;
+  let durationMinutes = base.durationMinutes;
+  if (isChaptered) {
+    durationMinutes = chapterChildren.reduce(
+      (sum, child) => sum + (child.durationMinutes || 0),
+      0,
+    );
+    durationLabel = formatImportDurationMinutes(durationMinutes);
+  }
+
   return {
     ...base,
+    durationLabel,
+    durationMinutes,
     courseId: course.id,
     courseTitle: course.title,
     sectionTitle,
@@ -349,7 +396,7 @@ export async function loadLessonImportStatusReport(
   const { data: contentRows, error: contentError } = await supabaseAdmin
     .from("academy_lesson_content")
     .select(
-      "course_id, lesson_id, video_url, body_markdown, transcript_text, guide_markdown, video_chapters, is_draft, is_deleted",
+      "course_id, lesson_id, video_url, body_markdown, transcript_text, guide_markdown, duration, video_chapters, is_draft, is_deleted",
     );
 
   if (contentError) {
@@ -372,6 +419,10 @@ export async function loadLessonImportStatusReport(
   }
 
   const flatLessons = flattenLessonImportRows(lessons);
+  const totalDurationMinutes = lessons.reduce(
+    (sum, row) => sum + (row.durationMinutes || 0),
+    0,
+  );
 
   const summary = {
     lessonCount: flatLessons.length,
@@ -392,6 +443,8 @@ export async function loadLessonImportStatusReport(
     ).length,
     draftCount: flatLessons.filter((l) => l.isDraft).length,
     publishedCount: flatLessons.filter((l) => !l.isDraft).length,
+    totalDurationMinutes,
+    totalDurationLabel: formatImportDurationMinutes(totalDurationMinutes),
   };
 
   const { data: snap } = await supabaseAdmin

@@ -2,6 +2,7 @@
 
 import type { DashboardSidebarVariant } from "./DashboardSidebar";
 import { DashboardTopActions } from "./DashboardTopActions";
+import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
 
 type MobileDashboardTopBarProps = {
   variant: DashboardSidebarVariant;
@@ -13,7 +14,7 @@ type MobileDashboardTopBarProps = {
   } | null;
 };
 
-/** Fixed top bar on mobile: notifications only (account lives in bottom nav). */
+/** Fixed top bar on mobile: search + notifications (account lives in bottom nav). */
 export function MobileDashboardTopBar({
   variant,
   signingOut,
@@ -22,7 +23,11 @@ export function MobileDashboardTopBar({
 }: MobileDashboardTopBarProps) {
   return (
     <div className="md:hidden">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-end px-3 pt-[max(0.375rem,env(safe-area-inset-top))]">
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex justify-end gap-2 px-3 pt-[max(0.375rem,env(safe-area-inset-top))]">
+        <SearchTopBarTrigger
+          className="pointer-events-auto shrink-0"
+          compactNavigate
+        />
         <DashboardTopActions
           variant={variant}
           signingOut={signingOut}

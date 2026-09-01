@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalendarClock, Pin, Vote } from "lucide-react";
+import { SearchHighlight } from "@/components/search/SearchHighlight";
 import { displayNameFromProfile } from "@/lib/communityProfile";
 import { MentionBody } from "@/components/community/MentionBody";
 import { toggleCommunityPostLike } from "@/lib/communityPostLike";
@@ -27,6 +28,10 @@ type Props = {
     postId: string,
     patch: (post: CommunityPostRow) => Partial<CommunityPostRow>
   ) => void;
+  /** Sanitized `<mark>` HTML from search headlines. */
+  titleHighlightHtml?: string | null;
+  bodyHighlightHtml?: string | null;
+  children?: ReactNode;
 };
 
 export function PostCard({
@@ -35,6 +40,9 @@ export function PostCard({
   feedCardHasBeenRead,
   onOpen,
   onPostLocalUpdate,
+  titleHighlightHtml,
+  bodyHighlightHtml,
+  children,
 }: Props) {
   const authorName = post.author
     ? displayNameFromProfile(post.author)
@@ -198,10 +206,12 @@ export function PostCard({
       <div className="mt-3 flex w-full min-w-0 gap-3">
         <div className={`min-w-0 flex-1 ${post.media.length > 0 ? "pr-2" : ""}`}>
           <h2 className="line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900">
-            {post.title}
+            <SearchHighlight html={titleHighlightHtml} fallback={post.title} />
           </h2>
           <div className="mt-0.5 line-clamp-2 text-base leading-relaxed text-slate-600">
-            {previewBody ? (
+            {bodyHighlightHtml ? (
+              <SearchHighlight html={bodyHighlightHtml} />
+            ) : previewBody ? (
               <MentionBody
                 body={previewBody}
                 nameById={feedMentionNameById}
@@ -240,6 +250,7 @@ export function PostCard({
           </div>
         ) : null}
       </div>
+      {children}
     </article>
   );
 }

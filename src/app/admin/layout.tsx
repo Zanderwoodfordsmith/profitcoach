@@ -13,6 +13,7 @@ import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
 import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
+import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
@@ -129,6 +130,7 @@ export default function AdminLayout({
               {bossWorkshopPage && workshopTopRightSlot ? (
                 <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
               ) : null}
+              <SearchTopBarTrigger className="shrink-0" />
               <DashboardTopActions
                 variant="admin"
                 signingOut={signingOut}

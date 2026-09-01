@@ -134,11 +134,13 @@ export function AdminAcademyImportUnmatchedTable({
   }, [catalogOrder, lessonsByKey]);
 
   const [overrides, setOverrides] = useState(initialOverrides);
+  const [rows, setRows] = useState(unmatched);
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("pending");
   const [draftLessons, setDraftLessons] = useState<Record<string, string>>({});
   const [useSuggested, setUseSuggested] = useState<Record<string, boolean>>({});
   const [busyPath, setBusyPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const overrideByPath = useMemo(() => {
     const map = new Map<string, AcademyImportOverride>();
@@ -148,9 +150,9 @@ export function AdminAcademyImportUnmatchedTable({
 
   const unmatchedKindByPath = useMemo(() => {
     const map = new Map<string, MediaGroupKind>();
-    for (const row of unmatched) map.set(row.relativePath, row.kind);
+    for (const row of rows) map.set(row.relativePath, row.kind);
     return map;
-  }, [unmatched]);
+  }, [rows]);
 
   /** Lessons already linked to another pending file (per video vs transcript). */
   const linkedLessonKeysByKind = useMemo(() => {
@@ -168,7 +170,7 @@ export function AdminAcademyImportUnmatchedTable({
 
   const suggestedByPath = useMemo(() => {
     const map: Record<string, string> = {};
-    for (const row of unmatched) {
+    for (const row of rows) {
       let suggested = resolveSuggestedPick(row, lessonTitles);
       const reserved =
         row.kind === "video"
@@ -178,11 +180,11 @@ export function AdminAcademyImportUnmatchedTable({
       map[row.relativePath] = suggested;
     }
     return map;
-  }, [unmatched, lessonTitles, linkedLessonKeysByKind]);
+  }, [rows, lessonTitles, linkedLessonKeysByKind]);
 
   const sortedRows = useMemo(
-    () => [...unmatched].sort((a, b) => b.bestScore - a.bestScore),
-    [unmatched]
+    () => [...rows].sort((a, b) => b.bestScore - a.bestScore),
+    [rows]
   );
 
   const filteredRows = useMemo(() => {
@@ -292,6 +294,7 @@ export function AdminAcademyImportUnmatchedTable({
   async function clearLink(relativePath: string) {
     setBusyPath(relativePath);
     setError(null);
+    setNotice(null);
     try {
       const res = await authFetch("/api/admin/academy/import/overrides", {
         method: "DELETE",
@@ -307,7 +310,44 @@ export function AdminAcademyImportUnmatchedTable({
     }
   }
 
-  if (unmatched.length === 0) {
+  async function deleteFile(row: UnmatchedRow) {
+    const file = formatDriveImportFileDisplay(row.relativePath);
+    const confirmed = window.confirm(
+      `Delete “${file.title}” from Drive and remove it from this list?\n\nThis cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setBusyPath(row.relativePath);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await authFetch("/api/admin/academy/import/unmatched", {
+        method: "DELETE",
+        body: JSON.stringify({ relativePath: row.relativePath }),
+      });
+      const payload = (await res.json()) as {
+        error?: string;
+        deletedFromDisk?: boolean;
+        diskMessage?: string | null;
+      };
+      if (!res.ok) throw new Error(payload.error ?? "Failed to delete file");
+      setRows((prev) => prev.filter((item) => item.relativePath !== row.relativePath));
+      setOverrides((prev) => prev.filter((o) => o.relativePath !== row.relativePath));
+      setNotice(
+        payload.deletedFromDisk
+          ? `Deleted “${file.title}”.`
+          : `Removed “${file.title}” from the list${
+              payload.diskMessage ? ` (${payload.diskMessage})` : ""
+            }.`
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete file");
+    } finally {
+      setBusyPath(null);
+    }
+  }
+
+  if (rows.length === 0) {
     return (
       <p className="mt-4 text-sm text-emerald-700">No unmatched Drive files in the last import run.</p>
     );
@@ -318,7 +358,7 @@ export function AdminAcademyImportUnmatchedTable({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-slate-600">
-            {unmatched.length} unmatched files
+            {rows.length} unmatched files
             {snapshotUpdatedAt
               ? ` · snapshot ${new Date(snapshotUpdatedAt).toLocaleString()}`
               : null}
@@ -342,10 +382,10 @@ export function AdminAcademyImportUnmatchedTable({
               }`}
             >
               {key === "pending"
-                ? `Pending (${unmatched.length - linkedCount})`
+                ? `Pending (${rows.length - linkedCount})`
                 : key === "linked"
                   ? `Linked (${linkedCount})`
-                  : `All (${unmatched.length})`}
+                  : `All (${rows.length})`}
             </button>
           ))}
         </div>
@@ -366,6 +406,12 @@ export function AdminAcademyImportUnmatchedTable({
         </p>
       ) : null}
 
+      {notice ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          {notice}
+        </p>
+      ) : null}
+
       <div className="overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full table-fixed divide-y divide-slate-200 text-sm">
           <colgroup>
@@ -373,7 +419,7 @@ export function AdminAcademyImportUnmatchedTable({
             <col className="w-[24%]" />
             <col className="w-[36%]" />
             <col className="w-[5.5rem]" />
-            <col className="w-[6.5rem]" />
+            <col className="w-[9rem]" />
           </colgroup>
           <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
             <tr>
@@ -550,27 +596,38 @@ export function AdminAcademyImportUnmatchedTable({
                         )}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2.5 text-right">
-                        {linked ? (
+                        <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                          {linked ? (
+                            <button
+                              type="button"
+                              onClick={() => void clearLink(row.relativePath)}
+                              disabled={isBusy}
+                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              Clear
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => void saveLink(row)}
+                              disabled={isBusy || !canLink}
+                              className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
+                            >
+                              <Check className="h-3 w-3" aria-hidden />
+                              {isBusy ? "…" : "Link"}
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => void clearLink(row.relativePath)}
+                            onClick={() => void deleteFile(row)}
                             disabled={isBusy}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                            title="Delete this Drive file"
                           >
                             <Trash2 className="h-3 w-3" aria-hidden />
-                            Clear
+                            Delete
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => void saveLink(row)}
-                            disabled={isBusy || !canLink}
-                            className="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-2 py-1 text-[10px] font-semibold text-white hover:bg-sky-500 disabled:opacity-50"
-                          >
-                            <Check className="h-3 w-3" aria-hidden />
-                            {isBusy ? "…" : "Link"}
-                          </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   );

@@ -38,6 +38,7 @@
     "import-academy-bodies": "npx tsx scripts/import-academy-lesson-bodies-from-docs.ts --apply",
     "dedupe-academy-resources": "npx tsx scripts/dedupe-academy-resources.ts",
     "clean-academy-transcripts": "npx tsx scripts/clean-academy-transcript-speakers.ts",
+    "test:happy-scribe": "npx tsx scripts/test-happy-scribe.ts",
     "normalize-academy-lessons:dry-run": "npx tsx scripts/normalize-academy-lesson-markdown.ts --dry-run",
     "normalize-academy-lessons": "npx tsx scripts/normalize-academy-lesson-markdown.ts --apply",
     "import-community-posts": "npx tsx scripts/import-community-posts-from-csv.ts",

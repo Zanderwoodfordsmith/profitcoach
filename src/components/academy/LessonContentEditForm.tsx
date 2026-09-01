@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, type FormEvent, type ReactNode } from "react";
 import { FileUp, Headphones, Upload, X } from "lucide-react";
 
 import { LessonFeaturedMedia } from "@/components/academy/LessonFeaturedMedia";
@@ -52,7 +52,14 @@ type Props = {
   uploading: boolean;
   onUploadingChange: (value: boolean) => void;
   onError: (message: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: FormEvent) => void;
+  /**
+   * Chapter/step copy only — hide video, audio, duration, and action items.
+   * Used when editing a consolidated lesson's nested step.
+   */
+  copyOnly?: boolean;
+  /** Optional control rendered under the title (e.g. step picker). */
+  headerExtra?: ReactNode;
 };
 
 export function LessonContentEditForm({
@@ -78,6 +85,8 @@ export function LessonContentEditForm({
   onUploadingChange,
   onError,
   onSubmit,
+  copyOnly = false,
+  headerExtra,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -211,97 +220,102 @@ export function LessonContentEditForm({
             className="min-w-0 flex-1 border-0 bg-transparent p-0 text-xl font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 md:text-2xl"
           />
         </div>
+        {headerExtra ? <div className="mt-4">{headerExtra}</div> : null}
       </header>
 
-      <LessonFeaturedMedia
-        videoUrl={videoUrl}
-        onVideoUrlChange={onVideoUrlChange}
-        uploading={uploading}
-        onUploadFile={(file) => void handleVideoUpload(file)}
-      />
+      {!copyOnly ? (
+        <>
+          <LessonFeaturedMedia
+            videoUrl={videoUrl}
+            onVideoUrlChange={onVideoUrlChange}
+            uploading={uploading}
+            onUploadFile={(file) => void handleVideoUpload(file)}
+          />
 
-      <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-              <Headphones className="h-4 w-4 text-slate-500" aria-hidden />
-              Listen audio
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Optional MP3 shown under the video for on-the-go listening.
+          <div className="mb-8 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <Headphones className="h-4 w-4 text-slate-500" aria-hidden />
+                  Listen audio
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Optional MP3 shown under the video for on-the-go listening.
+                </p>
+              </div>
+              {trimmedAudio ? (
+                <button
+                  type="button"
+                  onClick={() => onAudioUrlChange("")}
+                  className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-100"
+                  aria-label="Remove audio"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+            {trimmedAudio ? (
+              <audio className="mt-3 w-full" controls preload="metadata" src={trimmedAudio} />
+            ) : null}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() => audioInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+              >
+                <Upload className="h-3.5 w-3.5" aria-hidden />
+                {uploading
+                  ? "Uploading…"
+                  : trimmedAudio
+                    ? "Replace audio"
+                    : "Upload MP3"}
+              </button>
+              <input
+                type="url"
+                value={audioUrl}
+                onChange={(e) => onAudioUrlChange(e.target.value)}
+                placeholder="Or paste an audio URL"
+                className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+              />
+            </div>
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg"
+              className="sr-only"
+              disabled={uploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleAudioUpload(file);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          <div className="mb-8 max-w-xs">
+            <label
+              htmlFor={`${formId}-duration`}
+              className="block text-sm font-medium text-slate-700"
+            >
+              Duration
+            </label>
+            <input
+              id={`${formId}-duration`}
+              type="text"
+              value={duration}
+              onChange={(e) => onDurationChange(e.target.value)}
+              placeholder="e.g. 6m"
+              className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Shown next to the lesson in the course sidebar. Use minutes like{" "}
+              <span className="font-medium text-slate-600">6m</span> or{" "}
+              <span className="font-medium text-slate-600">1h 5m</span>.
             </p>
           </div>
-          {trimmedAudio ? (
-            <button
-              type="button"
-              onClick={() => onAudioUrlChange("")}
-              className="rounded-full border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-100"
-              aria-label="Remove audio"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-        {trimmedAudio ? (
-          <audio className="mt-3 w-full" controls preload="metadata" src={trimmedAudio} />
-        ) : null}
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={uploading}
-            onClick={() => audioInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
-          >
-            <Upload className="h-3.5 w-3.5" aria-hidden />
-            {uploading
-              ? "Uploading…"
-              : trimmedAudio
-                ? "Replace audio"
-                : "Upload MP3"}
-          </button>
-          <input
-            type="url"
-            value={audioUrl}
-            onChange={(e) => onAudioUrlChange(e.target.value)}
-            placeholder="Or paste an audio URL"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-          />
-        </div>
-        <input
-          ref={audioInputRef}
-          type="file"
-          accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/ogg,.mp3,.m4a,.aac,.wav,.ogg"
-          className="sr-only"
-          disabled={uploading}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void handleAudioUpload(file);
-            e.target.value = "";
-          }}
-        />
-      </div>
-
-      <div className="mb-8 max-w-xs">
-        <label
-          htmlFor={`${formId}-duration`}
-          className="block text-sm font-medium text-slate-700"
-        >
-          Duration
-        </label>
-        <input
-          id={`${formId}-duration`}
-          type="text"
-          value={duration}
-          onChange={(e) => onDurationChange(e.target.value)}
-          placeholder="e.g. 6m"
-          className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-        />
-        <p className="mt-1.5 text-xs text-slate-500">
-          Shown next to the lesson in the course sidebar. Use minutes like{" "}
-          <span className="font-medium text-slate-600">6m</span> or{" "}
-          <span className="font-medium text-slate-600">1h 5m</span>.
-        </p>
-      </div>
+        </>
+      ) : null}
 
       <LessonTabBar
         tabs={tabs}
@@ -345,19 +359,21 @@ export function LessonContentEditForm({
             images with the Image button, drag-and-drop, or Cmd/Ctrl+V.
           </p>
 
-          <div className="mt-8 border-t border-slate-200/80 pt-6">
-            <div className="mb-4">
-              <p className="text-sm font-semibold text-slate-900">Action items</p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                Shown beside the Overview. Use checklist for self-reported steps,
-                or tracked when the system can verify the coach did it.
-              </p>
+          {!copyOnly ? (
+            <div className="mt-8 border-t border-slate-200/80 pt-6">
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-slate-900">Action items</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Shown beside the Overview. Use checklist for self-reported steps,
+                  or tracked when the system can verify the coach did it.
+                </p>
+              </div>
+              <LessonRecommendedActionsEditor
+                actions={recommendedActions}
+                onChange={onRecommendedActionsChange}
+              />
             </div>
-            <LessonRecommendedActionsEditor
-              actions={recommendedActions}
-              onChange={onRecommendedActionsChange}
-            />
-          </div>
+          ) : null}
         </div>
       ) : (
         <div className="pt-6">

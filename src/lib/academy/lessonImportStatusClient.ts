@@ -43,6 +43,10 @@ export type LessonImportStatusRow = {
   /** True when Classroom treats this lesson as draft (admins only). */
   isDraft: boolean;
   adminLessonHref: string;
+  /** Compact duration label (`6m`, `1h 5m`) when known. */
+  durationLabel: string | null;
+  /** Parsed minutes for aggregation; 0 when unknown. */
+  durationMinutes: number;
 };
 
 export type LessonImportStatusSummary = {
@@ -60,6 +64,9 @@ export type LessonImportStatusSummary = {
   readyCount: number;
   draftCount: number;
   publishedCount: number;
+  /** Sum of hub-lesson durations (chaptered parents use rolled-up chapter time). */
+  totalDurationMinutes: number;
+  totalDurationLabel: string | null;
 };
 
 export type LessonImportFilter =
@@ -114,6 +121,9 @@ export type LessonImportSectionGroup = {
   lessonCount: number;
   /** Column tallies for visible lessons in this module + nested children. */
   columnTallies: LessonImportColumnTallies;
+  /** Sum of hub-lesson durations in this module + nested children. */
+  durationMinutes: number;
+  durationLabel: string | null;
 };
 
 export type LessonImportCourseGroup = {
@@ -123,6 +133,8 @@ export type LessonImportCourseGroup = {
   lessonCount: number;
   gapCount: number;
   columnTallies: LessonImportColumnTallies;
+  durationMinutes: number;
+  durationLabel: string | null;
 };
 
 export type LessonImportStatusReport = {
@@ -132,6 +144,46 @@ export type LessonImportStatusReport = {
   summary: LessonImportStatusSummary;
   snapshotUpdatedAt: string | null;
 };
+
+/** Parse hub/DB duration strings like `23m`, `1h 5m`, `(15m)` into minutes. */
+export function parseImportDurationMinutes(raw: string | null | undefined): number {
+  if (!raw) return 0;
+  const t = raw.trim().replace(/^\(|\)$/g, "").trim().toLowerCase();
+  if (!t) return 0;
+  const hm = t.match(
+    /^(\d+(?:\.\d+)?)\s*h(?:r|rs|our|ours)?\s*(\d+(?:\.\d+)?)?\s*m(?:in(?:ute)?s?)?$/,
+  );
+  if (hm) {
+    return Number(hm[1]) * 60 + (hm[2] ? Number(hm[2]) : 0);
+  }
+  const hoursOnly = t.match(/^(\d+(?:\.\d+)?)\s*h(?:r|rs|our|ours)?$/);
+  if (hoursOnly) return Number(hoursOnly[1]) * 60;
+  const mins = t.match(/^(\d+(?:\.\d+)?)\s*m(?:in(?:ute)?s?)?$/);
+  if (mins) return Number(mins[1]);
+  const bare = Number(t);
+  return Number.isFinite(bare) ? bare : 0;
+}
+
+/** Format total minutes as `45m` or `1h 16m`. */
+export function formatImportDurationMinutes(totalMinutes: number): string | null {
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) return null;
+  const rounded = Math.round(totalMinutes);
+  if (rounded < 60) return `${rounded}m`;
+  const h = Math.floor(rounded / 60);
+  const m = rounded % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+export function resolveImportDuration(raw: string | null | undefined): {
+  durationLabel: string | null;
+  durationMinutes: number;
+} {
+  const durationMinutes = parseImportDurationMinutes(raw);
+  return {
+    durationMinutes,
+    durationLabel: formatImportDurationMinutes(durationMinutes),
+  };
+}
 
 function rowMatchesImportFilterSelf(
   row: LessonImportStatusRow,
@@ -208,7 +260,7 @@ export function addLessonColumnTallies(
     if (tallyRow.videoStatus === "video_ready") tallies.video.ok += 1;
     else if (tallyRow.videoStatus === "video_missing") tallies.video.missing += 1;
 
-    if (tallyRow.legacyExpectsVideo || tallyRow.hasInAppVideo) {
+    if (tallyRow.hasInAppVideo) {
       if (tallyRow.hasTranscript) tallies.transcript.ok += 1;
       else tallies.transcript.missing += 1;
     }
@@ -250,6 +302,11 @@ function talliesFromLessons(lessons: LessonImportStatusRow[]): LessonImportColum
   return tallies;
 }
 
+/** Hub-lesson duration only (chaptered parents already roll up chapter time). */
+function durationMinutesFromHubLessons(lessons: LessonImportStatusRow[]): number {
+  return lessons.reduce((sum, row) => sum + (row.durationMinutes || 0), 0);
+}
+
 function buildSectionGroup(
   courseId: string,
   section: LessonImportCatalogSection,
@@ -281,6 +338,10 @@ function buildSectionGroup(
     columnTallies = mergeColumnTallies(columnTallies, child.columnTallies);
   }
 
+  const durationMinutes =
+    durationMinutesFromHubLessons(lessons) +
+    childSections.reduce((n, s) => n + s.durationMinutes, 0);
+
   return {
     sectionId: section.id,
     sectionTitle: section.title,
@@ -291,6 +352,8 @@ function buildSectionGroup(
     gapCount: directGapCount + nestedGapCount,
     lessonCount: visibleImportRowCount(lessons) + nestedLessonCount,
     columnTallies,
+    durationMinutes,
+    durationLabel: formatImportDurationMinutes(durationMinutes),
   };
 }
 
@@ -315,6 +378,7 @@ export function buildOrderedCourseGroups(
     }
     if (sections.length === 0) continue;
 
+    const durationMinutes = sections.reduce((n, s) => n + s.durationMinutes, 0);
     result.push({
       courseId: hubCourse.id,
       courseTitle: hubCourse.title,
@@ -325,6 +389,8 @@ export function buildOrderedCourseGroups(
         (acc, s) => mergeColumnTallies(acc, s.columnTallies),
         emptyColumnTallies(),
       ),
+      durationMinutes,
+      durationLabel: formatImportDurationMinutes(durationMinutes),
     });
   }
 

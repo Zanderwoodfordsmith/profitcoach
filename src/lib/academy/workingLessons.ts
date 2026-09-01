@@ -100,7 +100,7 @@ Offer variants. Let them choose.`,
   {
     id: "outreach-messages",
     title: "First Campaign Messages",
-    classroomLessonId: "get-calls-connector-launch-your-connector-campaign",
+    classroomLessonId: "get-calls-lead-generation-get-started-with-connector",
     kind: "sketch",
     introTitle: "Five messages, one conversation",
     introBody:

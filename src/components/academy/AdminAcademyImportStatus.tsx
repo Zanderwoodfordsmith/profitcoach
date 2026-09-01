@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, ChevronDown, Minus, X } from "lucide-react";
 
 import type { AcademyImportSnapshotReport } from "@/lib/academy/academyImportSnapshot";
 import type { AcademyImportOverride } from "@/lib/academy/academyImportOverrides";
-import type { AcademyBodyImportReportRow } from "@/lib/academy/bodyImportReport";
 import { AdminAcademyImportUnmatchedTable } from "@/components/academy/AdminAcademyImportUnmatchedTable";
 import {
   buildOrderedCourseGroups,
@@ -26,19 +25,14 @@ type Props = {
   snapshot: AcademyImportSnapshotReport | null;
   snapshotUpdatedAt: string | null;
   importOverrides: AcademyImportOverride[];
-  bodyImportUnresolved: AcademyBodyImportReportRow[];
-  bodyImportReportFile: string | null;
-  bodyImportTotalRows: number;
 };
 
 type ImportCellState = "ok" | "missing" | "na";
+type OverallStatus = "ready" | "gaps" | "partial";
 
+/** Lesson | Time | Status | Content | Video | Transcript */
 const STATUS_COLS =
-  "grid-cols-[minmax(0,1fr)_5.5rem_6rem_6rem_6rem] sm:grid-cols-[minmax(0,1fr)_6rem_7rem_7rem_7rem]";
-
-function bodyRowKey(row: AcademyBodyImportReportRow): string {
-  return `${row.sourceFile}:${row.sourceLine}:${row.title}`;
-}
+  "grid-cols-[minmax(0,1fr)_3.25rem_7rem_4.25rem_3.5rem_4.75rem] sm:grid-cols-[minmax(0,1fr)_3.75rem_8rem_4.75rem_4rem_5.25rem]";
 
 function lessonExpandKey(row: LessonImportStatusRow): string {
   return `${row.courseId}:${row.lessonId}`;
@@ -79,14 +73,14 @@ function ImportStatusCell({
   }
   if (state === "ok") {
     return (
-      <span className="inline-flex justify-center text-emerald-600" title={`${label} ready`}>
+      <span className="inline-flex justify-center text-emerald-700" title={`${label} ready`}>
         <Check className="h-4 w-4" strokeWidth={2.5} aria-hidden />
         <span className="sr-only">{label} ready</span>
       </span>
     );
   }
   return (
-    <span className="inline-flex justify-center text-rose-600" title={`${label} missing`}>
+    <span className="inline-flex justify-center text-rose-700" title={`${label} missing`}>
       <X className="h-4 w-4" strokeWidth={2.5} aria-hidden />
       <span className="sr-only">{label} missing</span>
     </span>
@@ -106,13 +100,75 @@ function lessonStatusStates(row: LessonImportStatusRow): {
         : row.videoStatus === "video_missing"
           ? "missing"
           : "na",
-    transcript:
-      row.legacyExpectsVideo || row.hasInAppVideo
-        ? row.hasTranscript
-          ? "ok"
-          : "missing"
-        : "na",
+    transcript: row.hasInAppVideo
+      ? row.hasTranscript
+        ? "ok"
+        : "missing"
+      : "na",
   };
+}
+
+function overallStatusFromStates(states: {
+  content: ImportCellState;
+  video: ImportCellState;
+  transcript: ImportCellState;
+}): OverallStatus {
+  const tracked = [states.content, states.video, states.transcript].filter(
+    (s) => s !== "na",
+  );
+  if (tracked.length === 0) return "ready";
+  const missing = tracked.filter((s) => s === "missing").length;
+  if (missing === 0) return "ready";
+  if (missing === tracked.length) return "gaps";
+  return "partial";
+}
+
+function OverallStatusChip({ status }: { status: OverallStatus }) {
+  if (status === "ready") {
+    return (
+      <span className="inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+        Ready
+      </span>
+    );
+  }
+  if (status === "gaps") {
+    return (
+      <span className="inline-flex rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-800 ring-1 ring-inset ring-rose-200/80">
+        Gaps
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900 ring-1 ring-inset ring-amber-200/80">
+      Partial
+    </span>
+  );
+}
+
+function PublishBadge({ isDraft }: { isDraft: boolean }) {
+  if (isDraft) {
+    return (
+      <span className="inline-flex rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-900 ring-1 ring-inset ring-amber-200/80">
+        Draft
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+      Live
+    </span>
+  );
+}
+
+function TimeCell({ label }: { label: string | null }) {
+  if (!label) {
+    return <span className="text-center text-xs tabular-nums text-slate-300">—</span>;
+  }
+  return (
+    <span className="text-center text-xs font-medium tabular-nums text-slate-600">
+      {label}
+    </span>
+  );
 }
 
 function ColumnTallyCell({
@@ -133,31 +189,31 @@ function ColumnTallyCell({
 
   return (
     <span
-      className="inline-flex items-center justify-center gap-1.5 text-xs font-medium tabular-nums"
+      className="inline-flex items-center justify-center gap-1 text-xs font-medium tabular-nums"
       title={`${label}: ${tally.ok} ready, ${tally.missing} missing`}
     >
       {tally.ok > 0 ? (
-        <span className="inline-flex items-center gap-0.5 text-emerald-600">
+        <span className="inline-flex items-center gap-0.5 text-emerald-700">
           <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
           {tally.ok}
-          <span className="sr-only">{label} ready</span>
         </span>
       ) : null}
       {tally.missing > 0 ? (
-        <span className="inline-flex items-center gap-0.5 text-rose-600">
+        <span className="inline-flex items-center gap-0.5 text-rose-700">
           <X className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
           {tally.missing}
-          <span className="sr-only">{label} missing</span>
         </span>
       ) : null}
+      <span className="sr-only">
+        {label}: {tally.ok} ready, {tally.missing} missing
+      </span>
     </span>
   );
 }
 
-function GroupColumnTallies({ tallies }: { tallies: LessonImportColumnTallies }) {
+function GroupStatusSummary({ tallies }: { tallies: LessonImportColumnTallies }) {
   return (
     <>
-      <span aria-hidden />
       <div className="flex justify-center">
         <ColumnTallyCell tally={tallies.content} label="Content" />
       </div>
@@ -171,29 +227,44 @@ function GroupColumnTallies({ tallies }: { tallies: LessonImportColumnTallies })
   );
 }
 
-function Scorecard({
+function FilterScorecard({
   label,
   value,
+  active,
   tone = "neutral",
+  onClick,
 }: {
   label: string;
-  value: number;
+  value: number | string;
+  active: boolean;
   tone?: "neutral" | "good" | "warn" | "bad";
+  onClick: () => void;
 }) {
   const valueClass =
     tone === "good"
-      ? "text-emerald-700"
+      ? "text-emerald-800"
       : tone === "warn"
-        ? "text-amber-700"
+        ? "text-amber-900"
         : tone === "bad"
-          ? "text-rose-700"
+          ? "text-rose-800"
           : "text-slate-900";
 
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`min-w-0 rounded-xl border px-4 py-3 text-left shadow-sm transition ${
+        active
+          ? "border-sky-400 bg-sky-50 ring-2 ring-sky-200/80"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+      }`}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        {label}
+      </p>
       <p className={`mt-1 text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
-    </div>
+    </button>
   );
 }
 
@@ -244,24 +315,31 @@ function LessonKindBadge({ row }: { row: LessonImportStatusRow }) {
   );
 }
 
+function metaLessonCount(count: number): string {
+  return `${count} lesson${count === 1 ? "" : "s"}`;
+}
+
 function TableStatusHeader() {
   return (
     <div
       className={`grid ${STATUS_COLS} items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2`}
     >
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
         Lesson
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        Type
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        Time
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+        Status
+      </span>
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
         Content
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
         Video
       </span>
-      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+      <span className="text-center text-[11px] font-semibold uppercase tracking-wide text-slate-600">
         Transcript
       </span>
     </div>
@@ -280,6 +358,7 @@ function LessonStatusRow({
   toggleNestedLesson: (key: string) => void;
 }) {
   const states = lessonStatusStates(row);
+  const overall = overallStatusFromStates(states);
   const childDepth = depth + 1;
   const hasChildren = Boolean(row.children?.length);
   const expandKey = lessonExpandKey(row);
@@ -300,7 +379,11 @@ function LessonStatusRow({
               onClick={() => toggleNestedLesson(expandKey)}
               className="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
               aria-expanded={open}
-              aria-label={open ? "Collapse chapters and related items" : "Expand chapters and related items"}
+              aria-label={
+                open
+                  ? "Collapse chapters and related items"
+                  : "Expand chapters and related items"
+              }
             >
               <ChevronDown
                 className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
@@ -312,32 +395,18 @@ function LessonStatusRow({
           )}
           <Link
             href={row.adminLessonHref}
-            className="min-w-0 truncate text-sm text-slate-700 hover:text-sky-800"
+            className="min-w-0 truncate text-sm text-slate-800 hover:text-sky-800"
           >
             {row.lessonTitle}
           </Link>
-          {row.kind === "chaptered" && row.chapterCount ? (
-            <span className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400">
-              {row.chapterCount} chapters
-            </span>
-          ) : null}
-          {row.satelliteCount ? (
-            <span className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400">
-              {row.satelliteCount} related
-            </span>
-          ) : null}
-          {row.isDraft ? (
-            <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 ring-1 ring-inset ring-amber-200/80">
-              Draft
-            </span>
-          ) : row.kind !== "chapter" ? (
-            <span className="shrink-0 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
-              Published
-            </span>
-          ) : null}
+          <LessonKindBadge row={row} />
         </div>
         <div className="flex justify-center">
-          <LessonKindBadge row={row} />
+          <TimeCell label={row.durationLabel} />
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-1">
+          <OverallStatusChip status={overall} />
+          {row.kind !== "chapter" ? <PublishBadge isDraft={row.isDraft} /> : null}
         </div>
         <div className="flex justify-center">
           <ImportStatusCell state={states.content} label="Content" />
@@ -410,19 +479,23 @@ function SectionTree({
           <span
             className={
               isRule
-                ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500"
+                ? "text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600"
                 : depth === 0
                   ? "text-sm font-semibold text-slate-800"
                   : "text-sm font-medium text-slate-700"
             }
           >
             {section.sectionTitle}
-            <span className="ml-1.5 font-normal tabular-nums text-slate-400">
-              ({section.lessonCount})
+            <span className="ml-1.5 font-normal tabular-nums text-slate-500">
+              ({metaLessonCount(section.lessonCount)})
             </span>
           </span>
         </span>
-        <GroupColumnTallies tallies={section.columnTallies} />
+        <div className="flex justify-center">
+          <TimeCell label={section.durationLabel} />
+        </div>
+        <span aria-hidden />
+        <GroupStatusSummary tallies={section.columnTallies} />
       </button>
 
       {open ? (
@@ -458,19 +531,17 @@ export function AdminAcademyImportStatus({
   snapshot,
   snapshotUpdatedAt,
   importOverrides,
-  bodyImportUnresolved,
-  bodyImportReportFile,
-  bodyImportTotalRows,
 }: Props) {
   const [filter, setFilter] = useState<LessonImportFilter>("all");
   const [courseFilter, setCourseFilter] = useState<string>("all");
   const [openCourses, setOpenCourses] = useState<Set<string>>(() => new Set());
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
   const [openNestedLessons, setOpenNestedLessons] = useState<Set<string>>(() => new Set());
+  const [driveOpen, setDriveOpen] = useState(false);
 
   const courses = useMemo(
     () => status.catalogOrder.courses.map((c) => [c.id, c.title] as const),
-    [status.catalogOrder]
+    [status.catalogOrder],
   );
 
   const courseGroups = useMemo(() => {
@@ -484,6 +555,15 @@ export function AdminAcademyImportStatus({
     [courseGroups],
   );
 
+  const filteredDurationLabel = useMemo(() => {
+    const minutes = courseGroups.reduce((n, c) => n + c.durationMinutes, 0);
+    if (minutes <= 0) return null;
+    if (minutes < 60) return `${Math.round(minutes)}m`;
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes) % 60;
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  }, [courseGroups]);
+
   const lessonTitles = useMemo(() => {
     const titles: Record<string, string> = {};
     for (const row of flattenLessonImportRows(status.lessons)) {
@@ -491,114 +571,20 @@ export function AdminAcademyImportStatus({
     }
     return titles;
   }, [status.lessons]);
-  const lessonKeyByLessonId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const row of flattenLessonImportRows(status.lessons)) {
-      const key = `${row.courseId}:${row.lessonId}`;
-      if (!map.has(row.lessonId)) map.set(row.lessonId, key);
-    }
-    return map;
-  }, [status.lessons]);
-  const lessonOptionGroups = useMemo(() => {
-    const byCourse = new Map<string, { label: string; options: Array<{ key: string; title: string }> }>();
-    for (const course of status.catalogOrder.courses) {
-      byCourse.set(course.id, { label: course.title, options: [] });
-    }
-    for (const row of flattenLessonImportRows(status.lessons)) {
-      const group = byCourse.get(row.courseId);
-      if (!group) continue;
-      const prefix =
-        row.kind === "chapter"
-          ? "Chapter · "
-          : row.kind === "satellite"
-            ? "Related · "
-            : "";
-      group.options.push({
-        key: `${row.courseId}:${row.lessonId}`,
-        title: `${prefix}${row.lessonTitle}`,
-      });
-    }
-    return Array.from(byCourse.values()).filter((g) => g.options.length > 0);
-  }, [status.catalogOrder.courses, status.lessons]);
-  const bodyReviewStorageKey = useMemo(
-    () => `academy-body-import-review:${bodyImportReportFile ?? "latest"}`,
-    [bodyImportReportFile]
-  );
-  const defaultBodySelections = useMemo(() => {
-    const out: Record<string, string> = {};
-    for (const row of bodyImportUnresolved) {
-      const key = bodyRowKey(row);
-      if (row.target?.courseId && row.target?.lessonId) {
-        out[key] = `${row.target.courseId}:${row.target.lessonId}`;
-        continue;
-      }
-      const firstCandidateLessonId = row.candidates?.[0]?.lessonId;
-      if (!firstCandidateLessonId) continue;
-      const found = lessonKeyByLessonId.get(firstCandidateLessonId);
-      if (found) out[key] = found;
-    }
-    return out;
-  }, [bodyImportUnresolved, lessonKeyByLessonId]);
-  const [bodySelections, setBodySelections] = useState<
-    Record<string, { lessonKey: string; confirmed: boolean }>
-  >(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const raw = window.localStorage.getItem(bodyReviewStorageKey);
-        if (raw) {
-          return JSON.parse(raw) as Record<string, { lessonKey: string; confirmed: boolean }>;
-        }
-      } catch {
-        // Ignore malformed/blocked localStorage and fall back to defaults.
-      }
-    }
-    const seeded: Record<string, { lessonKey: string; confirmed: boolean }> = {};
-    for (const [rowKey, lessonKey] of Object.entries(defaultBodySelections)) {
-      seeded[rowKey] = { lessonKey, confirmed: false };
-    }
-    return seeded;
-  });
-  const [copiedOverrides, setCopiedOverrides] = useState(false);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(bodyReviewStorageKey, JSON.stringify(bodySelections));
-    } catch {
-      // Ignore localStorage write errors.
-    }
-  }, [bodyReviewStorageKey, bodySelections]);
+  const gapsCount = useMemo(
+    () =>
+      flattenLessonImportRows(status.lessons).filter(
+        (row) => row.missingVideo || row.missingContent || row.missingTranscript,
+      ).length,
+    [status.lessons],
+  );
 
   const { summary } = status;
   const unmatched = snapshot?.unmatched ?? [];
   const ambiguous = snapshot?.ambiguous ?? [];
   const oversized = snapshot?.oversizedVideos ?? [];
   const importErrors = snapshot?.errors ?? [];
-  const confirmedBodyCount = useMemo(
-    () => Object.values(bodySelections).filter((s) => s.confirmed && s.lessonKey).length,
-    [bodySelections]
-  );
-
-  async function copyConfirmedBodyOverrides() {
-    const titles: Record<string, { courseId: string; lessonId: string }> = {};
-    for (const row of bodyImportUnresolved) {
-      const rowKey = bodyRowKey(row);
-      const state = bodySelections[rowKey];
-      if (!state?.confirmed || !state.lessonKey) continue;
-      const [courseId, ...rest] = state.lessonKey.split(":");
-      const lessonId = rest.join(":");
-      if (!courseId || !lessonId) continue;
-      titles[row.title] = { courseId, lessonId };
-    }
-
-    const payload = {
-      _README:
-        "Paste into scripts/academy-lesson-body-overrides.json under `titles` (merge keys).",
-      titles,
-    };
-    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
-    setCopiedOverrides(true);
-    window.setTimeout(() => setCopiedOverrides(false), 1800);
-  }
 
   function toggleCourse(courseId: string) {
     setOpenCourses((prev) => {
@@ -649,32 +635,49 @@ export function AdminAcademyImportStatus({
 
   return (
     <div className="w-full max-w-[110rem] space-y-8 pb-12">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-10">
-        <Scorecard label="All items" value={summary.lessonCount} />
-        <Scorecard label="Hub lessons" value={summary.hubLessonCount} />
-        <Scorecard label="Chaptered" value={summary.chapteredLessonCount} tone="neutral" />
-        <Scorecard label="Chapters" value={summary.chapterStepCount} />
-        <Scorecard label="Related" value={summary.satelliteCount} />
-        <Scorecard label="Published" value={summary.publishedCount} tone="good" />
-        <Scorecard label="Draft" value={summary.draftCount} tone="warn" />
-        <Scorecard label="Ready" value={summary.readyCount} tone="good" />
-        <Scorecard label="Missing video" value={summary.missingVideoCount} tone="bad" />
-        <Scorecard label="Missing content" value={summary.missingContentCount} tone="warn" />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <FilterScorecard
+          label="All"
+          value={summary.hubLessonCount}
+          active={filter === "all"}
+          onClick={() => setFilter("all")}
+        />
+        <FilterScorecard
+          label="Gaps"
+          value={gapsCount}
+          active={filter === "gaps"}
+          tone="bad"
+          onClick={() => setFilter("gaps")}
+        />
+        <FilterScorecard
+          label="Missing video"
+          value={summary.missingVideoCount}
+          active={filter === "missingVideo"}
+          tone="bad"
+          onClick={() => setFilter("missingVideo")}
+        />
+        <FilterScorecard
+          label="Missing content"
+          value={summary.missingContentCount}
+          active={filter === "missingContent"}
+          tone="warn"
+          onClick={() => setFilter("missingContent")}
+        />
+        <FilterScorecard
+          label="Missing transcript"
+          value={summary.missingTranscriptCount}
+          active={filter === "missingTranscript"}
+          tone="warn"
+          onClick={() => setFilter("missingTranscript")}
+        />
+        <FilterScorecard
+          label="Draft"
+          value={summary.draftCount}
+          active={filter === "draft"}
+          tone="warn"
+          onClick={() => setFilter("draft")}
+        />
       </div>
-
-      <p className="text-xs text-slate-500">
-        Hub lessons are the main catalogue entries. Chapters are sequential steps inside a chaptered
-        lesson. Related items are optional satellites shown under the Related tab.
-      </p>
-
-      <p className="text-xs text-slate-500">
-        <Check className="mr-1 inline h-3.5 w-3.5 text-emerald-600" aria-hidden />
-        ready ·
-        <X className="mx-1 inline h-3.5 w-3.5 text-rose-600" aria-hidden />
-        missing ·
-        <Minus className="mx-1 inline h-3.5 w-3.5 text-slate-300" aria-hidden />
-        not applicable
-      </p>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4">
@@ -729,7 +732,10 @@ export function AdminAcademyImportStatus({
           >
             Collapse all
           </button>
-          <p className="ml-auto text-sm text-slate-500">{filteredLessonCount} lessons</p>
+          <p className="ml-auto text-sm text-slate-600">
+            {filteredLessonCount} shown
+            {filteredDurationLabel ? ` · ${filteredDurationLabel}` : ""}
+          </p>
         </div>
 
         <TableStatusHeader />
@@ -754,12 +760,16 @@ export function AdminAcademyImportStatus({
                     />
                     <span className="font-semibold text-slate-900">
                       {course.courseTitle}
-                      <span className="ml-1.5 font-normal tabular-nums text-slate-400">
-                        ({course.lessonCount})
+                      <span className="ml-1.5 font-normal tabular-nums text-slate-500">
+                        ({metaLessonCount(course.lessonCount)})
                       </span>
                     </span>
                   </span>
-                  <GroupColumnTallies tallies={course.columnTallies} />
+                  <div className="flex justify-center">
+                    <TimeCell label={course.durationLabel} />
+                  </div>
+                  <span aria-hidden />
+                  <GroupStatusSummary tallies={course.columnTallies} />
                 </button>
 
                 {courseOpen ? (
@@ -787,213 +797,122 @@ export function AdminAcademyImportStatus({
         ) : null}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Drive files not matched to a lesson</h2>
-        {!snapshot ? (
-          <p className="mt-4 text-sm text-slate-500">
-            No snapshot yet. After{" "}
-            <code className="text-xs">import-academy-lessons-from-drive-folder.ts --apply</code>, unmatched
-            files appear here.
-          </p>
-        ) : (
-          <>
-            <AdminAcademyImportUnmatchedTable
-              unmatched={unmatched}
-              initialOverrides={importOverrides}
-              catalogOrder={status.catalogOrder}
-              lessons={status.lessons}
-              lessonTitles={lessonTitles}
-              snapshotUpdatedAt={snapshotUpdatedAt}
-            />
-
-            {(ambiguous.length > 0 || oversized.length > 0 || importErrors.length > 0) && (
-              <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
-                {ambiguous.length > 0 ? (
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Ambiguous ({ambiguous.length})
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Re-run import with <code className="text-xs">--include-ambiguous</code> or confirm
-                      links above.
-                    </p>
-                  </div>
-                ) : null}
-
-                {oversized.length > 0 ? (
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Too large ({oversized.length})
-                    </h3>
-                    <ul className="mt-2 space-y-1 text-sm text-slate-700">
-                      {oversized.map((o) => (
-                        <li key={o.videoPath}>
-                          {o.lessonTitle}: {o.sizeMb}MB (max {o.maxMb}MB) — {o.videoPath}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-
-                {importErrors.length > 0 ? (
-                  <div>
-                    <h3 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      <X className="h-3.5 w-3.5 text-rose-600" aria-hidden />
-                      Errors ({importErrors.length})
-                    </h3>
-                    <ul className="mt-2 space-y-1 text-sm text-rose-800">
-                      {importErrors.map((e) => (
-                        <li key={`${e.relativePath}:${e.message}`}>
-                          {e.relativePath}: {e.message}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <button
+          type="button"
+          onClick={() => setDriveOpen((open) => !open)}
+          className="flex w-full items-center gap-3 px-5 py-4 text-left hover:bg-slate-50/80"
+          aria-expanded={driveOpen}
+        >
+          <ChevronDown
+            className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+              driveOpen ? "rotate-180" : ""
+            }`}
+            aria-hidden
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-slate-900">
+              Drive files not matched to a lesson
+            </span>
+            <span className="mt-0.5 block text-xs text-slate-600">
+              Leftover import files to link or ignore
+            </span>
+          </span>
+          <span className="inline-flex items-center gap-2">
+            {unmatched.length > 0 ? (
+              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-rose-800 ring-1 ring-inset ring-rose-200/80">
+                {unmatched.length} unmatched
+              </span>
+            ) : (
+              <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+                Clear
+              </span>
             )}
-          </>
-        )}
-      </div>
+            {ambiguous.length > 0 ? (
+              <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-amber-900 ring-1 ring-inset ring-amber-200/80">
+                {ambiguous.length} ambiguous
+              </span>
+            ) : null}
+            {importErrors.length > 0 ? (
+              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-rose-800 ring-1 ring-inset ring-rose-200/80">
+                {importErrors.length} errors
+              </span>
+            ) : null}
+          </span>
+        </button>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Lesson body docs needing manual mapping</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Ambiguous/unmatched lesson titles from the doc-body import run.
-        </p>
-        {bodyImportReportFile ? (
-          <p className="mt-2 text-xs text-slate-500">
-            Source report: <code className="text-xs">{`reports/${bodyImportReportFile}`}</code> (
-            {bodyImportTotalRows} rows)
-          </p>
-        ) : (
-          <p className="mt-2 text-xs text-slate-500">No body import report found in reports/ yet.</p>
-        )}
-
-        <p className="mt-2 text-xs text-slate-500">
-          Pick a lesson, then tick confirm. Confirmed selections are tracked locally and can be copied
-          as overrides JSON.
-        </p>
-
-        {bodyImportUnresolved.length === 0 ? (
-          <p className="mt-4 text-sm text-emerald-700">No unresolved body-import rows.</p>
-        ) : (
-          <div className="mt-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-              <p className="text-xs text-slate-600">
-                {confirmedBodyCount} of {bodyImportUnresolved.length} confirmed
+        {driveOpen ? (
+          <div className="border-t border-slate-100 px-5 pb-5 pt-4">
+            {!snapshot ? (
+              <p className="text-sm text-slate-500">
+                No snapshot yet. After{" "}
+                <code className="text-xs">
+                  import-academy-lessons-from-drive-folder.ts --apply
+                </code>
+                , unmatched files appear here.
               </p>
-              <button
-                type="button"
-                onClick={() => void copyConfirmedBodyOverrides()}
-                disabled={confirmedBodyCount === 0}
-                className="rounded-md bg-sky-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {copiedOverrides ? "Copied" : "Copy confirmed overrides JSON"}
-              </button>
-            </div>
+            ) : (
+              <>
+                <AdminAcademyImportUnmatchedTable
+                  unmatched={unmatched}
+                  initialOverrides={importOverrides}
+                  catalogOrder={status.catalogOrder}
+                  lessons={status.lessons}
+                  lessonTitles={lessonTitles}
+                  snapshotUpdatedAt={snapshotUpdatedAt}
+                />
 
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="px-3 py-2.5">Confirm</th>
-                    <th className="px-3 py-2.5">Kind</th>
-                    <th className="px-3 py-2.5">Score</th>
-                    <th className="px-3 py-2.5">Doc title</th>
-                    <th className="px-3 py-2.5">Lesson selection</th>
-                    <th className="px-3 py-2.5">Candidates</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {bodyImportUnresolved.map((row) => (
-                    <tr key={`${row.sourceFile}:${row.sourceLine}:${row.title}`} className="align-top">
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-slate-300 text-sky-600"
-                          checked={Boolean(bodySelections[bodyRowKey(row)]?.confirmed)}
-                          onChange={(e) => {
-                            const rowKey = bodyRowKey(row);
-                            setBodySelections((prev) => ({
-                              ...prev,
-                              [rowKey]: {
-                                lessonKey: prev[rowKey]?.lessonKey ?? defaultBodySelections[rowKey] ?? "",
-                                confirmed: e.target.checked,
-                              },
-                            }));
-                          }}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5">
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            row.kind === "ambiguous"
-                              ? "bg-amber-50 text-amber-900"
-                              : "bg-rose-50 text-rose-800"
-                          }`}
-                        >
-                          {row.kind}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-slate-700">
-                        {Math.round(row.score * 100)}%
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <p className="font-medium text-slate-900">{row.title}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {row.sourceFile}:{row.sourceLine}
+                {(ambiguous.length > 0 || oversized.length > 0 || importErrors.length > 0) && (
+                  <div className="mt-8 space-y-6 border-t border-slate-100 pt-6">
+                    {ambiguous.length > 0 ? (
+                      <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          Ambiguous ({ambiguous.length})
+                        </h3>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Re-run import with{" "}
+                          <code className="text-xs">--include-ambiguous</code> or confirm links
+                          above.
                         </p>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <select
-                          value={
-                            bodySelections[bodyRowKey(row)]?.lessonKey ??
-                            defaultBodySelections[bodyRowKey(row)] ??
-                            ""
-                          }
-                          onChange={(e) => {
-                            const rowKey = bodyRowKey(row);
-                            setBodySelections((prev) => ({
-                              ...prev,
-                              [rowKey]: {
-                                lessonKey: e.target.value,
-                                confirmed: false,
-                              },
-                            }));
-                          }}
-                          className="w-full min-w-[18rem] rounded-lg border border-slate-200 px-2 py-1.5 text-xs"
-                        >
-                          <option value="">Select lesson…</option>
-                          {lessonOptionGroups.map((group) => (
-                            <optgroup key={group.label} label={group.label}>
-                              {group.options.map((option) => (
-                                <option key={option.key} value={option.key}>
-                                  {option.title}
-                                </option>
-                              ))}
-                            </optgroup>
+                      </div>
+                    ) : null}
+
+                    {oversized.length > 0 ? (
+                      <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          Too large ({oversized.length})
+                        </h3>
+                        <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                          {oversized.map((o) => (
+                            <li key={o.videoPath}>
+                              {o.lessonTitle}: {o.sizeMb}MB (max {o.maxMb}MB) — {o.videoPath}
+                            </li>
                           ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-700">
-                        {row.candidates?.length ? (
-                          row.candidates.map((c) => (
-                            <p key={`${row.title}:${c.lessonId}`}>
-                              {Math.round(c.score * 100)}% · <code>{c.lessonId}</code>
-                            </p>
-                          ))
-                        ) : (
-                          <span className="text-slate-400">No candidate</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {importErrors.length > 0 ? (
+                      <div>
+                        <h3 className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          <X className="h-3.5 w-3.5 text-rose-700" aria-hidden />
+                          Errors ({importErrors.length})
+                        </h3>
+                        <ul className="mt-2 space-y-1 text-sm text-rose-800">
+                          {importErrors.map((e) => (
+                            <li key={`${e.relativePath}:${e.message}`}>
+                              {e.relativePath}: {e.message}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+              </>
+            )}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
