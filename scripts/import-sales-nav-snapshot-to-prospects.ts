@@ -22,6 +22,7 @@ import {
   type ProspectLeadrocksEnrichment,
 } from "../src/lib/prospects/matchLeadrocksLead";
 import {
+  canonicalLinkedInProfileUrl,
   normalizePublicLinkedInUrl,
   samePersonNameCompany,
 } from "../src/lib/salesNavigator/leadIdentity";
@@ -230,7 +231,9 @@ async function main() {
     const batch = snapshot.slice(i, i + BATCH_SIZE);
     for (const lead of batch) {
       const linkedinRaw = lead.linkedinUrl?.trim();
-      const linkedinUrl = normalizeLinkedInProfileUrl(linkedinRaw ?? "");
+      const linkedinUrl =
+        canonicalLinkedInProfileUrl(linkedinRaw ?? "") ??
+        normalizeLinkedInProfileUrl(linkedinRaw ?? "");
       const fullName =
         lead.fullName?.trim() ||
         [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim();

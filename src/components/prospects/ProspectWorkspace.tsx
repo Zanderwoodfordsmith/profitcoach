@@ -38,6 +38,7 @@ import type {
   ProspectFieldPatch,
   UpdatedProspectFields,
 } from "@/lib/prospects/updateProspectFields";
+import { canonicalLinkedInProfileUrl } from "@/lib/salesNavigator/linkedinUrl";
 import { splitFullName } from "@/lib/splitFullName";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
@@ -374,7 +375,10 @@ export function ProspectWorkspace({ contactId }: Props) {
                     </div>
                     {prospect.linkedin_url?.trim() ? (
                       <a
-                        href={prospect.linkedin_url.trim()}
+                        href={
+                          canonicalLinkedInProfileUrl(prospect.linkedin_url) ??
+                          prospect.linkedin_url.trim()
+                        }
                         target="_blank"
                         rel="noreferrer"
                         title="Open LinkedIn"

@@ -38,7 +38,9 @@ function pickPrimaryCurrency(
 export function buildCoachPaymentSummary(
   payments: PaymentForBillingKind[]
 ): CoachPaymentSummary {
-  const sorted = [...payments].sort(comparePaidAtDesc);
+  const sorted = [...payments]
+    .filter((payment) => payment.status === "succeeded")
+    .sort(comparePaidAtDesc);
   const totalsByCurrency = new Map<string, number>();
 
   for (const payment of sorted) {

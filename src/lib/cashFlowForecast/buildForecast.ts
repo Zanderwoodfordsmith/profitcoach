@@ -242,17 +242,21 @@ function detectStreams(
     if (installmentPayments.length === 0) continue;
 
     const paidCount = installmentPayments.length;
+    const latest = installmentPayments[paidCount - 1];
     const ongoingAmount = ongoingPlanInstallmentCents(
       installmentPayments.map((p) => p.amount_cents)
     );
-    const installmentCount = inferInstallmentCount(ongoingAmount, paidCount);
+    const installmentCount = inferInstallmentCount(
+      ongoingAmount,
+      paidCount,
+      latest.currency
+    );
 
     if (isOneTimePlanPayment(paidCount, ongoingAmount, installmentCount)) {
       continue;
     }
 
     const remaining = installmentCount - paidCount;
-    const latest = installmentPayments[paidCount - 1];
     const paidIso = latest.paid_at.slice(0, 10);
 
     if (!planIsActive(paidIso, remaining)) continue;

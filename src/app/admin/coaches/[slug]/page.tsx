@@ -42,6 +42,7 @@ import {
   paymentBillingKindLabel,
   type PaymentBillingKind,
 } from "@/lib/paymentBillingKind";
+import { buildCoachBillingOverview } from "@/lib/admin/paymentPlanRemaining";
 import { formatPersonName } from "@/lib/formatPersonName";
 import { LADDER_LEVELS } from "@/lib/ladder";
 import { paymentSourceLabel } from "@/lib/paymentSource";
@@ -150,12 +151,11 @@ function DetailField({
 }
 
 function SetupBadge({ complete, label }: { complete: boolean; label: string }) {
+  const badgeClass = complete
+    ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800"
+    : "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700";
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-        complete ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
-      }`}
-    >
+    <span className={badgeClass}>
       <span aria-hidden>{complete ? "✓" : "—"}</span>
       {label}
     </span>
@@ -358,24 +358,10 @@ export default function AdminCoachDetailPage({
     }));
   }, [coach?.id, payments]);
 
-  const paymentSummary = useMemo(() => {
-    const succeeded = paymentsWithBilling.filter((payment) => payment.status === "succeeded");
-    const totalsByCurrency = new Map<string, number>();
-    for (const payment of succeeded) {
-      const code = payment.currency.toUpperCase();
-      totalsByCurrency.set(
-        code,
-        (totalsByCurrency.get(code) ?? 0) + payment.amount_cents
-      );
-    }
-    return {
-      totalCount: paymentsWithBilling.length,
-      succeededCount: succeeded.length,
-      totalsByCurrency: [...totalsByCurrency.entries()].sort(([a], [b]) =>
-        a.localeCompare(b)
-      ),
-    };
-  }, [paymentsWithBilling]);
+  const paymentSummary = useMemo(
+    () => buildCoachBillingOverview(paymentsWithBilling),
+    [paymentsWithBilling]
+  );
 
   const displayName =
     formatPersonName(coach?.full_name) ||
@@ -834,32 +820,39 @@ export default function AdminCoachDetailPage({
             <div className="space-y-6">
               <SectionCard
                 title="Payment history"
-                description="All payments assigned to this coach, most recent first."
+                description="Successful charges only in the totals. Failed or canceled attempts stay in the list below but do not count."
               >
                 <div className="mb-6 flex flex-wrap gap-4 text-sm">
                   <div className="rounded-xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Total payments
-                    </p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {paymentSummary.totalCount}
-                    </p>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                      Successful
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-600">
+                      Successful payments
                     </p>
                     <p className="mt-1 text-lg font-semibold text-slate-900">
                       {paymentSummary.succeededCount}
                     </p>
                   </div>
-                  {paymentSummary.totalsByCurrency.map(([currency, cents]) => (
+                  {paymentSummary.totalsByCurrency.map(({ currency, cents }) => (
                     <div key={currency} className="rounded-xl bg-emerald-50 px-4 py-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                      <p className="text-xs font-medium uppercase tracking-wide text-emerald-800">
                         Paid ({currency})
                       </p>
-                      <p className="mt-1 text-lg font-semibold text-emerald-900">
+                      <p className="mt-1 text-lg font-semibold text-emerald-950">
                         {formatPaymentMoney(cents, currency)}
+                      </p>
+                    </div>
+                  ))}
+                  {paymentSummary.remainingByCurrency.map((row) => (
+                    <div key={`${row.currency}-left`} className="rounded-xl bg-amber-50 px-4 py-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
+                        Predicted left ({row.currency})
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-amber-950">
+                        {formatPaymentMoney(row.remainingCents, row.currency)}
+                      </p>
+                      <p className="mt-1 text-xs text-amber-900">
+                        {row.installmentsPaid != null && row.installmentCount != null
+                          ? `${row.installmentsPaid} of ${row.installmentCount} on the plan · ${formatPaymentMoney(row.paidCents, row.currency)} of ${formatPaymentMoney(row.expectedCents, row.currency)}`
+                          : `${formatPaymentMoney(row.paidCents, row.currency)} of ${formatPaymentMoney(row.expectedCents, row.currency)} predicted`}
                       </p>
                     </div>
                   ))}

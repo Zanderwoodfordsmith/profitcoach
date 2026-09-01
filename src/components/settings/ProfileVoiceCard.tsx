@@ -238,8 +238,7 @@ export function ProfileVoiceCard({
       description="Record a short sample so AI can speak in your voice for content and coaching tools."
     >
       <p className="mb-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-        Admin preview — coaches cannot see or use this yet. Impersonate a coach
-        (e.g. Pam) to walk through their Profile experience.
+        Admin only — coaches cannot see or use this yet.
       </p>
       {loading ? (
         <p className="py-2 text-sm text-slate-600">Loading voice…</p>

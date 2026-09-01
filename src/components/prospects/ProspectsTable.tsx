@@ -53,6 +53,7 @@ import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } f
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { splitFullName } from "@/lib/splitFullName";
+import { canonicalLinkedInProfileUrl } from "@/lib/salesNavigator/linkedinUrl";
 
 export type { ProspectRow };
 
@@ -343,7 +344,9 @@ function ProspectLeadLinkedInLink({
   row: ProspectRow;
   onAddClick?: (row: ProspectRow) => void;
 }) {
-  const url = row.linkedin_url?.trim();
+  const url =
+    canonicalLinkedInProfileUrl(row.linkedin_url) ??
+    row.linkedin_url?.trim();
 
   if (url) {
     return (

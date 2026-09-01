@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { StickyPageHeader } from "@/components/layout";
+import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
 import {
@@ -353,64 +353,64 @@ export function AdminSupportPage() {
     }
   }
 
-  const headerActions = (
-    <div className="flex flex-wrap items-center gap-2">
-      <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
-        <button
-          type="button"
-          onClick={() => setViewMode("table")}
-          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
-            viewMode === "table"
-              ? "bg-sky-700 text-white"
-              : "text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <Table2 className="h-3.5 w-3.5" aria-hidden />
-          Table
-        </button>
-        <button
-          type="button"
-          onClick={() => setViewMode("cards")}
-          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
-            viewMode === "cards"
-              ? "bg-sky-700 text-white"
-              : "text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
-          Cards
-        </button>
-      </div>
-      <button
-        type="button"
-        onClick={() => setCreateOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
-      >
-        <Plus className="h-4 w-4" aria-hidden />
-        New ticket
-      </button>
-    </div>
-  );
-
   return (
-    <div className="mx-auto w-full max-w-6xl">
-      <StickyPageHeader title="Support" actions={headerActions} />
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {SMART_LISTS.map((list) => (
+    <DashboardPageSection
+      contentMaxWidthClass="max-w-6xl"
+      header={<StickyPageHeader title="Support" />}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {SMART_LISTS.map((list) => (
+            <button
+              key={list}
+              type="button"
+              onClick={() => setSmartList(list)}
+              className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                smartList === list
+                  ? "bg-sky-700 text-white"
+                  : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              {smartListLabel(list)}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+                viewMode === "table"
+                  ? "bg-sky-700 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <Table2 className="h-3.5 w-3.5" aria-hidden />
+              Table
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("cards")}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+                viewMode === "cards"
+                  ? "bg-sky-700 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+              Cards
+            </button>
+          </div>
           <button
-            key={list}
             type="button"
-            onClick={() => setSmartList(list)}
-            className={`rounded-full px-3 py-1.5 text-sm font-medium ${
-              smartList === list
-                ? "bg-sky-700 text-white"
-                : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-            }`}
+            onClick={() => setCreateOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
           >
-            {smartListLabel(list)}
+            <Plus className="h-4 w-4" aria-hidden />
+            New ticket
           </button>
-        ))}
+        </div>
       </div>
 
       {createOpen ? (
@@ -725,7 +725,7 @@ export function AdminSupportPage() {
                           type="button"
                           disabled={saving}
                           onClick={() => void deleteRow(row)}
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                          className="rounded-md p-1.5 text-slate-500 hover:text-rose-700"
                           aria-label="Delete ticket"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -739,6 +739,6 @@ export function AdminSupportPage() {
           </div>
         </div>
       )}
-    </div>
+    </DashboardPageSection>
   );
 }

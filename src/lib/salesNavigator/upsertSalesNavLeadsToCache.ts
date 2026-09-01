@@ -6,6 +6,7 @@
 
 import type { SalesNavImportedLead } from "@/lib/apify/salesNavigatorTypes";
 import {
+  canonicalLinkedInProfileUrl,
   isObfuscatedLinkedInUrl,
   isVanityLinkedInUrl,
   nameCompanyIdentityKey,
@@ -207,10 +208,13 @@ export async function upsertSalesNavLeadsToCache(opts: {
       // Don't clobber a human-readable vanity URL with a Sales Nav member-id
       // URL — keep the vanity URL and stash the member-id form alongside it.
       const incomingLi =
-        normalizePublicLinkedInUrl(lead.linkedinUrl) ??
+        canonicalLinkedInProfileUrl(lead.linkedinUrl) ??
         lead.linkedinUrl?.trim() ??
         null;
-      const existingLi = match.linkedin_url?.trim() || null;
+      const existingLi =
+        canonicalLinkedInProfileUrl(match.linkedin_url) ??
+        match.linkedin_url?.trim() ??
+        null;
       const incomingIsObfuscated = isObfuscatedLinkedInUrl(lead.linkedinUrl);
       const keepExistingVanity =
         incomingIsObfuscated && isVanityLinkedInUrl(existingLi);
@@ -264,7 +268,7 @@ export async function upsertSalesNavLeadsToCache(opts: {
       email: lead.email,
       phone: null,
       linkedin_url:
-        normalizePublicLinkedInUrl(lead.linkedinUrl) ?? lead.linkedinUrl,
+        canonicalLinkedInProfileUrl(lead.linkedinUrl) ?? lead.linkedinUrl,
       company: lead.company,
       location: lead.location,
       team_size: teamSizeFromFilter,
@@ -282,7 +286,7 @@ export async function upsertSalesNavLeadsToCache(opts: {
         last_sales_nav_scrape_at: now,
         last_sales_nav_url: opts.salesNavUrl ?? null,
         sales_nav_member_url: isObfuscatedLinkedInUrl(lead.linkedinUrl)
-          ? normalizePublicLinkedInUrl(lead.linkedinUrl) ??
+          ? canonicalLinkedInProfileUrl(lead.linkedinUrl) ??
             lead.linkedinUrl?.trim() ??
             null
           : null,

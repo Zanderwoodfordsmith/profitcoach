@@ -1,4 +1,5 @@
 import {
+  canonicalLinkedInProfileUrl,
   isObfuscatedLinkedInUrl,
   isVanityLinkedInUrl,
   nameCompanyIdentityKey,
@@ -190,10 +191,13 @@ export function enrichmentPatchFromLeadrocks(
   lead: CacheRow
 ): ProspectLeadrocksEnrichment {
   const incomingLi =
-    normalizePublicLinkedInUrl(contact.linkedin_url) ??
+    canonicalLinkedInProfileUrl(contact.linkedin_url) ??
     contact.linkedin_url?.trim() ??
     null;
-  const existingLi = lead.linkedin_url?.trim() || null;
+  const existingLi =
+    canonicalLinkedInProfileUrl(lead.linkedin_url) ??
+    lead.linkedin_url?.trim() ??
+    null;
   const incomingIsObfuscated = isObfuscatedLinkedInUrl(contact.linkedin_url);
   const keepExistingVanity =
     incomingIsObfuscated && isVanityLinkedInUrl(existingLi);

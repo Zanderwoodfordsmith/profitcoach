@@ -244,6 +244,7 @@ function formatGroupPaymentCount(payments: PaymentRowWithBilling[]): string {
   let recurringCount = 0;
 
   for (const payment of payments) {
+    if (payment.status !== "succeeded") continue;
     if (isRecurringGroupPayment(payment)) {
       recurringCount += 1;
     } else {
@@ -364,7 +365,11 @@ function computeUpfrontSummary(
     for (const [currency, amounts] of installmentAmountsByCurrency) {
       const ongoing = ongoingPlanInstallmentCents(amounts);
       if (ongoing > 0) {
-        const installmentCount = inferInstallmentCount(ongoing, amounts.length);
+        const installmentCount = inferInstallmentCount(
+          ongoing,
+          amounts.length,
+          currency
+        );
         addCentsToCurrencyMap(
           expectedCentsByCurrency,
           currency,
@@ -379,6 +384,7 @@ function computeUpfrontSummary(
 
   if (Object.keys(expectedCentsByCurrency).length === 0) {
     for (const payment of upfrontPayments) {
+      if (payment.status !== "succeeded") continue;
       addCentsToCurrencyMap(
         expectedCentsByCurrency,
         payment.currency,

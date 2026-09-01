@@ -574,8 +574,8 @@ export function BossDashboardSettings({
           }
         />
 
-        {/* Admin-only for now; visible when impersonating so you can QA coach UX (e.g. Pam). */}
-        {variant === "admin" || impersonatingCoachId ? (
+        {/* Admin-only until coaches get voice cloning. Hidden on member Profile, including impersonation. */}
+        {variant === "admin" && !impersonatingCoachId ? (
           <ProfileVoiceCard
             impersonatingCoachId={impersonatingCoachId}
             profileRevision={`${firstName}|${lastName}|${location}|${profile.full_name ?? ""}`}
