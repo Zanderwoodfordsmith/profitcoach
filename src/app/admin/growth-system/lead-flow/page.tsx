@@ -1,5 +1,6 @@
-import { LeadFlowMap } from "@/components/academy/LeadFlowMap";
+import { redirect } from "next/navigation";
 
-export default function AdminLeadFlowPage() {
-  return <LeadFlowMap />;
+/** Vertical lead flow retired — use Classroom → System. */
+export default function AdminLeadFlowRedirectPage() {
+  redirect("/admin/academy/classroom/system");
 }

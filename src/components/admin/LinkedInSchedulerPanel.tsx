@@ -10,12 +10,14 @@ import {
   PenLine,
   RefreshCw,
   Settings2,
+  BarChart3,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { LinkedInCalendarTab } from "./linkedin/LinkedInCalendarTab";
 import { LinkedInComposeTab } from "./linkedin/LinkedInComposeTab";
 import { LinkedInLibraryTab } from "./linkedin/LinkedInLibraryTab";
 import { LinkedInQueueTab } from "./linkedin/LinkedInQueueTab";
+import { LinkedInInsightsTab } from "./linkedin/LinkedInInsightsTab";
 import {
   displayName,
   LI_BLUE,
@@ -24,13 +26,20 @@ import {
   type LinkedInProfilePreview,
 } from "./linkedin/types";
 
-type TabId = "compose" | "queue" | "calendar" | "library" | "settings";
+type TabId =
+  | "compose"
+  | "queue"
+  | "calendar"
+  | "library"
+  | "insights"
+  | "settings";
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
   { id: "compose", label: "Compose", icon: PenLine },
   { id: "queue", label: "Queue", icon: ListTodo },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "library", label: "Library", icon: FolderOpen },
+  { id: "insights", label: "Insights", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings2 },
 ];
 
@@ -204,9 +213,14 @@ export function LinkedInSchedulerPanel() {
     setConnecting(true);
     try {
       const token = await getToken();
-      const res = await fetch("/api/linkedin/connect", {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
+      // Same Unipile LinkedIn connect as Campaigns (one account for content + outreach).
+      const res = await fetch("/api/coach/linkedin-outreach/accounts", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
       });
       const body = (await res.json().catch(() => ({}))) as {
         url?: string;
@@ -327,8 +341,8 @@ export function LinkedInSchedulerPanel() {
           Connect LinkedIn
         </h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
-          Compose posts that look like LinkedIn, schedule a queue, and keep reusable
-          drafts in your library.
+          One LinkedIn connect powers Content and Campaigns. Compose, schedule,
+          and publish from here.
         </p>
         <button
           type="button"
@@ -458,6 +472,13 @@ export function LinkedInSchedulerPanel() {
               setSeed(item);
               setTab("compose");
             }}
+          />
+        ) : null}
+        {tab === "insights" ? (
+          <LinkedInInsightsTab
+            items={items}
+            getToken={getToken}
+            onMessage={onMessage}
           />
         ) : null}
         {tab === "settings" ? (

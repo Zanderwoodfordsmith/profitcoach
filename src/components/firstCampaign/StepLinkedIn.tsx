@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Linkedin, Users2 } from "lucide-react";
+import { Users2 } from "lucide-react";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import {
   AiNote,
   Card,
@@ -241,7 +242,7 @@ export function StepLinkedIn({
               />
             ) : (
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                <Linkedin className="h-6 w-6" />
+                <LinkedInSolidIcon className="h-6 w-6" />
               </div>
             )}
             <div className="min-w-0 flex-1">

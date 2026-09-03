@@ -33,6 +33,8 @@ export type LinkedInScheduledPostRow = {
   article_description: string | null;
   article_thumbnail_url: string | null;
   media: LinkedInMediaItem[];
+  engagement?: Record<string, unknown> | null;
+  engagement_synced_at?: string | null;
 };
 
 export function normalizeMedia(raw: unknown): LinkedInMediaItem[] {

@@ -19,6 +19,18 @@
     {
       "path": "/api/cron/happy-scribe",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/linkedin-outreach",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/linkedin-inbox-sync",
+      "schedule": "0 */2 * * *"
+    },
+    {
+      "path": "/api/cron/messaging-scheduled",
+      "schedule": "* * * * *"
     }
   ]
 }

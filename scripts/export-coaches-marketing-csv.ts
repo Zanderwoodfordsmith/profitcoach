@@ -22,7 +22,7 @@ import {
 } from "../src/lib/profileBioFields";
 import type { CoachAiContext } from "../src/lib/profitCoachAi/types";
 
-const SYSTEM_COACH_SLUGS = new Set(["profit-coach-snapshot"]);
+const SYSTEM_COACH_SLUGS = new Set(["profit-coach-snapshot", "zander-demo"]);
 
 function isSystemCoachSlug(slug: string | null | undefined): boolean {
   if (!slug) return false;

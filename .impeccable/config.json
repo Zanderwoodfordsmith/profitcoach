@@ -52,6 +52,15 @@
         ],
         "createdAt": "2026-09-01T07:53:48.352Z",
         "reason": "Agent: Operate admin editor reuses existing cancel/save/error card patterns (slate on white, rose text on rose-50); gray-on-color false-positives blocked the edit-step fix"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/messaging/MessagingInbox.tsx"
+        ],
+        "createdAt": "2026-09-02T16:08:23.382Z",
+        "reason": "Pre-existing MessagingInbox: dark slate text on light sky/white bubbles and icon buttons; gray-on-color false positive for this established pattern"
       }
     ]
   }

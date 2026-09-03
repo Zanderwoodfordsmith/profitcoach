@@ -6,7 +6,7 @@ export default function AdminLessonImportCurriculumPage() {
   return (
     <div className="flex flex-col gap-6">
       <StickyPageHeader
-        title="Lessons"
+        title="Academy"
         description={
           <span className="text-lg leading-relaxed text-slate-600">
             Outcome titles we are taking. Current lessons we are keeping. Locked

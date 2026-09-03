@@ -871,9 +871,9 @@ function CoachWorkshopPageContent() {
     <div className="flex min-w-0 flex-col gap-6">
       {!(isMinimalChrome && !activeContactId) ? (
         <StickyPageHeader
-          title="Get Clients"
+          title="Coach Clients"
           nowrap
-          tabs={<CoachToolsHubTabs hub="get-clients" />}
+          tabs={<CoachToolsHubTabs hub="coach-clients" />}
           actions={
             sessionToolbar
               ? isMinimalChrome

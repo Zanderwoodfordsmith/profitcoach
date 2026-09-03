@@ -126,8 +126,10 @@ type CoachAiPanelProps = {
   fullscreen: boolean;
   onToggleFullscreen: () => void;
   createHubHref: string;
-  /** When expanded, panel fills the main column — sidebar stays visible. */
+  /** When true, panel fullscreen leaves room for the sidebar chrome. */
   sidebarVisible?: boolean;
+  /** Icon-rail width instead of full labels. */
+  sidebarCollapsed?: boolean;
 };
 
 export function CoachAiPanel({
@@ -136,6 +138,7 @@ export function CoachAiPanel({
   onToggleFullscreen,
   createHubHref,
   sidebarVisible = true,
+  sidebarCollapsed = false,
 }: CoachAiPanelProps) {
   const pathname = usePathname();
   const { impersonatingCoachId } = useImpersonation();
@@ -663,7 +666,11 @@ export function CoachAiPanel({
 
   const panelPositionClass = fullscreen
     ? `fixed z-[95] flex flex-col bg-white inset-y-0 right-0 left-0 max-md:top-14 ${
-        sidebarVisible ? "md:left-56" : ""
+        !sidebarVisible
+          ? ""
+          : sidebarCollapsed
+            ? "md:left-14"
+            : "md:left-56"
       }`
     : `fixed z-[95] flex flex-col border-slate-200 bg-white inset-y-0 right-0 w-full border-l shadow-[-8px_0_24px_-16px_rgba(15,23,42,0.25)] md:top-16 md:w-[28rem] md:rounded-tl-2xl md:border-t`;
 

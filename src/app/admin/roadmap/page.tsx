@@ -20,6 +20,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -333,8 +334,9 @@ export default function AdminRoadmapPage() {
   return (
     <div className="w-full">
       <StickyPageHeader
-        title="Build roadmap"
+        title="Academy"
         description="Done = built and verified. Live = released to coaches. Ask the AI panel to add or update jobs from any screen — jobs marked Members feed the public roadmap later."
+        tabs={<LessonImportTabs />}
       />
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -895,7 +897,7 @@ function JobDetailModal({
               }
             }}
             placeholder="Blocked by… (leave empty if not blocked)"
-            className="mt-3 w-full rounded-lg border border-amber-200/70 bg-amber-50/40 px-3 py-1.5 text-sm text-amber-900 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none"
+            className="mt-3 w-full rounded-lg border border-amber-200/70 bg-amber-50/40 px-3 py-1.5 text-sm text-amber-900 placeholder:text-amber-800/45 focus:border-amber-400 focus:outline-none"
           />
 
           {/* Scope / notes */}

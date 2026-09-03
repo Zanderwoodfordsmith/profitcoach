@@ -19,7 +19,6 @@ import {
   Eye,
   EyeOff,
   Globe,
-  Linkedin,
   Loader2,
   Mail,
   Phone,
@@ -29,6 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { StickyPageHeader } from "@/components/layout";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import { SalesNavResultsPanel } from "@/components/leadFinder/SalesNavResultsPanel";
@@ -712,7 +712,7 @@ function ContactAvailability({
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-slate-700 underline-offset-2 hover:underline"
           >
-            <Linkedin className="h-3 w-3" />
+            <LinkedInSolidIcon className="h-3 w-3" />
             LinkedIn
           </a>
         ) : null}
@@ -736,7 +736,7 @@ function ContactAvailability({
               rel="noreferrer"
               className="inline-flex items-center gap-1 underline-offset-2 hover:underline"
             >
-              <Linkedin className="h-3 w-3" />
+              <LinkedInSolidIcon className="h-3 w-3" />
               LinkedIn
             </a>
           ) : null}
@@ -785,7 +785,7 @@ function ContactAvailability({
               : "bg-slate-50 text-slate-300"
           }`}
         >
-          <Linkedin className="h-3 w-3" />
+          <LinkedInSolidIcon className={`h-3 w-3 ${lead.hasLinkedIn ? "" : "opacity-30"}`} />
         </span>
       </div>
       <button
@@ -829,12 +829,14 @@ export function LeadFinderClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const importRunFromUrl = searchParams.get("importRun")?.trim() || null;
+  const linkedinJustConnected =
+    searchParams.get("linkedin") === "connected";
   const [openImportRunId, setOpenImportRunId] = useState<string | null>(
     () => importRunFromUrl
   );
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [sourceTab, setSourceTab] = useState<SourceTab>(() =>
-    importRunFromUrl ? "sales_nav" : "database"
+    importRunFromUrl || linkedinJustConnected ? "sales_nav" : "database"
   );
   const [jobTitleKeywords, setJobTitleKeywords] = useState<FilterKeyword[]>(
     DEFAULT_JOB_TITLE_KEYWORDS

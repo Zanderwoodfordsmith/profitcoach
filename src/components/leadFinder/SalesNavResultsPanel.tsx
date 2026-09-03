@@ -27,6 +27,9 @@ import { supabaseClient } from "@/lib/supabaseClient";
 
 const COOKIE_STORAGE_KEY = "lead-finder-sales-nav-cookie";
 const URL_OVERRIDE_STORAGE_KEY = "lead-finder-sales-nav-url-override";
+const PROVIDER_STORAGE_KEY = "lead-finder-sales-nav-provider";
+
+type ImportProvider = "apify" | "unipile";
 
 /** How many leads to pull from Sales Nav (25 per Sales Nav search page). */
 const IMPORT_SIZE_OPTIONS = [
@@ -45,6 +48,7 @@ const RESULTS_PAGE_SIZES = [25, 50, 100] as const;
 type ImportStartResponse = {
   jobId?: string;
   status?: string;
+  provider?: ImportProvider;
   takePages?: number;
   targetCount?: number;
   progressCount?: number;
@@ -83,6 +87,7 @@ type ImportPollResponse = {
     segmentIndex?: number;
     segmentTotal?: number;
     segmentLabel?: string | null;
+    provider?: ImportProvider;
   };
 };
 
@@ -114,9 +119,11 @@ type HistoryRun = {
   cacheInserted: number;
   cacheUpdated: number;
   errorMessage?: string | null;
+  provider?: ImportProvider;
 };
 
 const IMPORT_POLL_MS = 25_000;
+const UNIPILE_POLL_MS = 2_000;
 
 type UrlSource = "filters" | "paste";
 
@@ -153,6 +160,9 @@ export function SalesNavResultsPanel({
     string | null
   >(null);
   const [takePages, setTakePages] = useState(4);
+  const [importProvider, setImportProvider] = useState<ImportProvider>("apify");
+  const [unipileConnected, setUnipileConnected] = useState<boolean | null>(null);
+  const [unipileConnecting, setUnipileConnecting] = useState(false);
   const [urlSource, setUrlSource] = useState<UrlSource>("filters");
   const [pastedUrl, setPastedUrl] = useState("");
   const [importName, setImportName] = useState("");
@@ -171,6 +181,7 @@ export function SalesNavResultsPanel({
   const [scrapedCount, setScrapedCount] = useState(0);
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const [lastDurationMs, setLastDurationMs] = useState<number | null>(null);
+  const [lastProvider, setLastProvider] = useState<ImportProvider | null>(null);
   const [resultsPage, setResultsPage] = useState(1);
   const [resultsPageSize, setResultsPageSize] =
     useState<(typeof RESULTS_PAGE_SIZES)[number]>(25);
@@ -216,6 +227,15 @@ export function SalesNavResultsPanel({
         setPastedUrl(storedUrl);
         setUrlSource("paste");
       }
+      const storedProvider = window.sessionStorage.getItem(PROVIDER_STORAGE_KEY);
+      if (storedProvider === "unipile" || storedProvider === "apify") {
+        setImportProvider(storedProvider);
+      }
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("linkedin") === "connected") {
+        setImportProvider("unipile");
+        window.sessionStorage.setItem(PROVIDER_STORAGE_KEY, "unipile");
+      }
     } catch {
       // ignore
     }
@@ -240,6 +260,12 @@ export function SalesNavResultsPanel({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
+
+  useEffect(() => {
+    if (importProvider !== "unipile") return;
+    void refreshUnipileAccount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- provider switch
+  }, [importProvider]);
 
   useEffect(() => {
     if (importNonce > 0) void runImport();
@@ -276,6 +302,74 @@ export function SalesNavResultsPanel({
       }
     } catch {
       // ignore
+    }
+  }
+
+  function persistProvider(next: ImportProvider) {
+    setImportProvider(next);
+    try {
+      window.sessionStorage.setItem(PROVIDER_STORAGE_KEY, next);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function refreshUnipileAccount() {
+    const headers = await authHeaders();
+    if (!headers) {
+      setUnipileConnected(false);
+      return;
+    }
+    try {
+      const res = await fetch("/api/coach/linkedin-outreach/accounts", {
+        headers,
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        accounts?: Array<{ status?: string; unipile_account_id?: string }>;
+      };
+      if (!res.ok) {
+        setUnipileConnected(false);
+        return;
+      }
+      const ok = (body.accounts ?? []).some(
+        (a) => a.status === "OK" && Boolean(a.unipile_account_id)
+      );
+      setUnipileConnected(ok);
+    } catch {
+      setUnipileConnected(false);
+    }
+  }
+
+  async function connectUnipileLinkedIn() {
+    setUnipileConnecting(true);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) {
+        setError("Not signed in.");
+        return;
+      }
+      const res = await fetch("/api/coach/linkedin-outreach/accounts", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          provider: "LINKEDIN",
+          return_to: "lead-finder",
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !body.url) {
+        setError(body.error ?? "Could not start LinkedIn connect.");
+        return;
+      }
+      window.location.href = body.url;
+    } catch {
+      setError("Could not start LinkedIn connect.");
+    } finally {
+      setUnipileConnecting(false);
     }
   }
 
@@ -401,6 +495,7 @@ export function SalesNavResultsPanel({
         ? body.durationMs
         : body.run?.durationMs ?? null
     );
+    setLastProvider(body.run?.provider ?? importProvider);
     if (body.run?.name?.trim()) setImportName(body.run.name.trim());
     if (target != null && delivered < target) {
       setSavedNote(
@@ -460,7 +555,12 @@ export function SalesNavResultsPanel({
     });
     setHistoryOpen(false);
     try {
-      const done = await pollImportJob(jobId, headers, targetCount);
+      const done = await pollImportJob(
+        jobId,
+        headers,
+        targetCount,
+        seed?.run?.provider === "unipile" ? UNIPILE_POLL_MS : IMPORT_POLL_MS
+      );
       if (done === "left") return;
       unwatchSalesNavImport(jobId);
       if (!mountedRef.current) return;
@@ -593,7 +693,8 @@ export function SalesNavResultsPanel({
   async function pollImportJob(
     jobId: string,
     headers: Record<string, string>,
-    targetCount: number
+    targetCount: number,
+    pollMs = IMPORT_POLL_MS
   ): Promise<ImportPollResponse | "left"> {
     const started = Date.now();
     const maxWaitMs = 45 * 60 * 1000;
@@ -639,7 +740,7 @@ export function SalesNavResultsPanel({
         throw new Error(body.error || "Import failed.");
       }
 
-      await new Promise((r) => setTimeout(r, IMPORT_POLL_MS));
+      await new Promise((r) => setTimeout(r, pollMs));
     }
     throw new Error(
       "Import is still running after 45 minutes. Check History later — it continues in the background."
@@ -696,8 +797,11 @@ export function SalesNavResultsPanel({
         save: false,
       };
       if (importName.trim()) payload.name = importName.trim();
-      // Prefer pasted/session cookie; omit so the server can use LINKEDIN_SALES_NAV_COOKIE.
-      if (cookieToUse) payload.cookie = cookieToUse;
+      if (importProvider === "unipile") {
+        payload.provider = "unipile";
+      } else if (cookieToUse) {
+        payload.cookie = cookieToUse;
+      }
 
       const res = await fetch("/api/admin/lead-finder/sales-nav-import", {
         method: "POST",
@@ -710,9 +814,11 @@ export function SalesNavResultsPanel({
         setError(message);
         if (
           res.status === 503 ||
-          /cookie|session|not configured|stale|Cookie-Editor/i.test(message)
+          /cookie|session|not configured|stale|Cookie-Editor|Connect LinkedIn/i.test(
+            message
+          )
         ) {
-          setSettingsOpen(true);
+          if (importProvider === "apify") setSettingsOpen(true);
         }
         return;
       }
@@ -744,7 +850,12 @@ export function SalesNavResultsPanel({
         segmentTotal: body.segmentTotal,
       });
 
-      const done = await pollImportJob(jobId, headers, targetCount);
+      const done = await pollImportJob(
+        jobId,
+        headers,
+        targetCount,
+        body.provider === "unipile" ? UNIPILE_POLL_MS : IMPORT_POLL_MS
+      );
       if (done === "left") {
         // Global toast will finish + notify.
         return;
@@ -849,19 +960,42 @@ export function SalesNavResultsPanel({
             <History className="h-3.5 w-3.5" />
             History
           </button>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
-            title="Sales Navigator session"
-          >
-            <Settings2 className="h-3.5 w-3.5" />
-            {hasAccountSession || hasCookie ? (
-              <span className="text-emerald-700">{sessionLabel}</span>
-            ) : (
-              <span>{sessionLabel}</span>
-            )}
-          </button>
+          {importProvider === "apify" ? (
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+              title="Sales Navigator session"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              {hasAccountSession || hasCookie ? (
+                <span className="text-emerald-700">{sessionLabel}</span>
+              ) : (
+                <span>{sessionLabel}</span>
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={unipileConnecting}
+              onClick={() =>
+                unipileConnected
+                  ? void refreshUnipileAccount()
+                  : void connectUnipileLinkedIn()
+              }
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              title="Unipile LinkedIn account"
+            >
+              {unipileConnecting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : null}
+              {unipileConnected ? (
+                <span className="text-emerald-700">LinkedIn connected</span>
+              ) : (
+                <span>Connect LinkedIn</span>
+              )}
+            </button>
+          )}
           <a
             href={effectiveUrl || salesNavUrl}
             target="_blank"
@@ -873,7 +1007,10 @@ export function SalesNavResultsPanel({
           </a>
           <button
             type="button"
-            disabled={loading}
+            disabled={
+              loading ||
+              (importProvider === "unipile" && unipileConnected === false)
+            }
             onClick={() => void runImport()}
             className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-50"
           >
@@ -923,6 +1060,40 @@ export function SalesNavResultsPanel({
               </button>
             );
           })}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+            Via
+          </span>
+          {(
+            [
+              { id: "apify" as const, label: "Apify" },
+              { id: "unipile" as const, label: "Unipile" },
+            ] as const
+          ).map((opt) => {
+            const on = importProvider === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => persistProvider(opt.id)}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${
+                  on
+                    ? "border border-emerald-300 bg-emerald-100 text-emerald-800"
+                    : "border border-dashed border-slate-300 bg-white text-slate-500 hover:border-slate-400 hover:text-slate-700"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+          <span className="text-xs text-slate-400">
+            {importProvider === "unipile"
+              ? unipileConnected
+                ? "Connected LinkedIn session — same search, no cookie scrape."
+                : "Uses your Unipile LinkedIn account (needs Sales Navigator)."
+              : "Cookie scrape — existing Apify path."}
+          </span>
         </div>
         {urlSource === "paste" ? (
           <label className="mt-2 block">
@@ -1046,7 +1217,8 @@ export function SalesNavResultsPanel({
             </p>
             <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
               Use the left-hand filters, or switch to Paste URL for a Sales Nav
-              link you already built, then Import.
+              link you already built, then Import via Apify or Unipile to
+              compare.
             </p>
           </div>
         ) : leads.length === 0 ? (
@@ -1057,6 +1229,11 @@ export function SalesNavResultsPanel({
               <p className="text-sm font-medium text-slate-800">
                 {scrapedCount.toLocaleString()}{" "}
                 {scrapedCount === 1 ? "person" : "people"}
+                {lastProvider ? (
+                  <span className="ml-2 text-xs font-normal text-slate-400">
+                    via {lastProvider === "unipile" ? "Unipile" : "Apify"}
+                  </span>
+                ) : null}
                 {lastDurationMs != null ? (
                   <span className="ml-2 text-xs font-normal text-slate-400">
                     · {formatImportDuration(lastDurationMs)}
@@ -1218,6 +1395,8 @@ export function SalesNavResultsPanel({
                           new Date(run.createdAt).toLocaleString()}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
+                        {run.provider === "unipile" ? "Unipile" : "Apify"}
+                        {" · "}
                         {run.name?.trim()
                           ? new Date(run.createdAt).toLocaleString() + " · "
                           : ""}
@@ -1408,11 +1587,15 @@ function SalesNavLeadRow({
     .map((s) => s?.trim())
     .filter(Boolean)
     .join(" · ");
+  const about = lead.about?.trim() || lead.headline?.trim() || null;
+  const showAboutToggle = Boolean(about && about.length > 160);
   const photo =
     lead.photoUrl?.trim() ||
-    (typeof lead.raw?.pictureUrl === "string" ? lead.raw.pictureUrl : null);
-  const about = lead.headline?.trim() || null;
-  const showAboutToggle = Boolean(about && about.length > 160);
+    (typeof lead.raw?.pictureUrl === "string" ? lead.raw.pictureUrl : null) ||
+    (typeof lead.raw?.profile_picture_url === "string"
+      ? lead.raw.profile_picture_url
+      : null) ||
+    (typeof lead.raw?.picture_url === "string" ? lead.raw.picture_url : null);
 
   return (
     <li className="flex gap-4 px-4 py-4 sm:px-5">
@@ -1447,6 +1630,11 @@ function SalesNavLeadRow({
           ) : (
             <p className="text-[15px] font-semibold text-slate-900">{name}</p>
           )}
+          {lead.premium ? (
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-amber-700">
+              Premium
+            </span>
+          ) : null}
         </div>
 
         {titleCompany ? (

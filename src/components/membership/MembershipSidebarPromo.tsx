@@ -5,13 +5,31 @@ type MembershipSidebarPromoProps = {
   active?: boolean;
   onNavigate?: () => void;
   className?: string;
+  /** Icon-only for the collapsed desktop rail. */
+  compact?: boolean;
 };
 
 export function MembershipSidebarPromo({
   active = false,
   onNavigate,
   className = "",
+  compact = false,
 }: MembershipSidebarPromoProps) {
+  if (compact) {
+    return (
+      <Link
+        href="/coach/membership#plans"
+        onClick={onNavigate}
+        title="Join Premium"
+        className={`mb-1 flex items-center justify-center rounded-md border border-emerald-300/25 bg-gradient-to-br from-emerald-500/90 to-teal-600/90 p-2 shadow-sm transition hover:brightness-105 ${className}`}
+        aria-current={active ? "page" : undefined}
+        aria-label="Join Premium"
+      >
+        <Sparkles className="h-5 w-5 text-emerald-50" strokeWidth={2.25} aria-hidden />
+      </Link>
+    );
+  }
+
   return (
     <Link
       href="/coach/membership#plans"

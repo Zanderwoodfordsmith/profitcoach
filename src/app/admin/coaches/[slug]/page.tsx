@@ -844,7 +844,7 @@ export default function AdminCoachDetailPage({
                   {paymentSummary.remainingByCurrency.map((row) => (
                     <div key={`${row.currency}-left`} className="rounded-xl bg-amber-50 px-4 py-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-amber-800">
-                        Predicted left ({row.currency})
+                        Remaining ({row.currency})
                       </p>
                       <p className="mt-1 text-lg font-semibold text-amber-950">
                         {formatPaymentMoney(row.remainingCents, row.currency)}
@@ -852,7 +852,7 @@ export default function AdminCoachDetailPage({
                       <p className="mt-1 text-xs text-amber-900">
                         {row.installmentsPaid != null && row.installmentCount != null
                           ? `${row.installmentsPaid} of ${row.installmentCount} on the plan · ${formatPaymentMoney(row.paidCents, row.currency)} of ${formatPaymentMoney(row.expectedCents, row.currency)}`
-                          : `${formatPaymentMoney(row.paidCents, row.currency)} of ${formatPaymentMoney(row.expectedCents, row.currency)} predicted`}
+                          : `${formatPaymentMoney(row.paidCents, row.currency)} of ${formatPaymentMoney(row.expectedCents, row.currency)}`}
                       </p>
                     </div>
                   ))}

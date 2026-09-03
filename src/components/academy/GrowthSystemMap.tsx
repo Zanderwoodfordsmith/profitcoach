@@ -205,10 +205,10 @@ function GrowthSystemSection({
           <div className="flex shrink-0 items-center gap-2 pl-16 lg:pl-0">
             {section.id === "get-calls" ? (
               <Link
-                href="/admin/growth-system/lead-flow"
+                href="/admin/academy/classroom/system"
                 className={`hidden rounded-full px-3.5 py-2 text-sm font-semibold transition hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 sm:inline-flex ${style.accent}`}
               >
-                View lead flow
+                View system map
               </Link>
             ) : null}
             <Link

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { requireAdminBearer } from "@/lib/linkedinAdminAuth";
+import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import {
   isLinkedInDocumentMime,
   isLinkedInVideoMime,
@@ -70,7 +70,7 @@ function extForMime(mime: string, filename?: string): string {
  *   POST JSON { intent: "complete", path, mime, size, filename? }
  */
 export async function POST(request: Request) {
-  const auth = await requireAdminBearer(request);
+  const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
   }

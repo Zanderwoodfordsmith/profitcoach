@@ -12,6 +12,8 @@ import {
 } from "@/lib/salesNavigator/importJob";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+export const maxDuration = 60;
+
 type Ctx = { params: Promise<{ id: string }> };
 
 async function requireOwnedRun(userId: string, id: string) {
@@ -71,6 +73,7 @@ function jobPayload(job: SalesNavImportJobRow) {
       requestedTakePages: job.requested_take_pages ?? job.take_pages ?? null,
       durationMs: job.duration_ms,
       estimatedCostUsd: Number(job.estimated_cost_usd ?? 0),
+      provider: job.provider,
       salesNavUrl: job.sales_nav_url ?? null,
       cacheInserted: job.cache_inserted ?? 0,
       cacheUpdated: job.cache_updated ?? 0,

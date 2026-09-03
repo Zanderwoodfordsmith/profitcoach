@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { ExternalLink, Linkedin } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { ClientMiniCalendar } from "@/components/clients/ClientMiniCalendar";
 import { ClientSessionsList } from "@/components/clients/ClientSessionsList";
 import { ProspectActivityFeed } from "@/components/prospects/ProspectActivityFeed";
@@ -95,7 +96,7 @@ export function ClientOverviewPanel({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
                 >
-                  <Linkedin className="h-3.5 w-3.5 text-sky-700" aria-hidden />
+                  <LinkedInSolidIcon className="h-3.5 w-3.5" />
                   LinkedIn
                 </a>
               ) : null}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminBearer } from "@/lib/linkedinAdminAuth";
+import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 
 export const maxDuration = 30;
 
@@ -48,7 +48,7 @@ function absoluteUrl(base: string, maybeRelative: string | null): string | null 
  * LinkedIn article title/description (API does not scrape).
  */
 export async function POST(request: Request) {
-  const auth = await requireAdminBearer(request);
+  const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
   }

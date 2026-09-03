@@ -119,7 +119,7 @@ function CoachingHubInner() {
         <StickyPageHeader
           title="Coach Clients"
           description="Pick a client to open their coaching workspace."
-          below={<CoachToolsHubTabs hub="coach-clients" />}
+          tabs={<CoachToolsHubTabs hub="coach-clients" />}
         />
 
         {loading ? (

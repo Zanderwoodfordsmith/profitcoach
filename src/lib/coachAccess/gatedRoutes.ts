@@ -81,11 +81,11 @@ export const GATED_ROUTES: GatedRoute[] = [
       "Set up your share links, CRM sync, and funnel landing copy so leads flow into your pipeline.",
   },
   {
-    prefix: "/coach/boss-pro",
+    prefix: "/coach/lead-magnets",
     feature: "nav.marketing",
-    title: "Boss Pro",
+    title: "Lead Magnets",
     description:
-      "Run the BOSS diagnostic for any client to show exactly where the money is and why your fee is justified.",
+      "Share your Boss Score and Boss Score Pro assessment links to attract owners into your funnel.",
   },
   {
     prefix: "/coach/message-generator",
@@ -114,6 +114,13 @@ export const GATED_ROUTES: GatedRoute[] = [
     title: "Playbooks",
     description:
       "Give every client a clear, guided plan they can follow, so your delivery stays consistent and high-value.",
+  },
+  {
+    prefix: "/coach/boss-pro",
+    feature: "nav.delivery",
+    title: "BOSS Score",
+    description:
+      "Run the BOSS diagnostic for any client to show exactly where the money is and why your fee is justified.",
   },
   {
     prefix: "/coach/contacts",

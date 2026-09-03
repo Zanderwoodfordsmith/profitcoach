@@ -40,7 +40,10 @@ export default function AdminLayout({
   }, [pathname]);
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
-  const sidebarVisible = sidebarOpen && !playbooksReader;
+  const conversationsPage = pathname === "/admin/conversations";
+  const sidebarExpanded = sidebarOpen && !playbooksReader;
+  const sidebarMounted = !playbooksReader;
+  const sidebarCollapsed = sidebarMounted && !sidebarOpen;
 
   /**
    * Docked AI panel — pushes the canvas from the right (ClickUp-style).
@@ -67,10 +70,10 @@ export default function AdminLayout({
   };
   const aiPanelDocked = aiPanelAvailable && aiPanelOpen && !aiPanelFullscreen;
 
-  const shellPadClass = `${sidebarVisible ? "md:pl-56" : "pl-0"} ${
-    aiPanelDocked ? "md:pr-[28rem]" : ""
-  } transition-[padding] duration-200`;
-  const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
+  const shellPadClass = `${
+    playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
+  } ${aiPanelDocked ? "md:pr-[28rem]" : ""} transition-[padding] duration-200`;
+  const isMinimalWorkshopChrome = bossWorkshopPage && sidebarCollapsed;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
 
   const bossWorkshopChromeValue = useMemo(
@@ -105,7 +108,9 @@ export default function AdminLayout({
   return (
     <div
       data-ai-docked={aiPanelDocked ? true : undefined}
-      className={`group/appshell min-h-screen ${shellPadClass} text-slate-900 ${
+      className={`group/appshell ${
+        conversationsPage ? "h-dvh overflow-hidden" : "min-h-screen"
+      } ${shellPadClass} text-slate-900 ${
         playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
     >
@@ -159,31 +164,38 @@ export default function AdminLayout({
         )}
         {!playbooksReader ? (
           <BossProNavToggle
-            sidebarVisible={sidebarVisible}
+            expanded={sidebarExpanded}
             onToggle={() => setSidebarOpen((o) => !o)}
           />
         ) : null}
-        {sidebarVisible ? (
+        {sidebarMounted ? (
           <DashboardSidebar
             variant="admin"
+            collapsed={sidebarCollapsed}
             signingOut={signingOut}
             onSignOut={handleSignOut}
           />
         ) : null}
         <main
-          className={`min-h-screen min-w-0 w-full pt-0 ${
-            playbooksReader
-              ? "px-0 pb-10"
-              : `px-4 md:px-[60px] ${
-                  sidebarVisible
+          className={`min-w-0 w-full pt-0 ${
+            conversationsPage
+              ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px] max-md:pt-14"
+              : playbooksReader
+              ? "min-h-screen px-0 pb-10"
+              : `min-h-screen px-4 md:px-[60px] ${
+                  sidebarExpanded
                     ? "max-md:pt-14 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "pb-6"
+                    : "max-md:pt-14 pb-6"
                 }`
           }`}
         >
           <div
             className={`flex w-full min-w-0 flex-col ${
-              playbooksReader ? "gap-0" : "gap-4"
+              conversationsPage
+                ? "h-full min-h-0 gap-0"
+                : playbooksReader
+                  ? "gap-0"
+                  : "gap-4"
             }`}
           >
             {children}
@@ -197,7 +209,8 @@ export default function AdminLayout({
           fullscreen={aiPanelFullscreen}
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
           createHubHref="/admin/message-generator"
-          sidebarVisible={sidebarVisible}
+          sidebarVisible={sidebarMounted}
+          sidebarCollapsed={sidebarCollapsed}
         />
       ) : null}
     </div>

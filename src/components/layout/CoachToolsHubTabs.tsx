@@ -20,13 +20,12 @@ export type CoachToolsHub = "get-clients" | "coach-clients";
 
 type Props = {
   hub: CoachToolsHub;
-  /** When set, coaching tool tabs deep-link to this client’s workspace. */
-  contactId?: string | null;
 };
 
 /**
- * Unreleased tabs: admins on the admin surface see them grey + locked.
- * Coaches — and admins “View as coach” — never see them.
+ * Unreleased tabs: admins on the admin surface always see them (grey + locked).
+ * Coaches — and admins “View as coach” on /coach — never see them.
+ * Impersonation must not hide preview tabs while browsing /admin.
  */
 function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
   const { impersonatingCoachId } = useImpersonation();
@@ -60,7 +59,9 @@ function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
     };
   }, [onAdminPath]);
 
-  return isAdminUser && !impersonatingCoachId;
+  if (!isAdminUser) return false;
+  if (onAdminPath) return true;
+  return !impersonatingCoachId;
 }
 
 function previewTabLabel(label: ReactNode, adminPreview: boolean): ReactNode {
@@ -77,16 +78,14 @@ function previewTabLabel(label: ReactNode, adminPreview: boolean): ReactNode {
 function CoachClientsTabsNav({
   pathname,
   search,
-  contactId,
   showAdminPreview,
 }: {
   pathname: string;
   search: string;
-  contactId?: string | null;
   showAdminPreview: boolean;
 }) {
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
-  const items = coachClientsTabItems(prefix, { contactId }).filter(
+  const items = coachClientsTabItems(prefix).filter(
     (item: CoachClientsTabItem) => showAdminPreview || !item.adminPreview
   );
   return (
@@ -110,7 +109,7 @@ function CoachClientsTabsNav({
   );
 }
 
-function CoachToolsHubTabsInner({ hub, contactId }: Props) {
+function CoachToolsHubTabsInner({ hub }: Props) {
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   const search = searchParams.toString();
@@ -169,7 +168,6 @@ function CoachToolsHubTabsInner({ hub, contactId }: Props) {
     <CoachClientsTabsNav
       pathname={pathname}
       search={search}
-      contactId={contactId}
       showAdminPreview={showAdminPreview}
     />
   );
@@ -194,7 +192,6 @@ export function CoachToolsHubTabs(props: Props) {
           <CoachClientsTabsNav
             pathname={pathname}
             search=""
-            contactId={props.contactId}
             showAdminPreview={fallbackShowAdminPreview}
           />
         }

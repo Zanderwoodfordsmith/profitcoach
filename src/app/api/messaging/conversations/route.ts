@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -27,8 +28,9 @@ export async function GET(request: Request) {
   let q = supabaseAdmin
     .from("messaging_conversations")
     .select(
-      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, last_message_at, created_at, starred, unread_count, last_preview, last_channel"
+      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_business_name, last_message_at, created_at, starred, unread_count, last_preview, last_channel, unipile_chat_id"
     )
+    .is("hidden_at", null)
     .order("last_message_at", { ascending: false })
     .limit(100);
 
@@ -40,5 +42,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load conversations." }, { status: 500 });
   }
 
-  return NextResponse.json({ conversations: data ?? [] });
+  return NextResponse.json({
+    conversations: await enrichMessagingConversationPeople(data ?? []),
+  });
 }

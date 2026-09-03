@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
+  ArrowLeftRight,
   ChevronDown,
   ChevronUp,
   Lock,
@@ -34,6 +35,8 @@ import {
 import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { DEMO_COACH_LABEL, resolveDemoCoachId } from "@/lib/demoCoach";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
 /** Selected nav pill — restrained cooler-blue gradient (between solid sky and full wash). */
@@ -59,6 +62,11 @@ type DashboardSidebarProps = {
   membershipTierEnforcementEnabled?: boolean;
   /** Coach-only: hide Join Premium for members already on Premium/VIP. */
   coachAccessTier?: CoachAccessTier | null;
+  /**
+   * Desktop: icon-only rail. Mobile bottom nav is hidden while collapsed
+   * (workshop / focus mode).
+   */
+  collapsed?: boolean;
 };
 
 function isCommunityCalendarActive(pathname: string | null, communityHref: string) {
@@ -84,14 +92,20 @@ export function DashboardSidebar({
   coachHasFeature,
   membershipTierEnforcementEnabled = false,
   coachAccessTier = null,
+  collapsed = false,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { impersonatingCoachId, setImpersonatingCoachId, clearImpersonation } =
+    useImpersonation();
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const supportHref = `${prefix}/support`;
   const supportActive = Boolean(pathname?.startsWith(supportHref));
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [adminNavExpanded, setAdminNavExpanded] = useState(false);
+  const [demoSwitchBusy, setDemoSwitchBusy] = useState(false);
+  const [demoSwitchError, setDemoSwitchError] = useState<string | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const showAdminSection = variant === "admin";
 
@@ -112,6 +126,10 @@ export function DashboardSidebar({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [accountMenuOpen]);
 
+  useEffect(() => {
+    if (collapsed) setAccountMenuOpen(false);
+  }, [collapsed]);
+
   const toggleAdminNav = () => {
     setAdminNavExpanded((prev) => {
       const next = !prev;
@@ -129,21 +147,64 @@ export function DashboardSidebar({
       ? coachHasFeature
       : () => true;
 
-  const { profileLoading, avatarLabel, avatarImageUrl } =
+  const { profile, profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
+  const isAdmin = profile?.role === "admin";
+  const isImpersonating = Boolean(impersonatingCoachId);
   const newFeedbackCount = useNewFeedbackCount(variant === "admin");
   const coachUnreadSupportCount = useCoachUnreadSupportCount(variant === "coach");
+
+  async function switchToDemoCoach() {
+    if (demoSwitchBusy) return;
+    setDemoSwitchBusy(true);
+    setDemoSwitchError(null);
+    try {
+      const id = await resolveDemoCoachId();
+      if (!id) {
+        setDemoSwitchError(`${DEMO_COACH_LABEL} not found.`);
+        return;
+      }
+      setImpersonatingCoachId(id);
+      setAccountMenuOpen(false);
+      setMobileMoreOpen(false);
+      router.push("/coach");
+    } finally {
+      setDemoSwitchBusy(false);
+    }
+  }
+
+  function switchBackToAdmin() {
+    clearImpersonation();
+    setAccountMenuOpen(false);
+    setMobileMoreOpen(false);
+    setDemoSwitchError(null);
+    router.push("/admin");
+  }
 
   // Soft-gate model: gated items stay visible with a lock badge; clicking
   // through shows the upgrade gate on the page itself.
   const navItemLocked = (feature?: CoachFeature) =>
     feature ? !featureCheck(feature) : false;
-  const lockBadge = (
+  const lockBadge = collapsed ? (
+    <Lock
+      className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-[#0a4274] p-[1px] text-sky-200/80"
+      aria-label="Upgrade to unlock"
+    />
+  ) : (
     <Lock
       className="ml-auto h-3.5 w-3.5 shrink-0 text-sky-200/60"
       aria-label="Upgrade to unlock"
     />
   );
+
+  const navLinkClass = (active: boolean) =>
+    `relative flex items-center rounded-md leading-snug ${
+      collapsed
+        ? "justify-center px-0 py-2.5"
+        : "gap-3 px-4 py-2.5 text-[0.9375rem]"
+    } ${
+      active ? SIDEBAR_NAV_ACTIVE : "text-slate-100/90 hover:bg-white/10"
+    }`;
 
   const mainItems = mainNavItems(prefix);
   const mobilePrimary = mobilePrimaryNavItems(prefix);
@@ -194,6 +255,13 @@ export function DashboardSidebar({
     const count =
       variant === "admin" ? newFeedbackCount : coachUnreadSupportCount;
     if (count <= 0) return null;
+    if (collapsed) {
+      return (
+        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-0.5 text-[9px] font-bold leading-none text-white">
+          {count > 9 ? "9+" : count}
+        </span>
+      );
+    }
     return (
       <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-none text-white">
         {count > 99 ? "99+" : count}
@@ -267,24 +335,48 @@ export function DashboardSidebar({
 
   return (
     <>
-      <aside className="fixed bottom-0 left-0 top-0 z-40 hidden w-56 border-r border-white/10 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] text-white md:flex md:flex-col">
+      <aside
+        className={`fixed bottom-0 left-0 top-0 z-40 hidden border-r border-white/10 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] text-white transition-[width] duration-200 md:flex md:flex-col ${
+          collapsed ? "w-14" : "w-56"
+        }`}
+      >
         {/* Align thick logo pillars (not the thin swoosh tip) with nav icons. */}
-        <div className="shrink-0 pb-4 pl-[9px] pr-4 pt-1.5">
+        <div
+          className={`shrink-0 pb-4 pt-1.5 ${
+            collapsed ? "flex justify-center px-1.5" : "pl-[9px] pr-4"
+          }`}
+        >
           <Link
             href={prefix}
+            title="Profit Coach"
             className="block rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
-            <Image
-              src="/brand/profit-coach-logo-white.svg"
-              alt="Profit Coach"
-              width={352}
-              height={99}
-              className="h-[3.25rem] w-auto max-w-full"
-              priority
-            />
+            {collapsed ? (
+              <Image
+                src="/favicon.png"
+                alt="Profit Coach"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-md"
+                priority
+              />
+            ) : (
+              <Image
+                src="/brand/profit-coach-logo-white.svg"
+                alt="Profit Coach"
+                width={352}
+                height={99}
+                className="h-[3.25rem] w-auto max-w-full"
+                priority
+              />
+            )}
           </Link>
         </div>
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-3">
+        <nav
+          className={`min-h-0 flex-1 overflow-y-auto pb-2 pt-3 ${
+            collapsed ? "px-1.5" : "px-3"
+          }`}
+        >
           <ul className="space-y-0.5">
             {mainItems.map((item) => {
               let active = navLinkActive(pathname, item.href);
@@ -300,24 +392,32 @@ export function DashboardSidebar({
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-3 rounded-md px-4 py-2.5 text-[0.9375rem] leading-snug ${
-                      active
-                        ? SIDEBAR_NAV_ACTIVE
-                        : "text-slate-100/90 hover:bg-white/10"
-                    }`}
+                    title={collapsed ? item.label : undefined}
+                    className={navLinkClass(active)}
                   >
-                    <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                    {item.label}
-                    {locked ? lockBadge : null}
+                    <span className="relative shrink-0">
+                      <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                      {locked && collapsed ? lockBadge : null}
+                    </span>
+                    {collapsed ? (
+                      <span className="sr-only">{item.label}</span>
+                    ) : (
+                      item.label
+                    )}
+                    {locked && !collapsed ? lockBadge : null}
                   </Link>
                 </li>
               );
             })}
           </ul>
-          <div className="mt-5 px-1">
-            <p className="mb-2 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
-              Tools
-            </p>
+          <div className={`mt-5 ${collapsed ? "px-0" : "px-1"}`}>
+            {collapsed ? (
+              <div className="mb-2 border-t border-white/15" aria-hidden />
+            ) : (
+              <p className="mb-2 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                Tools
+              </p>
+            )}
             <ul className="space-y-0.5">
               {toolsNavItems.map((item) => {
                 const active = isToolsNavActive(item.href);
@@ -328,15 +428,19 @@ export function DashboardSidebar({
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`flex items-center gap-3 rounded-md px-4 py-2.5 text-[0.9375rem] leading-snug ${
-                        active
-                          ? SIDEBAR_NAV_ACTIVE
-                          : "text-slate-100/90 hover:bg-white/10"
-                      }`}
+                      title={collapsed ? item.label : undefined}
+                      className={navLinkClass(active)}
                     >
-                      <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                      {item.label}
-                      {locked ? lockBadge : null}
+                      <span className="relative shrink-0">
+                        <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                        {locked && collapsed ? lockBadge : null}
+                      </span>
+                      {collapsed ? (
+                        <span className="sr-only">{item.label}</span>
+                      ) : (
+                        item.label
+                      )}
+                      {locked && !collapsed ? lockBadge : null}
                     </Link>
                   </li>
                 );
@@ -345,7 +449,9 @@ export function DashboardSidebar({
           </div>
         </nav>
         {showAdminSection ? (
-          <div className="shrink-0 px-3 pb-2 pt-1">
+          <div
+            className={`shrink-0 pb-2 pt-1 ${collapsed ? "px-1.5" : "px-3"}`}
+          >
             {adminNavExpanded ? (
               <div className="mb-1">
                 <button
@@ -353,12 +459,23 @@ export function DashboardSidebar({
                   onClick={toggleAdminNav}
                   aria-expanded={true}
                   aria-label="Collapse admin menu"
-                  className="mb-1 flex w-full items-center gap-2 rounded-md px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100"
+                  title={collapsed ? "Admin" : undefined}
+                  className={`mb-1 flex w-full items-center rounded-md text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100 ${
+                    collapsed
+                      ? "justify-center px-0 py-2"
+                      : "gap-2 px-4 py-1.5"
+                  }`}
                 >
-                  <span className="min-w-0 flex-1 text-left">Admin</span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  {collapsed ? (
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  ) : (
+                    <>
+                      <span className="min-w-0 flex-1 text-left">Admin</span>
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    </>
+                  )}
                 </button>
-                <ul className="space-y-0.5 px-1">
+                <ul className={`space-y-0.5 ${collapsed ? "" : "px-1"}`}>
                   {adminSectionNavItems.map((item) => {
                     const active = adminSectionNavItemActive(pathname, item);
                     const Icon = item.icon;
@@ -366,14 +483,23 @@ export function DashboardSidebar({
                       <li key={item.href}>
                         <Link
                           href={item.href}
-                          className={`flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-                            active
-                              ? SIDEBAR_NAV_ACTIVE
-                              : "text-slate-100/90 hover:bg-white/10"
-                          }`}
+                          title={collapsed ? item.label : undefined}
+                          className={
+                            collapsed
+                              ? navLinkClass(active)
+                              : `flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
+                                  active
+                                    ? SIDEBAR_NAV_ACTIVE
+                                    : "text-slate-100/90 hover:bg-white/10"
+                                }`
+                          }
                         >
                           <Icon className="h-5 w-5 shrink-0 opacity-95" />
-                          <span className="min-w-0 flex-1">{item.label}</span>
+                          {collapsed ? (
+                            <span className="sr-only">{item.label}</span>
+                          ) : (
+                            <span className="min-w-0 flex-1">{item.label}</span>
+                          )}
                         </Link>
                       </li>
                     );
@@ -385,51 +511,79 @@ export function DashboardSidebar({
                 type="button"
                 onClick={toggleAdminNav}
                 aria-expanded={false}
-                className="flex w-full items-center gap-2 rounded-md px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100"
+                aria-label="Expand admin menu"
+                title={collapsed ? "Admin" : undefined}
+                className={`flex w-full items-center rounded-md text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100 ${
+                  collapsed
+                    ? "justify-center px-0 py-2"
+                    : "gap-2 px-4 py-1.5"
+                }`}
               >
-                <span className="min-w-0 flex-1 text-left">Admin</span>
-                <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {collapsed ? (
+                  <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                ) : (
+                  <>
+                    <span className="min-w-0 flex-1 text-left">Admin</span>
+                    <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  </>
+                )}
               </button>
             )}
           </div>
         ) : null}
-        <div className="shrink-0 border-t border-white/15 px-3 py-3">
+        <div
+          className={`shrink-0 border-t border-white/15 py-3 ${
+            collapsed ? "px-1.5" : "px-3"
+          }`}
+        >
           {showJoinPremiumPromo ? (
-            <MembershipSidebarPromo active={membershipPageActive} />
+            <MembershipSidebarPromo
+              active={membershipPageActive}
+              compact={collapsed}
+            />
           ) : null}
           {showMembershipNav ? (
             <Link
               href="/coach/membership"
-              className={`mb-1 flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-                membershipPageActive
-                  ? SIDEBAR_NAV_ACTIVE
-                  : "text-slate-100/90 hover:bg-white/10"
-              }`}
+              title={collapsed ? "Membership" : undefined}
+              className={`mb-1 ${navLinkClass(membershipPageActive)}`}
             >
               <CreditCard className="h-5 w-5 shrink-0 opacity-95" />
-              Membership
+              {collapsed ? (
+                <span className="sr-only">Membership</span>
+              ) : (
+                "Membership"
+              )}
             </Link>
           ) : null}
           <Link
             href={supportHref}
-            className={`mb-1 flex items-center gap-3 rounded-md px-4 py-2 text-[0.9375rem] leading-snug ${
-              supportActive
-                ? SIDEBAR_NAV_ACTIVE
-                : "text-slate-100/90 hover:bg-white/10"
-            }`}
+            title={collapsed ? "Support" : undefined}
+            className={`mb-1 ${navLinkClass(supportActive)}`}
           >
-            <CircleHelp className="h-5 w-5 shrink-0 opacity-95" />
-            Support
-            {renderSupportBadge()}
+            <span className="relative shrink-0">
+              <CircleHelp className="h-5 w-5 shrink-0 opacity-95" />
+              {collapsed ? renderSupportBadge() : null}
+            </span>
+            {collapsed ? <span className="sr-only">Support</span> : "Support"}
+            {!collapsed ? renderSupportBadge() : null}
           </Link>
-          <div className="relative mt-2 border-t border-white/15 pt-2" ref={accountMenuRef}>
+          <div
+            className="relative mt-2 border-t border-white/15 pt-2"
+            ref={accountMenuRef}
+          >
             <button
               type="button"
               aria-expanded={accountMenuOpen}
               aria-haspopup="menu"
               aria-label="Account menu"
+              title={collapsed ? (profileLoading ? "Account" : avatarLabel) : undefined}
               onClick={() => setAccountMenuOpen((open) => !open)}
-              className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-[0.9375rem] leading-snug ${
+              className={`flex w-full items-center rounded-md text-left leading-snug ${
+                collapsed
+                  ? "justify-center px-0 py-2"
+                  : "gap-3 px-3 py-2 text-[0.9375rem]"
+              } ${
                 accountMenuOpen || settingsActive || supportActive
                   ? SIDEBAR_NAV_ACTIVE
                   : "text-slate-100/90 hover:bg-white/10"
@@ -447,20 +601,58 @@ export function DashboardSidebar({
                   {profileInitialsFromName(avatarLabel)}
                 </span>
               )}
-              <span className="min-w-0 flex-1 text-[0.8125rem] font-medium leading-snug line-clamp-2">
-                {profileLoading ? "Loading..." : avatarLabel}
-              </span>
+              {!collapsed ? (
+                <span className="min-w-0 flex-1 text-[0.8125rem] font-medium leading-snug line-clamp-2">
+                  {profileLoading ? "Loading..." : avatarLabel}
+                </span>
+              ) : null}
             </button>
             {accountMenuOpen ? (
               <div
                 role="menu"
-                className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                className={`absolute z-50 mb-2 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg ${
+                  collapsed
+                    ? "bottom-0 left-full ml-2 w-56"
+                    : "bottom-full left-0 right-0"
+                }`}
               >
                 <div className="border-b border-slate-100 px-3 py-2">
                   <p className="truncate text-sm font-semibold text-slate-900">
                     {profileLoading ? "Loading..." : avatarLabel}
                   </p>
+                  {isAdmin && isImpersonating ? (
+                    <p className="mt-0.5 text-[11px] font-medium text-amber-800">
+                      Viewing as coach
+                    </p>
+                  ) : null}
                 </div>
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={demoSwitchBusy}
+                    onClick={() => {
+                      if (isImpersonating) switchBackToAdmin();
+                      else void switchToDemoCoach();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    <ArrowLeftRight
+                      className="h-4 w-4 shrink-0 opacity-80"
+                      aria-hidden
+                    />
+                    {isImpersonating
+                      ? "Back to admin"
+                      : demoSwitchBusy
+                        ? "Switching…"
+                        : `Switch to ${DEMO_COACH_LABEL}`}
+                  </button>
+                ) : null}
+                {demoSwitchError ? (
+                  <p className="px-3 pb-1 text-[11px] text-rose-600">
+                    {demoSwitchError}
+                  </p>
+                ) : null}
                 <Link
                   href={settingsHref}
                   role="menuitem"
@@ -489,7 +681,9 @@ export function DashboardSidebar({
         </div>
       </aside>
 
-      {/* Mobile: 4 primary tabs + settings (opens more sheet) */}
+      {/* Mobile: 4 primary tabs + settings (opens more sheet) — hidden while collapsed */}
+      {!collapsed ? (
+        <>
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/15 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-4px_24px_rgba(0,0,0,0.18)] md:hidden"
         aria-label="Main navigation"
@@ -671,6 +865,29 @@ export function DashboardSidebar({
               <p className="mb-1 mt-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                 Settings
               </p>
+              {isAdmin ? (
+                <button
+                  type="button"
+                  disabled={demoSwitchBusy}
+                  onClick={() => {
+                    if (isImpersonating) switchBackToAdmin();
+                    else void switchToDemoCoach();
+                  }}
+                  className="mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-[0.9375rem] text-slate-100/90 hover:bg-white/10 disabled:opacity-60"
+                >
+                  <ArrowLeftRight className="h-5 w-5 shrink-0 opacity-95" />
+                  {isImpersonating
+                    ? "Back to admin"
+                    : demoSwitchBusy
+                      ? "Switching…"
+                      : `Switch to ${DEMO_COACH_LABEL}`}
+                </button>
+              ) : null}
+              {demoSwitchError ? (
+                <p className="mb-1 px-3 text-[11px] text-rose-200">
+                  {demoSwitchError}
+                </p>
+              ) : null}
               <Link
                 href={supportHref}
                 onClick={closeMobileSheets}
@@ -711,6 +928,8 @@ export function DashboardSidebar({
             </div>
           </div>
         </div>
+      ) : null}
+        </>
       ) : null}
     </>
   );

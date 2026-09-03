@@ -1,16 +1,13 @@
 import type React from "react";
 import {
-  Archive,
   CalendarDays,
   FileDown,
   LayoutGrid,
-  ListTodo,
   MessagesSquare,
   Newspaper,
   Palette,
   PhoneCall,
   Rocket,
-  Route,
   Sparkles,
   Wallet,
   Wrench,
@@ -29,6 +26,8 @@ export type AdminSectionNavItem = DashboardNavItem & {
   coachesHub?: boolean;
   financialsHub?: boolean;
   toolkitHub?: boolean;
+  /** Roadmap + lesson import + related product tooling. */
+  academyHub?: boolean;
 };
 
 function IconBriefcase({ className }: { className?: string }) {
@@ -76,20 +75,8 @@ function IconMessagesSquare({ className }: { className?: string }) {
   return <MessagesSquare className={className} />;
 }
 
-function IconArchive({ className }: { className?: string }) {
-  return <Archive className={className} />;
-}
-
 function IconLessonImport({ className }: { className?: string }) {
   return <FileDown className={className} />;
-}
-
-function IconRoadmap({ className }: { className?: string }) {
-  return <ListTodo className={className} />;
-}
-
-function IconGrowthSystem({ className }: { className?: string }) {
-  return <Route className={className} />;
 }
 
 function IconBrand({ className }: { className?: string }) {
@@ -267,7 +254,11 @@ export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
 
 /** Tabs inside the Coach Clients hub (former Delivery links). */
 export function coachClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
-  return [`${prefix}/clients`, `${prefix}/playbooks`];
+  return [
+    `${prefix}/clients`,
+    `${prefix}/playbooks`,
+    `${prefix}/boss-pro`,
+  ];
 }
 
 export function isToolsHubPath(
@@ -313,6 +304,11 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       label: "Conversations",
       adminPreview: true,
     },
+    {
+      href: `${prefix}/campaigns`,
+      label: "Campaigns",
+      adminPreview: true,
+    },
     { href: `${prefix}/calls`, label: "Calendar" },
     { href: `${prefix}/prospects`, label: "Prospects" },
     { href: `${prefix}/pipeline`, label: "Pipeline", adminPreview: true },
@@ -323,9 +319,15 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       label: "Content",
       adminPreview: true,
     });
+  } else {
+    items.push({
+      href: "/coach/linkedin",
+      label: "Content",
+      adminPreview: true,
+    });
   }
   items.push(
-    { href: `${prefix}/boss-pro`, label: "Boss Pro" },
+    { href: `${prefix}/lead-magnets`, label: "Lead Magnets" },
     {
       href:
         prefix === "/admin"
@@ -347,6 +349,8 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/ideal-client`,
     `${prefix}/message-generator`,
     `${prefix}/linkedin-profile`,
+    `${prefix}/campaigns`,
+    `${prefix}/linkedin`,
   ];
   if (prefix === "/admin") {
     paths.push(
@@ -361,7 +365,10 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
 /** Content tab is the LinkedIn planner. */
 export function isGetClientsContentPath(pathname: string | null): boolean {
   if (!pathname) return false;
-  return pathMatches(pathname, "/admin/linkedin");
+  return (
+    pathMatches(pathname, "/admin/linkedin") ||
+    pathMatches(pathname, "/coach/linkedin")
+  );
 }
 
 /** Create tab stays active on writers / setup tools (not Content). */
@@ -386,67 +393,17 @@ export function isGetClientsStudioPath(pathname: string | null): boolean {
   return isGetClientsCreatePath(pathname);
 }
 
+/**
+ * Coach Clients hub tabs only. Per-client tools (plans, notes, …) live on the
+ * individual client workspace, not here.
+ */
 export function coachClientsTabItems(
-  prefix: "/coach" | "/admin",
-  options?: { contactId?: string | null }
+  prefix: "/coach" | "/admin"
 ): CoachClientsTabItem[] {
-  const contactId = options?.contactId ?? null;
-  const toolHref = (tab: string) => {
-    if (contactId) {
-      const path = `${prefix}/clients/${encodeURIComponent(contactId)}`;
-      if (!tab || tab === "overview") return path;
-      return `${path}?tab=${encodeURIComponent(tab)}`;
-    }
-    const path = `${prefix}/clients/coaching`;
-    if (!tab || tab === "overview") return path;
-    return `${path}?tab=${encodeURIComponent(tab)}`;
-  };
-
   return [
     { key: "clients", href: `${prefix}/clients`, label: "Clients" },
+    { key: "boss-pro", href: `${prefix}/boss-pro`, label: "BOSS Score" },
     { key: "playbooks", href: `${prefix}/playbooks`, label: "Playbooks" },
-    {
-      key: "overview",
-      href: toolHref("overview"),
-      label: "Overview",
-      adminPreview: true,
-    },
-    {
-      key: "plan",
-      href: toolHref("plan"),
-      label: "3-Year Plan",
-      adminPreview: true,
-    },
-    {
-      key: "ninety-day",
-      href: toolHref("ninety-day"),
-      label: "90-Day",
-      adminPreview: true,
-    },
-    {
-      key: "revenue",
-      href: toolHref("revenue"),
-      label: "Revenue",
-      adminPreview: true,
-    },
-    {
-      key: "expenses",
-      href: toolHref("expenses"),
-      label: "Expenses",
-      adminPreview: true,
-    },
-    {
-      key: "team",
-      href: toolHref("team"),
-      label: "Team",
-      adminPreview: true,
-    },
-    {
-      key: "notes",
-      href: toolHref("notes"),
-      label: "Notes",
-      adminPreview: true,
-    },
   ];
 }
 
@@ -455,16 +412,19 @@ const CLIENT_ID_PATH =
 
 export function coachClientsTabActive(
   pathname: string | null,
-  search: string | null,
+  _search: string | null,
   tabKey: string
 ): boolean {
   if (!pathname) return false;
-  const raw = search?.startsWith("?") ? search.slice(1) : search ?? "";
-  const params = new URLSearchParams(raw);
-  const tabParam = params.get("tab") || "overview";
 
   if (tabKey === "clients") {
-    return pathname === "/coach/clients" || pathname === "/admin/clients";
+    return (
+      pathname === "/coach/clients" ||
+      pathname === "/admin/clients" ||
+      pathname === "/coach/clients/coaching" ||
+      pathname === "/admin/clients/coaching" ||
+      CLIENT_ID_PATH.test(pathname)
+    );
   }
   if (tabKey === "playbooks") {
     return (
@@ -474,15 +434,16 @@ export function coachClientsTabActive(
       Boolean(pathname.startsWith("/admin/playbooks/"))
     );
   }
+  if (tabKey === "boss-pro") {
+    return (
+      pathname === "/coach/boss-pro" ||
+      pathname === "/admin/boss-pro" ||
+      Boolean(pathname.startsWith("/coach/boss-pro/")) ||
+      Boolean(pathname.startsWith("/admin/boss-pro/"))
+    );
+  }
 
-  const onCoachingHub =
-    pathname === "/coach/clients/coaching" ||
-    pathname === "/admin/clients/coaching";
-  const onClientWorkspace = CLIENT_ID_PATH.test(pathname);
-
-  if (!onCoachingHub && !onClientWorkspace) return false;
-  if (tabKey === "overview") return !params.get("tab") || tabParam === "overview";
-  return tabParam === tabKey;
+  return false;
 }
 
 export const adminSectionNavItems: AdminSectionNavItem[] = [
@@ -494,20 +455,10 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     financialsHub: true,
   },
   {
-    href: "/admin/links",
-    label: "Tools and links",
-    icon: IconSiteTools,
-    toolkitHub: true,
-  },
-  {
     href: "/admin/roadmap",
-    label: "Roadmap",
-    icon: IconRoadmap,
-  },
-  {
-    href: "/admin/growth-system",
-    label: "Growth System",
-    icon: IconGrowthSystem,
+    label: "Academy",
+    icon: IconLessonImport,
+    academyHub: true,
   },
   {
     href: "/admin/brand",
@@ -520,14 +471,10 @@ export const adminSectionNavItems: AdminSectionNavItem[] = [
     icon: IconBlog,
   },
   {
-    href: "/admin/lesson-import",
-    label: "Lessons",
-    icon: IconLessonImport,
-  },
-  {
-    href: "/admin/academy/archive",
-    label: "Archive",
-    icon: IconArchive,
+    href: "/admin/links",
+    label: "Tools and links",
+    icon: IconSiteTools,
+    toolkitHub: true,
   },
 ];
 
@@ -563,8 +510,16 @@ export function isToolkitHubPath(pathname: string | null): boolean {
     pathMatches(pathname, "/admin/time-tracker") ||
     pathMatches(pathname, "/admin/landing-analytics") ||
     pathMatches(pathname, "/admin/funnel-analyzer") ||
-    pathMatches(pathname, "/admin/sales-nav-imports") ||
-    pathMatches(pathname, "/admin/linkedin-inbox")
+    pathMatches(pathname, "/admin/sales-nav-imports")
+  );
+}
+
+export function isAcademyHubPath(pathname: string | null): boolean {
+  return (
+    pathMatches(pathname, "/admin/roadmap") ||
+    pathMatches(pathname, "/admin/lesson-import") ||
+    pathMatches(pathname, "/admin/growth-system") ||
+    pathMatches(pathname, "/admin/academy/archive")
   );
 }
 
@@ -575,6 +530,7 @@ export function adminSectionNavItemActive(
   if (item.coachesHub) return isCoachesHubPath(pathname);
   if (item.financialsHub) return isFinancialsHubPath(pathname);
   if (item.toolkitHub) return isToolkitHubPath(pathname);
+  if (item.academyHub) return isAcademyHubPath(pathname);
   return navLinkActive(pathname, item.href);
 }
 

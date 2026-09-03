@@ -7,7 +7,20 @@ import {
   isBirdConfigured,
   normalizePhoneE164,
 } from "@/lib/bird/client";
+import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
+import { resolveConversationLinkedInUrl } from "@/lib/messaging/conversationLinkedInUrl";
+import {
+  filesFromFormData,
+  MAX_MESSAGING_ATTACHMENTS,
+  parseMessagingAttachments,
+  signMessagingAttachments,
+  uploadMessagingAttachment,
+  validateMessagingAttachment,
+  type MessagingAttachmentMeta,
+} from "@/lib/messaging/messageAttachments";
+import { scheduleMessagingReply } from "@/lib/messaging/scheduledMessages";
 import { loadEnrichedProspectById } from "@/lib/prospects/loadEnrichedProspect";
+import { updateProspectFields } from "@/lib/prospects/updateProspectFields";
 import { loadProspectActivity } from "@/lib/messaging/loadProspectActivity";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
@@ -47,7 +60,7 @@ async function loadConversation(id: string, coachId: string | null) {
   let q = supabaseAdmin
     .from("messaging_conversations")
     .select(
-      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, last_message_at, starred, unread_count, last_preview, last_channel"
+      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_business_name, last_message_at, starred, unread_count, last_preview, last_channel, unipile_chat_id, hidden_at"
     )
     .eq("id", id);
   if (coachId) q = q.eq("coach_id", coachId);
@@ -71,7 +84,7 @@ export async function GET(
     id,
     access.coachId
   );
-  if (convErr || !conversation) {
+  if (convErr || !conversation || conversation.hidden_at) {
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
 
@@ -87,7 +100,7 @@ export async function GET(
   const { data: messages, error: msgErr } = await supabaseAdmin
     .from("messaging_messages")
     .select(
-      "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, created_at"
+      "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
     )
     .eq("conversation_id", id)
     .order("created_at", { ascending: true });
@@ -96,6 +109,22 @@ export async function GET(
     console.error("messaging messages list:", msgErr);
     return NextResponse.json({ error: "Could not load messages." }, { status: 500 });
   }
+
+  const enrichedMessages = await Promise.all(
+    (messages ?? []).map(async (m) => {
+      const meta = (m.metadata as Record<string, unknown> | null) || {};
+      const attachments = parseMessagingAttachments(meta.attachments);
+      if (!attachments.length) {
+        return { ...m, attachments: [] as MessagingAttachmentMeta[] };
+      }
+      const signed = await signMessagingAttachments(attachments);
+      return {
+        ...m,
+        metadata: { ...meta, attachments: signed },
+        attachments: signed,
+      };
+    })
+  );
 
   // Prefer explicit contact_id; otherwise resolve via booking or email and backfill.
   let contactId = (conversation.contact_id as string | null) ?? null;
@@ -174,9 +203,28 @@ export async function GET(
     if (bookingRow) booking = bookingRow;
   }
 
-  return NextResponse.json({
+  const [enrichedConversation] = await enrichMessagingConversationPeople([
     conversation,
-    messages: messages ?? [],
+  ]);
+  const linkedInUrl = await resolveConversationLinkedInUrl({
+    conversationId: id,
+    contactId,
+    unipileChatId: (conversation.unipile_chat_id as string | null) ?? null,
+    existing:
+      (enrichedConversation?.prospect_linkedin_url as string | null) ??
+      (conversation.prospect_linkedin_url as string | null) ??
+      ((prospect as { linkedin_url?: string | null } | null)?.linkedin_url ??
+        null),
+    fetchAttendees:
+      String(conversation.last_channel || "").toLowerCase() === "linkedin",
+  });
+  if (enrichedConversation && linkedInUrl) {
+    enrichedConversation.prospect_linkedin_url = linkedInUrl;
+  }
+
+  return NextResponse.json({
+    conversation: enrichedConversation ?? conversation,
+    messages: enrichedMessages,
     prospect,
     booking,
     activity,
@@ -205,14 +253,46 @@ export async function PATCH(
   const body = (await request.json().catch(() => ({}))) as {
     starred?: boolean;
     unread_count?: number;
+    business_name?: string | null;
   };
   const patch: Record<string, unknown> = {};
   if (typeof body.starred === "boolean") patch.starred = body.starred;
   if (typeof body.unread_count === "number" && body.unread_count >= 0) {
     patch.unread_count = Math.floor(body.unread_count);
   }
+
+  let prospectBusiness: string | null | undefined;
+  if (body.business_name !== undefined) {
+    prospectBusiness = body.business_name?.trim() || null;
+    patch.prospect_business_name = prospectBusiness;
+    const contactId = (conversation.contact_id as string | null) ?? null;
+    const coachIdForContact =
+      access.coachId || ((conversation.coach_id as string | null) ?? null);
+    if (contactId && coachIdForContact) {
+      try {
+        const updatedProspect = await updateProspectFields(
+          contactId,
+          coachIdForContact,
+          { business_name: prospectBusiness }
+        );
+        prospectBusiness = updatedProspect.business_name;
+        patch.prospect_business_name = prospectBusiness;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Could not update business name.";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+    }
+  }
+
   if (!Object.keys(patch).length) {
-    return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+    if (prospectBusiness === undefined) {
+      return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+    }
+    return NextResponse.json({
+      conversation,
+      prospect: { business_name: prospectBusiness },
+    });
   }
 
   const { data: updated, error } = await supabaseAdmin
@@ -220,7 +300,7 @@ export async function PATCH(
     .update(patch)
     .eq("id", id)
     .select(
-      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, last_message_at, starred, unread_count, last_preview, last_channel"
+      "id, coach_id, contact_id, booking_id, subject, prospect_name, prospect_email, prospect_phone, prospect_avatar_url, prospect_linkedin_url, prospect_business_name, last_message_at, starred, unread_count, last_preview, last_channel"
     )
     .maybeSingle();
 
@@ -229,14 +309,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Could not update conversation." }, { status: 500 });
   }
 
-  return NextResponse.json({ conversation: updated });
+  return NextResponse.json({
+    conversation: updated,
+    ...(prospectBusiness !== undefined
+      ? { prospect: { business_name: prospectBusiness } }
+      : {}),
+  });
 }
 
 /**
- * POST /api/messaging/conversations/[id]
- * Send a reply: { channel: 'email'|'sms'|'comment', body, subject?, fromName? }
+ * DELETE /api/messaging/conversations/[id]
+ * Hides the thread from the inbox. Provider history is kept so sync cannot resurrect it as a new row.
  */
-export async function POST(
+export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -251,21 +336,147 @@ export async function POST(
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as {
-    channel?: string;
-    body?: string;
-    subject?: string;
-    fromName?: string;
-  };
+  let q = supabaseAdmin
+    .from("messaging_conversations")
+    .update({ hidden_at: new Date().toISOString() })
+    .eq("id", id);
+  if (access.coachId) q = q.eq("coach_id", access.coachId);
+  const { error } = await q;
 
-  const channel = (body.channel || "email").trim().toLowerCase();
-  const text = (body.body || "").trim();
-  if (!text) {
-    return NextResponse.json({ error: "Message body is required." }, { status: 400 });
-  }
-  if (!["email", "sms", "comment"].includes(channel)) {
+  if (error) {
+    console.error("messaging conversation hide:", error);
     return NextResponse.json(
-      { error: "Channel must be email, sms, or comment." },
+      { error: "Could not delete conversation." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+/**
+ * POST /api/messaging/conversations/[id]
+ * Send a reply (JSON or multipart FormData).
+ * Fields: channel, body, subject?, fromName?, scheduled_for?, attachments[]
+ */
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const access = await resolveAccess(request);
+  if (access.error) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  const { data: conversation } = await loadConversation(id, access.coachId);
+  if (!conversation || conversation.hidden_at) {
+    return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
+  }
+
+  const contentType = request.headers.get("content-type") || "";
+  let channel = "email";
+  let text = "";
+  let subject: string | undefined;
+  let fromNameField: string | undefined;
+  let scheduledFor: string | undefined;
+  let attachmentFiles: Array<{ blob: Blob; filename: string; mime: string }> =
+    [];
+  let voiceFile: { blob: Blob; filename: string; mime: string } | null = null;
+  let videoFile: { blob: Blob; filename: string; mime: string } | null = null;
+
+  if (contentType.includes("multipart/form-data")) {
+    const form = await request.formData();
+    channel = String(form.get("channel") || "email")
+      .trim()
+      .toLowerCase();
+    text = String(form.get("body") || "").trim();
+    const sub = form.get("subject");
+    const fn = form.get("fromName");
+    const sched = form.get("scheduled_for");
+    if (typeof sub === "string" && sub.trim()) subject = sub.trim();
+    if (typeof fn === "string" && fn.trim()) fromNameField = fn.trim();
+    if (typeof sched === "string" && sched.trim()) scheduledFor = sched.trim();
+    attachmentFiles = await filesFromFormData(form, "attachments");
+    const voiceEntries = await filesFromFormData(form, "voice_message");
+    const videoEntries = await filesFromFormData(form, "video_message");
+    voiceFile = voiceEntries[0] ?? null;
+    videoFile = videoEntries[0] ?? null;
+  } else {
+    const body = (await request.json().catch(() => ({}))) as {
+      channel?: string;
+      body?: string;
+      subject?: string;
+      fromName?: string;
+      scheduled_for?: string;
+    };
+    channel = (body.channel || "email").trim().toLowerCase();
+    text = (body.body || "").trim();
+    subject = body.subject?.trim() || undefined;
+    fromNameField = body.fromName?.trim() || undefined;
+    scheduledFor = body.scheduled_for?.trim() || undefined;
+  }
+
+  if (
+    !["email", "sms", "comment", "linkedin", "whatsapp", "instagram", "messenger"].includes(
+      channel
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Channel must be email, sms, linkedin, whatsapp, instagram, messenger, or comment.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const unipileChatChannel =
+    channel === "linkedin" ||
+    channel === "whatsapp" ||
+    channel === "instagram" ||
+    channel === "messenger";
+
+  if (attachmentFiles.length > MAX_MESSAGING_ATTACHMENTS) {
+    return NextResponse.json(
+      {
+        error: `You can attach at most ${MAX_MESSAGING_ATTACHMENTS} files.`,
+      },
+      { status: 400 }
+    );
+  }
+
+  for (const file of attachmentFiles) {
+    const err = validateMessagingAttachment({
+      mime: file.mime,
+      size: file.blob.size,
+      filename: file.filename,
+    });
+    if (err) {
+      return NextResponse.json({ error: err }, { status: 400 });
+    }
+  }
+
+  if (!text && attachmentFiles.length === 0 && !voiceFile && !videoFile) {
+    return NextResponse.json(
+      { error: "Message body or attachment is required." },
+      { status: 400 }
+    );
+  }
+
+  if (
+    (attachmentFiles.length > 0 || voiceFile || videoFile) &&
+    !unipileChatChannel
+  ) {
+    return NextResponse.json(
+      { error: "Attachments are only supported on LinkedIn and similar chat channels." },
+      { status: 400 }
+    );
+  }
+
+  if (scheduledFor && !unipileChatChannel) {
+    return NextResponse.json(
+      { error: "Schedule send is only available on LinkedIn and similar chat channels." },
       { status: 400 }
     );
   }
@@ -274,6 +485,116 @@ export async function POST(
   const sender = getBirdSenderDefaults();
   const preview = text.replace(/\s+/g, " ").trim().slice(0, 160);
   const now = new Date().toISOString();
+
+  if (unipileChatChannel) {
+    try {
+      if (scheduledFor) {
+        if (voiceFile || videoFile) {
+          return NextResponse.json(
+            {
+              error:
+                "Voice notes and video messages can’t be scheduled yet — send them now.",
+            },
+            { status: 400 }
+          );
+        }
+        const uploaded: MessagingAttachmentMeta[] = [];
+        for (const file of attachmentFiles) {
+          uploaded.push(
+            await uploadMessagingAttachment({
+              coachId,
+              conversationId: id,
+              blob: file.blob,
+              filename: file.filename,
+              mime: file.mime,
+            })
+          );
+        }
+        const scheduled = await scheduleMessagingReply({
+          conversationId: id,
+          coachId,
+          channel,
+          bodyText: text,
+          scheduledFor,
+          attachments: uploaded,
+        });
+        return NextResponse.json({ ok: true, scheduled });
+      }
+
+      const { replyUnipileConversation } = await import(
+        "@/lib/unipile/inboxSync"
+      );
+      const msg = await replyUnipileConversation({
+        coachId,
+        conversationId: id,
+        text,
+        channel,
+        attachments: attachmentFiles.map((f) => ({
+          blob: f.blob,
+          filename: f.filename,
+          mime: f.mime,
+        })),
+        voiceMessage: voiceFile
+          ? {
+              blob: voiceFile.blob,
+              filename: voiceFile.filename,
+              mime: voiceFile.mime,
+            }
+          : undefined,
+        videoMessage: videoFile
+          ? {
+              blob: videoFile.blob,
+              filename: videoFile.filename,
+              mime: videoFile.mime,
+            }
+          : undefined,
+      });
+      const meta = (msg?.metadata as Record<string, unknown> | null) || {};
+      const attachments = await signMessagingAttachments(
+        parseMessagingAttachments(meta.attachments)
+      );
+      return NextResponse.json({
+        ok: true,
+        message: msg
+          ? { ...msg, attachments, metadata: { ...meta, attachments } }
+          : msg,
+      });
+    } catch (err) {
+      return NextResponse.json(
+        {
+          error:
+            err instanceof Error ? err.message : `${channel} reply failed.`,
+        },
+        { status: 502 }
+      );
+    }
+  }
+
+  if (channel === "email") {
+    // Prefer connected Gmail/Outlook when this thread came from Unipile
+    const { data: fullConv } = await supabaseAdmin
+      .from("messaging_conversations")
+      .select("unipile_account_id, unipile_chat_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (fullConv?.unipile_account_id && fullConv?.unipile_chat_id) {
+      const { replyUnipileConversation } = await import(
+        "@/lib/unipile/inboxSync"
+      );
+      try {
+        const msg = await replyUnipileConversation({
+          coachId,
+          conversationId: id,
+          text,
+          channel: "email",
+        });
+        return NextResponse.json({ ok: true, message: msg });
+      } catch (err) {
+        // Fall through to Bird if Unipile send fails and we have prospect email
+        console.error("unipile email reply:", err);
+      }
+    }
+  }
 
   if (channel === "comment") {
     const { data: msg, error } = await supabaseAdmin
@@ -291,7 +612,7 @@ export async function POST(
         metadata: { kind: "internal_comment" },
       })
       .select(
-        "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, created_at"
+        "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
       )
       .maybeSingle();
 
@@ -326,7 +647,7 @@ export async function POST(
     .maybeSingle();
 
   const fromName =
-    body.fromName?.trim() ||
+    fromNameField ||
     (profile?.full_name as string | null)?.trim() ||
     (profile?.coach_business_name as string | null)?.trim() ||
     sender.fromName;
@@ -339,8 +660,8 @@ export async function POST(
         { status: 400 }
       );
     }
-    const subject =
-      body.subject?.trim() ||
+    const emailSubject =
+      subject ||
       (conversation.subject as string | null)?.trim() ||
       "Follow-up";
 
@@ -350,7 +671,7 @@ export async function POST(
       fromEmail: sender.fromEmail,
       fromName,
       replyTo: conversationReplyToAddress(id),
-      subject,
+      subject: emailSubject,
       text,
       metadata: {
         conversation_id: id,
@@ -367,7 +688,7 @@ export async function POST(
         channel: "email",
         direction: "outbound",
         status: emailRes.ok ? emailRes.status || "accepted" : "failed",
-        subject,
+        subject: emailSubject,
         body_text: text,
         from_address: `${fromName} <${sender.fromEmail}>`,
         to_address: toEmail,
@@ -376,7 +697,7 @@ export async function POST(
         metadata: { kind: "reply", raw: emailRes.raw },
       })
       .select(
-        "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, created_at"
+        "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
       )
       .maybeSingle();
 
@@ -394,7 +715,7 @@ export async function POST(
         last_message_at: now,
         last_preview: preview,
         last_channel: "email",
-        subject,
+        subject: emailSubject,
       })
       .eq("id", id);
 
@@ -453,7 +774,7 @@ export async function POST(
       metadata: { kind: "reply", raw: smsRes.raw },
     })
     .select(
-      "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, created_at"
+      "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
     )
     .maybeSingle();
 

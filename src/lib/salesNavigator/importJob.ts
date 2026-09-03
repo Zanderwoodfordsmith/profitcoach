@@ -1,6 +1,6 @@
 /**
  * Background Sales Nav import jobs backed by sales_nav_import_runs + Apify .start().
- * Segmented imports split by team size (and years at company when targeting 2,500).
+ * Segmented imports split by team size. Years sub-splits are Unipile-only (fast total_count).
  */
 
 import {
@@ -32,6 +32,8 @@ export type SalesNavImportJobStatus =
   | "succeeded"
   | "failed";
 
+export type SalesNavImportProvider = "apify" | "unipile";
+
 export type SalesNavImportJobRow = {
   id: string;
   coach_id: string;
@@ -50,6 +52,9 @@ export type SalesNavImportJobRow = {
   error_message: string | null;
   apify_run_id: string | null;
   apify_dataset_id: string | null;
+  provider: SalesNavImportProvider;
+  unipile_account_id: string | null;
+  unipile_cursor: string | null;
   lead_snapshot: unknown;
   started_at: string | null;
   finished_at: string | null;
@@ -61,7 +66,7 @@ export type SalesNavImportJobRow = {
 };
 
 const JOB_SELECT =
-  "id, coach_id, status, name, sales_nav_url, take_pages, requested_take_pages, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, estimated_cost_usd, duration_ms, error_message, apify_run_id, apify_dataset_id, lead_snapshot, started_at, finished_at, created_at, segmented, segment_index, segment_total, segment_plan";
+  "id, coach_id, status, name, sales_nav_url, take_pages, requested_take_pages, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, estimated_cost_usd, duration_ms, error_message, apify_run_id, apify_dataset_id, provider, unipile_account_id, unipile_cursor, lead_snapshot, started_at, finished_at, created_at, segmented, segment_index, segment_total, segment_plan";
 
 const TERMINAL_APIFY = new Set([
   "SUCCEEDED",
@@ -101,6 +106,14 @@ function parseSegmentPlan(value: unknown): SalesNavImportSegmentPlan[] | null {
         r.yearsAtCompany === "4" ||
         r.yearsAtCompany === "5"
           ? r.yearsAtCompany
+          : null,
+      yearsInRole:
+        r.yearsInRole === "1" ||
+        r.yearsInRole === "2" ||
+        r.yearsInRole === "3" ||
+        r.yearsInRole === "4" ||
+        r.yearsInRole === "5"
+          ? r.yearsInRole
           : null,
       status:
         r.status === "pending" ||
@@ -149,7 +162,9 @@ function activeSegmentUrl(job: SalesNavImportJobRow): string | null {
   return seg?.salesNavUrl ?? job.sales_nav_url;
 }
 
-function mergeSnapshots(
+type SalesNavImportLeadSnapshot = ReturnType<typeof toSalesNavImportLeadSnapshot>;
+
+export function mergeSalesNavLeadSnapshots(
   existing: SalesNavImportLeadSnapshot[],
   incoming: SalesNavImportedLead[]
 ): SalesNavImportLeadSnapshot[] {
@@ -169,8 +184,6 @@ function mergeSnapshots(
   }
   return [...byKey.values()];
 }
-
-type SalesNavImportLeadSnapshot = ReturnType<typeof toSalesNavImportLeadSnapshot>;
 
 async function markFailed(
   jobId: string,
@@ -291,7 +304,7 @@ async function finalizeSucceeded(opts: {
   const priorSnapshot = Array.isArray(opts.job.lead_snapshot)
     ? (opts.job.lead_snapshot as SalesNavImportLeadSnapshot[])
     : [];
-  const mergedSnapshot = mergeSnapshots(priorSnapshot, leads);
+  const mergedSnapshot = mergeSalesNavLeadSnapshots(priorSnapshot, leads);
 
   const totalInserted =
     (opts.job.cache_inserted ?? 0) + cache.inserted;
@@ -429,6 +442,11 @@ function mapJobRow(r: Record<string, unknown>): SalesNavImportJobRow {
       typeof r.apify_run_id === "string" ? r.apify_run_id : null,
     apify_dataset_id:
       typeof r.apify_dataset_id === "string" ? r.apify_dataset_id : null,
+    provider: r.provider === "unipile" ? "unipile" : "apify",
+    unipile_account_id:
+      typeof r.unipile_account_id === "string" ? r.unipile_account_id : null,
+    unipile_cursor:
+      typeof r.unipile_cursor === "string" ? r.unipile_cursor : null,
     lead_snapshot: r.lead_snapshot,
     started_at: typeof r.started_at === "string" ? r.started_at : null,
     finished_at: typeof r.finished_at === "string" ? r.finished_at : null,
@@ -505,6 +523,7 @@ export async function createSalesNavImportJob(opts: {
       profile_scraper_mode: "Short",
       estimated_cost_usd: estimatedCostUsd,
       status: "running",
+      provider: "apify",
       apify_run_id: started.apifyRunId,
       apify_dataset_id: started.apifyDatasetId,
       lead_snapshot: [],
@@ -548,7 +567,7 @@ export async function loadImportJob(
 }
 
 /**
- * Poll Apify for a running job; finalize when the actor finishes.
+ * Poll Apify or Unipile for a running job; finalize when the run finishes.
  * Safe to call from client poll + cron.
  */
 export async function syncSalesNavImportJob(
@@ -561,6 +580,13 @@ export async function syncSalesNavImportJob(
 
   if (job.status === "succeeded" || job.status === "failed") {
     return job;
+  }
+
+  if (job.provider === "unipile") {
+    const { syncUnipileSalesNavImportJob } = await import(
+      "@/lib/unipile/salesNavImportJob"
+    );
+    return syncUnipileSalesNavImportJob(job);
   }
 
   if (!job.apify_run_id) {

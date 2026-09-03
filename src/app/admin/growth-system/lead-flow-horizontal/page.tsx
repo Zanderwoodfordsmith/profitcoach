@@ -1,5 +1,6 @@
-import { HorizontalLeadFlowMap } from "@/components/academy/HorizontalLeadFlowMap";
+import { redirect } from "next/navigation";
 
-export default function AdminHorizontalLeadFlowPage() {
-  return <HorizontalLeadFlowMap />;
+/** Moved into Classroom → System for admin and members. */
+export default function AdminHorizontalLeadFlowRedirectPage() {
+  redirect("/admin/academy/classroom/system");
 }

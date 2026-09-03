@@ -24,6 +24,18 @@ export type LinkedInPostItem = {
   article_description?: string | null;
   article_thumbnail_url?: string | null;
   media: Array<LinkedInMediaItem & { signedUrl?: string | null }>;
+  engagement?: {
+    comments?: number;
+    reactions?: number;
+    comment_preview?: Array<{
+      id?: unknown;
+      text?: unknown;
+      author?: string | null;
+    }>;
+    reaction_types?: Record<string, number>;
+    errors?: string[];
+  } | null;
+  engagement_synced_at?: string | null;
 };
 
 export type LinkedInProfilePreview = {

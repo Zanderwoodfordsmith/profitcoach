@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminBearer } from "@/lib/linkedinAdminAuth";
+import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import {
   createSignedMediaUrls,
   normalizeMedia,
@@ -8,7 +8,7 @@ import {
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const SELECT_COLS =
-  "id, user_id, content, scheduled_for, status, attempts, last_error, linkedin_post_urn, published_at, created_at, updated_at, post_type, category, article_url, article_title, article_description, article_thumbnail_url, media";
+  "id, user_id, content, scheduled_for, status, attempts, last_error, linkedin_post_urn, published_at, created_at, updated_at, post_type, category, article_url, article_title, article_description, article_thumbnail_url, media, engagement, engagement_synced_at";
 
 type PatchBody = {
   action?: "cancel" | "reschedule" | "clone" | "delete" | "update";
@@ -28,7 +28,7 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAdminBearer(request);
+  const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
   }
@@ -278,7 +278,7 @@ export async function DELETE(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireAdminBearer(request);
+  const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
   }

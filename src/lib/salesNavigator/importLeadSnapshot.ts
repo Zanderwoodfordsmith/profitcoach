@@ -10,10 +10,12 @@ export type SalesNavImportLeadSnapshot = {
   linkedinUrl: string | null;
   location: string | null;
   headline: string | null;
+  about: string | null;
   photoUrl: string | null;
   tenureLabel: string | null;
   monthsAtCompany: number | null;
   yearsAtCompanyBucket: string | null;
+  premium: boolean;
 };
 
 export function toSalesNavImportLeadSnapshot(
@@ -28,10 +30,12 @@ export function toSalesNavImportLeadSnapshot(
     linkedinUrl: lead.linkedinUrl,
     location: lead.location,
     headline: lead.headline,
+    about: lead.about,
     photoUrl: lead.photoUrl,
     tenureLabel: lead.tenureLabel,
     monthsAtCompany: lead.monthsAtCompany ?? null,
     yearsAtCompanyBucket: lead.yearsAtCompanyBucket ?? null,
+    premium: lead.premium,
   };
 }
 
@@ -48,7 +52,7 @@ export function snapshotToSalesNavImportedLead(
     location: snap.location,
     email: null,
     headline: snap.headline,
-    about: snap.headline,
+    about: snap.about ?? snap.headline,
     photoUrl: snap.photoUrl,
     tenureLabel: snap.tenureLabel,
     monthsAtCompany: snap.monthsAtCompany,
@@ -56,7 +60,7 @@ export function snapshotToSalesNavImportedLead(
     yearsAtCompanyBucket:
       (snap.yearsAtCompanyBucket as SalesNavImportedLead["yearsAtCompanyBucket"]) ??
       null,
-    premium: false,
+    premium: Boolean(snap.premium),
     raw: {},
   };
 }

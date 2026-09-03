@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   CalendarDays,
@@ -15,6 +15,11 @@ import {
 } from "lucide-react";
 import { type MembershipInterval, type MembershipPlanKey } from "@/config/membershipPlans";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { buildCoachBillingOverview } from "@/lib/admin/paymentPlanRemaining";
+import {
+  paymentBillingKindLabel,
+  type PaymentBillingKind,
+} from "@/lib/paymentBillingKind";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type PlanInfo = {
@@ -33,7 +38,7 @@ type BillingPayment = {
   currency: string;
   status: string;
   paidAt: string;
-  billingKind: string | null;
+  billingKind: PaymentBillingKind | null;
 };
 
 type BillingPayload = {
@@ -106,6 +111,19 @@ function formatCurrency(amountCents: number, currency: string): string {
   }
 }
 
+function formatPlanMoney(amountCents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amountCents / 100);
+  } catch {
+    return `${currency.toUpperCase()} ${Math.round(amountCents / 100)}`;
+  }
+}
+
 function statusLabel(status: string | null, cancelAtPeriodEnd: boolean): string {
   if (cancelAtPeriodEnd) return "Cancels at period end";
   if (status === "active") return "Active";
@@ -115,11 +133,14 @@ function statusLabel(status: string | null, cancelAtPeriodEnd: boolean): string 
   return status ?? "No active subscription";
 }
 
-function billingKindLabel(kind: string | null): string {
+function billingKindLabel(kind: PaymentBillingKind | null): string {
+  if (!kind || kind === "other") return "Payment";
   if (kind === "recurring") return "Subscription";
-  if (kind === "one_off") return "One-off payment";
-  if (kind === "complimentary") return "Complimentary";
-  return "Payment";
+  return paymentBillingKindLabel(kind);
+}
+
+function isSucceededPayment(status: string): boolean {
+  return status === "succeeded" || status === "paid";
 }
 
 function paymentStatusClass(status: string): string {
@@ -182,6 +203,25 @@ export function BillingSettingsTab() {
     void load();
   }, [load]);
 
+  const billingOverview = useMemo(
+    () =>
+      buildCoachBillingOverview(
+        (data?.payments ?? []).map((payment) => ({
+          amount_cents: payment.amountCents,
+          currency: payment.currency,
+          status: payment.status === "paid" ? "succeeded" : payment.status,
+          billing_kind:
+            payment.billingKind === "recurring" ||
+            payment.billingKind === "initial" ||
+            payment.billingKind === "installment" ||
+            payment.billingKind === "other"
+              ? payment.billingKind
+              : "other",
+        }))
+      ),
+    [data?.payments]
+  );
+
   async function openPortal() {
     setPortalLoading(true);
     setError(null);
@@ -235,6 +275,18 @@ export function BillingSettingsTab() {
     isComplimentary;
   const nextBillingDate = formatDate(data.subscription.currentPeriodEnd);
   const visiblePlans = data.plans.filter((plan) => plan.checkoutAvailable.month);
+  const succeededPayments = data.payments.filter((payment) =>
+    isSucceededPayment(payment.status)
+  );
+  const remainingLine = billingOverview.remainingByCurrency
+    .map((row) => {
+      const remaining = formatPlanMoney(row.remainingCents, row.currency);
+      if (row.installmentsPaid != null && row.installmentCount != null) {
+        return `Remaining ${remaining} · ${row.installmentsPaid} of ${row.installmentCount} on the plan`;
+      }
+      return `Remaining ${remaining}`;
+    })
+    .join(" · ");
   const paymentMethodLabel =
     isComplimentary || isIncludedPeriod
       ? "No payment method required"
@@ -287,6 +339,11 @@ export function BillingSettingsTab() {
               <p className="mt-2 max-w-xl text-sm leading-6 text-slate-600">
                 {planDescription}
               </p>
+              {remainingLine ? (
+                <p className="mt-3 text-sm font-semibold text-slate-900">
+                  {remainingLine}
+                </p>
+              ) : null}
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
               {hasSubscription ? (
@@ -442,18 +499,24 @@ export function BillingSettingsTab() {
       ) : null}
 
       <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_12px_35px_-28px_rgba(15,23,42,0.55)]">
-        <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-5 py-4 sm:px-6">
-          <div className="flex items-center gap-2 text-slate-900">
-            <FileText className="h-4 w-4 text-[#0c5290]" aria-hidden />
-            <h2 className="text-sm font-semibold">Payment history</h2>
+        <div className="flex flex-col gap-1 border-b border-slate-200/80 px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-slate-900">
+              <FileText className="h-4 w-4 text-[#0c5290]" aria-hidden />
+              <h2 className="text-sm font-semibold">Payment history</h2>
+            </div>
+            <span className="text-xs text-slate-600">
+              {billingOverview.succeededCount}{" "}
+              {billingOverview.succeededCount === 1 ? "payment" : "payments"}
+            </span>
           </div>
-          <span className="text-xs text-slate-500">
-            {data.payments.length} {data.payments.length === 1 ? "payment" : "payments"}
-          </span>
+          {remainingLine ? (
+            <p className="text-sm font-medium text-slate-800">{remainingLine}</p>
+          ) : null}
         </div>
-        {data.payments.length > 0 ? (
+        {succeededPayments.length > 0 ? (
           <div className="divide-y divide-slate-100">
-            {data.payments.map((payment) => (
+            {succeededPayments.map((payment) => (
               <div
                 key={payment.id}
                 className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"

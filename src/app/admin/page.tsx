@@ -1270,7 +1270,10 @@ export default function AdminPage() {
   const now = Date.now();
   const thirtyDaysAgoMs = now - 30 * 24 * 60 * 60 * 1000;
   const ninetyDaysAgoMs = now - 90 * 24 * 60 * 60 * 1000;
-  const filteredCoaches = coaches
+  const memberCoaches = coaches.filter(
+    (coach) => !isSystemCoachSlug(coach.slug)
+  );
+  const filteredCoaches = memberCoaches
     .filter((coach) => {
       const matchesName = normalizedCoachSearchTerm
         ? (coach.full_name ?? "")
@@ -2325,7 +2328,7 @@ export default function AdminPage() {
       ) : null}
 
       <CoachesMonthlyBarChart
-        coaches={coaches.filter((coach) => !isSystemCoachSlug(coach.slug))}
+        coaches={memberCoaches}
         loading={loading || checkingRole}
       />
 
@@ -2947,9 +2950,9 @@ export default function AdminPage() {
                   ? "…"
                   : selectedCount > 0
                     ? `${selectedCount} selected`
-                    : filteredCoaches.length === coaches.length
-                      ? `${coaches.length} ${coaches.length === 1 ? "coach" : "coaches"}`
-                      : `${filteredCoaches.length} of ${coaches.length}`}
+                    : filteredCoaches.length === memberCoaches.length
+                      ? `${memberCoaches.length} ${memberCoaches.length === 1 ? "coach" : "coaches"}`
+                      : `${filteredCoaches.length} of ${memberCoaches.length}`}
               </p>
             </div>
           </div>

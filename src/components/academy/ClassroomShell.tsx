@@ -22,8 +22,12 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
   const tabItems = useMemo(() => {
     const isResources =
       pathname === resourcesRoot || pathname.startsWith(`${resourcesRoot}/`);
+    const systemRoot = `${classroomRoot}/system`;
+    const isSystem =
+      pathname === systemRoot || pathname.startsWith(`${systemRoot}/`);
     const isClassroom =
-      pathname === classroomRoot || pathname.startsWith(`${classroomRoot}/`);
+      (pathname === classroomRoot || pathname.startsWith(`${classroomRoot}/`)) &&
+      !isSystem;
     const isActions =
       pathname === actionsRoot || pathname.startsWith(`${actionsRoot}/`);
     const isCompass =
@@ -35,6 +39,13 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         href: classroomRoot,
         label: "Classroom",
         active: isClassroom,
+        scroll: false,
+      },
+      {
+        kind: "link",
+        href: systemRoot,
+        label: "System",
+        active: isSystem,
         scroll: false,
       },
       {
@@ -97,6 +108,14 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         <span className="text-lg leading-relaxed text-slate-600">
           Worksheets, SOPs, templates, and reference links for coach delivery and the Profit
           System — searchable and grouped by topic.
+        </span>
+      );
+    }
+    if (pathname.startsWith(`${classroomRoot}/system`)) {
+      return (
+        <span className="text-lg leading-relaxed text-slate-600">
+          How the coaching business fits together — from market and outreach through authority and
+          client delivery. Open any card to jump into the lesson.
         </span>
       );
     }

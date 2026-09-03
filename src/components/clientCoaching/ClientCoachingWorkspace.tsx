@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ClientOverviewPanel } from "@/components/clientCoaching/ClientOverviewPanel";
@@ -9,11 +10,13 @@ import { ThreeYearPlanPanel } from "@/components/clientCoaching/ThreeYearPlanPan
 import { ClientNotesPanel } from "@/components/clients/ClientNotesPanel";
 import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import { StickyPageHeader } from "@/components/layout";
-import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
+import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
+  CLIENT_WORKSPACE_TAB_LABELS,
   createEmptyCoachingPlan,
   LAST_CLIENT_WORKSPACE_KEY,
+  clientWorkspacePath,
 } from "@/lib/clientCoaching/defaults";
 import { parseClientWorkspaceTab } from "@/lib/clientCoaching/normalize";
 import type {
@@ -30,6 +33,7 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
+  const prefix = isAdmin ? "/admin" : "/coach";
   const searchParams = useSearchParams();
   const tab = parseClientWorkspaceTab(searchParams.get("tab"));
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
@@ -136,30 +140,40 @@ export function ClientCoachingWorkspace({ contactId }: Props) {
     router.push("/client");
   }
 
-  const title = contact?.fullName ?? "Client";
+  const title = contact?.fullName ?? (loading ? "Loading…" : "Client");
 
   return (
     <CoachClientHubGate>
       <div className="flex flex-col gap-4">
         <StickyPageHeader
-          title="Clients"
-          description="Coaching workspace — sessions, notes, plans, and activity."
-          below={
-            <div className="flex flex-col gap-2">
-              <CoachToolsHubTabs hub="coach-clients" contactId={contactId} />
-              {loading ? null : (
-                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-                    {title}
-                  </h2>
-                  {contact?.businessName ? (
-                    <span className="text-sm text-slate-500">
-                      {contact.businessName}
-                    </span>
-                  ) : null}
-                </div>
-              )}
-            </div>
+          leading={
+            <Link
+              href={`${prefix}/clients`}
+              className="text-sm font-medium text-sky-800 hover:text-sky-950"
+            >
+              ← Clients
+            </Link>
+          }
+          title={title}
+          description={
+            contact?.businessName
+              ? contact.businessName
+              : "Coaching workspace — sessions, notes, plans, and activity."
+          }
+          descriptionPlacement={contact?.businessName ? "below" : "info"}
+          tabs={
+            <PageHeaderUnderlineTabs
+              ariaLabel="Client workspace"
+              items={CLIENT_WORKSPACE_TAB_LABELS.map((item) => ({
+                kind: "link" as const,
+                href: clientWorkspacePath(contactId, item.id, {
+                  admin: isAdmin,
+                }),
+                label: item.label,
+                active: tab === item.id,
+                scroll: false,
+              }))}
+            />
           }
         />
 

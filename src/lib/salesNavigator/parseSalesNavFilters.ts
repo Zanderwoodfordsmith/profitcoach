@@ -36,6 +36,7 @@ export type ParsedSalesNavFilters = {
   location: string | null;
   degrees: SalesNavDegree[];
   yearsAtCurrentCompany: SalesNavYearsAtCompanyId[];
+  yearsAtCurrentPosition: SalesNavYearsAtCompanyId[];
   /** Top Keywords bar boolean string, if present. */
   keywordsBoolean: string | null;
 };
@@ -142,16 +143,14 @@ export function parseSalesNavSearchUrl(
     }
   }
 
-  const yearsSection = filterSection(blob, "YEARS_AT_CURRENT_COMPANY");
-  const yearsAtCurrentCompany: SalesNavYearsAtCompanyId[] = [];
-  if (yearsSection) {
-    for (const m of yearsSection.matchAll(/id:([1-5])\b/g)) {
-      const id = m[1] as SalesNavYearsAtCompanyId;
-      if (YEARS_AT_COMPANY_IDS.has(id) && !yearsAtCurrentCompany.includes(id)) {
-        yearsAtCurrentCompany.push(id);
-      }
-    }
-  }
+  const yearsAtCurrentCompany = parseYearsBucketIds(
+    blob,
+    "YEARS_AT_CURRENT_COMPANY"
+  );
+  const yearsAtCurrentPosition = parseYearsBucketIds(
+    blob,
+    "YEARS_AT_CURRENT_POSITION"
+  );
 
   let keywordsBoolean: string | null = null;
   try {
@@ -169,6 +168,21 @@ export function parseSalesNavSearchUrl(
     location,
     degrees,
     yearsAtCurrentCompany,
+    yearsAtCurrentPosition,
     keywordsBoolean,
   };
+}
+
+function parseYearsBucketIds(
+  blob: string,
+  type: "YEARS_AT_CURRENT_COMPANY" | "YEARS_AT_CURRENT_POSITION"
+): SalesNavYearsAtCompanyId[] {
+  const section = filterSection(blob, type);
+  const out: SalesNavYearsAtCompanyId[] = [];
+  if (!section) return out;
+  for (const m of section.matchAll(/id:([1-5])\b/g)) {
+    const id = m[1] as SalesNavYearsAtCompanyId;
+    if (YEARS_AT_COMPANY_IDS.has(id) && !out.includes(id)) out.push(id);
+  }
+  return out;
 }

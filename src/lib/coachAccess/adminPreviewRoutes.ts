@@ -19,6 +19,8 @@ export const ADMIN_PREVIEW_COACH_ROUTES: AdminPreviewCoachRoute[] = [
   { prefix: "/coach/ideal-client", fallback: "/coach/prospects" },
   { prefix: "/coach/pipeline", fallback: "/coach/prospects" },
   { prefix: "/coach/conversations", fallback: "/coach/prospects" },
+  { prefix: "/coach/campaigns", fallback: "/coach/prospects" },
+  { prefix: "/coach/linkedin", fallback: "/coach/prospects" },
   { prefix: "/coach/funnel-analyzer", fallback: "/coach/prospects" },
   { prefix: "/coach/message-generator", fallback: "/coach/prospects" },
   { prefix: "/coach/linkedin-profile", fallback: "/coach/prospects" },

@@ -45,6 +45,9 @@ export default function AdminConversationsPage() {
   return (
     <DashboardPageSection
       contentMaxWidthClass="max-w-none"
+      gapClass="gap-0"
+      outerClassName="h-full min-h-0"
+      contentClassName="min-h-0 flex-1 overflow-hidden"
       header={
         <StickyPageHeader
           title="Get Clients"

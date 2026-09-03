@@ -9,20 +9,56 @@ import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CoachClientHubGate } from "@/components/coach/CoachClientHubGate";
 import { AddClientPanel } from "@/components/clients/AddClientPanel";
 import {
-  ClientsRoster,
-  type ClientRosterItem,
-} from "@/components/clients/ClientsRoster";
+  CoachClientsHome,
+  type CoachClientHomeItem,
+} from "@/components/clients/CoachClientsHome";
 import { clientWorkspacePath } from "@/lib/clientCoaching/defaults";
+import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+
+type ApiClient = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  business_name: string | null;
+  job_title?: string | null;
+  photo_url?: string | null;
+  headline?: string | null;
+  linkedin_url?: string | null;
+  last_score?: number | null;
+  boss_score?: number | null;
+  boss_score_premium?: number | null;
+  last_assessed_at?: string | null;
+  next_call?: ProspectNextCall | null;
+};
+
+function toHomeItem(row: ApiClient): CoachClientHomeItem {
+  const score =
+    row.boss_score_premium ?? row.boss_score ?? row.last_score ?? null;
+  return {
+    id: row.id,
+    full_name: row.full_name,
+    email: row.email,
+    business_name: row.business_name,
+    job_title: row.job_title ?? null,
+    photo_url: row.photo_url ?? null,
+    headline: row.headline ?? null,
+    linkedin_url: row.linkedin_url ?? null,
+    last_score: score,
+    boss_score: row.boss_score ?? null,
+    boss_score_premium: row.boss_score_premium ?? null,
+    last_assessed_at: row.last_assessed_at ?? null,
+    next_call: row.next_call ?? null,
+  };
+}
 
 export default function CoachClientsPage() {
   const router = useRouter();
   const { impersonatingCoachId, setImpersonatingContactId } = useImpersonation();
-  const [clients, setClients] = useState<ClientRosterItem[]>([]);
+  const [clients, setClients] = useState<CoachClientHomeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [search, setSearch] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -77,20 +113,8 @@ export default function CoachClientsPage() {
         return;
       }
 
-      const body = (await res.json()) as {
-        clients?: Array<{
-          id: string;
-          full_name: string;
-          email: string | null;
-          business_name: string | null;
-          job_title?: string | null;
-          photo_url?: string | null;
-          headline?: string | null;
-          linkedin_url?: string | null;
-          last_score?: number | null;
-        }>;
-      };
-      setClients(body.clients ?? []);
+      const body = (await res.json()) as { clients?: ApiClient[] };
+      setClients((body.clients ?? []).map(toHomeItem));
       setLoading(false);
     }
 
@@ -123,35 +147,55 @@ export default function CoachClientsPage() {
     router.push(clientWorkspacePath(contactId));
   }
 
+  const empty = !loading && !error && clients.length === 0;
+
   return (
     <CoachClientHubGate>
       <div className="flex flex-col gap-4">
         <StickyPageHeader
-          title="Clients"
-          description="Your coaching roster — sessions, notes, and delivery tools."
-          below={<CoachToolsHubTabs hub="coach-clients" />}
+          title="Coach Clients"
+          description={
+            empty
+              ? "Import a client from LinkedIn to open their coaching workspace."
+              : "Upcoming sessions, attention items, and your roster."
+          }
+          tabs={<CoachToolsHubTabs hub="coach-clients" />}
         />
 
         <div className="flex w-full flex-col gap-4">
-          {showAdd ? (
+          {error && !loading ? (
+            <p className="text-sm text-rose-700">{error}</p>
+          ) : null}
+
+          {empty ? (
             <AddClientPanel
-              onClose={() => setShowAdd(false)}
+              variant="hero"
               authHeaders={authHeaders}
               onImported={handleCreated}
               onManualCreated={handleCreated}
             />
-          ) : null}
+          ) : (
+            <>
+              {showAdd ? (
+                <div className="max-w-lg">
+                  <AddClientPanel
+                    variant="panel"
+                    onClose={() => setShowAdd(false)}
+                    authHeaders={authHeaders}
+                    onImported={handleCreated}
+                    onManualCreated={handleCreated}
+                  />
+                </div>
+              ) : null}
 
-          <ClientsRoster
-            clients={clients}
-            loading={loading}
-            error={error}
-            search={search}
-            onSearchChange={setSearch}
-            onAddClick={() => setShowAdd((open) => !open)}
-            addActive={showAdd}
-            onViewAsClient={handleViewAsClient}
-          />
+              <CoachClientsHome
+                clients={clients}
+                loading={loading}
+                onAddClient={() => setShowAdd(true)}
+                onViewAsClient={handleViewAsClient}
+              />
+            </>
+          )}
         </div>
       </div>
     </CoachClientHubGate>

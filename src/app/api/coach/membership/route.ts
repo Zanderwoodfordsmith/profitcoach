@@ -17,6 +17,12 @@ import {
 } from "@/lib/coachAccess/tiers";
 import { refreshCoachProgrammeStatus } from "@/lib/coachAccess/refreshProgrammeStatus";
 import { coachHasActiveRecurringBilling } from "@/lib/coachRecurringBilling";
+import {
+  buildPaymentBillingKindIndex,
+  resolvePaymentBillingKind,
+  type PaymentBillingKind,
+  type PaymentForBillingKind,
+} from "@/lib/paymentBillingKind";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { stripeServer } from "@/lib/stripeServer";
@@ -116,25 +122,35 @@ export async function GET(request: Request) {
 
   const { data: payments } = await supabaseAdmin
     .from("coach_payments")
-    .select("id, amount_cents, currency, status, paid_at, billing_kind_override")
+    .select(
+      "id, customer_email, amount_cents, currency, status, paid_at, description, billing_kind_override"
+    )
     .eq("coach_id", coachId)
     .order("paid_at", { ascending: false })
     .limit(50);
+
+  const paymentsForBilling: PaymentForBillingKind[] = (payments ?? []).map(
+    (payment) => ({
+      id: payment.id as string,
+      customer_email: (payment.customer_email as string) ?? "",
+      coach_id: coachId,
+      amount_cents: payment.amount_cents as number,
+      currency: (payment.currency as string) ?? "gbp",
+      status: payment.status as string,
+      paid_at: payment.paid_at as string,
+      description: (payment.description as string | null) ?? null,
+      billing_kind_override: payment.billing_kind_override as
+        | PaymentBillingKind
+        | null,
+    })
+  );
+  const billingKindById = buildPaymentBillingKindIndex(paymentsForBilling);
 
   const recurringActive = coachHasActiveRecurringBilling({
     recurringPaymentStatus: row.recurring_payment_status as
       | import("@/lib/coachBilling").CoachRecurringPaymentStatus
       | null,
-    payments: (payments ?? []).map((p) => ({
-      id: p.id as string,
-      customer_email: "",
-      amount_cents: p.amount_cents as number,
-      currency: (p.currency as string) ?? "gbp",
-      status: p.status as string,
-      paid_at: p.paid_at as string,
-      description: null,
-      billing_kind_override: p.billing_kind_override as import("@/lib/paymentBillingKind").PaymentBillingKind | null,
-    })),
+    payments: paymentsForBilling,
   });
 
   const hasActiveSubscription =
@@ -228,13 +244,16 @@ export async function GET(request: Request) {
     recurringPaymentStatus: row.recurring_payment_status,
     recurringActive,
     needsPaymentChoice,
-    payments: (payments ?? []).map((payment) => ({
-      id: payment.id as string,
-      amountCents: payment.amount_cents as number,
-      currency: (payment.currency as string) ?? "gbp",
-      status: payment.status as string,
-      paidAt: payment.paid_at as string,
-      billingKind: payment.billing_kind_override as string | null,
+    payments: paymentsForBilling.map((payment) => ({
+      id: payment.id,
+      amountCents: payment.amount_cents,
+      currency: payment.currency,
+      status: payment.status,
+      paidAt: payment.paid_at,
+      billingKind: resolvePaymentBillingKind(
+        billingKindById.get(payment.id) ?? "other",
+        payment.billing_kind_override
+      ),
     })),
     plans,
     stripeConfigured: MEMBERSHIP_PLAN_ORDER.some(

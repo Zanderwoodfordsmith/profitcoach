@@ -11,6 +11,7 @@ import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings"
 import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
 import { BillingSettingsTab } from "@/components/settings/BillingSettingsTab";
+import { IntegrationsSettingsTab } from "@/components/settings/IntegrationsSettingsTab";
 import { DirectorySettingsTab } from "@/components/settings/DirectorySettingsTab";
 import { FunnelSettingsClient } from "@/components/settings/FunnelSettingsClient";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
@@ -74,6 +75,8 @@ function parseSettingsTab(
 ): BossDashboardSettingsTabId | null {
   if (!raw) return null;
   if (raw === "get-clients") return "funnel";
+  // Legacy deep link — Integrations now lives on Profile.
+  if (raw === "integrations") return "profile";
   if (raw === "billing" && variant !== "coach") return null;
   if (SETTINGS_TAB_IDS.includes(raw as BossDashboardSettingsTabId)) {
     return raw as BossDashboardSettingsTabId;
@@ -212,11 +215,20 @@ export function BossDashboardSettings({
       }
       return;
     }
+    if (tab === "integrations" && !embed) {
+      const connected = searchParams.get("connected");
+      const qs = new URLSearchParams({ tab: "profile" });
+      if (connected) qs.set("connected", connected);
+      const base =
+        variant === "admin" ? "/admin/account" : "/coach/settings";
+      router.replace(`${base}?${qs.toString()}`);
+      return;
+    }
     const parsed = parseSettingsTab(tab, variant);
     if (parsed) {
       setInternalTab(parsed);
     }
-  }, [router, variant, searchParams]);
+  }, [embed, router, variant, searchParams]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.origin) {
@@ -535,10 +547,17 @@ export function BossDashboardSettings({
   const settingsBody = (
     <>
       {activeTab === "profile" ? (
-      <form
-        onSubmit={handleProfileSave}
-        className="flex w-full max-w-2xl flex-col gap-4"
-      >
+        <div
+          className={
+            variant === "coach"
+              ? "grid w-full items-start gap-8 lg:grid-cols-[minmax(0,32rem)_minmax(16rem,22rem)] lg:justify-start lg:gap-10"
+              : "w-full max-w-2xl"
+          }
+        >
+          <form
+            onSubmit={handleProfileSave}
+            className="flex w-full min-w-0 flex-col gap-4"
+          >
         <ProfileIdentityCard
           firstName={firstName}
           lastName={lastName}
@@ -696,7 +715,13 @@ export function BossDashboardSettings({
             <span className="text-sm text-rose-600">{saveError}</span>
           ) : null}
         </div>
-      </form>
+          </form>
+          {variant === "coach" ? (
+            <aside className="min-w-0 lg:sticky lg:top-24">
+              <IntegrationsSettingsTab />
+            </aside>
+          ) : null}
+        </div>
       ) : null}
 
       {activeTab === "directory" ? (
@@ -756,14 +781,17 @@ export function BossDashboardSettings({
     activeTab === "ladder" ||
     activeTab === "funnel" ||
     activeTab === "calendar" ||
-    activeTab === "directory";
+    activeTab === "directory" ||
+    (activeTab === "profile" && variant === "coach");
 
   return (
     <DashboardPageSection
       gapClass="gap-6"
       header={settingsHeader}
       contentMaxWidthClass={wideTab ? "max-w-6xl" : "max-w-4xl"}
-      contentClassName={wideTab ? "mx-0 mr-auto w-full" : ""}
+      contentClassName={
+        wideTab || activeTab === "profile" ? "!mx-0 mr-auto w-full" : ""
+      }
     >
       {settingsBody}
     </DashboardPageSection>

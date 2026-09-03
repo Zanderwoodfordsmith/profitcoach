@@ -88,7 +88,7 @@ export function SalesNavImportsPanel() {
       header={
         <StickyPageHeader
           title="Sales Nav imports"
-          description="Apify Short scrapes into the shared lead cache — who ran them, how many came in, and estimated cost. Open Lead Finder → Sales Nav → History to re-view leads from a run."
+          description="Apify cookie scrapes and Unipile connected-session imports into the shared lead cache. Open Lead Finder → Sales Nav → History to re-view leads from a run."
           tabs={<ToolkitHubTabs />}
         />
       }
@@ -139,6 +139,7 @@ export function SalesNavImportsPanel() {
                 <tr>
                   <th className="px-3 py-2.5 font-medium">When</th>
                   <th className="px-3 py-2.5 font-medium">Status</th>
+                  <th className="px-3 py-2.5 font-medium">Via</th>
                   <th className="px-3 py-2.5 font-medium">Name</th>
                   <th className="px-3 py-2.5 font-medium">Who</th>
                   <th className="px-3 py-2.5 font-medium text-right">Scraped</th>
@@ -166,6 +167,9 @@ export function SalesNavImportsPanel() {
                         : run.status === "failed"
                           ? "Failed"
                           : "Done"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-600">
+                      {run.provider === "unipile" ? "Unipile" : "Apify"}
                     </td>
                     <td className="max-w-[14rem] px-3 py-2.5">
                       <div className="truncate font-medium text-slate-900">
@@ -206,7 +210,9 @@ export function SalesNavImportsPanel() {
                       {formatDuration(run.durationMs)}
                     </td>
                     <td className="px-3 py-2.5 text-right tabular-nums text-slate-800">
-                      {formatUsd(run.estimatedCostUsd)}
+                      {run.provider === "unipile"
+                        ? "—"
+                        : formatUsd(run.estimatedCostUsd)}
                     </td>
                     <td className="px-3 py-2.5">
                       {run.salesNavUrl ? (

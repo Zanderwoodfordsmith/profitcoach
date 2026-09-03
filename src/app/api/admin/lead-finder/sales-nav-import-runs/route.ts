@@ -16,6 +16,7 @@ export type SalesNavImportHistoryItem = {
   requestedTakePages: number | null;
   durationMs: number | null;
   estimatedCostUsd: number;
+  provider: "apify" | "unipile";
   salesNavUrl: string | null;
   cacheInserted: number;
   cacheUpdated: number;
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabaseAdmin
     .from("sales_nav_import_runs")
     .select(
-      "id, name, status, created_at, scraped_count, progress_count, take_pages, requested_take_pages, duration_ms, estimated_cost_usd, sales_nav_url, cache_inserted, cache_updated, error_message"
+      "id, name, status, created_at, scraped_count, progress_count, take_pages, requested_take_pages, duration_ms, estimated_cost_usd, sales_nav_url, cache_inserted, cache_updated, error_message, provider"
     )
     .eq("coach_id", auth.userId)
     .not("take_pages", "is", null)
@@ -82,6 +83,7 @@ export async function GET(request: Request) {
           ? r.duration_ms
           : null,
       estimatedCostUsd: Number(r.estimated_cost_usd ?? 0),
+      provider: r.provider === "unipile" ? "unipile" : "apify",
       salesNavUrl: r.sales_nav_url ?? null,
       cacheInserted: r.cache_inserted ?? 0,
       cacheUpdated: r.cache_updated ?? 0,

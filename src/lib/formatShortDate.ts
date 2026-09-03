@@ -1,14 +1,28 @@
-/** Short date: `10 Aug`, or `10 Aug 2025` when not this year. */
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+/** Short date: `10 Aug`, or `10 Aug 2025` when not this year. Always 3-letter month. */
 export function formatShortDate(iso: string): string {
   try {
     const d = new Date(iso);
-    const now = new Date();
-    const sameYear = d.getFullYear() === now.getFullYear();
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "numeric",
-      month: "short",
-      ...(sameYear ? {} : { year: "numeric" }),
-    }).format(d);
+    if (Number.isNaN(d.getTime())) return iso;
+    const month = SHORT_MONTHS[d.getMonth()];
+    const sameYear = d.getFullYear() === new Date().getFullYear();
+    return sameYear
+      ? `${d.getDate()} ${month}`
+      : `${d.getDate()} ${month} ${d.getFullYear()}`;
   } catch {
     return iso;
   }

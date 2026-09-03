@@ -1,5 +1,6 @@
 /**
- * Rewrite COMPANY_HEADCOUNT / YEARS_AT_CURRENT_COMPANY filters on pasted Sales Nav URLs.
+ * Rewrite COMPANY_HEADCOUNT / YEARS_AT_CURRENT_COMPANY / YEARS_AT_CURRENT_POSITION
+ * filters on pasted Sales Nav URLs.
  * Operates on the encoded query param as LinkedIn stores it (no full decode round-trip).
  */
 
@@ -16,14 +17,31 @@ function encText(text: string): string {
   return encodeURIComponent(encodeURIComponent(text));
 }
 
+/**
+ * LinkedIn’s `query` value is percent-encoded (`type%3A`, `filters%3AList(`).
+ * `URLSearchParams.get` decodes that, which breaks rewrite. Prefer the raw
+ * query string when it still has encoded markers; otherwise take one decode
+ * (typical copied Sales Nav URLs are double-encoded).
+ */
 function extractQueryParam(salesNavUrl: string): string {
+  const raw = salesNavUrl.match(/[?&]query=([^&]*)/)?.[1] ?? "";
+  let fromParams = "";
   try {
-    const u = new URL(salesNavUrl);
-    return u.searchParams.get("query") ?? "";
+    fromParams = new URL(salesNavUrl).searchParams.get("query") ?? "";
   } catch {
-    const m = salesNavUrl.match(/[?&]query=([^&]+)/);
-    return m?.[1] ?? "";
+    fromParams = "";
   }
+  if (isRewriteEncodedQuery(raw)) return raw;
+  if (isRewriteEncodedQuery(fromParams)) return fromParams;
+  return raw || fromParams;
+}
+
+function isRewriteEncodedQuery(query: string): boolean {
+  return (
+    query.includes("filters%3AList(") ||
+    query.includes("type%3A") ||
+    query.includes("%2Cfilters%3AList(")
+  );
 }
 
 function headcountFilterEncoded(bands: SalesNavHeadcountBand[]): string {
@@ -34,12 +52,15 @@ function headcountFilterEncoded(bands: SalesNavHeadcountBand[]): string {
   return `(type%3ACOMPANY_HEADCOUNT%2Cvalues%3AList(${parts.join("%2C")}))`;
 }
 
-function yearsAtCompanyFilterEncoded(ids: SalesNavYearsAtCompanyId[]): string {
+function yearsBucketFilterEncoded(
+  type: "YEARS_AT_CURRENT_COMPANY" | "YEARS_AT_CURRENT_POSITION",
+  ids: SalesNavYearsAtCompanyId[]
+): string {
   const parts = ids.map((id) => {
     const mapped = YEARS_AT_CURRENT_COMPANY[id];
     return `(id%3A${mapped.id}%2Ctext%3A${encText(mapped.text)}%2CselectionType%3AINCLUDED)`;
   });
-  return `(type%3AYEARS_AT_CURRENT_COMPANY%2Cvalues%3AList(${parts.join("%2C")}))`;
+  return `(type%3A${type}%2Cvalues%3AList(${parts.join("%2C")}))`;
 }
 
 /** Remove one encoded filter block by type (e.g. COMPANY_HEADCOUNT). */
@@ -91,17 +112,24 @@ function insertFilter(encodedQuery: string, filter: string): string {
 }
 
 function rebuildSalesNavUrl(salesNavUrl: string, encodedQuery: string): string {
-  try {
-    const u = new URL(salesNavUrl);
-    u.searchParams.set("query", encodedQuery);
-    if (!u.searchParams.has("viewAllFilters")) {
-      u.searchParams.set("viewAllFilters", "true");
-    }
-    return u.toString();
-  } catch {
-    const base = salesNavUrl.split("?")[0] ?? "https://www.linkedin.com/sales/search/people";
-    return `${base}?query=${encodedQuery}&viewAllFilters=true`;
+  const hashIndex = salesNavUrl.indexOf("#");
+  const withoutHash =
+    hashIndex >= 0 ? salesNavUrl.slice(0, hashIndex) : salesNavUrl;
+  const hash = hashIndex >= 0 ? salesNavUrl.slice(hashIndex) : "";
+  const qIndex = withoutHash.indexOf("?");
+  const path =
+    qIndex >= 0
+      ? withoutHash.slice(0, qIndex)
+      : withoutHash || "https://www.linkedin.com/sales/search/people";
+  const search = qIndex >= 0 ? withoutHash.slice(qIndex + 1) : "";
+  const params = search
+    .split("&")
+    .filter((p) => p.length > 0 && !p.startsWith("query="));
+  const next = [`query=${encodedQuery}`, ...params];
+  if (!next.some((p) => p.startsWith("viewAllFilters="))) {
+    next.push("viewAllFilters=true");
   }
+  return `${path}?${next.join("&")}${hash}`;
 }
 
 function decodedQueryBlob(salesNavUrl: string): string {
@@ -149,7 +177,20 @@ export function rewriteSalesNavUrlYearsAtCompany(
   const query = extractQueryParam(salesNavUrl);
   if (!query) throw new Error("Sales Nav URL is missing query.");
   const without = removeFilterType(query, "YEARS_AT_CURRENT_COMPANY");
-  const filter = yearsAtCompanyFilterEncoded(yearsIds);
+  const filter = yearsBucketFilterEncoded("YEARS_AT_CURRENT_COMPANY", yearsIds);
+  return rebuildSalesNavUrl(salesNavUrl, insertFilter(without, filter));
+}
+
+/** LinkedIn SN "Years in current position" — same 1–5 bucket ids as company tenure. */
+export function rewriteSalesNavUrlYearsAtPosition(
+  salesNavUrl: string,
+  yearsIds: SalesNavYearsAtCompanyId[]
+): string {
+  if (yearsIds.length === 0) return salesNavUrl;
+  const query = extractQueryParam(salesNavUrl);
+  if (!query) throw new Error("Sales Nav URL is missing query.");
+  const without = removeFilterType(query, "YEARS_AT_CURRENT_POSITION");
+  const filter = yearsBucketFilterEncoded("YEARS_AT_CURRENT_POSITION", yearsIds);
   return rebuildSalesNavUrl(salesNavUrl, insertFilter(without, filter));
 }
 

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
-import { requireAdminBearer } from "@/lib/linkedinAdminAuth";
+import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import {
   inferPostType,
   normalizeMedia,
-  publishStoredLinkedInPost,
 } from "@/lib/linkedinScheduledPosts";
+import {
+  publishPostViaUnipile,
+  resolveUnipileAccountIdForUser,
+} from "@/lib/unipile/publishing";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   isLinkedInDocumentMime,
@@ -28,9 +31,12 @@ type Body = {
 
 export async function POST(request: Request) {
   try {
-    const auth = await requireAdminBearer(request);
+    const auth = await requireContentPublisher(request);
     if (auth.error || !auth.userId) {
-      return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: auth.error ?? "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const body = (await request.json().catch(() => ({}))) as Body;
@@ -44,10 +50,16 @@ export async function POST(request: Request) {
     const category = body.category?.trim() || null;
 
     if (!content && postType === "text") {
-      return NextResponse.json({ error: "Post content is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Post content is required." },
+        { status: 400 }
+      );
     }
     if (postType === "image" && media.length < 1) {
-      return NextResponse.json({ error: "Add an image for this post type." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Add an image for this post type." },
+        { status: 400 }
+      );
     }
     if (postType === "multi_image" && media.length < 2) {
       return NextResponse.json(
@@ -59,7 +71,9 @@ export async function POST(request: Request) {
       const videos = media.filter((m) => isLinkedInVideoMime(m.mime));
       if (videos.length !== 1 || media.length !== 1) {
         return NextResponse.json(
-          { error: "A video post needs exactly one MP4 (no mixed images)." },
+          {
+            error: "A video post needs exactly one MP4 (no mixed images).",
+          },
           { status: 400 }
         );
       }
@@ -68,45 +82,45 @@ export async function POST(request: Request) {
       const docs = media.filter((m) => isLinkedInDocumentMime(m.mime));
       if (docs.length !== 1 || media.length !== 1) {
         return NextResponse.json(
-          { error: "A document post needs exactly one PDF/DOC/PPT file." },
+          {
+            error: "A document post needs exactly one PDF/DOC/PPT file.",
+          },
           { status: 400 }
         );
       }
     }
     if (postType === "article") {
       if (!articleUrl) {
-        return NextResponse.json({ error: "Article URL is required." }, { status: 400 });
+        return NextResponse.json(
+          { error: "Article URL is required." },
+          { status: 400 }
+        );
       }
       if (!articleTitle) {
         return NextResponse.json(
-          { error: "Link title is required (LinkedIn does not scrape it via API)." },
+          { error: "Link title is required." },
           { status: 400 }
         );
       }
     }
 
-    const { data: connection, error: connectionError } = await supabaseAdmin
-      .from("linkedin_member_connections")
-      .select("linkedin_sub, access_token")
-      .eq("user_id", auth.userId)
-      .maybeSingle();
-
-    if (connectionError || !connection) {
+    const unipileAccountId = await resolveUnipileAccountIdForUser(auth.userId);
+    if (!unipileAccountId) {
       return NextResponse.json(
-        { error: "LinkedIn account is not connected for this admin user." },
+        {
+          error:
+            "Connect LinkedIn in Campaigns first. Content posts through that same account.",
+        },
         { status: 400 }
       );
     }
 
-    const publish = await publishStoredLinkedInPost({
-      connection,
+    const publish = await publishPostViaUnipile({
+      unipileAccountId,
       content,
       postType,
       media,
       articleUrl,
-      articleTitle,
-      articleDescription,
-      articleThumbnailUrl,
     });
     if (!publish.ok) {
       return NextResponse.json({ error: publish.error }, { status: 502 });
@@ -118,6 +132,9 @@ export async function POST(request: Request) {
       content,
       scheduled_for: nowIso,
       status: "published",
+      attempts: 1,
+      published_at: nowIso,
+      linkedin_post_urn: publish.postId,
       post_type: postType,
       category,
       article_url: articleUrl,
@@ -125,14 +142,18 @@ export async function POST(request: Request) {
       article_description: articleDescription,
       article_thumbnail_url: articleThumbnailUrl,
       media,
-      linkedin_post_urn: publish.postUrn,
-      published_at: nowIso,
-      attempts: 1,
+      last_error: null,
     });
 
-    return NextResponse.json({ ok: true, postUrn: publish.postUrn });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown server error";
-    return NextResponse.json({ error: `Server exception: ${message}` }, { status: 500 });
+    return NextResponse.json({
+      ok: true,
+      post_id: publish.postId,
+      via: "unipile",
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Publish failed." },
+      { status: 500 }
+    );
   }
 }

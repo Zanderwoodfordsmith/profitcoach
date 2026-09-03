@@ -25,8 +25,14 @@ export const PRIMARY_COACH_LEAD_WEBHOOK_URL =
 export const PRIMARY_COACH_GHL_LOCATION_ID = "nkMdG4ieburQlR9ypQYd";
 export const PRIMARY_COACH_GHL_CALENDAR_ID = "8jyZoTDwjgn8kTDZlv7y";
 
-/** Internal marketing / GHL test accounts — not real member join dates. */
-const SYSTEM_COACH_SLUGS = new Set([PRIMARY_COACH_SLUG_FALLBACK]);
+/** Internal marketing / GHL / QA demo accounts — not real member join dates. */
+export const DEMO_COACH_SLUG = "zander-demo";
+export const DEMO_COACH_LABEL = "Zander Demo";
+
+const SYSTEM_COACH_SLUGS = new Set([
+  PRIMARY_COACH_SLUG_FALLBACK,
+  DEMO_COACH_SLUG,
+]);
 
 export function isSystemCoachSlug(slug: string | null | undefined): boolean {
   if (!slug) return false;

@@ -175,9 +175,12 @@ export default function CoachLayout({
   }, [pathname]);
 
   const membershipPage = pathname === "/coach/membership";
+  const conversationsPage = pathname === "/coach/conversations";
   const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
   const playbooksReader = fullBleed;
-  const sidebarVisible = sidebarOpen && !playbooksReader;
+  const sidebarExpanded = sidebarOpen && !playbooksReader;
+  const sidebarMounted = !playbooksReader;
+  const sidebarCollapsed = sidebarMounted && !sidebarOpen;
 
   /**
    * Docked AI panel (admin preview). ClickUp-style: pushes the canvas from
@@ -210,13 +213,15 @@ export default function CoachLayout({
   };
   const aiPanelDocked = aiPanelAvailable && aiPanelOpen && !aiPanelFullscreen;
 
-  const shellPadClass = `${sidebarVisible ? "md:pl-56" : "pl-0"} ${
-    aiPanelDocked ? "md:pr-[28rem]" : ""
-  } transition-[padding] duration-200`;
-  const topClusterMaxW = sidebarVisible
+  const shellPadClass = `${
+    playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
+  } ${aiPanelDocked ? "md:pr-[28rem]" : ""} transition-[padding] duration-200`;
+  const topClusterMaxW = sidebarExpanded
     ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-15rem)]"
-    : "max-w-[calc(100vw-1.5rem)]";
-  const isMinimalWorkshopChrome = bossWorkshopPage && !sidebarVisible;
+    : sidebarMounted
+      ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-4.5rem)]"
+      : "max-w-[calc(100vw-1.5rem)]";
+  const isMinimalWorkshopChrome = bossWorkshopPage && sidebarCollapsed;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
   const { access, hasFeature } = useCoachAccess(impersonatingCoachId);
 
@@ -239,7 +244,9 @@ export default function CoachLayout({
   return (
     <div
       data-ai-docked={aiPanelDocked ? true : undefined}
-      className={`group/appshell min-h-screen overflow-x-hidden ${shellPadClass} text-slate-900 ${
+      className={`group/appshell ${
+        conversationsPage ? "h-dvh overflow-hidden" : "min-h-screen overflow-x-hidden"
+      } ${shellPadClass} text-slate-900 ${
         membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
     >
@@ -387,13 +394,14 @@ export default function CoachLayout({
         )}
       {!playbooksReader ? (
         <BossProNavToggle
-          sidebarVisible={sidebarVisible}
+          expanded={sidebarExpanded}
           onToggle={() => setSidebarOpen((o) => !o)}
         />
       ) : null}
-      {sidebarVisible ? (
+      {sidebarMounted ? (
         <DashboardSidebar
           variant="coach"
+          collapsed={sidebarCollapsed}
           signingOut={signingOut}
           onSignOut={handleSignOut}
           coachHasFeature={hasFeature}
@@ -410,23 +418,29 @@ export default function CoachLayout({
         />
       ) : null}
         <main
-          className={`min-h-screen min-w-0 w-full pt-0 ${
-            membershipPage
-              ? "px-0 pb-0"
+          className={`min-w-0 w-full pt-0 ${
+            conversationsPage
+              ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px] max-md:pt-14"
+              : membershipPage
+              ? "min-h-screen px-0 pb-0"
               : playbooksReader
-              ? "px-0 pb-10"
-              : `px-4 md:px-[60px] ${
-                  sidebarVisible
+              ? "min-h-screen px-0 pb-10"
+              : `min-h-screen px-4 md:px-[60px] ${
+                  sidebarExpanded
                     ? "max-md:pt-14 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : isMinimalWorkshopChrome
-                      ? "max-md:pt-14 pb-6"
-                      : "pb-6"
+                    : "max-md:pt-14 pb-6"
                 }`
           }`}
         >
           <div
             className={`flex w-full min-w-0 flex-col ${
-              isSignaturePage ? "max-w-none gap-0" : playbooksReader ? "w-full gap-0" : "gap-4"
+              conversationsPage
+                ? "h-full min-h-0 gap-0"
+                : isSignaturePage
+                  ? "max-w-none gap-0"
+                  : playbooksReader
+                    ? "w-full gap-0"
+                    : "gap-4"
             }`}
           >
             <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
@@ -440,7 +454,8 @@ export default function CoachLayout({
           fullscreen={aiPanelFullscreen}
           onToggleFullscreen={() => setAiPanelFullscreen((f) => !f)}
           createHubHref="/coach/message-generator"
-          sidebarVisible={sidebarVisible}
+          sidebarVisible={sidebarMounted}
+          sidebarCollapsed={sidebarCollapsed}
         />
       ) : null}
     </div>

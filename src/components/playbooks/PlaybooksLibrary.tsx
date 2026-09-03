@@ -29,6 +29,8 @@ export type PlaybooksLibraryProps = {
   headerLeading?: ReactNode;
   /** Optional header tabs (e.g. Coach Clients hub). */
   tabs?: ReactNode;
+  /** Extra actions beside the grid/list toggle (e.g. Classroom course link). */
+  headerActions?: ReactNode;
 };
 
 function levelLabel(levelId: number): string {
@@ -48,6 +50,7 @@ export function PlaybooksLibrary({
   stickyBleedInset,
   headerLeading,
   tabs,
+  headerActions,
 }: PlaybooksLibraryProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -98,8 +101,15 @@ export function PlaybooksLibrary({
         eyebrow={eyebrow}
         title={title}
         description={description}
-        below={tabs}
-        actions={viewToggle}
+        tabs={tabs}
+        actions={
+          headerActions || viewToggle ? (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {headerActions}
+              {viewToggle}
+            </div>
+          ) : undefined
+        }
         bleedInset={stickyBleedInset ?? undefined}
       />
 

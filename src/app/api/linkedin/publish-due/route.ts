@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { requireAdminBearer } from "@/lib/linkedinAdminAuth";
+import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import {
   inferPostType,
   normalizeMedia,
-  publishStoredLinkedInPost,
 } from "@/lib/linkedinScheduledPosts";
+import {
+  publishScheduledRowViaUnipile,
+} from "@/lib/unipile/publishing";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { LinkedInConnection, LinkedInPostType } from "@/lib/linkedinPublishing";
+import type { LinkedInPostType } from "@/lib/linkedinPublishing";
 
 export const maxDuration = 300;
 
@@ -35,7 +37,6 @@ function isCronRequest(request: Request): boolean {
 }
 
 async function publishOne(
-  connection: LinkedInConnection,
   item: DueItem
 ): Promise<{ id: string; ok: boolean; error?: string }> {
   const media = normalizeMedia(item.media);
@@ -44,15 +45,12 @@ async function publishOne(
     media,
     item.article_url
   );
-  const result = await publishStoredLinkedInPost({
-    connection,
+  const result = await publishScheduledRowViaUnipile({
+    user_id: item.user_id,
     content: item.content,
-    postType,
+    post_type: postType,
     media,
-    articleUrl: item.article_url,
-    articleTitle: item.article_title,
-    articleDescription: item.article_description,
-    articleThumbnailUrl: item.article_thumbnail_url,
+    article_url: item.article_url,
   });
   if (result.ok) {
     await supabaseAdmin
@@ -61,7 +59,7 @@ async function publishOne(
         status: "published",
         attempts: item.attempts + 1,
         published_at: new Date().toISOString(),
-        linkedin_post_urn: result.postUrn,
+        linkedin_post_urn: result.postId,
         last_error: null,
       })
       .eq("id", item.id);
@@ -99,8 +97,7 @@ async function loadDue(userId?: string): Promise<DueItem[]> {
 
 /**
  * Publish scheduled LinkedIn posts whose scheduled_for has passed.
- * - Admin session: only that user's posts
- * - Vercel cron / CRON_SECRET: all users' due posts
+ * Uses Unipile (same account as Campaigns).
  */
 export async function POST(request: Request) {
   try {
@@ -108,9 +105,12 @@ export async function POST(request: Request) {
     let scopeUserId: string | null = null;
 
     if (!cron) {
-      const auth = await requireAdminBearer(request);
+      const auth = await requireContentPublisher(request);
       if (auth.error || !auth.userId) {
-        return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
+        return NextResponse.json(
+          { error: auth.error ?? "Unauthorized" },
+          { status: 401 }
+        );
       }
       scopeUserId = auth.userId;
     }
@@ -120,60 +120,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ processed: 0, published: 0, results: [] });
     }
 
-    const byUser = new Map<string, DueItem[]>();
-    for (const item of items) {
-      const list = byUser.get(item.user_id) ?? [];
-      list.push(item);
-      byUser.set(item.user_id, list);
-    }
-
     const out: Array<{ id: string; ok: boolean; error?: string }> = [];
     let published = 0;
 
-    for (const [userId, userItems] of byUser) {
-      const { data: connection, error: connectionError } = await supabaseAdmin
-        .from("linkedin_member_connections")
-        .select("linkedin_sub, access_token")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      if (connectionError || !connection) {
-        for (const item of userItems) {
-          await supabaseAdmin
-            .from("linkedin_scheduled_posts")
-            .update({
-              attempts: item.attempts + 1,
-              last_error: "LinkedIn connection missing.",
-              status: item.attempts + 1 >= 3 ? "failed" : "scheduled",
-            })
-            .eq("id", item.id);
-          out.push({ id: item.id, ok: false, error: "LinkedIn connection missing." });
-        }
-        continue;
-      }
-
-      for (const item of userItems) {
-        const result = await publishOne(connection, item);
-        out.push(result);
-        if (result.ok) published += 1;
-      }
+    for (const item of items) {
+      const result = await publishOne(item);
+      out.push(result);
+      if (result.ok) published += 1;
     }
 
     return NextResponse.json({
-      processed: out.length,
+      processed: items.length,
       published,
       results: out,
+      via: "unipile",
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Publish-due failed." },
+      { status: 500 }
+    );
   }
 }
 
-/** Vercel Cron uses GET by default for some configs; support both. */
 export async function GET(request: Request) {
-  if (!isCronRequest(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
   return POST(request);
 }

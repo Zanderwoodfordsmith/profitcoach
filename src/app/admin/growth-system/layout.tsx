@@ -1,5 +1,4 @@
 import { StickyPageHeader } from "@/components/layout";
-import { GrowthSystemTabs } from "@/components/academy/GrowthSystemTabs";
 
 export default function GrowthSystemLayout({
   children,
@@ -9,9 +8,8 @@ export default function GrowthSystemLayout({
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Growth System"
-        description="Internal preview of the recommended coaching business journey."
-        tabs={<GrowthSystemTabs />}
+        title="Growth system overview"
+        description="Internal preview of the recommended coaching business journey. Linked from Academy → Archive links."
       />
       {children}
     </div>

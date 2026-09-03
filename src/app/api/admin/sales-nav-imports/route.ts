@@ -20,6 +20,7 @@ export type SalesNavImportRunRow = {
   /** Wall-clock ms for scrape + cache (null on legacy rows). */
   durationMs: number | null;
   profileScraperMode: string;
+  provider: "apify" | "unipile";
   savedToList: boolean;
   salesNavUrl: string | null;
   errorMessage: string | null;
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
   const { data, error } = await supabaseAdmin
     .from("sales_nav_import_runs")
     .select(
-      "id, created_at, coach_id, name, status, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, take_pages, estimated_cost_usd, duration_ms, profile_scraper_mode, saved_to_list, sales_nav_url, error_message"
+      "id, created_at, coach_id, name, status, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, take_pages, estimated_cost_usd, duration_ms, profile_scraper_mode, saved_to_list, sales_nav_url, error_message, provider"
     )
     .order("created_at", { ascending: false })
     .limit(200);
@@ -98,6 +99,7 @@ export async function GET(request: Request) {
           ? r.duration_ms
           : null,
       profileScraperMode: r.profile_scraper_mode ?? "Short",
+      provider: r.provider === "unipile" ? "unipile" : "apify",
       savedToList: Boolean(r.saved_to_list),
       salesNavUrl: r.sales_nav_url ?? null,
       errorMessage:

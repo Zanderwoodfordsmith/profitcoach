@@ -7,6 +7,7 @@ import { requireLeadFinderAccess } from "@/lib/requireLeadFinderAccess";
 import { mapLeadListRow } from "@/lib/firstCampaign/mapApi";
 import { toSalesNavImportLeadSnapshot } from "@/lib/salesNavigator/importLeadSnapshot";
 import { createSalesNavImportJob } from "@/lib/salesNavigator/importJob";
+import { createUnipileSalesNavImportJob } from "@/lib/unipile/salesNavImportJob";
 import { logSalesNavImportRun } from "@/lib/salesNavigator/logImportRun";
 import { getSalesNavSessionCookie } from "@/lib/salesNavigator/sessionStore";
 import { upsertSalesNavLeadsToCache } from "@/lib/salesNavigator/upsertSalesNavLeadsToCache";
@@ -134,6 +135,8 @@ export async function POST(request: Request) {
     cookie?: string;
     userAgent?: string;
     takePages?: number;
+    /** apify (cookie scrape, default) or unipile (connected LinkedIn). */
+    provider?: "apify" | "unipile";
     save?: boolean;
     listName?: string;
     /** Already-imported leads — save without re-scraping. */
@@ -196,6 +199,29 @@ export async function POST(request: Request) {
       });
     }
 
+    if (body.provider === "unipile") {
+      const job = await createUnipileSalesNavImportJob({
+        coachId: auth.userId,
+        salesNavUrl: body.salesNavUrl ?? "",
+        name: importName,
+        takePages: body.takePages,
+      });
+      return NextResponse.json({
+        jobId: job.jobId,
+        status: "running" as const,
+        provider: "unipile" as const,
+        takePages: job.takePages,
+        requestedTakePages: job.requestedTakePages,
+        targetCount: job.targetCount,
+        progressCount: 0,
+        estimatedCostUsd: 0,
+        segmented: job.segmented,
+        segmentTotal: job.segmentTotal,
+        segmentLabels: job.segmentLabels,
+        async: true,
+      });
+    }
+
     const storedSession = await getSalesNavSessionCookie(auth.userId);
     const job = await createSalesNavImportJob({
       coachId: auth.userId,
@@ -210,6 +236,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       jobId: job.jobId,
       status: "running" as const,
+      provider: "apify" as const,
       takePages: job.takePages,
       requestedTakePages: job.requestedTakePages,
       targetCount: job.targetCount,
@@ -232,6 +259,11 @@ export async function POST(request: Request) {
     }
     const message =
       err instanceof Error ? err.message : "Sales Navigator import failed.";
+    if (
+      /Connect LinkedIn|UNIPILE|Sales Navigator people-search URL/i.test(message)
+    ) {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

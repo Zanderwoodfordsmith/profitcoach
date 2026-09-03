@@ -1,11 +1,61 @@
 import { NextResponse } from "next/server";
-import { requireAdminBearer } from "@/lib/linkedinAdminAuth";
+import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
-  const auth = await requireAdminBearer(request);
+  const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: outreach } = await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .select("unipile_account_id, status, display_name, last_synced_at")
+    .eq("coach_id", auth.userId)
+    .eq("status", "OK")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: profileRow } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name, first_name, last_name, avatar_url")
+    .eq("id", auth.userId)
+    .maybeSingle();
+
+  const profileName =
+    profileRow?.full_name ||
+    [profileRow?.first_name, profileRow?.last_name].filter(Boolean).join(" ").trim() ||
+    null;
+
+  if (outreach?.unipile_account_id) {
+    return NextResponse.json({
+      connected: true,
+      via: "unipile",
+      connection: {
+        linkedin_sub: outreach.unipile_account_id,
+        scope: "unipile",
+        token_expires_at: null,
+        updated_at: outreach.last_synced_at,
+      },
+      account: {
+        sub: outreach.unipile_account_id,
+        name: outreach.display_name || profileName,
+        first_name: null,
+        last_name: null,
+        email: null,
+        email_verified: null,
+        picture: profileRow?.avatar_url ?? null,
+      },
+      profile: {
+        name: outreach.display_name || profileName,
+        headline: null,
+        photo_url: profileRow?.avatar_url ?? null,
+        website_label: "Visit my website",
+        website_url: null,
+        quote_handle: "Profit Coach",
+      },
+    });
   }
 
   const { data, error } = await supabaseAdmin
@@ -20,166 +70,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Could not load LinkedIn status." }, { status: 500 });
   }
 
-  let account: {
-    sub: string | null;
-    name: string | null;
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-    email_verified: boolean | null;
-    picture: string | null;
-  } | null = null;
-
-  if (data?.access_token) {
-    try {
-      const res = await fetch("https://api.linkedin.com/v2/userinfo", {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-        cache: "no-store",
-      });
-      if (res.ok) {
-        const body = (await res.json().catch(() => ({}))) as {
-          sub?: string;
-          name?: string;
-          given_name?: string;
-          family_name?: string;
-          email?: string;
-          email_verified?: boolean;
-          picture?: string;
-        };
-        const firstName = body.given_name ?? null;
-        const lastName = body.family_name ?? null;
-        const parsedName = [firstName, lastName].filter(Boolean).join(" ").trim();
-        const fullName = body.name ?? (parsedName || null);
-        account = {
-          sub: body.sub ?? data.linkedin_sub ?? null,
-          name: fullName,
-          first_name: firstName,
-          last_name: lastName,
-          email: body.email ?? null,
-          email_verified:
-            typeof body.email_verified === "boolean" ? body.email_verified : null,
-          picture: body.picture ?? null,
-        };
-      }
-    } catch {
-      // Best-effort only.
-    }
-  }
-
-  if (
-    data?.access_token &&
-    (!account || (!account.first_name && !account.last_name && !account.name))
-  ) {
-    try {
-      const res = await fetch(
-        "https://api.linkedin.com/v2/me?projection=(id,localizedFirstName,localizedLastName)",
-        {
-          headers: {
-            Authorization: `Bearer ${data.access_token}`,
-            "X-Restli-Protocol-Version": "2.0.0",
-          },
-          cache: "no-store",
-        }
-      );
-      if (res.ok) {
-        const body = (await res.json().catch(() => ({}))) as {
-          id?: string;
-          localizedFirstName?: string;
-          localizedLastName?: string;
-        };
-        const firstName = body.localizedFirstName ?? account?.first_name ?? null;
-        const lastName = body.localizedLastName ?? account?.last_name ?? null;
-        const name = [firstName, lastName].filter(Boolean).join(" ").trim() || null;
-        account = {
-          sub: account?.sub ?? body.id ?? data.linkedin_sub ?? null,
-          name: account?.name ?? name,
-          first_name: firstName,
-          last_name: lastName,
-          email: account?.email ?? null,
-          email_verified: account?.email_verified ?? null,
-          picture: account?.picture ?? null,
-        };
-      }
-    } catch {
-      // Best-effort only.
-    }
-  }
-
-  if (!account && data) {
-    account = {
-      sub: data.linkedin_sub ?? null,
-      name: null,
-      first_name: null,
-      last_name: null,
-      email: null,
-      email_verified: null,
-      picture: null,
-    };
-  }
-
-  const [{ data: liSnap }, { data: profileRow }] = await Promise.all([
-    supabaseAdmin
-      .from("coach_linkedin_profiles")
-      .select("snapshot")
-      .eq("coach_id", auth.userId)
-      .maybeSingle(),
-    supabaseAdmin
-      .from("profiles")
-      .select("full_name, first_name, last_name, avatar_url")
-      .eq("id", auth.userId)
-      .maybeSingle(),
-  ]);
+  const { data: liSnap } = await supabaseAdmin
+    .from("coach_linkedin_profiles")
+    .select("snapshot")
+    .eq("coach_id", auth.userId)
+    .maybeSingle();
 
   const snap = (liSnap?.snapshot ?? null) as {
     fullName?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
     headline?: string | null;
     photoUrl?: string | null;
   } | null;
 
-  const oauthName =
-    account?.name ||
-    [account?.first_name, account?.last_name].filter(Boolean).join(" ").trim() ||
-    null;
-  const snapName =
-    snap?.fullName ||
-    [snap?.firstName, snap?.lastName].filter(Boolean).join(" ").trim() ||
-    null;
-  const profileName =
-    profileRow?.full_name ||
-    [profileRow?.first_name, profileRow?.last_name].filter(Boolean).join(" ").trim() ||
-    null;
-
-  const identityName = oauthName || profileName || (snapName || null);
-
-  // Headline/photo come from the LinkedIn scrape when present. OAuth OpenID
-  // never returns headline — only name/email/picture.
-  const savedHeadline =
-    typeof data?.display_headline === "string" && data.display_headline.trim()
-      ? data.display_headline.trim()
-      : null;
-
-  const profile = {
-    name: identityName,
-    headline: savedHeadline || snap?.headline || null,
-    photo_url:
-      profileRow?.avatar_url ||
-      account?.picture ||
-      snap?.photoUrl ||
-      null,
-    website_label:
-      (typeof data?.website_label === "string" && data.website_label.trim()) ||
-      "Visit my website",
-    website_url:
-      (typeof data?.website_url === "string" && data.website_url.trim()) || null,
-    quote_handle:
-      (typeof data?.quote_handle === "string" && data.quote_handle.trim()) ||
-      "Profit Coach",
-  };
-
   return NextResponse.json({
     connected: !!data,
+    via: data ? "oauth" : null,
     connection: data
       ? {
           linkedin_sub: data.linkedin_sub,
@@ -188,15 +93,52 @@ export async function GET(request: Request) {
           updated_at: data.updated_at,
         }
       : null,
-    account,
-    profile,
+    account: data
+      ? {
+          sub: data.linkedin_sub,
+          name: profileName,
+          first_name: null,
+          last_name: null,
+          email: null,
+          email_verified: null,
+          picture: profileRow?.avatar_url ?? null,
+        }
+      : null,
+    profile: {
+      name: profileName,
+      headline:
+        (typeof data?.display_headline === "string" && data.display_headline.trim()) ||
+        snap?.headline ||
+        null,
+      photo_url: profileRow?.avatar_url || snap?.photoUrl || null,
+      website_label:
+        (typeof data?.website_label === "string" && data.website_label.trim()) ||
+        "Visit my website",
+      website_url:
+        (typeof data?.website_url === "string" && data.website_url.trim()) || null,
+      quote_handle:
+        (typeof data?.quote_handle === "string" && data.quote_handle.trim()) ||
+        "Profit Coach",
+    },
   });
 }
 
 export async function PATCH(request: Request) {
-  const auth = await requireAdminBearer(request);
+  const auth = await requireContentPublisher(request);
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error ?? "Unauthorized" }, { status: 401 });
+  }
+
+  const { data: outreach } = await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .select("id")
+    .eq("coach_id", auth.userId)
+    .eq("status", "OK")
+    .limit(1)
+    .maybeSingle();
+
+  if (outreach) {
+    return NextResponse.json({ ok: true, via: "unipile" });
   }
 
   const body = (await request.json().catch(() => ({}))) as {
@@ -214,7 +156,7 @@ export async function PATCH(request: Request) {
 
   if (!existing) {
     return NextResponse.json(
-      { error: "Connect LinkedIn before saving composer settings." },
+      { error: "Connect LinkedIn in Campaigns before saving settings." },
       { status: 400 }
     );
   }

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Linkedin, MapPin, Pencil, Sparkles } from "lucide-react";
+import { MapPin, Pencil, Sparkles } from "lucide-react";
+import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { useRouter } from "next/navigation";
 import { DirectoryLevelBadge } from "@/components/directory/DirectoryLevelBadge";
 import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
@@ -680,7 +681,7 @@ export function DirectorySettingsTab({
                     />
                   ) : (
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0A66C2]/10 text-[#0A66C2]">
-                      <Linkedin className="h-4 w-4" aria-hidden />
+                      <LinkedInSolidIcon className="h-4 w-4" />
                     </span>
                   )}
                   <div className="min-w-0">
@@ -728,7 +729,7 @@ export function DirectorySettingsTab({
                   onClick={() => void handleLinkedInImport()}
                   className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#0A66C2] px-3 py-2 text-sm font-semibold text-white hover:bg-[#004182] disabled:opacity-60"
                 >
-                  <Linkedin className="h-3.5 w-3.5" aria-hidden />
+                  <LinkedInSolidIcon className="h-3.5 w-3.5" />
                   {linkedinImporting
                     ? "Importing…"
                     : "Import LinkedIn profile"}

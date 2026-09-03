@@ -12,6 +12,7 @@ export type SupportTicketAuthor = {
   full_name: string | null;
   first_name: string | null;
   last_name: string | null;
+  avatar_url?: string | null;
   role: string | null;
 };
 
@@ -36,6 +37,7 @@ export type SupportTicket = {
   coach_last_read_at?: string | null;
   author?: SupportTicketAuthor | null;
   assignee?: SupportTicketAuthor | null;
+  media?: unknown;
 };
 
 export type SupportReply = {
@@ -46,7 +48,32 @@ export type SupportReply = {
   body: string;
   community_comment_id: string | null;
   author: SupportTicketAuthor | null;
+  media?: unknown;
 };
+
+export const SUPPORT_AUTHOR_SELECT =
+  "id, full_name, first_name, last_name, avatar_url, role";
+
+export function normalizeSupportAuthor(
+  author: SupportTicketAuthor | SupportTicketAuthor[] | null | undefined
+): SupportTicketAuthor | null {
+  if (!author) return null;
+  return Array.isArray(author) ? (author[0] ?? null) : author;
+}
+
+export function supportAuthorAsProfile(
+  author: SupportTicketAuthor | null | undefined
+) {
+  if (!author) return null;
+  return {
+    id: author.id,
+    full_name: author.full_name,
+    first_name: author.first_name,
+    last_name: author.last_name,
+    avatar_url: author.avatar_url ?? null,
+    role: author.role,
+  };
+}
 
 export const SUPPORT_TYPE_LABELS: Record<SupportTicketType, string> = {
   question: "Question",
