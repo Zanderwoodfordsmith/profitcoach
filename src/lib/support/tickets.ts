@@ -61,6 +61,61 @@ export function normalizeSupportAuthor(
   return Array.isArray(author) ? (author[0] ?? null) : author;
 }
 
+/** Partial row from Supabase selects / inserts (author join may be an array). */
+export type SupportTicketRow = {
+  id: string;
+  created_at: string;
+  created_by: string | null;
+  ticket_number: number;
+  type: string;
+  title: string | null;
+  details: string;
+  page_path?: string | null;
+  status: string;
+  media?: unknown;
+  coach_last_read_at?: string | null;
+  source?: SupportTicketSource | null;
+  assigned_to?: string | null;
+  community_post_id?: string | null;
+  created_by_admin?: string | null;
+  contact_email?: string | null;
+  submitter_name?: string | null;
+  importance?: number | null;
+  ease?: number | null;
+  author?: SupportTicketAuthor | SupportTicketAuthor[] | null;
+  assignee?: SupportTicketAuthor | SupportTicketAuthor[] | null;
+};
+
+export function mapSupportTicketRow(
+  row: SupportTicketRow,
+  options?: { fallbackAuthor?: SupportTicketAuthor | null }
+): SupportTicket {
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    created_by: row.created_by,
+    ticket_number: row.ticket_number,
+    type: normalizeSupportTicketType(row.type),
+    title: row.title,
+    details: row.details,
+    page_path: row.page_path ?? null,
+    status: (row.status as SupportTicketStatus) || "new",
+    source: row.source ?? "direct",
+    assigned_to: row.assigned_to ?? null,
+    community_post_id: row.community_post_id ?? null,
+    created_by_admin: row.created_by_admin ?? null,
+    contact_email: row.contact_email ?? null,
+    submitter_name: row.submitter_name ?? null,
+    importance: row.importance ?? null,
+    ease: row.ease ?? null,
+    coach_last_read_at: row.coach_last_read_at ?? null,
+    media: row.media,
+    author:
+      normalizeSupportAuthor(row.author) ?? options?.fallbackAuthor ?? null,
+    assignee: normalizeSupportAuthor(row.assignee),
+  };
+}
+
 export function supportAuthorAsProfile(
   author: SupportTicketAuthor | null | undefined
 ) {

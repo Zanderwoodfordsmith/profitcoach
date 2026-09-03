@@ -11,6 +11,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import {
   SUPPORT_AUTHOR_SELECT,
   normalizeSupportAuthor,
+  mapSupportTicketRow,
   normalizeSupportTicketType,
   ticketHasUnreadStaffReply,
   type SupportReply,
@@ -84,15 +85,9 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       return;
     }
 
-    const list = (
-      (reports ?? []) as Array<
-        Omit<SupportTicket, "type"> & { type: string }
-      >
-    ).map((row) => ({
-      ...row,
-      type: normalizeSupportTicketType(row.type),
-      author: normalizeSupportAuthor(row.author) ?? author,
-    }));
+    const list = (reports ?? []).map((row) =>
+      mapSupportTicketRow(row, { fallbackAuthor: author })
+    );
     if (list.length === 0) {
       setTickets([]);
       setLoading(false);

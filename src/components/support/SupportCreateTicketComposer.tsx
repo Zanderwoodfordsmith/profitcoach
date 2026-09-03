@@ -16,6 +16,7 @@ import {
   SUPPORT_AUTHOR_SELECT,
   normalizeSupportAuthor,
   normalizeSupportTicketType,
+  mapSupportTicketRow,
   type SupportTicket,
   type SupportTicketType,
 } from "@/lib/support/tickets";
@@ -129,12 +130,9 @@ export function SupportCreateTicketComposer({
         .single();
 
       if (insertError) throw insertError;
+      if (!data) throw new Error("Ticket was not created.");
 
-      const created: SupportTicket = {
-        ...(data as SupportTicket),
-        type: normalizeSupportTicketType(String(data.type)),
-        author: normalizeSupportAuthor(data.author),
-      };
+      const created = mapSupportTicketRow(data);
       for (const p of pendingMedia) URL.revokeObjectURL(p.previewUrl);
       notifySupportCountsChanged();
       onCreated(created);
