@@ -8,7 +8,9 @@ import {
 } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { FunnelSettingsTab } from "@/components/settings/FunnelSettingsTab";
-import { getCalendarSyncStatus, validateCrmLocationId } from "@/lib/ghlCalendarSync";
+import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
+import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
+import type { BookingCalendarProvider } from "@/lib/booking/coachBookingProvider";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 
@@ -18,6 +20,7 @@ type FunnelProfileData = {
   crm_profile_name?: string | null;
   crm_location_id?: string | null;
   calendar_embed_code?: string | null;
+  booking_calendar_provider?: BookingCalendarProvider | null;
   landing_copy_overrides?: Record<string, string> | null;
 };
 
@@ -43,6 +46,8 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
   const [crmProfileName, setCrmProfileName] = useState("");
   const [crmLocationId, setCrmLocationId] = useState("");
   const [landingEyebrow, setLandingEyebrow] = useState("");
+  const [bookingCalendarProvider, setBookingCalendarProvider] =
+    useState<BookingCalendarProvider>("ghl");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<"success" | "error" | null>(
     null
@@ -52,13 +57,18 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
 
   const calendarSyncStatus = useMemo(
     () =>
-      getCalendarSyncStatus({
-        crmLocationId,
-        calendarEmbedCode,
-        leadWebhookUrl,
-        audience: "coach",
-      }),
-    [crmLocationId, calendarEmbedCode, leadWebhookUrl]
+      buildCoachCalendarSyncFields({
+        booking_calendar_provider: bookingCalendarProvider,
+        crm_location_id: crmLocationId,
+        calendar_embed_code: calendarEmbedCode,
+        lead_webhook_url: leadWebhookUrl,
+      }).calendar_sync_status,
+    [
+      bookingCalendarProvider,
+      crmLocationId,
+      calendarEmbedCode,
+      leadWebhookUrl,
+    ]
   );
 
   const loadProfile = useCallback(async () => {
@@ -116,6 +126,9 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
     setCrmProfileName(data.crm_profile_name ?? "");
     setCrmLocationId(data.crm_location_id ?? "");
     setLandingEyebrow(data.landing_copy_overrides?.eyebrow ?? "");
+    setBookingCalendarProvider(
+      data.booking_calendar_provider === "native" ? "native" : "ghl"
+    );
     setLoading(false);
   }, [router, impersonatingCoachId, isAdmin]);
 
@@ -223,6 +236,7 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
         leadWebhookUrl={leadWebhookUrl}
         onLeadWebhookUrlChange={setLeadWebhookUrl}
         calendarSyncStatus={calendarSyncStatus}
+        bookingCalendarProvider={bookingCalendarProvider}
         impersonatingCoachId={impersonatingCoachId}
         saving={saving}
         saveMessage={saveMessage}

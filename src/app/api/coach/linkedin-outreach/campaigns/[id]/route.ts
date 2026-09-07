@@ -4,6 +4,7 @@ import {
   addCampaignLeads,
   applyCampaignPlaybook,
   deleteCampaignLead,
+  duplicateCampaign,
   getCampaign,
   replaceCampaignSteps,
   setCampaignStatus,
@@ -11,6 +12,7 @@ import {
   type CampaignStepInput,
   type CampaignStatus,
 } from "@/lib/unipile/campaigns";
+import { loadCampaignActivity } from "@/lib/unipile/activityHeatmap";
 import { abStatsForCampaign } from "@/lib/unipile/interest";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -26,8 +28,11 @@ export async function GET(request: Request, ctx: Ctx) {
     if (!detail) {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
     }
-    const ab = await abStatsForCampaign(id);
-    return NextResponse.json({ ...detail, ab });
+    const [ab, activity] = await Promise.all([
+      abStatsForCampaign(id),
+      loadCampaignActivity(auth.coachId, id, 30),
+    ]);
+    return NextResponse.json({ ...detail, ab, activity });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Load failed." },
@@ -92,6 +97,16 @@ export async function PATCH(request: Request, ctx: Ctx) {
     if (body.action === "delete_lead" && typeof body.lead_id === "string") {
       await deleteCampaignLead(auth.coachId, id, body.lead_id);
       return NextResponse.json({ ok: true });
+    }
+
+    if (body.action === "duplicate") {
+      const campaign = await duplicateCampaign(auth.coachId, id);
+      return NextResponse.json({ campaign });
+    }
+
+    if (body.action === "archive") {
+      const campaign = await setCampaignStatus(auth.coachId, id, "archived");
+      return NextResponse.json({ campaign });
     }
 
     const campaign = await updateCampaign(auth.coachId, id, body);

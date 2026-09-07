@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { normalizeLinkedInProfileUrl } from "@/lib/apify/linkedinProfile";
+import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { tryInsertContactStripping } from "@/lib/contactSchemaSafeInsert";
+import { splitFullName } from "@/lib/splitFullName";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
   fullName: string;
   email?: string;
+  phone?: string;
   jobTitle?: string;
   businessName?: string;
   linkedinUrl?: string;
@@ -28,6 +30,7 @@ export async function POST(request: Request) {
 
   const fullName = body.fullName?.trim();
   const email = body.email?.trim() || null;
+  const phone = body.phone?.trim() || null;
   const jobTitle = body.jobTitle?.trim() || null;
   const businessName = body.businessName?.trim() || null;
   const sendInvite = !!body.sendInvite;
@@ -62,32 +65,34 @@ export async function POST(request: Request) {
       throw new Error("Coach record not found.");
     }
 
-    const { data: inserted, error: insertError } = await tryInsertContactStripping({
-      coach_id: coachId,
-      full_name: fullName,
+    const { first_name, last_name } = splitFullName(fullName);
+    const resolved = await resolveOrCreateContact({
+      coachId,
+      fullName,
+      firstName: first_name,
+      lastName: last_name,
       email,
-      job_title: jobTitle,
-      business_name: businessName,
-      linkedin_url: linkedinUrl,
+      phone,
+      linkedinUrl,
+      jobTitle,
+      businessName,
       type: contactType,
-      prospect_source: contactType === "prospect" ? "manual" : undefined,
+      prospectSource: contactType === "prospect" ? "manual" : null,
     });
-
-    if (insertError || !inserted) {
-      throw new Error(contactType === "client" ? "Unable to create client." : "Unable to create prospect.");
-    }
 
     const slug = coachRow.slug as string;
 
     return NextResponse.json(
       {
         ok: true,
-        contactId: inserted.id as string,
+        contactId: resolved.contactId,
+        created: resolved.created,
+        matchedBy: resolved.matchedBy,
         coachSlug: slug,
         sendInvite,
         type: contactType,
       },
-      { status: 201 }
+      { status: resolved.created ? 201 : 200 }
     );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unexpected error.";

@@ -47,7 +47,8 @@ import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
-import { getProspectCrmContactUrl } from "@/lib/ghlContactWebhook";
+import { WhatsAppGlyph } from "@/components/icons/WhatsAppGlyph";
+import { getProspectCrmContactUrl } from "@/lib/crmContactUrl";
 import { paginationItems } from "@/lib/communityPagination";
 import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } from "@/lib/assessmentContactParams";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
@@ -1404,20 +1405,34 @@ export function ProspectsTable({
 
     const formatted = formatPhoneDisplay(raw) ?? raw;
     const telHref = phoneToTelHref(raw);
+    const waBadge = prospect.has_whatsapp ? (
+      <span title="WhatsApp available" className="inline-flex shrink-0">
+        <WhatsAppGlyph className="h-3.5 w-3.5" />
+        <span className="sr-only">WhatsApp available</span>
+      </span>
+    ) : null;
     if (!telHref) {
-      return <span className="text-sm text-slate-700">{formatted}</span>;
+      return (
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-slate-700">
+          <span className="min-w-0 truncate">{formatted}</span>
+          {waBadge}
+        </span>
+      );
     }
 
     return (
-      <a
-        href={telHref}
-        data-row-action
-        onClick={(e) => e.stopPropagation()}
-        className="block min-w-0 truncate text-sm text-sky-600 hover:text-sky-800 hover:underline"
-        title={`Call ${formatted}`}
-      >
-        {formatted}
-      </a>
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        <a
+          href={telHref}
+          data-row-action
+          onClick={(e) => e.stopPropagation()}
+          className="min-w-0 truncate text-sm text-sky-600 hover:text-sky-800 hover:underline"
+          title={`Call ${formatted}`}
+        >
+          {formatted}
+        </a>
+        {waBadge}
+      </span>
     );
   }
 

@@ -108,14 +108,8 @@ export async function logLeadInterest(input: {
   if (upErr) throw new Error(upErr.message);
 
   if (input.outcome === "positive" || input.outcome === "soft") {
-    await supabaseAdmin
-      .from("linkedin_send_jobs")
-      .update({
-        status: "cancelled",
-        last_error: "Paused — interested reply logged",
-      })
-      .eq("lead_id", input.leadId)
-      .eq("status", "pending");
+    const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
+    await cancelOpenSendJobs(input.leadId, "Paused — interested reply logged");
   }
 
   return updated;
@@ -154,14 +148,8 @@ export async function advanceLeadFunnel(input: {
     .maybeSingle();
   if (upErr) throw new Error(upErr.message);
 
-  await supabaseAdmin
-    .from("linkedin_send_jobs")
-    .update({
-      status: "cancelled",
-      last_error: `Paused — ${input.status}`,
-    })
-    .eq("lead_id", input.leadId)
-    .eq("status", "pending");
+  const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
+  await cancelOpenSendJobs(input.leadId, `Paused — ${input.status}`);
 
   return data;
 }

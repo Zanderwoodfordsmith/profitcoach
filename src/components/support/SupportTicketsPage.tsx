@@ -1,18 +1,18 @@
 "use client";
 
 import { MessageSquare } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { notifyCoachSupportReadChanged } from "@/components/layout/useNewFeedbackCount";
 import { SupportCreateTicketComposer } from "@/components/support/SupportCreateTicketComposer";
 import { SupportTicketCard } from "@/components/support/SupportTicketCard";
 import { SupportTicketDetailModal } from "@/components/support/SupportTicketDetailModal";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
   SUPPORT_AUTHOR_SELECT,
   normalizeSupportAuthor,
   mapSupportTicketRow,
-  normalizeSupportTicketType,
   ticketHasUnreadStaffReply,
   type SupportReply,
   type SupportTicket,
@@ -36,14 +36,17 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [openTicketId, setOpenTicketId] = useState<string | null>(null);
+  const loadGenerationRef = useRef(0);
 
   const loadTickets = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError(null);
 
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
+    if (generation !== loadGenerationRef.current) return;
     if (!user?.id) {
       setTickets([]);
       setUserId(null);
@@ -58,6 +61,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       .select(SUPPORT_AUTHOR_SELECT)
       .eq("id", user.id)
       .maybeSingle();
+    if (generation !== loadGenerationRef.current) return;
 
     const author: SupportTicketAuthor = {
       id: user.id,
@@ -77,8 +81,10 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       )
       .eq("created_by", user.id)
       .order("created_at", { ascending: false });
+    if (generation !== loadGenerationRef.current) return;
 
     if (reportsError) {
+      if (isSupabaseAbortError(reportsError)) return;
       setTickets([]);
       setError(reportsError.message);
       setLoading(false);
@@ -111,8 +117,10 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       )
       .in("report_id", ids)
       .order("created_at", { ascending: true });
+    if (generation !== loadGenerationRef.current) return;
 
     if (repliesError) {
+      if (isSupabaseAbortError(repliesError)) return;
       setTickets([]);
       setError(repliesError.message);
       setLoading(false);
@@ -165,6 +173,9 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
 
   useEffect(() => {
     void loadTickets();
+    return () => {
+      loadGenerationRef.current += 1;
+    };
   }, [loadTickets]);
 
   const openTicket = tickets.find((t) => t.id === openTicketId) ?? null;

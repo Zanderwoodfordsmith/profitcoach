@@ -5,6 +5,8 @@ import {
 } from "@/lib/actionPlans/prospectFollowUp";
 import { normalizeLinkedInProfileUrl } from "@/lib/apify/linkedinProfile";
 import { tryUpdateContactStripping } from "@/lib/contactSchemaSafeInsert";
+import { normalizeContactPhone } from "@/lib/contacts/identity";
+import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import {
   normalizeProspectLabel,
   normalizeProspectPersonName,
@@ -16,7 +18,9 @@ import {
   loadNextCallsByContactId,
 } from "@/lib/prospectNextCall";
 import { resolveProspectStatus, type ProspectStatusDisplay } from "@/lib/prospectStatus";
+import { normalizeProspectTags } from "@/lib/prospects/tags";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { syncContactWhatsAppStatus } from "@/lib/unipile/checkWhatsAppOn";
 
 export type ProspectFieldPatch = {
   first_name?: string | null;
@@ -30,6 +34,7 @@ export type ProspectFieldPatch = {
   prospect_status?: string | null;
   crm_contact_id?: string | null;
   next_action?: { text: string; due_at: string | null } | null;
+  tags?: string[];
 };
 
 export type UpdatedProspectFields = {
@@ -44,6 +49,8 @@ export type UpdatedProspectFields = {
   crm_contact_id: string | null;
   status: ProspectStatusDisplay;
   next_action: ProspectNextAction | null;
+  tags: string[];
+  has_whatsapp?: boolean;
 };
 
 function buildFullName(
@@ -133,7 +140,34 @@ export async function updateProspectFields(
   }
 
   if (patch.phone !== undefined) {
-    contactPatch.phone = patch.phone?.trim() || null;
+    const phone = patch.phone?.trim() || null;
+    if (phone) {
+      const phoneKey = normalizeContactPhone(phone);
+      if (phoneKey) {
+        const { data: siblings } = await selectContactsWithOptionalPhone<{
+          id: string;
+          phone: string | null;
+        }>(
+          async (columns) =>
+            supabaseAdmin
+              .from("contacts")
+              .select(columns)
+              .eq("coach_id", coachId)
+              .neq("id", contactId),
+          "id, email",
+          []
+        );
+        const clash = siblings.find(
+          (row) => normalizeContactPhone(row.phone) === phoneKey
+        );
+        if (clash) {
+          throw new Error(
+            "Another contact already uses this phone. Merge the duplicates instead."
+          );
+        }
+      }
+    }
+    contactPatch.phone = phone;
   }
 
   if (patch.job_title !== undefined) {
@@ -187,12 +221,54 @@ export async function updateProspectFields(
   if (patch.crm_contact_id !== undefined) {
     contactPatch.crm_contact_id = patch.crm_contact_id?.trim() || null;
   }
+  if (patch.tags !== undefined) {
+    contactPatch.prospect_tags = normalizeProspectTags(patch.tags);
+  }
 
   if (Object.keys(contactPatch).length > 0) {
     const { error } = await tryUpdateContactStripping(contactId, contactPatch);
     if (error) {
       throw new Error(error.message);
     }
+
+    // Keep messaging threads in sync — composer/send use conversation denormalized fields.
+    const conversationPatch: Record<string, unknown> = {};
+    if (contactPatch.phone !== undefined) {
+      conversationPatch.prospect_phone = contactPatch.phone;
+    }
+    if (contactPatch.email !== undefined) {
+      conversationPatch.prospect_email = contactPatch.email;
+    }
+    if (contactPatch.full_name !== undefined) {
+      conversationPatch.prospect_name = contactPatch.full_name;
+    }
+    if (contactPatch.business_name !== undefined) {
+      conversationPatch.prospect_business_name = contactPatch.business_name;
+    }
+    if (contactPatch.linkedin_url !== undefined) {
+      conversationPatch.prospect_linkedin_url = contactPatch.linkedin_url;
+    }
+    if (Object.keys(conversationPatch).length > 0) {
+      const { error: convError } = await supabaseAdmin
+        .from("messaging_conversations")
+        .update(conversationPatch)
+        .eq("coach_id", coachId)
+        .eq("contact_id", contactId);
+      if (convError) {
+        console.error("messaging conversation contact sync:", convError);
+      }
+    }
+  }
+
+  let hasWhatsApp: boolean | undefined;
+  if (patch.phone !== undefined) {
+    const wa = await syncContactWhatsAppStatus({
+      coachId,
+      contactId,
+      phoneOverride: (contactPatch.phone as string | null | undefined) ?? null,
+      force: true,
+    });
+    hasWhatsApp = wa.on === true;
   }
 
   let nextAction: ProspectNextAction | null = null;
@@ -213,7 +289,7 @@ export async function updateProspectFields(
     const withLinkedIn = await supabaseAdmin
       .from("contacts")
       .select(
-        "full_name, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id"
+        "full_name, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id, prospect_tags"
       )
       .eq("id", contactId)
       .maybeSingle();
@@ -266,5 +342,7 @@ export async function updateProspectFields(
       next_action: nextAction,
     }),
     next_action: nextAction,
+    tags: normalizeProspectTags(refreshed.prospect_tags),
+    ...(hasWhatsApp !== undefined ? { has_whatsapp: hasWhatsApp } : {}),
   };
 }

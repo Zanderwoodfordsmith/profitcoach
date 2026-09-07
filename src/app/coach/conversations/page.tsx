@@ -14,7 +14,7 @@ export default function CoachConversationsPage() {
       header={
         <StickyPageHeader
           title="Get Clients"
-          description="Messages sent to your booked prospects."
+          description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

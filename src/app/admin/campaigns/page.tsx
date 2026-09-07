@@ -44,7 +44,7 @@ export default function AdminCampaignsPage() {
 
   return (
     <DashboardPageSection
-      contentMaxWidthClass="max-w-6xl"
+      contentMaxWidthClass="max-w-7xl"
       header={
         <StickyPageHeader
           title="Get Clients"

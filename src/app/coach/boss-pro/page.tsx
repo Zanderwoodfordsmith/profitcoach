@@ -859,7 +859,7 @@ function CoachWorkshopPageContent() {
 
   useEffect(() => {
     if (!setWorkshopTopRight) return;
-    if (sessionToolbar && !isMinimalChrome) {
+    if (sessionToolbar && isMinimalChrome) {
       setWorkshopTopRight(sessionToolbar);
     } else {
       setWorkshopTopRight(null);
@@ -874,13 +874,7 @@ function CoachWorkshopPageContent() {
           title="Coach Clients"
           nowrap
           tabs={<CoachToolsHubTabs hub="coach-clients" />}
-          actions={
-            sessionToolbar
-              ? isMinimalChrome
-                ? sessionToolbar
-                : <div className="md:hidden">{sessionToolbar}</div>
-              : undefined
-          }
+          actions={sessionToolbar && !isMinimalChrome ? sessionToolbar : undefined}
           description={
             sessionSummary ? undefined : (
               <span className="text-base leading-relaxed text-slate-700">

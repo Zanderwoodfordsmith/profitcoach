@@ -1,5 +1,7 @@
 export { DashboardPageSection } from "./DashboardPageSection";
 export type { DashboardPageSectionProps } from "./DashboardPageSection";
+export { DashboardChromeActions } from "./DashboardChromeActions";
+export { DashboardChromeFallback } from "./DashboardChromeFallback";
 export { StickyPageHeader } from "./StickyPageHeader";
 export type {
   PageHeaderDescriptionPlacement,

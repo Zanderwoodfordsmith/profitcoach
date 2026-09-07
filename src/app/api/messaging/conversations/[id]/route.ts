@@ -8,6 +8,7 @@ import {
   normalizePhoneE164,
 } from "@/lib/bird/client";
 import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
+import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { resolveConversationLinkedInUrl } from "@/lib/messaging/conversationLinkedInUrl";
 import {
   filesFromFormData,
@@ -20,10 +21,13 @@ import {
 } from "@/lib/messaging/messageAttachments";
 import { scheduleMessagingReply } from "@/lib/messaging/scheduledMessages";
 import { loadEnrichedProspectById } from "@/lib/prospects/loadEnrichedProspect";
+import { listCoachProspectTags } from "@/lib/prospects/tags";
 import { updateProspectFields } from "@/lib/prospects/updateProspectFields";
 import { loadProspectActivity } from "@/lib/messaging/loadProspectActivity";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import { listOutreachAccounts } from "@/lib/unipile/accounts";
+import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 async function resolveAccess(request: Request): Promise<
@@ -32,9 +36,12 @@ async function resolveAccess(request: Request): Promise<
 > {
   const admin = await requireAdmin(request);
   if (admin.error === null && admin.userId) {
+    const impersonateId = request.headers
+      .get("x-impersonate-coach-id")
+      ?.trim();
     return {
       error: null,
-      coachId: null,
+      coachId: impersonateId || null,
       isAdmin: true,
       userId: admin.userId,
     };
@@ -222,12 +229,17 @@ export async function GET(
     enrichedConversation.prospect_linkedin_url = linkedInUrl;
   }
 
+  const coachTags = coachIdForContact
+    ? await listCoachProspectTags(coachIdForContact)
+    : [];
+
   return NextResponse.json({
     conversation: enrichedConversation ?? conversation,
     messages: enrichedMessages,
     prospect,
     booking,
     activity,
+    coachTags,
   });
 }
 
@@ -379,6 +391,8 @@ export async function POST(
   let text = "";
   let subject: string | undefined;
   let fromNameField: string | undefined;
+  /** `"bird"` or a Unipile mailing account id. Empty = auto (mailbox first). */
+  let emailAccountId: string | undefined;
   let scheduledFor: string | undefined;
   let attachmentFiles: Array<{ blob: Blob; filename: string; mime: string }> =
     [];
@@ -393,9 +407,11 @@ export async function POST(
     text = String(form.get("body") || "").trim();
     const sub = form.get("subject");
     const fn = form.get("fromName");
+    const ea = form.get("email_account_id");
     const sched = form.get("scheduled_for");
     if (typeof sub === "string" && sub.trim()) subject = sub.trim();
     if (typeof fn === "string" && fn.trim()) fromNameField = fn.trim();
+    if (typeof ea === "string" && ea.trim()) emailAccountId = ea.trim();
     if (typeof sched === "string" && sched.trim()) scheduledFor = sched.trim();
     attachmentFiles = await filesFromFormData(form, "attachments");
     const voiceEntries = await filesFromFormData(form, "voice_message");
@@ -408,12 +424,14 @@ export async function POST(
       body?: string;
       subject?: string;
       fromName?: string;
+      email_account_id?: string;
       scheduled_for?: string;
     };
     channel = (body.channel || "email").trim().toLowerCase();
     text = (body.body || "").trim();
     subject = body.subject?.trim() || undefined;
     fromNameField = body.fromName?.trim() || undefined;
+    emailAccountId = body.email_account_id?.trim() || undefined;
     scheduledFor = body.scheduled_for?.trim() || undefined;
   }
 
@@ -571,28 +589,85 @@ export async function POST(
   }
 
   if (channel === "email") {
-    // Prefer connected Gmail/Outlook when this thread came from Unipile
+    const mailingAccounts = (await listOutreachAccounts(coachId)).filter(
+      (row) =>
+        isMailingProvider(row.provider) &&
+        (row.status || "").toUpperCase() === "OK"
+    );
+    const wantBird = emailAccountId === "bird";
+    const requestedMailbox =
+      emailAccountId && emailAccountId !== "bird"
+        ? mailingAccounts.find((row) => row.unipile_account_id === emailAccountId)
+        : null;
+    if (emailAccountId && emailAccountId !== "bird" && !requestedMailbox) {
+      return NextResponse.json(
+        { error: "That mailbox is not connected (or is offline)." },
+        { status: 400 }
+      );
+    }
+
     const { data: fullConv } = await supabaseAdmin
       .from("messaging_conversations")
       .select("unipile_account_id, unipile_chat_id")
       .eq("id", id)
       .maybeSingle();
-    if (fullConv?.unipile_account_id && fullConv?.unipile_chat_id) {
-      const { replyUnipileConversation } = await import(
-        "@/lib/unipile/inboxSync"
-      );
+    const linkedMailbox = mailingAccounts.find(
+      (row) => row.unipile_account_id === fullConv?.unipile_account_id
+    );
+    const mailbox =
+      requestedMailbox ||
+      (!wantBird ? linkedMailbox || mailingAccounts[0] || null : null);
+
+    if (mailbox) {
       try {
+        if (subject) {
+          await supabaseAdmin
+            .from("messaging_conversations")
+            .update({ subject })
+            .eq("id", id);
+        }
+        const { replyUnipileConversation } = await import(
+          "@/lib/unipile/inboxSync"
+        );
         const msg = await replyUnipileConversation({
           coachId,
           conversationId: id,
           text,
           channel: "email",
+          accountId: mailbox.unipile_account_id,
         });
-        return NextResponse.json({ ok: true, message: msg });
+        return NextResponse.json({
+          ok: true,
+          message: msg,
+          via: "unipile",
+          from: {
+            provider: mailbox.provider,
+            label: providerLabel(mailbox.provider),
+            display_name: mailbox.display_name,
+            account_id: mailbox.unipile_account_id,
+          },
+        });
       } catch (err) {
-        // Fall through to Bird if Unipile send fails and we have prospect email
+        // Connected mailbox was chosen (or is the default) — surface the error
+        // instead of silently sending from Bird.
         console.error("unipile email reply:", err);
+        return NextResponse.json(
+          {
+            error:
+              err instanceof Error
+                ? err.message
+                : "Could not send from your connected mailbox.",
+          },
+          { status: 502 }
+        );
       }
+    }
+
+    if (wantBird && mailingAccounts.length > 0 && !isBirdConfigured()) {
+      return NextResponse.json(
+        { error: "Platform email (Bird) is not configured." },
+        { status: 503 }
+      );
     }
   }
 
@@ -624,9 +699,12 @@ export async function POST(
     await supabaseAdmin
       .from("messaging_conversations")
       .update({
-        last_message_at: now,
-        last_preview: preview,
-        last_channel: "system",
+        ...conversationActivityPatch({
+          lastChannel: "system",
+          lastDirection: "outbound",
+          lastMessageAt: now,
+          lastPreview: preview,
+        }),
       })
       .eq("id", id);
 
@@ -694,7 +772,7 @@ export async function POST(
         to_address: toEmail,
         bird_message_id: emailRes.id || null,
         provider_error: emailRes.error || null,
-        metadata: { kind: "reply", raw: emailRes.raw },
+        metadata: { kind: "reply", via: "bird", raw: emailRes.raw },
       })
       .select(
         "id, channel, direction, status, subject, body_text, body_html, from_address, to_address, bird_message_id, provider_error, metadata, created_at"
@@ -712,9 +790,12 @@ export async function POST(
     await supabaseAdmin
       .from("messaging_conversations")
       .update({
-        last_message_at: now,
-        last_preview: preview,
-        last_channel: "email",
+        ...conversationActivityPatch({
+          lastChannel: "email",
+          lastDirection: "outbound",
+          lastMessageAt: now,
+          lastPreview: preview,
+        }),
         subject: emailSubject,
       })
       .eq("id", id);
@@ -789,9 +870,12 @@ export async function POST(
   await supabaseAdmin
     .from("messaging_conversations")
     .update({
-      last_message_at: now,
-      last_preview: preview,
-      last_channel: "sms",
+      ...conversationActivityPatch({
+        lastChannel: "sms",
+        lastDirection: "outbound",
+        lastMessageAt: now,
+        lastPreview: preview,
+      }),
     })
     .eq("id", id);
 

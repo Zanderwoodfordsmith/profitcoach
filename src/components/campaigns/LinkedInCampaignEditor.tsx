@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
+import type { CampaignActivityDay } from "@/components/campaigns/CampaignOverviewMetrics";
+import {
+  buildCampaignDials,
+  CampaignDailyStackChart,
+  CampaignDialsPanel,
+} from "@/components/campaigns/CampaignOverviewMetrics";
 
 type Account = {
   id: string;
@@ -27,6 +33,9 @@ type Step = {
   body: string | null;
   wait_hours: number | null;
   variants?: Array<{ key: string; label?: string; body: string }> | null;
+  send_mode?: "auto" | "remind" | null;
+  fallback_hours?: number | null;
+  fallback_body?: string | null;
 };
 
 type Lead = {
@@ -50,7 +59,7 @@ type PlaybookMeta = {
   step_count: number;
 };
 
-type TabId = "flow" | "leads" | "analytics" | "settings";
+type TabId = "overview" | "prospects" | "steps" | "settings";
 
 type LeadDrawerFilter =
   | { kind: "status"; status: string; title: string }
@@ -125,9 +134,9 @@ function formatWait(hours: number | null | undefined) {
 }
 
 const TAB_ITEMS: Array<{ id: TabId; label: string }> = [
-  { id: "flow", label: "Flow" },
-  { id: "leads", label: "Leads" },
-  { id: "analytics", label: "Analytics" },
+  { id: "overview", label: "Overview" },
+  { id: "prospects", label: "Prospects" },
+  { id: "steps", label: "Steps" },
   { id: "settings", label: "Settings" },
 ];
 
@@ -146,7 +155,7 @@ export function LinkedInCampaignEditor() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importText, setImportText] = useState("");
-  const [tab, setTab] = useState<TabId>("flow");
+  const [tab, setTab] = useState<TabId>("overview");
   const [audienceMode, setAudienceMode] = useState<"urls" | "search">("urls");
   const [searchUrl, setSearchUrl] = useState("");
   const [searchKeywords, setSearchKeywords] = useState("");
@@ -165,6 +174,9 @@ export function LinkedInCampaignEditor() {
     string,
     Record<string, { assigned: number; interested: number; replied: number }>
   > | null>(null);
+  const [activityBuckets, setActivityBuckets] = useState<CampaignActivityDay[]>(
+    []
+  );
   const [searchCursor, setSearchCursor] = useState<string | null>(null);
   const [editingStepIndex, setEditingStepIndex] = useState<number | null>(null);
   const [leadDrawer, setLeadDrawer] = useState<LeadDrawerFilter | null>(null);
@@ -192,6 +204,7 @@ export function LinkedInCampaignEditor() {
     setSteps(detail.steps ?? []);
     setLeads(detail.leads ?? []);
     setAbStats(detail.ab?.stats ?? null);
+    setActivityBuckets(detail.activity?.buckets ?? []);
     const pbRes = await fetch(
       "/api/coach/linkedin-outreach/interest?view=playbooks",
       { headers }
@@ -324,7 +337,7 @@ export function LinkedInCampaignEditor() {
       if (!res.ok) throw new Error(body.error || "Could not apply playbook.");
       setSteps(body.steps ?? []);
       setEditingStepIndex(null);
-      setTab("flow");
+      setTab("steps");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Playbook failed.");
     } finally {
@@ -478,6 +491,9 @@ export function LinkedInCampaignEditor() {
         step_type: type,
         body: type === "wait" || type === "react" ? null : "",
         wait_hours: type === "wait" ? 24 : null,
+        send_mode: type === "message" ? "auto" : "auto",
+        fallback_hours: null,
+        fallback_body: null,
       },
     ];
     setSteps(next);
@@ -595,252 +611,212 @@ export function LinkedInCampaignEditor() {
         </div>
       ) : null}
 
-      {/* ——— FLOW ——— */}
-      {tab === "flow" ? (
-        <div className="mt-4 min-h-[70vh] rounded-2xl bg-slate-100/80">
-          {/* Hopper strip */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-slate-200/80 px-5 py-4 sm:px-8">
-            <button
-              type="button"
-              onClick={() =>
-                setLeadDrawer({
-                  kind: "hopper",
-                  hopper: "staging",
-                  title: "Staging",
-                })
-              }
-              className="text-left"
-            >
-              <span className="block text-[11px] font-medium text-slate-500">
-                Staging
-              </span>
-              <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
-                {stagingLeads.length}
-              </span>
-            </button>
-
-            <div className="flex items-center gap-2 text-slate-400">
-              <span className="hidden h-px w-6 bg-slate-300 sm:block" />
-              <label className="flex items-center gap-1.5 text-xs text-slate-500">
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={campaign.daily_invite_limit}
-                  onChange={(e) =>
-                    setCampaign({
-                      ...campaign,
-                      daily_invite_limit: Number(e.target.value || 20),
-                    })
-                  }
-                  onBlur={() =>
-                    void saveSettings({
-                      daily_invite_limit: campaign.daily_invite_limit,
-                    })
-                  }
-                  className="w-12 rounded-md border border-slate-200 bg-white px-1.5 py-1 text-center text-sm font-semibold tabular-nums text-slate-900"
-                />
-                / day
-              </label>
-              <span className="hidden h-px w-6 bg-slate-300 sm:block" />
+      {/* ——— OVERVIEW ——— */}
+      {tab === "overview" ? (
+        <div className="mt-6 min-h-[60vh] space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)] sm:px-5">
+            <div className="flex flex-wrap gap-6 sm:gap-10">
+              <button
+                type="button"
+                onClick={() =>
+                  setLeadDrawer({
+                    kind: "hopper",
+                    hopper: "staging",
+                    title: "Staging",
+                  })
+                }
+                className="text-left"
+              >
+                <span className="block text-[11px] font-medium text-slate-500">
+                  Staging
+                </span>
+                <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
+                  {stagingLeads.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setLeadDrawer({
+                    kind: "hopper",
+                    hopper: "active",
+                    title: "In campaign",
+                  })
+                }
+                className="text-left"
+              >
+                <span className="block text-[11px] font-medium text-slate-500">
+                  In campaign
+                </span>
+                <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
+                  {activeLeads.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab("prospects")}
+                className="text-left"
+              >
+                <span className="block text-[11px] font-medium text-slate-500">
+                  Prospects
+                </span>
+                <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
+                  {leads.length}
+                </span>
+              </button>
             </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setLeadDrawer({
-                  kind: "hopper",
-                  hopper: "active",
-                  title: "In campaign",
-                })
-              }
-              className="text-left"
-            >
-              <span className="block text-[11px] font-medium text-slate-500">
-                In campaign
-              </span>
-              <span className="text-2xl font-semibold tabular-nums tracking-tight text-slate-900">
-                {activeLeads.length}
-              </span>
-            </button>
-
             <button
               type="button"
               onClick={() => setAddLeadsOpen(true)}
-              className="ml-auto rounded-lg bg-[#0c5290] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a]"
+              className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a]"
             >
-              Add leads
+              Add prospects
             </button>
           </div>
 
-          {/* Sequence canvas */}
-          <div className="flex flex-col items-center px-4 py-10 sm:py-14">
-            {steps.length === 0 ? (
-              <div className="py-16 text-center">
-                <p className="text-sm text-slate-500">No steps yet</p>
-                <button
-                  type="button"
-                  onClick={() => addStep("invite")}
-                  className="mt-3 text-sm font-semibold text-[#0c5290] hover:underline"
-                >
-                  Add connection request
-                </button>
-              </div>
-            ) : (
-              <div className="flex w-full max-w-md flex-col items-center">
-                {steps.map((step, idx) => {
-                  const count = countAtStep(step, idx);
-                  const hasAb = Boolean(
-                    step.variants && step.variants.length > 0
-                  );
-                  return (
-                    <div
-                      key={step.id || `${step.step_type}-${idx}`}
-                      className="flex w-full flex-col items-center"
-                    >
-                      {idx > 0 ? (
-                        <div
-                          className="h-8 w-px border-l border-dashed border-slate-300"
-                          aria-hidden
-                        />
-                      ) : null}
-
-                      {hasAb && step.step_type === "message" ? (
-                        <div className="grid w-full grid-cols-2 gap-2">
-                          {(step.variants || []).slice(0, 2).map((v) => (
-                            <button
-                              key={v.key}
-                              type="button"
-                              onClick={() => setEditingStepIndex(idx)}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-left transition hover:border-slate-300"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-xs font-semibold text-slate-800">
-                                  {v.key}
-                                </span>
-                                {step.id && abStats?.[step.id]?.[v.key] ? (
-                                  <span className="text-[10px] tabular-nums text-slate-400">
-                                    {abStats[step.id][v.key].assigned}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-slate-500">
-                                {v.body || "Empty"}
-                              </p>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex w-full items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setEditingStepIndex(idx)}
-                            className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-left transition hover:border-slate-300"
-                          >
-                            <p className="text-sm font-semibold text-slate-900">
-                              {step.step_type === "wait"
-                                ? `Wait ${formatWait(step.wait_hours)}`
-                                : stepTypeLabel(step.step_type)}
-                            </p>
-                            {step.step_type !== "wait" &&
-                            step.step_type !== "react" &&
-                            step.body ? (
-                              <p className="mt-1 line-clamp-1 text-xs text-slate-500">
-                                {step.body}
-                              </p>
-                            ) : null}
-                          </button>
-                          {count > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setLeadDrawer({
-                                  kind: "step",
-                                  position: step.position ?? idx,
-                                  title: stepTypeLabel(step.step_type),
-                                })
-                              }
-                              className="shrink-0 rounded-full bg-white px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50"
-                            >
-                              {count}
-                            </button>
-                          ) : (
-                            <span className="w-8 shrink-0" aria-hidden />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
+          {leads.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
+              <p className="text-sm font-medium text-slate-800">
+                No prospects yet
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Add people, then check volume and reply rates here.
+              </p>
+              <button
+                type="button"
+                onClick={() => setAddLeadsOpen(true)}
+                className="mt-4 text-sm font-semibold text-[#0c5290] hover:underline"
+              >
+                Add prospects
+              </button>
+            </div>
+          ) : (
+            <>
+              <CampaignDialsPanel
+                dials={buildCampaignDials({
+                  leads,
+                  hasInviteStep: steps.some((s) => s.step_type === "invite"),
                 })}
+              />
 
-                <div
-                  className="h-8 w-px border-l border-dashed border-slate-300"
-                  aria-hidden
-                />
+              <CampaignDailyStackChart buckets={activityBuckets} />
 
-                <div className="relative">
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-600/40 bg-slate-700 px-4 py-2.5">
+                  <h2 className="text-sm font-semibold tracking-wide text-white">
+                    By status
+                  </h2>
                   <button
                     type="button"
-                    onClick={() => setAddStepOpen((o) => !o)}
-                    className="rounded-full border border-dashed border-slate-300 bg-white px-4 py-2 text-xs font-medium text-slate-600 hover:border-slate-400 hover:text-slate-900"
+                    onClick={() => setTab("prospects")}
+                    className="text-xs font-medium text-sky-200 hover:text-white"
                   >
-                    Add step
+                    View all
                   </button>
-                  {addStepOpen ? (
-                    <div className="absolute top-full left-1/2 z-20 mt-2 w-44 -translate-x-1/2 rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10">
-                      {(
-                        [
-                          ["invite", "Connection"],
-                          ["message", "Message"],
-                          ["wait", "Wait"],
-                          ["react", "Like post"],
-                          ["comment", "Comment"],
-                        ] as const
-                      ).map(([type, label]) => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() => addStep(type)}
-                          className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
+                <ul className="divide-y divide-slate-100 px-1">
+                  {Object.keys(statusCounts).length === 0 ? (
+                    <li className="py-8 text-center text-sm text-slate-500">
+                      No activity yet
+                    </li>
+                  ) : (
+                    Object.entries(statusCounts)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([status, count]) => (
+                        <li key={status}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLeadDrawer({
+                                kind: "status",
+                                status,
+                                title: statusLabel(status),
+                              })
+                            }
+                            className="flex w-full items-center justify-between px-3 py-3 text-sm hover:bg-slate-50"
+                          >
+                            <span className="font-medium text-slate-700">
+                              {statusLabel(status)}
+                            </span>
+                            <span className="tabular-nums font-semibold text-slate-900">
+                              {count}
+                            </span>
+                          </button>
+                        </li>
+                      ))
+                  )}
+                </ul>
               </div>
-            )}
-          </div>
+
+              {abStats &&
+              steps.some((s) => s.id && s.variants && s.variants.length > 0) ? (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.015)]">
+                  <div className="border-b border-slate-600/40 bg-slate-700 px-4 py-2.5 text-sm font-semibold tracking-wide text-white">
+                    A/B
+                  </div>
+                  <div className="space-y-4 px-4 py-4">
+                    {steps
+                      .filter((s) => s.id && s.variants && s.variants.length > 0)
+                      .map((s) => (
+                        <div key={s.id}>
+                          <p className="text-xs text-slate-500">
+                            {stepTypeLabel(s.step_type)}
+                          </p>
+                          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                            {(s.variants || []).map((v) => {
+                              const stats = s.id
+                                ? abStats[s.id]?.[v.key]
+                                : undefined;
+                              return (
+                                <div key={v.key} className="py-1">
+                                  <p className="text-sm font-semibold text-slate-800">
+                                    {v.key}
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-slate-500">
+                                    {stats
+                                      ? `${stats.assigned} sent · ${stats.interested} interested`
+                                      : "No sends yet"}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
       ) : null}
 
-      {/* ——— LEADS ——— */}
-      {tab === "leads" ? (
+      {/* ——— PROSPECTS ——— */}
+      {tab === "prospects" ? (
         <div className="mt-4 min-h-[60vh]">
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="text-sm text-slate-500">
-              {leads.length} lead{leads.length === 1 ? "" : "s"}
+              {leads.length} prospect{leads.length === 1 ? "" : "s"}
             </p>
             <button
               type="button"
               onClick={() => setAddLeadsOpen(true)}
               className="rounded-lg bg-[#0c5290] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a]"
             >
-              Add leads
+              Add prospects
             </button>
           </div>
 
           {leads.length === 0 ? (
             <div className="flex min-h-[40vh] items-center justify-center rounded-2xl bg-slate-50">
               <div className="text-center">
-                <p className="text-sm text-slate-500">No leads yet</p>
+                <p className="text-sm text-slate-500">No prospects yet</p>
                 <button
                   type="button"
                   onClick={() => setAddLeadsOpen(true)}
                   className="mt-2 text-sm font-semibold text-[#0c5290] hover:underline"
                 >
-                  Add leads
+                  Add prospects
                 </button>
               </div>
             </div>
@@ -849,7 +825,7 @@ export function LinkedInCampaignEditor() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   <tr>
-                    <th className="px-4 py-2.5 font-semibold">Lead</th>
+                    <th className="px-4 py-2.5 font-semibold">Prospect</th>
                     <th className="px-4 py-2.5 font-semibold">Status</th>
                     <th className="hidden px-4 py-2.5 font-semibold sm:table-cell">
                       Company
@@ -918,99 +894,207 @@ export function LinkedInCampaignEditor() {
         </div>
       ) : null}
 
-      {/* ——— ANALYTICS ——— */}
-      {tab === "analytics" ? (
-        <div className="mt-4 min-h-[60vh] space-y-8">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-            {[
-              { label: "Total", value: leads.length },
-              { label: "Staging", value: stagingLeads.length },
-              { label: "In campaign", value: activeLeads.length },
-              { label: "Replied", value: statusCounts.replied || 0 },
-            ].map((s) => (
-              <div key={s.label}>
-                <p className="text-[11px] font-medium text-slate-500">
-                  {s.label}
-                </p>
-                <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-slate-900">
-                  {s.value}
-                </p>
-              </div>
-            ))}
+      {/* ——— STEPS ——— */}
+      {tab === "steps" ? (
+        <div className="mt-4 min-h-[60vh]">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-500">
+              {steps.length === 0
+                ? "Build the sequence people move through"
+                : `${steps.length} step${steps.length === 1 ? "" : "s"} · ${activeLeads.length} in campaign`}
+            </p>
+            <button
+              type="button"
+              onClick={() => setTab("prospects")}
+              className="text-xs font-medium text-[#0c5290] hover:underline"
+            >
+              Manage prospects
+            </button>
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900">By status</h2>
-            <ul className="mt-3 divide-y divide-slate-100 border-y border-slate-200">
-              {Object.keys(statusCounts).length === 0 ? (
-                <li className="py-8 text-center text-sm text-slate-500">
-                  No activity yet
-                </li>
-              ) : (
-                Object.entries(statusCounts)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([status, count]) => (
-                    <li key={status}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLeadDrawer({
-                            kind: "status",
-                            status,
-                            title: statusLabel(status),
-                          })
-                        }
-                        className="flex w-full items-center justify-between py-3 text-sm hover:bg-slate-50"
-                      >
-                        <span className="font-medium text-slate-700">
-                          {statusLabel(status)}
-                        </span>
-                        <span className="tabular-nums text-slate-900">
-                          {count}
-                        </span>
-                      </button>
-                    </li>
-                  ))
-              )}
-            </ul>
-          </div>
-
-          {abStats &&
-          steps.some((s) => s.id && s.variants && s.variants.length > 0) ? (
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">A/B</h2>
-              <div className="mt-3 space-y-4">
-                {steps
-                  .filter((s) => s.id && s.variants && s.variants.length > 0)
-                  .map((s) => (
-                    <div key={s.id}>
-                      <p className="text-xs text-slate-500">
-                        {stepTypeLabel(s.step_type)}
-                      </p>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                        {(s.variants || []).map((v) => {
-                          const stats = s.id
-                            ? abStats[s.id]?.[v.key]
-                            : undefined;
-                          return (
-                            <div key={v.key} className="py-1">
-                              <p className="text-sm font-semibold text-slate-800">
-                                {v.key}
-                              </p>
-                              <p className="mt-0.5 text-xs text-slate-500">
-                                {stats
-                                  ? `${stats.assigned} sent · ${stats.interested} interested`
-                                  : "No sends yet"}
+          {steps.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
+              <p className="text-sm text-slate-500">No steps yet</p>
+              <button
+                type="button"
+                onClick={() => addStep("invite")}
+                className="mt-3 text-sm font-semibold text-[#0c5290] hover:underline"
+              >
+                Add connection request
+              </button>
+            </div>
+          ) : (
+            <ol className="space-y-2">
+              {steps.map((step, idx) => {
+                const count = countAtStep(step, idx);
+                const hasAb = Boolean(
+                  step.variants && step.variants.length > 0
+                );
+                const isWait = step.step_type === "wait";
+                return (
+                  <li key={step.id || `${step.step_type}-${idx}`}>
+                    {hasAb && step.step_type === "message" ? (
+                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold tabular-nums text-slate-600">
+                              {idx + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-slate-900">
+                                Message
+                                {step.send_mode === "remind" ? (
+                                  <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                                    Remind me
+                                  </span>
+                                ) : null}
                               </p>
                             </div>
-                          );
-                        })}
+                          </div>
+                          {count > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLeadDrawer({
+                                  kind: "step",
+                                  position: step.position ?? idx,
+                                  title: stepTypeLabel(step.step_type),
+                                })
+                              }
+                              className="shrink-0 rounded-full bg-slate-50 px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+                            >
+                              {count}
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {(step.variants || []).slice(0, 2).map((v) => (
+                            <button
+                              key={v.key}
+                              type="button"
+                              onClick={() => setEditingStepIndex(idx)}
+                              className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-left transition hover:border-slate-300 hover:bg-white"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-semibold text-slate-800">
+                                  {v.key}
+                                </span>
+                                {step.id && abStats?.[step.id]?.[v.key] ? (
+                                  <span className="text-[10px] tabular-nums text-slate-400">
+                                    {abStats[step.id][v.key].assigned}
+                                  </span>
+                                ) : null}
+                              </div>
+                              <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-slate-500">
+                                {v.body || "Empty"}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ) : (
+                      <div
+                        className={`flex items-stretch gap-0 overflow-hidden rounded-xl border ${
+                          isWait
+                            ? "border-dashed border-slate-200 bg-slate-50/60"
+                            : "border-slate-200 bg-white"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setEditingStepIndex(idx)}
+                          className="flex min-w-0 flex-1 items-start gap-3 px-4 py-3.5 text-left transition hover:bg-slate-50/80"
+                        >
+                          <span
+                            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
+                              isWait
+                                ? "bg-white text-slate-500 ring-1 ring-slate-200"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
+                            {idx + 1}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={`text-sm font-semibold ${
+                                isWait ? "text-slate-600" : "text-slate-900"
+                              }`}
+                            >
+                              {isWait
+                                ? `Wait ${formatWait(step.wait_hours)}`
+                                : stepTypeLabel(step.step_type)}
+                              {step.step_type === "message" &&
+                              step.send_mode === "remind" ? (
+                                <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                                  Remind me
+                                </span>
+                              ) : null}
+                            </p>
+                            {!isWait &&
+                            step.step_type !== "react" &&
+                            step.body ? (
+                              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
+                                {step.body}
+                              </p>
+                            ) : null}
+                          </div>
+                        </button>
+                        {count > 0 ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLeadDrawer({
+                                kind: "step",
+                                position: step.position ?? idx,
+                                title: stepTypeLabel(step.step_type),
+                              })
+                            }
+                            className="shrink-0 border-l border-slate-100 px-3 text-xs font-semibold tabular-nums text-slate-700 hover:bg-slate-50"
+                          >
+                            {count}
+                          </button>
+                        ) : (
+                          <span className="w-3 shrink-0" aria-hidden />
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+
+          <div className="relative mt-4">
+            <button
+              type="button"
+              onClick={() => setAddStepOpen((o) => !o)}
+              className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-2.5 text-xs font-medium text-slate-600 hover:border-slate-400 hover:text-slate-900"
+            >
+              Add step
+            </button>
+            {addStepOpen ? (
+              <div className="absolute left-0 z-20 mt-2 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10">
+                {(
+                  [
+                    ["invite", "Connection"],
+                    ["message", "Message"],
+                    ["wait", "Wait"],
+                    ["react", "Like post"],
+                    ["comment", "Comment"],
+                  ] as const
+                ).map(([type, label]) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => addStep(type)}
+                    className="block w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       ) : null}
 
@@ -1191,6 +1275,82 @@ export function LinkedInCampaignEditor() {
               editingStep.step_type === "invite" ? (
                 <>
                   {editingStep.step_type === "message" ? (
+                    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-slate-800">
+                            Send mode
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-slate-500">
+                            Auto sends via worker. Remind me queues for you —
+                            optional fallback if you miss it.
+                          </p>
+                        </div>
+                        <select
+                          value={editingStep.send_mode === "remind" ? "remind" : "auto"}
+                          onChange={(e) =>
+                            updateEditingStep({
+                              send_mode: e.target.value as "auto" | "remind",
+                              ...(e.target.value === "auto"
+                                ? {
+                                    fallback_hours: null,
+                                    fallback_body: null,
+                                  }
+                                : {}),
+                            })
+                          }
+                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium"
+                        >
+                          <option value="auto">Auto</option>
+                          <option value="remind">Remind me</option>
+                        </select>
+                      </div>
+                      {editingStep.send_mode === "remind" ? (
+                        <div className="space-y-3 border-t border-slate-200/80 pt-3">
+                          <label className="block text-xs font-medium text-slate-700">
+                            Fallback after (hours)
+                            <input
+                              type="number"
+                              min={1}
+                              max={720}
+                              placeholder="Off"
+                              value={editingStep.fallback_hours ?? ""}
+                              onChange={(e) =>
+                                updateEditingStep({
+                                  fallback_hours: e.target.value
+                                    ? Number(e.target.value)
+                                    : null,
+                                })
+                              }
+                              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal"
+                            />
+                            <span className="mt-1 block text-[11px] font-normal text-slate-500">
+                              Leave blank for no auto-send. After this many hours
+                              past due, the fallback template goes out.
+                            </span>
+                          </label>
+                          {editingStep.fallback_hours != null ? (
+                            <label className="block text-xs font-medium text-slate-700">
+                              Fallback message
+                              <textarea
+                                value={editingStep.fallback_body ?? ""}
+                                onChange={(e) =>
+                                  updateEditingStep({
+                                    fallback_body: e.target.value,
+                                  })
+                                }
+                                rows={3}
+                                placeholder="Uses the main message template if empty"
+                                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal"
+                              />
+                            </label>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {editingStep.step_type === "message" ? (
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-700">
                         A/B test
@@ -1357,7 +1517,7 @@ export function LinkedInCampaignEditor() {
         </div>
       ) : null}
 
-      {/* Add leads */}
+      {/* Add prospects */}
       {addLeadsOpen ? (
         <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
           <button
@@ -1372,7 +1532,9 @@ export function LinkedInCampaignEditor() {
             className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-900">Add leads</h2>
+              <h2 className="text-sm font-semibold text-slate-900">
+                Add prospects
+              </h2>
               <button
                 type="button"
                 onClick={() => setAddLeadsOpen(false)}

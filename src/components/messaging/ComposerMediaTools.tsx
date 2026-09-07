@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import {
   Clock,
@@ -328,6 +328,7 @@ export function ChatComposerTools({
   sending,
   canSend,
   showSchedule,
+  leadingTools,
 }: {
   enabled: boolean;
   pendingFiles: PendingComposerFile[];
@@ -344,6 +345,8 @@ export function ChatComposerTools({
   sending: boolean;
   canSend: boolean;
   showSchedule: boolean;
+  /** Extra controls before media tools (e.g. reply templates). */
+  leadingTools?: ReactNode;
 }) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -738,6 +741,7 @@ export function ChatComposerTools({
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-0.5">
+          {leadingTools}
           {enabled ? (
             <>
               <input

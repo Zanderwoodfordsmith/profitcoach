@@ -68,6 +68,7 @@ type CoachDetail = {
   conference_status: "no" | "maybe" | "yes" | null;
   crm_profile_name: string | null;
   crm_location_id: string | null;
+  booking_calendar_provider: "native" | "ghl";
   has_calendar_embed: boolean;
   calendar_sync_ready: boolean;
   has_lead_webhook: boolean;
@@ -760,6 +761,14 @@ export default function AdminCoachDetailPage({
                   <SetupBadge complete={coach.has_directory_bio} label="Directory bio" />
                 </div>
                 <dl className="mt-5 grid gap-5 sm:grid-cols-2">
+                  <DetailField
+                    label="Booking calendars"
+                    value={
+                      coach.booking_calendar_provider === "native"
+                        ? "Profit Coach (native)"
+                        : "CRM (GHL)"
+                    }
+                  />
                   <DetailField label="CRM profile" value={coach.crm_profile_name} />
                   <DetailField label="CRM location ID" value={coach.crm_location_id} />
                 </dl>

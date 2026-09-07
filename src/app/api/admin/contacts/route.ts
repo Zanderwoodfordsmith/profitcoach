@@ -260,15 +260,42 @@ export async function POST(request: Request) {
       }
     }
 
+    if (resolvedCoachId) {
+      const { resolveOrCreateContact } = await import(
+        "@/lib/contacts/resolveOrCreateContact"
+      );
+      const { splitFullName } = await import("@/lib/splitFullName");
+      const parts = splitFullName(fullName);
+      const resolved = await resolveOrCreateContact({
+        coachId: resolvedCoachId,
+        fullName,
+        firstName: parts.first_name,
+        lastName: parts.last_name,
+        email,
+        businessName,
+        type: contactType,
+        prospectSource: contactType === "prospect" ? "manual" : null,
+      });
+      return NextResponse.json(
+        {
+          ok: true,
+          contactId: resolved.contactId,
+          created: resolved.created,
+          matchedBy: resolved.matchedBy,
+          coachSlug: coachSlug ?? null,
+          sendInvite,
+          type: contactType,
+        },
+        { status: resolved.created ? 201 : 200 }
+      );
+    }
+
     const insertPayload: Record<string, unknown> = {
       full_name: fullName,
       email,
       business_name: businessName,
       type: contactType,
     };
-    if (resolvedCoachId) {
-      insertPayload.coach_id = resolvedCoachId;
-    }
 
     const { data: inserted, error: insertError } = await supabaseAdmin
       .from("contacts")

@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDayLabel, formatShortTime } from "@/lib/formatShortDate";
+import {
+  displayConversationPreview,
+  extractReactionEmoji,
+  isStoredReactionEventMessage,
+  reactionChipsSummary,
+  reactionsFromMessageMetadata,
+} from "@/lib/messaging/messageReactions";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
 type MessageRow = {
@@ -17,6 +24,7 @@ type MessageRow = {
   to_address: string | null;
   provider_error: string | null;
   created_at: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 type ActivityEvent = {
@@ -38,7 +46,7 @@ type FeedItem =
   | { kind: "activity"; at: string; activity: ActivityEvent };
 
 function previewText(body: string | null | undefined, max = 96): string {
-  const compact = (body || "").replace(/\s+/g, " ").trim();
+  const compact = displayConversationPreview(body);
   if (!compact) return "";
   if (compact.length <= max) return compact;
   return `${compact.slice(0, max).trimEnd()}…`;
@@ -265,6 +273,35 @@ export function ProspectActivityFeed({
                 const subject = m.subject?.trim();
                 const failed =
                   m.status === "failed" || Boolean(m.provider_error);
+                const chips = reactionChipsSummary(
+                  reactionsFromMessageMetadata(m.metadata)
+                );
+
+                if (
+                  isStoredReactionEventMessage({
+                    body_text: m.body_text,
+                    metadata: m.metadata,
+                  })
+                ) {
+                  const emoji =
+                    (typeof m.metadata?.reaction === "string" &&
+                      m.metadata.reaction.trim()) ||
+                    extractReactionEmoji(m.body_text);
+                  const label = outbound ? "You reacted" : "Reacted";
+                  return (
+                    <div key={m.id} className="flex justify-center">
+                      <div className="inline-flex items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-[11px] text-slate-500">
+                        <span className="text-sm leading-none">{emoji}</span>
+                        <span className="font-medium text-slate-600">
+                          {label}
+                        </span>
+                        <span className="tabular-nums text-slate-400">
+                          {formatShortTime(m.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
 
                 if (isComment) {
                   return (
@@ -332,6 +369,17 @@ export function ProspectActivityFeed({
                           title={m.provider_error}
                         >
                           Delivery issue
+                        </div>
+                      ) : null}
+                      {chips ? (
+                        <div
+                          className={`mt-1.5 flex ${
+                            outbound ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <span className="inline-flex rounded-full bg-white px-2 py-0.5 text-[13px] shadow-sm ring-1 ring-slate-200/90">
+                            {chips}
+                          </span>
                         </div>
                       ) : null}
                     </button>

@@ -9,6 +9,7 @@ import {
 } from "@/components/layout";
 import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
 import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
+import { BookingCalendarProviderCard } from "@/components/settings/BookingCalendarProviderCard";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
 import { BillingSettingsTab } from "@/components/settings/BillingSettingsTab";
 import { IntegrationsSettingsTab } from "@/components/settings/IntegrationsSettingsTab";
@@ -127,7 +128,6 @@ export function BossDashboardSettings({
   const activeTab = embed?.activeTab ?? internalTab;
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
-  const [viewerIsAdmin, setViewerIsAdmin] = useState(variant === "admin");
 
   const loadProfile = useCallback(async () => {
     const {
@@ -253,34 +253,6 @@ export function BossDashboardSettings({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data bootstrap after async profile-role + coach profile fetches
     void loadProfile();
   }, [loadProfile]);
-
-  useEffect(() => {
-    if (variant === "admin") {
-      setViewerIsAdmin(true);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      if (!user || cancelled) return;
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
-        role?: string;
-      };
-      if (!cancelled) {
-        setViewerIsAdmin(roleBody.role === "admin");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [variant]);
 
   async function handleProfileSave(e: React.FormEvent) {
     e.preventDefault();
@@ -550,13 +522,17 @@ export function BossDashboardSettings({
         <div
           className={
             variant === "coach"
-              ? "grid w-full items-start gap-8 lg:grid-cols-[minmax(0,32rem)_minmax(16rem,22rem)] lg:justify-start lg:gap-10"
+              ? "flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10"
               : "w-full max-w-2xl"
           }
         >
           <form
             onSubmit={handleProfileSave}
-            className="flex w-full min-w-0 flex-col gap-4"
+            className={
+              variant === "coach"
+                ? "mx-auto flex w-full min-w-0 max-w-[40.8rem] flex-col gap-4 pt-3 lg:mx-0 lg:pt-3.5"
+                : "flex w-full min-w-0 flex-col gap-4"
+            }
           >
         <ProfileIdentityCard
           firstName={firstName}
@@ -717,7 +693,7 @@ export function BossDashboardSettings({
         </div>
           </form>
           {variant === "coach" ? (
-            <aside className="min-w-0 lg:sticky lg:top-24">
+            <aside className="w-full shrink-0 pt-3 lg:w-[22rem] lg:sticky lg:top-4 lg:self-start lg:pt-3.5">
               <IntegrationsSettingsTab />
             </aside>
           ) : null}
@@ -739,14 +715,13 @@ export function BossDashboardSettings({
 
       {activeTab === "calendar" ? (
         <div className="flex w-full min-w-0 flex-col gap-10">
-          {viewerIsAdmin ? (
-            <CallsCalendarSettings
-              appOrigin={appOrigin}
-              callsBasePath={
-                variant === "admin" ? "/admin/calls" : "/coach/calls"
-              }
-            />
-          ) : null}
+          <BookingCalendarProviderCard />
+          <CallsCalendarSettings
+            appOrigin={appOrigin}
+            callsBasePath={
+              variant === "admin" ? "/admin/calls" : "/coach/calls"
+            }
+          />
           <Suspense
             fallback={
               <section className="rounded-xl border border-slate-200/80 bg-white p-4">

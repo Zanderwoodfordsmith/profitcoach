@@ -710,6 +710,7 @@ export function CoachAiPanel({
           description={view === "chat" ? screenContextLine : undefined}
           descriptionPlacement="below"
           bleedInset="px-4 md:px-[60px]"
+          showChrome={false}
           tabs={
             <PageHeaderUnderlineTabs
               ariaLabel="Profit Coach AI sections"

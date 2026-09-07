@@ -225,6 +225,7 @@ export async function resolveGhlContactLinks(input: {
   profitCoachContactId: string | null;
   ghlLocationId: string | null;
   email: string | null;
+  phone?: string | null;
   crmContactId?: string | null;
 }): Promise<ResolvedGhlContactLinks> {
   if (input.profitCoachContactId) {
@@ -299,7 +300,7 @@ export async function resolveGhlContactLinks(input: {
     };
   }
 
-  if (!input.email) {
+  if (!input.email && !input.phone) {
     return {
       coachId,
       contactId: null,
@@ -307,8 +308,12 @@ export async function resolveGhlContactLinks(input: {
     };
   }
 
-  const contactId = await lookupContactByCoachAndEmail(coachId, input.email);
-  if (!contactId) {
+  const { findContactByIdentity } = await import("@/lib/contacts/identity");
+  const match = await findContactByIdentity(coachId, {
+    email: input.email,
+    phone: input.phone,
+  });
+  if (!match) {
     return {
       coachId,
       contactId: null,
@@ -318,7 +323,7 @@ export async function resolveGhlContactLinks(input: {
 
   return {
     coachId,
-    contactId,
+    contactId: match.id,
     matchStatus: "matched",
   };
 }

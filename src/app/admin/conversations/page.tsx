@@ -51,7 +51,7 @@ export default function AdminConversationsPage() {
       header={
         <StickyPageHeader
           title="Get Clients"
-          description="Team inbox for email and SMS (Bird)."
+          description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

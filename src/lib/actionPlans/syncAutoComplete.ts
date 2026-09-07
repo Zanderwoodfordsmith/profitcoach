@@ -9,7 +9,7 @@ export async function syncCoachActionAutoComplete(coachId: string): Promise<void
   const { data: coachRow, error: coachError } = await supabaseAdmin
     .from("coaches")
     .select(
-      "crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, lead_webhook_url",
+      "crm_profile_name, crm_location_id, calendar_embed_code, ghl_calendar_id, lead_webhook_url, booking_calendar_provider",
     )
     .eq("id", coachId)
     .maybeSingle();

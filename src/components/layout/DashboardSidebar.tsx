@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
-  ArrowLeftRight,
   ChevronDown,
   ChevronUp,
   Lock,
@@ -35,8 +34,7 @@ import {
 import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
-import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { DEMO_COACH_LABEL, resolveDemoCoachId } from "@/lib/demoCoach";
+import { DemoCoachToggle } from "@/components/layout/DemoCoachToggle";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 
 /** Selected nav pill — restrained cooler-blue gradient (between solid sky and full wash). */
@@ -95,17 +93,12 @@ export function DashboardSidebar({
   collapsed = false,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { impersonatingCoachId, setImpersonatingCoachId, clearImpersonation } =
-    useImpersonation();
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const supportHref = `${prefix}/support`;
   const supportActive = Boolean(pathname?.startsWith(supportHref));
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [adminNavExpanded, setAdminNavExpanded] = useState(false);
-  const [demoSwitchBusy, setDemoSwitchBusy] = useState(false);
-  const [demoSwitchError, setDemoSwitchError] = useState<string | null>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const showAdminSection = variant === "admin";
 
@@ -147,39 +140,10 @@ export function DashboardSidebar({
       ? coachHasFeature
       : () => true;
 
-  const { profile, profileLoading, avatarLabel, avatarImageUrl } =
+  const { profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
-  const isAdmin = profile?.role === "admin";
-  const isImpersonating = Boolean(impersonatingCoachId);
   const newFeedbackCount = useNewFeedbackCount(variant === "admin");
   const coachUnreadSupportCount = useCoachUnreadSupportCount(variant === "coach");
-
-  async function switchToDemoCoach() {
-    if (demoSwitchBusy) return;
-    setDemoSwitchBusy(true);
-    setDemoSwitchError(null);
-    try {
-      const id = await resolveDemoCoachId();
-      if (!id) {
-        setDemoSwitchError(`${DEMO_COACH_LABEL} not found.`);
-        return;
-      }
-      setImpersonatingCoachId(id);
-      setAccountMenuOpen(false);
-      setMobileMoreOpen(false);
-      router.push("/coach");
-    } finally {
-      setDemoSwitchBusy(false);
-    }
-  }
-
-  function switchBackToAdmin() {
-    clearImpersonation();
-    setAccountMenuOpen(false);
-    setMobileMoreOpen(false);
-    setDemoSwitchError(null);
-    router.push("/admin");
-  }
 
   // Soft-gate model: gated items stay visible with a lock badge; clicking
   // through shows the upgrade gate on the page itself.
@@ -589,24 +553,36 @@ export function DashboardSidebar({
                   : "text-slate-100/90 hover:bg-white/10"
               }`}
             >
-              {avatarImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarImageUrl}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-white/35"
-                />
-              ) : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white ring-1 ring-white/30">
-                  {profileInitialsFromName(avatarLabel)}
-                </span>
-              )}
+              <span className="relative shrink-0">
+                {avatarImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarImageUrl}
+                    alt=""
+                    className="h-8 w-8 rounded-full object-cover ring-1 ring-white/35"
+                  />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-[11px] font-semibold text-white ring-1 ring-white/30">
+                    {profileInitialsFromName(avatarLabel)}
+                  </span>
+                )}
+              </span>
               {!collapsed ? (
-                <span className="min-w-0 flex-1 text-[0.8125rem] font-medium leading-snug line-clamp-2">
-                  {profileLoading ? "Loading..." : avatarLabel}
+                <span className="relative min-w-0 flex-1 pr-1">
+                  <span className="block text-[0.8125rem] font-medium leading-snug line-clamp-2">
+                    {profileLoading ? "Loading..." : avatarLabel}
+                  </span>
                 </span>
               ) : null}
             </button>
+            {collapsed ? (
+              <DemoCoachToggle
+                compact
+                className="pointer-events-auto absolute bottom-1 right-1 z-10"
+              />
+            ) : (
+              <DemoCoachToggle className="pointer-events-auto absolute bottom-2 right-3 z-10" />
+            )}
             {accountMenuOpen ? (
               <div
                 role="menu"
@@ -620,39 +596,7 @@ export function DashboardSidebar({
                   <p className="truncate text-sm font-semibold text-slate-900">
                     {profileLoading ? "Loading..." : avatarLabel}
                   </p>
-                  {isAdmin && isImpersonating ? (
-                    <p className="mt-0.5 text-[11px] font-medium text-amber-800">
-                      Viewing as coach
-                    </p>
-                  ) : null}
                 </div>
-                {isAdmin ? (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={demoSwitchBusy}
-                    onClick={() => {
-                      if (isImpersonating) switchBackToAdmin();
-                      else void switchToDemoCoach();
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                  >
-                    <ArrowLeftRight
-                      className="h-4 w-4 shrink-0 opacity-80"
-                      aria-hidden
-                    />
-                    {isImpersonating
-                      ? "Back to admin"
-                      : demoSwitchBusy
-                        ? "Switching…"
-                        : `Switch to ${DEMO_COACH_LABEL}`}
-                  </button>
-                ) : null}
-                {demoSwitchError ? (
-                  <p className="px-3 pb-1 text-[11px] text-rose-600">
-                    {demoSwitchError}
-                  </p>
-                ) : null}
                 <Link
                   href={settingsHref}
                   role="menuitem"
@@ -750,6 +694,7 @@ export function DashboardSidebar({
                 <p className="truncate text-base font-semibold">
                   {profileLoading ? "Loading..." : avatarLabel}
                 </p>
+                <DemoCoachToggle className="mt-1" />
               </div>
             </div>
             {variant === "admin" ? (
@@ -865,29 +810,6 @@ export function DashboardSidebar({
               <p className="mb-1 mt-2 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
                 Settings
               </p>
-              {isAdmin ? (
-                <button
-                  type="button"
-                  disabled={demoSwitchBusy}
-                  onClick={() => {
-                    if (isImpersonating) switchBackToAdmin();
-                    else void switchToDemoCoach();
-                  }}
-                  className="mb-1 flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-[0.9375rem] text-slate-100/90 hover:bg-white/10 disabled:opacity-60"
-                >
-                  <ArrowLeftRight className="h-5 w-5 shrink-0 opacity-95" />
-                  {isImpersonating
-                    ? "Back to admin"
-                    : demoSwitchBusy
-                      ? "Switching…"
-                      : `Switch to ${DEMO_COACH_LABEL}`}
-                </button>
-              ) : null}
-              {demoSwitchError ? (
-                <p className="mb-1 px-3 text-[11px] text-rose-200">
-                  {demoSwitchError}
-                </p>
-              ) : null}
               <Link
                 href={supportHref}
                 onClick={closeMobileSheets}

@@ -517,6 +517,7 @@ function CrmLeadCaptureFields({
   onCalendarEmbedCodeChange,
   leadWebhookUrl,
   onLeadWebhookUrlChange,
+  showCalendarEmbed = true,
 }: {
   crmProfileName: string;
   onCrmProfileNameChange: (value: string) => void;
@@ -526,6 +527,7 @@ function CrmLeadCaptureFields({
   onCalendarEmbedCodeChange: (value: string) => void;
   leadWebhookUrl: string;
   onLeadWebhookUrlChange: (value: string) => void;
+  showCalendarEmbed?: boolean;
 }) {
   const platformHref = proCoachPlatformHref(crmLocationId);
 
@@ -542,6 +544,14 @@ function CrmLeadCaptureFields({
           <span aria-hidden> →</span>
         </a>
       </p>
+
+      {!showCalendarEmbed ? (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950">
+          Prospects book on <span className="font-medium">Profit Coach calendars</span>.
+          Switch back to CRM calendars or manage availability under{" "}
+          <span className="font-medium">Settings → Calendar</span>.
+        </p>
+      ) : null}
 
       <OutlinedTextField
         id="crm_profile_name"
@@ -570,15 +580,17 @@ function CrmLeadCaptureFields({
         </FieldHint>
       </div>
 
-      <OutlinedTextArea
-        id="calendar_embed_code"
-        label="Booking calendar embed"
-        rows={6}
-        value={calendarEmbedCode}
-        onChange={(e) => onCalendarEmbedCodeChange(e.target.value)}
-        placeholder='<iframe src="https://..." …></iframe>'
-        wrapperClassName="w-full"
-      />
+      {showCalendarEmbed ? (
+        <OutlinedTextArea
+          id="calendar_embed_code"
+          label="Booking calendar embed"
+          rows={6}
+          value={calendarEmbedCode}
+          onChange={(e) => onCalendarEmbedCodeChange(e.target.value)}
+          placeholder='<iframe src="https://..." …></iframe>'
+          wrapperClassName="w-full"
+        />
+      ) : null}
 
       <div>
         <OutlinedTextField
@@ -615,6 +627,8 @@ export type FunnelSettingsTabProps = {
   leadWebhookUrl: string;
   onLeadWebhookUrlChange: (value: string) => void;
   calendarSyncStatus: CalendarSyncStatus;
+  /** When native, hide CRM embed field and show Profit Coach calendars note. */
+  bookingCalendarProvider?: "native" | "ghl";
   impersonatingCoachId?: string | null;
   saving: boolean;
   saveMessage: "success" | "error" | null;
@@ -638,6 +652,7 @@ export function FunnelSettingsTab({
   leadWebhookUrl,
   onLeadWebhookUrlChange,
   calendarSyncStatus,
+  bookingCalendarProvider = "ghl",
   impersonatingCoachId,
   saving,
   saveMessage,
@@ -705,6 +720,7 @@ export function FunnelSettingsTab({
               onCalendarEmbedCodeChange={onCalendarEmbedCodeChange}
               leadWebhookUrl={leadWebhookUrl}
               onLeadWebhookUrlChange={onLeadWebhookUrlChange}
+              showCalendarEmbed={bookingCalendarProvider === "ghl"}
             />
           </CollapsibleCrmSection>
 

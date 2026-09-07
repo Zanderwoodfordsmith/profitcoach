@@ -5,7 +5,7 @@ import { ChevronDown, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BossGridTransposed } from "@/components/BossGrid";
 import { BossWheel } from "@/components/BossCharts";
-import { CalendarEmbed } from "@/components/CalendarEmbed";
+import { CoachPublicBookingSurface } from "@/components/booking/CoachPublicBookingSurface";
 import { BossScoreDialStrip } from "@/components/coach/BossScoreDialStrip";
 import { WorkshopOwnerLevelBars } from "@/components/coach/WorkshopOwnerLevelBars";
 import { BossScoreProThankYouHeading } from "@/components/scorecard/BossScoreWordmark";
@@ -365,18 +365,11 @@ export function BossProReportResults({
 }) {
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
-  const [calendarEmbed, setCalendarEmbed] = useState<string | null>(null);
   const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const effectiveSlug = coachSlug || getPrimaryCoachSlug();
 
   useEffect(() => {
     if (coachGlance || !effectiveSlug) return;
-    fetch(`/api/public/coaches/${encodeURIComponent(effectiveSlug)}/calendar`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.calendar_embed_code) setCalendarEmbed(data.calendar_embed_code);
-      })
-      .catch(() => {});
 
     fetch(`/api/coach-by-slug?slug=${encodeURIComponent(effectiveSlug)}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -436,9 +429,6 @@ export function BossProReportResults({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const displayCalendarEmbed =
-    calendarEmbed ?? (isPreview ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null);
 
   return (
     <div
@@ -730,22 +720,13 @@ export function BossProReportResults({
                 </p>
               </div>
               <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                {displayCalendarEmbed ? (
-                  <CalendarEmbed
-                    embedCode={displayCalendarEmbed}
-                    contact={calendarContact}
-                  />
-                ) : (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                    <p className="text-sm font-semibold text-slate-700">
-                      Loading calendar…
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      If nothing appears, your coach can add their booking embed in
-                      settings.
-                    </p>
-                  </div>
-                )}
+                <CoachPublicBookingSurface
+                  coachSlug={effectiveSlug}
+                  contact={calendarContact}
+                  fallbackEmbedCode={
+                    isPreview ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
+                  }
+                />
               </div>
             </div>
           </section>

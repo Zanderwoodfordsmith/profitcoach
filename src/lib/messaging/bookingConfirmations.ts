@@ -6,6 +6,7 @@ import {
   isBirdConfigured,
   normalizePhoneE164,
 } from "@/lib/bird/client";
+import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type BookingNotifyInput = {
@@ -133,9 +134,12 @@ async function appendOutbound(args: {
   await supabaseAdmin
     .from("messaging_conversations")
     .update({
-      last_message_at: new Date().toISOString(),
-      last_preview: preview || args.subject || null,
-      last_channel: args.channel,
+      ...conversationActivityPatch({
+        lastChannel: args.channel,
+        lastDirection: "outbound",
+        lastMessageAt: new Date().toISOString(),
+        lastPreview: preview || args.subject || null,
+      }),
       // Surface new activity in Unread until the coach opens the thread.
       unread_count: unread + 1,
       ...(args.subject ? { subject: args.subject } : {}),

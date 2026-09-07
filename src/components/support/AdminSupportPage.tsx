@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
@@ -33,6 +33,7 @@ import {
   type SupportTicketType,
 } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 
 type AdminTicketRow = {
   id: string;
@@ -115,6 +116,7 @@ export function AdminSupportPage() {
   const [createBusy, setCreateBusy] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const loadGenerationRef = useRef(0);
 
   const loadMeta = useCallback(async () => {
     const {
@@ -145,6 +147,7 @@ export function AdminSupportPage() {
   }, []);
 
   const loadTickets = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError(null);
     const { data, error: queryError } = await supabaseClient
@@ -172,8 +175,10 @@ export function AdminSupportPage() {
       `
       )
       .order("created_at", { ascending: false });
+    if (generation !== loadGenerationRef.current) return;
 
     if (queryError) {
+      if (isSupabaseAbortError(queryError)) return;
       setRows([]);
       setError(queryError.message);
       setLoading(false);
@@ -199,6 +204,9 @@ export function AdminSupportPage() {
   useEffect(() => {
     void loadMeta();
     void loadTickets();
+    return () => {
+      loadGenerationRef.current += 1;
+    };
   }, [loadMeta, loadTickets]);
 
   const filteredRows = useMemo(() => {

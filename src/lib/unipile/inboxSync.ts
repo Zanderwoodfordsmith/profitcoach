@@ -1,3 +1,11 @@
+import { findContactByIdentity } from "@/lib/contacts/identity";
+import {
+  linkedInIdentityIncomplete,
+  normalizeLinkedInProviderId,
+  parseLinkedInIdentity,
+  preferLinkedInUrl,
+  resolveLinkedInIdentityPair,
+} from "@/lib/contacts/linkedinIdentity";
 import {
   isChannelOnlySubject,
   isGenericConversationName,
@@ -8,6 +16,24 @@ import {
   uploadMessagingAttachment,
 } from "@/lib/messaging/messageAttachments";
 import type { MessagingAttachmentMeta } from "@/lib/messaging/messageAttachments";
+import {
+  resolveAccountIdForChannel,
+  startFirstUnipileMessage,
+} from "@/lib/messaging/startConversation";
+import {
+  channelRequiresKnownContact,
+  loadKnownContactIndex,
+  matchKnownContact,
+} from "@/lib/messaging/knownContacts";
+import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
+import {
+  applyReactionToParentMessage,
+  extractReactionEmoji,
+  formatReactionPreview,
+  isUnipileReactionEvent,
+  parseUnipileMessageFlags,
+  patchMessageReactionsByUnipileId,
+} from "@/lib/messaging/messageReactions";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   counterpartForChat,
@@ -18,6 +44,8 @@ import {
   type ChatCounterpart,
   type UnipileChatAttendee,
 } from "@/lib/unipile/chatCounterpart";
+import { whatsappPhoneDigits } from "@/lib/unipile/whatsappIdentity";
+import { markContactWhatsAppOn } from "@/lib/unipile/checkWhatsAppOn";
 import {
   listUnipileAttendees,
   listUnipileChatAttendees,
@@ -34,6 +62,9 @@ import {
   providerToAppChannel,
   type UnipileAppChannel,
 } from "@/lib/unipile/providers";
+
+/** Cap Unipile profile lookups per soft sync to stay under provider limits. */
+const MAX_LINKEDIN_PAIR_RESOLVES_PER_SYNC = 12;
 
 function previewOf(text: string | null | undefined) {
   const t = (text || "").replace(/\s+/g, " ").trim();
@@ -132,6 +163,7 @@ async function resolveChatCounterpart(input: {
         occupation: fromChat.occupation || counterpart.occupation,
         email: fromChat.email || counterpart.email,
         providerId: fromChat.providerId || counterpart.providerId,
+        phone: fromChat.phone || counterpart.phone,
       };
     }
   }
@@ -178,11 +210,14 @@ async function backfillUnnamedChatIdentities(input: {
       counterpart,
       existingName,
       existingSubject: (row.subject as string | null) ?? null,
+      linkedinUrl: counterpart.profileUrl,
+      linkedinProviderId: counterpart.providerId,
     });
     if (
       !patch.prospect_name &&
       !patch.prospect_avatar_url &&
-      !patch.prospect_linkedin_url
+      !patch.prospect_linkedin_url &&
+      !patch.prospect_linkedin_provider_id
     )
       continue;
     await supabaseAdmin
@@ -198,6 +233,8 @@ function identityPatch(input: {
   leadContactId?: string | null;
   existingName?: string | null;
   existingSubject?: string | null;
+  linkedinUrl?: string | null;
+  linkedinProviderId?: string | null;
 }): Record<string, unknown> {
   const patch: Record<string, unknown> = {
     last_channel: input.channel,
@@ -209,11 +246,20 @@ function identityPatch(input: {
   if (input.counterpart.pictureUrl) {
     patch.prospect_avatar_url = input.counterpart.pictureUrl;
   }
-  if (input.counterpart.profileUrl) {
-    patch.prospect_linkedin_url = input.counterpart.profileUrl;
+  if (input.channel !== "whatsapp") {
+    const liUrl =
+      input.linkedinUrl || input.counterpart.profileUrl || null;
+    if (liUrl) patch.prospect_linkedin_url = liUrl;
+    const providerId =
+      normalizeLinkedInProviderId(input.linkedinProviderId) ||
+      normalizeLinkedInProviderId(input.counterpart.providerId);
+    if (providerId) patch.prospect_linkedin_provider_id = providerId;
   }
   if (input.counterpart.email) {
     patch.prospect_email = input.counterpart.email;
+  }
+  if (input.channel === "whatsapp" && input.counterpart.phone) {
+    patch.prospect_phone = input.counterpart.phone;
   }
   const occupation = input.counterpart.occupation;
   if (
@@ -231,7 +277,12 @@ async function syncMessagingAccount(input: {
   coachId: string;
   unipileAccountId: string;
   channel: UnipileAppChannel;
+  /** Full history pull. Soft visits skip unchanged chats. */
   includeMessages?: boolean;
+  /** Soft open: only fetch messages when Unipile shows newer activity. */
+  messagesOnlyIfStale?: boolean;
+  /** Cap expensive LinkedIn vanity↔provider resolves (0 = skip). */
+  maxLinkedInPairResolves?: number;
 }): Promise<{ chats: number; messages: number }> {
   let chats = 0;
   let messages = 0;
@@ -245,15 +296,27 @@ async function syncMessagingAccount(input: {
     input.unipileAccountId
   );
   const includeMessages = input.includeMessages !== false;
+  const messagesOnlyIfStale = Boolean(input.messagesOnlyIfStale);
+  const requireKnown = channelRequiresKnownContact(input.channel);
+  const knownContacts = requireKnown
+    ? await loadKnownContactIndex(input.coachId)
+    : null;
+  const maxPairResolves =
+    input.maxLinkedInPairResolves ??
+    (includeMessages && !messagesOnlyIfStale
+      ? MAX_LINKEDIN_PAIR_RESOLVES_PER_SYNC
+      : 0);
+  let linkedInPairResolves = 0;
 
   for (const chat of items) {
     const chatId = String(chat.id || chat.chat_id || "");
     if (!chatId) continue;
-    chats += 1;
 
     let { data: lead } = await supabaseAdmin
       .from("linkedin_campaign_leads")
-      .select("id, contact_id, campaign_id, first_name, last_name")
+      .select(
+        "id, contact_id, campaign_id, first_name, last_name, linkedin_url, linkedin_provider_id"
+      )
       .eq("coach_id", input.coachId)
       .eq("unipile_chat_id", chatId)
       .maybeSingle();
@@ -263,7 +326,9 @@ async function syncMessagingAccount(input: {
       if (providerId) {
         const { data: byProvider } = await supabaseAdmin
           .from("linkedin_campaign_leads")
-          .select("id, contact_id, campaign_id, first_name, last_name")
+          .select(
+            "id, contact_id, campaign_id, first_name, last_name, linkedin_url, linkedin_provider_id"
+          )
           .eq("coach_id", input.coachId)
           .eq("linkedin_provider_id", providerId)
           .maybeSingle();
@@ -291,63 +356,294 @@ async function syncMessagingAccount(input: {
     let conversationId: string | null = null;
     const { data: existingConv } = await supabaseAdmin
       .from("messaging_conversations")
-      .select("id, prospect_name, subject, prospect_avatar_url")
+      .select(
+        "id, prospect_name, subject, prospect_avatar_url, contact_id, prospect_linkedin_url, prospect_linkedin_provider_id, last_message_at, unread_count, last_preview"
+      )
       .eq("coach_id", input.coachId)
       .eq("unipile_chat_id", chatId)
       .maybeSingle();
 
+    let linkedInPair = parseLinkedInIdentity({
+      linkedinUrl:
+        input.channel === "linkedin"
+          ? counterpart.profileUrl ||
+            (lead?.linkedin_url as string | null) ||
+            (existingConv?.prospect_linkedin_url as string | null)
+          : null,
+      providerId:
+        input.channel === "linkedin"
+          ? counterpart.providerId ||
+            (lead?.linkedin_provider_id as string | null) ||
+            (existingConv?.prospect_linkedin_provider_id as string | null)
+          : null,
+    });
+    if (
+      input.channel === "linkedin" &&
+      linkedInIdentityIncomplete(linkedInPair) &&
+      linkedInPairResolves < maxPairResolves &&
+      (linkedInPair.providerId || linkedInPair.linkedinUrl)
+    ) {
+      linkedInPairResolves += 1;
+      linkedInPair = await resolveLinkedInIdentityPair({
+        linkedinUrl: linkedInPair.linkedinUrl,
+        providerId: linkedInPair.providerId,
+        publicIdentifier: linkedInPair.publicIdentifier,
+        unipileAccountId: input.unipileAccountId,
+      });
+    }
+
+    const waPhoneDigits =
+      input.channel === "whatsapp"
+        ? whatsappPhoneDigits({
+            phoneNumber: counterpart.phone,
+            publicIdentifier: String(chat.attendee_public_identifier || ""),
+            providerId:
+              counterpart.providerId ||
+              String(chat.attendee_provider_id || ""),
+            name: counterpart.name,
+          })
+        : null;
+    const known =
+      requireKnown && knownContacts
+        ? matchKnownContact(knownContacts, {
+            email: counterpart.email,
+            phone: waPhoneDigits,
+          })
+        : null;
+
+    let linkedContactId =
+      (lead?.contact_id as string | null) ||
+      (existingConv?.contact_id as string | null) ||
+      known?.id ||
+      null;
+
+    if (!linkedContactId && input.channel === "linkedin") {
+      const matched = await findContactByIdentity(input.coachId, {
+        linkedinUrl: linkedInPair.linkedinUrl,
+        linkedinProviderId: linkedInPair.providerId,
+        email: counterpart.email,
+      });
+      if (matched?.id) linkedContactId = matched.id;
+    }
+
+    if (
+      linkedContactId &&
+      input.channel === "linkedin" &&
+      (linkedInPair.providerId || linkedInPair.hasVanity)
+    ) {
+      // Absorb blanks / upgrade ACo → vanity on the matched contact.
+      const { data: existingContact } = await supabaseAdmin
+        .from("contacts")
+        .select("linkedin_url, linkedin_provider_id")
+        .eq("id", linkedContactId)
+        .maybeSingle();
+      if (existingContact) {
+        const nextUrl = preferLinkedInUrl(
+          existingContact.linkedin_url as string | null,
+          linkedInPair.linkedinUrl
+        );
+        const patch: Record<string, unknown> = {};
+        if (
+          nextUrl &&
+          nextUrl !== (existingContact.linkedin_url as string | null)
+        ) {
+          patch.linkedin_url = nextUrl;
+        }
+        if (
+          linkedInPair.providerId &&
+          !existingContact.linkedin_provider_id
+        ) {
+          patch.linkedin_provider_id = linkedInPair.providerId;
+        }
+        if (Object.keys(patch).length) {
+          const { error: contactUpdateError } = await supabaseAdmin
+            .from("contacts")
+            .update(patch)
+            .eq("id", linkedContactId);
+          // Unique conflict on vanity URL usually means another contact
+          // already holds it — leave merge to the coach UI.
+          if (
+            contactUpdateError &&
+            contactUpdateError.code !== "23505"
+          ) {
+            console.error(
+              "inbox sync contact linkedin bridge:",
+              contactUpdateError.message
+            );
+          }
+        }
+      }
+    }
+
+    if (
+      lead?.id &&
+      input.channel === "linkedin" &&
+      (linkedInPair.providerId || linkedInPair.hasVanity)
+    ) {
+      const leadPatch: Record<string, unknown> = {};
+      if (
+        linkedInPair.providerId &&
+        linkedInPair.providerId !== (lead.linkedin_provider_id as string | null)
+      ) {
+        leadPatch.linkedin_provider_id = linkedInPair.providerId;
+      }
+      const nextLeadUrl = preferLinkedInUrl(
+        lead.linkedin_url as string | null,
+        linkedInPair.linkedinUrl
+      );
+      if (
+        nextLeadUrl &&
+        nextLeadUrl !== (lead.linkedin_url as string | null)
+      ) {
+        leadPatch.linkedin_url = nextLeadUrl;
+      }
+      if (linkedContactId && !lead.contact_id) {
+        leadPatch.contact_id = linkedContactId;
+      }
+      if (Object.keys(leadPatch).length) {
+        await supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .update(leadPatch)
+          .eq("id", lead.id);
+      }
+    }
+
+    if (requireKnown && !linkedContactId) {
+      // Personal channel — do not pull private chats into Conversations.
+      continue;
+    }
+
+    chats += 1;
+
     const identity = identityPatch({
       channel: input.channel,
       counterpart,
-      leadContactId: (lead?.contact_id as string | null) ?? null,
+      leadContactId: linkedContactId,
       existingName: (existingConv?.prospect_name as string | null) ?? null,
       existingSubject: (existingConv?.subject as string | null) ?? null,
+      linkedinUrl:
+        input.channel === "linkedin" ? linkedInPair.linkedinUrl : null,
+      linkedinProviderId:
+        input.channel === "linkedin" ? linkedInPair.providerId : null,
     });
+    if (waPhoneDigits && input.channel === "whatsapp") {
+      identity.prospect_phone = `+${waPhoneDigits}`;
+    }
+    if (input.channel === "whatsapp") {
+      // Clear accidental LinkedIn URLs built from WhatsApp JIDs.
+      identity.prospect_linkedin_url = null;
+      identity.prospect_linkedin_provider_id = null;
+    }
+    if (known?.full_name && !looksLikePersonName(prospectName)) {
+      identity.prospect_name = known.full_name;
+    }
+
+    if (
+      input.channel === "whatsapp" &&
+      linkedContactId &&
+      waPhoneDigits
+    ) {
+      void markContactWhatsAppOn({
+        coachId: input.coachId,
+        contactId: linkedContactId,
+        phone: waPhoneDigits,
+      }).catch(() => {
+        /* best-effort */
+      });
+    }
 
     if (existingConv?.id) {
       conversationId = existingConv.id as string;
+      const chatTimestamp = String(
+        chat.timestamp || chat.last_message_at || ""
+      ).trim();
+      const remoteUnread = Number(chat.unread_count);
+      const metaPatch: Record<string, unknown> = { ...identity };
+      if (chatTimestamp) {
+        const remoteAt = new Date(chatTimestamp).getTime();
+        const localAt = existingConv.last_message_at
+          ? new Date(existingConv.last_message_at as string).getTime()
+          : 0;
+        if (Number.isFinite(remoteAt) && remoteAt > localAt) {
+          metaPatch.last_message_at = new Date(remoteAt).toISOString();
+        }
+      }
+      if (Number.isFinite(remoteUnread) && remoteUnread >= 0) {
+        metaPatch.unread_count = remoteUnread;
+      }
       await supabaseAdmin
         .from("messaging_conversations")
-        .update(identity)
+        .update(metaPatch)
         .eq("id", conversationId);
     } else {
       const { data: created } = await supabaseAdmin
         .from("messaging_conversations")
         .insert({
           coach_id: input.coachId,
-          contact_id: lead?.contact_id ?? null,
-          prospect_name: prospectName,
-          prospect_email: counterpart.email,
+          contact_id: linkedContactId,
+          prospect_name: known?.full_name || prospectName,
+          prospect_email: counterpart.email || known?.email || null,
+          prospect_phone: waPhoneDigits
+            ? `+${waPhoneDigits}`
+            : known?.phone || null,
           prospect_avatar_url: counterpart.pictureUrl,
-          prospect_linkedin_url: counterpart.profileUrl,
+          prospect_linkedin_url:
+            input.channel === "whatsapp" ? null : linkedInPair.linkedinUrl,
+          prospect_linkedin_provider_id:
+            input.channel === "whatsapp" ? null : linkedInPair.providerId,
           subject: counterpart.occupation || null,
           unipile_chat_id: chatId,
           unipile_account_id: input.unipileAccountId,
           last_channel: input.channel,
-          last_message_at: new Date().toISOString(),
+          last_message_at: String(chat.timestamp || "").trim()
+            ? new Date(String(chat.timestamp)).toISOString()
+            : new Date().toISOString(),
+          unread_count: Number(chat.unread_count) || 0,
         })
         .select("id")
         .maybeSingle();
       conversationId = (created?.id as string) ?? null;
     }
     if (!conversationId) continue;
-    if (!includeMessages) continue;
+
+    let shouldPullMessages = includeMessages;
+    if (includeMessages && messagesOnlyIfStale) {
+      if (!existingConv?.id) {
+        shouldPullMessages = true;
+      } else {
+        const chatTimestamp = String(
+          chat.timestamp || chat.last_message_at || ""
+        ).trim();
+        const remoteAt = chatTimestamp
+          ? new Date(chatTimestamp).getTime()
+          : 0;
+        const localAt = existingConv.last_message_at
+          ? new Date(existingConv.last_message_at as string).getTime()
+          : 0;
+        const remoteUnread = Number(chat.unread_count) || 0;
+        const localUnread = Number(existingConv.unread_count) || 0;
+        shouldPullMessages =
+          (Number.isFinite(remoteAt) && remoteAt > localAt + 1000) ||
+          remoteUnread > localUnread ||
+          !(existingConv.last_preview as string | null)?.trim();
+      }
+    }
+
+    if (!shouldPullMessages) continue;
 
     const msgs = await listUnipileChatMessages({ chat_id: chatId, limit: 30 });
     if (!msgs.ok) continue;
 
     let latestAt: string | null = null;
     let latestPreview: string | null = null;
+    let latestDirection: "inbound" | "outbound" | null = null;
     let inboundSeen = false;
 
     for (const msg of msgs.data?.items ?? []) {
       const messageId = String(msg.id || msg.message_id || "");
       if (!messageId) continue;
-      const text =
-        (msg.text as string) ||
-        (msg.body as string) ||
-        (msg.message as string) ||
-        "";
+      const flags = parseUnipileMessageFlags(msg as Record<string, unknown>);
+      const text = flags.text;
       const isSender =
         Boolean(msg.is_sender) ||
         String(msg.folder || "").toLowerCase() === "sent" ||
@@ -359,6 +655,50 @@ async function syncMessagingAccount(input: {
         (msg.date as string) ||
         new Date().toISOString();
 
+      if (isUnipileReactionEvent(flags)) {
+        const emoji = extractReactionEmoji(text);
+        let attached = false;
+        if (flags.parentId) {
+          attached = await applyReactionToParentMessage({
+            conversationId,
+            parentUnipileMessageId: flags.parentId,
+            reaction: {
+              value: emoji,
+              is_sender: isSender,
+            },
+          });
+        }
+        if (!attached) {
+          // Keep a lightweight row so coaches still see engagement if parent
+          // isn't in the last-N sync window — UI renders this as a system line.
+          const ok = await upsertChatMessage({
+            conversationId,
+            coachId: input.coachId,
+            channel: input.channel,
+            messageId,
+            text: formatReactionPreview(emoji, { isSender }),
+            direction,
+            createdAt,
+            metadata: {
+              chat_id: chatId,
+              kind: "reaction_event",
+              is_event: true,
+              event_type: flags.eventType,
+              parent_unipile_message_id: flags.parentId,
+              reaction: emoji,
+              hidden: true,
+            },
+          });
+          if (ok) messages += 1;
+        }
+        if (!latestAt || new Date(createdAt) >= new Date(latestAt)) {
+          latestAt = createdAt;
+          latestPreview = formatReactionPreview(emoji, { isSender });
+          latestDirection = direction;
+        }
+        continue;
+      }
+
       const ok = await upsertChatMessage({
         conversationId,
         coachId: input.coachId,
@@ -367,13 +707,24 @@ async function syncMessagingAccount(input: {
         text,
         direction,
         createdAt,
-        metadata: { chat_id: chatId },
+        metadata: {
+          chat_id: chatId,
+          ...(flags.reactions.length ? { reactions: flags.reactions } : {}),
+        },
       });
       if (ok) messages += 1;
+      if (flags.reactions.length) {
+        await patchMessageReactionsByUnipileId({
+          conversationId,
+          unipileMessageId: messageId,
+          reactions: flags.reactions,
+        });
+      }
 
       if (!latestAt || new Date(createdAt) >= new Date(latestAt)) {
         latestAt = createdAt;
         latestPreview = previewOf(text);
+        latestDirection = direction;
       }
       if (direction === "inbound") inboundSeen = true;
     }
@@ -383,8 +734,12 @@ async function syncMessagingAccount(input: {
         .from("messaging_conversations")
         .update({
           ...identity,
-          last_message_at: latestAt,
-          last_preview: latestPreview,
+          ...conversationActivityPatch({
+            lastChannel: input.channel,
+            lastDirection: latestDirection || "inbound",
+            lastMessageAt: latestAt,
+            lastPreview: latestPreview,
+          }),
         })
         .eq("id", conversationId);
     }
@@ -401,11 +756,8 @@ async function syncMessagingAccount(input: {
           .update({ status: "replied", next_action_at: null })
           .eq("id", lead.id)
           .neq("status", "replied");
-        await supabaseAdmin
-          .from("linkedin_send_jobs")
-          .update({ status: "cancelled", last_error: "Lead replied" })
-          .eq("lead_id", lead.id)
-          .eq("status", "pending");
+        const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
+        await cancelOpenSendJobs(lead.id as string, "Lead replied");
       }
     }
   }
@@ -421,15 +773,19 @@ async function syncMessagingAccount(input: {
 async function syncMailingAccount(input: {
   coachId: string;
   unipileAccountId: string;
+  /** Soft visit: list headers only when the API supports it. */
+  metaOnly?: boolean;
 }): Promise<{ chats: number; messages: number }> {
   let chats = 0;
   let messages = 0;
   const listed = await listUnipileEmails({
     account_id: input.unipileAccountId,
-    limit: 50,
-    meta_only: false,
+    limit: input.metaOnly ? 30 : 50,
+    meta_only: Boolean(input.metaOnly),
   });
   if (!listed.ok) return { chats, messages };
+
+  const knownContacts = await loadKnownContactIndex(input.coachId);
 
   const byThread = new Map<string, Array<Record<string, unknown>>>();
   for (const email of listed.data?.items ?? []) {
@@ -447,7 +803,6 @@ async function syncMailingAccount(input: {
   }
 
   for (const [threadKey, emails] of byThread) {
-    chats += 1;
     emails.sort((a, b) => {
       const da = new Date(String(a.date || 0)).getTime();
       const db = new Date(String(b.date || 0)).getTime();
@@ -471,20 +826,40 @@ async function syncMailingAccount(input: {
     let conversationId: string | null = null;
     const { data: existingConv } = await supabaseAdmin
       .from("messaging_conversations")
-      .select("id")
+      .select("id, contact_id")
       .eq("coach_id", input.coachId)
       .eq("unipile_chat_id", threadKey)
       .maybeSingle();
 
+    const known = matchKnownContact(knownContacts, { email: prospectEmail });
+    const linkedContactId =
+      (existingConv?.contact_id as string | null) || known?.id || null;
+    if (!linkedContactId) {
+      // Only sync mail with known CRM contacts.
+      continue;
+    }
+
+    chats += 1;
+
     if (existingConv?.id) {
       conversationId = existingConv.id as string;
+      await supabaseAdmin
+        .from("messaging_conversations")
+        .update({
+          contact_id: linkedContactId,
+          prospect_email: prospectEmail || known?.email || undefined,
+          prospect_name: known?.full_name || undefined,
+        })
+        .eq("id", conversationId);
     } else {
       const { data: created } = await supabaseAdmin
         .from("messaging_conversations")
         .insert({
           coach_id: input.coachId,
-          prospect_name: String(prospectName).slice(0, 200),
-          prospect_email: prospectEmail,
+          contact_id: linkedContactId,
+          prospect_name:
+            known?.full_name || String(prospectName).slice(0, 200),
+          prospect_email: prospectEmail || known?.email || null,
           subject,
           unipile_chat_id: threadKey,
           unipile_account_id: input.unipileAccountId,
@@ -505,6 +880,7 @@ async function syncMailingAccount(input: {
 
     let latestAt: string | null = null;
     let latestPreview: string | null = null;
+    let latestDirection: "inbound" | "outbound" | null = null;
 
     for (const email of emails) {
       const messageId = String(email.id || "");
@@ -540,6 +916,7 @@ async function syncMailingAccount(input: {
       if (!latestAt || new Date(createdAt) >= new Date(latestAt)) {
         latestAt = createdAt;
         latestPreview = previewOf(text);
+        latestDirection = direction;
       }
     }
 
@@ -547,9 +924,12 @@ async function syncMailingAccount(input: {
       await supabaseAdmin
         .from("messaging_conversations")
         .update({
-          last_message_at: latestAt,
-          last_preview: latestPreview,
-          last_channel: "email",
+          ...conversationActivityPatch({
+            lastChannel: "email",
+            lastDirection: latestDirection || "inbound",
+            lastMessageAt: latestAt,
+            lastPreview: latestPreview,
+          }),
           subject,
           prospect_email: prospectEmail || undefined,
           prospect_name: String(prospectName).slice(0, 200),
@@ -649,6 +1029,10 @@ export async function syncUnipileInboxForCoach(
 
   let chats = 0;
   let messages = 0;
+  const force = Boolean(options?.force);
+  // Soft page-open: refresh chat metadata + only pull messages for chats that
+  // look newer/unread. Force/cron: full message history for listed chats.
+  const softVisit = !force;
 
   for (const account of accounts) {
     const provider = normalizeUnipileProvider(account.provider as string);
@@ -657,12 +1041,16 @@ export async function syncUnipileInboxForCoach(
       result = await syncMailingAccount({
         coachId,
         unipileAccountId: account.unipile_account_id as string,
+        metaOnly: softVisit,
       });
     } else if (isMessagingProvider(provider)) {
       result = await syncMessagingAccount({
         coachId,
         unipileAccountId: account.unipile_account_id as string,
         channel: providerToAppChannel(provider),
+        includeMessages: true,
+        messagesOnlyIfStale: softVisit,
+        maxLinkedInPairResolves: softVisit ? 3 : undefined,
       });
     }
     chats += result.chats;
@@ -690,6 +1078,8 @@ export async function replyUnipileConversation(input: {
   conversationId: string;
   text: string;
   channel?: string;
+  /** Force a specific Unipile mailbox/chat account (e.g. Gmail vs Outlook). */
+  accountId?: string | null;
   attachments?: Array<{ blob: Blob; filename: string; mime?: string }>;
   voiceMessage?: { blob: Blob; filename: string; mime?: string };
   videoMessage?: { blob: Blob; filename: string; mime?: string };
@@ -720,7 +1110,7 @@ export async function replyUnipileConversation(input: {
   const { data: conv } = await supabaseAdmin
     .from("messaging_conversations")
     .select(
-      "id, coach_id, unipile_chat_id, unipile_account_id, contact_id, prospect_email, subject, last_channel"
+      "id, coach_id, unipile_chat_id, unipile_account_id, contact_id, prospect_email, prospect_phone, prospect_linkedin_url, subject, last_channel"
     )
     .eq("id", input.conversationId)
     .eq("coach_id", input.coachId)
@@ -738,6 +1128,27 @@ export async function replyUnipileConversation(input: {
       throw new Error("Email attachments are not supported yet.");
     }
     if (!text) throw new Error("Message is empty.");
+    const preferredAccountId = input.accountId?.trim() || null;
+    if (
+      preferredAccountId &&
+      preferredAccountId !== conv.unipile_account_id
+    ) {
+      conv.unipile_account_id = preferredAccountId;
+      await supabaseAdmin
+        .from("messaging_conversations")
+        .update({ unipile_account_id: preferredAccountId })
+        .eq("id", conv.id);
+    }
+    if (!conv.unipile_account_id) {
+      const accountId = await resolveAccountIdForChannel(input.coachId, "email");
+      if (accountId) {
+        conv.unipile_account_id = accountId;
+        await supabaseAdmin
+          .from("messaging_conversations")
+          .update({ unipile_account_id: accountId })
+          .eq("id", conv.id);
+      }
+    }
     if (!conv.unipile_account_id) {
       throw new Error("This conversation is not linked to a connected mailbox.");
     }
@@ -783,6 +1194,7 @@ export async function replyUnipileConversation(input: {
         metadata: {
           provider_id: res.data?.provider_id,
           via: "unipile",
+          account_id: conv.unipile_account_id,
         },
       })
       .select("*")
@@ -792,9 +1204,13 @@ export async function replyUnipileConversation(input: {
     await supabaseAdmin
       .from("messaging_conversations")
       .update({
-        last_message_at: new Date().toISOString(),
-        last_preview: previewOf(text),
-        last_channel: "email",
+        ...conversationActivityPatch({
+          lastChannel: "email",
+          lastDirection: "outbound",
+          lastMessageAt: new Date().toISOString(),
+          lastPreview: previewOf(text),
+        }),
+        unipile_account_id: conv.unipile_account_id,
       })
       .eq("id", conv.id);
 
@@ -802,7 +1218,55 @@ export async function replyUnipileConversation(input: {
   }
 
   if (!conv.unipile_chat_id) {
-    throw new Error("This conversation is not linked to a messaging chat.");
+    if (rawAttachments.length || existingMeta.length || hasVoice || hasVideo) {
+      throw new Error(
+        "Send the first message as text. You can attach files on the next one."
+      );
+    }
+    if (!text) throw new Error("Message is empty.");
+    const started = await startFirstUnipileMessage({
+      coachId: input.coachId,
+      conversationId: conv.id as string,
+      channel,
+      text,
+      contactId: (conv.contact_id as string | null) ?? null,
+      prospectPhone: (conv.prospect_phone as string | null) ?? null,
+      prospectLinkedInUrl:
+        (conv.prospect_linkedin_url as string | null) ?? null,
+      unipileAccountId: (conv.unipile_account_id as string | null) ?? null,
+    });
+    conv.unipile_chat_id = started.chatId;
+    conv.unipile_account_id = started.accountId;
+
+    const { data: firstMsg, error: firstErr } = await supabaseAdmin
+      .from("messaging_messages")
+      .insert({
+        conversation_id: conv.id,
+        coach_id: input.coachId,
+        channel,
+        direction: "outbound",
+        status: "accepted",
+        body_text: text,
+        unipile_message_id: started.messageId,
+        metadata: { chat_id: started.chatId, via: "unipile_start" },
+      })
+      .select("*")
+      .maybeSingle();
+    if (firstErr) throw new Error(firstErr.message);
+
+    await supabaseAdmin
+      .from("messaging_conversations")
+      .update({
+        ...conversationActivityPatch({
+          lastChannel: channel,
+          lastDirection: "outbound",
+          lastMessageAt: new Date().toISOString(),
+          lastPreview: previewOf(text),
+        }),
+      })
+      .eq("id", conv.id);
+
+    return firstMsg;
   }
 
   const attachmentMeta: MessagingAttachmentMeta[] = [];
@@ -939,9 +1403,12 @@ export async function replyUnipileConversation(input: {
   await supabaseAdmin
     .from("messaging_conversations")
     .update({
-      last_message_at: new Date().toISOString(),
-      last_preview: preview,
-      last_channel: channel,
+      ...conversationActivityPatch({
+        lastChannel: channel,
+        lastDirection: "outbound",
+        lastMessageAt: new Date().toISOString(),
+        lastPreview: preview,
+      }),
     })
     .eq("id", conv.id);
 

@@ -339,49 +339,26 @@ export async function findOrCreateProspectContact(input: {
   const email = input.email.trim().toLowerCase();
   if (!email) return null;
 
-  const { data: existing } = await supabaseAdmin
-    .from("contacts")
-    .select("id")
-    .eq("coach_id", input.coachId)
-    .eq("email", email)
-    .maybeSingle();
-
-  if (existing?.id) {
-    const updates: Record<string, unknown> = {};
-    if (input.phone?.trim()) updates.phone = input.phone.trim();
-    if (input.firstName.trim()) updates.first_name = input.firstName.trim();
-    if (input.lastName.trim()) updates.last_name = input.lastName.trim();
+  try {
+    const { resolveOrCreateContact } = await import(
+      "@/lib/contacts/resolveOrCreateContact"
+    );
     const fullName = `${input.firstName} ${input.lastName}`.trim();
-    if (fullName) updates.full_name = fullName;
-    if (Object.keys(updates).length > 0) {
-      await supabaseAdmin
-        .from("contacts")
-        .update(updates)
-        .eq("id", existing.id);
-    }
-    return existing.id as string;
-  }
-
-  const fullName = `${input.firstName} ${input.lastName}`.trim();
-  const { data: created, error } = await supabaseAdmin
-    .from("contacts")
-    .insert({
-      coach_id: input.coachId,
+    const result = await resolveOrCreateContact({
+      coachId: input.coachId,
       email,
-      first_name: input.firstName.trim() || null,
-      last_name: input.lastName.trim() || null,
-      full_name: fullName || email,
-      phone: input.phone?.trim() || null,
+      phone: input.phone,
+      firstName: input.firstName.trim() || null,
+      lastName: input.lastName.trim() || null,
+      fullName: fullName || email,
       type: "prospect",
-    })
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
-    console.error("findOrCreateProspectContact:", error);
+      prospectSource: "booking",
+    });
+    return result.contactId;
+  } catch (err) {
+    console.error("findOrCreateProspectContact:", err);
     return null;
   }
-  return (created?.id as string | undefined) ?? null;
 }
 
 const CALENDAR_SELECT =
@@ -492,6 +469,33 @@ export async function ensureDefaultCoachCalendars(
   );
 
   return listCoachCalendars(coachId);
+}
+
+/**
+ * Seed defaults and ensure the discovery calendar is enabled + public so
+ * assessment thank-you pages can book without extra coach setup.
+ */
+export async function ensureNativeDiscoveryReady(
+  coachId: string
+): Promise<CoachCalendarRow | null> {
+  const calendars = await ensureDefaultCoachCalendars(coachId);
+  const discovery = calendars.find((c) => c.slug === "discovery") ?? null;
+  if (!discovery) return null;
+
+  if (!discovery.is_enabled || !discovery.is_public) {
+    return updateCoachCalendar(coachId, discovery.id, {
+      is_enabled: true,
+      is_public: true,
+    });
+  }
+
+  await ensureDefaultAvailabilityRules(coachId);
+  await supabaseAdmin.from("coach_booking_settings").upsert(
+    { coach_id: coachId, is_enabled: true },
+    { onConflict: "coach_id" }
+  );
+
+  return discovery;
 }
 
 export async function updateCoachCalendar(

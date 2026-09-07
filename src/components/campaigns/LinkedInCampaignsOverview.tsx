@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { LinkedInInterestQueue } from "@/components/campaigns/LinkedInInterestQueue";
+import { CampaignCompactDial } from "@/components/campaigns/CampaignOverviewMetrics";
 
 type Account = {
   id: string;
@@ -29,6 +30,7 @@ type Campaign = {
   status: string;
   daily_invite_limit: number;
   lead_count?: number;
+  has_invite_step?: boolean;
   status_counts?: Record<string, number>;
   progress?: CampaignProgress;
   created_at?: string;
@@ -76,111 +78,159 @@ function relativeTime(iso: string) {
   return `${days}d ago`;
 }
 
-function formatLaunch(iso?: string) {
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function campaignRates(c: Campaign) {
+  const progress = c.progress ?? {
+    sent: 0,
+    connected: 0,
+    replied: 0,
+    interested: 0,
+    failed: 0,
+    queued: c.lead_count ?? 0,
+    remaining: c.lead_count ?? 0,
+  };
+  const interested = progress.interested ?? 0;
+  const replied = progress.replied ?? 0;
+  const interestNumerator = interested > 0 ? interested : replied;
+  return { progress, interested, interestNumerator };
 }
 
-function MetricRing({
-  value,
-  label,
-  pct,
-  color,
+function CampaignToggle({
+  on,
+  disabled,
+  busy,
+  onChange,
 }: {
-  value: string | number;
-  label: string;
-  pct: number;
-  color: string;
+  on: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+  onChange: () => void;
 }) {
-  const r = 18;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, pct));
-  const dash = (clamped / 100) * c;
-
   return (
-    <div className="flex w-[4.25rem] flex-col items-center gap-1">
-      <div className="relative h-12 w-12">
-        <svg viewBox="0 0 44 44" className="h-12 w-12 -rotate-90">
-          <circle
-            cx="22"
-            cy="22"
-            r={r}
-            fill="none"
-            stroke="#e2e8f0"
-            strokeWidth="3.5"
-          />
-          <circle
-            cx="22"
-            cy="22"
-            r={r}
-            fill="none"
-            stroke={color}
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${c - dash}`}
-            className="transition-[stroke-dasharray] duration-500"
-          />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-semibold tabular-nums text-slate-800">
-          {value}
-        </span>
-      </div>
-      <span className="text-[10px] font-medium text-slate-500">{label}</span>
-    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={on ? "Turn campaign off" : "Turn campaign on"}
+      disabled={disabled || busy}
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 disabled:opacity-40 ${
+        on ? "bg-[#0c5290]" : "bg-slate-200"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
+          on ? "translate-x-5" : ""
+        }`}
+      />
+    </button>
   );
 }
 
-function SummaryCard({
-  label,
-  value,
-  hint,
-  pct,
-  color,
+function RowMenu({
+  open,
+  onOpenChange,
+  onEdit,
+  onDuplicate,
+  onDelete,
+  busy,
 }: {
-  label: string;
-  value: string | number;
-  hint: string;
-  pct: number;
-  color: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  busy: boolean;
 }) {
-  const r = 16;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, pct));
-  const dash = (clamped / 100) * c;
+  const menuId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) {
+        onOpenChange(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onOpenChange(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, onOpenChange]);
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white px-4 py-3.5 shadow-sm shadow-slate-200/40">
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium text-slate-500">{label}</p>
-        <p className="mt-0.5 text-2xl font-semibold tracking-tight tabular-nums text-slate-900">
-          {value}
-        </p>
-        <p className="mt-0.5 truncate text-[11px] text-slate-500">{hint}</p>
-      </div>
-      <svg viewBox="0 0 40 40" className="h-10 w-10 shrink-0 -rotate-90">
-        <circle
-          cx="20"
-          cy="20"
-          r={r}
-          fill="none"
-          stroke="#e2e8f0"
-          strokeWidth="3"
-        />
-        <circle
-          cx="20"
-          cy="20"
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${c - dash}`}
-        />
-      </svg>
+    <div ref={rootRef} className="relative flex justify-end">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-label="Campaign actions"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenChange(!open);
+        }}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+      >
+        <MoreVertical className="h-4 w-4" aria-hidden />
+      </button>
+      {open ? (
+        <div
+          id={menuId}
+          role="menu"
+          className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenChange(false);
+              onEdit();
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            Edit
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenChange(false);
+              onDuplicate();
+            }}
+          >
+            <Copy className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            Duplicate
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenChange(false);
+              onDelete();
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-rose-400" aria-hidden />
+            Delete
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -200,7 +250,7 @@ export function LinkedInCampaignsOverview() {
   const [newName, setNewName] = useState("");
   const [configured, setConfigured] = useState(true);
   const [inviteTotal, setInviteTotal] = useState(0);
-  const [menuId, setMenuId] = useState<string | null>(null);
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   const primaryAccount = accounts[0] ?? null;
 
@@ -254,35 +304,17 @@ export function LinkedInCampaignsOverview() {
     };
   }, [load, searchParams]);
 
-  const totals = useMemo(() => {
-    return campaigns.reduce(
-      (acc, c) => {
-        acc.leads += c.lead_count ?? 0;
-        acc.sent += c.progress?.sent ?? 0;
-        acc.connected += c.progress?.connected ?? 0;
-        acc.replied += c.progress?.replied ?? 0;
-        acc.interested += c.progress?.interested ?? 0;
-        acc.running += c.status === "running" ? 1 : 0;
-        return acc;
-      },
-      { leads: 0, sent: 0, connected: 0, replied: 0, interested: 0, running: 0 }
-    );
+  const sorted = useMemo(() => {
+    return [...campaigns].sort((a, b) => {
+      const order = (s: string) =>
+        s === "running" ? 0 : s === "paused" ? 1 : s === "draft" ? 2 : 3;
+      const byStatus = order(a.status) - order(b.status);
+      if (byStatus !== 0) return byStatus;
+      return (
+        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
   }, [campaigns]);
-
-  const acceptRate =
-    totals.sent > 0 ? Math.round((totals.connected / totals.sent) * 100) : 0;
-  const interestRate =
-    totals.connected > 0
-      ? Math.round((totals.interested / totals.connected) * 100)
-      : totals.replied > 0
-        ? Math.round((totals.interested / totals.replied) * 100)
-        : 0;
-  const replyRate =
-    totals.connected > 0
-      ? Math.round((totals.replied / totals.connected) * 100)
-      : totals.sent > 0
-        ? Math.round((totals.replied / totals.sent) * 100)
-        : 0;
 
   async function connectLinkedIn() {
     setBusy(true);
@@ -332,13 +364,16 @@ export function LinkedInCampaignsOverview() {
   }
 
   async function quickToggle(campaign: Campaign) {
+    if (campaign.status === "completed") return;
     setBusy(true);
     setError(null);
-    setMenuId(null);
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
       const next = campaign.status === "running" ? "paused" : "running";
+      if (next === "running" && !primaryAccount) {
+        throw new Error("Connect LinkedIn before starting a campaign.");
+      }
       const res = await fetch(
         `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
         {
@@ -360,55 +395,111 @@ export function LinkedInCampaignsOverview() {
     }
   }
 
+  async function duplicateCampaign(campaign: Campaign) {
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "duplicate" }),
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Duplicate failed.");
+      await load();
+      if (body.campaign?.id) {
+        router.push(`${prefix}/campaigns/${body.campaign.id}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Duplicate failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function archiveCampaign(campaign: Campaign) {
+    const ok = window.confirm(
+      `Delete “${campaign.name}”? It will be removed from your campaigns list.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "archive" }),
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Delete failed.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl py-16 text-center text-sm text-slate-500">
+      <div className="py-16 text-center text-sm text-slate-500">
         Loading campaigns…
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-16">
+    <div className="flex w-full flex-col gap-5 pb-16">
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           {error}
         </div>
       ) : null}
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
             Campaigns
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Manage your LinkedIn outreach campaigns
-          </p>
+          {!primaryAccount && configured ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void connectLinkedIn()}
+              className="mt-1 text-xs font-medium text-[#0c5290] hover:underline disabled:opacity-50"
+            >
+              Connect LinkedIn
+            </button>
+          ) : primaryAccount ? (
+            <p className="mt-1 text-[11px] text-slate-500">
+              {primaryAccount.display_name || "LinkedIn connected"}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`${prefix}/campaigns/invites`}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
           >
             Invites{inviteTotal ? ` (${inviteTotal})` : ""}
           </Link>
           <button
             type="button"
-            disabled={busy || !configured}
-            onClick={() => void connectLinkedIn()}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            {primaryAccount
-              ? primaryAccount.display_name || "LinkedIn connected"
-              : "Connect LinkedIn"}
-          </button>
-          <button
-            type="button"
             disabled={busy}
             onClick={() => setShowCreate((v) => !v)}
-            className="rounded-xl bg-[#0c5290] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50"
+            className="rounded-xl bg-[#0c5290] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
           >
-            + New Campaign
+            + Create
           </button>
         </div>
       </header>
@@ -420,7 +511,7 @@ export function LinkedInCampaignsOverview() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="e.g. SaaS Founders Outreach"
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
+            className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
             onKeyDown={(e) => {
               if (e.key === "Enter") void createCampaign();
               if (e.key === "Escape") setShowCreate(false);
@@ -437,213 +528,158 @@ export function LinkedInCampaignsOverview() {
         </div>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label="Total Campaigns"
-          value={campaigns.length}
-          hint={`${totals.running} active`}
-          pct={
-            campaigns.length
-              ? (totals.running / campaigns.length) * 100
-              : 0
-          }
-          color="#1a8fd4"
-        />
-        <SummaryCard
-          label="Total Contacts"
-          value={totals.leads}
-          hint={`${totals.connected} connected`}
-          pct={totals.leads ? (totals.connected / totals.leads) * 100 : 0}
-          color="#0c5290"
-        />
-        <SummaryCard
-          label="Interest rate"
-          value={`${interestRate}%`}
-          hint={`${totals.interested} interested (north star)`}
-          pct={interestRate}
-          color="#059669"
-        />
-        <SummaryCard
-          label="Reply rate"
-          value={`${replyRate}%`}
-          hint={`${totals.replied} replies logged`}
-          pct={replyRate}
-          color="#ea580c"
-        />
-      </section>
-
-      <LinkedInInterestQueue />
-
-      <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
-        <div className="border-b border-slate-100 px-5 py-3.5">
-          <h2 className="text-sm font-semibold text-slate-900">All Campaigns</h2>
+      {campaigns.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
+          <p className="text-sm font-medium text-slate-800">No campaigns yet</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Create one to build a sequence and add LinkedIn leads.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="mt-4 rounded-xl bg-[#0c5290] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0a457a]"
+          >
+            + Create
+          </button>
         </div>
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+          <table className="w-full min-w-[720px] border-collapse text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                <th scope="col" className="w-14 px-4 py-3 font-semibold">
+                  <span className="sr-only">On or off</span>
+                </th>
+                <th scope="col" className="px-3 py-3 font-semibold">
+                  Campaign
+                </th>
+                <th
+                  scope="col"
+                  className="w-[5.5rem] px-2 py-3 text-center font-semibold"
+                >
+                  Progress
+                </th>
+                <th
+                  scope="col"
+                  className="w-[5.5rem] px-2 py-3 text-center font-semibold"
+                >
+                  Connect
+                </th>
+                <th
+                  scope="col"
+                  className="w-[5.5rem] px-2 py-3 text-center font-semibold"
+                >
+                  Interest
+                </th>
+                <th scope="col" className="w-12 px-3 py-3">
+                  <span className="sr-only">Actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((c) => {
+                const contacts = c.lead_count ?? 0;
+                const { progress, interestNumerator } = campaignRates(c);
+                const isRunning = c.status === "running";
+                const canToggle =
+                  c.status !== "completed" &&
+                  (isRunning || Boolean(primaryAccount));
+                const hasInvite = c.has_invite_step !== false;
 
-        {campaigns.length === 0 ? (
-          <div className="px-6 py-16 text-center">
-            <p className="text-sm font-medium text-slate-800">No campaigns yet</p>
-            <p className="mt-1 text-xs text-slate-500">
-              Create one to build a sequence and add LinkedIn leads.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowCreate(true)}
-              className="mt-4 rounded-xl bg-[#0c5290] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0a457a]"
-            >
-              + New Campaign
-            </button>
-          </div>
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {campaigns.map((c) => {
-              const progress = c.progress ?? {
-                sent: 0,
-                connected: 0,
-                replied: 0,
-                failed: 0,
-                queued: c.lead_count ?? 0,
-                remaining: c.lead_count ?? 0,
-              };
-              const contacts = c.lead_count ?? 0;
-              const acceptPct =
-                progress.sent > 0
-                  ? Math.round((progress.connected / progress.sent) * 100)
-                  : 0;
-              const accountLabel =
-                primaryAccount?.display_name ||
-                (primaryAccount ? "LinkedIn account" : "No account");
-
-              return (
-                <li key={c.id} className="relative">
-                  <div className="flex flex-col gap-4 px-5 py-4 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        router.push(`${prefix}/campaigns/${c.id}`)
-                      }
-                      className="min-w-0 flex-1 text-left"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
-                          {c.name}
-                        </h3>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${statusTone(c.status)}`}
-                        >
-                          {statusLabel(c.status)}
-                        </span>
-                        <span className="max-w-[10rem] truncate rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-800 ring-1 ring-inset ring-sky-100">
-                          {accountLabel}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {c.daily_invite_limit}/day invite cap
-                        {contacts
-                          ? ` · ${contacts} contact${contacts === 1 ? "" : "s"}`
-                          : " · No contacts yet"}
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        {formatLaunch(c.created_at)
-                          ? `Launched ${formatLaunch(c.created_at)}`
-                          : "Draft"}
-                        {" · "}
-                        Last activity: {relativeTime(c.updated_at)}
-                      </p>
-                    </button>
-
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <MetricRing
-                        value={contacts}
-                        label="Contacts"
-                        pct={100}
-                        color="#94a3b8"
+                return (
+                  <tr
+                    key={c.id}
+                    className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70"
+                  >
+                    <td className="px-4 py-3.5 align-middle">
+                      <CampaignToggle
+                        on={isRunning}
+                        busy={busy}
+                        disabled={!canToggle && !isRunning}
+                        onChange={() => void quickToggle(c)}
                       />
-                      <MetricRing
-                        value={progress.sent}
-                        label="Sent"
-                        pct={contacts ? (progress.sent / contacts) * 100 : 0}
-                        color="#0c5290"
-                      />
-                      <MetricRing
-                        value={progress.connected}
-                        label="Connected"
-                        pct={
-                          progress.sent
-                            ? (progress.connected / progress.sent) * 100
-                            : 0
+                    </td>
+                    <td className="min-w-0 px-3 py-3.5 align-middle">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          router.push(`${prefix}/campaigns/${c.id}`)
                         }
-                        color="#059669"
-                      />
-                      <MetricRing
-                        value={progress.replied}
-                        label="Replied"
-                        pct={
-                          progress.connected
-                            ? (progress.replied / progress.connected) * 100
-                            : 0
-                        }
-                        color="#0284c7"
-                      />
-                      <MetricRing
-                        value={`${acceptPct}%`}
-                        label="Accept %"
-                        pct={acceptPct}
-                        color="#ea580c"
-                      />
-
-                      <div className="relative ml-1">
-                        <button
-                          type="button"
-                          aria-label="Campaign actions"
-                          onClick={() =>
-                            setMenuId((id) => (id === c.id ? null : c.id))
-                          }
-                          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                        >
-                          <svg
-                            viewBox="0 0 16 16"
-                            className="h-4 w-4"
-                            fill="currentColor"
-                            aria-hidden
+                        className="group flex min-w-0 max-w-xl flex-col items-start text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                      >
+                        <span className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
+                            {c.name}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${statusTone(c.status)}`}
                           >
-                            <circle cx="8" cy="3" r="1.5" />
-                            <circle cx="8" cy="8" r="1.5" />
-                            <circle cx="8" cy="13" r="1.5" />
-                          </svg>
-                        </button>
-                        {menuId === c.id ? (
-                          <div className="absolute right-0 z-10 mt-1 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg shadow-slate-200/80">
-                            <button
-                              type="button"
-                              className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"
-                              onClick={() =>
-                                router.push(`${prefix}/campaigns/${c.id}`)
-                              }
-                            >
-                              Open editor
-                            </button>
-                            <button
-                              type="button"
-                              disabled={
-                                busy ||
-                                (!primaryAccount && c.status !== "running")
-                              }
-                              className="block w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                              onClick={() => void quickToggle(c)}
-                            >
-                              {c.status === "running" ? "Pause" : "Start"}
-                            </button>
-                          </div>
-                        ) : null}
+                            {statusLabel(c.status)}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 text-xs text-slate-500">
+                          {contacts
+                            ? `${contacts} contact${contacts === 1 ? "" : "s"}`
+                            : "No contacts yet"}
+                          {" · "}
+                          {isRunning
+                            ? `updated ${relativeTime(c.updated_at)}`
+                            : c.status === "draft"
+                              ? "not launched"
+                              : `updated ${relativeTime(c.updated_at)}`}
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-2 py-3.5 align-middle">
+                      <div className="flex justify-center">
+                        <CampaignCompactDial
+                          label="Progress"
+                          numerator={progress.sent}
+                          denominator={Math.max(contacts, progress.sent)}
+                          showFraction
+                        />
                       </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+                    </td>
+                    <td className="px-2 py-3.5 align-middle">
+                      <div className="flex justify-center">
+                        <CampaignCompactDial
+                          label="Connect"
+                          numerator={progress.connected}
+                          denominator={progress.sent}
+                          muted={!hasInvite}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-2 py-3.5 align-middle">
+                      <div className="flex justify-center">
+                        <CampaignCompactDial
+                          label="Interest"
+                          numerator={interestNumerator}
+                          denominator={progress.connected}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-3.5 align-middle">
+                      <RowMenu
+                        open={menuOpenId === c.id}
+                        onOpenChange={(next) =>
+                          setMenuOpenId(next ? c.id : null)
+                        }
+                        busy={busy}
+                        onEdit={() =>
+                          router.push(`${prefix}/campaigns/${c.id}`)
+                        }
+                        onDuplicate={() => void duplicateCampaign(c)}
+                        onDelete={() => void archiveCampaign(c)}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

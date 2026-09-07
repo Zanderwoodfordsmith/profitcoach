@@ -46,10 +46,10 @@ const InsightDashboard = dynamic(
     })),
   { ssr: false }
 );
-const CalendarEmbed = dynamic(
+const CoachPublicBookingSurface = dynamic(
   () =>
-    import("@/components/CalendarEmbed").then((m) => ({
-      default: m.CalendarEmbed,
+    import("@/components/booking/CoachPublicBookingSurface").then((m) => ({
+      default: m.CoachPublicBookingSurface,
     })),
   { ssr: false }
 );
@@ -86,6 +86,7 @@ export default function ClientDashboardPage() {
   const [coachSlug, setCoachSlug] = useState<string>("BCA");
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [coachCalendarEmbedCode, setCoachCalendarEmbedCode] = useState<string | null>(null);
+  const [showCoachBooking, setShowCoachBooking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingScores, setEditingScores] = useState(false);
@@ -148,12 +149,17 @@ export default function ClientDashboardPage() {
         contact?: Contact;
         coach_slug?: string;
         coach_calendar_embed_code?: string | null;
+        booking_calendar_provider?: "native" | "ghl" | null;
         assessment?: Assessment | null;
       };
 
       setContact(body.contact ?? null);
       setCoachSlug(body.coach_slug ?? "BCA");
       setCoachCalendarEmbedCode(body.coach_calendar_embed_code ?? null);
+      setShowCoachBooking(
+        body.booking_calendar_provider === "native" ||
+          Boolean(body.coach_calendar_embed_code?.trim())
+      );
       const loadedAssessment = body.assessment ?? null;
       setAssessment(loadedAssessment);
 
@@ -545,7 +551,7 @@ export default function ClientDashboardPage() {
             </section>
           </div>
 
-          {hasAssessment && coachCalendarEmbedCode ? (
+          {hasAssessment && showCoachBooking ? (
             <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900">
                 Book your strategy call
@@ -555,7 +561,17 @@ export default function ClientDashboardPage() {
                 steps.
               </p>
               <div className="mt-4">
-                <CalendarEmbed embedCode={coachCalendarEmbedCode} />
+                <CoachPublicBookingSurface
+                  coachSlug={coachSlug}
+                  fallbackEmbedCode={coachCalendarEmbedCode}
+                  contact={{
+                    firstName: contact?.full_name?.split(/\s+/)[0] ?? null,
+                    lastName:
+                      contact?.full_name?.split(/\s+/).slice(1).join(" ") ||
+                      null,
+                    email: contact?.email ?? null,
+                  }}
+                />
               </div>
             </section>
           ) : null}

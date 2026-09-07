@@ -1,5 +1,6 @@
 import { isGenericConversationName, looksLikePersonName } from "@/lib/messaging/conversationDisplay";
 import { hrefFromUnipileLinkedIn } from "@/lib/unipile/linkedinUrl";
+import { whatsappPhoneE164 } from "@/lib/unipile/whatsappIdentity";
 
 export type UnipileChatAttendee = {
   id?: string;
@@ -10,9 +11,12 @@ export type UnipileChatAttendee = {
   is_self?: number | boolean;
   public_identifier?: string;
   specifics?: {
+    provider?: string;
     occupation?: string;
     headline?: string;
     public_identifier?: string;
+    phone_number?: string;
+    lid?: string;
     contact_info?: { emails?: string[] };
   };
 };
@@ -22,6 +26,8 @@ export type ChatCounterpart = {
   pictureUrl: string | null;
   profileUrl: string | null;
   providerId: string | null;
+  /** Real MSISDN when known (WhatsApp); never a Linked ID. */
+  phone: string | null;
   occupation: string | null;
   email: string | null;
 };
@@ -69,9 +75,12 @@ export function parseUnipileAttendee(raw: unknown): UnipileChatAttendee | null {
     is_self: rec.is_self as number | boolean | undefined,
     specifics: specifics
       ? {
+          provider: asString(specifics.provider) ?? undefined,
           occupation: asString(specifics.occupation) ?? undefined,
           headline: asString(specifics.headline) ?? undefined,
           public_identifier: asString(specifics.public_identifier) ?? undefined,
+          phone_number: asString(specifics.phone_number) ?? undefined,
+          lid: asString(specifics.lid) ?? undefined,
           contact_info: {
             emails: emails
               .map((e) => asString(e))
@@ -87,9 +96,21 @@ const EMPTY_COUNTERPART: ChatCounterpart = {
   pictureUrl: null,
   profileUrl: null,
   providerId: null,
+  phone: null,
   occupation: null,
   email: null,
 };
+
+function phoneFromAttendee(attendee: UnipileChatAttendee | undefined): string | null {
+  if (!attendee) return null;
+  return whatsappPhoneE164({
+    phoneNumber: attendee.specifics?.phone_number,
+    publicIdentifier: attendee.public_identifier,
+    providerId: attendee.provider_id,
+    profileUrl: attendee.profile_url,
+    name: attendee.name,
+  });
+}
 
 export function counterpartFromAttendees(
   attendees: UnipileChatAttendee[]
@@ -107,6 +128,12 @@ export function counterpartFromAttendees(
     asString(first?.specifics?.occupation) ||
     asString(first?.specifics?.headline);
   const email = first?.specifics?.contact_info?.emails?.[0] ?? null;
+  const isWhatsApp =
+    String(first?.specifics?.provider || "").toUpperCase() === "WHATSAPP" ||
+    Boolean(first?.specifics?.phone_number) ||
+    Boolean(first?.specifics?.lid) ||
+    /@s\.whatsapp\.net/i.test(first?.public_identifier || "") ||
+    /@lid/i.test(first?.provider_id || "");
   return {
     name:
       names.length === 0
@@ -115,11 +142,15 @@ export function counterpartFromAttendees(
           ? names[0]
           : names.slice(0, 3).join(", "),
     pictureUrl: asString(first?.picture_url),
-    profileUrl: hrefFromUnipileLinkedIn(
-      first?.profile_url,
-      first?.public_identifier || first?.specifics?.public_identifier
-    ),
+    // Only LinkedIn (and similar) profile URLs — never WhatsApp JIDs.
+    profileUrl: isWhatsApp
+      ? null
+      : hrefFromUnipileLinkedIn(
+          first?.profile_url,
+          first?.public_identifier || first?.specifics?.public_identifier
+        ),
     providerId: asString(first?.provider_id),
+    phone: phoneFromAttendee(first),
     occupation,
     email,
   };
@@ -161,6 +192,7 @@ export function counterpartForChat(
       pictureUrl: fromAttendee.pictureUrl,
       profileUrl: fromAttendee.profileUrl,
       providerId: providerId || fromAttendee.providerId,
+      phone: fromAttendee.phone,
       occupation: fromAttendee.occupation,
       email: fromAttendee.email,
     };
@@ -171,6 +203,12 @@ export function counterpartForChat(
     pictureUrl: fromAttendee.pictureUrl,
     profileUrl: fromAttendee.profileUrl,
     providerId: providerId || fromAttendee.providerId,
+    phone:
+      fromAttendee.phone ||
+      whatsappPhoneE164({
+        publicIdentifier: asString(chat.attendee_public_identifier),
+        providerId,
+      }),
     occupation: fromAttendee.occupation,
     email: fromAttendee.email,
   };
@@ -200,6 +238,25 @@ export function identityFromUnipileWebhook(
   );
   const isSender = Boolean(body.is_sender);
 
+  const webhookPhone =
+    fromAttendees.phone ||
+    whatsappPhoneE164({
+      phoneNumber:
+        asString(body.phone_number) ||
+        asString(asRecord(body.specifics)?.phone_number),
+      publicIdentifier:
+        asString(body.attendee_public_identifier) ||
+        asString(body.user_public_identifier) ||
+        asString(sender?.attendee_public_identifier),
+      providerId:
+        asString(sender?.attendee_provider_id) ||
+        asString(sender?.provider_id) ||
+        fromAttendees.providerId,
+      profileUrl:
+        asString(sender?.attendee_profile_url) || asString(sender?.profile_url),
+      name: senderName || fromAttendees.name,
+    });
+
   if (
     !isSender &&
     senderName &&
@@ -213,6 +270,7 @@ export function identityFromUnipileWebhook(
         asString(sender?.attendee_provider_id) ||
         asString(sender?.provider_id) ||
         fromAttendees.providerId,
+      phone: webhookPhone,
       occupation: fromAttendees.occupation,
       email: fromAttendees.email,
     };
@@ -222,6 +280,7 @@ export function identityFromUnipileWebhook(
     return {
       ...fromAttendees,
       pictureUrl: fromAttendees.pictureUrl || senderPicture,
+      phone: fromAttendees.phone || webhookPhone,
     };
   }
 
@@ -230,6 +289,7 @@ export function identityFromUnipileWebhook(
     pictureUrl: fromAttendees.pictureUrl || senderPicture,
     profileUrl: fromAttendees.profileUrl || senderProfile,
     providerId: fromAttendees.providerId,
+    phone: webhookPhone,
     occupation: fromAttendees.occupation,
     email: fromAttendees.email,
   };

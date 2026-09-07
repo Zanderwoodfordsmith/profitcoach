@@ -7,6 +7,7 @@ import {
   parseConversationIdFromAddress,
   type BirdInboundMessageMeta,
 } from "@/lib/bird/client";
+import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function fromEmailOf(meta: BirdInboundMessageMeta): string | null {
@@ -161,9 +162,12 @@ export async function ingestBirdInboundMessage(
   await supabaseAdmin
     .from("messaging_conversations")
     .update({
-      last_message_at: new Date().toISOString(),
-      last_preview: preview || meta.subject || null,
-      last_channel: "email",
+      ...conversationActivityPatch({
+        lastChannel: "email",
+        lastDirection: "inbound",
+        lastMessageAt: new Date().toISOString(),
+        lastPreview: preview || meta.subject || null,
+      }),
       unread_count: unread + 1,
       ...(meta.subject ? { subject: meta.subject } : {}),
     })

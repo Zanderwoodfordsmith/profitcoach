@@ -1,6 +1,8 @@
 /**
  * Canonical outreach playbooks (interest-first).
- * Sourced from VIP 200 / Pam 5-day nurture / reply playbooks copy provided for product.
+ * Sourced from VIP 200 / VIP 100 / Pam 5-day / 90-day nurture / reply playbooks.
+ *
+ * Manual "reply to replies" snippets live in replySnippets.ts (grouped).
  */
 
 import type { CampaignStepInput } from "@/lib/unipile/campaigns";
@@ -23,6 +25,17 @@ export type OutreachPlaybook = {
   northStar: string;
   steps: PlaybookStep[];
 };
+
+export {
+  REPLY_PLAYBOOK_SNIPPETS,
+  REPLY_SNIPPET_GROUPS,
+  groupedReplySnippets,
+  snippetBodyForChannel,
+  snippetsByGroup,
+  type ReplyPlaybookSnippet,
+  type ReplySnippetChannel,
+  type ReplySnippetGroupId,
+} from "@/lib/unipile/replySnippets";
 
 const VIP_MSG1_A = `Hi {{first_name}}, Most owners running a {{company}} business your size tell me revenue is growing but profit isn't following it. The issue is rarely sales. It's that nobody has ever scored the nine areas underneath the business to find where the money is actually leaking. Worth a chat? I've got two ideas for a business your size.`;
 
@@ -248,9 +261,223 @@ export const CONNECTOR_INTEREST_PLAYBOOK: OutreachPlaybook = {
   ],
 };
 
+const VIP100_SOFT_A = `Hi {{first_name}},
+I've just launched a new 3-minute BOSS Scorecard for business owners who are doing well on paper, but feel stretched too thin behind the scenes.
+It gives you a score out of 100 and shows where the business may be over-relying on you.
+What do you reckon you'll score?
+{{assessment_url}}`;
+
+const VIP100_SOFT_B = `Hi {{first_name}},
+I've created a 3-minute BOSS Scorecard for business owners who are doing well on paper but feel stretched too thin.
+It gives you a score out of 100 and shows where the business may be over-relying on you.
+What do you reckon you'll score?
+{{assessment_url}}`;
+
+const VIP100_OWNER = `Hi {{first_name}},
+Quick one — I've created a 3-minute BOSS Scorecard that shows how much the business may be relying on you across team, systems, sales, marketing and performance.
+It gives you a score out of 100 and highlights what to focus on first.
+Is this of interest?
+{{assessment_url}}`;
+
+const VIP100_90DAY = `Hi {{first_name}},
+Most business owners are working hard, but not always on the highest-leverage priority.
+The BOSS Scorecard takes 3 minutes and shows what could make the biggest difference over the next 90 days.
+Here's the link if useful:
+{{assessment_url}}
+What do you reckon you'll score out of 100?`;
+
+/** Warm VIP 100 list — soft scorecard invite + nudge (personalise first line). */
+export const VIP_100_SCORECARD_PLAYBOOK: OutreachPlaybook = {
+  id: "vip-100-scorecard",
+  name: "VIP 100 scorecard invite",
+  channel: "linkedin",
+  description:
+    "Warm connections / past enquiries. Soft invite → nudge. Personalise line one. North star: assessment start.",
+  northStar: "assessment_start",
+  steps: [
+    {
+      position: 0,
+      step_type: "message",
+      body: VIP100_SOFT_A,
+      variants: [
+        { key: "A", label: "Soft invite — stretched thin", body: VIP100_SOFT_A },
+        { key: "B", label: "Soft invite — short", body: VIP100_SOFT_B },
+        { key: "C", label: "Owner dependence angle", body: VIP100_OWNER },
+        { key: "D", label: "90-day priority angle", body: VIP100_90DAY },
+      ],
+    },
+    { position: 1, step_type: "wait", wait_hours: 72 },
+    {
+      position: 2,
+      step_type: "message",
+      body: `Hi {{first_name}},
+Just giving this a gentle nudge.
+The BOSS Scorecard only takes 3 minutes and gives you a quick score out of 100 across the key areas of your business.
+Useful if you want to see where things could work even better and what to focus on first.
+Here's the link again:
+{{assessment_url}}`,
+    },
+  ],
+};
+
+/** 90-day LinkedIn value nurture after connection (DM length, not email). */
+export const NURTURE_90_DAY_PLAYBOOK: OutreachPlaybook = {
+  id: "nurture-90-day",
+  name: "90-day LinkedIn nurture",
+  channel: "linkedin",
+  description:
+    "Connect → discovery → BOSS offer → weekly value DMs through day 90. Lead with value; BOSS Review is the offer.",
+  northStar: "interested_reply",
+  steps: [
+    { position: 0, step_type: "invite", body: "" },
+    { position: 1, step_type: "wait", wait_hours: 1 },
+    {
+      position: 2,
+      step_type: "message",
+      body: "Happy to share how if you're curious.",
+    },
+    { position: 3, step_type: "wait", wait_hours: 23 },
+    {
+      position: 4,
+      step_type: "message",
+      body: "Curious {{first_name}} – what would you most like to be even better:\n1. Your time – more flexibility and fun\n2. Your profit – pay yourself more\n3. Your team – things running without you, zero worries\n1, 2, or 3?",
+    },
+    { position: 5, step_type: "wait", wait_hours: 24 },
+    {
+      position: 6,
+      step_type: "message",
+      body: `{{first_name}} – would you be interested in a FREE 45-min BOSS Review (Business Operating System Score)?
+I can either:
+1. Do it with you on a call
+2. Send you the link to do it yourself ({{assessment_url}})
+It scores your business out of 100 across the 5 levels of business owner and 10 key areas. Then shows you the key areas to focus on in the next 90 days.
+Interested?
+P.s. one business who did this helped go from -£76K to +£121K profit in 9 months`,
+    },
+    { position: 7, step_type: "wait", wait_hours: 168 },
+    {
+      position: 8,
+      step_type: "message",
+      body: `{{first_name}}, quick question – do you ever feel like your business is running you instead of you running it?
+99% of business owners I talk to are stuck in what I call 'Overwhelm' – firefighting, reactive, no clarity.
+The fix? Simple. List every task. Cross out anything that doesn't help you get or keep customers. Delegate or delete everything else.
+Most clients find 10-15 hours/week of waste when they do this. Sound useful?`,
+    },
+    { position: 9, step_type: "wait", wait_hours: 168 },
+    {
+      position: 10,
+      step_type: "message",
+      body: `{{first_name}}, I've got a tool that literally changed how one client ran their business.
+It's the Time Value Tracker. Takes 5 minutes to fill in.
+You list every activity you do, then it shows you which are £10, £100, or £1,000 jobs. Instantly see where your time is wasted.
+Most owners are shocked when they see how many £10 jobs they're doing.
+Want it?`,
+    },
+    { position: 11, step_type: "wait", wait_hours: 168 },
+    {
+      position: 12,
+      step_type: "message",
+      body: `{{first_name}}, brutal truth time: most business owners have no idea if they can pay their bills next month.
+They look at their bank balance and hope. That's not a strategy.
+The Cashflow Forecaster changes that. Input your income and expenses. See exactly what's coming. No surprises.
+One client went from stressed every week to calm and in control in 10 minutes. Want it?`,
+    },
+    { position: 13, step_type: "wait", wait_hours: 168 },
+    {
+      position: 14,
+      step_type: "message",
+      body: `{{first_name}}, I need to show you something that blows 99 out of 100 people's minds.
+It's so simple it's just a table of numbers. But when you see what they mean, you'll never look at your business the same way.
+It's called the Profit Maximiser. It shows how cutting expenses at different profit margins changes everything.
+Example: At 10% margin, an 11% reduction in expenses DOUBLES your profit. Wild, right?
+Want to see your numbers?`,
+    },
+    { position: 15, step_type: "wait", wait_hours: 168 },
+    {
+      position: 16,
+      step_type: "message",
+      body: `{{first_name}}, do you ever feel like you've got 47 priorities and no idea which one to tackle first?
+I've got a tool that fixes that in under 5 minutes.
+Pairwise Prioritisation. It uses neuroscience – simple choice between two things. It does the thinking for you.
+Clients have saved 10+ hours/week by using this to get clear. Want it?`,
+    },
+    { position: 17, step_type: "wait", wait_hours: 168 },
+    {
+      position: 18,
+      step_type: "message",
+      body: `{{first_name}}, every business owner sits at one of 5 levels:
+Level 1: Overwhelm – firefighting, survival mode
+Level 2: Overworked – doing too much yourself
+Level 3: Organised – systems working, but you're still central
+Level 4: Overseer – working ON it, not IN it
+Level 5: Owner – business runs without you
+Which level are you at? And which level do you want to be at?`,
+    },
+    { position: 19, step_type: "wait", wait_hours: 168 },
+    {
+      position: 20,
+      step_type: "message",
+      body: `{{first_name}}, here's the thing that separates Level 2 owners from Level 3 and above:
+Systems.
+Not complicated ones. Just documented ways things get done so they're not all in your head.
+Start with one: Map your Critical Client Flow. From first contact to money in the bank. Just draw it out.
+That's step one of building a business that doesn't need you 24/7. Does that resonate?`,
+    },
+    { position: 21, step_type: "wait", wait_hours: 168 },
+    {
+      position: 22,
+      step_type: "message",
+      body: `{{first_name}}, quick one: What's the one task you do every week that someone else could probably do?
+Most owners tell me 'nothing' because they think no one can do it as well as them.
+Here's the truth: they don't have to do it as well. They just have to do it 80% as well, and suddenly you've bought back your time.
+That's how you go from Overworked to Overseer. What's your answer?`,
+    },
+    { position: 23, step_type: "wait", wait_hours: 168 },
+    {
+      position: 24,
+      step_type: "message",
+      body: `{{first_name}}, most business owners look at last month's numbers and hope this month is better.
+That's like driving by looking in the rearview mirror.
+The Revenue Growth Accelerator changes that. It shows you what's COMING, not what already happened.
+Helps you spot problems before they're problems. Want it?`,
+    },
+    { position: 25, step_type: "wait", wait_hours: 168 },
+    {
+      position: 26,
+      step_type: "message",
+      body: `{{first_name}}, honest question: When you started your business, what did you actually want from it?
+Freedom? Money? Impact? Time with family?
+Most owners I work with have lost sight of that. They're so busy running the business they forgot why they built it.
+That's what we help people get back to: a business you love, not resent. Does that sound like you?`,
+    },
+    { position: 27, step_type: "wait", wait_hours: 192 },
+    {
+      position: 28,
+      step_type: "message",
+      body: `{{first_name}}, all these tools I've been sharing with you – the Time Tracker, Cashflow Forecaster, Profit Maximiser, the 5 Levels – they're all part of something bigger.
+It's called The Profit System.
+It scores your business out of 100 across 50 playbooks. Shows you EXACTLY which area needs attention and gives you the playbook to fix it.
+Less chaos. More profit. Real freedom.
+That BOSS Review I mentioned earlier? That's your entry point. Still interested? {{assessment_url}}`,
+    },
+    { position: 29, step_type: "wait", wait_hours: 240 },
+    {
+      position: 30,
+      step_type: "message",
+      body: `{{first_name}}, we've been connected for 90 days now.
+I've shared tools, insights, and frameworks. Hopefully some of it landed.
+But I'm curious – where's your business actually at right now? Are you closer to that business you love, or still stuck in the chaos?
+If you want to actually do something about it, let's have a proper conversation. That BOSS Review is still on the table.
+You in?`,
+    },
+  ],
+};
+
 export const OUTREACH_PLAYBOOKS: OutreachPlaybook[] = [
   VIP_GET_INTEREST_PLAYBOOK,
   CONNECTOR_INTEREST_PLAYBOOK,
+  VIP_100_SCORECARD_PLAYBOOK,
+  NURTURE_90_DAY_PLAYBOOK,
   PAM_OWNER_DEPENDENCE,
   PAM_PROFIT_LEAKAGE,
   PAM_MARKETING,
@@ -259,56 +486,3 @@ export const OUTREACH_PLAYBOOKS: OutreachPlaybook[] = [
 export function getPlaybook(id: string): OutreachPlaybook | null {
   return OUTREACH_PLAYBOOKS.find((p) => p.id === id) ?? null;
 }
-
-/** Reply / objection snippets for Conversations (not automated steps). */
-export const REPLY_PLAYBOOK_SNIPPETS: Array<{
-  id: string;
-  when: string;
-  body: string;
-}> = [
-  {
-    id: "interest-call-offer",
-    when: "Shows interest (after logging positive)",
-    body: "Hi {{first_name}},\nI saw your message about {{their_reply}}. I called and left you a message.\nThis is something I help clients with regularly. Would you be opposed to a short call?",
-  },
-  {
-    id: "interest-softer",
-    when: "Interest — softer open",
-    body: "Hi {{first_name}},\nI saw your message about {{their_reply}}. Is it just something specific at the moment, or is it how it always is?",
-  },
-  {
-    id: "not-yet",
-    when: "Says not yet / maybe later",
-    body: "Is it not yet because you've got something in particular that you're currently focused on?",
-  },
-  {
-    id: "thumbs-up",
-    when: "Thumbs up only",
-    body: "Is the thumbs up that you would like to have a call / you're interested, or is it a thumbs up you're just agreeing with my comments?",
-  },
-  {
-    id: "fine-for-now",
-    when: "Fine for now / we're good",
-    body: "It's great that you can say that. Not many business owners can.\nWhat I find is that every level has its devil, and usually there's something that you'd like to be even better in the business.",
-  },
-  {
-    id: "no-thanks",
-    when: "No thanks",
-    body: "Is that no thanks to what I've written (like helping you make more profit)? Or no thanks you don't want to make more profit at the moment? Or no thanks you don't want to hear from me ever again?",
-  },
-  {
-    id: "send-scorecard",
-    when: "Interested → send assessment (before call)",
-    body: "Brilliant — here's the 3-minute BOSS Scorecard:\n{{assessment_url}}\n\nTake it when you can and tell me what stands out. No call needed to start.",
-  },
-  {
-    id: "scorecard-no-book",
-    when: "Took scorecard, didn't book",
-    body: "Hi {{first_name}},\nI saw you completed the BOSS Scorecard — well done for taking the first step.\nIf you'd like to go through it in more depth, I'm offering a 30-minute {{review_name}}. Would you like me to send a couple of times?",
-  },
-  {
-    id: "final-ping-pong",
-    when: "Final follow-up after interest",
-    body: "Hi {{first_name}},\nRather than continue the answerphone ping pong, do let me know when's the best time to get hold of you, and I'll do my best to accommodate.",
-  },
-];

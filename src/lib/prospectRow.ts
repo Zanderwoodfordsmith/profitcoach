@@ -45,6 +45,15 @@ export type ProspectRow = {
   prospect_funnel?: string | null;
   /** How this prospect entered the pipeline (Sales Navigator, manual, etc.). */
   prospect_source?: string | null;
+  /** Coach-defined labels (right sidebar). */
+  tags?: string[];
+  /** True when a WhatsApp conversation exists for this contact. */
+  has_whatsapp?: boolean;
+  /**
+   * Cached Unipile "on WhatsApp?" result for the current phone.
+   * null = not checked yet; drives lazy pre-check.
+   */
+  whatsapp_on?: boolean | null;
 };
 
 export function latestProspectAssessmentAt(

@@ -1,6 +1,8 @@
 "use client";
 
-import type { ReactNode, Ref } from "react";
+import { useLayoutEffect, type ReactNode, type Ref } from "react";
+import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
+import { DashboardChromeActions } from "./DashboardChromeActions";
 import { PageHeaderDescriptionInfo } from "./PageHeaderDescriptionInfo";
 
 export type PageHeaderDescriptionPlacement = "info" | "below";
@@ -25,7 +27,7 @@ export type StickyPageHeaderProps = {
   leading?: ReactNode;
   /** Block below description (filters, controls) */
   below?: ReactNode;
-  /** Right-aligned actions */
+  /** Right-aligned page actions (shown before global search / notifications / AI). */
   actions?: ReactNode;
   className?: string;
   /**
@@ -39,6 +41,11 @@ export type StickyPageHeaderProps = {
   rootRef?: Ref<HTMLDivElement>;
   /** Keep title and actions on one row (e.g. Boss Pro session picker). */
   nowrap?: boolean;
+  /**
+   * Include layout search / notifications / AI. Default true when chrome context
+   * is enabled. Set false for nested headers (e.g. AI panel fullscreen).
+   */
+  showChrome?: boolean;
 };
 
 export function StickyPageHeader({
@@ -55,7 +62,18 @@ export function StickyPageHeader({
   bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px_+_28rem)] md:group-data-[ai-docked]/appshell:pr-[calc(60px_+_28rem)]",
   rootRef,
   nowrap = false,
+  showChrome,
 }: StickyPageHeaderProps) {
+  const chrome = useDashboardChrome();
+  const includeChrome =
+    showChrome !== false && Boolean(chrome?.chromeEnabled);
+  const claimChromeHost = chrome?.claimChromeHost;
+
+  useLayoutEffect(() => {
+    if (!includeChrome || !claimChromeHost) return;
+    return claimChromeHost();
+  }, [includeChrome, claimChromeHost]);
+
   const shell = [
     "sticky top-0 z-30 border-b border-slate-200/90 bg-white pb-1 pt-2 shadow-sm transition-[margin,padding] duration-200",
     typeof bleedInset === "string" ? bleedInset : "",
@@ -63,6 +81,24 @@ export function StickyPageHeader({
   ]
     .filter(Boolean)
     .join(" ");
+
+  const rightCluster =
+    actions || includeChrome ? (
+      <div
+        className={`relative z-40 flex shrink-0 flex-wrap items-center justify-end gap-2 overflow-visible ${
+          tabs ? "" : "self-start"
+        }`}
+      >
+        {actions ? (
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            {actions}
+          </div>
+        ) : null}
+        {includeChrome ? (
+          <DashboardChromeActions compactSearchNavigate />
+        ) : null}
+      </div>
+    ) : null;
 
   return (
     <div ref={rootRef} className={shell}>
@@ -112,13 +148,7 @@ export function StickyPageHeader({
           ) : null}
           {below ? <div className="mt-3">{below}</div> : null}
         </header>
-        {actions ? (
-          <div
-            className={`relative z-40 flex shrink-0 flex-col items-stretch gap-2 overflow-visible sm:items-end ${tabs ? "" : "self-start"}`}
-          >
-            {actions}
-          </div>
-        ) : null}
+        {rightCluster}
       </div>
     </div>
   );

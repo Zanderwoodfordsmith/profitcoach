@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowUpDown,
@@ -35,8 +36,18 @@ import {
   conversationPersonName,
   inboundReplyChannels,
 } from "@/lib/messaging/conversationDisplay";
+import {
+  displayConversationPreview,
+  extractReactionEmoji,
+  isStoredReactionEventMessage,
+  reactionChipsSummary,
+  reactionsFromMessageMetadata,
+} from "@/lib/messaging/messageReactions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { WhatsAppGlyph } from "@/components/icons/WhatsAppGlyph";
 import {
   ChatComposerTools,
   MessageAttachments,
@@ -46,6 +57,13 @@ import {
   type PendingVideoNote,
   type PendingVoiceNote,
 } from "@/components/messaging/ComposerMediaTools";
+import { NewConversationPicker } from "@/components/messaging/NewConversationPicker";
+import { ReplySnippetPicker } from "@/components/messaging/ReplySnippetPicker";
+import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
+import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
+import { ProspectTagsEditor } from "@/components/prospects/ProspectTagsEditor";
+import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
+import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
 
 type InboxTab = "unread" | "all" | "recent" | "starred";
 type ChannelFilter =
@@ -82,7 +100,13 @@ type ConversationRow = {
   unread_count?: number;
   last_preview?: string | null;
   last_channel?: string | null;
+  last_direction?: string | null;
+  prospect_tags?: string[];
+  in_campaign?: boolean;
   reply_channels?: string[];
+  /** How many channel threads were collapsed into this inbox row. */
+  thread_count?: number;
+  sibling_conversation_ids?: string[];
 };
 
 type MessageAttachment = {
@@ -126,6 +150,7 @@ type ProspectDetails = {
   email: string | null;
   business_name: string | null;
   linkedin_url?: string | null;
+  company_website?: string | null;
   phone: string | null;
   prospect_status: string | null;
   boss_score: number | null;
@@ -135,6 +160,9 @@ type ProspectDetails = {
   boss_level: string | null;
   revenue: string | null;
   team_size: string | null;
+  tags?: string[];
+  has_whatsapp?: boolean;
+  whatsapp_on?: boolean | null;
 };
 
 type BookingDetails = {
@@ -161,10 +189,39 @@ type FeedItem =
   | { kind: "activity"; at: string; activity: ActivityEvent };
 
 function previewText(body: string | null | undefined, max = 96): string {
-  const compact = (body || "").replace(/\s+/g, " ").trim();
+  const compact = displayConversationPreview(body);
   if (!compact) return "";
   if (compact.length <= max) return compact;
   return `${compact.slice(0, max).trimEnd()}…`;
+}
+
+function MessageReactionChips({
+  reactions,
+  align,
+}: {
+  reactions: ReturnType<typeof reactionsFromMessageMetadata>;
+  align: "left" | "right";
+}) {
+  if (!reactions.length) return null;
+  const summary = reactionChipsSummary(reactions);
+  if (!summary) return null;
+  return (
+    <div
+      className={`mt-1 flex ${
+        align === "right" ? "justify-end" : "justify-start"
+      }`}
+    >
+      <span
+        className="inline-flex items-center gap-0.5 rounded-full bg-white px-2 py-0.5 text-[13px] leading-none shadow-sm ring-1 ring-slate-200/90"
+        title={reactions
+          .map((r) => r.value)
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {summary}
+      </span>
+    </div>
+  );
 }
 
 function messageAttachmentsOf(m: MessageRow): MessageAttachment[] {
@@ -412,40 +469,6 @@ function ChannelBadgeStack({
   );
 }
 
-function ChannelViaLine({
-  channel,
-  href,
-}: {
-  channel: string | null | undefined;
-  href?: string | null;
-}) {
-  const c = (channel || "").toLowerCase();
-  if (!c || c === "system" || c === "comment") return null;
-  const inner = (
-    <>
-      <ChannelMark channel={c} />
-      {channelLabelOf(c)}
-    </>
-  );
-  if (href && (c === "linkedin" || c === "instagram")) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 hover:text-sky-800"
-      >
-        {inner}
-      </a>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-slate-500">
-      {inner}
-    </span>
-  );
-}
-
 function DetailRow({
   label,
   children,
@@ -473,20 +496,22 @@ function CollapsibleDetailSection({
   onToggle,
   children,
   badge,
+  panel = false,
 }: {
   title: string;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
   badge?: ReactNode;
+  panel?: boolean;
 }) {
   return (
-    <section>
+    <section className={panel ? "rounded-lg bg-slate-50 p-3" : undefined}>
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="mb-2 flex w-full items-center gap-1.5 text-left"
+        className={`flex w-full items-center gap-1.5 text-left ${open ? "mb-2" : ""}`}
       >
         <ChevronDown
           className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform ${
@@ -578,17 +603,22 @@ function composerChannelOptions(selected: {
   last_channel?: string | null;
   prospect_email?: string | null;
   prospect_phone?: string | null;
+  prospect_linkedin_url?: string | null;
 }): { id: ReplyChannel; label: string; enabled: boolean }[] {
   const last = (selected.last_channel || "").toLowerCase();
+  const hasPhone = Boolean(selected.prospect_phone);
+  const hasEmail = Boolean(selected.prospect_email);
+  const hasLinkedIn =
+    Boolean(selected.prospect_linkedin_url) || last === "linkedin";
   return [
-    { id: "sms", label: "SMS", enabled: Boolean(selected.prospect_phone) },
-    { id: "whatsapp", label: "WhatsApp", enabled: last === "whatsapp" },
+    { id: "sms", label: "SMS", enabled: hasPhone },
+    { id: "whatsapp", label: "WhatsApp", enabled: hasPhone || last === "whatsapp" },
     {
       id: "email",
       label: "Email",
-      enabled: Boolean(selected.prospect_email) || last === "email",
+      enabled: hasEmail || last === "email",
     },
-    { id: "linkedin", label: "LinkedIn", enabled: last === "linkedin" },
+    { id: "linkedin", label: "LinkedIn", enabled: hasLinkedIn },
     { id: "instagram", label: "Instagram", enabled: last === "instagram" },
     { id: "messenger", label: "Messenger", enabled: last === "messenger" },
     { id: "comment", label: "Internal Comment", enabled: true },
@@ -741,40 +771,127 @@ function conversationMatchesChannel(
   channel: ChannelFilter
 ): boolean {
   if (channel === "all") return true;
-  const last = (conversation.last_channel || "").toLowerCase();
-  if (last === channel) return true;
-  return (conversation.reply_channels || []).some(
-    (item) => item.toLowerCase() === channel
+  // Filter on the latest message channel only (not "ever messaged on").
+  return (conversation.last_channel || "").toLowerCase() === channel;
+}
+
+type InboxFilters = {
+  needsReply: boolean;
+  hasBooking: boolean;
+  inCampaign: boolean;
+  channel: ChannelFilter;
+  tag: string | null;
+};
+
+const EMPTY_INBOX_FILTERS: InboxFilters = {
+  needsReply: false,
+  hasBooking: false,
+  inCampaign: false,
+  channel: "all",
+  tag: null,
+};
+
+function inboxFiltersActive(filters: InboxFilters): boolean {
+  return (
+    filters.needsReply ||
+    filters.hasBooking ||
+    filters.inCampaign ||
+    filters.channel !== "all" ||
+    Boolean(filters.tag)
   );
+}
+
+function conversationMatchesFilters(
+  conversation: ConversationRow,
+  filters: InboxFilters
+): boolean {
+  if (!conversationMatchesChannel(conversation, filters.channel)) return false;
+  if (filters.needsReply && conversation.last_direction !== "inbound") {
+    return false;
+  }
+  if (filters.hasBooking && !conversation.booking_id) return false;
+  if (filters.inCampaign && !conversation.in_campaign) return false;
+  if (filters.tag) {
+    const needle = filters.tag.toLowerCase();
+    const tags = conversation.prospect_tags || [];
+    if (!tags.some((tag) => tag.toLowerCase() === needle)) return false;
+  }
+  return true;
 }
 
 function inboxEmptyCopy(
   tab: InboxTab,
-  channel: ChannelFilter,
+  filters: InboxFilters,
   searching: boolean
 ): string {
   if (searching) return "No conversations match that search.";
+  if (inboxFiltersActive(filters)) {
+    return "No conversations match these filters.";
+  }
   if (tab === "unread") return "No unread conversations.";
   if (tab === "starred") return "No starred conversations.";
-  if (channel === "linkedin") {
-    return "No LinkedIn threads yet. Connect LinkedIn in Settings → Integrations, then Sync.";
-  }
-  if (channel === "email") {
-    return "No email threads yet. Connect Gmail or Outlook in Settings → Integrations, then Sync.";
-  }
-  if (channel === "whatsapp") {
-    return "No WhatsApp threads yet. Connect WhatsApp in Settings → Integrations, then Sync.";
-  }
-  if (channel === "instagram") {
-    return "No Instagram threads yet. Connect Instagram in Settings → Integrations, then Sync.";
-  }
-  if (channel === "messenger") {
-    return "No Messenger threads yet. Connect Facebook Messenger in Settings → Integrations, then Sync.";
-  }
-  if (channel === "sms") return "No SMS threads yet.";
   if (tab === "recent") return "No recent conversations.";
   return "No conversations yet. Book a call to create the first thread.";
 }
+
+function formatInboxSyncedAt(iso: string | null): string {
+  if (!iso) return "Not synced yet";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "Not synced yet";
+  const ms = Date.now() - then;
+  if (ms < 45_000) return "just now";
+  if (ms < 60 * 60 * 1000) {
+    const minutes = Math.max(1, Math.round(ms / 60_000));
+    return `${minutes} min ago`;
+  }
+  if (ms < 24 * 60 * 60 * 1000) {
+    const hours = Math.max(1, Math.round(ms / (60 * 60 * 1000)));
+    return `${hours}h ago`;
+  }
+  return formatShortDateTime(iso);
+}
+
+/**
+ * Rolling age bands for the newest-first inbox list — not calendar weeks,
+ * so a Monday reply isn't still "this week" on Sunday.
+ */
+function inboxAgeBand(iso: string, now = new Date()): string {
+  const then = new Date(iso);
+  if (Number.isNaN(then.getTime())) return "Older";
+
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const startOfThen = new Date(
+    then.getFullYear(),
+    then.getMonth(),
+    then.getDate()
+  );
+  const dayDiff = Math.round(
+    (startOfToday.getTime() - startOfThen.getTime()) / 86_400_000
+  );
+
+  if (dayDiff <= 0) return "Today";
+  if (dayDiff === 1) return "Yesterday";
+  if (dayDiff <= 3) return "3 days ago";
+  if (dayDiff <= 7) return "1 week ago";
+  if (dayDiff <= 14) return "2 weeks ago";
+  if (dayDiff <= 30) return "1 month ago";
+  return "Older";
+}
+
+type InboxAccountRow = {
+  id?: string;
+  unipile_account_id: string;
+  provider: string;
+  status: string;
+  display_name: string | null;
+  last_synced_at: string | null;
+};
+
+const PLATFORM_EMAIL_FROM = "bird";
 
 function conversationMatchesSearch(
   conversation: ConversationRow,
@@ -803,7 +920,8 @@ function conversationMatchesSearch(
 
 export function MessagingInbox() {
   const pathname = usePathname();
-  const [loading, setLoading] = useState(false);
+  const { impersonatingCoachId } = useImpersonation();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -876,7 +994,8 @@ export function MessagingInbox() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [tab, setTab] = useState<InboxTab>("all");
-  const [channelFilter, setChannelFilter] = useState<ChannelFilter>("all");
+  const [inboxFilters, setInboxFilters] =
+    useState<InboxFilters>(EMPTY_INBOX_FILTERS);
   const [inboxSort, setInboxSort] = useState<InboxSort>("newest");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -915,12 +1034,18 @@ export function MessagingInbox() {
   >([]);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleNotice, setScheduleNotice] = useState<string | null>(null);
+  const [assessmentUrl, setAssessmentUrl] = useState<string | null>(null);
   const [detailSectionsOpen, setDetailSectionsOpen] = useState({
+    contact: true,
+    tags: true,
     assessment: true,
     booking: true,
     conversation: true,
     notes: true,
   });
+  const [coachTags, setCoachTags] = useState<string[]>([]);
+  const [savingTags, setSavingTags] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [coachProfile, setCoachProfile] = useState<{
     name: string;
@@ -928,7 +1053,30 @@ export function MessagingInbox() {
   }>({ name: "You", avatarUrl: null });
   const [liSyncing, setLiSyncing] = useState(false);
   const [liSyncNote, setLiSyncNote] = useState<string | null>(null);
+  const [inboxAccounts, setInboxAccounts] = useState<InboxAccountRow[]>([]);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [syncNowTick, setSyncNowTick] = useState(0);
+  /** Unipile mailing account id, or `"bird"` for platform email. */
+  const [emailFromAccountId, setEmailFromAccountId] = useState<string>("");
   const liSoftSyncAttempted = useRef(false);
+  /** Avoid mid-sync list flashes; apply one refresh when sync finishes. */
+  const liSyncingRef = useRef(false);
+  const selectedIdRef = useRef<string | null>(null);
+  const composerDirtyRef = useRef(false);
+  const pendingListRefreshRef = useRef(false);
+  const settingsIntegrationsHref = pathname?.startsWith("/admin")
+    ? "/admin/account?tab=profile"
+    : "/coach/settings?tab=profile";
+
+  selectedIdRef.current = selectedId;
+  composerDirtyRef.current =
+    Boolean(replyBody.trim()) ||
+    pendingFiles.length > 0 ||
+    Boolean(pendingVoice) ||
+    Boolean(pendingVideo) ||
+    scheduleOpen ||
+    scheduleSending;
 
   const selected = useMemo(
     () =>
@@ -940,15 +1088,29 @@ export function MessagingInbox() {
     () =>
       conversations.filter(
         (c) =>
-          conversationMatchesChannel(c, channelFilter) &&
+          conversationMatchesFilters(c, inboxFilters) &&
           (c.unread_count ?? 0) > 0
       ).length,
-    [conversations, channelFilter]
+    [conversations, inboxFilters]
   );
+
+  const availableTags = useMemo(() => {
+    const seen = new Set<string>();
+    const tags: string[] = [];
+    for (const row of conversations) {
+      for (const tag of row.prospect_tags || []) {
+        const key = tag.toLowerCase();
+        if (seen.has(key)) continue;
+        seen.add(key);
+        tags.push(tag);
+      }
+    }
+    return tags.sort((a, b) => a.localeCompare(b));
+  }, [conversations]);
 
   const filtered = useMemo(() => {
     let list = conversations.filter((c) =>
-      conversationMatchesChannel(c, channelFilter)
+      conversationMatchesFilters(c, inboxFilters)
     );
     if (tab === "unread") list = list.filter((c) => (c.unread_count ?? 0) > 0);
     if (tab === "starred") list = list.filter((c) => !!c.starred);
@@ -969,7 +1131,7 @@ export function MessagingInbox() {
     });
     if (tab === "recent") return list.slice(0, 20);
     return list;
-  }, [conversations, tab, channelFilter, inboxSort, searchQuery]);
+  }, [conversations, tab, inboxFilters, inboxSort, searchQuery]);
 
   useEffect(() => {
     if (!filterOpen && !sortOpen && !actionsOpen) return;
@@ -1035,50 +1197,103 @@ export function MessagingInbox() {
       data: { session },
     } = await supabaseClient.auth.getSession();
     if (!session?.access_token) return null;
-    return {
+    const headers: Record<string, string> = {
       Authorization: `Bearer ${session.access_token}`,
       "Content-Type": "application/json",
     };
-  }, []);
+    if (impersonatingCoachId) {
+      headers["x-impersonate-coach-id"] = impersonatingCoachId;
+    }
+    return headers;
+  }, [impersonatingCoachId]);
 
-  const loadList = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadList = useCallback(
+    async (opts?: { silent?: boolean; fromSync?: boolean }) => {
+      // While Unipile is writing chats, hold refreshes so the inbox doesn't
+      // grow one row at a time under the user's cursor.
+      if (liSyncingRef.current && !opts?.fromSync) {
+        pendingListRefreshRef.current = true;
+        return;
+      }
+      const silent = Boolean(opts?.silent);
+      if (!silent) {
+        setLoading(true);
+        setError(null);
+      }
+      try {
+        const headers = await authHeaders();
+        if (!headers) {
+          if (!silent) setError("Sign in again, then retry.");
+          return;
+        }
+        const res = await fetch("/api/messaging/conversations", { headers });
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          conversations?: ConversationRow[];
+        };
+        if (!res.ok) {
+          if (!silent) {
+            setError(body.error || `Request failed (${res.status}).`);
+            setConversations([]);
+          }
+          return;
+        }
+        const list = Array.isArray(body.conversations) ? body.conversations : [];
+        setConversations(list);
+        setSelectedId((prev) => {
+          if (prev && list.some((c) => c.id === prev)) return prev;
+          // Background sync refresh: never steal focus / auto-select.
+          if (silent) return prev;
+          return list[0]?.id ?? null;
+        });
+      } catch (err) {
+        if (!silent) {
+          setError(err instanceof Error ? err.message : "Load failed.");
+        }
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [authHeaders]
+  );
+
+  const loadInboxAccounts = useCallback(async () => {
     try {
       const headers = await authHeaders();
       if (!headers) {
-        setError("Sign in again, then retry.");
+        setAccountsLoaded(true);
         return;
       }
-      const res = await fetch("/api/messaging/conversations", { headers });
+      const res = await fetch("/api/coach/integrations/accounts", { headers });
       const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        conversations?: ConversationRow[];
+        accounts?: InboxAccountRow[];
       };
-      if (!res.ok) {
-        setError(body.error || `Request failed (${res.status}).`);
-        setConversations([]);
-        return;
-      }
-      const list = Array.isArray(body.conversations) ? body.conversations : [];
-      setConversations(list);
-      setSelectedId((prev) => {
-        if (prev && list.some((c) => c.id === prev)) return prev;
-        return list[0]?.id ?? null;
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Load failed.");
+      const list = Array.isArray(body.accounts) ? body.accounts : [];
+      setInboxAccounts(list);
+      const latest = list.reduce<string | null>((acc, row) => {
+        const at = row.last_synced_at;
+        if (!at) return acc;
+        if (!acc || new Date(at) > new Date(acc)) return at;
+        return acc;
+      }, null);
+      setLastSyncedAt(latest);
+    } catch {
+      // Status bar still works from the last successful sync note.
     } finally {
-      setLoading(false);
+      setAccountsLoaded(true);
     }
   }, [authHeaders]);
 
   const loadThread = useCallback(
-    async (id: string) => {
-      setLoadingThread(true);
-      setProspectDetails(null);
-      setBookingDetails(null);
-      setActivityEvents([]);
+    async (id: string, opts?: { silent?: boolean }) => {
+      const silent = Boolean(opts?.silent);
+      if (!silent) {
+        setLoadingThread(true);
+        setProspectDetails(null);
+        setBookingDetails(null);
+        setActivityEvents([]);
+        setCoachTags([]);
+      }
       try {
         const headers = await authHeaders();
         if (!headers) return;
@@ -1093,23 +1308,86 @@ export function MessagingInbox() {
           prospect?: ProspectDetails | null;
           booking?: BookingDetails | null;
           activity?: ActivityEvent[];
+          coachTags?: string[];
         };
         if (!res.ok) {
-          setError(body.error || `Thread failed (${res.status}).`);
-          setMessages([]);
-          setProspectDetails(null);
-          setBookingDetails(null);
-          setActivityEvents([]);
-          setExpandedIds(new Set());
+          if (!silent) {
+            setError(body.error || `Thread failed (${res.status}).`);
+            setMessages([]);
+            setProspectDetails(null);
+            setBookingDetails(null);
+            setActivityEvents([]);
+            setExpandedIds(new Set());
+          }
           return;
         }
+        // User switched away while this request was in flight.
+        if (selectedIdRef.current !== id) return;
+
         const list = Array.isArray(body.messages) ? body.messages : [];
-        setMessages(list);
-        setProspectDetails(body.prospect ?? null);
-        setBookingDetails(body.booking ?? null);
-        setActivityEvents(Array.isArray(body.activity) ? body.activity : []);
-        const newest = list[list.length - 1];
-        setExpandedIds(newest ? new Set([newest.id]) : new Set());
+        if (silent) {
+          setMessages((prev) => {
+            if (
+              prev.length === list.length &&
+              prev.every((m, i) => m.id === list[i]?.id)
+            ) {
+              return prev;
+            }
+            return list;
+          });
+          setExpandedIds((prev) => {
+            const known = new Set(list.map((m) => m.id));
+            const next = new Set([...prev].filter((mid) => known.has(mid)));
+            const newest = list[list.length - 1];
+            if (newest && !prev.has(newest.id)) next.add(newest.id);
+            return next;
+          });
+        } else {
+          setMessages(list);
+          const newest = list[list.length - 1];
+          setExpandedIds(newest ? new Set([newest.id]) : new Set());
+        }
+        if (body.prospect !== undefined) {
+          setProspectDetails(body.prospect ?? null);
+        }
+        if (body.booking !== undefined) {
+          setBookingDetails(body.booking ?? null);
+        }
+        if (Array.isArray(body.activity)) {
+          setActivityEvents(body.activity);
+        }
+        if (Array.isArray(body.coachTags)) {
+          setCoachTags(body.coachTags);
+        }
+        // Lazy WhatsApp-on check when we have a phone but no cached yes yet.
+        const prospectPhone = body.prospect?.phone?.trim();
+        const prospectId = body.prospect?.id;
+        if (
+          prospectId &&
+          prospectPhone &&
+          !body.prospect?.has_whatsapp &&
+          selectedIdRef.current === id
+        ) {
+          void (async () => {
+            const h = await authHeaders();
+            if (!h) return;
+            const checkRes = await fetch(
+              `/api/coach/contacts/${encodeURIComponent(prospectId)}/whatsapp-check`,
+              { method: "POST", headers: h, body: "{}" }
+            );
+            if (!checkRes.ok || selectedIdRef.current !== id) return;
+            const checkBody = (await checkRes.json().catch(() => ({}))) as {
+              has_whatsapp?: boolean;
+            };
+            if (typeof checkBody.has_whatsapp === "boolean") {
+              setProspectDetails((prev) =>
+                prev && prev.id === prospectId
+                  ? { ...prev, has_whatsapp: checkBody.has_whatsapp }
+                  : prev
+              );
+            }
+          })();
+        }
         if (body.conversation) {
           setConversations((prev) =>
             prev.map((c) =>
@@ -1118,7 +1396,7 @@ export function MessagingInbox() {
                 : c
             )
           );
-          if (body.conversation.subject) {
+          if (!silent && body.conversation.subject) {
             setReplySubject((s) => s || `Re: ${body.conversation!.subject}`);
           }
         } else {
@@ -1127,9 +1405,11 @@ export function MessagingInbox() {
           );
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Thread load failed.");
+        if (!silent) {
+          setError(err instanceof Error ? err.message : "Thread load failed.");
+        }
       } finally {
-        setLoadingThread(false);
+        if (!silent) setLoadingThread(false);
       }
     },
     [authHeaders]
@@ -1137,6 +1417,8 @@ export function MessagingInbox() {
 
   const syncLinkedInInbox = useCallback(
     async (force: boolean) => {
+      if (liSyncingRef.current) return;
+      liSyncingRef.current = true;
       setLiSyncing(true);
       setLiSyncNote(null);
       try {
@@ -1153,38 +1435,70 @@ export function MessagingInbox() {
           reason?: string;
           chats?: number;
           messages?: number;
+          last_synced_at?: string | null;
         };
+        if (body.last_synced_at) setLastSyncedAt(body.last_synced_at);
         if (!res.ok) {
           if (!force && (res.status === 401 || res.status === 403)) return;
-          setLiSyncNote(body.error || "LinkedIn sync failed.");
+          setLiSyncNote(body.error || "Inbox sync failed.");
           return;
         }
         if (body.skipped) {
           if (force) {
             setLiSyncNote(
               body.reason === "no_account"
-                ? "Connect LinkedIn in Campaigns first."
+                ? "Connect a channel in Settings to sync."
                 : "Synced very recently — try again in a minute."
             );
           }
+          // Identity-only backfill still wrote chats — apply once, silently.
           if ((body.chats ?? 0) > 0) {
-            await loadList();
-            if (selectedId) await loadThread(selectedId);
+            pendingListRefreshRef.current = false;
+            await loadList({ silent: true, fromSync: true });
+            const openId = selectedIdRef.current;
+            if (openId && !composerDirtyRef.current) {
+              await loadThread(openId, { silent: true });
+            }
           }
+          await loadInboxAccounts();
           return;
         }
-        setLiSyncNote(
-          `Synced ${body.chats ?? 0} chats · ${body.messages ?? 0} new messages`
-        );
-        await loadList();
-        if (selectedId) await loadThread(selectedId);
+        const msgCount = body.messages ?? 0;
+        const chatCount = body.chats ?? 0;
+        if (force) {
+          setLiSyncNote(
+            `Synced ${chatCount} chats · ${msgCount} new messages`
+          );
+        } else if (msgCount > 0) {
+          setLiSyncNote(
+            msgCount === 1
+              ? "1 new message"
+              : `${msgCount} new messages`
+          );
+        } else {
+          // Soft visit with nothing new — keep the quiet "Last synced" status.
+          setLiSyncNote(null);
+        }
+        // Capture finished in the background — swap the list in one shot.
+        pendingListRefreshRef.current = false;
+        await loadList({ silent: true, fromSync: true });
+        const openId = selectedIdRef.current;
+        if (openId && !composerDirtyRef.current) {
+          await loadThread(openId, { silent: true });
+        }
+        await loadInboxAccounts();
       } catch {
-        if (force) setLiSyncNote("LinkedIn sync failed.");
+        if (force) setLiSyncNote("Inbox sync failed.");
       } finally {
+        liSyncingRef.current = false;
         setLiSyncing(false);
+        if (pendingListRefreshRef.current) {
+          pendingListRefreshRef.current = false;
+          void loadList({ silent: true });
+        }
       }
     },
-    [authHeaders, loadList, loadThread, selectedId]
+    [authHeaders, loadInboxAccounts, loadList, loadThread]
   );
 
   const toggleExpanded = useCallback((id: string) => {
@@ -1402,6 +1716,46 @@ export function MessagingInbox() {
     });
   }, [replyBody]);
 
+  /** Insert a reply template — replaces empty composer, otherwise inserts at cursor. */
+  const insertSnippetText = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      setComposerOpen(true);
+      const el = replyTextareaRef.current;
+      if (!replyBody.trim()) {
+        setReplyBody(trimmed);
+        requestAnimationFrame(() => {
+          const ta = replyTextareaRef.current;
+          if (!ta) return;
+          ta.focus();
+          const pos = trimmed.length;
+          ta.setSelectionRange(pos, pos);
+        });
+        return;
+      }
+      if (!el) {
+        setReplyBody((prev) => `${prev.trimEnd()}\n\n${trimmed}`);
+        return;
+      }
+      const start = el.selectionStart ?? replyBody.length;
+      const end = el.selectionEnd ?? replyBody.length;
+      const before = replyBody.slice(0, start);
+      const after = replyBody.slice(end);
+      const padBefore =
+        before.length && !before.endsWith("\n") ? "\n\n" : before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "";
+      const insert = `${padBefore}${trimmed}`;
+      const next = before + insert + after;
+      setReplyBody(next);
+      requestAnimationFrame(() => {
+        el.focus();
+        const pos = before.length + insert.length;
+        el.setSelectionRange(pos, pos);
+      });
+    },
+    [replyBody]
+  );
+
   const scrollThreadToBottom = useCallback(() => {
     const el = threadScrollRef.current;
     if (!el) return;
@@ -1429,11 +1783,15 @@ export function MessagingInbox() {
       const bodyText = replyBody;
       const subjectText = replySubject;
       const fromNameText = fromName;
+      const channel =
+        replyChannel === "comment" ? "comment" : replyChannel;
+      const emailAccountIdText =
+        channel === "email"
+          ? emailFromAccountId || undefined
+          : undefined;
       const filesSnap = pendingFiles;
       const voiceSnap = pendingVoice;
       const videoSnap = pendingVideo;
-      const channel =
-        replyChannel === "comment" ? "comment" : replyChannel;
       const useMultipart =
         filesSnap.length > 0 ||
         Boolean(voiceSnap) ||
@@ -1545,6 +1903,9 @@ export function MessagingInbox() {
           form.append("body", bodyText);
           if (subjectText) form.append("subject", subjectText);
           if (fromNameText) form.append("fromName", fromNameText);
+          if (emailAccountIdText) {
+            form.append("email_account_id", emailAccountIdText);
+          }
           if (opts?.scheduledFor) {
             form.append("scheduled_for", opts.scheduledFor);
           }
@@ -1585,6 +1946,7 @@ export function MessagingInbox() {
                 body: bodyText,
                 subject: subjectText || undefined,
                 fromName: fromNameText || undefined,
+                email_account_id: emailAccountIdText,
               }),
             }
           );
@@ -1684,6 +2046,7 @@ export function MessagingInbox() {
       clearPendingFiles,
       dismissOptimistic,
       fromName,
+      emailFromAccountId,
       loadList,
       pendingFiles,
       pendingVideo,
@@ -1705,15 +2068,28 @@ export function MessagingInbox() {
   }, [selectedId, clearPendingFiles]);
 
   useEffect(() => {
-    void loadList();
-  }, [loadList]);
+    let cancelled = false;
+    async function boot() {
+      // Paint cached conversations first; background soft sync must not gate the list.
+      await loadList();
+      if (cancelled || liSoftSyncAttempted.current) return;
+      liSoftSyncAttempted.current = true;
+      void syncLinkedInInbox(false);
+    }
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+  }, [loadList, syncLinkedInInbox]);
 
-  // Soft LinkedIn pull on first inbox view this session (server enforces 2h cooldown).
   useEffect(() => {
-    if (liSoftSyncAttempted.current) return;
-    liSoftSyncAttempted.current = true;
-    void syncLinkedInInbox(false);
-  }, [syncLinkedInInbox]);
+    void loadInboxAccounts();
+  }, [loadInboxAccounts]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setSyncNowTick((n) => n + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1746,6 +2122,30 @@ export function MessagingInbox() {
 
   useEffect(() => {
     let cancelled = false;
+    async function loadAssessmentUrl() {
+      try {
+        const headers = await authHeaders();
+        if (!headers || cancelled) return;
+        const res = await fetch("/api/coach/linkedin-outreach/interest", {
+          headers,
+        });
+        const body = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok) return;
+        if (typeof body.assessment_url === "string" && body.assessment_url) {
+          setAssessmentUrl(body.assessment_url);
+        }
+      } catch {
+        /* optional for templates */
+      }
+    }
+    void loadAssessmentUrl();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders]);
+
+  useEffect(() => {
+    let cancelled = false;
     async function tick() {
       try {
         const headers = await authHeaders();
@@ -1757,9 +2157,16 @@ export function MessagingInbox() {
         const inbound = (await inboundRes.json().catch(() => ({}))) as {
           ingested?: number;
         };
-        if (!cancelled && (inbound.ingested ?? 0) > 0) {
-          await loadList();
-          if (selectedId) await loadThread(selectedId);
+        if (cancelled || (inbound.ingested ?? 0) <= 0) return;
+        // Don't reshuffle the inbox while a LinkedIn/Unipile sync is in flight.
+        if (liSyncingRef.current) {
+          pendingListRefreshRef.current = true;
+          return;
+        }
+        await loadList({ silent: true });
+        const openId = selectedIdRef.current;
+        if (openId && !composerDirtyRef.current) {
+          await loadThread(openId, { silent: true });
         }
       } catch {
         /* ignore */
@@ -1771,7 +2178,7 @@ export function MessagingInbox() {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [authHeaders, loadList, loadThread, selectedId]);
+  }, [authHeaders, loadList, loadThread]);
 
   useEffect(() => {
     if (selected?.id) {
@@ -1799,17 +2206,14 @@ export function MessagingInbox() {
       setReplyChannel(last as ReplyChannel);
       return;
     }
-    if (replyChannel === "sms" && !selected.prospect_phone) {
-      setReplyChannel("email");
-    }
-    if (
-      replyChannel === "email" &&
-      !selected.prospect_email &&
-      selected.prospect_phone
-    ) {
+    if (selected.prospect_phone && !selected.prospect_email) {
       setReplyChannel("sms");
+      return;
     }
-  }, [selected, replyChannel]);
+    setReplyChannel("email");
+    // Only when switching threads — do not fight the user's channel picker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selected.id only
+  }, [selected?.id]);
 
   const feedByDay = useMemo(() => {
     const optimisticForThread = selectedId
@@ -1945,8 +2349,6 @@ export function MessagingInbox() {
     if (selected?.reply_channels?.length) return selected.reply_channels;
     return inboundReplyChannels([], selected?.last_channel);
   }, [messages, selected]);
-  const speakingChannel =
-    replyChannels[0] || selected?.last_channel || null;
 
   const subtitle =
     prospectDetails?.business_name?.trim() ||
@@ -1961,6 +2363,61 @@ export function MessagingInbox() {
     prospectDetails?.linkedin_url?.trim() ||
     selected?.prospect_linkedin_url?.trim() ||
     null;
+
+  const snippetFirstName = useMemo(() => {
+    const fromDetails = prospectDetails?.full_name?.trim().split(/\s+/)[0];
+    if (fromDetails) return fromDetails;
+    const fromConv = selected?.prospect_name?.trim().split(/\s+/)[0];
+    if (fromConv) return fromConv;
+    return displayName.split(/\s+/)[0] || null;
+  }, [prospectDetails?.full_name, selected?.prospect_name, displayName]);
+
+  const lastInboundSnippet = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.direction === "inbound" && m.body_text?.trim()) {
+        const t = m.body_text.trim();
+        return t.length > 160 ? `${t.slice(0, 157)}…` : t;
+      }
+    }
+    return null;
+  }, [messages]);
+
+  // Keep denormalized conversation fields aligned with live contact details so
+  // WhatsApp/SMS stay enabled after a phone is added on the prospect.
+  useEffect(() => {
+    if (!selected?.id || !prospectDetails) return;
+    const nextPhone = prospectDetails.phone?.trim() || null;
+    const nextEmail = prospectDetails.email?.trim() || null;
+    const nextLinkedIn = prospectDetails.linkedin_url?.trim() || null;
+    if (
+      (nextPhone || null) === (selected.prospect_phone || null) &&
+      (nextEmail || null) === (selected.prospect_email || null) &&
+      (nextLinkedIn || null) === (selected.prospect_linkedin_url || null)
+    ) {
+      return;
+    }
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === selected.id
+          ? {
+              ...c,
+              prospect_phone: nextPhone ?? c.prospect_phone,
+              prospect_email: nextEmail ?? c.prospect_email,
+              prospect_linkedin_url: nextLinkedIn ?? c.prospect_linkedin_url,
+            }
+          : c
+      )
+    );
+  }, [
+    selected?.id,
+    selected?.prospect_phone,
+    selected?.prospect_email,
+    selected?.prospect_linkedin_url,
+    prospectDetails?.phone,
+    prospectDetails?.email,
+    prospectDetails?.linkedin_url,
+  ]);
 
   useEffect(() => {
     setBusinessDraft(
@@ -1999,11 +2456,181 @@ export function MessagingInbox() {
     patchConversation,
   ]);
 
+  const patchProspectContact = useCallback(
+    async (patch: ProspectFieldPatch) => {
+      const contactId = prospectDetails?.id || selected?.contact_id;
+      if (!contactId) {
+        throw new Error("Link a prospect before editing details.");
+      }
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Please sign in again.");
+      const contactUrl = pathname?.startsWith("/admin")
+        ? `/api/admin/contacts/${encodeURIComponent(contactId)}`
+        : `/api/coach/contacts/${encodeURIComponent(contactId)}`;
+      const res = await fetch(contactUrl, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(patch),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        full_name?: string;
+        email?: string | null;
+        phone?: string | null;
+        job_title?: string | null;
+        business_name?: string | null;
+        linkedin_url?: string | null;
+        company_website?: string | null;
+        prospect_status?: string | null;
+        tags?: string[];
+        has_whatsapp?: boolean;
+        error?: string;
+      };
+      if (!res.ok) {
+        throw new Error(body.error ?? "Unable to update prospect.");
+      }
+      setProspectDetails((prev) =>
+        prev
+          ? {
+              ...prev,
+              email: body.email !== undefined ? body.email : prev.email,
+              phone: body.phone !== undefined ? body.phone : prev.phone,
+              job_title:
+                body.job_title !== undefined ? body.job_title : prev.job_title,
+              business_name:
+                body.business_name !== undefined
+                  ? body.business_name
+                  : prev.business_name,
+              linkedin_url:
+                body.linkedin_url !== undefined
+                  ? body.linkedin_url
+                  : prev.linkedin_url,
+              company_website:
+                body.company_website !== undefined
+                  ? body.company_website
+                  : prev.company_website,
+              prospect_status:
+                body.prospect_status !== undefined
+                  ? body.prospect_status
+                  : prev.prospect_status,
+              tags: Array.isArray(body.tags) ? body.tags : prev.tags,
+              has_whatsapp:
+                body.has_whatsapp !== undefined
+                  ? body.has_whatsapp
+                  : prev.has_whatsapp,
+            }
+          : prev
+      );
+      if (selected?.id) {
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === selected.id
+              ? {
+                  ...c,
+                  prospect_name: body.full_name ?? c.prospect_name,
+                  prospect_email:
+                    body.email !== undefined ? body.email : c.prospect_email,
+                  prospect_phone:
+                    body.phone !== undefined ? body.phone : c.prospect_phone,
+                  prospect_linkedin_url:
+                    body.linkedin_url !== undefined
+                      ? body.linkedin_url
+                      : c.prospect_linkedin_url,
+                  prospect_business_name:
+                    body.business_name !== undefined
+                      ? body.business_name
+                      : c.prospect_business_name,
+                }
+              : c
+          )
+        );
+      }
+      if (body.business_name !== undefined) {
+        setBusinessDraft(body.business_name ?? "");
+      }
+      if (Array.isArray(body.tags)) {
+        setCoachTags((prev) => {
+          const have = new Set(prev.map((tag) => tag.toLowerCase()));
+          const next = [...prev];
+          for (const tag of body.tags!) {
+            if (!have.has(tag.toLowerCase())) next.push(tag);
+          }
+          return next;
+        });
+      }
+    },
+    [authHeaders, pathname, prospectDetails?.id, selected?.contact_id, selected?.id]
+  );
+
+  const saveProspectTags = useCallback(
+    async (tags: string[]) => {
+      setSavingTags(true);
+      try {
+        await patchProspectContact({ tags });
+      } finally {
+        setSavingTags(false);
+      }
+    },
+    [patchProspectContact]
+  );
+
+  const saveProspectContact = useCallback(
+    async (patch: ProspectFieldPatch) => {
+      setSavingContact(true);
+      try {
+        await patchProspectContact(patch);
+      } finally {
+        setSavingContact(false);
+      }
+    },
+    [patchProspectContact]
+  );
+
   const prospectHref = selected?.contact_id
     ? pathname?.startsWith("/admin")
       ? `/admin/prospects/${selected.contact_id}`
       : `/coach/prospects/${selected.contact_id}`
     : null;
+
+  const connectedChannelLabels = useMemo(() => {
+    const names = [
+      ...new Set(
+        inboxAccounts
+          .filter((row) => (row.status || "").toUpperCase() === "OK")
+          .map((row) => providerLabel(row.provider))
+      ),
+    ];
+    return names.join(", ");
+  }, [inboxAccounts]);
+
+  const mailingAccounts = useMemo(
+    () =>
+      inboxAccounts.filter(
+        (row) =>
+          isMailingProvider(row.provider) &&
+          (row.status || "").toUpperCase() === "OK" &&
+          Boolean(row.unipile_account_id)
+      ),
+    [inboxAccounts]
+  );
+
+  useEffect(() => {
+    if (replyChannel !== "email") return;
+    const stillValid =
+      emailFromAccountId === PLATFORM_EMAIL_FROM ||
+      (emailFromAccountId !== "" &&
+        mailingAccounts.some(
+          (row) => row.unipile_account_id === emailFromAccountId
+        ));
+    if (stillValid && emailFromAccountId) return;
+    // Prefer a connected mailbox. Empty = let the server pick for this coach
+    // (important on admin org-wide inbox without impersonation).
+    setEmailFromAccountId(mailingAccounts[0]?.unipile_account_id || "");
+  }, [replyChannel, mailingAccounts, emailFromAccountId]);
+
+  const lastSyncedLabel = useMemo(
+    () => formatInboxSyncedAt(lastSyncedAt),
+    [lastSyncedAt, syncNowTick]
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col py-3 max-lg:h-auto max-lg:py-2">
@@ -2036,11 +2663,27 @@ export function MessagingInbox() {
                 </button>
               </div>
             ) : (
-              <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">
+              <h2 className="min-w-0 text-[15px] font-semibold tracking-tight text-slate-900">
                 Inbox
               </h2>
             )}
             <div className="flex shrink-0 items-center">
+              {searchOpen ? null : (
+                <NewConversationPicker
+                  getHeaders={authHeaders}
+                  onStarted={(conversation) => {
+                    const row = conversation as ConversationRow;
+                    setConversations((prev) =>
+                      prev.some((c) => c.id === row.id)
+                        ? prev
+                        : [row, ...prev]
+                    );
+                    setSelectedId(row.id);
+                    setComposerOpen(true);
+                    setChannelMenuOpen(false);
+                  }}
+                />
+              )}
               {searchOpen ? null : (
                 <button
                   type="button"
@@ -2061,9 +2704,9 @@ export function MessagingInbox() {
               <div className="relative" ref={filterMenuRef}>
                 <button
                   type="button"
-                  aria-label="Filter by channel"
+                  aria-label="Filter conversations"
                   aria-expanded={filterOpen}
-                  aria-haspopup="menu"
+                  aria-haspopup="dialog"
                   onClick={() => {
                     setFilterOpen((open) => !open);
                     setSortOpen(false);
@@ -2071,56 +2714,179 @@ export function MessagingInbox() {
                   className="relative rounded-md p-1.5 text-slate-400 hover:bg-slate-50 hover:text-slate-700"
                 >
                   <ListFilter className="h-4 w-4" strokeWidth={1.75} />
-                  {channelFilter !== "all" ? (
+                  {inboxFiltersActive(inboxFilters) ? (
                     <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-sky-600" />
                   ) : null}
                 </button>
                 {filterOpen ? (
                   <div
-                    role="menu"
-                    className="absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg shadow-slate-900/10"
+                    role="dialog"
+                    aria-label="Inbox filters"
+                    className="absolute right-0 z-20 mt-1 w-64 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg shadow-slate-900/10"
                   >
-                    {CHANNEL_FILTERS.map((item) => {
-                      const active = channelFilter === item.id;
-                      return (
+                    <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
+                      <p className="text-[13px] font-semibold text-slate-900">
+                        Filters
+                      </p>
+                      {inboxFiltersActive(inboxFilters) ? (
                         <button
-                          key={item.id}
                           type="button"
-                          role="menuitemradio"
-                          aria-checked={active}
-                          onClick={() => {
-                            setChannelFilter(item.id);
-                            setFilterOpen(false);
-                          }}
-                          className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] ${
-                            active
-                              ? "bg-sky-50 font-medium text-sky-800"
-                              : "text-slate-700 hover:bg-slate-50"
-                          }`}
+                          onClick={() => setInboxFilters(EMPTY_INBOX_FILTERS)}
+                          className="text-[12px] font-medium text-sky-700 hover:text-sky-800"
                         >
-                          {item.id === "all" ? (
-                            <Inbox className="h-3.5 w-3.5 text-slate-400" />
-                          ) : (
-                            <ChannelMark channel={item.id} />
-                          )}
-                          {item.label}
+                          Clear
                         </button>
-                      );
-                    })}
-                    <div className="my-1 border-t border-slate-100" />
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        setFilterOpen(false);
-                        void syncLinkedInInbox(true);
-                      }}
-                      disabled={liSyncing || loading}
-                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
-                      {liSyncing ? "Syncing…" : "Sync inbox"}
-                    </button>
+                      ) : null}
+                    </div>
+                    <div className="space-y-1 border-b border-slate-100 px-2 py-2">
+                      {(
+                        [
+                          {
+                            key: "needsReply" as const,
+                            label: "Needs reply",
+                            hint: "Last message was inbound",
+                          },
+                          {
+                            key: "hasBooking" as const,
+                            label: "Has booking",
+                            hint: "Linked to a booked call",
+                          },
+                          {
+                            key: "inCampaign" as const,
+                            label: "In campaign",
+                            hint: "Active LinkedIn outreach",
+                          },
+                        ] as const
+                      ).map((item) => {
+                        const active = inboxFilters[item.key];
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() =>
+                              setInboxFilters((prev) => ({
+                                ...prev,
+                                [item.key]: !prev[item.key],
+                              }))
+                            }
+                            className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left ${
+                              active
+                                ? "bg-sky-50 text-sky-900"
+                                : "text-slate-700 hover:bg-slate-50"
+                            }`}
+                          >
+                            <span
+                              className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                active
+                                  ? "border-sky-600 bg-sky-600 text-white"
+                                  : "border-slate-300 bg-white"
+                              }`}
+                              aria-hidden
+                            >
+                              {active ? (
+                                <span className="text-[10px] font-bold leading-none">
+                                  ✓
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[13px] font-medium">
+                                {item.label}
+                              </span>
+                              <span className="block text-[11px] text-slate-500">
+                                {item.hint}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="border-b border-slate-100 px-3 py-2">
+                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Last channel
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {CHANNEL_FILTERS.map((item) => {
+                          const active = inboxFilters.channel === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() =>
+                                setInboxFilters((prev) => ({
+                                  ...prev,
+                                  channel: item.id,
+                                }))
+                              }
+                              className={`rounded-md px-2 py-1 text-[12px] ${
+                                active
+                                  ? "bg-sky-50 font-medium text-sky-800 ring-1 ring-sky-200"
+                                  : "text-slate-600 hover:bg-slate-50"
+                              }`}
+                            >
+                              {item.label.replace(" channels", "")}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="px-3 py-2">
+                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        Tag
+                      </p>
+                      {availableTags.length === 0 ? (
+                        <p className="text-[12px] text-slate-500">
+                          No prospect tags yet.
+                        </p>
+                      ) : (
+                        <div className="flex max-h-28 flex-wrap gap-1 overflow-y-auto">
+                          <button
+                            type="button"
+                            aria-pressed={!inboxFilters.tag}
+                            onClick={() =>
+                              setInboxFilters((prev) => ({
+                                ...prev,
+                                tag: null,
+                              }))
+                            }
+                            className={`rounded-md px-2 py-1 text-[12px] ${
+                              !inboxFilters.tag
+                                ? "bg-sky-50 font-medium text-sky-800 ring-1 ring-sky-200"
+                                : "text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            Any
+                          </button>
+                          {availableTags.map((tag) => {
+                            const active =
+                              (inboxFilters.tag || "").toLowerCase() ===
+                              tag.toLowerCase();
+                            return (
+                              <button
+                                key={tag}
+                                type="button"
+                                aria-pressed={active}
+                                onClick={() =>
+                                  setInboxFilters((prev) => ({
+                                    ...prev,
+                                    tag: active ? null : tag,
+                                  }))
+                                }
+                                className={`rounded-md px-2 py-1 text-[12px] ${
+                                  active
+                                    ? "bg-sky-50 font-medium text-sky-800 ring-1 ring-sky-200"
+                                    : "text-slate-600 hover:bg-slate-50"
+                                }`}
+                              >
+                                {tag}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -2186,6 +2952,52 @@ export function MessagingInbox() {
                 ) : null}
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
+            <p
+              className={`min-w-0 truncate text-[12px] ${
+                liSyncNote && /failed|Connect/i.test(liSyncNote)
+                  ? "text-rose-600"
+                  : "text-slate-500"
+              }`}
+              aria-live="polite"
+            >
+              {liSyncing
+                ? "Checking for updates…"
+                : liSyncNote
+                  ? liSyncNote
+                  : !accountsLoaded
+                    ? "Checking connected channels…"
+                    : inboxAccounts.length === 0
+                      ? "Connect LinkedIn or WhatsApp to pull messages"
+                      : lastSyncedAt
+                        ? `Last synced ${lastSyncedLabel}${
+                            connectedChannelLabels ? ` · ${connectedChannelLabels}` : ""
+                          }`
+                        : "Ready to sync connected channels"}
+            </p>
+            {accountsLoaded && inboxAccounts.length === 0 ? (
+              <Link
+                href={settingsIntegrationsHref}
+                className="shrink-0 text-[12px] font-semibold text-sky-700 hover:text-sky-800"
+              >
+                Connect
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void syncLinkedInInbox(true)}
+                disabled={liSyncing}
+                className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-sky-700 hover:text-sky-800 disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`h-3 w-3 ${liSyncing ? "animate-spin" : ""}`}
+                  aria-hidden
+                />
+                {liSyncing ? "Updating" : "Sync now"}
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-4 border-b border-slate-100">
@@ -2294,20 +3106,23 @@ export function MessagingInbox() {
                 />
                 Select all
               </label>
-              {liSyncNote ? (
-                <span className="text-slate-600">{liSyncNote}</span>
-              ) : null}
               {error ? <span className="text-red-600">{error}</span> : null}
             </div>
           )}
 
           <ul className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
-            {filtered.length === 0 && !loading ? (
-              <li className="px-4 py-8 text-sm text-slate-500">
-                {inboxEmptyCopy(tab, channelFilter, Boolean(searchQuery.trim()))}
+            {loading && conversations.length === 0 ? (
+              <li className="flex items-center gap-2 px-4 py-8 text-sm text-slate-500">
+                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                Loading conversations…
               </li>
             ) : null}
-            {filtered.map((c) => {
+            {filtered.length === 0 && !loading ? (
+              <li className="px-4 py-8 text-sm text-slate-500">
+                {inboxEmptyCopy(tab, inboxFilters, Boolean(searchQuery.trim()))}
+              </li>
+            ) : null}
+            {filtered.map((c, index) => {
               const active = selected?.id === c.id;
               const unread = (c.unread_count ?? 0) > 0;
               const checked = checkedIds.has(c.id);
@@ -2316,102 +3131,122 @@ export function MessagingInbox() {
                 prospectEmail: c.prospect_email,
                 channel: c.last_channel,
               });
+              const showAgeBands = inboxSort === "newest";
+              const ageBand = showAgeBands
+                ? inboxAgeBand(c.last_message_at)
+                : null;
+              const prevBand =
+                showAgeBands && index > 0
+                  ? inboxAgeBand(filtered[index - 1].last_message_at)
+                  : null;
+              const showBandHeader = Boolean(
+                ageBand && ageBand !== prevBand
+              );
               return (
-                <li key={c.id} className="px-2.5 py-0.5">
-                  <div
-                    className={`flex items-start gap-2 rounded-lg px-2 py-2 ${
-                      checked
-                        ? "bg-sky-50 ring-1 ring-sky-300"
-                        : active
-                          ? "bg-sky-50/80"
-                          : "hover:bg-slate-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checkedIds.has(c.id)}
-                      onChange={() => toggleChecked(c.id)}
-                      className="mt-2.5 h-3.5 w-3.5 shrink-0 rounded border-slate-300 accent-sky-600"
-                      aria-label={`Select ${personName}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(c.id)}
-                      className="min-w-0 flex-1 text-left"
+                <Fragment key={c.id}>
+                  {showBandHeader ? (
+                    <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        {ageBand}
+                      </p>
+                    </li>
+                  ) : null}
+                  <li className="px-2.5 py-0.5">
+                    <div
+                      className={`flex items-start gap-2 rounded-lg px-2 py-2 ${
+                        checked
+                          ? "bg-sky-50 ring-1 ring-sky-300"
+                          : active
+                            ? "bg-sky-50/80"
+                            : "hover:bg-slate-50"
+                      }`}
                     >
-                      <div className="flex items-start gap-2.5">
-                        <AvatarWithChannels
-                          name={personName}
-                          url={c.prospect_avatar_url}
-                          size="md"
-                          channels={
-                            c.reply_channels?.length
-                              ? c.reply_channels
-                              : c.last_channel
-                                ? [c.last_channel]
-                                : []
-                          }
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-1.5">
-                            <span
-                              className={`truncate text-sm ${
-                                unread
-                                  ? "font-semibold text-slate-900"
-                                  : "font-medium text-slate-800"
-                              }`}
-                            >
-                              {personName}
+                      <input
+                        type="checkbox"
+                        checked={checkedIds.has(c.id)}
+                        onChange={() => toggleChecked(c.id)}
+                        className="mt-2.5 h-3.5 w-3.5 shrink-0 rounded border-slate-300 accent-sky-600"
+                        aria-label={`Select ${personName}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(c.id)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <AvatarWithChannels
+                            name={personName}
+                            url={c.prospect_avatar_url}
+                            size="md"
+                            channels={
+                              c.reply_channels?.length
+                                ? c.reply_channels
+                                : c.last_channel
+                                  ? [c.last_channel]
+                                  : []
+                            }
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5">
+                              <span
+                                className={`truncate text-sm ${
+                                  unread
+                                    ? "font-semibold text-slate-900"
+                                    : "font-medium text-slate-800"
+                                }`}
+                              >
+                                {personName}
+                              </span>
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs text-slate-500">
+                              {previewText(c.last_preview || c.subject, 72) ||
+                                "No messages yet"}
                             </span>
                           </span>
-                          <span className="mt-0.5 block truncate text-xs text-slate-500">
-                            {previewText(c.last_preview || c.subject, 72) ||
-                              "No messages yet"}
-                          </span>
-                        </span>
-                        <span className="flex shrink-0 flex-col items-end gap-1">
-                          <span className="text-[11px] text-slate-400">
-                            {formatShortDate(c.last_message_at)}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            {unread ? (
-                              <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
-                                {c.unread_count}
-                              </span>
-                            ) : null}
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void patchConversation(c.id, {
-                                  starred: !c.starred,
-                                });
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
+                          <span className="flex shrink-0 flex-col items-end gap-1">
+                            <span className="text-[11px] text-slate-400">
+                              {formatShortDate(c.last_message_at)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              {unread ? (
+                                <span className="inline-flex min-w-[1.15rem] items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
+                                  {c.unread_count}
+                                </span>
+                              ) : null}
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   void patchConversation(c.id, {
                                     starred: !c.starred,
                                   });
-                                }
-                              }}
-                              className={`text-sm ${
-                                c.starred
-                                  ? "text-amber-500"
-                                  : "text-slate-300 hover:text-slate-500"
-                              }`}
-                              aria-label={c.starred ? "Unstar" : "Star"}
-                            >
-                              {c.starred ? "★" : "☆"}
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    void patchConversation(c.id, {
+                                      starred: !c.starred,
+                                    });
+                                  }
+                                }}
+                                className={`text-sm ${
+                                  c.starred
+                                    ? "text-amber-500"
+                                    : "text-slate-300 hover:text-slate-500"
+                                }`}
+                                aria-label={c.starred ? "Unstar" : "Star"}
+                              >
+                                {c.starred ? "★" : "☆"}
+                              </span>
                             </span>
                           </span>
-                        </span>
-                      </div>
-                    </button>
-                  </div>
-                </li>
+                        </div>
+                      </button>
+                    </div>
+                  </li>
+                </Fragment>
               );
             })}
           </ul>
@@ -2438,14 +3273,14 @@ export function MessagingInbox() {
                         {subtitle}
                       </div>
                     ) : null}
-                    <div className="mt-0.5">
-                      <ChannelViaLine
-                        channel={speakingChannel}
-                        href={linkedIn}
-                      />
-                    </div>
                     <div className="truncate text-xs text-slate-500 xl:hidden">
-                      {[selected.prospect_email, selected.prospect_phone]
+                      {[
+                        selected.prospect_email,
+                        selected.prospect_phone
+                          ? formatPhoneDisplay(selected.prospect_phone) ??
+                            selected.prospect_phone
+                          : null,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </div>
@@ -2572,10 +3407,40 @@ export function MessagingInbox() {
                     const failed =
                       m.status === "failed" || Boolean(m.provider_error);
                     const uploading = isSending && attachments.length > 0;
+                    const messageReactions = reactionsFromMessageMetadata(
+                      m.metadata
+                    );
                     // Emails (and notes) always collapse; SMS only if very long.
                     const collapsible =
                       isComment || isEmail || body.length > 280;
                     const showFull = open || !collapsible;
+
+                    if (
+                      isStoredReactionEventMessage({
+                        body_text: m.body_text,
+                        metadata: m.metadata,
+                      })
+                    ) {
+                      const meta = m.metadata || {};
+                      const emoji =
+                        (typeof meta.reaction === "string" &&
+                          meta.reaction.trim()) ||
+                        extractReactionEmoji(m.body_text);
+                      const label = outbound ? "You reacted" : "Reacted";
+                      return (
+                        <div key={m.id} className="flex justify-center px-2">
+                          <div className="inline-flex max-w-[min(84%,36rem)] items-center gap-2 rounded-full bg-slate-100/90 px-3 py-1 text-[11px] text-slate-500">
+                            <span className="text-sm leading-none">{emoji}</span>
+                            <span className="font-medium text-slate-600">
+                              {label}
+                            </span>
+                            <span className="tabular-nums text-slate-400">
+                              {formatShortTime(m.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
 
                     if (isComment) {
                       return (
@@ -2635,6 +3500,7 @@ export function MessagingInbox() {
                               channels={replyChannels}
                             />
                           ) : null}
+                          <div className="flex min-w-0 flex-1 flex-col">
                           <div
                             className={`w-full max-w-[min(84%,36rem)] overflow-hidden rounded-2xl text-sm shadow-sm ring-1 ${
                               outbound
@@ -2776,6 +3642,11 @@ export function MessagingInbox() {
                               </div>
                             ) : null}
                           </div>
+                          <MessageReactionChips
+                            reactions={messageReactions}
+                            align={outbound ? "right" : "left"}
+                          />
+                          </div>
                           {outbound ? (
                             <Avatar
                               name={coachProfile.name}
@@ -2804,8 +3675,9 @@ export function MessagingInbox() {
                             channels={replyChannels}
                           />
                         ) : null}
+                        <div className="flex max-w-[min(70%,26rem)] flex-col">
                         <div
-                          className={`max-w-[min(70%,26rem)] rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ring-1 ${
+                          className={`rounded-2xl px-3.5 py-2.5 text-sm shadow-sm ring-1 ${
                             outbound
                               ? failed
                                 ? "rounded-br-md bg-sky-50 text-slate-900 ring-amber-300/80"
@@ -2900,6 +3772,11 @@ export function MessagingInbox() {
                             )}
                           </div>
                         </div>
+                        <MessageReactionChips
+                          reactions={messageReactions}
+                          align={outbound ? "right" : "left"}
+                        />
+                        </div>
                         {outbound ? (
                           <Avatar
                             name={coachProfile.name}
@@ -2966,7 +3843,12 @@ export function MessagingInbox() {
                     <ChannelPickerMenu
                       open={channelMenuOpen}
                       current={replyChannel}
-                      options={composerChannelOptions(selected)}
+                      options={composerChannelOptions({
+                        ...selected,
+                        prospect_email: email,
+                        prospect_phone: phone,
+                        prospect_linkedin_url: linkedIn,
+                      })}
                       onPick={(id) => {
                         setReplyChannel(id);
                         setChannelMenuOpen(false);
@@ -3022,7 +3904,12 @@ export function MessagingInbox() {
                     <ChannelPickerMenu
                       open={channelMenuOpen}
                       current={replyChannel}
-                      options={composerChannelOptions(selected)}
+                      options={composerChannelOptions({
+                        ...selected,
+                        prospect_email: email,
+                        prospect_phone: phone,
+                        prospect_linkedin_url: linkedIn,
+                      })}
                       onPick={(id) => {
                         setReplyChannel(id);
                         setChannelMenuOpen(false);
@@ -3035,15 +3922,54 @@ export function MessagingInbox() {
                       <div className="shrink-0 space-y-2 text-sm">
                         <label className="flex items-center gap-2">
                           <span className="w-20 shrink-0 text-xs text-slate-500">
-                            From name
+                            From
                           </span>
-                          <input
-                            value={fromName}
-                            onChange={(e) => setFromName(e.target.value)}
-                            placeholder="Coach name"
-                            className="flex-1 rounded-md border border-slate-200 px-2.5 py-1.5 text-sm"
-                          />
+                          <select
+                            value={
+                              emailFromAccountId ||
+                              mailingAccounts[0]?.unipile_account_id ||
+                              ""
+                            }
+                            onChange={(e) =>
+                              setEmailFromAccountId(e.target.value)
+                            }
+                            className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
+                          >
+                            {mailingAccounts.length === 0 ? (
+                              <option value="">
+                                Connected mailbox if available
+                              </option>
+                            ) : null}
+                            {mailingAccounts.map((account) => (
+                              <option
+                                key={account.unipile_account_id}
+                                value={account.unipile_account_id}
+                              >
+                                {providerLabel(account.provider)}
+                                {account.display_name
+                                  ? ` · ${account.display_name}`
+                                  : ""}
+                              </option>
+                            ))}
+                            <option value={PLATFORM_EMAIL_FROM}>
+                              Platform email (Bird)
+                              {mailingAccounts.length ? " · backup" : ""}
+                            </option>
+                          </select>
                         </label>
+                        {emailFromAccountId === PLATFORM_EMAIL_FROM ? (
+                          <label className="flex items-center gap-2">
+                            <span className="w-20 shrink-0 text-xs text-slate-500">
+                              From name
+                            </span>
+                            <input
+                              value={fromName}
+                              onChange={(e) => setFromName(e.target.value)}
+                              placeholder="Coach name"
+                              className="flex-1 rounded-md border border-slate-200 px-2.5 py-1.5 text-sm"
+                            />
+                          </label>
+                        ) : null}
                         <div className="flex items-center gap-2">
                           <span className="w-20 shrink-0 text-xs text-slate-500">
                             To
@@ -3122,6 +4048,24 @@ export function MessagingInbox() {
                         pendingFiles={pendingFiles}
                         pendingVoice={pendingVoice}
                         pendingVideo={pendingVideo}
+                        leadingTools={
+                          <ReplySnippetPicker
+                            replyChannel={replyChannel}
+                            vars={{
+                              firstName: snippetFirstName,
+                              company:
+                                subtitle ||
+                                selected?.prospect_business_name ||
+                                null,
+                              theirReply: lastInboundSnippet,
+                              coachName: coachProfile.name,
+                              assessmentUrl,
+                              reviewName: "Business Clarity Review",
+                            }}
+                            onInsert={insertSnippetText}
+                            disabled={scheduleSending}
+                          />
+                        }
                         onAddFiles={(list) => addPendingFiles(list)}
                         onRemoveFile={(id) => {
                           setPendingFiles((prev) => {
@@ -3238,9 +4182,154 @@ export function MessagingInbox() {
 
               <div className="space-y-5 border-t border-slate-100 px-4 py-4">
                 <CollapsibleDetailSection
+                  title="Contact"
+                  open={detailSectionsOpen.contact}
+                  onToggle={() => toggleDetailSection("contact")}
+                  panel
+                >
+                  {prospectDetails?.id || selected.contact_id ? (
+                    <>
+                      <ProspectContactFields
+                        values={{
+                          email: prospectDetails?.email ?? email,
+                          phone: prospectDetails?.phone ?? phone,
+                          job_title: prospectDetails?.job_title ?? null,
+                          business_name:
+                            prospectDetails?.business_name ?? subtitle,
+                          company_website:
+                            prospectDetails?.company_website ?? null,
+                          linkedin_url:
+                            prospectDetails?.linkedin_url ?? linkedIn,
+                        }}
+                        saving={savingContact}
+                        whatsappKnown={
+                          Boolean(prospectDetails?.has_whatsapp) ||
+                          replyChannels.includes("whatsapp") ||
+                          selected.last_channel === "whatsapp"
+                        }
+                        onSave={saveProspectContact}
+                      />
+                      {(prospectDetails?.id || selected.contact_id) && (
+                        <div className="mt-3">
+                          <ProspectMergeDuplicates
+                            contactId={
+                              (prospectDetails?.id || selected.contact_id)!
+                            }
+                            authHeaders={authHeaders}
+                            onMerged={() => {
+                              void loadList({ silent: true });
+                              if (selected?.id) {
+                                void loadThread(selected.id, { silent: true });
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                      <dl className="mt-3 space-y-2.5">
+                        <DetailRow label="Status">
+                          {prospectDetails?.prospect_status ? (
+                            <span className="capitalize">
+                              {prospectDetails.prospect_status.replace(
+                                /_/g,
+                                " "
+                              )}
+                            </span>
+                          ) : (
+                            <DetailEmpty />
+                          )}
+                        </DetailRow>
+                      </dl>
+                    </>
+                  ) : (
+                    <>
+                      <dl className="space-y-2.5">
+                        <DetailRow label="Email">
+                          {email ? (
+                            <a
+                              href={`mailto:${email}`}
+                              className="hover:text-sky-700"
+                            >
+                              {email}
+                            </a>
+                          ) : (
+                            <DetailEmpty />
+                          )}
+                        </DetailRow>
+                        <DetailRow label="Phone">
+                          {phone ? (
+                            <span className="inline-flex items-center gap-1.5">
+                              <a
+                                href={`tel:${phone}`}
+                                className="hover:text-sky-700"
+                              >
+                                {formatPhoneDisplay(phone) ?? phone}
+                              </a>
+                              {Boolean(prospectDetails?.has_whatsapp) ||
+                              replyChannels.includes("whatsapp") ||
+                              selected.last_channel === "whatsapp" ? (
+                                <span title="WhatsApp available">
+                                  <WhatsAppGlyph className="h-3.5 w-3.5" />
+                                  <span className="sr-only">
+                                    WhatsApp available
+                                  </span>
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : (
+                            <DetailEmpty />
+                          )}
+                        </DetailRow>
+                        <DetailRow label="Business">
+                          {subtitle?.trim() || <DetailEmpty />}
+                        </DetailRow>
+                        <DetailRow label="LinkedIn">
+                          {linkedIn ? (
+                            <a
+                              href={linkedIn}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:text-sky-700"
+                            >
+                              View profile
+                            </a>
+                          ) : (
+                            <DetailEmpty />
+                          )}
+                        </DetailRow>
+                      </dl>
+                      <p className="mt-2.5 text-xs leading-snug text-slate-500">
+                        No linked prospect record yet — fields above use inbox
+                        details only.
+                      </p>
+                    </>
+                  )}
+                </CollapsibleDetailSection>
+
+                <CollapsibleDetailSection
+                  title="Tags"
+                  open={detailSectionsOpen.tags}
+                  onToggle={() => toggleDetailSection("tags")}
+                  panel
+                >
+                  {prospectDetails?.id || selected.contact_id ? (
+                    <ProspectTagsEditor
+                      tags={prospectDetails?.tags ?? []}
+                      suggestions={coachTags}
+                      saving={savingTags}
+                      onChange={saveProspectTags}
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      Link a prospect to add tags.
+                    </p>
+                  )}
+                </CollapsibleDetailSection>
+
+                <CollapsibleDetailSection
                   title="Assessment"
                   open={detailSectionsOpen.assessment}
                   onToggle={() => toggleDetailSection("assessment")}
+                  panel
                 >
                   <dl className="space-y-2.5">
                     <DetailRow label="Boss Score">
@@ -3322,29 +4411,13 @@ export function MessagingInbox() {
                   title="Conversation"
                   open={detailSectionsOpen.conversation}
                   onToggle={() => toggleDetailSection("conversation")}
+                  panel
                 >
                   <dl className="space-y-2.5">
                     <DetailRow label="Last activity">
                       {formatShortDateTime(selected.last_message_at)}
                     </DetailRow>
                     <DetailRow label="Messages">{messages.length}</DetailRow>
-                    {email ? (
-                      <DetailRow label="Email">
-                        <a
-                          href={`mailto:${email}`}
-                          className="hover:text-sky-700"
-                        >
-                          {email}
-                        </a>
-                      </DetailRow>
-                    ) : null}
-                    {phone ? (
-                      <DetailRow label="Phone">
-                        <a href={`tel:${phone}`} className="hover:text-sky-700">
-                          {phone}
-                        </a>
-                      </DetailRow>
-                    ) : null}
                   </dl>
                 </CollapsibleDetailSection>
 
@@ -3433,11 +4506,64 @@ export function MessagingInbox() {
                   onChange={setBusinessDraft}
                   onSave={() => void saveBusinessName()}
                 />
+                {email ? (
+                  <a
+                    href={`mailto:${email}`}
+                    className="block text-sky-700 hover:text-sky-800"
+                  >
+                    {email}
+                  </a>
+                ) : null}
+                {phone ? (
+                  <a href={`tel:${phone}`} className="block text-sky-700 hover:text-sky-800">
+                    {phone}
+                  </a>
+                ) : null}
                 <div className="text-xs text-slate-400">
                   Last activity {formatShortDateTime(selected.last_message_at)}
                 </div>
               </div>
             </div>
+            {prospectDetails?.id || selected.contact_id ? (
+              <div className="mt-4 space-y-4">
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Contact
+                  </h3>
+                  <ProspectContactFields
+                    values={{
+                      email: prospectDetails?.email ?? email,
+                      phone: prospectDetails?.phone ?? phone,
+                      job_title: prospectDetails?.job_title ?? null,
+                      business_name:
+                        prospectDetails?.business_name ?? subtitle,
+                      company_website:
+                        prospectDetails?.company_website ?? null,
+                      linkedin_url:
+                        prospectDetails?.linkedin_url ?? linkedIn,
+                    }}
+                    saving={savingContact}
+                    whatsappKnown={
+                      Boolean(prospectDetails?.has_whatsapp) ||
+                      replyChannels.includes("whatsapp") ||
+                      selected.last_channel === "whatsapp"
+                    }
+                    onSave={saveProspectContact}
+                  />
+                </div>
+                <div>
+                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Tags
+                  </h3>
+                  <ProspectTagsEditor
+                    tags={prospectDetails?.tags ?? []}
+                    suggestions={coachTags}
+                    saving={savingTags}
+                    onChange={saveProspectTags}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
         </div>

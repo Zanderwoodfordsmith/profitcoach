@@ -5,10 +5,9 @@ import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import { allocateCoachSlug } from "@/lib/coachSlug";
 import { createCoachProfileAndRow } from "@/lib/createCoachAccountRecords";
 import { splitFullName } from "@/lib/splitFullName";
-import {
-  hasCalendarEmbed,
-  isCalendarSyncReady,
-} from "@/lib/ghlCalendarSync";
+import { getCoachBookingProvider } from "@/lib/booking/coachBookingProvider";
+import { nativeDiscoveryReadyByCoachIds } from "@/lib/booking/coachBookingProviderServer";
+import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
 import {
   resolveCommunityBio,
   resolveDirectoryBio,
@@ -67,7 +66,7 @@ export async function GET(request: Request) {
     const billingCols =
       "has_sales_robot_account, sales_robot_active_campaigns, sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status, membership_status, membership_interval, membership_current_period_end, stripe_subscription_id";
     const coachCore =
-      "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code";
+      "id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, booking_calendar_provider";
 
     let res = await runSelect(
       `${coachCore}, access_tier, access_tier_locked, ghl_calendar_id, ${billingCols}, ${profileFull}`
@@ -80,13 +79,13 @@ export async function GET(request: Request) {
     let accountBillingMissing = false;
     let accessTierMissing = false;
     let ghlCalendarMissing = false;
+    let bookingProviderMissing = false;
 
     if (res.error?.code === "42703") {
+      bookingProviderMissing = true;
       res = await runSelect(
-        `${coachCore}, ${billingCols}, ${profileFull}`
+        `id, slug, directory_listed, directory_level, conference_status, lead_webhook_url, crm_profile_name, crm_location_id, calendar_embed_code, access_tier, access_tier_locked, ghl_calendar_id, ${billingCols}, ${profileFull}`
       );
-      accessTierMissing = true;
-      ghlCalendarMissing = true;
     }
     if (res.error?.code === "42703") {
       res = await runSelect(
@@ -247,6 +246,10 @@ export async function GET(request: Request) {
       }
     }
 
+    const nativeDiscoveryReady = bookingProviderMissing
+      ? new Map<string, boolean>()
+      : await nativeDiscoveryReadyByCoachIds(ids);
+
     const coaches = rows.map((row) => {
       const profRaw = row.profiles as
         | Record<string, unknown>
@@ -310,24 +313,51 @@ export async function GET(request: Request) {
         crm_location_id: crmMissing
           ? null
           : (row.crm_location_id as string | null) ?? null,
-        has_calendar_embed: calendarEmbedMissing
-          ? false
-          : hasCalendarEmbed(
-              row.calendar_embed_code as string | null,
-              ghlCalendarMissing
+        booking_calendar_provider: bookingProviderMissing
+          ? "ghl"
+          : getCoachBookingProvider({
+              booking_calendar_provider: row.booking_calendar_provider as
+                | string
+                | null,
+            }),
+        ...(() => {
+          const provider = bookingProviderMissing
+            ? "ghl"
+            : getCoachBookingProvider({
+                booking_calendar_provider: row.booking_calendar_provider as
+                  | string
+                  | null,
+              });
+          const sync = buildCoachCalendarSyncFields(
+            {
+              booking_calendar_provider: provider,
+              crm_location_id: row.crm_location_id as string | null,
+              calendar_embed_code: calendarEmbedMissing
                 ? null
-                : (row.ghl_calendar_id as string | null)
-            ),
-        calendar_sync_ready: calendarEmbedMissing
-          ? false
-          : isCalendarSyncReady({
-              crmLocationId: row.crm_location_id as string | null,
-              calendarEmbedCode: row.calendar_embed_code as string | null,
-              ghlCalendarId: ghlCalendarMissing
+                : (row.calendar_embed_code as string | null),
+              ghl_calendar_id: ghlCalendarMissing
                 ? null
                 : (row.ghl_calendar_id as string | null),
-              leadWebhookUrl: row.lead_webhook_url as string | null,
-            }),
+              lead_webhook_url: webhookMissing
+                ? null
+                : (row.lead_webhook_url as string | null),
+            },
+            {
+              audience: "admin",
+              nativeDiscoveryReady:
+                provider === "native"
+                  ? nativeDiscoveryReady.get(id) === true
+                  : undefined,
+            }
+          );
+          return {
+            has_calendar_embed:
+              provider === "native"
+                ? nativeDiscoveryReady.get(id) === true
+                : sync.has_calendar_embed,
+            calendar_sync_ready: sync.calendar_sync_ready,
+          };
+        })(),
         has_lead_webhook: webhookMissing
           ? false
           : Boolean((row.lead_webhook_url as string | null)?.trim()),

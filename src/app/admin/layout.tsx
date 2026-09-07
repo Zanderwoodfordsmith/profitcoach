@@ -3,17 +3,15 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
+import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
-import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
-import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
-import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
+import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
@@ -75,6 +73,7 @@ export default function AdminLayout({
   } ${aiPanelDocked ? "md:pr-[28rem]" : ""} transition-[padding] duration-200`;
   const isMinimalWorkshopChrome = bossWorkshopPage && sidebarCollapsed;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
+  const chromeEnabled = !playbooksReader && !isMinimalWorkshopChrome;
 
   const bossWorkshopChromeValue = useMemo(
     () => ({
@@ -115,93 +114,64 @@ export default function AdminLayout({
       }`}
     >
       <UsageTracker />
-      <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
-        {playbooksReader ? null : isMinimalWorkshopChrome ? (
-          <>
-            {workshopTopRightSlot ? (
-              <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
-                <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <MobileDashboardTopBar
+      <DashboardChromeProvider
+        variant="admin"
+        signingOut={signingOut}
+        onSignOut={handleSignOut}
+        showAi={showAiSparkles}
+        aiPanelOpen={aiPanelOpen}
+        profileLoading={profileLoading}
+        onToggleAi={() => setAiOpen(!aiPanelOpen)}
+        chromeEnabled={chromeEnabled}
+      >
+        <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
+          {playbooksReader ? null : isMinimalWorkshopChrome && workshopTopRightSlot ? (
+            <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
+              <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
+            </div>
+          ) : null}
+          {!playbooksReader ? (
+            <BossProNavToggle
+              expanded={sidebarExpanded}
+              onToggle={() => setSidebarOpen((o) => !o)}
+            />
+          ) : null}
+          {sidebarMounted ? (
+            <DashboardSidebar
               variant="admin"
+              collapsed={sidebarCollapsed}
               signingOut={signingOut}
               onSignOut={handleSignOut}
             />
-            <div className="fixed right-6 top-3 z-[100] hidden items-center gap-3 md:flex">
-              {bossWorkshopPage && workshopTopRightSlot ? (
-                <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
-              ) : null}
-              <SearchTopBarTrigger className="shrink-0" />
-              <DashboardTopActions
-                variant="admin"
-                signingOut={signingOut}
-                onSignOut={handleSignOut}
-                notificationsOnly
-                className="!static !right-auto !top-auto z-0 shrink-0"
-              />
-              {showAiSparkles ? (
-                <button
-                  type="button"
-                  aria-label={aiPanelOpen ? "Close AI panel" : "Open AI panel"}
-                  title="Profit Coach AI"
-                  disabled={profileLoading}
-                  onClick={() => setAiOpen(!aiPanelOpen)}
-                  className={`rounded-full p-2 transition disabled:cursor-wait disabled:opacity-60 ${
-                    aiPanelOpen
-                      ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
-                      : "bg-white text-slate-700 hover:bg-slate-50"
-                  }`}
-                >
-                  <Sparkles className="h-6 w-6" />
-                </button>
-              ) : null}
-            </div>
-          </>
-        )}
-        {!playbooksReader ? (
-          <BossProNavToggle
-            expanded={sidebarExpanded}
-            onToggle={() => setSidebarOpen((o) => !o)}
-          />
-        ) : null}
-        {sidebarMounted ? (
-          <DashboardSidebar
-            variant="admin"
-            collapsed={sidebarCollapsed}
-            signingOut={signingOut}
-            onSignOut={handleSignOut}
-          />
-        ) : null}
-        <main
-          className={`min-w-0 w-full pt-0 ${
-            conversationsPage
-              ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px] max-md:pt-14"
-              : playbooksReader
-              ? "min-h-screen px-0 pb-10"
-              : `min-h-screen px-4 md:px-[60px] ${
-                  sidebarExpanded
-                    ? "max-md:pt-14 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "max-md:pt-14 pb-6"
-                }`
-          }`}
-        >
-          <div
-            className={`flex w-full min-w-0 flex-col ${
+          ) : null}
+          <main
+            className={`min-w-0 w-full pt-0 ${
               conversationsPage
-                ? "h-full min-h-0 gap-0"
+                ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
                 : playbooksReader
-                  ? "gap-0"
-                  : "gap-4"
+                ? "min-h-screen px-0 pb-10"
+                : `min-h-screen px-4 md:px-[60px] ${
+                    sidebarExpanded
+                      ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                      : "pb-6"
+                  }`
             }`}
           >
-            {children}
-          </div>
-        </main>
-      </BossWorkshopChromeContext.Provider>
+            <div
+              className={`flex w-full min-w-0 flex-col ${
+                conversationsPage
+                  ? "h-full min-h-0 gap-0"
+                  : playbooksReader
+                    ? "gap-0"
+                    : "gap-4"
+              }`}
+            >
+              {chromeEnabled ? <DashboardChromeFallback /> : null}
+              {children}
+            </div>
+          </main>
+        </BossWorkshopChromeContext.Provider>
+      </DashboardChromeProvider>
       <SalesNavImportToast />
       {aiPanelAvailable && aiPanelOpen ? (
         <CoachAiPanel

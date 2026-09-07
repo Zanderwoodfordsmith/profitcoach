@@ -9,16 +9,18 @@ import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { InlineEditableText } from "@/components/prospects/InlineEditableText";
 import { ProspectActivityFeed } from "@/components/prospects/ProspectActivityFeed";
+import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
 import { ProspectCrmLinkModal } from "@/components/prospects/ProspectCrmLinkModal";
+import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
 import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActionCell";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
+import { ProspectTagsEditor } from "@/components/prospects/ProspectTagsEditor";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
 import {
   buildPersonalisedAssessmentLink,
   buildPersonalisedAssessmentProLink,
 } from "@/lib/assessmentContactParams";
-import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
-import { getProspectCrmContactUrl } from "@/lib/ghlContactWebhook";
+import { getProspectCrmContactUrl } from "@/lib/crmContactUrl";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
 import {
   formatProspectPersonName,
@@ -38,7 +40,6 @@ import type {
   ProspectFieldPatch,
   UpdatedProspectFields,
 } from "@/lib/prospects/updateProspectFields";
-import { canonicalLinkedInProfileUrl } from "@/lib/salesNavigator/linkedinUrl";
 import { splitFullName } from "@/lib/splitFullName";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
@@ -66,6 +67,7 @@ export function ProspectWorkspace({ contactId }: Props) {
   const [saving, setSaving] = useState(false);
   const [crmOpen, setCrmOpen] = useState(false);
   const [glanceOpen, setGlanceOpen] = useState(false);
+  const [coachTags, setCoachTags] = useState<string[]>([]);
 
   const backHref = isAdmin ? "/admin/prospects" : "/coach/prospects";
   const pipelineHref = isAdmin ? "/admin/pipeline" : "/coach/pipeline";
@@ -103,6 +105,7 @@ export function ProspectWorkspace({ contactId }: Props) {
       const body = (await res.json().catch(() => ({}))) as {
         prospect?: ProspectRow;
         coachSlug?: string | null;
+        coachTags?: string[];
         error?: string;
       };
       if (!res.ok || !body.prospect) {
@@ -115,6 +118,33 @@ export function ProspectWorkspace({ contactId }: Props) {
       }
       setProspect(body.prospect);
       setCoachSlug(body.coachSlug ?? null);
+      setCoachTags(Array.isArray(body.coachTags) ? body.coachTags : []);
+
+      if (
+        body.prospect.phone?.trim() &&
+        body.prospect.whatsapp_on == null &&
+        !body.prospect.has_whatsapp
+      ) {
+        void (async () => {
+          const checkHeaders = await authHeaders();
+          if (!checkHeaders) return;
+          const checkRes = await fetch(
+            `/api/coach/contacts/${encodeURIComponent(body.prospect!.id)}/whatsapp-check`,
+            { method: "POST", headers: checkHeaders, body: "{}" }
+          );
+          if (!checkRes.ok) return;
+          const checkBody = (await checkRes.json().catch(() => ({}))) as {
+            has_whatsapp?: boolean;
+          };
+          if (typeof checkBody.has_whatsapp === "boolean") {
+            setProspect((prev) =>
+              prev && prev.id === body.prospect!.id
+                ? { ...prev, has_whatsapp: checkBody.has_whatsapp }
+                : prev
+            );
+          }
+        })();
+      }
     } catch {
       setError("Unable to load prospect.");
       setProspect(null);
@@ -151,6 +181,16 @@ export function ProspectWorkspace({ contactId }: Props) {
         throw new Error(body.error ?? "Unable to update prospect.");
       }
       setProspect((prev) => (prev ? applyProspectPatch(prev, body) : prev));
+      if (body.tags) {
+        setCoachTags((prev) => {
+          const have = new Set(prev.map((tag) => tag.toLowerCase()));
+          const next = [...prev];
+          for (const tag of body.tags) {
+            if (!have.has(tag.toLowerCase())) next.push(tag);
+          }
+          return next;
+        });
+      }
     } finally {
       setSaving(false);
     }
@@ -277,118 +317,6 @@ export function ProspectWorkspace({ contactId }: Props) {
               </div>
 
               <dl className="mt-5 space-y-3 border-t border-slate-100 pt-4">
-                <InlineEditableText
-                  label="Email"
-                  value={prospect.email}
-                  placeholder="Add email"
-                  type="email"
-                  saving={saving}
-                  validate={(raw) => {
-                    const trimmed = raw.trim();
-                    if (!trimmed) return "Email is required.";
-                    if (!trimmed.includes("@")) return "Enter a valid email.";
-                    return null;
-                  }}
-                  normalize={(raw) => raw.trim().toLowerCase() || null}
-                  onSave={async (next) => {
-                    await handleUpdate({ email: next });
-                  }}
-                />
-                <InlineEditableText
-                  label="Phone"
-                  value={prospect.phone}
-                  placeholder="Add phone"
-                  type="tel"
-                  saving={saving}
-                  normalize={(raw) => raw.trim() || null}
-                  onSave={async (next) => {
-                    await handleUpdate({ phone: next });
-                  }}
-                  display={(v) => formatPhoneDisplay(v)}
-                />
-                <InlineEditableText
-                  label="Business"
-                  value={prospect.business_name}
-                  placeholder="Add business"
-                  saving={saving}
-                  normalize={(raw) => normalizeProspectLabel(raw)}
-                  onSave={async (next) => {
-                    await handleUpdate({ business_name: next });
-                  }}
-                />
-                <div>
-                  <div className="text-[11px] text-slate-400">Website</div>
-                  <div className="mt-0.5 flex items-start gap-1.5">
-                    <div className="min-w-0 flex-1">
-                      <InlineEditableText
-                        value={prospect.company_website}
-                        placeholder="Add website"
-                        type="url"
-                        saving={saving}
-                        normalize={(raw) => raw.trim() || null}
-                        onSave={async (next) => {
-                          await handleUpdate({ company_website: next });
-                        }}
-                        display={(v) => (
-                          <span className="break-all text-sm text-slate-800">
-                            {v.replace(/^https?:\/\/(www\.)?/i, "")}
-                          </span>
-                        )}
-                      />
-                    </div>
-                    {prospect.company_website?.trim() ? (
-                      <a
-                        href={
-                          /^https?:\/\//i.test(prospect.company_website.trim())
-                            ? prospect.company_website.trim()
-                            : `https://${prospect.company_website.trim()}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Open website"
-                        className="mt-1 shrink-0 rounded p-1 text-slate-400 hover:bg-slate-50 hover:text-sky-700"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-400">LinkedIn</div>
-                  <div className="mt-0.5 flex items-start gap-1.5">
-                    <div className="min-w-0 flex-1">
-                      <InlineEditableText
-                        value={prospect.linkedin_url}
-                        placeholder="Add LinkedIn URL"
-                        type="url"
-                        saving={saving}
-                        normalize={(raw) => raw.trim() || null}
-                        onSave={async (next) => {
-                          await handleUpdate({ linkedin_url: next });
-                        }}
-                        display={(v) => (
-                          <span className="break-all text-sm text-slate-800">
-                            {v.replace(/^https?:\/\/(www\.)?/i, "")}
-                          </span>
-                        )}
-                      />
-                    </div>
-                    {prospect.linkedin_url?.trim() ? (
-                      <a
-                        href={
-                          canonicalLinkedInProfileUrl(prospect.linkedin_url) ??
-                          prospect.linkedin_url.trim()
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Open LinkedIn"
-                        className="mt-1 shrink-0 rounded p-1 text-slate-400 hover:bg-slate-50 hover:text-sky-700"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
                 <div>
                   <div className="text-[11px] text-slate-400">CRM</div>
                   <div className="mt-0.5">
@@ -454,8 +382,46 @@ export function ProspectWorkspace({ contactId }: Props) {
             />
           </section>
 
-          {/* Right: assessments, calls, links */}
+          {/* Right: contact, tags, assessments, calls, links */}
           <aside className="flex flex-col gap-4 lg:col-span-2 xl:col-span-1">
+            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-900">Contact</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Click a field to add or edit it.
+              </p>
+              <div className="mt-3">
+                <ProspectContactFields
+                  values={prospect}
+                  saving={saving}
+                  whatsappKnown={Boolean(prospect.has_whatsapp)}
+                  onSave={handleUpdate}
+                />
+              </div>
+            </section>
+
+            <ProspectMergeDuplicates
+              contactId={contactId}
+              authHeaders={authHeaders}
+              onMerged={() => {
+                void load();
+              }}
+            />
+
+            <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-900">Tags</h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Label this prospect. Press Enter to add.
+              </p>
+              <div className="mt-3">
+                <ProspectTagsEditor
+                  tags={prospect.tags ?? []}
+                  suggestions={coachTags}
+                  saving={saving}
+                  onChange={(tags) => handleUpdate({ tags })}
+                />
+              </div>
+            </section>
+
             <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-900">
                 Next action

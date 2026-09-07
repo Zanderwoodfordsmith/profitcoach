@@ -5,18 +5,16 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { Sparkles } from "lucide-react";
 import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { BossProNavToggle } from "@/components/layout/BossProNavToggle";
 import { AdminCoachImpersonationSwitcher } from "@/components/layout/AdminCoachImpersonationSwitcher";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
-import { DashboardTopActions } from "@/components/layout/DashboardTopActions";
-import { MobileDashboardTopBar } from "@/components/layout/MobileDashboardTopBar";
-import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
+import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { CoachAiPanel } from "@/components/profitCoachAi/CoachAiPanel";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
+import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
@@ -216,14 +214,16 @@ export default function CoachLayout({
   const shellPadClass = `${
     playbooksReader ? "pl-0" : sidebarExpanded ? "md:pl-56" : "md:pl-14"
   } ${aiPanelDocked ? "md:pr-[28rem]" : ""} transition-[padding] duration-200`;
-  const topClusterMaxW = sidebarExpanded
-    ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-15rem)]"
-    : sidebarMounted
-      ? "max-md:max-w-[calc(100vw-1.5rem)] md:max-w-[calc(100vw-4.5rem)]"
-      : "max-w-[calc(100vw-1.5rem)]";
   const isMinimalWorkshopChrome = bossWorkshopPage && sidebarCollapsed;
   const [workshopTopRightSlot, setWorkshopTopRightSlot] = useState<React.ReactNode>(null);
   const { access, hasFeature } = useCoachAccess(impersonatingCoachId);
+  const chromeEnabled = !playbooksReader && !isMinimalWorkshopChrome;
+  const avatarOverride = isImpersonatingCoach
+    ? {
+        name: coachName ?? "Coach",
+        avatarUrl: coachAvatarUrl,
+      }
+    : null;
 
   const bossWorkshopChromeValue = useMemo(
     () => ({
@@ -245,12 +245,23 @@ export default function CoachLayout({
     <div
       data-ai-docked={aiPanelDocked ? true : undefined}
       className={`group/appshell ${
-        conversationsPage ? "h-dvh overflow-hidden" : "min-h-screen overflow-x-hidden"
+        conversationsPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
         membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
     >
       <UsageTracker />
+      <DashboardChromeProvider
+        variant="coach"
+        signingOut={signingOut}
+        onSignOut={handleSignOut}
+        avatarOverride={avatarOverride}
+        showAi={showAiSparkles}
+        aiPanelOpen={aiPanelOpen}
+        profileLoading={profileLoading}
+        onToggleAi={() => setAiOpen(!aiPanelOpen)}
+        chromeEnabled={chromeEnabled}
+      >
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {playbooksReader ? (
           isImpersonatingCoach ? (
@@ -309,89 +320,31 @@ export default function CoachLayout({
               ) : null}
             </div>
           ) : null
-        ) : (
-          <>
-            <MobileDashboardTopBar
-              variant="coach"
-              signingOut={signingOut}
-              onSignOut={handleSignOut}
-              avatarOverride={
-                isImpersonatingCoach
-                  ? {
-                      name: coachName ?? "Coach",
-                      avatarUrl: coachAvatarUrl,
-                    }
-                  : null
-              }
-            />
+        ) : isImpersonatingCoach ? (
+          <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6 md:top-16">
             <div
-              className={`fixed right-3 top-3 z-[100] hidden flex-col items-end gap-2 sm:right-6 md:flex ${topClusterMaxW}`}
+              className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
+              role="status"
+              aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
             >
-              <div className="flex max-w-full items-center justify-end gap-3">
-                {bossWorkshopPage && workshopTopRightSlot ? (
-                  <div className="min-w-0 shrink text-right">{workshopTopRightSlot}</div>
-                ) : null}
-                <SearchTopBarTrigger className="shrink-0" />
-                <DashboardTopActions
-                  variant="coach"
-                  signingOut={signingOut}
-                  onSignOut={handleSignOut}
-                  notificationsOnly
-                  avatarOverride={
-                    isImpersonatingCoach
-                      ? {
-                          name: coachName ?? "Coach",
-                          avatarUrl: coachAvatarUrl,
-                        }
-                      : null
-                  }
-                  className="!static !right-auto !top-auto z-0 shrink-0"
-                />
-                {showAiSparkles ? (
-                  <button
-                    type="button"
-                    aria-label={
-                      aiPanelOpen ? "Close AI panel" : "Open AI panel"
-                    }
-                    title="Profit Coach AI"
-                    disabled={profileLoading}
-                    onClick={() => setAiOpen(!aiPanelOpen)}
-                    className={`rounded-full p-2 transition disabled:cursor-wait disabled:opacity-60 ${
-                      aiPanelOpen
-                        ? "bg-sky-100 text-sky-700 hover:bg-sky-200"
-                        : "bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <Sparkles className="h-6 w-6" />
-                  </button>
-                ) : null}
-              </div>
-            {isImpersonatingCoach ? (
-              <div
-                className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
-                role="status"
-                aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
+              <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
+                Admin
+              </span>
+              <AdminCoachImpersonationSwitcher
+                coachName={coachName}
+                accessTier={access.tier}
+                enforcementEnabled={access.enforcementEnabled}
+              />
+              <button
+                type="button"
+                onClick={handleExit}
+                className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
               >
-                <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
-                  Admin
-                </span>
-                <AdminCoachImpersonationSwitcher
-                  coachName={coachName}
-                  accessTier={access.tier}
-                  enforcementEnabled={access.enforcementEnabled}
-                />
-                <button
-                  type="button"
-                  onClick={handleExit}
-                  className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
-                >
-                  Exit
-                </button>
-              </div>
-            ) : null}
+                Exit
+              </button>
             </div>
-          </>
-        )}
+          </div>
+        ) : null}
       {!playbooksReader ? (
         <BossProNavToggle
           expanded={sidebarExpanded}
@@ -407,28 +360,21 @@ export default function CoachLayout({
           coachHasFeature={hasFeature}
           membershipTierEnforcementEnabled={access.enforcementEnabled}
           coachAccessTier={access.tier}
-          avatarOverride={
-            isImpersonatingCoach
-              ? {
-                  name: coachName ?? "Coach",
-                  avatarUrl: coachAvatarUrl,
-                }
-              : null
-          }
+          avatarOverride={avatarOverride}
         />
       ) : null}
         <main
           className={`min-w-0 w-full pt-0 ${
             conversationsPage
-              ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px] max-md:pt-14"
+              ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
               : membershipPage
               ? "min-h-screen px-0 pb-0"
               : playbooksReader
               ? "min-h-screen px-0 pb-10"
               : `min-h-screen px-4 md:px-[60px] ${
                   sidebarExpanded
-                    ? "max-md:pt-14 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                    : "max-md:pt-14 pb-6"
+                    ? "pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                    : "pb-6"
                 }`
           }`}
         >
@@ -443,10 +389,16 @@ export default function CoachLayout({
                     : "gap-4"
             }`}
           >
+            {chromeEnabled ? (
+              <DashboardChromeFallback
+                bleedInset={membershipPage ? "px-4 md:px-[60px]" : undefined}
+              />
+            ) : null}
             <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>
+      </DashboardChromeProvider>
       <SalesNavImportToast />
       {aiPanelAvailable && aiPanelOpen ? (
         <CoachAiPanel

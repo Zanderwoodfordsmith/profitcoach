@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  tryInsertContactStripping,
-  tryUpdateContactStripping,
-} from "@/lib/contactSchemaSafeInsert";
-import {
   fireLeadWebhook,
   getCoachLeadWebhookUrl,
   resolveLeadWebhookStatus,
@@ -117,48 +113,26 @@ export async function POST(request: Request) {
   const businessName = body.contact?.business_name?.trim() || null;
   const prospectFunnel = normalizeProspectFunnel(body.assessment_type);
 
-  // Upsert by (coach_id, email). Older contact rows stay the source of truth
-  // when an assessment eventually fires — same row gets updated.
-  // Select only columns we know exist on every deployment; phone is optional.
-  const { data: existing } = await supabaseAdmin
-    .from("contacts")
-    .select("id, full_name, business_name")
-    .eq("coach_id", coachId)
-    .eq("email", email)
-    .maybeSingle();
-
   let contactId: string | null = null;
-
-  if (existing?.id) {
-    contactId = existing.id as string;
-    // Only patch fields that the prospect has now provided — never blank out
-    // data we already had.
-    const patch: Record<string, unknown> = {};
-    if (fullName && (existing.full_name == null || existing.full_name === "Unknown")) {
-      patch.full_name = fullName;
-    }
-    if (phone) patch.phone = phone;
-    if (businessName && !existing.business_name) patch.business_name = businessName;
-    if (prospectFunnel) patch.prospect_funnel = prospectFunnel;
-    if (Object.keys(patch).length > 0) {
-      await tryUpdateContactStripping(contactId, patch);
-    }
-  } else {
-    const insertPayload: Record<string, unknown> = {
-      coach_id: coachId,
-      type: "prospect",
-      full_name: fullName ?? "Unknown",
+  try {
+    const { resolveOrCreateContact } = await import(
+      "@/lib/contacts/resolveOrCreateContact"
+    );
+    const result = await resolveOrCreateContact({
+      coachId,
       email,
-      business_name: businessName,
       phone,
-    };
-    if (prospectFunnel) insertPayload.prospect_funnel = prospectFunnel;
-    if (firstName) insertPayload.first_name = firstName;
-    if (lastName) insertPayload.last_name = lastName;
-    const { data: inserted } = await tryInsertContactStripping(insertPayload);
-    if (inserted?.id) {
-      contactId = inserted.id as string;
-    }
+      fullName: fullName ?? "Unknown",
+      firstName,
+      lastName,
+      businessName,
+      type: "prospect",
+      prospectSource: "lead_capture",
+      extra: prospectFunnel ? { prospect_funnel: prospectFunnel } : undefined,
+    });
+    contactId = result.contactId;
+  } catch (err) {
+    console.error("leads/capture resolveOrCreateContact:", err);
   }
 
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);

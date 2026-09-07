@@ -10,6 +10,7 @@ import {
 import {
   OUTREACH_PLAYBOOKS,
   REPLY_PLAYBOOK_SNIPPETS,
+  groupedReplySnippets,
 } from "@/lib/unipile/playbooks";
 import { buildLeadAssessmentUrl } from "@/lib/unipile/interest";
 
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
           step_count: p.steps.length,
         })),
         reply_snippets: REPLY_PLAYBOOK_SNIPPETS,
+        reply_snippet_groups: groupedReplySnippets(),
       });
     }
     const queue = await listInterestQueue(auth.coachId);

@@ -1,5 +1,4 @@
 import {
-  tryInsertContactStripping,
   tryUpdateContactStripping,
 } from "@/lib/contactSchemaSafeInsert";
 import { splitFullName } from "@/lib/splitFullName";
@@ -145,32 +144,18 @@ export function getGhlContactWebhookSecret(): string {
   );
 }
 
-export function buildCrmContactDetailUrl(
-  crmLocationId: string,
-  crmContactId: string
-): string {
-  return `https://app.procoachplatform.com/v2/location/${encodeURIComponent(
-    crmLocationId
-  )}/contacts/detail/${encodeURIComponent(crmContactId)}`;
-}
-
-export function getProspectCrmContactUrl(input: {
-  crm_location_id?: string | null;
-  crm_contact_id?: string | null;
-}): string | null {
-  const crmLocationId = input.crm_location_id?.trim();
-  const crmContactId = input.crm_contact_id?.trim();
-  if (!crmLocationId || !crmContactId) return null;
-  return buildCrmContactDetailUrl(crmLocationId, crmContactId);
-}
+export {
+  buildCrmContactDetailUrl,
+  getProspectCrmContactUrl,
+} from "@/lib/crmContactUrl";
 
 export type CreateProspectFromGhlContactResult =
   | { contactId: string; created: boolean }
   | { error: string };
 
 /**
- * Creates a new prospect when GHL originates the contact (manual add, import, etc.).
- * Requires email so the row can be deduped per coach.
+ * Creates or absorbs a prospect when GHL originates the contact.
+ * Matches LinkedIn → email → phone (phone alone is enough when email is missing).
  */
 export async function createProspectFromGhlContact(input: {
   coachId: string;
@@ -178,10 +163,10 @@ export async function createProspectFromGhlContact(input: {
 }): Promise<CreateProspectFromGhlContactResult> {
   const { coachId, parsed } = input;
 
-  if (!parsed.email) {
+  if (!parsed.email && !parsed.phone) {
     return {
       error:
-        "Email is required to create a prospect from GHL. Map contact.email in the workflow body.",
+        "Email or phone is required to create a prospect from GHL. Map contact.email or contact.phone in the workflow body.",
     };
   }
 
@@ -194,27 +179,28 @@ export async function createProspectFromGhlContact(input: {
     lastName = split.last_name;
   }
 
-  const insertPayload: Record<string, unknown> = {
-    coach_id: coachId,
-    type: "prospect",
-    full_name: fullName,
-    email: parsed.email,
-    phone: parsed.phone,
-    business_name: parsed.businessName,
-    crm_contact_id: parsed.crmContactId,
-  };
-  if (firstName) insertPayload.first_name = firstName;
-  if (lastName) insertPayload.last_name = lastName;
-
-  const { data, error } = await tryInsertContactStripping(insertPayload);
-  if (error) {
-    return { error: error.message };
+  try {
+    const { resolveOrCreateContact } = await import(
+      "@/lib/contacts/resolveOrCreateContact"
+    );
+    const result = await resolveOrCreateContact({
+      coachId,
+      email: parsed.email,
+      phone: parsed.phone,
+      fullName,
+      firstName,
+      lastName,
+      businessName: parsed.businessName,
+      crmContactId: parsed.crmContactId,
+      type: "prospect",
+      prospectSource: "ghl",
+    });
+    return { contactId: result.contactId, created: result.created };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to create prospect.",
+    };
   }
-  if (!data?.id) {
-    return { error: "Failed to create prospect." };
-  }
-
-  return { contactId: data.id, created: true };
 }
 
 export async function linkProspectCrmContactId(

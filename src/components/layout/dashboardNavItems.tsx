@@ -302,7 +302,6 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     {
       href: `${prefix}/conversations`,
       label: "Conversations",
-      adminPreview: true,
     },
     {
       href: `${prefix}/campaigns`,
@@ -317,13 +316,11 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
     items.push({
       href: "/admin/linkedin",
       label: "Content",
-      adminPreview: true,
     });
   } else {
     items.push({
       href: "/coach/linkedin",
       label: "Content",
-      adminPreview: true,
     });
   }
   items.push(

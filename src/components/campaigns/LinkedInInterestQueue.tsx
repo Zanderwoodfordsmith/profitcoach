@@ -18,6 +18,22 @@ type QueueLead = {
   linkedin_url: string | null;
 };
 
+type ReplySnippet = {
+  id: string;
+  group?: string;
+  when: string;
+  channel?: string;
+  body: string;
+  emailBody?: string;
+};
+
+type ReplySnippetGroup = {
+  id: string;
+  label: string;
+  description: string;
+  snippets: ReplySnippet[];
+};
+
 async function authHeaders(): Promise<HeadersInit | null> {
   const {
     data: { session },
@@ -40,9 +56,7 @@ export function LinkedInInterestQueue() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [snippets, setSnippets] = useState<
-    Array<{ id: string; when: string; body: string }>
-  >([]);
+  const [snippetGroups, setSnippetGroups] = useState<ReplySnippetGroup[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,7 +75,24 @@ export function LinkedInInterestQueue() {
       if (!qRes.ok) throw new Error(qBody.error || "Could not load queue.");
       setLeads(qBody.queue ?? []);
       setAssessmentUrl(qBody.assessment_url ?? null);
-      setSnippets(pBody.reply_snippets ?? []);
+      const groups = (pBody.reply_snippet_groups ?? []) as ReplySnippetGroup[];
+      if (groups.length) {
+        setSnippetGroups(groups);
+      } else {
+        const flat = (pBody.reply_snippets ?? []) as ReplySnippet[];
+        setSnippetGroups(
+          flat.length
+            ? [
+                {
+                  id: "all",
+                  label: "Reply playbook snippets",
+                  description: "",
+                  snippets: flat,
+                },
+              ]
+            : []
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Load failed.");
     } finally {
@@ -101,7 +132,46 @@ export function LinkedInInterestQueue() {
       .replace(/\{\{first_name\}\}/gi, lead.first_name || "there")
       .replace(/\{\{assessment_url\}\}/gi, assessmentUrl || "[scorecard link]")
       .replace(/\{\{review_name\}\}/gi, "Business Clarity Review")
-      .replace(/\{\{their_reply\}\}/gi, lead.interest_note || "your note");
+      .replace(/\{\{their_reply\}\}/gi, lead.interest_note || "your note")
+      .replace(/\{\{company\}\}/gi, lead.company || "business")
+      .replace(/\{\{coach_name\}\}/gi, "me");
+  }
+
+  /** Prefer groups relevant to where the lead is in the funnel. */
+  function groupsForLead(lead: QueueLead): ReplySnippetGroup[] {
+    const outcome = lead.interest_outcome;
+    const status = lead.status;
+    const prefer = new Set<string>();
+    if (
+      status === "replied" ||
+      outcome === "positive" ||
+      outcome === "soft" ||
+      status === "interested"
+    ) {
+      prefer.add("interest");
+      prefer.add("response_types");
+      prefer.add("follow_up");
+      prefer.add("scorecard");
+    }
+    if (outcome === "negative") {
+      prefer.add("response_types");
+      prefer.add("nurture_engage");
+    }
+    if (
+      status === "assessment_sent" ||
+      status === "assessment_done" ||
+      status === "call_offered"
+    ) {
+      prefer.add("scorecard");
+      prefer.add("interest");
+      prefer.add("follow_up");
+    }
+    if (!prefer.size) return snippetGroups;
+    const ranked = [
+      ...snippetGroups.filter((g) => prefer.has(g.id)),
+      ...snippetGroups.filter((g) => !prefer.has(g.id)),
+    ];
+    return ranked;
   }
 
   return (
@@ -267,36 +337,73 @@ export function LinkedInInterestQueue() {
                     ) : null}
                   </div>
                 </div>
-                {snippets.length &&
+                {snippetGroups.length &&
                 (lead.status === "interested" ||
                   lead.status === "replied" ||
                   lead.interest_outcome) ? (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-[11px] font-medium text-slate-500">
-                      Reply playbook snippets
+                      How to reply — playbook snippets
                     </summary>
-                    <ul className="mt-2 space-y-1.5">
-                      {snippets.slice(0, 6).map((s) => (
-                        <li key={s.id}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void navigator.clipboard.writeText(
-                                fillSnippet(s.body, lead)
-                              )
-                            }
-                            className="w-full rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-slate-100"
-                          >
-                            <span className="font-semibold text-slate-800">
-                              {s.when}
-                            </span>
-                            <span className="mt-0.5 block line-clamp-2 text-slate-500">
-                              {fillSnippet(s.body, lead)}
-                            </span>
-                          </button>
-                        </li>
+                    <div className="mt-2 space-y-3">
+                      {groupsForLead(lead).map((group) => (
+                        <div key={group.id}>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                            {group.label}
+                          </p>
+                          {group.description ? (
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {group.description}
+                            </p>
+                          ) : null}
+                          <ul className="mt-1.5 space-y-1.5">
+                            {group.snippets.map((s) => {
+                              const filled = fillSnippet(s.body, lead);
+                              const channelHint =
+                                s.channel && s.channel !== "any"
+                                  ? ` · ${s.channel}`
+                                  : s.emailBody
+                                    ? " · DM length"
+                                    : "";
+                              return (
+                                <li key={s.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void navigator.clipboard.writeText(filled)
+                                    }
+                                    className="w-full rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-slate-100"
+                                  >
+                                    <span className="font-semibold text-slate-800">
+                                      {s.when}
+                                      <span className="font-normal text-slate-400">
+                                        {channelHint}
+                                      </span>
+                                    </span>
+                                    <span className="mt-0.5 block line-clamp-2 text-slate-500">
+                                      {filled}
+                                    </span>
+                                  </button>
+                                  {s.emailBody ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void navigator.clipboard.writeText(
+                                          fillSnippet(s.emailBody!, lead)
+                                        )
+                                      }
+                                      className="mt-1 w-full rounded-lg border border-dashed border-slate-200 px-2.5 py-1 text-left text-[10px] text-slate-500 hover:bg-slate-50"
+                                    >
+                                      Copy email version (longer)
+                                    </button>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </details>
                 ) : null}
               </li>

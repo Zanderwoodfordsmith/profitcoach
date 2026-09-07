@@ -3,6 +3,11 @@ import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { extractGhlCalendarIdFromEmbed } from "@/lib/extractGhlCalendarIdFromEmbed";
 import { validateCrmLocationId } from "@/lib/ghlCalendarSync";
 import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
+import {
+  isBookingCalendarProvider,
+  type BookingCalendarProvider,
+} from "@/lib/booking/coachBookingProvider";
+import { ensureNativeDiscoveryReady } from "@/lib/booking/bookingService";
 import { syncCoachActionAutoComplete } from "@/lib/actionPlans/syncAutoComplete";
 import { mergeCoachAiContext } from "@/lib/profitCoachAi/loadCoachPromptContext";
 import type { CoachAiContext } from "@/lib/profitCoachAi/types";
@@ -138,13 +143,24 @@ export async function GET(request: Request) {
     let coachRowResult = await supabaseAdmin
       .from("coaches")
       .select(
-        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id"
+        "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id, booking_calendar_provider"
       )
       .eq("id", coachId)
       .maybeSingle();
     let webhookColumnMissing = false;
     let calendarEmbedColumnMissing = false;
     let crmLocationColumnMissing = false;
+    let bookingProviderColumnMissing = false;
+    if (coachRowResult.error?.code === "42703") {
+      bookingProviderColumnMissing = true;
+      coachRowResult = await supabaseAdmin
+        .from("coaches")
+        .select(
+          "slug, directory_listed, directory_level, lead_webhook_url, calendar_embed_code, crm_profile_name, crm_location_id, ghl_calendar_id"
+        )
+        .eq("id", coachId)
+        .maybeSingle();
+    }
     if (coachRowResult.error?.code === "42703") {
       coachRowResult = await supabaseAdmin
         .from("coaches")
@@ -235,7 +251,9 @@ export async function GET(request: Request) {
             ? prof.landing_variant_preference
             : null,
         account_email,
-        ...buildCoachCalendarSyncFields(null),
+        ...buildCoachCalendarSyncFields({
+          booking_calendar_provider: "ghl",
+        }),
       });
     }
     if (coachErr) {
@@ -317,15 +335,25 @@ export async function GET(request: Request) {
       ...buildCoachCalendarSyncFields(
         crmLocationColumnMissing
           ? {
+              booking_calendar_provider: bookingProviderColumnMissing
+                ? "ghl"
+                : (coachRow as { booking_calendar_provider?: string | null } | null)
+                    ?.booking_calendar_provider,
               calendar_embed_code: calendarEmbedColumnMissing
                 ? null
                 : (coachRow as { calendar_embed_code?: string | null } | null)
                     ?.calendar_embed_code ?? null,
+              lead_webhook_url: webhookColumnMissing
+                ? null
+                : (coachRow as { lead_webhook_url?: string | null } | null)
+                    ?.lead_webhook_url ?? null,
             }
           : (coachRow as {
+              booking_calendar_provider?: string | null;
               calendar_embed_code?: string | null;
               crm_location_id?: string | null;
               ghl_calendar_id?: string | null;
+              lead_webhook_url?: string | null;
             } | null)
       ),
     });
@@ -368,6 +396,8 @@ type PatchBody = {
   lead_webhook_url?: string | null;
   /** Booking calendar embed HTML shown on post-assessment report page. */
   calendar_embed_code?: string | null;
+  /** native = Profit Coach calendars; ghl = CRM embed. */
+  booking_calendar_provider?: BookingCalendarProvider | null;
   /** Allowlisted keys only; sanitized server-side (see landingCopy.ts). */
   landing_copy_overrides?: Record<string, unknown> | null;
   /** Reserved for future funnel routing; /score currently always opens landing D. */
@@ -603,6 +633,16 @@ export async function PATCH(request: Request) {
     }
   }
 
+  if (body.booking_calendar_provider !== undefined) {
+    if (!isBookingCalendarProvider(body.booking_calendar_provider)) {
+      return NextResponse.json(
+        { error: "booking_calendar_provider must be native or ghl." },
+        { status: 400 }
+      );
+    }
+    coachUpdates.booking_calendar_provider = body.booking_calendar_provider;
+  }
+
   if (body.landing_copy_overrides !== undefined) {
     if (body.landing_copy_overrides === null) {
       updates.landing_copy_overrides = {};
@@ -679,10 +719,17 @@ export async function PATCH(request: Request) {
         coachUpdates,
         "calendar_embed_code"
       );
+      const includesBookingProvider = Object.prototype.hasOwnProperty.call(
+        coachUpdates,
+        "booking_calendar_provider"
+      );
       let msg: string;
       let status = 500;
       if (coachUpdateError.code === "42703") {
-        if (includesWebhook && includesCalendarEmbed) {
+        if (includesBookingProvider) {
+          msg =
+            "Booking calendar provider column is missing. Deploy the latest database migration.";
+        } else if (includesWebhook && includesCalendarEmbed) {
           msg =
             "Coach settings columns are missing. Deploy the latest database migrations.";
         } else if (includesWebhook) {
@@ -707,6 +754,14 @@ export async function PATCH(request: Request) {
           "Could not update directory settings";
       }
       return NextResponse.json({ error: msg }, { status });
+    }
+
+    if (coachUpdates.booking_calendar_provider === "native") {
+      try {
+        await ensureNativeDiscoveryReady(coachId);
+      } catch (seedErr) {
+        console.warn("coach/profile native discovery seed failed:", seedErr);
+      }
     }
   }
 
@@ -813,7 +868,8 @@ export async function PATCH(request: Request) {
     body.calendar_embed_code !== undefined ||
     body.lead_webhook_url !== undefined ||
     body.crm_profile_name !== undefined ||
-    body.crm_location_id !== undefined;
+    body.crm_location_id !== undefined ||
+    body.booking_calendar_provider !== undefined;
   if (autoCompleteFieldsChanged) {
     try {
       await syncCoachActionAutoComplete(coachId);

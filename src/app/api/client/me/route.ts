@@ -104,16 +104,26 @@ export async function GET(request: Request) {
 
   let coachSlug: string | null = null;
   let calendarEmbedCode: string | null = null;
+  let bookingCalendarProvider: "native" | "ghl" = "ghl";
+  let bookingCalendarSlug: string | null = null;
   if (resolvedContact.coach_id) {
     const { data: coachRow } = await supabaseAdmin
       .from("coaches")
-      .select("slug, calendar_embed_code")
+      .select("slug, calendar_embed_code, booking_calendar_provider")
       .eq("id", resolvedContact.coach_id)
       .maybeSingle();
     coachSlug = coachRow?.slug ?? null;
     calendarEmbedCode =
       (coachRow as { calendar_embed_code?: string | null } | null)
         ?.calendar_embed_code ?? null;
+    bookingCalendarProvider =
+      (coachRow as { booking_calendar_provider?: string | null } | null)
+        ?.booking_calendar_provider === "native"
+        ? "native"
+        : "ghl";
+    if (bookingCalendarProvider === "native") {
+      bookingCalendarSlug = "discovery";
+    }
   }
   if (!coachSlug) {
     coachSlug = "BCA";
@@ -143,6 +153,8 @@ export async function GET(request: Request) {
     },
     coach_slug: coachSlug,
     coach_calendar_embed_code: calendarEmbedCode,
+    booking_calendar_provider: bookingCalendarProvider,
+    booking_calendar_slug: bookingCalendarSlug,
     assessment: latest
       ? {
           id: latest.id,

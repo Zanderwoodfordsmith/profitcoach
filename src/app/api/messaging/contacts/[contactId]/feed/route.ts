@@ -10,7 +10,10 @@ async function resolveAccess(request: Request): Promise<
 > {
   const admin = await requireAdmin(request);
   if (admin.error === null && admin.userId) {
-    return { error: null, coachId: null };
+    const impersonateId = request.headers
+      .get("x-impersonate-coach-id")
+      ?.trim();
+    return { error: null, coachId: impersonateId || null };
   }
   const coach = await requireCoachRequest(request);
   if (coach.error || !coach.userId) {
@@ -77,7 +80,7 @@ export async function GET(
     const { data: messageRows } = await supabaseAdmin
       .from("messaging_messages")
       .select(
-        "id, conversation_id, channel, direction, status, subject, body_text, from_address, to_address, provider_error, created_at"
+        "id, conversation_id, channel, direction, status, subject, body_text, from_address, to_address, provider_error, metadata, created_at"
       )
       .in("conversation_id", conversationIds)
       .order("created_at", { ascending: true });

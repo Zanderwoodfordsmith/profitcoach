@@ -49,6 +49,7 @@ export type PublicBossProDashboardPayload = {
   coach_slug: string;
   coach_name: string | null;
   coach_calendar_embed_code: string | null;
+  booking_calendar_provider: "native" | "ghl";
   business_slug: string;
   contact: {
     full_name: string;
@@ -115,7 +116,7 @@ export async function loadPublicBossProDashboard(params: {
 
   const { data: coachRow, error: coachError } = await supabaseAdmin
     .from("coaches")
-    .select("slug, calendar_embed_code, profiles(full_name)")
+    .select("slug, calendar_embed_code, booking_calendar_provider, profiles(full_name)")
     .eq("id", coachId)
     .maybeSingle();
 
@@ -159,6 +160,11 @@ export async function loadPublicBossProDashboard(params: {
       coach_name: profiles?.full_name?.trim() || null,
       coach_calendar_embed_code:
         (coachRow?.calendar_embed_code as string | null)?.trim() || null,
+      booking_calendar_provider:
+        (coachRow as { booking_calendar_provider?: string | null } | null)
+          ?.booking_calendar_provider === "native"
+          ? "native"
+          : "ghl",
       business_slug: expectedBusinessSlug,
       contact: {
         full_name: (contactRow.full_name as string)?.trim() || "Client",

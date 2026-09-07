@@ -61,6 +61,27 @@
         ],
         "createdAt": "2026-09-02T16:08:23.382Z",
         "reason": "Pre-existing MessagingInbox: dark slate text on light sky/white bubbles and icon buttons; gray-on-color false positive for this established pattern"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-700 hover:bg-sky-50/80",
+        "createdAt": "2026-09-05T07:45:24.837Z",
+        "reason": "Pre-existing notification filter menu: slate text on white; sky tint is hover-only, not a colored surface."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "bg-amber-100 text-slate-900",
+        "createdAt": "2026-09-05T07:45:24.969Z",
+        "reason": "Pre-existing selected filter row: slate-900 on amber-100 is intentional high-contrast selection, not washed-out gray-on-color."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/layout/DashboardTopActions.tsx"
+        ],
+        "createdAt": "2026-09-05T07:45:56.087Z",
+        "reason": "Pre-existing notification dropdown: slate text on white/amber-100 selection rows; detector false-positive blocks unrelated embedded-chrome edits."
       }
     ]
   }

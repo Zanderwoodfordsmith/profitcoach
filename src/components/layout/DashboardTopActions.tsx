@@ -47,6 +47,8 @@ type DashboardTopActionsProps = {
   className?: string;
   /** Mobile top bar: bell only (account is in bottom nav). */
   notificationsOnly?: boolean;
+  /** Inside StickyPageHeader — static flex, no floating fixed position. */
+  embedded?: boolean;
 };
 
 function NotificationReadToggle({
@@ -119,6 +121,7 @@ export function DashboardTopActions({
   avatarOverride,
   className,
   notificationsOnly = false,
+  embedded = false,
 }: DashboardTopActionsProps) {
   const { profile, profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
@@ -770,7 +773,11 @@ export function DashboardTopActions({
 
   return (
     <div
-      className={`fixed right-6 top-3 z-[90] flex items-center gap-3 ${className ?? ""}`}
+      className={
+        embedded
+          ? `relative flex items-center gap-2 ${className ?? ""}`
+          : `fixed right-6 top-3 z-[90] flex items-center gap-3 ${className ?? ""}`
+      }
     >
       <div className="relative" ref={notificationsRef}>
         <button
@@ -780,7 +787,11 @@ export function DashboardTopActions({
             setNotificationsOpen((o) => !o);
             setAvatarMenuOpen(false);
           }}
-          className="relative rounded-full bg-white p-2 text-slate-700 transition hover:bg-slate-50"
+          className={`relative rounded-full p-2 text-slate-700 transition ${
+            embedded
+              ? "bg-transparent hover:bg-slate-50"
+              : "bg-white hover:bg-slate-50"
+          }`}
         >
           <Bell className="h-6 w-6" />
           {unreadCount > 0 ? (

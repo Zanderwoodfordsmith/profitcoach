@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CalendarEmbed } from "@/components/CalendarEmbed";
+import { CoachPublicBookingSurface } from "@/components/booking/CoachPublicBookingSurface";
 import { areaHeroGradient } from "@/components/playbooks/PlaybookCard";
 import { BossWheel } from "@/components/BossCharts";
 import { ScorecardPreviewCoachSwitcher } from "@/components/scorecard/ScorecardPreviewCoachSwitcher";
@@ -514,9 +514,6 @@ export function ReportV3({
 }) {
   const [wheelColorScheme] = useWheelColorScheme();
   const [wheelViewMode] = useWheelViewMode();
-  const [calendarEmbedCode, setCalendarEmbedCode] = useState<string | null>(
-    variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
-  );
   const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const [activePillar, setActivePillar] = useState<PillarTabKey>("foundation");
 
@@ -550,25 +547,10 @@ export function ReportV3({
     let cancelled = false;
 
     async function load() {
-      const [calendarRes, profileRes] = await Promise.all([
-        fetch(`/api/public/coaches/${encodeURIComponent(coachSlugParam)}/calendar`),
-        fetch(`/api/coach-by-slug?slug=${encodeURIComponent(coachSlugParam)}`),
-      ]);
+      const profileRes = await fetch(
+        `/api/coach-by-slug?slug=${encodeURIComponent(coachSlugParam)}`
+      );
       if (cancelled) return;
-
-      if (!calendarRes.ok) {
-        setCalendarEmbedCode(
-          variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
-        );
-      } else {
-        const data = (await calendarRes.json().catch(() => ({}))) as {
-          calendar_embed_code?: string | null;
-        };
-        setCalendarEmbedCode(
-          data?.calendar_embed_code ??
-            (variant === "preview" ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null)
-        );
-      }
 
       if (profileRes.ok) {
         const data = (await profileRes.json().catch(() => null)) as {
@@ -598,7 +580,7 @@ export function ReportV3({
     return () => {
       cancelled = true;
     };
-  }, [coachSlugParam, variant]);
+  }, [coachSlugParam]);
 
   /* Stats */
   const criticalCount = breakdown.red;
@@ -951,27 +933,17 @@ export function ReportV3({
                 what to fix, in what order, and how.
               </p>
 
-              {calendarEmbedCode ? (
-                <div className="relative mt-6 rounded-2xl bg-white p-3 shadow-inner">
-                  <CalendarEmbed
-                    embedCode={calendarEmbedCode}
-                    contact={calendarContact}
-                  />
-                </div>
-              ) : (
-                <div className="relative mt-6 rounded-2xl border border-white/15 bg-white/5 p-4 backdrop-blur-sm">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
-                    Calendar embed slot
-                  </p>
-                  <p className="mt-1 text-sm text-white/80">
-                    Pass{" "}
-                    <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs">
-                      ?coach=BCA
-                    </code>{" "}
-                    on the URL to load the coach&rsquo;s embedded calendar here.
-                  </p>
-                </div>
-              )}
+              <div className="relative mt-6 rounded-2xl bg-white p-3 shadow-inner">
+                <CoachPublicBookingSurface
+                  coachSlug={coachSlugParam}
+                  contact={calendarContact}
+                  fallbackEmbedCode={
+                    variant === "preview"
+                      ? PRIMARY_COACH_CALENDAR_EMBED_CODE
+                      : null
+                  }
+                />
+              </div>
 
               <div className="relative mt-6 flex flex-wrap gap-3">
                 <Link

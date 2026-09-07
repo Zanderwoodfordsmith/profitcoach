@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  PRIMARY_COACH_CALENDAR_EMBED_CODE,
-  PRIMARY_COACH_SLUG_FALLBACK,
-} from "@/lib/primaryCoach";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { resolvePublicBookingSurface } from "@/lib/booking/coachBookingProviderServer";
 
 export async function GET(
   _request: Request,
@@ -13,32 +9,37 @@ export async function GET(
   const cleanSlug = slug?.trim();
 
   if (!cleanSlug) {
-    return NextResponse.json({ calendar_embed_code: null }, { status: 200 });
+    return NextResponse.json(
+      {
+        provider: "ghl",
+        calendar_embed_code: null,
+        coach_slug: null,
+        calendar_slug: null,
+      },
+      { status: 200 }
+    );
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("coaches")
-    .select("calendar_embed_code")
-    .eq("slug", cleanSlug)
-    .maybeSingle();
+  try {
+    const surface = await resolvePublicBookingSurface({ slug: cleanSlug });
+    if (!surface) {
+      return NextResponse.json(
+        {
+          provider: "ghl",
+          calendar_embed_code: null,
+          coach_slug: cleanSlug,
+          calendar_slug: null,
+        },
+        { status: 200 }
+      );
+    }
 
-  if (error) {
+    return NextResponse.json(surface);
+  } catch (err) {
+    console.error("public coaches calendar:", err);
     return NextResponse.json(
       { error: "Could not load calendar embed." },
       { status: 500 }
     );
   }
-
-  const storedEmbed =
-    (data as { calendar_embed_code?: string | null } | null)
-      ?.calendar_embed_code ?? null;
-
-  const isPrimaryCoach =
-    cleanSlug.toLowerCase() === PRIMARY_COACH_SLUG_FALLBACK.toLowerCase();
-
-  return NextResponse.json({
-    calendar_embed_code:
-      storedEmbed ??
-      (isPrimaryCoach ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null),
-  });
 }

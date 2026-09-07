@@ -11,9 +11,11 @@ import { deriveCurrentLevelId, isValidLadderLevelId } from "@/lib/ladder";
 import { defaultMonthlyIncomeForLevelId } from "@/lib/ladderIncomeGoal";
 import {
   hasCalendarEmbed,
-  isCalendarSyncReady,
   validateCrmLocationId,
 } from "@/lib/ghlCalendarSync";
+import { getCoachBookingProvider } from "@/lib/booking/coachBookingProvider";
+import { isNativeDiscoveryReady } from "@/lib/booking/coachBookingProviderServer";
+import { buildCoachCalendarSyncFields } from "@/lib/coachProfileCalendarSync";
 import type { PaymentForBillingKind } from "@/lib/paymentBillingKind";
 import {
   resolveCommunityBio,
@@ -57,7 +59,7 @@ export async function GET(
       "profiles!inner(full_name, coach_business_name, avatar_url, linkedin_url, bio, community_bio, directory_summary, directory_bio, ladder_goal_level, ladder_goal_target_date, created_at, disco_community_joined_on, coaching_income_reported_2024)";
     const coachSelect = `
       id, slug, directory_listed, directory_level, conference_status, lead_webhook_url,
-      crm_profile_name, crm_location_id, calendar_embed_code, access_tier, access_tier_locked,
+      crm_profile_name, crm_location_id, calendar_embed_code, booking_calendar_provider, access_tier, access_tier_locked,
       ghl_calendar_id, has_sales_robot_account, sales_robot_active_campaigns,
       sales_robot_paying_accounts, has_profit_coach_email_account, recurring_payment_status,
       stripe_customer_id, stripe_subscription_id, membership_status, membership_interval,
@@ -137,6 +139,25 @@ export async function GET(
       (payment) => payment.status === "succeeded"
     ) as PaymentForBillingKind[];
 
+    const bookingProvider = getCoachBookingProvider({
+      booking_calendar_provider: (row as { booking_calendar_provider?: string | null })
+        .booking_calendar_provider,
+    });
+    const nativeReady =
+      bookingProvider === "native"
+        ? await isNativeDiscoveryReady(coachId)
+        : false;
+    const calendarSync = buildCoachCalendarSyncFields(
+      {
+        booking_calendar_provider: bookingProvider,
+        crm_location_id: row.crm_location_id as string | null,
+        calendar_embed_code: row.calendar_embed_code as string | null,
+        ghl_calendar_id: (row.ghl_calendar_id as string | null) ?? null,
+        lead_webhook_url: row.lead_webhook_url as string | null,
+      },
+      { audience: "admin", nativeDiscoveryReady: nativeReady }
+    );
+
     const coach = {
       id: row.id as string,
       slug: row.slug as string,
@@ -181,16 +202,15 @@ export async function GET(
       conference_status: (row.conference_status as string | null) ?? null,
       crm_profile_name: (row.crm_profile_name as string | null) ?? null,
       crm_location_id: (row.crm_location_id as string | null) ?? null,
-      has_calendar_embed: hasCalendarEmbed(
-        row.calendar_embed_code as string | null,
-        (row.ghl_calendar_id as string | null) ?? null
-      ),
-      calendar_sync_ready: isCalendarSyncReady({
-        crmLocationId: row.crm_location_id as string | null,
-        calendarEmbedCode: row.calendar_embed_code as string | null,
-        ghlCalendarId: (row.ghl_calendar_id as string | null) ?? null,
-        leadWebhookUrl: row.lead_webhook_url as string | null,
-      }),
+      booking_calendar_provider: bookingProvider,
+      has_calendar_embed:
+        bookingProvider === "native"
+          ? nativeReady
+          : hasCalendarEmbed(
+              row.calendar_embed_code as string | null,
+              (row.ghl_calendar_id as string | null) ?? null
+            ),
+      calendar_sync_ready: calendarSync.calendar_sync_ready,
       has_lead_webhook: Boolean((row.lead_webhook_url as string | null)?.trim()),
       has_community_bio: Boolean(resolveCommunityBio(bioFields)),
       has_directory_summary: Boolean(resolveDirectorySummary(bioFields)),

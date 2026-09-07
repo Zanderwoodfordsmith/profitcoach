@@ -32,6 +32,8 @@ type ContactRecord = {
   created_at?: string | null;
   prospect_funnel?: string | null;
   prospect_source?: string | null;
+  prospect_tags?: string[] | null;
+  whatsapp_on?: boolean | null;
 };
 
 /** Unenriched prospect rows for fast list paint; enrich later by id. */
@@ -80,6 +82,9 @@ export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+      tags: Array.isArray(contact.prospect_tags) ? contact.prospect_tags : [],
+      has_whatsapp: contact.whatsapp_on === true,
+      whatsapp_on: contact.whatsapp_on ?? null,
     };
   });
 }
@@ -98,6 +103,7 @@ export async function enrichProspectRows(
     pastCallByContact,
     nextActionByContact,
     fallbackPhonesByContact,
+    whatsappContactIds,
   ] = await Promise.all([
     loadLatestScorecardByContactId(supabase, contactIds),
     loadLatestPremiumDiagnosticByContactId(supabase, contactIds),
@@ -106,6 +112,7 @@ export async function enrichProspectRows(
     loadLatestPastCallsByContactId(supabase, contactIds),
     loadProspectNextActionsForContacts(supabase, contacts),
     loadFallbackPhonesByContactId(supabase, contacts),
+    loadWhatsAppContactIds(supabase, contactIds),
   ]);
 
   return contacts.map((contact) => {
@@ -182,6 +189,31 @@ export async function enrichProspectRows(
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+      tags: Array.isArray(contact.prospect_tags) ? contact.prospect_tags : [],
+      has_whatsapp:
+        contact.whatsapp_on === true || whatsappContactIds.has(contact.id),
+      whatsapp_on:
+        contact.whatsapp_on === true || whatsappContactIds.has(contact.id)
+          ? true
+          : (contact.whatsapp_on ?? null),
     };
   });
+}
+
+async function loadWhatsAppContactIds(
+  supabase: SupabaseClient,
+  contactIds: string[]
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+  if (!contactIds.length) return ids;
+  const { data } = await supabase
+    .from("messaging_conversations")
+    .select("contact_id")
+    .in("contact_id", contactIds)
+    .eq("last_channel", "whatsapp");
+  for (const row of data ?? []) {
+    const id = row.contact_id as string | null;
+    if (id) ids.add(id);
+  }
+  return ids;
 }

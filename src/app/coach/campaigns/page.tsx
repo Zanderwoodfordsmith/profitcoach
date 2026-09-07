@@ -8,7 +8,7 @@ import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 export default function CoachCampaignsPage() {
   return (
     <DashboardPageSection
-      contentMaxWidthClass="max-w-6xl"
+      contentMaxWidthClass="max-w-7xl"
       header={
         <StickyPageHeader
           title="Get Clients"

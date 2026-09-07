@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Check } from "lucide-react";
 import { Lato, Montserrat } from "next/font/google";
-import { CalendarEmbed } from "@/components/CalendarEmbed";
+import { CoachPublicBookingSurface } from "@/components/booking/CoachPublicBookingSurface";
 import type { DoubleProfitsCoach } from "@/lib/getDoubleProfitsCoach";
 import { PAM_CALENDAR_EMBED_CODE } from "@/lib/doubleProfitsLandingCopy";
 
@@ -58,36 +57,6 @@ function ClaimButton({
 
 export function DoubleProfitsLanding({ coach }: DoubleProfitsLandingProps) {
   const { copy } = coach;
-  const [calendarEmbed, setCalendarEmbed] = useState<string | null>(
-    coach.calendarEmbedCode
-  );
-
-  useEffect(() => {
-    if (coach.calendarEmbedCode) {
-      setCalendarEmbed(coach.calendarEmbedCode);
-      return;
-    }
-
-    let cancelled = false;
-    void fetch(`/api/public/coaches/${encodeURIComponent(coach.slug)}/calendar`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { calendar_embed_code?: string | null } | null) => {
-        if (cancelled) return;
-        setCalendarEmbed(
-          data?.calendar_embed_code ??
-            (coach.slug === "pam" ? PAM_CALENDAR_EMBED_CODE : null)
-        );
-      })
-      .catch(() => {
-        if (!cancelled && coach.slug === "pam") {
-          setCalendarEmbed(PAM_CALENDAR_EMBED_CODE);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [coach.calendarEmbedCode, coach.slug]);
 
   return (
     <div
@@ -142,13 +111,14 @@ export function DoubleProfitsLanding({ coach }: DoubleProfitsLandingProps) {
             className="order-1 scroll-mt-6 lg:order-2 lg:sticky lg:top-6"
           >
             <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-              {calendarEmbed ? (
-                <CalendarEmbed embedCode={calendarEmbed} />
-              ) : (
-                <div className="flex min-h-[520px] items-center justify-center p-8 text-center text-sm text-slate-500">
-                  Loading calendar…
-                </div>
-              )}
+              <CoachPublicBookingSurface
+                coachSlug={coach.slug}
+                fallbackEmbedCode={
+                  coach.calendarEmbedCode ??
+                  (coach.slug === "pam" ? PAM_CALENDAR_EMBED_CODE : null)
+                }
+                embedded={false}
+              />
             </div>
           </div>
         </div>

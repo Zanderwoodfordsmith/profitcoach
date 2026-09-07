@@ -32,6 +32,8 @@ export async function loadEnrichedProspectById(
     created_at: string;
     prospect_funnel: string | null;
     prospect_source: string | null;
+    prospect_tags: string[] | null;
+    whatsapp_on?: boolean | null;
   }>(
     async (columns) => {
       let query = supabaseAdmin
@@ -46,7 +48,7 @@ export async function loadEnrichedProspectById(
       return query;
     },
     "id, full_name, email, business_name, job_title, prospect_status, type, coach_id, created_at",
-    ["crm_contact_id", "prospect_funnel", "linkedin_url", "company_website", "prospect_source"]
+    ["crm_contact_id", "prospect_funnel", "linkedin_url", "company_website", "prospect_source", "prospect_tags", "whatsapp_on"]
   );
 
   if (error || !contacts?.length) {
@@ -100,6 +102,8 @@ export async function loadEnrichedProspectById(
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+      prospect_tags: contact.prospect_tags ?? [],
+      whatsapp_on: contact.whatsapp_on ?? null,
     },
   ]);
 

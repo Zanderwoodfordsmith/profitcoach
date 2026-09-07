@@ -270,7 +270,7 @@ export async function removeOutreachAccount(
         .update({ status: "cancelled", last_error: "LinkedIn disconnected" })
         .eq("coach_id", coachId)
         .in("campaign_id", campaignIds)
-        .eq("status", "pending");
+        .in("status", ["pending", "awaiting_coach"]);
     }
   }
 

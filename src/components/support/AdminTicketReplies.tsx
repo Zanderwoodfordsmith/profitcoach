@@ -1,7 +1,7 @@
 "use client";
 
 import { Send, Shield } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommentAttachButton,
   CommentImagePreviews,
@@ -13,6 +13,7 @@ import { profileInitialsFromName } from "@/lib/communityProfile";
 import { uploadCommunityCommentImageFile } from "@/lib/communityCommentMedia";
 import { parseSupportReplyMedia } from "@/lib/support/supportTicketMedia";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
   SUPPORT_AUTHOR_SELECT,
   authorDisplayName,
@@ -40,8 +41,10 @@ export function AdminTicketReplies({
   const [pendingImages, setPendingImages] = useState<PendingCommentImage[]>([]);
   const [busy, setBusy] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const loadGenerationRef = useRef(0);
 
   const loadReplies = useCallback(async () => {
+    const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError(null);
     const { data, error: queryError } = await supabaseClient
@@ -60,8 +63,10 @@ export function AdminTicketReplies({
       )
       .eq("report_id", reportId)
       .order("created_at", { ascending: true });
+    if (generation !== loadGenerationRef.current) return;
 
     if (queryError) {
+      if (isSupabaseAbortError(queryError)) return;
       setReplies([]);
       setError(queryError.message);
       setLoading(false);
@@ -85,6 +90,9 @@ export function AdminTicketReplies({
 
   useEffect(() => {
     void loadReplies();
+    return () => {
+      loadGenerationRef.current += 1;
+    };
   }, [loadReplies]);
 
   useEffect(() => {

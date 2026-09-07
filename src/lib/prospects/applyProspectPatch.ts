@@ -22,5 +22,8 @@ export function applyProspectPatch(
     status: body.status,
     next_action: body.next_action,
     crm_contact_id: body.crm_contact_id,
+    tags: body.tags ?? row.tags ?? [],
+    has_whatsapp:
+      body.has_whatsapp !== undefined ? body.has_whatsapp : row.has_whatsapp,
   };
 }

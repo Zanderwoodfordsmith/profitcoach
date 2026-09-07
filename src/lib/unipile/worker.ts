@@ -1,5 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
+  preferLinkedInUrl,
+} from "@/lib/contacts/linkedinIdentity";
+import {
   resolveUnipileUser,
   sendUnipileChatMessage,
   sendUnipileInvitation,
@@ -9,7 +12,10 @@ import {
   listUnipileUserPosts,
 } from "@/lib/unipile/client";
 import { buildMessageBody } from "@/lib/unipile/campaigns";
-import { linkedInPublicIdentifier } from "@/lib/unipile/linkedinUrl";
+import {
+  hrefFromUnipileLinkedIn,
+  linkedInPublicIdentifier,
+} from "@/lib/unipile/linkedinUrl";
 import {
   extractUnipileProfileFields,
   leadFieldsIncomplete,
@@ -80,7 +86,15 @@ async function resolveProviderId(
   };
 
   const needsProfile =
-    !lead.linkedin_provider_id || leadFieldsIncomplete(enriched);
+    !lead.linkedin_provider_id ||
+    leadFieldsIncomplete(enriched) ||
+    // Also resolve when we only have an ACo… URL so we can store vanity.
+    Boolean(
+      lead.linkedin_url &&
+        /^https?:\/\/(www\.)?linkedin\.com\/in\/AC[ow]/i.test(
+          lead.linkedin_url
+        )
+    );
 
   if (!needsProfile) {
     return { providerId: lead.linkedin_provider_id, lead: enriched };
@@ -114,10 +128,25 @@ async function resolveProviderId(
   };
 
   if (providerId) {
+    const publicIdentifier =
+      (data.public_identifier as string | undefined) ||
+      (lead.metadata?.public_identifier as string | undefined) ||
+      pub;
+    const resolvedUrl = preferLinkedInUrl(
+      lead.linkedin_url,
+      hrefFromUnipileLinkedIn(
+        typeof data.public_profile_url === "string"
+          ? data.public_profile_url
+          : null,
+        publicIdentifier
+      )
+    );
+
     await supabaseAdmin
       .from("linkedin_campaign_leads")
       .update({
         linkedin_provider_id: providerId,
+        ...(resolvedUrl ? { linkedin_url: resolvedUrl } : {}),
         first_name: enriched.first_name,
         last_name: enriched.last_name,
         company: enriched.company,
@@ -126,10 +155,7 @@ async function resolveProviderId(
           ...((lead.metadata as Record<string, unknown>) || {}),
           city: enriched.city,
           location: enriched.location,
-          public_identifier:
-            (data.public_identifier as string | undefined) ||
-            (lead.metadata?.public_identifier as string | undefined) ||
-            pub,
+          public_identifier: publicIdentifier,
         },
       })
       .eq("id", lead.id);
@@ -138,13 +164,14 @@ async function resolveProviderId(
   return { providerId, lead: enriched };
 }
 
-async function advanceLeadAfterStep(input: {
+export async function advanceLeadAfterStep(input: {
   lead: Record<string, unknown>;
   campaignId: string;
   coachId: string;
   nextPosition: number;
   patch?: Record<string, unknown>;
 }) {
+  const { jobStatusForStep } = await import("@/lib/unipile/remindQueue");
   const { data: steps } = await supabaseAdmin
     .from("linkedin_campaign_steps")
     .select("*")
@@ -189,13 +216,18 @@ async function advanceLeadAfterStep(input: {
     .eq("id", input.lead.id);
 
   if (status !== "completed" && finalStep && finalStep.step_type !== "wait") {
+    const jobStatus = jobStatusForStep(
+      finalStep.step_type === "message"
+        ? (finalStep.send_mode as string | null)
+        : "auto"
+    );
     await supabaseAdmin.from("linkedin_send_jobs").insert({
       coach_id: input.coachId,
       campaign_id: input.campaignId,
       lead_id: input.lead.id,
       step_id: finalStep.id,
       scheduled_for: nextAction.toISOString(),
-      status: "pending",
+      status: jobStatus,
     });
   }
 }
@@ -228,6 +260,9 @@ export async function processOutreachJobsTick(): Promise<{
   failed: number;
   errors: string[];
 }> {
+  const { processRemindFallbacks } = await import("@/lib/unipile/remindQueue");
+  const fallback = await processRemindFallbacks();
+
   const now = new Date().toISOString();
   const { data: jobs, error } = await supabaseAdmin
     .from("linkedin_send_jobs")
@@ -288,6 +323,21 @@ export async function processOutreachJobsTick(): Promise<{
         .eq("id", job.lead_id)
         .maybeSingle();
       if (!step || !lead) throw new Error("Step or lead missing.");
+
+      // Remind steps must never auto-send — park for coach (or fallback tick).
+      if (
+        step.step_type === "message" &&
+        (step.send_mode as string) === "remind"
+      ) {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "awaiting_coach",
+            last_error: null,
+          })
+          .eq("id", job.id);
+        continue;
+      }
 
       if (
         [
@@ -531,7 +581,12 @@ export async function processOutreachJobsTick(): Promise<{
 
       await supabaseAdmin
         .from("linkedin_send_jobs")
-        .update({ status: "succeeded", provider_ref: providerRef, last_error: null })
+        .update({
+          status: "succeeded",
+          provider_ref: providerRef,
+          sent_by: "worker",
+          last_error: null,
+        })
         .eq("id", job.id);
       succeeded += 1;
     } catch (err) {
@@ -549,5 +604,10 @@ export async function processOutreachJobsTick(): Promise<{
     }
   }
 
-  return { processed, succeeded, failed, errors };
+  return {
+    processed: processed + fallback.processed,
+    succeeded: succeeded + fallback.succeeded,
+    failed: failed + fallback.failed,
+    errors: [...fallback.errors, ...errors],
+  };
 }

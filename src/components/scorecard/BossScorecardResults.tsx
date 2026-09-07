@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarEmbed } from "@/components/CalendarEmbed";
+import { CoachPublicBookingSurface } from "@/components/booking/CoachPublicBookingSurface";
 import { BossScorecardVennDiagram } from "@/components/scorecard/BossScorecardVennDiagram";
 import { ScorecardCompassKey } from "@/components/scorecard/ScorecardCompassKey";
 import { BossScoreThankYouHeading } from "@/components/scorecard/BossScoreWordmark";
@@ -245,18 +245,11 @@ export function BossScorecardResults({
   /** Prefills the coach booking calendar (first_name, last_name, email, phone). */
   calendarContact?: CalendarContactParams | null;
 }) {
-  const [calendarEmbed, setCalendarEmbed] = useState<string | null>(null);
   const [coachProfile, setCoachProfile] = useState<CoachProfile | null>(null);
   const effectiveSlug = coachSlug || getPrimaryCoachSlug();
 
   useEffect(() => {
     if (coachGlance || !effectiveSlug) return;
-    fetch(`/api/public/coaches/${encodeURIComponent(effectiveSlug)}/calendar`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.calendar_embed_code) setCalendarEmbed(data.calendar_embed_code);
-      })
-      .catch(() => {});
 
     fetch(`/api/coach-by-slug?slug=${encodeURIComponent(effectiveSlug)}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -310,9 +303,6 @@ export function BossScorecardResults({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const displayCalendarEmbed =
-    calendarEmbed ?? (isPreview ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null);
 
   return (
     <div
@@ -548,22 +538,13 @@ export function BossScorecardResults({
               </p>
             </div>
             <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              {displayCalendarEmbed ? (
-                <CalendarEmbed
-                  embedCode={displayCalendarEmbed}
-                  contact={calendarContact}
-                />
-              ) : (
-                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                  <p className="text-sm font-semibold text-slate-700">
-                    Loading calendar…
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">
-                    If nothing appears, your coach can add their booking embed in
-                    settings.
-                  </p>
-                </div>
-              )}
+              <CoachPublicBookingSurface
+                coachSlug={effectiveSlug}
+                contact={calendarContact}
+                fallbackEmbedCode={
+                  isPreview ? PRIMARY_COACH_CALENDAR_EMBED_CODE : null
+                }
+              />
             </div>
           </div>
         </section>

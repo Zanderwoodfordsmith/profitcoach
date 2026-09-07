@@ -5,7 +5,16 @@ import { listOutreachAccounts } from "@/lib/unipile/accounts";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 
 function mapSearchItem(raw: Record<string, unknown>) {
+  const publicId =
+    typeof raw.public_identifier === "string"
+      ? raw.public_identifier.trim()
+      : "";
+  const fromPublic =
+    publicId && !/^AC[ow]/i.test(publicId)
+      ? `https://www.linkedin.com/in/${publicId}/`
+      : null;
   const profileUrl =
+    fromPublic ||
     normalizeLinkedInProfileUrl(
       String(
         raw.profile_url ||
@@ -15,9 +24,7 @@ function mapSearchItem(raw: Record<string, unknown>) {
           ""
       )
     ) ||
-    (raw.public_identifier
-      ? `https://www.linkedin.com/in/${raw.public_identifier}/`
-      : null);
+    (publicId ? `https://www.linkedin.com/in/${publicId}/` : null);
 
   const first =
     (raw.first_name as string) ||
@@ -34,8 +41,8 @@ function mapSearchItem(raw: Record<string, unknown>) {
   return {
     linkedin_url: profileUrl,
     linkedin_provider_id:
-      (raw.id as string) ||
       (raw.provider_id as string) ||
+      (raw.id as string) ||
       (raw.member_urn as string) ||
       null,
     first_name: first,

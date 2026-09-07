@@ -6,6 +6,7 @@ export type CoachAutoCompleteContext = {
   calendar_embed_code?: string | null;
   ghl_calendar_id?: string | null;
   lead_webhook_url?: string | null;
+  booking_calendar_provider?: string | null;
 };
 
 export function evaluateAutoCompleteRule(
@@ -20,6 +21,7 @@ export function evaluateAutoCompleteRule(
         coach.crm_profile_name?.trim() && coach.crm_location_id?.trim(),
       );
     case "calendar_embed_set":
+      if (coach.booking_calendar_provider === "native") return true;
       return Boolean(
         coach.calendar_embed_code?.trim() || coach.ghl_calendar_id?.trim(),
       );

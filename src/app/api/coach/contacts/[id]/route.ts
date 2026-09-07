@@ -5,6 +5,7 @@ import {
   updateProspectFields,
   type ProspectFieldPatch,
 } from "@/lib/prospects/updateProspectFields";
+import { listCoachProspectTags } from "@/lib/prospects/tags";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -40,6 +41,7 @@ export async function GET(request: Request, context: RouteContext) {
   return NextResponse.json({
     prospect: loaded.prospect,
     coachSlug: loaded.coachSlug,
+    coachTags: await listCoachProspectTags(authCheck.userId),
   });
 }
 

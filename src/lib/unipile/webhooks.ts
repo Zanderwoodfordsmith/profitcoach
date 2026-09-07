@@ -175,6 +175,15 @@ export async function dispatchUnipileWebhookPayload(
   }
 
   if (
+    event.includes("reaction") ||
+    body.reaction ||
+    body.reaction_sender
+  ) {
+    const detail = await handleUnipileMessageReceived(body);
+    return { handled: "message_reaction", detail };
+  }
+
+  if (
     event === "message_received" ||
     body.message_id ||
     (body.chat_id && body.message)

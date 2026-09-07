@@ -31,6 +31,20 @@ export function hrefFromUnipileLinkedIn(
   profileUrl?: string | null,
   publicIdentifier?: string | null
 ): string | null {
+  // Prefer vanity public_identifier over obfuscated ACo… profile_url —
+  // Unipile often returns both for the same person.
+  const slug = (publicIdentifier || "").trim();
+  if (
+    slug &&
+    !/^AC[ow]/i.test(slug) &&
+    !slug.includes(":") &&
+    !slug.includes("@") &&
+    !/whatsapp\.net/i.test(slug) &&
+    !/@lid$/i.test(slug)
+  ) {
+    return `https://www.linkedin.com/in/${encodeURIComponent(slug)}/`;
+  }
+
   const fromUrl = profileUrl?.trim() || null;
   if (fromUrl) {
     const normalized = normalizeLinkedInProfileUrl(fromUrl);
@@ -47,10 +61,7 @@ export function hrefFromUnipileLinkedIn(
       /* ignore */
     }
   }
-  const slug = (publicIdentifier || "").trim();
-  if (!slug) return null;
-  if (/^AC[ow]/i.test(slug) || slug.includes(":")) return null;
-  return `https://www.linkedin.com/in/${encodeURIComponent(slug)}/`;
+  return null;
 }
 
 export function linkedInPublicIdentifier(url: string): string | null {

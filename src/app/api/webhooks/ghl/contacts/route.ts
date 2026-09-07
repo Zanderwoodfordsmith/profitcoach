@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     profitCoachContactId: parsed.profitCoachContactId,
     ghlLocationId: parsed.ghlLocationId,
     email: parsed.email,
+    phone: parsed.phone,
     crmContactId: parsed.crmContactId,
   });
 
