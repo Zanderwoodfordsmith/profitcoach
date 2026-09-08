@@ -5,6 +5,7 @@ import {
   createSupportMailboxConnectLink,
   disconnectSupportMailbox,
   getSupportMailboxAccount,
+  syncSupportMailboxInbound,
 } from "@/lib/support/mailbox";
 import { isUnipileConfigured } from "@/lib/unipile/client";
 
@@ -24,13 +25,9 @@ export async function GET(request: Request) {
       account = await claimSupportMailboxFromUnipile(auth.userId);
     }
     // Same localhost webhook gap: poll recent mail into tickets on admin load.
-    let sync: Awaited<
-      ReturnType<typeof syncSupportMailboxInbound>
-    > | null = null;
+    let sync: Awaited<ReturnType<typeof syncSupportMailboxInbound>> | null =
+      null;
     if (account && isUnipileConfigured()) {
-      const { syncSupportMailboxInbound } = await import(
-        "@/lib/support/mailbox"
-      );
       sync = await syncSupportMailboxInbound(15).catch((err) => {
         console.warn("support mailbox sync on GET:", err);
         return null;
