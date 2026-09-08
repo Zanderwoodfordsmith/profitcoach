@@ -627,6 +627,19 @@ export async function updateUnipileEmail(
   return unipileFetch<{ object?: string }>("PUT", path, body);
 }
 
+/** Move an email to Trash (Unipile DELETE = trash, not permanent wipe). */
+export async function deleteUnipileEmail(
+  emailId: string,
+  accountId?: string | null
+) {
+  const qs = new URLSearchParams();
+  if (accountId) qs.set("account_id", accountId);
+  const path = qs.toString()
+    ? `/api/v1/emails/${encodeURIComponent(emailId)}?${qs}`
+    : `/api/v1/emails/${encodeURIComponent(emailId)}`;
+  return unipileFetch<{ object?: string }>("DELETE", path);
+}
+
 export async function getUnipileEmail(
   emailId: string,
   accountId?: string | null

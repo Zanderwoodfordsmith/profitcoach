@@ -20,6 +20,7 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   createHostedAuthLink,
   deleteUnipileAccount,
+  deleteUnipileEmail,
   getUnipileAccount,
   getUnipileEmail,
   isUnipileConfigured,
@@ -349,19 +350,79 @@ export async function tidySupportMailboxEmail(input: {
   });
 }
 
+/**
+ * True when Unipile says this message is already out of the active inbox
+ * (archived, trashed, spam, sent, drafts). Gmail often keeps role=important
+ * with only category labels — treat missing INBOX + archive/trash folders
+ * as inactive too.
+ */
+export function isInactiveSupportMailboxEmail(item: {
+  role?: unknown;
+  folders?: unknown;
+}): boolean {
+  const role = String(item.role || "").toLowerCase();
+  if (
+    role === "sent" ||
+    role === "drafts" ||
+    role === "trash" ||
+    role === "archive" ||
+    role === "spam"
+  ) {
+    return true;
+  }
+
+  const folders = Array.isArray(item.folders)
+    ? item.folders.map((f) => String(f).toLowerCase())
+    : [];
+  if (
+    folders.some(
+      (f) =>
+        f === "trash" ||
+        f === "[gmail]/trash" ||
+        f.includes("trash") ||
+        f === "archive" ||
+        f === "spam" ||
+        f === "[gmail]/spam"
+    )
+  ) {
+    return true;
+  }
+
+  // Gmail "important" / category-only labels without INBOX → already filed away.
+  if (
+    (role === "important" || role === "starred" || role === "all") &&
+    folders.length > 0 &&
+    !folders.some((f) => f === "inbox" || f === "inb")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 /** Move to Trash so mailbox sync / webhooks will not re-ingest it. */
 export async function trashSupportMailboxEmail(input: {
   emailId: string;
   accountId: string;
 }): Promise<void> {
+  // Prefer Unipile DELETE (moves to Trash). Folder PUT alone often left Gmail
+  // messages as role=important without INBOX, which sync still re-ingested.
+  const deleted = await deleteUnipileEmail(input.emailId, input.accountId);
+  if (deleted.ok) return;
+
   await updateUnipileEmail(input.emailId, {
     account_id: input.accountId,
     unread: false,
-  });
-  await updateUnipileEmail(input.emailId, {
+  }).catch(() => null);
+  const moved = await updateUnipileEmail(input.emailId, {
     account_id: input.accountId,
     folders: ["trash"],
   });
+  if (!moved.ok) {
+    throw new Error(
+      deleted.error || moved.error || "Could not trash support email."
+    );
+  }
 }
 
 /**
@@ -433,6 +494,7 @@ export async function handleSupportMailReceived(
   const isSent = role === "sent" || String(body.origin || "") === "unipile";
   // Outbound from our mailbox: do not open tickets.
   if (isSent) return "outbound_ignored";
+  if (isInactiveSupportMailboxEmail(body)) return "inactive_folder_ignored";
 
   const { data: existingByEmail } = await supabaseAdmin
     .from("community_feedback_reports")
@@ -534,6 +596,9 @@ export async function handleSupportMailReceived(
         linkThreadId: numberedTicket.unipile_thread_id ? null : threadId,
       });
     }
+    // Ticket was deleted — do not spawn "Re: SUP-#### …" zombie tickets.
+    await trashSupportMailboxEmail({ emailId, accountId }).catch(() => null);
+    return "orphaned_ticket_reply";
   }
 
   const createdBy = await findCoachProfileIdByEmail(contactEmail);
@@ -669,8 +734,7 @@ export async function syncSupportMailboxInbound(limit = 25): Promise<{
       continue;
     }
 
-    const role = String(item.role || "").toLowerCase();
-    if (role === "sent" || role === "drafts" || role === "trash") {
+    if (isInactiveSupportMailboxEmail(item)) {
       skipped += 1;
       continue;
     }
