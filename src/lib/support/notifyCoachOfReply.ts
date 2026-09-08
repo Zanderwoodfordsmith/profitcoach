@@ -365,9 +365,11 @@ export async function notifyCoachOfSupportReply(input: {
   )}" style="display:inline-block;background:#0369a1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">Open Support</a></p>
 <p style="color:#64748b;font-size:13px;">— Profit Coach Support</p>`;
 
-  const subject = input.unipileEmailId
-    ? `Re: ${subjectTitle}`.slice(0, 200)
-    : subjectTitle.slice(0, 200);
+  // Always RE: so member inbox shows a reply, not a bare ticket title.
+  const subjectBase = /^(re|RE|Re):\s*/i.test(subjectTitle)
+    ? subjectTitle.replace(/^(re|RE|Re):\s*/i, "").trim() || subjectTitle
+    : subjectTitle;
+  const subject = `RE: ${subjectBase}`.slice(0, 200);
 
   const res = await sendUnipileEmail({
     account_id: mailbox.unipile_account_id,
