@@ -854,6 +854,7 @@ function formatInboxSyncedAt(iso: string | null): string {
 /**
  * Rolling age bands for the newest-first inbox list — not calendar weeks,
  * so a Monday reply isn't still "this week" on Sunday.
+ * Labels name the range (e.g. Last 7 days), not a point in time.
  */
 function inboxAgeBand(iso: string, now = new Date()): string {
   const then = new Date(iso);
@@ -875,10 +876,8 @@ function inboxAgeBand(iso: string, now = new Date()): string {
 
   if (dayDiff <= 0) return "Today";
   if (dayDiff === 1) return "Yesterday";
-  if (dayDiff <= 3) return "3 days ago";
-  if (dayDiff <= 7) return "1 week ago";
-  if (dayDiff <= 14) return "2 weeks ago";
-  if (dayDiff <= 30) return "1 month ago";
+  if (dayDiff <= 7) return "Last 7 days";
+  if (dayDiff <= 30) return "Last 30 days";
   return "Older";
 }
 

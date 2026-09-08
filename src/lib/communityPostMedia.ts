@@ -1,7 +1,7 @@
 import { resolveSupabaseBrowserSession } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export type CommunityPostMediaKind = "image" | "video";
+export type CommunityPostMediaKind = "image" | "video" | "audio";
 
 export type CommunityPostMediaItem = {
   url: string;
@@ -12,9 +12,20 @@ export const COMMUNITY_POST_MEDIA_MAX = 6;
 
 export const COMMUNITY_POST_MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
 export const COMMUNITY_POST_MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB
+export const COMMUNITY_POST_MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25MB
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;
+const AUDIO_TYPES = [
+  "audio/webm",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/ogg",
+  "audio/wav",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/mp3",
+] as const;
 
 export const EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -23,6 +34,14 @@ export const EXT_BY_MIME: Record<string, string> = {
   "video/mp4": "mp4",
   "video/webm": "webm",
   "video/quicktime": "mov",
+  "audio/webm": "webm",
+  "audio/mp4": "m4a",
+  "audio/mpeg": "mp3",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "aac",
+  "audio/mp3": "mp3",
 };
 
 const MIME_BY_EXT: Record<string, string> = {
@@ -34,24 +53,35 @@ const MIME_BY_EXT: Record<string, string> = {
   webm: "video/webm",
   mov: "video/quicktime",
   m4v: "video/mp4",
+  m4a: "audio/mp4",
+  mp3: "audio/mpeg",
+  ogg: "audio/ogg",
+  wav: "audio/wav",
+  aac: "audio/aac",
 };
 
 export function mediaKindForMime(mime: string): CommunityPostMediaKind | null {
-  if ((IMAGE_TYPES as readonly string[]).includes(mime)) return "image";
-  if ((VIDEO_TYPES as readonly string[]).includes(mime)) return "video";
+  const base = mime.split(";")[0]!.trim().toLowerCase();
+  if ((IMAGE_TYPES as readonly string[]).includes(base)) return "image";
+  if ((VIDEO_TYPES as readonly string[]).includes(base)) return "video";
+  if ((AUDIO_TYPES as readonly string[]).includes(base)) return "audio";
+  if (base.startsWith("audio/")) return "audio";
   return null;
 }
 
 export function maxBytesForCommunityPostMime(mime: string): number {
-  return mediaKindForMime(mime) === "video"
-    ? COMMUNITY_POST_MAX_VIDEO_BYTES
-    : COMMUNITY_POST_MAX_IMAGE_BYTES;
+  const kind = mediaKindForMime(mime);
+  if (kind === "video") return COMMUNITY_POST_MAX_VIDEO_BYTES;
+  if (kind === "audio") return COMMUNITY_POST_MAX_AUDIO_BYTES;
+  return COMMUNITY_POST_MAX_IMAGE_BYTES;
 }
 
 /** Resolve MIME from File.type or filename when the browser omits type (common for .mov). */
 export function resolveCommunityPostMediaMime(file: File): string | null {
   const trimmed = file.type?.trim();
-  if (trimmed && mediaKindForMime(trimmed)) return trimmed;
+  if (trimmed && mediaKindForMime(trimmed)) {
+    return trimmed.split(";")[0]!.trim().toLowerCase();
+  }
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
   const fromExt = MIME_BY_EXT[ext];
   if (fromExt && mediaKindForMime(fromExt)) return fromExt;
@@ -69,6 +99,33 @@ export function validateCommunityPostMediaFile(
     };
   }
   const kind = mediaKindForMime(mime)!;
+  // Community feed posts stay image/video only; support uses validateSupportMediaFile.
+  if (kind === "audio") {
+    return {
+      error:
+        "File must be an image (JPEG, PNG, WebP) or video (MP4, WebM, MOV).",
+    };
+  }
+  const maxBytes = maxBytesForCommunityPostMime(mime);
+  if (file.size > maxBytes) {
+    const mb = Math.round(maxBytes / (1024 * 1024));
+    return { error: `File must be ${mb}MB or smaller.` };
+  }
+  return { mime, kind };
+}
+
+/** Images, video, and audio — used by support tickets/replies. */
+export function validateSupportMediaFile(
+  file: File
+): { mime: string; kind: CommunityPostMediaKind } | { error: string } {
+  const mime = resolveCommunityPostMediaMime(file);
+  if (!mime) {
+    return {
+      error:
+        "File must be an image, video (MP4, WebM, MOV), or audio (WebM, M4A, MP3, WAV).",
+    };
+  }
+  const kind = mediaKindForMime(mime)!;
   const maxBytes = maxBytesForCommunityPostMime(mime);
   if (file.size > maxBytes) {
     const mb = Math.round(maxBytes / (1024 * 1024));
@@ -79,12 +136,14 @@ export function validateCommunityPostMediaFile(
 
 export function inferCommunityPostMediaKindFromUrl(url: string): CommunityPostMediaKind {
   const path = url.split("?")[0]?.toLowerCase() ?? "";
+  if (/\.(m4a|mp3|wav|ogg|aac)(\s|$)/i.test(path)) return "audio";
+  // Prefer video for ambiguous .webm when no kind is stored.
   if (/\.(mp4|webm|mov|m4v|ogv)(\s|$)/i.test(path)) return "video";
   return "image";
 }
 
 function isMediaKind(k: unknown): k is CommunityPostMediaKind {
-  return k === "image" || k === "video";
+  return k === "image" || k === "video" || k === "audio";
 }
 
 /**
@@ -147,22 +206,23 @@ function communityPostMediaPublicUrl(path: string): string {
  * Upload one image or video for a community post directly to Supabase Storage
  * (avoids proxying large files through the Next.js API, which can hang or hit body limits).
  */
-export async function uploadCommunityPostMediaFile(
+async function uploadValidatedMediaFile(
   file: File,
-  _accessToken?: string | null | undefined
+  validated: { mime: string; kind: CommunityPostMediaKind }
 ): Promise<{ media: CommunityPostMediaItem } | { error: string }> {
-  const validated = validateCommunityPostMediaFile(file);
-  if ("error" in validated) {
-    return validated;
-  }
-
   const session = await resolveSupabaseBrowserSession();
   const user = session?.user;
   if (!user) {
     return { error: "Not signed in." };
   }
 
-  const ext = EXT_BY_MIME[validated.mime] ?? (validated.kind === "video" ? "mp4" : "jpg");
+  const ext =
+    EXT_BY_MIME[validated.mime] ??
+    (validated.kind === "video"
+      ? "mp4"
+      : validated.kind === "audio"
+        ? "webm"
+        : "jpg");
   const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
 
   const { error: uploadError } = await supabaseClient.storage
@@ -182,4 +242,30 @@ export async function uploadCommunityPostMediaFile(
       kind: validated.kind,
     },
   };
+}
+
+/**
+ * Upload one image or video for a community post directly to Supabase Storage
+ * (avoids proxying large files through the Next.js API, which can hang or hit body limits).
+ */
+export async function uploadCommunityPostMediaFile(
+  file: File,
+  _accessToken?: string | null | undefined
+): Promise<{ media: CommunityPostMediaItem } | { error: string }> {
+  const validated = validateCommunityPostMediaFile(file);
+  if ("error" in validated) {
+    return validated;
+  }
+  return uploadValidatedMediaFile(file, validated);
+}
+
+/** Upload image, video, or audio for support tickets / replies. */
+export async function uploadSupportMediaFile(
+  file: File
+): Promise<{ media: CommunityPostMediaItem } | { error: string }> {
+  const validated = validateSupportMediaFile(file);
+  if ("error" in validated) {
+    return validated;
+  }
+  return uploadValidatedMediaFile(file, validated);
 }

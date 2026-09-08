@@ -143,6 +143,17 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
     (claimedRows ?? []).map((r) => r.unipile_account_id as string)
   );
 
+  // Never claim the dedicated Support mailbox into a coach CRM account.
+  try {
+    const { listPlatformUnipileAccountIds } = await import(
+      "@/lib/support/mailbox"
+    );
+    const platformIds = await listPlatformUnipileAccountIds();
+    for (const id of platformIds) claimed.add(id);
+  } catch {
+    /* ignore during migrate */
+  }
+
   for (const item of items) {
     if (!item?.id) continue;
     const provider = normalizeUnipileProvider(

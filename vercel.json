@@ -31,6 +31,14 @@
     {
       "path": "/api/cron/messaging-scheduled",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/support-reply-notify",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/support-mailbox-sync",
+      "schedule": "* * * * *"
     }
   ]
 }

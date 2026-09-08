@@ -129,11 +129,16 @@ export function isLocalCalendarFeedUrl(url: string): boolean {
 }
 
 /**
- * Google's `cid=` subscribe flow. Prefer HTTPS — webcal:// often becomes the
- * calendar *name* (e.g. "Web Local 3000") when Google cannot read X-WR-CALNAME.
+ * Google's one-click `cid=` subscribe deep link.
+ *
+ * Pass webcal:// (not https://) in `cid=`. Google often rejects HTTPS feeds with
+ * "Unable to add calendar. Check the URL." even when the same URL works via
+ * Settings → Add calendar → From URL. webcal still fetches over HTTPS; X-WR-CALNAME
+ * remains the calendar title once Google can read the feed.
  */
 export function googleCalendarSubscribeUrl(httpsUrl: string): string {
-  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(httpsUrl)}`;
+  const cid = httpsFeedToWebcal(httpsUrl);
+  return `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(cid)}`;
 }
 
 export function outlookCalendarSubscribeUrl(httpsUrl: string): string {

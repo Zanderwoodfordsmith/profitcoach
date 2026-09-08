@@ -11,6 +11,7 @@ import {
   firstCommunityPostImageUrl,
   inferCommunityPostMediaKindFromUrl,
   uploadCommunityPostMediaFile,
+  type CommunityPostMediaItem,
 } from "@/lib/communityPostMedia";
 import {
   communityAccessHint,
@@ -265,11 +266,15 @@ export function CreatePostModal({
         data: { session },
       } = await supabaseClient.auth.getSession();
 
-      const uploaded: { url: string; kind: "image" | "video" }[] = [];
+      const uploaded: CommunityPostMediaItem[] = [];
       for (const p of pendingMedia) {
         const up = await uploadCommunityPostMediaFile(p.file, session?.access_token);
         if ("error" in up) {
           setError(up.error);
+          return;
+        }
+        if (up.media.kind === "audio") {
+          setError("Audio isn’t supported on community posts.");
           return;
         }
         uploaded.push(up.media);
@@ -488,7 +493,7 @@ export function CreatePostModal({
                       className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                         lessonVisibility === "public"
                           ? "bg-emerald-600 text-white shadow-sm"
-                          : "text-slate-400 hover:bg-emerald-50 hover:text-emerald-700"
+                          : "text-emerald-800/70 hover:bg-emerald-50 hover:text-emerald-800"
                       }`}
                     >
                       <Globe2 className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} aria-hidden />
@@ -505,7 +510,7 @@ export function CreatePostModal({
                       className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors ${
                         lessonVisibility === "private"
                           ? "bg-amber-400 text-amber-950 shadow-sm"
-                          : "text-slate-400 hover:bg-amber-50 hover:text-amber-700"
+                          : "text-amber-900/70 hover:bg-amber-50 hover:text-amber-900"
                       }`}
                     >
                       <Lock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} aria-hidden />

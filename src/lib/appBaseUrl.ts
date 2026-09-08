@@ -27,6 +27,22 @@ function isLocalHostname(hostname: string): boolean {
 }
 
 /**
+ * Prefer the public www host. Apex theprofitcoach.com 307s to www; Google's
+ * calendar fetch often fails on that redirect ("check the URL").
+ */
+function canonicalizeCalendarFeedBaseUrl(baseUrl: string): string {
+  try {
+    const url = new URL(baseUrl);
+    if (url.hostname === "theprofitcoach.com") {
+      url.hostname = "www.theprofitcoach.com";
+    }
+    return url.origin;
+  } catch {
+    return baseUrl.replace(/\/$/, "");
+  }
+}
+
+/**
  * Public origin for calendar subscribe feeds.
  * Google/Outlook fetch the URL from their servers, so localhost never works.
  * Prefer CALENDAR_FEED_BASE_URL / NEXT_PUBLIC_APP_BASE_URL when APP_BASE_URL is local.
@@ -35,16 +51,18 @@ export function getCalendarFeedBaseUrl(request?: Request): string {
   const dedicated =
     process.env.CALENDAR_FEED_BASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_BASE_URL?.trim();
-  if (dedicated) return dedicated.replace(/\/$/, "");
+  if (dedicated) return canonicalizeCalendarFeedBaseUrl(dedicated);
 
   const base = getAppBaseUrl(request);
   try {
-    if (!isLocalHostname(new URL(base).hostname)) return base;
+    if (!isLocalHostname(new URL(base).hostname)) {
+      return canonicalizeCalendarFeedBaseUrl(base);
+    }
   } catch {
     // fall through
   }
 
   // Local APP_BASE_URL (common in .env.local) — still return it so the UI can
   // warn / offer download; remote clients cannot fetch it.
-  return base;
+  return base.replace(/\/$/, "");
 }

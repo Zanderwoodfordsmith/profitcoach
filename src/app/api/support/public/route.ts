@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       page_path: "/support",
       source: "public_form",
       assigned_to: DEFAULT_SUPPORT_ASSIGNEE_ID,
-      status: "new",
+      status: "open",
       user_agent: request.headers.get("user-agent"),
     })
     .select("ticket_number")

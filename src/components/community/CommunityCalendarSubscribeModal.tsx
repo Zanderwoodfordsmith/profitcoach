@@ -319,6 +319,13 @@ export function CommunityCalendarSubscribeModal({
                 Profit Coach Training, Monthly Momentum, and any others). Keep
                 this link private — anyone with it can see your call schedule.
               </p>
+              {!remoteSubscribeDisabled ? (
+                <p className="text-xs leading-relaxed text-slate-500">
+                  If Google says “check the URL”, copy the feed link, then in
+                  Google Calendar go to Settings → Add calendar → From URL and
+                  paste it.
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

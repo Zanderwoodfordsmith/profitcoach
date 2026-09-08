@@ -33,7 +33,7 @@ export function useNewFeedbackCount(enabled: boolean) {
     const { count: nextCount, error } = await supabaseClient
       .from("community_feedback_reports")
       .select("*", { count: "exact", head: true })
-      .eq("status", "new");
+      .eq("status", "open");
 
     if (error) {
       setCount(0);

@@ -8,6 +8,7 @@ import {
   type BirdInboundMessageMeta,
 } from "@/lib/bird/client";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
+import { tryIngestSupportReplyFromBird } from "@/lib/support/ingestEmailReply";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function fromEmailOf(meta: BirdInboundMessageMeta): string | null {
@@ -93,6 +94,21 @@ export async function ingestBirdInboundMessage(
     return { ok: false, error: got.error || "Could not load inbound message." };
   }
   const meta = got.meta;
+
+  const support = await tryIngestSupportReplyFromBird({
+    inboundId,
+    meta,
+  });
+  if (support.handled) {
+    if (support.error) {
+      return { ok: false, error: support.error };
+    }
+    return {
+      ok: true,
+      skipped: support.skipped,
+      conversationId: support.ticketId,
+    };
+  }
 
   const conversationId = await findConversationId(meta);
   if (!conversationId) {

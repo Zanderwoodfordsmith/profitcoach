@@ -163,14 +163,31 @@ export function normalizePhoneE164(raw: string | null | undefined): string | nul
   return null;
 }
 
-/** Reply-To that routes prospect replies into Bird on our send subdomain. */
-export function conversationReplyToAddress(conversationId: string): string {
+function birdReplyDomain(): string {
   const { fromEmail } = birdConfig();
-  const domain = fromEmail.includes("@")
+  return fromEmail.includes("@")
     ? fromEmail.split("@")[1]!
     : "send.theprofitcoach.com";
-  const tag = conversationId.replace(/-/g, "").toLowerCase();
-  return `reply+${tag}@${domain}`;
+}
+
+function uuidToPlusTag(id: string): string {
+  return id.replace(/-/g, "").toLowerCase();
+}
+
+function plusTagToUuid(tag: string): string | null {
+  if (!/^[0-9a-f]{32}$/i.test(tag)) return null;
+  const h = tag.toLowerCase();
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+/** Reply-To that routes prospect replies into Bird on our send subdomain. */
+export function conversationReplyToAddress(conversationId: string): string {
+  return `reply+${uuidToPlusTag(conversationId)}@${birdReplyDomain()}`;
+}
+
+/** Reply-To that routes member replies into a support ticket via Bird inbound. */
+export function supportTicketReplyToAddress(ticketId: string): string {
+  return `sup+${uuidToPlusTag(ticketId)}@${birdReplyDomain()}`;
 }
 
 /** Extract conversation UUID from reply+{uuid32}@domain addressing. */
@@ -179,9 +196,18 @@ export function parseConversationIdFromAddress(
 ): string | null {
   if (!address) return null;
   const m = address.toLowerCase().match(/reply\+([0-9a-f]{32})@/);
-  if (!m) return null;
-  const h = m[1];
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  if (!m?.[1]) return null;
+  return plusTagToUuid(m[1]);
+}
+
+/** Extract support ticket UUID from sup+{uuid32}@domain addressing. */
+export function parseSupportTicketIdFromAddress(
+  address: string | null | undefined
+): string | null {
+  if (!address) return null;
+  const m = address.toLowerCase().match(/sup\+([0-9a-f]{32})@/);
+  if (!m?.[1]) return null;
+  return plusTagToUuid(m[1]);
 }
 
 export type BirdInboundMessageMeta = {

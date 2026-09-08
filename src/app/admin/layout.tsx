@@ -39,6 +39,8 @@ export default function AdminLayout({
 
   const playbooksReader = isPlaybooksReaderPath(pathname);
   const conversationsPage = pathname === "/admin/conversations";
+  const supportInboxPage = pathname === "/admin/support";
+  const fullHeightInboxPage = conversationsPage || supportInboxPage;
   const sidebarExpanded = sidebarOpen && !playbooksReader;
   const sidebarMounted = !playbooksReader;
   const sidebarCollapsed = sidebarMounted && !sidebarOpen;
@@ -108,7 +110,7 @@ export default function AdminLayout({
     <div
       data-ai-docked={aiPanelDocked ? true : undefined}
       className={`group/appshell ${
-        conversationsPage ? "h-dvh overflow-hidden" : "min-h-screen"
+        fullHeightInboxPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
         playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
@@ -146,7 +148,7 @@ export default function AdminLayout({
           ) : null}
           <main
             className={`min-w-0 w-full pt-0 ${
-              conversationsPage
+              fullHeightInboxPage
                 ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
                 : playbooksReader
                 ? "min-h-screen px-0 pb-10"
@@ -159,7 +161,7 @@ export default function AdminLayout({
           >
             <div
               className={`flex w-full min-w-0 flex-col ${
-                conversationsPage
+                fullHeightInboxPage
                   ? "h-full min-h-0 gap-0"
                   : playbooksReader
                     ? "gap-0"
@@ -167,7 +169,19 @@ export default function AdminLayout({
               }`}
             >
               {chromeEnabled ? <DashboardChromeFallback /> : null}
-              {children}
+              {/*
+                Full-height inboxes need a flex-1 / min-h-0 chain so the list
+                scrolls inside the viewport. Do not put overflow-hidden here —
+                StickyPageHeader bleeds with negative horizontal margins into
+                main's padding, and overflow on this wrapper clips that bar.
+              */}
+              {fullHeightInboxPage ? (
+                <div className="flex min-h-0 flex-1 flex-col">
+                  {children}
+                </div>
+              ) : (
+                children
+              )}
             </div>
           </main>
         </BossWorkshopChromeContext.Provider>

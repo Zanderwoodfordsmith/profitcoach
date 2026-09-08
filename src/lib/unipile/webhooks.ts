@@ -8,6 +8,10 @@ import {
   handleUnipileMessageReceived,
   handleUnipileNewRelation,
 } from "@/lib/unipile/webhookHandlers";
+import {
+  handleSupportMailReceived,
+  platformAccountForUnipileId,
+} from "@/lib/support/mailbox";
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
 
 const WEBHOOK_NAMES = {
@@ -170,6 +174,15 @@ export async function dispatchUnipileWebhookPayload(
     source === "email" ||
     (body.email_id && (body.from_attendee || body.subject))
   ) {
+    const accountId = String(body.account_id || "").trim();
+    // Support mailbox first — never fall through to coach CRM Conversations.
+    if (accountId) {
+      const support = await platformAccountForUnipileId(accountId);
+      if (support?.purpose === "support") {
+        const detail = await handleSupportMailReceived(body);
+        return { handled: "support_mail", detail };
+      }
+    }
     const detail = await handleUnipileMailReceived(body);
     return { handled: "mail", detail };
   }

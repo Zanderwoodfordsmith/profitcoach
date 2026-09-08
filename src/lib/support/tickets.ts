@@ -1,11 +1,17 @@
-export type SupportTicketStatus = "new" | "in_review" | "resolved";
-export type SupportTicketType = "question" | "bug" | "idea";
+export type SupportTicketStatus = "open" | "waiting_reply" | "resolved";
+export type SupportTicketType =
+  | "question"
+  | "bug"
+  | "idea"
+  | "billing"
+  | "other";
 
 export type SupportTicketSource =
   | "direct"
   | "lesson_private"
   | "public_form"
-  | "admin_created";
+  | "admin_created"
+  | "email_inbox";
 
 export type SupportTicketAuthor = {
   id: string;
@@ -35,6 +41,7 @@ export type SupportTicket = {
   importance: number | null;
   ease: number | null;
   coach_last_read_at?: string | null;
+  member_notify_email?: boolean;
   author?: SupportTicketAuthor | null;
   assignee?: SupportTicketAuthor | null;
   media?: unknown;
@@ -74,6 +81,7 @@ export type SupportTicketRow = {
   status: string;
   media?: unknown;
   coach_last_read_at?: string | null;
+  member_notify_email?: boolean | null;
   source?: SupportTicketSource | null;
   assigned_to?: string | null;
   community_post_id?: string | null;
@@ -99,7 +107,7 @@ export function mapSupportTicketRow(
     title: row.title,
     details: row.details,
     page_path: row.page_path ?? null,
-    status: (row.status as SupportTicketStatus) || "new",
+    status: normalizeSupportTicketStatus(row.status),
     source: row.source ?? "direct",
     assigned_to: row.assigned_to ?? null,
     community_post_id: row.community_post_id ?? null,
@@ -109,6 +117,7 @@ export function mapSupportTicketRow(
     importance: row.importance ?? null,
     ease: row.ease ?? null,
     coach_last_read_at: row.coach_last_read_at ?? null,
+    member_notify_email: row.member_notify_email !== false,
     media: row.media,
     author:
       normalizeSupportAuthor(row.author) ?? options?.fallbackAuthor ?? null,
@@ -132,28 +141,82 @@ export function supportAuthorAsProfile(
 
 export const SUPPORT_TYPE_LABELS: Record<SupportTicketType, string> = {
   question: "Question",
-  bug: "Bug",
-  idea: "Idea",
+  bug: "Bug report",
+  idea: "Feature request",
+  billing: "Billing",
+  other: "Other",
 };
+
+export const SUPPORT_TYPE_EMOJIS: Record<SupportTicketType, string> = {
+  question: "❓",
+  bug: "⚠️",
+  idea: "💡",
+  billing: "💳",
+  other: "💬",
+};
+
+export function supportTypeOptionLabel(type: SupportTicketType): string {
+  return `${SUPPORT_TYPE_EMOJIS[type]} ${SUPPORT_TYPE_LABELS[type]}`;
+}
 
 export const SUPPORT_SOURCE_LABELS: Record<SupportTicketSource, string> = {
   direct: "Direct ticket",
   lesson_private: "Private lesson",
   public_form: "Public form",
   admin_created: "Created by team",
+  email_inbox: "Support email",
 };
 
 export const SUPPORT_STATUS_USER_LABELS: Record<SupportTicketStatus, string> = {
-  new: "Open",
-  in_review: "In review",
+  open: "Open",
+  waiting_reply: "Your reply needed",
   resolved: "Resolved",
 };
 
 export const SUPPORT_STATUS_ADMIN_LABELS: Record<SupportTicketStatus, string> = {
-  new: "New",
-  in_review: "In review",
+  open: "Open",
+  waiting_reply: "Waiting reply",
   resolved: "Resolved",
 };
+
+/** Map legacy + current DB values onto open / waiting_reply / resolved. */
+export function normalizeSupportTicketStatus(
+  status: string | null | undefined
+): SupportTicketStatus {
+  switch (status) {
+    case "open":
+    case "waiting_reply":
+    case "resolved":
+      return status;
+    case "new":
+    case "submitted":
+    case "in_review":
+    case "in_progress":
+      return "open";
+    default:
+      return "open";
+  }
+}
+
+export function isSupportTicketOpen(status: SupportTicketStatus): boolean {
+  return status !== "resolved";
+}
+
+/** After staff sends a reply: reopen resolved → open; leave waiting_reply alone. */
+export function supportStatusAfterStaffReply(
+  status: SupportTicketStatus
+): SupportTicketStatus | null {
+  if (status === "resolved") return "open";
+  return null;
+}
+
+/** After the member/coach replies: waiting_reply or resolved → open. */
+export function supportStatusAfterMemberReply(
+  status: SupportTicketStatus
+): SupportTicketStatus | null {
+  if (status === "waiting_reply" || status === "resolved") return "open";
+  return null;
+}
 
 export function formatSupportTicketId(ticketNumber: number): string {
   return `SUP-${String(ticketNumber).padStart(4, "0")}`;
@@ -211,6 +274,30 @@ export function formatSupportRelativeAgo(iso: string, now = Date.now()): string 
   });
 }
 
+/** Compact queue age: `56m`, `3h`, `10d` (no “ago”). */
+export function formatSupportRelativeCompact(
+  iso: string,
+  now = Date.now()
+): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+
+  const diff = Math.max(0, now - t);
+  const minute = 60_000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (diff < minute) return "now";
+  if (diff < hour) return `${Math.floor(diff / minute)}m`;
+  if (diff < day) return `${Math.floor(diff / hour)}h`;
+  if (diff < 30 * day) return `${Math.floor(diff / day)}d`;
+
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function formatSupportTicketDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
@@ -228,7 +315,15 @@ export function supportTicketScore(ticket: Pick<SupportTicket, "importance" | "e
 export function normalizeSupportTicketType(raw: string): SupportTicketType {
   if (raw === "feature") return "idea";
   if (raw === "general") return "question";
-  if (raw === "bug" || raw === "idea" || raw === "question") return raw;
+  if (
+    raw === "bug" ||
+    raw === "idea" ||
+    raw === "question" ||
+    raw === "billing" ||
+    raw === "other"
+  ) {
+    return raw;
+  }
   return "question";
 }
 
@@ -238,11 +333,20 @@ export function ticketHasUnreadStaffReply(
   replies: SupportReply[],
   viewerId: string
 ): boolean {
+  return unreadStaffReplyCount(ticket, replies, viewerId) > 0;
+}
+
+/** Count of staff replies newer than the coach's last read. */
+export function unreadStaffReplyCount(
+  ticket: Pick<SupportTicket, "coach_last_read_at">,
+  replies: SupportReply[],
+  viewerId: string
+): number {
   const staffReplies = replies.filter((reply) => reply.created_by !== viewerId);
-  if (staffReplies.length === 0) return false;
-  if (!ticket.coach_last_read_at) return true;
+  if (staffReplies.length === 0) return 0;
+  if (!ticket.coach_last_read_at) return staffReplies.length;
   const lastRead = new Date(ticket.coach_last_read_at).getTime();
-  return staffReplies.some(
+  return staffReplies.filter(
     (reply) => new Date(reply.created_at).getTime() > lastRead
-  );
+  ).length;
 }

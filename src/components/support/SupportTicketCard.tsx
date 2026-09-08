@@ -1,19 +1,15 @@
 "use client";
 
-import { CheckCircle2, Clock, MessageCircle } from "lucide-react";
-import { CommunityAuthorAvatar } from "@/components/community/CommunityAuthorAvatar";
-import { CommunityPostMediaThumb } from "@/components/community/CommunityPostMediaGallery";
-import {
-  formatCommunityPostTimestamp,
-  formatCommunityRelativeActivityAgo,
-} from "@/lib/communityRelativeTime";
-import { profileInitialsFromProfile } from "@/lib/communityProfile";
+import { CheckCircle2, ChevronDown, ChevronUp, Circle, Hourglass, MessageCircle } from "lucide-react";
+import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
+import { SeeMoreText } from "@/components/support/SeeMoreText";
+import { SupportTicketChat } from "@/components/support/SupportTicketChat";
 import { parseSupportTicketMedia } from "@/lib/support/supportTicketMedia";
 import {
+  formatSupportTicketDate,
   SUPPORT_STATUS_USER_LABELS,
-  SUPPORT_TYPE_LABELS,
-  authorDisplayName,
-  supportAuthorAsProfile,
+  supportTypeOptionLabel,
+  unreadStaffReplyCount,
   type SupportReply,
   type SupportTicket,
   type SupportTicketAuthor,
@@ -25,155 +21,134 @@ export type SupportTicketCardTicket = SupportTicket & {
 
 type Props = {
   ticket: SupportTicketCardTicket;
-  author: SupportTicketAuthor | null;
-  hasUnread: boolean;
-  onOpen: () => void;
+  expanded: boolean;
+  onToggle: () => void;
+  viewer: SupportTicketAuthor | null;
+  viewerId: string;
+  onTicketChange: (next: SupportTicketCardTicket) => void;
 };
 
-function uniquePreviewAuthors(replies: SupportReply[]): SupportTicketAuthor[] {
-  const seen = new Set<string>();
-  const out: SupportTicketAuthor[] = [];
-  for (const reply of [...replies].reverse()) {
-    const author = reply.author;
-    if (!author || seen.has(author.id)) continue;
-    seen.add(author.id);
-    out.push(author);
-    if (out.length >= 3) break;
-  }
-  return out.reverse();
-}
-
-export function SupportTicketCard({ ticket, author, hasUnread, onOpen }: Props) {
-  const authorName = author ? authorDisplayName(author) : "You";
-  const media = parseSupportTicketMedia(ticket.media);
-  const commentCount = ticket.replies.length;
-  const previewAuthors = uniquePreviewAuthors(ticket.replies);
-  const lastReply = ticket.replies[ticket.replies.length - 1] ?? null;
-  const commentAgo = lastReply
-    ? formatCommunityRelativeActivityAgo(lastReply.created_at)
-    : null;
+export function SupportTicketCard({
+  ticket,
+  expanded,
+  onToggle,
+  viewer,
+  viewerId,
+  onTicketChange,
+}: Props) {
   const resolved = ticket.status === "resolved";
-  const preview = ticket.details.replace(/\s+/g, " ").trim();
+  const details = ticket.details.trim();
+  const title = ticket.title?.trim() || "(No subject)";
+  const media = parseSupportTicketMedia(ticket.media);
+  const replyCount = ticket.replies.length;
+  const unreadCount =
+    !resolved && !expanded
+      ? unreadStaffReplyCount(ticket, ticket.replies, viewerId)
+      : 0;
 
   return (
     <article
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
-      className={`flex w-full min-h-[132px] cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white py-4 px-[1.125rem] text-left transition hover:border-slate-300 hover:shadow ${
-        resolved
+      className={`overflow-hidden rounded-2xl border border-slate-200 bg-white transition ${
+        resolved && !expanded
           ? "opacity-[0.55] shadow-sm"
-          : "opacity-100 shadow-[0_1px_2px_rgb(15_23_42/0.05),0_3px_8px_-3px_rgb(15_23_42/0.08)]"
+          : "opacity-100 shadow-[0_1px_2px_rgb(15_23_42/0.04)]"
       }`}
     >
-      <div className="flex items-start gap-3">
-        <CommunityAuthorAvatar profile={supportAuthorAsProfile(author)} size="md" />
-        <div className="min-w-0 flex-1 pt-0.5">
-          <div className="flex items-start justify-between gap-2">
-            <span className="text-base font-semibold leading-tight text-slate-900">
-              {authorName}
-            </span>
-            {ticket.status === "resolved" ? (
-              <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
-                <CheckCircle2
-                  className="h-3.5 w-3.5 text-emerald-600"
-                  strokeWidth={1.75}
-                />
+      <div className="px-5 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-semibold leading-snug tracking-tight text-slate-900 sm:text-xl">
+              {title}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {formatSupportTicketDate(ticket.created_at)}
+              <span className="mx-1.5 text-slate-300">·</span>
+              {supportTypeOptionLabel(ticket.type)}
+            </p>
+          </div>
+          <div className="shrink-0 pt-0.5">
+            {resolved ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-200/80">
+                <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.75} />
                 {SUPPORT_STATUS_USER_LABELS.resolved}
               </span>
-            ) : ticket.status === "in_review" ? (
-              <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
-                <Clock className="h-3.5 w-3.5 text-sky-600" strokeWidth={1.75} />
-                {SUPPORT_STATUS_USER_LABELS.in_review}
+            ) : ticket.status === "waiting_reply" ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900 ring-1 ring-inset ring-amber-200/80">
+                <Hourglass className="h-3.5 w-3.5" strokeWidth={1.75} />
+                {SUPPORT_STATUS_USER_LABELS.waiting_reply}
               </span>
-            ) : null}
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-800 ring-1 ring-inset ring-sky-200/80">
+                <Circle className="h-3.5 w-3.5" strokeWidth={2} />
+                {SUPPORT_STATUS_USER_LABELS.open}
+              </span>
+            )}
           </div>
-          <p className="mt-0.5 text-xs leading-snug text-slate-500">
-            {formatCommunityPostTimestamp(ticket.created_at)}
-            <span className="mx-0.5 select-none text-slate-400">·</span>
-            <span className="font-semibold text-slate-500">
-              {SUPPORT_TYPE_LABELS[ticket.type]}
-            </span>
-          </p>
         </div>
-      </div>
 
-      <div className="mt-3 flex w-full min-w-0 gap-3">
-        <div className={`min-w-0 flex-1 ${media.length > 0 ? "pr-2" : ""}`}>
-          <h2 className="line-clamp-2 text-xl font-semibold leading-snug tracking-tight text-slate-900">
-            {ticket.title?.trim() || "(No subject)"}
-          </h2>
-          <p className="mt-0.5 line-clamp-2 text-base leading-relaxed text-slate-600">
-            {preview || "\u00a0"}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <span className="inline-flex items-center gap-1.5 text-[15px] text-slate-500">
-              <MessageCircle
-                className={`h-[18px] w-[18px] shrink-0 ${
-                  commentCount > 0 ? "fill-sky-700 text-sky-700" : ""
-                }`}
-                strokeWidth={1.75}
-              />
-              <span className="tabular-nums">{commentCount}</span>
-            </span>
-            {previewAuthors.length > 0 || commentAgo ? (
-              <div className="flex min-w-0 items-center gap-2 pl-1">
-                {previewAuthors.length > 0 ? (
-                  <div className="flex shrink-0 -space-x-2">
-                    {previewAuthors.map((a, i) => (
-                      <span
-                        key={`${a.id}-${i}`}
-                        className="relative inline-flex h-7 w-7 shrink-0 overflow-hidden rounded-full ring-2 ring-white"
-                        style={{ zIndex: previewAuthors.length - i }}
-                      >
-                        {a.avatar_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={a.avatar_url}
-                            alt=""
-                            referrerPolicy="no-referrer"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-medium text-slate-600">
-                            {profileInitialsFromProfile(supportAuthorAsProfile(a))}
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-                {commentAgo ? (
-                  <span
-                    className={`min-w-0 truncate text-xs font-medium ${
-                      hasUnread ? "text-sky-600" : "text-slate-400"
-                    }`}
-                  >
-                    {hasUnread ? `New comment ${commentAgo}` : `Last comment ${commentAgo}`}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
+        {details ? (
+          <div className="mt-3">
+            <SeeMoreText key={ticket.id} text={details} variant="feed" />
           </div>
-        </div>
+        ) : null}
+
         {media.length > 0 ? (
-          <div className="h-[80px] w-[92px] shrink-0 self-start">
-            <CommunityPostMediaThumb
-              item={media[0]}
-              playIconSize="sm"
-              className="h-full"
-              extraCount={media.length > 1 ? media.length - 1 : 0}
-            />
+          <div className="mt-3">
+            <CommunityPostMediaGallery items={media} variant="compact" />
           </div>
         ) : null}
       </div>
+
+      <div className="flex items-center justify-end border-t border-slate-100 px-5 py-3 sm:px-6">
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={
+            expanded
+              ? "Close chat"
+              : resolved
+                ? "Chat to reopen"
+                : unreadCount > 0
+                  ? `Chat, ${unreadCount} new ${
+                      unreadCount === 1 ? "reply" : "replies"
+                    }`
+                  : replyCount > 0
+                    ? `Chat, ${replyCount} ${
+                        replyCount === 1 ? "reply" : "replies"
+                      }`
+                    : "Chat"
+          }
+          className="relative inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
+        >
+          <span className="relative inline-flex">
+            <MessageCircle
+              className="h-4 w-4 text-slate-500"
+              strokeWidth={1.75}
+            />
+            {unreadCount > 0 ? (
+              <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </span>
+          {expanded ? "Close chat" : resolved ? "Chat to reopen" : "Chat"}
+          {expanded ? (
+            <ChevronUp className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+          )}
+        </button>
+      </div>
+
+      {expanded ? (
+        <SupportTicketChat
+          ticket={ticket}
+          viewer={viewer}
+          viewerId={viewerId}
+          onTicketChange={onTicketChange}
+        />
+      ) : null}
     </article>
   );
 }
-

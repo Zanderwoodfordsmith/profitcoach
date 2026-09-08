@@ -38,7 +38,10 @@ export function formatShortTime(iso: string): string {
     })
       .format(new Date(iso))
       .toLowerCase()
-      .replace(/\s+/g, " ");
+      .replace(/\u202f/g, " ") // narrow no-break space from some engines
+      .replace(/\s+/g, " ")
+      .replace(/\s*(am|pm)\s*$/i, " $1")
+      .trim();
   } catch {
     return iso;
   }

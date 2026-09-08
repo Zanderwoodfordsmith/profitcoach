@@ -605,12 +605,56 @@ export async function listUnipileEmails(input: {
   }>("GET", `/api/v1/emails?${qs.toString()}`);
 }
 
+/** Mark read and/or move folders (e.g. Archive) for a Gmail/Outlook message. */
+export async function updateUnipileEmail(
+  emailId: string,
+  patch: {
+    account_id?: string;
+    unread?: boolean;
+    folders?: string[];
+    categories?: string[];
+  }
+) {
+  const qs = new URLSearchParams();
+  if (patch.account_id) qs.set("account_id", patch.account_id);
+  const path = qs.toString()
+    ? `/api/v1/emails/${encodeURIComponent(emailId)}?${qs}`
+    : `/api/v1/emails/${encodeURIComponent(emailId)}`;
+  const body: Record<string, unknown> = {};
+  if (patch.unread !== undefined) body.unread = patch.unread;
+  if (patch.folders) body.folders = patch.folders;
+  if (patch.categories) body.categories = patch.categories;
+  return unipileFetch<{ object?: string }>("PUT", path, body);
+}
+
+export async function getUnipileEmail(
+  emailId: string,
+  accountId?: string | null
+): Promise<
+  UnipileResult<{
+    id?: string;
+    thread_id?: string | null;
+    provider_id?: string | null;
+    subject?: string | null;
+  }>
+> {
+  const qs = new URLSearchParams();
+  if (accountId) qs.set("account_id", accountId);
+  const path = qs.toString()
+    ? `/api/v1/emails/${encodeURIComponent(emailId)}?${qs}`
+    : `/api/v1/emails/${encodeURIComponent(emailId)}`;
+  return unipileFetch("GET", path);
+}
+
 export async function sendUnipileEmail(input: {
   account_id: string;
   to: Array<{ identifier: string; display_name?: string }>;
   subject?: string;
   body: string;
+  /** Unipile or provider id of the parent email (threads the reply). */
   reply_to?: string;
+  from?: { identifier: string; display_name?: string };
+  custom_headers?: Array<{ name: string; value: string }>;
 }) {
   const form = new FormData();
   form.append("account_id", input.account_id);
@@ -618,6 +662,10 @@ export async function sendUnipileEmail(input: {
   form.append("to", JSON.stringify(input.to));
   if (input.subject) form.append("subject", input.subject);
   if (input.reply_to) form.append("reply_to", input.reply_to);
+  if (input.from) form.append("from", JSON.stringify(input.from));
+  if (input.custom_headers?.length) {
+    form.append("custom_headers", JSON.stringify(input.custom_headers));
+  }
   return unipileFormFetch<{
     object?: string;
     tracking_id?: string;

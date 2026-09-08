@@ -409,6 +409,19 @@ export async function handleUnipileMailReceived(
   const emailId = String(
     body.email_id || body.id || body.deprecated_id || ""
   ).trim();
+
+  // Defense in depth: Support mailbox must never write Conversations.
+  try {
+    const { platformAccountForUnipileId, handleSupportMailReceived } =
+      await import("@/lib/support/mailbox");
+    const support = await platformAccountForUnipileId(accountId);
+    if (support?.purpose === "support") {
+      return handleSupportMailReceived(body);
+    }
+  } catch {
+    /* continue to CRM path */
+  }
+
   const account = await accountForUnipileId(accountId);
   if (!account || !emailId) return "missing_ids";
   const coachId = account.coach_id;
@@ -567,6 +580,16 @@ export async function handleUnipileAccountStatusEvent(
       last_synced_at: new Date().toISOString(),
     })
     .eq("unipile_account_id", accountId);
+
+  // Also update dedicated Support mailbox row when present (no CRM side effects).
+  try {
+    const { updatePlatformAccountStatus } = await import(
+      "@/lib/support/mailbox"
+    );
+    await updatePlatformAccountStatus(accountId, status);
+  } catch {
+    /* ignore — table may not exist yet during deploy */
+  }
 
   if (status !== "OK") {
     const { data: accounts } = await supabaseAdmin

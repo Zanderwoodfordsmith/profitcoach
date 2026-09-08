@@ -5,6 +5,7 @@ export default function CoachSupportPage() {
   return (
     <DashboardPageSection
       contentMaxWidthClass="max-w-3xl"
+      contentClassName="lg:mx-0"
       header={
         <StickyPageHeader
           title="Support"

@@ -86,7 +86,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       httpsUrl,
       webcalUrl,
-      // HTTPS (not webcal) so Google reads X-WR-CALNAME instead of naming by host.
+      // webcal in cid= — Google often rejects https://… with "check the URL".
       googleUrl: googleCalendarSubscribeUrl(httpsUrl),
       outlookUrl: outlookCalendarSubscribeUrl(httpsUrl),
       appleUrl: webcalUrl,

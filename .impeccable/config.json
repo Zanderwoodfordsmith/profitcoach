@@ -82,6 +82,18 @@
         ],
         "createdAt": "2026-09-05T07:45:56.087Z",
         "reason": "Pre-existing notification dropdown: slate text on white/amber-100 selection rows; detector false-positive blocks unrelated embedded-chrome edits."
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "public",
+        "createdAt": "2026-09-08T06:41:26.828Z",
+        "reason": "False positive: unselected state is slate on white; selected uses white on emerald"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "private",
+        "createdAt": "2026-09-08T06:41:26.870Z",
+        "reason": "False positive: unselected state is slate on white; selected uses amber-950 on amber-400"
       }
     ]
   }

@@ -46,10 +46,11 @@ export default function AdminConversationsPage() {
     <DashboardPageSection
       contentMaxWidthClass="max-w-none"
       gapClass="gap-0"
-      outerClassName="h-full min-h-0"
+      outerClassName="flex h-full min-h-0 flex-1 flex-col"
       contentClassName="min-h-0 flex-1 overflow-hidden"
       header={
         <StickyPageHeader
+          className="shrink-0"
           title="Get Clients"
           description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
