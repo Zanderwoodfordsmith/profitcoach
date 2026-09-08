@@ -2,7 +2,7 @@
 
 import { CommunityPostMediaGallery } from "@/components/community/CommunityPostMediaGallery";
 import { profileInitialsFromName } from "@/lib/communityProfile";
-import { formatShortTime } from "@/lib/formatShortDate";
+import { formatDayLabel, formatShortTime } from "@/lib/formatShortDate";
 import { parseSupportReplyMedia } from "@/lib/support/supportTicketMedia";
 import {
   authorDisplayName,
@@ -10,6 +10,30 @@ import {
   type SupportReply,
   type SupportTicketAuthor,
 } from "@/lib/support/tickets";
+
+function calendarDayKey(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+function groupRepliesByDay(replies: SupportReply[]) {
+  const groups: { key: string; label: string; replies: SupportReply[] }[] = [];
+  for (const reply of replies) {
+    const key = calendarDayKey(reply.created_at);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) {
+      last.replies.push(reply);
+    } else {
+      groups.push({
+        key,
+        label: formatDayLabel(reply.created_at),
+        replies: [reply],
+      });
+    }
+  }
+  return groups;
+}
 
 export function SupportChatAvatar({
   name,
@@ -130,29 +154,40 @@ export function SupportChatThread({
     ) : null;
   }
 
+  const byDay = groupRepliesByDay(replies);
+
   return (
     <div className="space-y-3">
-      {replies.map((reply) => {
-        const staff = isSupportStaffAuthor(reply.author);
-        const mine = viewerId != null && reply.created_by === viewerId;
-        const outbound =
-          perspective === "admin" ? staff || mine : mine && !staff;
+      {byDay.map((group) => (
+        <div key={group.key} className="space-y-3">
+          <div className="flex justify-center py-1">
+            <span className="rounded-full bg-white/90 px-3 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
+              {group.label}
+            </span>
+          </div>
+          {group.replies.map((reply) => {
+            const staff = isSupportStaffAuthor(reply.author);
+            const mine = viewerId != null && reply.created_by === viewerId;
+            const outbound =
+              perspective === "admin" ? staff || mine : mine && !staff;
 
-        return (
-          <SupportChatBubble
-            key={reply.id}
-            reply={reply}
-            outbound={outbound}
-            fallbackName={
-              staff
-                ? "Support"
-                : perspective === "member"
-                  ? "You"
-                  : "Member"
-            }
-          />
-        );
-      })}
+            return (
+              <SupportChatBubble
+                key={reply.id}
+                reply={reply}
+                outbound={outbound}
+                fallbackName={
+                  staff
+                    ? "Support"
+                    : perspective === "member"
+                      ? "You"
+                      : "Member"
+                }
+              />
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

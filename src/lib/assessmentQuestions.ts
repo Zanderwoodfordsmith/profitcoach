@@ -500,7 +500,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 1,
     question:
-      "Do you have a reliable, repeatable way to bring in new leads, customers, and/or clients, not just hope they find you?",
+      "Do you have a reliable, repeatable way to attract new leads, customers, and/or clients — not just hope they find you?",
     scoringGuide: {
       red: "I rely on word of mouth or hope",
       amber:
@@ -519,7 +519,7 @@ export const ASSESSMENT_QUESTIONS: AssessmentQuestion[] = [
     page: 6,
     questionNumberOnPage: 2,
     question:
-      "Do you have a repeatable system for acquiring and converting new leads, customers, and/or clients?",
+      "When someone shows interest, do you have a clear process that consistently turns that interest into a sale?",
     scoringGuide: {
       red: "It's very tactical or relies on me personally",
       amber:
