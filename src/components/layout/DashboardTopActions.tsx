@@ -26,6 +26,8 @@ import {
 } from "@/lib/adminWinsReplyQueue";
 import {
   EMPTY_NOTIFICATION_READ_STATE,
+  hasMeaningfulNotificationReadState,
+  hydrateNotificationReadState,
   isNotificationUnread,
   loadNotificationReadState,
   markCommunityNotificationRead,
@@ -137,6 +139,8 @@ export function DashboardTopActions({
   const [readState, setReadState] = useState<NotificationReadState>(
     EMPTY_NOTIFICATION_READ_STATE
   );
+  /** False until local or server read state is resolved — avoids all-unread flash. */
+  const [readStateReady, setReadStateReady] = useState(false);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [loadingProspectNotifications, setLoadingProspectNotifications] =
     useState(false);
@@ -152,7 +156,24 @@ export function DashboardTopActions({
 
   useEffect(() => {
     if (!profile?.id) return;
-    setReadState(loadNotificationReadState(profile.id));
+    const uid = profile.id;
+    setReadStateReady(false);
+    const local = loadNotificationReadState(uid);
+    // Only paint immediately when local already has cutoffs / marks. Empty local
+    // waits for server hydrate so we don't seed-to-now over a remote cutoff.
+    if (hasMeaningfulNotificationReadState(local)) {
+      setReadState(local);
+      setReadStateReady(true);
+    }
+    let cancelled = false;
+    void hydrateNotificationReadState(uid).then((resolved) => {
+      if (cancelled) return;
+      setReadState(resolved);
+      setReadStateReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [profile?.id]);
 
   const loadNotifications = useCallback(async () => {
@@ -708,21 +729,22 @@ export function DashboardTopActions({
   }, [notifications, filter]);
 
   const communityUnreadCount = useMemo(() => {
+    if (!readStateReady) return 0;
     let count = 0;
     for (const n of notifications) {
       if (isNotificationUnread(n, readState)) count += 1;
     }
     return count;
-  }, [notifications, readState]);
+  }, [notifications, readState, readStateReady]);
 
   const prospectsUnreadCount = useMemo(() => {
-    if (!prospectsEnabled) return 0;
+    if (!prospectsEnabled || !readStateReady) return 0;
     let count = 0;
     for (const n of prospectNotifications) {
       if (isNotificationUnread(n, readState)) count += 1;
     }
     return count;
-  }, [prospectNotifications, readState, prospectsEnabled]);
+  }, [prospectNotifications, readState, prospectsEnabled, readStateReady]);
 
   const unreadCount = communityUnreadCount + prospectsUnreadCount;
 
@@ -929,7 +951,8 @@ export function DashboardTopActions({
                 ) : (
                   <ul>
                     {filteredNotifications.map((item) => {
-                      const unread = isNotificationUnread(item, readState);
+                      const unread =
+                        readStateReady && isNotificationUnread(item, readState);
                       const actorInitials = profileInitialsFromName(item.actor_name);
                       return (
                         <li key={item.id} className="border-b border-sky-200/35 last:border-b-0">
@@ -988,7 +1011,8 @@ export function DashboardTopActions({
               ) : (
                 <ul>
                   {prospectNotifications.map((item) => {
-                    const unread = isNotificationUnread(item, readState);
+                    const unread =
+                      readStateReady && isNotificationUnread(item, readState);
                     const contactInitials = profileInitialsFromName(item.contact_name);
                     const actionText = item.title.replace(item.contact_name, "").trim();
                     return (

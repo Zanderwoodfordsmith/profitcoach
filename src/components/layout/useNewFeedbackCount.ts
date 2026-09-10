@@ -30,17 +30,11 @@ export function useNewFeedbackCount(enabled: boolean) {
       return;
     }
 
-    const { count: nextCount, error } = await supabaseClient
-      .from("community_feedback_reports")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "open");
-
-    if (error) {
-      setCount(0);
-      return;
-    }
-
-    setCount(nextCount ?? 0);
+    const { loadAdminSupportAttentionCount } = await import(
+      "@/lib/support/adminAttention"
+    );
+    const nextCount = await loadAdminSupportAttentionCount();
+    setCount(nextCount);
   }, [enabled]);
 
   useEffect(() => {

@@ -182,15 +182,16 @@ export async function POST(
   let googleCalendarId: string | null = null;
 
   const descriptionParts = [
-    `${calendar.name} with ${coach.displayName}.`,
-    `Guest: ${guestName} (${email})`,
-    phone ? `Phone: ${phone}` : null,
+    calendar.location_mode === "custom" && calendar.location_custom
+      ? `Join: ${calendar.location_custom.trim()}`
+      : null,
     calendar.location_mode === "phone" && calendar.location_phone
       ? `Call: ${calendar.location_phone}`
       : null,
-    calendar.location_mode === "custom" && calendar.location_custom
-      ? calendar.location_custom
-      : null,
+    `${calendar.name} with ${coach.displayName}.`,
+    `Guest: ${guestName} (${email})`,
+    phone ? `Phone: ${phone}` : null,
+    body.notes?.trim() ? `About:\n${body.notes.trim()}` : null,
   ].filter(Boolean);
 
   const googleEvent = await createGoogleBookingEvent({
@@ -213,6 +214,15 @@ export async function POST(
     if (googleEvent.hangoutLink) {
       meetingJoinUrl = googleEvent.hangoutLink;
     }
+  }
+
+  // Prefer explicit custom join URL (e.g. branded Zoom redirect) over Meet.
+  if (
+    calendar.location_mode === "custom" &&
+    calendar.location_custom &&
+    /^https?:\/\//i.test(calendar.location_custom.trim())
+  ) {
+    meetingJoinUrl = calendar.location_custom.trim();
   }
 
   const { data: booking, error } = await supabaseAdmin
@@ -256,6 +266,8 @@ export async function POST(
     whereLabel = meetingJoinUrl ? "Google Meet" : "Google Meet (invite by email)";
   } else if (calendar.location_mode === "phone" && meetingPhone) {
     whereLabel = `Phone · ${meetingPhone}`;
+  } else if (calendar.location_mode === "custom" && meetingJoinUrl) {
+    whereLabel = "Zoom";
   } else if (calendar.location_mode === "custom" && meetingInstructions) {
     whereLabel = meetingInstructions;
   }

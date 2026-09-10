@@ -56,6 +56,8 @@ export type SupportReply = {
   community_comment_id: string | null;
   author: SupportTicketAuthor | null;
   media?: unknown;
+  /** Set when an admin edited the body; null/undefined = never edited. */
+  edited_at?: string | null;
 };
 
 export const SUPPORT_AUTHOR_SELECT =

@@ -1,45 +1,17 @@
 import { NextResponse } from "next/server";
-import {
-  ensureCoachRowForUser,
-  updateCoachCalendar,
-} from "@/lib/booking/bookingService";
+import { updateCoachCalendar } from "@/lib/booking/bookingService";
 import type { CoachCalendarPatch } from "@/lib/booking/coachCalendars";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-async function requireSelfUser(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-  if (!token) return { error: "Missing access token." as const, userId: null };
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  return { error: null, userId: user.id as string };
-}
+import {
+  requireCoachOrAdmin,
+  resolveCoachTarget,
+} from "@/lib/booking/resolveCoachTarget";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await requireSelfUser(request);
-  if (auth.error || !auth.userId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
@@ -48,9 +20,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Missing calendar id." }, { status: 400 });
   }
 
-  let coach: { id: string };
+  let body: CoachCalendarPatch & { forSlug?: string };
   try {
-    coach = await ensureCoachRowForUser(auth.userId);
+    body = (await request.json()) as CoachCalendarPatch & { forSlug?: string };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+  }
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
+  try {
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug: body.forSlug,
+    });
   } catch {
     return NextResponse.json(
       { error: "Could not set up coach profile." },
@@ -58,18 +40,17 @@ export async function PATCH(
     );
   }
 
-  let body: CoachCalendarPatch;
-  try {
-    body = (await request.json()) as CoachCalendarPatch;
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
   }
 
+  const { forSlug: _forSlug, ...patch } = body;
+
   if (
-    body.location_mode !== undefined &&
-    body.location_mode !== "google_meet" &&
-    body.location_mode !== "phone" &&
-    body.location_mode !== "custom"
+    patch.location_mode !== undefined &&
+    patch.location_mode !== "google_meet" &&
+    patch.location_mode !== "phone" &&
+    patch.location_mode !== "custom"
   ) {
     return NextResponse.json(
       { error: "Invalid location_mode." },
@@ -78,7 +59,11 @@ export async function PATCH(
   }
 
   try {
-    const calendar = await updateCoachCalendar(coach.id, id.trim(), body);
+    const calendar = await updateCoachCalendar(
+      target.coach.id,
+      id.trim(),
+      patch
+    );
     if (!calendar) {
       return NextResponse.json({ error: "Calendar not found." }, { status: 404 });
     }

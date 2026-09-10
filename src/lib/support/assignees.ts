@@ -64,25 +64,8 @@ export function isSupportMessageSender(
   return !isDeltaIqContractor(assignee);
 }
 
-/** Smart-list filter keys for the admin queue. */
-export type SupportSmartList =
-  | "zander"
-  | "pam"
-  | "all_open"
-  | "from_lessons"
-  | "ideas";
+/** Admin queue: who the ticket is for (assignee or @mention). */
+export type SupportAssigneeFilter = "zander" | "pam" | "anyone";
 
-export function smartListLabel(list: SupportSmartList): string {
-  switch (list) {
-    case "zander":
-      return "Zander tasks";
-    case "pam":
-      return "Pam tasks";
-    case "all_open":
-      return "All open";
-    case "from_lessons":
-      return "From lessons";
-    case "ideas":
-      return "Ideas backlog";
-  }
-}
+/** Admin queue: active vs closed vs everything. */
+export type SupportStatusFilter = "open" | "resolved" | "all";

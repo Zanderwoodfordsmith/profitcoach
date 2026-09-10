@@ -715,6 +715,23 @@ export function BossDashboardSettings({
 
       {activeTab === "calendar" ? (
         <div className="flex w-full min-w-0 flex-col gap-10">
+          {variant === "admin" && !impersonatingCoachId ? (
+            <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+              This tab is for{" "}
+              <span className="font-medium text-slate-800">
+                your personal / discovery booking calendars
+              </span>{" "}
+              (same system coaches use for clients). Team support-call pages are
+              managed separately under{" "}
+              <a
+                href="/admin/support?tab=settings"
+                className="font-medium text-sky-700 hover:underline"
+              >
+                Support → Settings
+              </a>
+              .
+            </p>
+          ) : null}
           <BookingCalendarProviderCard />
           <CallsCalendarSettings
             appOrigin={appOrigin}

@@ -265,6 +265,111 @@ export type CreateBookingEventResult = {
   location: string | null;
 };
 
+type GoogleEventConferencePayload = {
+  id?: string;
+  hangoutLink?: string;
+  htmlLink?: string;
+  location?: string;
+  conferenceData?: {
+    entryPoints?: { entryPointType?: string; uri?: string }[];
+    createRequest?: {
+      status?: { statusCode?: string };
+    };
+  };
+};
+
+function extractHangoutLink(event: GoogleEventConferencePayload): string | null {
+  if (event.hangoutLink?.trim()) return event.hangoutLink.trim();
+  const video = event.conferenceData?.entryPoints?.find(
+    (e) => e.entryPointType === "video" && e.uri
+  );
+  return video?.uri?.trim() || null;
+}
+
+function meetCreateRequestId(): string {
+  return `pc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function patchGoogleEventFields(input: {
+  accessToken: string;
+  calendarIdEncoded: string;
+  eventId: string;
+  location?: string | null;
+  description?: string | null;
+  sendUpdates?: "all" | "none";
+}): Promise<boolean> {
+  const body: Record<string, string> = {};
+  if (input.location?.trim()) body.location = input.location.trim();
+  if (input.description != null) body.description = input.description;
+  if (Object.keys(body).length === 0) return true;
+
+  const url = new URL(
+    `https://www.googleapis.com/calendar/v3/calendars/${input.calendarIdEncoded}/events/${encodeURIComponent(input.eventId)}`
+  );
+  url.searchParams.set("sendUpdates", input.sendUpdates ?? "none");
+  const res = await fetch(url.toString(), {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    console.warn("google patch event fields failed:", res.status, raw);
+    return false;
+  }
+  return true;
+}
+
+function withJoinInDescription(
+  description: string,
+  joinUrl: string | null
+): string {
+  const trimmed = description.trim();
+  if (!joinUrl?.trim()) return trimmed;
+  const join = joinUrl.trim();
+  if (trimmed.includes(join)) return trimmed;
+  return [`Join: ${join}`, trimmed].filter(Boolean).join("\n\n");
+}
+
+async function attachMeetToExistingEvent(input: {
+  accessToken: string;
+  calendarIdEncoded: string;
+  eventId: string;
+}): Promise<string | null> {
+  const url = new URL(
+    `https://www.googleapis.com/calendar/v3/calendars/${input.calendarIdEncoded}/events/${encodeURIComponent(input.eventId)}`
+  );
+  url.searchParams.set("conferenceDataVersion", "1");
+  url.searchParams.set("sendUpdates", "all");
+  const res = await fetch(url.toString(), {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${input.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      conferenceData: {
+        createRequest: {
+          requestId: meetCreateRequestId(),
+          conferenceSolutionKey: { type: "hangoutsMeet" },
+        },
+      },
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    console.error("google attach meet failed:", res.status, raw);
+    return null;
+  }
+  const patched = (await res.json()) as GoogleEventConferencePayload;
+  return extractHangoutLink(patched);
+}
+
 export async function createGoogleBookingEvent(
   input: CreateBookingEventInput
 ): Promise<CreateBookingEventResult | null> {
@@ -274,23 +379,31 @@ export async function createGoogleBookingEvent(
   const accessToken = await getValidGoogleAccessToken(input.coachId);
   if (!accessToken) return null;
 
-  const calendarId = encodeURIComponent(conn.event_calendar_id || "primary");
+  const rawCalendarId = conn.event_calendar_id || "primary";
+  const calendarId = encodeURIComponent(rawCalendarId);
+  const wantMeet = input.locationMode === "google_meet";
 
   let location: string | null = null;
+  let knownJoinUrl: string | null = null;
   if (input.locationMode === "phone" && input.locationPhone?.trim()) {
     location = `Phone: ${input.locationPhone.trim()}`;
   } else if (input.locationMode === "custom" && input.locationCustom?.trim()) {
-    location = input.locationCustom.trim();
+    knownJoinUrl = input.locationCustom.trim();
+    location = knownJoinUrl;
   }
+
+  const description = withJoinInDescription(input.description, knownJoinUrl);
 
   const eventBody: Record<string, unknown> = {
     summary: input.title,
-    description: input.description,
+    description,
     start: {
       dateTime: input.startsAt,
+      timeZone: input.timezone,
     },
     end: {
       dateTime: input.endsAt,
+      timeZone: input.timezone,
     },
     attendees: [
       {
@@ -305,10 +418,10 @@ export async function createGoogleBookingEvent(
 
   if (location) eventBody.location = location;
 
-  if (input.locationMode === "google_meet") {
+  if (wantMeet) {
     eventBody.conferenceData = {
       createRequest: {
-        requestId: `pc-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+        requestId: meetCreateRequestId(),
         conferenceSolutionKey: { type: "hangoutsMeet" },
       },
     };
@@ -318,7 +431,7 @@ export async function createGoogleBookingEvent(
     `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`
   );
   url.searchParams.set("sendUpdates", "all");
-  if (input.locationMode === "google_meet") {
+  if (wantMeet) {
     url.searchParams.set("conferenceDataVersion", "1");
   }
 
@@ -338,32 +451,65 @@ export async function createGoogleBookingEvent(
     return null;
   }
 
-  const created = (await res.json()) as {
-    id?: string;
-    hangoutLink?: string;
-    htmlLink?: string;
-    location?: string;
-    conferenceData?: {
-      entryPoints?: { entryPointType?: string; uri?: string }[];
-    };
-  };
+  const created = (await res.json()) as GoogleEventConferencePayload;
 
   if (!created.id) return null;
 
-  let hangoutLink = created.hangoutLink ?? null;
-  if (!hangoutLink && created.conferenceData?.entryPoints) {
-    const video = created.conferenceData.entryPoints.find(
-      (e) => e.entryPointType === "video" && e.uri
-    );
-    hangoutLink = video?.uri ?? null;
+  let hangoutLink = extractHangoutLink(created);
+  const createStatus =
+    created.conferenceData?.createRequest?.status?.statusCode ?? null;
+
+  if (wantMeet && !hangoutLink) {
+    console.warn("google meet missing after create:", {
+      eventId: created.id,
+      calendarId: rawCalendarId,
+      createStatus,
+    });
+    hangoutLink = await attachMeetToExistingEvent({
+      accessToken,
+      calendarIdEncoded: calendarId,
+      eventId: created.id,
+    });
+  }
+
+  const joinUrl = hangoutLink ?? knownJoinUrl;
+  const finalDescription = withJoinInDescription(description, joinUrl);
+  const finalLocation = joinUrl ?? location;
+
+  // Ensure Location + "Join:" in description on the invite (email confirmations
+  // already have the URL; calendar invites were missing it).
+  const locationMissing =
+    Boolean(finalLocation) &&
+    (!created.location?.trim() || created.location.trim() !== finalLocation);
+  const descriptionNeedsJoin =
+    Boolean(joinUrl) && finalDescription !== description;
+
+  if (finalLocation && (locationMissing || descriptionNeedsJoin)) {
+    await patchGoogleEventFields({
+      accessToken,
+      calendarIdEncoded: calendarId,
+      eventId: created.id,
+      location: finalLocation,
+      description: finalDescription,
+      // Re-notify guests when location was missing on the first invite.
+      sendUpdates: locationMissing ? "all" : "none",
+    });
+  }
+
+  if (wantMeet && !hangoutLink) {
+    console.error("google meet still missing after retry:", {
+      eventId: created.id,
+      calendarId: rawCalendarId,
+      createStatus,
+    });
   }
 
   return {
     eventId: created.id,
-    calendarId: conn.event_calendar_id || "primary",
+    calendarId: rawCalendarId,
     hangoutLink,
     htmlLink: created.htmlLink ?? null,
-    location: created.location ?? location,
+    location: finalLocation,
   };
 }
 

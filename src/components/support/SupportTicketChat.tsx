@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, Minus, Send, Video, X } from "lucide-react";
+import { Bold, ImagePlus, Link as LinkIcon, Minus, Send, Video, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   CommentImagePreviews,
@@ -20,6 +20,10 @@ import {
   validateSupportMediaFile,
   type CommunityPostMediaItem,
 } from "@/lib/communityPostMedia";
+import {
+  applyMarkdownLink,
+  applyTextareaWrap,
+} from "@/lib/support/textareaFormat";
 import {
   SUPPORT_AUTHOR_SELECT,
   normalizeSupportAuthor,
@@ -106,6 +110,34 @@ export function SupportTicketChat({
 
   function minimizeComposer() {
     setComposerOpen(false);
+  }
+
+  function applyFormatResult(
+    result: { next: string; selectStart: number; selectEnd: number } | null
+  ) {
+    if (!result) return;
+    setDraft(result.next);
+    const el = replyTextareaRef.current;
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(result.selectStart, result.selectEnd);
+    });
+  }
+
+  function insertBoldMarkdown() {
+    const el = replyTextareaRef.current;
+    const start = el?.selectionStart ?? draft.length;
+    const end = el?.selectionEnd ?? draft.length;
+    applyFormatResult(
+      applyTextareaWrap(draft, start, end, "**", "**", "bold")
+    );
+  }
+
+  function insertLinkMarkdown() {
+    const el = replyTextareaRef.current;
+    const start = el?.selectionStart ?? draft.length;
+    const end = el?.selectionEnd ?? draft.length;
+    applyFormatResult(applyMarkdownLink(draft, start, end));
   }
 
   async function toggleNotifyEmail(next: boolean) {
@@ -210,6 +242,7 @@ export function SupportTicketChat({
           `
           id,
           created_at,
+          edited_at,
           report_id,
           created_by,
           body,
@@ -225,6 +258,7 @@ export function SupportTicketChat({
       const reply: SupportReply = {
         id: data.id,
         created_at: data.created_at,
+        edited_at: data.edited_at ?? null,
         report_id: data.report_id,
         created_by: data.created_by,
         body: data.body,
@@ -235,13 +269,12 @@ export function SupportTicketChat({
 
       let nextStatus = ticket.status;
       const statusAfterReply = supportStatusAfterMemberReply(ticket.status);
-      if (statusAfterReply) {
-        const { error: statusError } = await supabaseClient
-          .from("community_feedback_reports")
-          .update({ status: statusAfterReply })
-          .eq("id", ticket.id);
-        if (!statusError) nextStatus = statusAfterReply;
-      }
+      // Always touch the row so updated_at bumps (assignee attention badges).
+      const { error: statusError } = await supabaseClient
+        .from("community_feedback_reports")
+        .update({ status: statusAfterReply ?? ticket.status })
+        .eq("id", ticket.id);
+      if (!statusError && statusAfterReply) nextStatus = statusAfterReply;
 
       onTicketChange({
         ...ticket,
@@ -395,6 +428,24 @@ export function SupportTicketChat({
                 toolbar={(micButton) => (
                   <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-2 py-1.5">
                     <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        title="Bold"
+                        disabled={busy}
+                        onClick={insertBoldMarkdown}
+                        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                      >
+                        <Bold className="h-4 w-4" strokeWidth={1.75} />
+                      </button>
+                      <button
+                        type="button"
+                        title="Add link"
+                        disabled={busy}
+                        onClick={insertLinkMarkdown}
+                        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                      >
+                        <LinkIcon className="h-4 w-4" strokeWidth={1.75} />
+                      </button>
                       <input
                         ref={imageInputRef}
                         type="file"

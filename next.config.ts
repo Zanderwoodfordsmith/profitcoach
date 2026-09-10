@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/zoom-zander",
+        destination: "https://us02web.zoom.us/j/9183502510",
+        permanent: false,
+      },
+      {
+        source: "/zoom-pam",
+        destination: "https://us02web.zoom.us/j/7540888016",
+        permanent: false,
+      },
+      {
         source: "/boss-exact/BOSS Assessment.html",
         destination: "/boss-exact/boss-assessment.html",
         permanent: true,

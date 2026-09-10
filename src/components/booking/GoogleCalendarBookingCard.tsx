@@ -54,7 +54,18 @@ function GoogleCalendarMark({ className }: { className?: string }) {
 /**
  * Compact integrations list for Settings → Calendar (expand for prefs).
  */
-export function GoogleCalendarBookingCard() {
+export function GoogleCalendarBookingCard({
+  forSlug = null,
+  returnTo: returnToProp = null,
+  compact = false,
+}: {
+  /** Admin support-call setup: show status for this host. Connect only works for self. */
+  forSlug?: string | null;
+  /** After OAuth, return here instead of the default settings calendar tab. */
+  returnTo?: string | null;
+  /** Drop the Integrations heading — for embedded support settings. */
+  compact?: boolean;
+} = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -63,10 +74,12 @@ export function GoogleCalendarBookingCard() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
-  const [status, setStatus] = useState<GoogleStatus | null>(null);
+  const [status, setStatus] = useState<(GoogleStatus & { is_self?: boolean }) | null>(
+    null
+  );
   const [busyIds, setBusyIds] = useState<string[]>([]);
   const [eventCalendarId, setEventCalendarId] = useState("primary");
-  const [googleOpen, setGoogleOpen] = useState(false);
+  const [googleOpen, setGoogleOpen] = useState(Boolean(compact));
   const [busyOpen, setBusyOpen] = useState(false);
 
   const authHeaders = useCallback(async () => {
@@ -87,9 +100,14 @@ export function GoogleCalendarBookingCard() {
       setLoading(false);
       return;
     }
-    const res = await fetch("/api/coach/google-calendar", { headers });
+    const qs =
+      forSlug && forSlug.trim()
+        ? `?forSlug=${encodeURIComponent(forSlug.trim())}`
+        : "";
+    const res = await fetch(`/api/coach/google-calendar${qs}`, { headers });
     const body = (await res.json().catch(() => ({}))) as GoogleStatus & {
       error?: string;
+      is_self?: boolean;
     };
     if (!res.ok) {
       setError(body.error ?? "Could not load Google Calendar status.");
@@ -100,7 +118,7 @@ export function GoogleCalendarBookingCard() {
     setBusyIds(body.busy_calendar_ids ?? []);
     setEventCalendarId(body.event_calendar_id || "primary");
     setLoading(false);
-  }, [authHeaders]);
+  }, [authHeaders, forSlug]);
 
   useEffect(() => {
     void load();
@@ -132,9 +150,11 @@ export function GoogleCalendarBookingCard() {
       setError("Not signed in.");
       return;
     }
-    const returnTo = pathname.startsWith("/admin")
-      ? "/admin/account?tab=calendar"
-      : "/coach/settings?tab=calendar";
+    const returnTo =
+      returnToProp?.trim() ||
+      (pathname.startsWith("/admin")
+        ? "/admin/account?tab=calendar"
+        : "/coach/settings?tab=calendar");
     const res = await fetch(
       `/api/coach/google-calendar/connect?returnTo=${encodeURIComponent(returnTo)}`,
       { headers }
@@ -240,15 +260,18 @@ export function GoogleCalendarBookingCard() {
   }
 
   const connected = Boolean(status?.connected);
+  const isSelf = status?.is_self !== false;
 
   return (
     <div className="space-y-3">
-      <div>
-        <h2 className="text-sm font-semibold text-slate-900">Integrations</h2>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Connect once — expand a row to adjust sync settings.
-        </p>
-      </div>
+      {!compact ? (
+        <div>
+          <h2 className="text-sm font-semibold text-slate-900">Integrations</h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Connect once — expand a row to adjust sync settings.
+          </p>
+        </div>
+      ) : null}
 
       {banner ? (
         <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -256,6 +279,13 @@ export function GoogleCalendarBookingCard() {
         </p>
       ) : null}
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+      {!isSelf ? (
+        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          Google must be connected while signed in as this host. You can still
+          set their weekly hours above.
+        </p>
+      ) : null}
 
       {!status?.configured ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -295,7 +325,7 @@ export function GoogleCalendarBookingCard() {
               <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
               Connected
             </span>
-          ) : (
+          ) : isSelf ? (
             <button
               type="button"
               disabled={connecting || !status?.configured}
@@ -304,10 +334,12 @@ export function GoogleCalendarBookingCard() {
             >
               {connecting ? "Opening…" : "Connect"}
             </button>
+          ) : (
+            <span className="text-xs text-slate-400">Sign in as host</span>
           )}
         </div>
 
-        {googleOpen && connected ? (
+        {googleOpen && connected && isSelf ? (
           <div className="space-y-4 border-t border-slate-100 px-4 py-4">
             <label className="block text-sm">
               <span className="font-medium text-slate-700">
@@ -325,6 +357,10 @@ export function GoogleCalendarBookingCard() {
                   </option>
                 ))}
               </select>
+              <span className="mt-1 block text-[11px] text-slate-400">
+                Meet links are created on this calendar. Prefer your primary
+                calendar if a booking had no join link.
+              </span>
             </label>
 
             <div className="rounded-lg border border-slate-100">

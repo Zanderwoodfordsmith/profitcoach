@@ -1,6 +1,11 @@
 import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { BCA_SUPPORT_EMAIL } from "@/config/businessContact";
 import { getSupportMailboxAccount } from "@/lib/support/mailbox";
+import {
+  buildSupportCallBookingUrl,
+  loadSupportCallContactPrefill,
+  resolveSupportCallHostSlug,
+} from "@/lib/support/supportCallPrefill";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { SupportTicketSource } from "@/lib/support/tickets";
 import {
@@ -167,7 +172,7 @@ export async function processDueSupportReplyEmails(
   const { data: due, error } = await supabaseAdmin
     .from("community_feedback_reports")
     .select(
-      "id, ticket_number, title, created_by, contact_email, submitter_name, member_notify_email, email_notify_after, email_notify_last_sent_at, unipile_email_id, unipile_thread_id, unipile_account_id"
+      "id, ticket_number, title, created_by, contact_email, submitter_name, assigned_to, member_notify_email, email_notify_after, email_notify_last_sent_at, unipile_email_id, unipile_thread_id, unipile_account_id"
     )
     .not("email_notify_after", "is", null)
     .lte("email_notify_after", nowIso)
@@ -249,6 +254,23 @@ export async function processDueSupportReplyEmails(
       .map((r) => r.authorFirstName)
       .filter((n): n is string => Boolean(n));
 
+    const hostSlug = await resolveSupportCallHostSlug(
+      (ticket as { assigned_to?: string | null }).assigned_to
+    );
+    const contactPrefill = ticket.created_by
+      ? await loadSupportCallContactPrefill(ticket.created_by)
+      : {
+          firstName: ticket.submitter_name?.trim()?.split(/\s+/)[0] || null,
+          lastName:
+            ticket.submitter_name?.trim()?.split(/\s+/).slice(1).join(" ") ||
+            null,
+          email: recipient.email,
+          phone: null,
+        };
+    if (!contactPrefill.email) {
+      contactPrefill.email = recipient.email;
+    }
+
     const result = await notifyCoachOfSupportReply({
       ticketId: ticket.id,
       title: ticket.title,
@@ -256,6 +278,11 @@ export async function processDueSupportReplyEmails(
       intro: staffReplyIntro(authorNames),
       recipient,
       unipileEmailId: ticket.unipile_email_id,
+      supportCallUrl: buildSupportCallBookingUrl({
+        baseUrl: getAppBaseUrl(request),
+        hostSlug,
+        contact: contactPrefill,
+      }),
       request,
     });
 
@@ -319,6 +346,8 @@ export async function notifyCoachOfSupportReply(input: {
   intro: string;
   recipient: SupportNotifyRecipient;
   unipileEmailId?: string | null;
+  /** Prefillable /support-call-* link for the assignee host. */
+  supportCallUrl?: string | null;
   request?: Request;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!isUnipileConfigured()) {
@@ -343,12 +372,24 @@ export async function notifyCoachOfSupportReply(input: {
   const base = getAppBaseUrl(input.request);
   const subjectTitle = (input.title || "").trim() || "your support request";
   const supportUrl = `${base}/coach/support`;
+  const supportCallUrl = input.supportCallUrl?.trim() || null;
   const preview = input.replyBody.trim().slice(0, 2000);
   const greeting = `Hi${
     input.recipient.name ? ` ${input.recipient.name.split(" ")[0]}` : ""
   },`;
   const outro =
-    "You can reply to this email, or open Support in the app — either works.";
+    "You can reply to this email, open Support in the app, or book a short call — whichever is easiest.";
+
+  const callButton = supportCallUrl
+    ? `<p><a href="${escapeHtml(
+        supportCallUrl
+      )}" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;margin-right:8px;">Book a support call</a>
+<a href="${escapeHtml(
+        supportUrl
+      )}" style="display:inline-block;background:#0369a1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">Open Support</a></p>`
+    : `<p><a href="${escapeHtml(
+        supportUrl
+      )}" style="display:inline-block;background:#0369a1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">Open Support</a></p>`;
 
   const html = `<p>${escapeHtml(greeting)}</p>
 <p>${escapeHtml(input.intro)}${
@@ -360,9 +401,7 @@ export async function notifyCoachOfSupportReply(input: {
     preview
   )}</blockquote>
 <p style="color:#334155;font-size:14px;">${escapeHtml(outro)}</p>
-<p><a href="${escapeHtml(
-    supportUrl
-  )}" style="display:inline-block;background:#0369a1;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">Open Support</a></p>
+${callButton}
 <p style="color:#64748b;font-size:13px;">— Profit Coach Support</p>`;
 
   // Always RE: so member inbox shows a reply, not a bare ticket title.

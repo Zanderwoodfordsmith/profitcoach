@@ -240,14 +240,16 @@ type Props = {
    * Keep false for staff previews until that webhook is wired.
    */
   enableLeadCapture?: boolean;
-  /** Override terms / privacy hrefs (defaults to BCA marketing site). */
-  termsHref?: string;
-  privacyHref?: string;
   /**
    * After Continue: GHL Fit Call iframe (default) or native booking embed.
    * Use `StartApplyPanelNative` for the native coach-slug flow.
    */
   calendar?: StartApplyCalendarEngine;
+  /**
+   * `discovery` — sales qualify questions (default).
+   * `support` — single “what is this call about?” notes field.
+   */
+  intent?: "discovery" | "support";
 };
 
 /**
@@ -260,10 +262,10 @@ export function StartApplyPanel({
   onCalendarChange,
   prefill: prefillProp,
   enableLeadCapture = false,
-  termsHref = "https://www.businesscoachacademy.com/terms-and-conditions",
-  privacyHref = "https://www.businesscoachacademy.com/privacy-policy",
   calendar = { type: "ghl" },
+  intent = "discovery",
 }: Props) {
+  const isSupport = intent === "support";
   const seeded = seedFromPrefill(prefillProp);
   const [countryCode, setCountryCode] = useState(seeded.countryCode);
   const [phoneValue, setPhoneValue] = useState(seeded.phoneValue);
@@ -274,6 +276,7 @@ export function StartApplyPanel({
   const [role, setRole] = useState(seeded.role);
   const [timing, setTiming] = useState(seeded.timing);
   const [investment, setInvestment] = useState(seeded.investment);
+  const [callTopic, setCallTopic] = useState("");
   const [bookingEmail, setBookingEmail] = useState(seeded.email);
   const [error, setError] = useState("");
   const [stage, setStage] = useState<"form" | "calendar">("form");
@@ -337,14 +340,15 @@ export function StartApplyPanel({
   const expanded =
     lastName.trim().length >= 1 ||
     (phoneValid && firstName.trim().length > 0 && lastName.trim().length > 0) ||
-    Boolean(email.trim() || role || timing || investment);
+    Boolean(email.trim() || role || timing || investment || callTopic.trim());
   const showCalendar = stage === "calendar";
   const isNative = calendar.type === "native";
   const nativeSlug = calendar.type === "native" ? calendar.slug : "";
   const nativeCalendarSlug =
     calendar.type === "native" ? calendar.calendarSlug ?? "discovery" : "discovery";
-  // GHL iframe only — native mounts after Continue (no preload / no duplicate chrome).
-  const preloadCalendar = !isNative && (expanded || showCalendar);
+  // Mount calendar as soon as the form expands so meta/slots (native) or the
+  // GHL iframe can load while they finish email / topic.
+  const preloadCalendar = expanded || showCalendar;
 
   const bookingSrc = buildBookingSrc({
     firstName: firstName.trim(),
@@ -361,6 +365,7 @@ export function StartApplyPanel({
     role: `start-role-${uid}`,
     timing: `start-timing-${uid}`,
     investment: `start-investment-${uid}`,
+    topic: `start-topic-${uid}`,
     iframe: `start-booking-${uid}`,
   };
 
@@ -587,17 +592,21 @@ export function StartApplyPanel({
       setError("Enter a valid email address.");
       return;
     }
-    if (!role) {
-      setError("Select which best describes you.");
-      return;
-    }
-    if (!timing) {
-      setError("Select whether you’re able to get started in the next 90 days.");
-      return;
-    }
-    if (!investment) {
-      setError("Select whether the investment works for you.");
-      return;
+    if (!isSupport) {
+      if (!role) {
+        setError("Select which best describes you.");
+        return;
+      }
+      if (!timing) {
+        setError(
+          "Select whether you’re able to get started in the next 90 days."
+        );
+        return;
+      }
+      if (!investment) {
+        setError("Select whether the investment works for you.");
+        return;
+      }
     }
     setEmail(trimmed);
     setError("");
@@ -607,9 +616,9 @@ export function StartApplyPanel({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: trimmed,
-        role,
-        timing,
-        investment,
+        role: isSupport ? undefined : role,
+        timing: isSupport ? undefined : timing,
+        investment: isSupport ? undefined : investment,
         stage: "email",
       },
       true,
@@ -658,9 +667,13 @@ export function StartApplyPanel({
       {!showCalendar ? (
         <div className="start-panel__split">
           <form className="start-panel__form" onSubmit={onContinue} noValidate>
-            <h2 className="start-panel__title">Let&apos;s Talk</h2>
+            <h2 className="start-panel__title">
+              {isSupport ? "Book a support call" : <>Let&apos;s Talk</>}
+            </h2>
             <p className="start-panel__lead">
-              Ready to see if the Academy is the right next step?
+              {isSupport
+                ? "20 minutes — share what you need help with so we can prepare."
+                : "Ready to see if the Academy is the right next step?"}
             </p>
 
             <div>
@@ -781,52 +794,66 @@ export function StartApplyPanel({
                   />
                 </div>
 
-                <div className="start-panel__field">
-                  <p className="start-panel__label" id={ids.role}>
-                    Which best describes you?
-                    <span className="start-panel__req" aria-hidden="true">
-                      *
-                    </span>
-                  </p>
-                  <RolePicker value={role} onChange={setRole} compact />
-                </div>
+                {isSupport ? (
+                  <div className="start-panel__field">
+                    <label className="start-panel__label" htmlFor={ids.topic}>
+                      What would you like this call to be about?
+                      <span className="start-panel__optional">(optional)</span>
+                    </label>
+                    <textarea
+                      id={ids.topic}
+                      className="start-panel__input start-panel__textarea"
+                      rows={5}
+                      value={callTopic}
+                      onChange={(e) => setCallTopic(e.target.value)}
+                      placeholder="Share as much as you can — context, questions, links — so we can make the most of the time."
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="start-panel__field">
+                      <p className="start-panel__label" id={ids.role}>
+                        Which best describes you?
+                        <span className="start-panel__req" aria-hidden="true">
+                          *
+                        </span>
+                      </p>
+                      <RolePicker value={role} onChange={setRole} compact />
+                    </div>
 
-                <div className="start-panel__field">
-                  <p className="start-panel__label" id={ids.timing}>
-                    Able to get started in the next 90 days?
-                    <span className="start-panel__req" aria-hidden="true">
-                      *
-                    </span>
-                  </p>
-                  <TimingPicker value={timing} onChange={setTiming} compact />
-                </div>
+                    <div className="start-panel__field">
+                      <p className="start-panel__label" id={ids.timing}>
+                        Able to get started in the next 90 days?
+                        <span className="start-panel__req" aria-hidden="true">
+                          *
+                        </span>
+                      </p>
+                      <TimingPicker
+                        value={timing}
+                        onChange={setTiming}
+                        compact
+                      />
+                    </div>
 
-                <div className="start-panel__field">
-                  <p className="start-panel__label" id={ids.investment}>
-                    This requires an investment. Does that work for you?
-                    <span className="start-panel__req" aria-hidden="true">
-                      *
-                    </span>
-                  </p>
-                  <InvestmentPicker value={investment} onChange={setInvestment} compact />
-                </div>
+                    <div className="start-panel__field">
+                      <p className="start-panel__label" id={ids.investment}>
+                        This requires an investment. Does that work for you?
+                        <span className="start-panel__req" aria-hidden="true">
+                          *
+                        </span>
+                      </p>
+                      <InvestmentPicker
+                        value={investment}
+                        onChange={setInvestment}
+                        compact
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             ) : null}
 
             {error ? <p className="start-panel__error">{error}</p> : null}
-
-            <p className="start-panel__consent">
-              By entering your information, you consent to your data being saved in accordance with
-              our{" "}
-              <a href={termsHref} target="_blank" rel="noreferrer">
-                Terms
-              </a>{" "}
-              &amp;{" "}
-              <a href={privacyHref} target="_blank" rel="noreferrer">
-                Privacy Policy
-              </a>
-              .
-            </p>
 
             <button type="submit" className="start-panel__continue" disabled={!expanded}>
               Continue <span aria-hidden="true">›</span>
@@ -842,9 +869,14 @@ export function StartApplyPanel({
         </div>
       ) : null}
 
-      {/* Native picker — shown only after Continue (header lives inside NativeBookingEmbed). */}
-      {isNative && showCalendar ? (
-        <div className="start-panel__booking">
+      {/* Native picker — preload while form is expanded so slots are warm on Continue. */}
+      {isNative && preloadCalendar ? (
+        <div
+          className={`start-panel__booking${
+            showCalendar ? "" : " start-panel__booking--preload"
+          }`}
+          aria-hidden={!showCalendar}
+        >
           <div className="start-panel__native">
             <NativeBookingEmbed
               slug={nativeSlug}
@@ -856,13 +888,14 @@ export function StartApplyPanel({
                 email: bookingEmail.trim() || email.trim(),
                 phone: phoneE164,
               }}
+              notes={isSupport ? callTopic.trim() : undefined}
             />
           </div>
         </div>
       ) : null}
 
       {/* Keep the GHL iframe mounted from expand → Continue so it doesn’t remount on reveal. */}
-      {preloadCalendar ? (
+      {!isNative && preloadCalendar ? (
         <div
           className={`start-panel__booking${
             showCalendar ? "" : " start-panel__booking--preload"

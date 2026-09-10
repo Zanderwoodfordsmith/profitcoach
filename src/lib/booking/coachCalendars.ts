@@ -30,6 +30,12 @@ export const DEFAULT_COACH_CALENDARS = [
     meeting_duration_minutes: 120,
     sort_order: 4,
   },
+  {
+    slug: "support",
+    name: "Support call",
+    meeting_duration_minutes: 20,
+    sort_order: 5,
+  },
 ] as const;
 
 export type CoachCalendarRow = {
@@ -119,6 +125,7 @@ export function calendarToBookingSettings(
 ): {
   timezone: string;
   meeting_duration_minutes: number;
+  slot_interval_minutes: number;
   buffer_minutes: number;
   min_notice_hours: number;
   booking_window_days: number;
@@ -128,9 +135,16 @@ export function calendarToBookingSettings(
   location_phone: string | null;
   location_custom: string | null;
 } {
+  // Support calls are 20 min but offer starts on :00 / :30.
+  const slotInterval =
+    calendar.slug === "support"
+      ? 30
+      : calendar.meeting_duration_minutes;
+
   return {
     timezone,
     meeting_duration_minutes: calendar.meeting_duration_minutes,
+    slot_interval_minutes: slotInterval,
     buffer_minutes: calendar.buffer_minutes,
     min_notice_hours: calendar.min_notice_hours,
     booking_window_days: calendar.booking_window_days,

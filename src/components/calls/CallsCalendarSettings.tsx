@@ -24,11 +24,32 @@ const WEEKDAYS = [
 type Props = {
   appOrigin: string;
   callsBasePath: "/coach/calls" | "/admin/calls";
+  /**
+   * Admin support-call setup: load/save calendars for this host slug
+   * (zander / pam). Omit for the signed-in user.
+   */
+  forSlug?: string | null;
+  /** When set, only these calendar slugs are shown (e.g. `["support"]`). */
+  calendarSlugFilter?: string[] | null;
+  /** Hide the shared weekly hours editor (when parent owns that UI). */
+  hideHours?: boolean;
+  /** Hide the booking calendars list (when parent owns that UI). */
+  hideCalendars?: boolean;
+  /** Override weekly hours card title. */
+  hoursTitle?: string;
+  /** Override weekly hours card hint. */
+  hoursHint?: string;
 };
 
 export function CallsCalendarSettings({
   appOrigin,
   callsBasePath: _callsBasePath,
+  forSlug = null,
+  calendarSlugFilter = null,
+  hideHours = false,
+  hideCalendars = false,
+  hoursTitle = "Weekly hours",
+  hoursHint,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,7 +79,11 @@ export function CallsCalendarSettings({
       setLoading(false);
       return;
     }
-    const res = await fetch("/api/coach/calendars", { headers });
+    const qs =
+      forSlug && forSlug.trim()
+        ? `?forSlug=${encodeURIComponent(forSlug.trim())}`
+        : "";
+    const res = await fetch(`/api/coach/calendars${qs}`, { headers });
     const body = (await res.json().catch(() => ({}))) as {
       error?: string;
       slug?: string;
@@ -78,9 +103,15 @@ export function CallsCalendarSettings({
         ? body.rules
         : DEFAULT_WEEKDAY_AVAILABILITY.map((r) => ({ ...r }))
     );
-    setCalendars(body.calendars ?? []);
+    const all = body.calendars ?? [];
+    const filter = calendarSlugFilter?.map((s) => s.trim().toLowerCase()) ?? null;
+    setCalendars(
+      filter && filter.length > 0
+        ? all.filter((c) => filter.includes(c.slug.toLowerCase()))
+        : all
+    );
     setLoading(false);
-  }, [authHeaders]);
+  }, [authHeaders, forSlug, calendarSlugFilter]);
 
   useEffect(() => {
     void load();
@@ -98,7 +129,11 @@ export function CallsCalendarSettings({
     const res = await fetch("/api/coach/calendars", {
       method: "PATCH",
       headers,
-      body: JSON.stringify({ timezone, rules }),
+      body: JSON.stringify({
+        timezone,
+        rules,
+        ...(forSlug?.trim() ? { forSlug: forSlug.trim() } : {}),
+      }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -121,7 +156,10 @@ export function CallsCalendarSettings({
     const res = await fetch(`/api/coach/calendars/${encodeURIComponent(id)}`, {
       method: "PATCH",
       headers,
-      body: JSON.stringify(patch),
+      body: JSON.stringify({
+        ...patch,
+        ...(forSlug?.trim() ? { forSlug: forSlug.trim() } : {}),
+      }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -182,7 +220,14 @@ export function CallsCalendarSettings({
     <div className="space-y-4">
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+      <div
+        className={
+          hideHours || hideCalendars
+            ? "space-y-6"
+            : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start"
+        }
+      >
+        {!hideCalendars ? (
         <section className="min-w-0 space-y-3">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-slate-900">
@@ -530,14 +575,18 @@ export function CallsCalendarSettings({
             })}
           </ul>
         </section>
+        ) : null}
 
+        {!hideHours ? (
         <aside className="rounded-xl border border-slate-200/80 bg-white p-4 lg:sticky lg:top-20">
           <h3 className="text-sm font-semibold text-slate-900">
-            Weekly hours
+            {hoursTitle}
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            Shared across all calendars · {activeDays} day
-            {activeDays === 1 ? "" : "s"} open
+            {hoursHint ??
+              `Shared across all calendars · ${activeDays} day${
+                activeDays === 1 ? "" : "s"
+              } open`}
           </p>
 
           <label className="mt-4 block text-sm">
@@ -621,6 +670,7 @@ export function CallsCalendarSettings({
             {saving ? "Saving…" : "Save hours"}
           </button>
         </aside>
+        ) : null}
       </div>
     </div>
   );

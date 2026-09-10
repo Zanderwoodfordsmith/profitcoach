@@ -10,7 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Fragment,
   useCallback,
@@ -19,9 +19,17 @@ import {
   useRef,
   useState,
 } from "react";
-import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
-import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
+import {
+  DashboardPageSection,
+  PageHeaderUnderlineTabs,
+  StickyPageHeader,
+} from "@/components/layout";
+import {
+  FEEDBACK_COUNTS_CHANGED,
+  notifySupportCountsChanged,
+} from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
+import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
 import { SupportCreateTicketComposer } from "@/components/support/SupportCreateTicketComposer";
 import { SupportMailboxConnect } from "@/components/support/SupportMailboxConnect";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -29,10 +37,16 @@ import {
   DEFAULT_SUPPORT_ASSIGNEE_ID,
   assigneeDisplayName,
   isSupportAssignable,
-  smartListLabel,
   type SupportAssignee,
-  type SupportSmartList,
+  type SupportAssigneeFilter,
+  type SupportStatusFilter,
 } from "@/lib/support/assignees";
+import {
+  loadAdminSupportAttention,
+  markAdminSupportTicketRead,
+  supportAttentionBadgeCount,
+  type SupportAttentionMap,
+} from "@/lib/support/adminAttention";
 import { supportNotifyDefaultOn } from "@/lib/support/notifyCoachOfReply";
 import {
   SUPPORT_SOURCE_LABELS,
@@ -50,7 +64,6 @@ import {
 } from "@/lib/support/tickets";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
-
 type AdminTicketRow = {
   id: string;
   created_at: string;
@@ -108,13 +121,33 @@ const STATUS_DOT: Record<SupportTicketStatus, string> = {
   resolved: "bg-emerald-500",
 };
 
-const SMART_LISTS: SupportSmartList[] = [
-  "zander",
-  "pam",
-  "all_open",
-  "from_lessons",
-  "ideas",
+const ASSIGNEE_FILTERS: { id: SupportAssigneeFilter; label: string }[] = [
+  { id: "zander", label: "Zander" },
+  { id: "pam", label: "Pam" },
+  { id: "anyone", label: "Anyone" },
 ];
+
+const STATUS_FILTER_OPTIONS: {
+  id: SupportStatusFilter;
+  label: string;
+}[] = [
+  { id: "open", label: "Open" },
+  { id: "resolved", label: "Resolved" },
+  { id: "all", label: "All statuses" },
+];
+
+const TYPE_FILTER_OPTIONS: { id: "all" | SupportTicketType; label: string }[] =
+  [
+    { id: "all", label: "All categories" },
+    { id: "question", label: SUPPORT_TYPE_LABELS.question },
+    { id: "bug", label: SUPPORT_TYPE_LABELS.bug },
+    { id: "idea", label: SUPPORT_TYPE_LABELS.idea },
+    { id: "billing", label: SUPPORT_TYPE_LABELS.billing },
+    { id: "other", label: SUPPORT_TYPE_LABELS.other },
+  ];
+
+const filterSelectClass =
+  "w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20";
 
 function normalizeProfile(
   row: SupportAssignee | SupportAssignee[] | null
@@ -221,14 +254,24 @@ function inboxAgeBand(iso: string, now = new Date()): string {
 
 export function AdminSupportPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setImpersonatingCoachId } = useImpersonation();
+  const topTab =
+    searchParams.get("tab") === "settings" ? "settings" : "inbox";
+  const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
   const [rows, setRows] = useState<AdminTicketRow[]>([]);
   const [assignees, setAssignees] = useState<SupportAssignee[]>([]);
   const [coaches, setCoaches] = useState<CoachOption[]>([]);
   const [pamAssigneeId, setPamAssigneeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [smartList, setSmartList] = useState<SupportSmartList>("zander");
+  const [assigneeFilter, setAssigneeFilter] =
+    useState<SupportAssigneeFilter>("zander");
+  const [statusFilter, setStatusFilter] =
+    useState<SupportStatusFilter>("open");
+  const [typeFilter, setTypeFilter] = useState<"all" | SupportTicketType>(
+    "all"
+  );
   const [groupMode, setGroupMode] = useState<GroupMode>("tickets");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedPersonKey, setSelectedPersonKey] = useState<string | null>(
@@ -238,7 +281,25 @@ export function AdminSupportPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const [attentionByTicket, setAttentionByTicket] = useState<SupportAttentionMap>(
+    {}
+  );
+  /** report_id → user ids @mentioned in any internal note */
+  const [mentionsByTicket, setMentionsByTicket] = useState<
+    Record<string, string[]>
+  >({});
   const loadGenerationRef = useRef(0);
+
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
+
+  function selectTopTab(tab: "inbox" | "settings") {
+    router.replace(
+      tab === "settings" ? "/admin/support?tab=settings" : "/admin/support",
+      { scroll: false }
+    );
+  }
 
   const loadMeta = useCallback(async () => {
     const {
@@ -268,37 +329,63 @@ export function AdminSupportPage() {
     setCoaches((coachProfiles ?? []) as CoachOption[]);
   }, []);
 
+  const loadAttention = useCallback(async () => {
+    const [{ map }, notesRes] = await Promise.all([
+      loadAdminSupportAttention(),
+      supabaseClient
+        .from("support_ticket_internal_notes")
+        .select("report_id, mentioned_user_ids"),
+    ]);
+    setAttentionByTicket(map);
+
+    const byTicket: Record<string, string[]> = {};
+    for (const row of notesRes.data ?? []) {
+      const reportId = row.report_id as string;
+      const ids = Array.isArray(row.mentioned_user_ids)
+        ? (row.mentioned_user_ids as string[])
+        : [];
+      if (ids.length === 0) continue;
+      const existing = byTicket[reportId] ?? [];
+      const merged = new Set([...existing, ...ids]);
+      byTicket[reportId] = [...merged];
+    }
+    setMentionsByTicket(byTicket);
+  }, []);
+
   const loadTickets = useCallback(async () => {
     const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError(null);
-    const { data, error: queryError } = await supabaseClient
-      .from("community_feedback_reports")
-      .select(
+    const [{ data, error: queryError }] = await Promise.all([
+      supabaseClient
+        .from("community_feedback_reports")
+        .select(
+          `
+          id,
+          created_at,
+          created_by,
+          ticket_number,
+          type,
+          title,
+          details,
+          page_path,
+          status,
+          source,
+          assigned_to,
+          community_post_id,
+          contact_email,
+          submitter_name,
+          importance,
+          ease,
+          media,
+          member_notify_email,
+          author:profiles!created_by ( id, full_name, first_name, last_name, avatar_url, role ),
+          assignee:profiles!assigned_to ( id, full_name, first_name, last_name, avatar_url, role )
         `
-        id,
-        created_at,
-        created_by,
-        ticket_number,
-        type,
-        title,
-        details,
-        page_path,
-        status,
-        source,
-        assigned_to,
-        community_post_id,
-        contact_email,
-        submitter_name,
-        importance,
-        ease,
-        media,
-        member_notify_email,
-        author:profiles!created_by ( id, full_name, first_name, last_name, avatar_url, role ),
-        assignee:profiles!assigned_to ( id, full_name, first_name, last_name, avatar_url, role )
-      `
-      )
-      .order("created_at", { ascending: false });
+        )
+        .order("created_at", { ascending: false }),
+      loadAttention(),
+    ]);
     if (generation !== loadGenerationRef.current) return;
 
     if (queryError) {
@@ -324,7 +411,7 @@ export function AdminSupportPage() {
     }));
     setRows(mapped);
     setLoading(false);
-  }, []);
+  }, [loadAttention]);
 
   useEffect(() => {
     void loadMeta();
@@ -334,39 +421,53 @@ export function AdminSupportPage() {
     };
   }, [loadMeta, loadTickets]);
 
+  useEffect(() => {
+    const onRefresh = () => void loadAttention();
+    window.addEventListener("focus", onRefresh);
+    window.addEventListener(FEEDBACK_COUNTS_CHANGED, onRefresh);
+    return () => {
+      window.removeEventListener("focus", onRefresh);
+      window.removeEventListener(FEEDBACK_COUNTS_CHANGED, onRefresh);
+    };
+  }, [loadAttention]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    void markAdminSupportTicketRead(selectedId).then(() => {
+      setAttentionByTicket((prev) => {
+        if (!prev[selectedId]) return prev;
+        const next = { ...prev };
+        delete next[selectedId];
+        return next;
+      });
+      notifySupportCountsChanged();
+    });
+  }, [selectedId]);
+
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return rows.filter((row) => {
-      switch (smartList) {
-        case "zander":
-          if (
-            row.assigned_to !== DEFAULT_SUPPORT_ASSIGNEE_ID ||
-            row.status === "resolved"
-          ) {
-            return false;
-          }
-          break;
-        case "pam":
-          if (
-            pamAssigneeId == null ||
-            row.assigned_to !== pamAssigneeId ||
-            row.status === "resolved"
-          ) {
-            return false;
-          }
-          break;
-        case "all_open":
-          if (row.status === "resolved") return false;
-          break;
-        case "from_lessons":
-          if (row.source !== "lesson_private") return false;
-          break;
-        case "ideas":
-          if (row.type !== "idea") return false;
-          break;
-        default:
-          break;
+      const mentioned = mentionsByTicket[row.id] ?? [];
+
+      if (assigneeFilter === "zander") {
+        const forZander =
+          row.assigned_to === DEFAULT_SUPPORT_ASSIGNEE_ID ||
+          mentioned.includes(DEFAULT_SUPPORT_ASSIGNEE_ID);
+        if (!forZander) return false;
+      } else if (assigneeFilter === "pam") {
+        if (pamAssigneeId == null) return false;
+        const forPam =
+          row.assigned_to === pamAssigneeId ||
+          mentioned.includes(pamAssigneeId);
+        if (!forPam) return false;
       }
+
+      if (statusFilter === "open" && row.status === "resolved") return false;
+      if (statusFilter === "resolved" && row.status !== "resolved") {
+        return false;
+      }
+
+      if (typeFilter !== "all" && row.type !== typeFilter) return false;
 
       if (!q) return true;
       const hay = [
@@ -383,7 +484,15 @@ export function AdminSupportPage() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [rows, smartList, pamAssigneeId, searchQuery]);
+  }, [
+    rows,
+    assigneeFilter,
+    statusFilter,
+    typeFilter,
+    pamAssigneeId,
+    searchQuery,
+    mentionsByTicket,
+  ]);
 
   const personGroups = useMemo((): PersonGroup[] => {
     const map = new Map<string, PersonGroup>();
@@ -445,7 +554,7 @@ export function AdminSupportPage() {
 
   useEffect(() => {
     setSelectedPersonKey(null);
-  }, [smartList, groupMode, searchQuery]);
+  }, [assigneeFilter, statusFilter, typeFilter, groupMode, searchQuery]);
 
   async function updateRow(
     id: string,
@@ -557,31 +666,67 @@ export function AdminSupportPage() {
 
   return (
     <DashboardPageSection
-      contentMaxWidthClass="max-w-none"
-      gapClass="gap-0"
+      contentMaxWidthClass={topTab === "settings" ? "max-w-6xl" : "max-w-none"}
+      gapClass={topTab === "settings" ? "gap-6" : "gap-0"}
       outerClassName="flex h-full min-h-0 flex-1 flex-col"
-      contentClassName="min-h-0 flex-1 overflow-hidden"
+      contentClassName={
+        topTab === "settings"
+          ? // Inbox shell is overflow-hidden; settings must scroll inside it.
+            "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain pb-8"
+          : "min-h-0 flex-1 overflow-hidden"
+      }
       header={
         <StickyPageHeader
           className="shrink-0"
           title="Support"
-          description="Ticket inbox for coach questions, bugs, ideas, and private lesson asks."
+          description={
+            topTab === "settings"
+              ? "Who can take support calls, and when."
+              : "Ticket inbox for coach questions, bugs, ideas, and private lesson asks."
+          }
+          tabs={
+            <PageHeaderUnderlineTabs
+              ariaLabel="Support sections"
+              items={[
+                {
+                  kind: "button",
+                  id: "inbox",
+                  label: "Inbox",
+                  active: topTab === "inbox",
+                  onClick: () => selectTopTab("inbox"),
+                },
+                {
+                  kind: "button",
+                  id: "settings",
+                  label: "Settings",
+                  active: topTab === "settings",
+                  onClick: () => selectTopTab("settings"),
+                },
+              ]}
+            />
+          }
           actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <SupportMailboxConnect />
-              <button
-                type="button"
-                onClick={() => setCreateOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
-              >
-                <Plus className="h-4 w-4" aria-hidden />
-                New ticket
-              </button>
-            </div>
+            topTab === "inbox" ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <SupportMailboxConnect />
+                <button
+                  type="button"
+                  onClick={() => setCreateOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800"
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                  New ticket
+                </button>
+              </div>
+            ) : null
           }
         />
       }
     >
+      {topTab === "settings" ? (
+        <SupportCallAdminSettings appOrigin={appOrigin} />
+      ) : (
+        <>
       {createOpen ? (
         <div
           className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/50 p-4 sm:items-center"
@@ -680,6 +825,56 @@ export function AdminSupportPage() {
                   </button>
                 </div>
 
+                <div className="inline-flex w-full rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                  {ASSIGNEE_FILTERS.map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setAssigneeFilter(filter.id)}
+                      className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold ${
+                        assigneeFilter === filter.id
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) =>
+                      setStatusFilter(e.target.value as SupportStatusFilter)
+                    }
+                    aria-label="Filter by status"
+                    className={filterSelectClass}
+                  >
+                    {STATUS_FILTER_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={typeFilter}
+                    onChange={(e) =>
+                      setTypeFilter(
+                        e.target.value as "all" | SupportTicketType
+                      )
+                    }
+                    aria-label="Filter by category"
+                    className={filterSelectClass}
+                  >
+                    {TYPE_FILTER_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="relative">
                   <Search
                     className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400"
@@ -692,23 +887,6 @@ export function AdminSupportPage() {
                     placeholder="Search tickets…"
                     className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
                   />
-                </div>
-
-                <div className="flex gap-1 overflow-x-auto pb-0.5">
-                  {SMART_LISTS.map((list) => (
-                    <button
-                      key={list}
-                      type="button"
-                      onClick={() => setSmartList(list)}
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                        smartList === list
-                          ? "bg-sky-700 text-white"
-                          : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {smartListLabel(list)}
-                    </button>
-                  ))}
                 </div>
               </div>
 
@@ -726,7 +904,7 @@ export function AdminSupportPage() {
                     </li>
                   ) : personGroups.length === 0 ? (
                     <li className="px-4 py-8 text-sm text-slate-500">
-                      No people in {smartListLabel(smartList).toLowerCase()}.
+                      No people match these filters.
                     </li>
                   ) : (
                     personGroups.map((group, index) => {
@@ -810,12 +988,14 @@ export function AdminSupportPage() {
                     </li>
                   ) : listTickets.length === 0 ? (
                     <li className="px-4 py-8 text-sm text-slate-500">
-                      No tickets in {smartListLabel(smartList).toLowerCase()}.
+                      No tickets match these filters.
                     </li>
                   ) : (
                     listTickets.map((row, index) => {
                       const active = selectedId === row.id;
-                      const isNew = row.status === "open";
+                      const attention = attentionByTicket[row.id];
+                      const badgeCount = supportAttentionBadgeCount(attention);
+                      const isNew = Boolean(attention);
                       const ageBand = inboxAgeBand(row.created_at);
                       const prevBand =
                         index > 0
@@ -863,6 +1043,19 @@ export function AdminSupportPage() {
                                     {row.title?.trim() ||
                                       formatSupportTicketId(row.ticket_number)}
                                   </span>
+                                  {attention?.mention ? (
+                                    <span
+                                      className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-semibold text-amber-900"
+                                      title="You were mentioned"
+                                    >
+                                      @
+                                    </span>
+                                  ) : null}
+                                  {badgeCount > 0 ? (
+                                    <span className="inline-flex min-w-[1.15rem] shrink-0 items-center justify-center rounded-full bg-sky-600 px-1 text-[10px] font-semibold text-white">
+                                      {badgeCount}
+                                    </span>
+                                  ) : null}
                                 </span>
                                 <span className="mt-0.5 block truncate text-xs text-slate-500">
                                   {ticketAuthorLabel(row)} ·{" "}
@@ -996,6 +1189,9 @@ export function AdminSupportPage() {
                       onStatusTouched={() => {
                         void loadTickets();
                         notifySupportCountsChanged();
+                      }}
+                      onInternalNoteSaved={() => {
+                        void loadAttention();
                       }}
                     />
                   </div>
@@ -1181,6 +1377,8 @@ export function AdminSupportPage() {
           </div>
         </div>
       </div>
+        </>
+      )}
     </DashboardPageSection>
   );
 }

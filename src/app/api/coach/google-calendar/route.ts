@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { ensureCoachRowForUser } from "@/lib/booking/bookingService";
 import {
   deleteGoogleConnection,
   getValidGoogleAccessToken,
@@ -7,45 +6,27 @@ import {
   loadGoogleConnectionPublic,
 } from "@/lib/booking/googleCalendar";
 import { isGoogleCalendarConfigured } from "@/lib/booking/googleCalendarOAuth";
+import {
+  requireCoachOrAdmin,
+  resolveCoachTarget,
+} from "@/lib/booking/resolveCoachTarget";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-async function requireSelfUser(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-  if (!token) return { error: "Missing access token." as const, userId: null };
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  return { error: null, userId: user.id as string };
-}
-
 export async function GET(request: Request) {
-  const auth = await requireSelfUser(request);
-  if (auth.error || !auth.userId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  let coach: { id: string };
+  const url = new URL(request.url);
+  const forSlug = url.searchParams.get("forSlug");
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
   try {
-    coach = await ensureCoachRowForUser(auth.userId);
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug,
+    });
   } catch {
     return NextResponse.json(
       { error: "Could not set up coach profile." },
@@ -53,7 +34,11 @@ export async function GET(request: Request) {
     );
   }
 
-  const status = await loadGoogleConnectionPublic(coach.id);
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  const status = await loadGoogleConnectionPublic(target.coach.id);
   if (!status?.connected) {
     return NextResponse.json({
       configured: isGoogleCalendarConfigured(),
@@ -62,17 +47,21 @@ export async function GET(request: Request) {
       calendars: [],
       busy_calendar_ids: [],
       event_calendar_id: "primary",
+      is_self: target.isSelf,
     });
   }
 
   let calendars: Awaited<ReturnType<typeof listGoogleCalendars>> = [];
-  try {
-    const accessToken = await getValidGoogleAccessToken(coach.id);
-    if (accessToken) {
-      calendars = await listGoogleCalendars(accessToken);
+  // Listing calendars needs a fresh token — only do that for self.
+  if (target.isSelf) {
+    try {
+      const accessToken = await getValidGoogleAccessToken(target.coach.id);
+      if (accessToken) {
+        calendars = await listGoogleCalendars(accessToken);
+      }
+    } catch (error) {
+      console.error("google calendar GET list:", error);
     }
-  } catch (error) {
-    console.error("google calendar GET list:", error);
   }
 
   return NextResponse.json({
@@ -82,6 +71,7 @@ export async function GET(request: Request) {
     calendars,
     busy_calendar_ids: status.busy_calendar_ids,
     event_calendar_id: status.event_calendar_id,
+    is_self: target.isSelf,
   });
 }
 
@@ -91,14 +81,17 @@ type PatchBody = {
 };
 
 export async function PATCH(request: Request) {
-  const auth = await requireSelfUser(request);
-  if (auth.error || !auth.userId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  let coach: { id: string };
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
   try {
-    coach = await ensureCoachRowForUser(auth.userId);
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug: null,
+    });
   } catch {
     return NextResponse.json(
       { error: "Could not set up coach profile." },
@@ -106,7 +99,11 @@ export async function PATCH(request: Request) {
     );
   }
 
-  const status = await loadGoogleConnectionPublic(coach.id);
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  const status = await loadGoogleConnectionPublic(target.coach.id);
   if (!status?.connected) {
     return NextResponse.json(
       { error: "Google Calendar is not connected." },
@@ -152,26 +149,29 @@ export async function PATCH(request: Request) {
   const { error } = await supabaseAdmin
     .from("coach_google_calendar_connections")
     .update(patch)
-    .eq("coach_id", coach.id);
+    .eq("coach_id", target.coach.id);
 
   if (error) {
     console.error("google calendar PATCH:", error);
     return NextResponse.json({ error: "Could not update." }, { status: 500 });
   }
 
-  const next = await loadGoogleConnectionPublic(coach.id);
-  return NextResponse.json(next);
+  const next = await loadGoogleConnectionPublic(target.coach.id);
+  return NextResponse.json({ ...next, is_self: true });
 }
 
 export async function DELETE(request: Request) {
-  const auth = await requireSelfUser(request);
-  if (auth.error || !auth.userId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  let coach: { id: string };
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
   try {
-    coach = await ensureCoachRowForUser(auth.userId);
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug: null,
+    });
   } catch {
     return NextResponse.json(
       { error: "Could not set up coach profile." },
@@ -179,6 +179,10 @@ export async function DELETE(request: Request) {
     );
   }
 
-  await deleteGoogleConnection(coach.id);
-  return NextResponse.json({ connected: false });
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  await deleteGoogleConnection(target.coach.id);
+  return NextResponse.json({ connected: false, is_self: true });
 }

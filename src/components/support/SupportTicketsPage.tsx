@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageSquare, Plus } from "lucide-react";
+import { MessageSquare, Phone, Plus } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -12,6 +13,8 @@ import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { SupportCreateTicketComposer } from "@/components/support/SupportCreateTicketComposer";
 import { SupportTicketCard } from "@/components/support/SupportTicketCard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { buildSupportCallPrefillQuery } from "@/lib/support/supportCallPrefill";
+import { SUPPORT_CALL_HOSTS } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
@@ -52,6 +55,8 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<SupportTicketAuthor | null>(null);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+  const [viewerPhone, setViewerPhone] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
   const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
@@ -80,9 +85,14 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
 
     const { data: profileRow } = await supabaseClient
       .from("profiles")
-      .select(SUPPORT_AUTHOR_SELECT)
+      .select(`${SUPPORT_AUTHOR_SELECT}, phone`)
       .eq("id", authorId)
       .maybeSingle();
+    if (generation !== loadGenerationRef.current) return;
+
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     if (generation !== loadGenerationRef.current) return;
 
     const author: SupportTicketAuthor = {
@@ -94,6 +104,10 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       role: profileRow?.role ?? null,
     };
     setViewer(author);
+    setViewerEmail(user?.email?.trim().toLowerCase() || null);
+    setViewerPhone(
+      typeof profileRow?.phone === "string" ? profileRow.phone.trim() || null : null
+    );
 
     const { data: reports, error: reportsError } = await supabaseClient
       .from("community_feedback_reports")
@@ -128,6 +142,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         `
         id,
         created_at,
+        edited_at,
         report_id,
         created_by,
         body,
@@ -153,6 +168,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       const reply: SupportReply = {
         id: raw.id,
         created_at: raw.created_at,
+        edited_at: raw.edited_at ?? null,
         report_id: raw.report_id,
         created_by: raw.created_by,
         body: raw.body,
@@ -216,12 +232,6 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         const next = current.map((ticket) => {
           const incoming = rows.filter((r) => r.report_id === ticket.id);
           if (incoming.length === 0) return ticket;
-          const known = new Set(ticket.replies.map((r) => r.id));
-          const extras = incoming.filter((r) => !known.has(r.id));
-          if (extras.length === 0) {
-            // Still refresh bodies/order if counts match but last id differs
-            if (ticket.replies.length === incoming.length) return ticket;
-          }
           const byId = new Map<string, SupportReply>();
           for (const r of ticket.replies) byId.set(r.id, r);
           for (const r of incoming) byId.set(r.id, r);
@@ -231,12 +241,52 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
           );
           if (
             merged.length === ticket.replies.length &&
-            merged.every((r, i) => r.id === ticket.replies[i]?.id)
+            merged.every((r, i) => {
+              const prev = ticket.replies[i];
+              return (
+                prev != null &&
+                prev.id === r.id &&
+                prev.body === r.body &&
+                (prev.edited_at ?? null) === (r.edited_at ?? null)
+              );
+            })
           ) {
             return ticket;
           }
           changed = true;
           return { ...ticket, replies: merged };
+        });
+        return changed ? next : current;
+      });
+    };
+
+    const replaceRepliesFromFetch = (rows: SupportReply[]) => {
+      setTickets((current) => {
+        let changed = false;
+        const next = current.map((ticket) => {
+          const forTicket = rows
+            .filter((r) => r.report_id === ticket.id)
+            .sort(
+              (a, b) =>
+                new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()
+            );
+          if (
+            forTicket.length === ticket.replies.length &&
+            forTicket.every((r, i) => {
+              const prev = ticket.replies[i];
+              return (
+                prev != null &&
+                prev.id === r.id &&
+                prev.body === r.body &&
+                (prev.edited_at ?? null) === (r.edited_at ?? null)
+              );
+            })
+          ) {
+            return ticket;
+          }
+          changed = true;
+          return { ...ticket, replies: forTicket };
         });
         return changed ? next : current;
       });
@@ -251,6 +301,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
           `
           id,
           created_at,
+          edited_at,
           report_id,
           created_by,
           body,
@@ -263,10 +314,11 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         .order("created_at", { ascending: true });
       if (queryError || !data) return;
 
-      mergeIncomingReplies(
+      replaceRepliesFromFetch(
         data.map((raw) => ({
           id: raw.id,
           created_at: raw.created_at,
+          edited_at: raw.edited_at ?? null,
           report_id: raw.report_id,
           created_by: raw.created_by,
           body: raw.body,
@@ -290,6 +342,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
           const raw = payload.new as {
             id: string;
             created_at: string;
+            edited_at?: string | null;
             report_id: string;
             created_by: string;
             body: string;
@@ -309,6 +362,7 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
             const reply: SupportReply = {
               id: raw.id,
               created_at: raw.created_at,
+              edited_at: raw.edited_at ?? null,
               report_id: raw.report_id,
               created_by: raw.created_by,
               body: raw.body,
@@ -328,6 +382,74 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
               notifyCoachSupportReadChanged();
             }
           })();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "community_feedback_replies",
+        },
+        (payload) => {
+          const raw = payload.new as {
+            id: string;
+            created_at: string;
+            edited_at?: string | null;
+            report_id: string;
+            created_by: string;
+            body: string;
+            media: SupportReply["media"];
+            community_comment_id?: string | null;
+          };
+          if (!raw?.id || !raw.report_id) return;
+          if (!ticketIdsRef.current.has(raw.report_id)) return;
+          setTickets((current) =>
+            current.map((ticket) => {
+              if (ticket.id !== raw.report_id) return ticket;
+              const idx = ticket.replies.findIndex((r) => r.id === raw.id);
+              if (idx < 0) return ticket;
+              const prev = ticket.replies[idx]!;
+              if (
+                prev.body === raw.body &&
+                (prev.edited_at ?? null) === (raw.edited_at ?? null)
+              ) {
+                return ticket;
+              }
+              const nextReplies = [...ticket.replies];
+              nextReplies[idx] = {
+                ...prev,
+                body: raw.body,
+                media: raw.media,
+                edited_at: raw.edited_at ?? null,
+                community_comment_id:
+                  raw.community_comment_id ?? prev.community_comment_id,
+              };
+              return { ...ticket, replies: nextReplies };
+            })
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "community_feedback_replies",
+        },
+        (payload) => {
+          const raw = payload.old as { id?: string; report_id?: string };
+          if (!raw?.id) return;
+          setTickets((current) =>
+            current.map((ticket) => {
+              if (raw.report_id && ticket.id !== raw.report_id) return ticket;
+              if (!ticket.replies.some((r) => r.id === raw.id)) return ticket;
+              return {
+                ...ticket,
+                replies: ticket.replies.filter((r) => r.id !== raw.id),
+              };
+            })
+          );
         }
       )
       .on(
@@ -408,6 +530,17 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const emptyAll = !loading && tickets.length === 0 && !composeOpen;
   const emptyTab = !loading && !emptyAll && filtered.length === 0 && !composeOpen;
 
+  const supportCallPrefillQs = useMemo(
+    () =>
+      buildSupportCallPrefillQuery({
+        firstName: viewer?.first_name,
+        lastName: viewer?.last_name,
+        email: viewerEmail,
+        phone: viewerPhone,
+      }),
+    [viewer?.first_name, viewer?.last_name, viewerEmail, viewerPhone]
+  );
+
   const tabBtn = (id: ListTab, label: string, count?: number) => (
     <button
       type="button"
@@ -435,15 +568,27 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
           {tabBtn("resolved", "Resolved", resolvedCount)}
         </div>
 
-        <button
-          type="button"
-          disabled={composeOpen}
-          onClick={() => setComposeOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          Raise new ticket
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {SUPPORT_CALL_HOSTS.map((host) => (
+            <Link
+              key={host.slug}
+              href={`${host.path}${supportCallPrefillQs}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              <Phone className="h-4 w-4 text-teal-700" aria-hidden />
+              Call {host.displayName}
+            </Link>
+          ))}
+          <button
+            type="button"
+            disabled={composeOpen}
+            onClick={() => setComposeOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+            Raise new ticket
+          </button>
+        </div>
       </div>
 
       {composeOpen ? (

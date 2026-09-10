@@ -1,13 +1,16 @@
 "use client";
 
 import {
+  Bold,
   Check,
   CheckCircle2,
   ChevronDown,
   Circle,
+  Eye,
   FileText,
   Hourglass,
   Image as ImageIcon,
+  Link as LinkIcon,
   Maximize2,
   Minimize2,
   Minus,
@@ -31,6 +34,8 @@ import {
   supportAuthorShortName,
 } from "@/components/support/SupportChatBubbles";
 import { SeeMoreText } from "@/components/support/SeeMoreText";
+import { MentionTextarea } from "@/components/community/MentionTextarea";
+import { notifySupportCountsChanged } from "@/components/layout/useNewFeedbackCount";
 import {
   SupportVoiceRecorder,
   pendingSupportVoiceToFile,
@@ -46,7 +51,24 @@ import {
   validateSupportMediaFile,
   type CommunityPostMediaItem,
 } from "@/lib/communityPostMedia";
-import { parseSupportTicketMedia } from "@/lib/support/supportTicketMedia";
+import {
+  parseSupportReplyMedia,
+  parseSupportTicketMedia,
+} from "@/lib/support/supportTicketMedia";
+import {
+  clearAdminReplyDraft,
+  loadAdminReplyDraft,
+  saveAdminReplyDraft,
+} from "@/lib/support/adminReplyDrafts";
+import {
+  insertSupportInternalNote,
+  loadSupportInternalNotes,
+  type SupportInternalNote,
+} from "@/lib/support/internalNotes";
+import {
+  applyMarkdownLink,
+  applyTextareaWrap,
+} from "@/lib/support/textareaFormat";
 import {
   assigneeDisplayName,
   isSupportMessageSender,
@@ -62,6 +84,10 @@ import {
   type SupportReply,
   type SupportTicketStatus,
 } from "@/lib/support/tickets";
+
+type ComposerMode = "reply" | "note";
+
+const ADMIN_REPLY_DRAFT_DEBOUNCE_MS = 500;
 
 const EmojiPicker = dynamic(
   () => import("emoji-picker-react").then((m) => m.default),
@@ -96,6 +122,8 @@ type AdminTicketRepliesProps = {
   emailNotifyLabel?: string | null;
   /** Staff profiles the admin can send as (Zander, Pam, …). */
   sendAsOptions?: SupportAssignee[];
+  /** Fired after an internal note is saved (for inbox attention refresh). */
+  onInternalNoteSaved?: () => void;
 };
 
 export function AdminTicketReplies({
@@ -110,11 +138,15 @@ export function AdminTicketReplies({
   emailNotifyDefault = false,
   emailNotifyLabel = null,
   sendAsOptions = [],
+  onInternalNoteSaved,
 }: AdminTicketRepliesProps) {
   const [replies, setReplies] = useState<SupportReply[]>([]);
+  const [internalNotes, setInternalNotes] = useState<SupportInternalNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
+  const [noteDraft, setNoteDraft] = useState("");
+  const [composerMode, setComposerMode] = useState<ComposerMode>("reply");
   const [pendingImages, setPendingImages] = useState<PendingCommentImage[]>([]);
   const [pendingVoice, setPendingVoice] = useState<PendingSupportVoice | null>(
     null
@@ -141,6 +173,13 @@ export function AdminTicketReplies({
   const sendAsMenuRef = useRef<HTMLDivElement>(null);
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const emojiWrapRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef(draft);
+  const reportIdRef = useRef(reportId);
+  const prevReportIdRef = useRef<string | null>(null);
+  const draftLoadGenerationRef = useRef(0);
+  const draftAutosaveReadyRef = useRef(false);
+  draftRef.current = draft;
+  reportIdRef.current = reportId;
   const inbox = variant === "inbox";
 
   const sendAsPeople = useMemo(() => {
@@ -175,36 +214,42 @@ export function AdminTicketReplies({
     const generation = ++loadGenerationRef.current;
     setLoading(true);
     setError(null);
-    const { data, error: queryError } = await supabaseClient
-      .from("community_feedback_replies")
-      .select(
+    const [repliesResult, notesResult] = await Promise.all([
+      supabaseClient
+        .from("community_feedback_replies")
+        .select(
+          `
+          id,
+          created_at,
+          edited_at,
+          report_id,
+          created_by,
+          body,
+          media,
+          community_comment_id,
+          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
         `
-        id,
-        created_at,
-        report_id,
-        created_by,
-        body,
-        media,
-        community_comment_id,
-        author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
-      `
-      )
-      .eq("report_id", reportId)
-      .order("created_at", { ascending: true });
+        )
+        .eq("report_id", reportId)
+        .order("created_at", { ascending: true }),
+      loadSupportInternalNotes(reportId),
+    ]);
     if (generation !== loadGenerationRef.current) return;
 
-    if (queryError) {
-      if (isSupabaseAbortError(queryError)) return;
+    if (repliesResult.error) {
+      if (isSupabaseAbortError(repliesResult.error)) return;
       setReplies([]);
-      setError(queryError.message);
+      setInternalNotes([]);
+      setError(repliesResult.error.message);
       setLoading(false);
       return;
     }
 
     setReplies(
-      (data ?? []).map((raw) => ({
+      (repliesResult.data ?? []).map((raw) => ({
         id: raw.id,
         created_at: raw.created_at,
+        edited_at: raw.edited_at ?? null,
         report_id: raw.report_id,
         created_by: raw.created_by,
         body: raw.body,
@@ -213,6 +258,10 @@ export function AdminTicketReplies({
         author: normalizeSupportAuthor(raw.author),
       }))
     );
+    setInternalNotes(notesResult.notes);
+    if (notesResult.error) {
+      setError(notesResult.error);
+    }
     setLoading(false);
   }, [reportId]);
 
@@ -222,6 +271,67 @@ export function AdminTicketReplies({
       loadGenerationRef.current += 1;
     };
   }, [loadReplies]);
+
+  const updateReplyBody = useCallback(
+    async (replyId: string, body: string) => {
+      const hasMedia = Boolean(
+        parseSupportReplyMedia(
+          replies.find((r) => r.id === replyId)?.media
+        ).length
+      );
+      if (!body.trim() && !hasMedia) {
+        throw new Error("Message cannot be empty.");
+      }
+      const { data, error: updateError } = await supabaseClient
+        .from("community_feedback_replies")
+        .update({ body })
+        .eq("id", replyId)
+        .eq("report_id", reportId)
+        .select(
+          `
+          id,
+          created_at,
+          edited_at,
+          report_id,
+          created_by,
+          body,
+          media,
+          community_comment_id,
+          author:profiles!created_by (${SUPPORT_AUTHOR_SELECT})
+        `
+        )
+        .single();
+      if (updateError) throw updateError;
+      const next: SupportReply = {
+        id: data.id,
+        created_at: data.created_at,
+        edited_at: data.edited_at ?? null,
+        report_id: data.report_id,
+        created_by: data.created_by,
+        body: data.body,
+        media: data.media,
+        community_comment_id: data.community_comment_id ?? null,
+        author: normalizeSupportAuthor(data.author),
+      };
+      setReplies((current) =>
+        current.map((r) => (r.id === replyId ? next : r))
+      );
+    },
+    [replies, reportId]
+  );
+
+  const deleteReply = useCallback(
+    async (replyId: string) => {
+      const { error: deleteError } = await supabaseClient
+        .from("community_feedback_replies")
+        .delete()
+        .eq("id", replyId)
+        .eq("report_id", reportId);
+      if (deleteError) throw deleteError;
+      setReplies((current) => current.filter((r) => r.id !== replyId));
+    },
+    [reportId]
+  );
 
   useEffect(() => {
     void (async () => {
@@ -244,22 +354,54 @@ export function AdminTicketReplies({
   }, [userId, sendAsPeople, sendAsId]);
 
   useEffect(() => {
+    const prevId = prevReportIdRef.current;
+    if (prevId && prevId !== reportId) {
+      void saveAdminReplyDraft(prevId, draftRef.current);
+    }
+    prevReportIdRef.current = reportId;
+
+    const generation = ++draftLoadGenerationRef.current;
+    draftAutosaveReadyRef.current = false;
     setComposerOpen(false);
     setComposerExpanded(false);
+    setComposerMode("reply");
     setSendAsMenuOpen(false);
     setEmojiOpen(false);
     setDraft("");
+    setNoteDraft("");
     clearPendingCommentImages(pendingImages);
     setPendingImages([]);
     revokePendingSupportVoice(pendingVoice);
     setPendingVoice(null);
     if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
     setPendingVideo(null);
+
+    void loadAdminReplyDraft(reportId).then((restored) => {
+      if (generation !== draftLoadGenerationRef.current) return;
+      setDraft((current) => {
+        // Keep anything the admin typed while the draft was loading.
+        if (current.trim()) return current;
+        return restored;
+      });
+      if (restored.trim()) {
+        setComposerOpen(true);
+      }
+      draftAutosaveReadyRef.current = true;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only on ticket change
   }, [reportId]);
 
   useEffect(() => {
+    if (!draftAutosaveReadyRef.current) return;
+    const timer = window.setTimeout(() => {
+      void saveAdminReplyDraft(reportId, draft);
+    }, ADMIN_REPLY_DRAFT_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [draft, reportId]);
+
+  useEffect(() => {
     return () => {
+      void saveAdminReplyDraft(reportIdRef.current, draftRef.current);
       revokePendingSupportVoice(pendingVoice);
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
     };
@@ -295,23 +437,71 @@ export function AdminTicketReplies({
   useEffect(() => {
     if (!inbox) return;
     bottomRef.current?.scrollIntoView({ block: "end", behavior: "auto" });
-  }, [inbox, reportId, replies.length, loading]);
+  }, [inbox, reportId, replies.length, internalNotes.length, loading]);
+
+  function switchComposerMode(mode: ComposerMode) {
+    setComposerMode(mode);
+    setSendAsMenuOpen(false);
+    setEmojiOpen(false);
+    setNotifyNote(null);
+    if (mode === "note") {
+      clearPendingCommentImages(pendingImages);
+      setPendingImages([]);
+      revokePendingSupportVoice(pendingVoice);
+      setPendingVoice(null);
+      if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+      setPendingVideo(null);
+    }
+  }
 
   function insertEmojiAtCursor(emoji: string) {
     const el = replyTextareaRef.current;
+    const current = composerMode === "note" ? noteDraft : draft;
+    const setCurrent = composerMode === "note" ? setNoteDraft : setDraft;
     if (!el) {
-      setDraft((d) => d + emoji);
+      setCurrent((d) => d + emoji);
       return;
     }
-    const start = el.selectionStart ?? draft.length;
-    const end = el.selectionEnd ?? draft.length;
-    const next = draft.slice(0, start) + emoji + draft.slice(end);
-    setDraft(next);
+    const start = el.selectionStart ?? current.length;
+    const end = el.selectionEnd ?? current.length;
+    const next = current.slice(0, start) + emoji + current.slice(end);
+    setCurrent(next);
     requestAnimationFrame(() => {
       el.focus();
       const pos = start + emoji.length;
       el.setSelectionRange(pos, pos);
     });
+  }
+
+  function applyFormatResult(
+    result: { next: string; selectStart: number; selectEnd: number } | null
+  ) {
+    if (!result) return;
+    if (composerMode === "note") setNoteDraft(result.next);
+    else setDraft(result.next);
+    const el = replyTextareaRef.current;
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(result.selectStart, result.selectEnd);
+    });
+  }
+
+  function insertBoldMarkdown() {
+    const el = replyTextareaRef.current;
+    const current = composerMode === "note" ? noteDraft : draft;
+    const start = el?.selectionStart ?? current.length;
+    const end = el?.selectionEnd ?? current.length;
+    applyFormatResult(
+      applyTextareaWrap(current, start, end, "**", "**", "bold")
+    );
+  }
+
+  function insertLinkMarkdown() {
+    const el = replyTextareaRef.current;
+    const current = composerMode === "note" ? noteDraft : draft;
+    const start = el?.selectionStart ?? current.length;
+    const end = el?.selectionEnd ?? current.length;
+    applyFormatResult(applyMarkdownLink(current, start, end));
   }
 
   function minimizeComposer() {
@@ -410,6 +600,7 @@ export function AdminTicketReplies({
           `
           id,
           created_at,
+          edited_at,
           report_id,
           created_by,
           body,
@@ -425,6 +616,7 @@ export function AdminTicketReplies({
       const reply: SupportReply = {
         id: data.id,
         created_at: data.created_at,
+        edited_at: data.edited_at ?? null,
         report_id: data.report_id,
         created_by: data.created_by,
         body: data.body,
@@ -434,6 +626,7 @@ export function AdminTicketReplies({
       };
       setReplies((current) => [...current, reply]);
       setDraft("");
+      void clearAdminReplyDraft(reportId);
       clearPendingCommentImages(pendingImages);
       setPendingImages([]);
       revokePendingSupportVoice(pendingVoice);
@@ -494,11 +687,76 @@ export function AdminTicketReplies({
     }
   }
 
-  const canSend = Boolean(
-    draft.trim() ||
-      pendingImages.length > 0 ||
-      pendingVoice ||
-      pendingVideo
+  async function sendInternalNote() {
+    const body = noteDraft.trim();
+    if (!body || busy || !userId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const { note, error: insertError } = await insertSupportInternalNote({
+        reportId,
+        createdBy: userId,
+        body,
+      });
+      if (insertError || !note) throw new Error(insertError || "Could not save note.");
+      setInternalNotes((current) => [...current, note]);
+      setNoteDraft("");
+      setComposerOpen(false);
+      setComposerExpanded(false);
+      setNotifyNote(null);
+      notifySupportCountsChanged();
+      onInternalNoteSaved?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save note.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function submitComposer() {
+    if (composerMode === "note") {
+      void sendInternalNote();
+      return;
+    }
+    void sendReply();
+  }
+
+  const canSend =
+    composerMode === "note"
+      ? Boolean(noteDraft.trim())
+      : Boolean(
+          draft.trim() ||
+            pendingImages.length > 0 ||
+            pendingVoice ||
+            pendingVideo
+        );
+
+  const modeToggle = (
+    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+      <button
+        type="button"
+        onClick={() => switchComposerMode("reply")}
+        className={`rounded-md px-2.5 py-1 ${
+          composerMode === "reply"
+            ? "bg-white text-slate-900 shadow-sm"
+            : "text-slate-500 hover:text-slate-800"
+        }`}
+      >
+        Reply
+      </button>
+      <button
+        type="button"
+        onClick={() => switchComposerMode("note")}
+        className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 ${
+          composerMode === "note"
+            ? "bg-amber-50 text-amber-900 shadow-sm ring-1 ring-amber-200/80"
+            : "text-slate-500 hover:text-slate-800"
+        }`}
+      >
+        <Eye className="h-3 w-3" strokeWidth={2} aria-hidden />
+        Internal note
+      </button>
+    </div>
   );
 
   const activeSendAsLabel = activeSendAs
@@ -632,9 +890,14 @@ export function AdminTicketReplies({
         composerOpen && composerExpanded ? "min-h-0 flex-1" : "shrink-0"
       }`}
     >
-      {reportStatus === "resolved" && composerOpen ? (
+      {reportStatus === "resolved" && composerOpen && composerMode === "reply" ? (
         <p className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
           This ticket is resolved — sending a message will reopen it.
+        </p>
+      ) : null}
+      {composerOpen && composerMode === "note" ? (
+        <p className="border-b border-amber-100 bg-amber-50 px-3 py-1.5 text-xs text-amber-800">
+          Internal only — coaches cannot see this note.
         </p>
       ) : null}
       {!composerOpen ? (
@@ -685,6 +948,7 @@ export function AdminTicketReplies({
                           onClick={() => {
                             setSendAsId(person.id);
                             setSendAsMenuOpen(false);
+                            switchComposerMode("reply");
                             setComposerOpen(true);
                           }}
                           className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm ${
@@ -716,6 +980,7 @@ export function AdminTicketReplies({
             <button
               type="button"
               onClick={() => {
+                switchComposerMode("reply");
                 setComposerOpen(true);
                 setSendAsMenuOpen(false);
               }}
@@ -725,7 +990,21 @@ export function AdminTicketReplies({
             </button>
             <button
               type="button"
+              title="Add internal note"
               onClick={() => {
+                switchComposerMode("note");
+                setComposerOpen(true);
+                setSendAsMenuOpen(false);
+              }}
+              className="flex shrink-0 items-center justify-center border-l border-slate-200 px-3 py-2 text-amber-700 hover:bg-amber-50"
+              aria-label="Add internal note"
+            >
+              <Eye className="h-4 w-4" strokeWidth={2} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                switchComposerMode("reply");
                 setComposerOpen(true);
                 setSendAsMenuOpen(false);
               }}
@@ -743,7 +1022,10 @@ export function AdminTicketReplies({
           }`}
         >
           <div className="relative flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
-            {sendAsPicker}
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {modeToggle}
+              {composerMode === "reply" ? sendAsPicker : null}
+            </div>
             <div className="flex items-center gap-0.5">
               <button
                 type="button"
@@ -771,7 +1053,7 @@ export function AdminTicketReplies({
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
-            {pendingImages.length > 0 ? (
+            {composerMode === "reply" && pendingImages.length > 0 ? (
               <CommentImagePreviews
                 pending={pendingImages}
                 onChange={setPendingImages}
@@ -779,7 +1061,7 @@ export function AdminTicketReplies({
               />
             ) : null}
 
-            {pendingVideo ? (
+            {composerMode === "reply" && pendingVideo ? (
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
                 <video
                   src={pendingVideo.url}
@@ -805,29 +1087,54 @@ export function AdminTicketReplies({
             ) : null}
 
             <div
-              className={`flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400 ${
-                composerExpanded ? "flex-1" : ""
-              }`}
+              className={`flex min-h-0 flex-col overflow-hidden rounded-xl border bg-white focus-within:border-sky-400 ${
+                composerMode === "note"
+                  ? "border-amber-300 focus-within:border-amber-500"
+                  : "border-slate-200"
+              } ${composerExpanded ? "flex-1" : ""}`}
             >
-              <textarea
-                ref={replyTextareaRef}
-                rows={composerExpanded ? undefined : 4}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    void sendReply();
-                  }
-                }}
-                autoFocus
-                placeholder="Write a message..."
-                className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
-                  composerExpanded ? "min-h-0 flex-1" : ""
-                }`}
-              />
+              {composerMode === "note" ? (
+                <MentionTextarea
+                  value={noteDraft}
+                  onChange={setNoteDraft}
+                  disabled={busy}
+                  rows={composerExpanded ? 12 : 4}
+                  placeholder="Add an internal note… Type @ to mention Pam or Zander"
+                  className="min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400"
+                />
+              ) : (
+                <textarea
+                  ref={replyTextareaRef}
+                  rows={composerExpanded ? undefined : 4}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void sendReply();
+                    }
+                  }}
+                  autoFocus
+                  placeholder="Write a message..."
+                  className={`min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400 ${
+                    composerExpanded ? "min-h-0 flex-1" : ""
+                  }`}
+                />
+              )}
             </div>
 
+            {composerMode === "note" ? (
+              <div className="flex shrink-0 items-center justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={busy || !canSend}
+                  onClick={() => void sendInternalNote()}
+                  className="shrink-0 rounded-md bg-amber-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50"
+                >
+                  {busy ? "Saving…" : "Save note"}
+                </button>
+              </div>
+            ) : (
             <SupportVoiceRecorder
               pending={pendingVoice}
               onChange={(note) => {
@@ -851,6 +1158,24 @@ export function AdminTicketReplies({
                       className="rounded-md p-1.5 text-slate-300"
                     >
                       <FileText className="h-4 w-4" strokeWidth={1.75} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Bold"
+                      disabled={busy}
+                      onClick={insertBoldMarkdown}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                    >
+                      <Bold className="h-4 w-4" strokeWidth={1.75} />
+                    </button>
+                    <button
+                      type="button"
+                      title="Add link"
+                      disabled={busy}
+                      onClick={insertLinkMarkdown}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                    >
+                      <LinkIcon className="h-4 w-4" strokeWidth={1.75} />
                     </button>
                     <input
                       ref={imageInputRef}
@@ -939,6 +1264,7 @@ export function AdminTicketReplies({
                 </div>
               )}
             />
+            )}
 
             {notifyNote ? (
               <p className="text-xs text-slate-600">{notifyNote}</p>
@@ -958,54 +1284,86 @@ export function AdminTicketReplies({
     </div>
   ) : (
     <div className="mt-3 space-y-2">
-      {reportStatus === "resolved" ? (
-        <p className="text-[11px] text-slate-500">
-          This ticket is resolved — sending a reply will reopen it.
-        </p>
-      ) : null}
-      <CommentImagePreviews
-        pending={pendingImages}
-        onChange={setPendingImages}
-        disabled={busy}
-      />
-      <div className="flex flex-wrap items-center gap-3">
-        {sendAsSelect}
-        {notifyToggle}
-      </div>
-      <div className="flex items-end gap-2">
-        <textarea
-          rows={2}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              void sendReply();
-            }
-          }}
-          placeholder="Reply to the coach…"
-          className="min-h-[2.5rem] flex-1 resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-        />
-        <CommentAttachButton
-          pending={pendingImages}
-          onChange={setPendingImages}
-          disabled={busy}
-          onError={setError}
-          size="sm"
-        />
-        <button
-          type="button"
-          disabled={busy || !canSend}
-          onClick={() => void sendReply()}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-700 text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          aria-label="Send reply"
-        >
-          <Send className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </div>
-      {notifyNote ? (
-        <p className="text-[11px] text-slate-600">{notifyNote}</p>
-      ) : null}
+      {modeToggle}
+      {composerMode === "note" ? (
+        <>
+          <p className="text-[11px] text-amber-800">
+            Internal only — coaches cannot see this note.
+          </p>
+          <div className="flex items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <MentionTextarea
+                value={noteDraft}
+                onChange={setNoteDraft}
+                disabled={busy}
+                rows={2}
+                placeholder="Add an internal note… Type @ to mention Pam or Zander"
+                className="min-h-[2.5rem] w-full resize-none rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={busy || !canSend}
+              onClick={() => void sendInternalNote()}
+              className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-amber-700 px-3 text-xs font-medium text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              aria-label="Save internal note"
+            >
+              Save note
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          {reportStatus === "resolved" ? (
+            <p className="text-[11px] text-slate-500">
+              This ticket is resolved — sending a reply will reopen it.
+            </p>
+          ) : null}
+          <CommentImagePreviews
+            pending={pendingImages}
+            onChange={setPendingImages}
+            disabled={busy}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            {sendAsSelect}
+            {notifyToggle}
+          </div>
+          <div className="flex items-end gap-2">
+            <textarea
+              rows={2}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void sendReply();
+                }
+              }}
+              placeholder="Reply to the coach…"
+              className="min-h-[2.5rem] flex-1 resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
+            />
+            <CommentAttachButton
+              pending={pendingImages}
+              onChange={setPendingImages}
+              disabled={busy}
+              onError={setError}
+              size="sm"
+            />
+            <button
+              type="button"
+              disabled={busy || !canSend}
+              onClick={() => void sendReply()}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-700 text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              aria-label="Send reply"
+            >
+              <Send className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </div>
+          {notifyNote ? (
+            <p className="text-[11px] text-slate-600">{notifyNote}</p>
+          ) : null}
+        </>
+      )}
     </div>
   );
 
@@ -1163,8 +1521,11 @@ export function AdminTicketReplies({
             ) : (
               <SupportChatThread
                 replies={replies}
+                notes={internalNotes}
                 viewerId={userId}
                 perspective="admin"
+                onUpdateReplyBody={updateReplyBody}
+                onDeleteReply={deleteReply}
               />
             )}
             <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
@@ -1186,9 +1547,12 @@ export function AdminTicketReplies({
         <div className="mt-2">
           <SupportChatThread
             replies={replies}
+            notes={internalNotes}
             viewerId={userId}
             perspective="admin"
             emptyLabel="No replies yet."
+            onUpdateReplyBody={updateReplyBody}
+            onDeleteReply={deleteReply}
           />
         </div>
       )}

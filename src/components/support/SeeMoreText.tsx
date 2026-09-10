@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SupportMessageBody } from "@/components/support/SupportMessageBody";
 import {
   feedBodyNeedsTruncation,
   postBodyNeedsTruncation,
@@ -17,7 +18,7 @@ type Props = {
 };
 
 const BASE_TEXT =
-  "text-[15px] leading-relaxed break-words text-slate-700";
+  "min-w-0 text-[15px] leading-relaxed break-words [overflow-wrap:anywhere] text-slate-700";
 
 /** Soft word-boundary cut so “… See more” can sit inline after the preview. */
 function truncateAtWord(text: string, maxChars: number): string {
@@ -76,7 +77,7 @@ export function SeeMoreText({
   if (expanded) {
     return (
       <div>
-        <p className={expandedClassName}>{trimmed}</p>
+        <SupportMessageBody body={trimmed} className={expandedClassName} />
         <button
           type="button"
           className="mt-1 font-medium text-sky-600 hover:text-sky-500 hover:underline"
@@ -90,9 +91,10 @@ export function SeeMoreText({
 
   if (!needsTruncation) {
     return (
-      <p className={collapsedClassName}>
-        {variant === "feed" ? previewText : trimmed}
-      </p>
+      <SupportMessageBody
+        body={variant === "feed" ? previewText : trimmed}
+        className={collapsedClassName}
+      />
     );
   }
 
@@ -100,7 +102,12 @@ export function SeeMoreText({
   if (variant === "feed") {
     return (
       <p className={collapsedClassName}>
-        {truncateAtWord(previewText, 140)} {seeMoreButton}
+        <SupportMessageBody
+          as="span"
+          body={truncateAtWord(previewText, 140)}
+          className=""
+        />{" "}
+        {seeMoreButton}
       </p>
     );
   }
@@ -108,11 +115,10 @@ export function SeeMoreText({
   return (
     <div>
       <div className="relative">
-        <p
+        <SupportMessageBody
+          body={trimmed}
           className={`${collapsedClassName} line-clamp-9 overflow-hidden`}
-        >
-          {trimmed}
-        </p>
+        />
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white via-white/90 to-transparent"

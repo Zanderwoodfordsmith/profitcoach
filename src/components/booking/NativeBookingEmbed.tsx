@@ -66,6 +66,8 @@ type Props = {
   hideThanks?: boolean;
   /** Override the question under Thanks (default: What time works best for you?). */
   question?: string;
+  /** Optional notes stored on the booking (e.g. support-call topic). */
+  notes?: string;
 };
 
 function buildGoogleCalendarUrl(input: {
@@ -149,6 +151,7 @@ export function NativeBookingEmbed({
   hideSuccessPanel = false,
   hideThanks = false,
   question = "What time works best for you?",
+  notes,
 }: Props) {
   const calPath = `${encodeURIComponent(slug)}/${encodeURIComponent(calendarSlug)}`;
   const [meta, setMeta] = useState<BookMeta | null>(null);
@@ -243,6 +246,7 @@ export function NativeBookingEmbed({
         email: contact.email.trim(),
         phone: contact.phone?.trim() || undefined,
         prospect_timezone: tz,
+        notes: notes?.trim() || undefined,
       }),
     });
     const body = (await res.json().catch(() => ({}))) as {

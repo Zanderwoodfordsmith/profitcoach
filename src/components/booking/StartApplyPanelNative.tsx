@@ -14,8 +14,11 @@ type Props = {
   onCalendarChange?: (showing: boolean) => void;
   prefill?: ApplyPrefill;
   enableLeadCapture?: boolean;
-  termsHref?: string;
-  privacyHref?: string;
+  /**
+   * `discovery` — sales qualify questions (default).
+   * `support` — single call-topic notes field.
+   */
+  intent?: "discovery" | "support";
 };
 
 /**
@@ -25,11 +28,13 @@ type Props = {
 export function StartApplyPanelNative({
   slug,
   calendarSlug = "discovery",
+  intent = "discovery",
   ...rest
 }: Props) {
   return (
     <StartApplyPanel
       {...rest}
+      intent={intent}
       calendar={{ type: "native", slug, calendarSlug }}
     />
   );

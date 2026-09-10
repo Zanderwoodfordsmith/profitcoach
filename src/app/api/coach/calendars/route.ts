@@ -1,54 +1,33 @@
 import { NextResponse } from "next/server";
 import {
-  ensureCoachRowForUser,
   ensureDefaultCoachCalendars,
   listCoachCalendars,
   loadBookingSettingsForCoach,
   loadCoachTimezone,
-  updateCoachCalendar,
   upsertBookingSettings,
 } from "@/lib/booking/bookingService";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import { isValidIanaTimeZone } from "@/lib/booking/bookingTime";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
-
-async function requireSelfUser(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-  if (!token) return { error: "Missing access token." as const, userId: null };
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  return { error: null, userId: user.id as string };
-}
+import {
+  requireCoachOrAdmin,
+  resolveCoachTarget,
+} from "@/lib/booking/resolveCoachTarget";
 
 export async function GET(request: Request) {
-  const auth = await requireSelfUser(request);
-  if (auth.error || !auth.userId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  let coach: { id: string; slug: string };
+  const url = new URL(request.url);
+  const forSlug = url.searchParams.get("forSlug");
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
   try {
-    coach = await ensureCoachRowForUser(auth.userId);
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug,
+    });
   } catch {
     return NextResponse.json(
       { error: "Could not set up coach profile." },
@@ -56,38 +35,34 @@ export async function GET(request: Request) {
     );
   }
 
-  const calendars = await ensureDefaultCoachCalendars(coach.id);
-  const timezone = await loadCoachTimezone(coach.id);
-  const { rules } = await loadBookingSettingsForCoach(coach.id);
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  const calendars = await ensureDefaultCoachCalendars(target.coach.id);
+  const timezone = await loadCoachTimezone(target.coach.id);
+  const { rules } = await loadBookingSettingsForCoach(target.coach.id);
 
   return NextResponse.json({
-    slug: coach.slug,
+    slug: target.coach.slug,
     timezone,
     rules,
     calendars,
+    is_self: target.isSelf,
   });
 }
 
 type PatchBody = {
   timezone?: string;
   rules?: AvailabilityRuleRow[];
+  forSlug?: string;
 };
 
 /** Patch shared coach-level timezone / weekly availability. */
 export async function PATCH(request: Request) {
-  const auth = await requireSelfUser(request);
-  if (auth.error || !auth.userId) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
-  }
-
-  let coach: { id: string; slug: string };
-  try {
-    coach = await ensureCoachRowForUser(auth.userId);
-  } catch {
-    return NextResponse.json(
-      { error: "Could not set up coach profile." },
-      { status: 500 }
-    );
   }
 
   let body: PatchBody;
@@ -95,6 +70,23 @@ export async function PATCH(request: Request) {
     body = (await request.json()) as PatchBody;
   } catch {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+  }
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
+  try {
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug: body.forSlug,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Could not set up coach profile." },
+      { status: 500 }
+    );
+  }
+
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
   }
 
   if (body.timezone !== undefined && !isValidIanaTimeZone(body.timezone)) {
@@ -106,17 +98,18 @@ export async function PATCH(request: Request) {
   if (body.rules !== undefined) patch.rules = body.rules;
 
   if (Object.keys(patch).length > 0) {
-    await upsertBookingSettings(coach.id, patch);
+    await upsertBookingSettings(target.coach.id, patch);
   }
 
-  const calendars = await listCoachCalendars(coach.id);
-  const timezone = await loadCoachTimezone(coach.id);
-  const { rules } = await loadBookingSettingsForCoach(coach.id);
+  const calendars = await listCoachCalendars(target.coach.id);
+  const timezone = await loadCoachTimezone(target.coach.id);
+  const { rules } = await loadBookingSettingsForCoach(target.coach.id);
 
   return NextResponse.json({
-    slug: coach.slug,
+    slug: target.coach.slug,
     timezone,
     rules,
     calendars,
+    is_self: target.isSelf,
   });
 }

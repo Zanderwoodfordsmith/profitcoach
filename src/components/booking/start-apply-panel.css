@@ -142,6 +142,12 @@ button.start-panel__step {
   font-weight: 700;
 }
 
+.start-panel__optional {
+  margin-left: 0.28em;
+  color: rgba(255, 255, 255, 0.42);
+  font-weight: 500;
+}
+
 .start-panel__phone {
   display: flex;
   align-items: stretch;
@@ -224,6 +230,13 @@ button.start-panel__step {
   font-size: 15px;
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.start-panel__textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+  line-height: 1.45;
+  font-family: inherit;
 }
 
 .start-panel__phone-input {
@@ -410,19 +423,6 @@ button.start-panel__step {
   margin: 0;
   font-size: 13.5px;
   color: #f87171;
-}
-
-.start-panel__consent {
-  margin: 4px 0 0;
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.start-panel__consent a {
-  color: #fff;
-  text-decoration: underline;
-  text-underline-offset: 2px;
 }
 
 .start-panel__continue {

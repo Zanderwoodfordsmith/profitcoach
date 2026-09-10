@@ -10,6 +10,11 @@ import {
 export type BookingSettingsRow = {
   timezone: string;
   meeting_duration_minutes: number;
+  /**
+   * Grid for slot start times (e.g. 30 → :00 and :30).
+   * Defaults to meeting duration when omitted.
+   */
+  slot_interval_minutes?: number;
   buffer_minutes: number;
   min_notice_hours: number;
   booking_window_days: number;
@@ -75,6 +80,10 @@ export function computeBookingSlots(input: {
   const now = input.now ?? new Date();
   const coachTz = input.settings.timezone;
   const durationMin = input.settings.meeting_duration_minutes;
+  const intervalMin = Math.max(
+    5,
+    Math.floor(input.settings.slot_interval_minutes ?? durationMin)
+  );
   const bufferMs = input.settings.buffer_minutes * 60_000;
   const minNoticeMs = input.settings.min_notice_hours * 3_600_000;
   const earliestMs = now.getTime() + minNoticeMs;
@@ -121,11 +130,11 @@ export function computeBookingSlots(input: {
     for (const rule of dayRules) {
       const startMin = parseTimeToMinutes(rule.start_time.slice(0, 5));
       const endMin = parseTimeToMinutes(rule.end_time.slice(0, 5));
-      for (
-        let slotStart = startMin;
-        slotStart + durationMin <= endMin;
-        slotStart += durationMin
-      ) {
+      // Snap first start to the interval grid (e.g. :00 / :30), at or after window open.
+      let slotStart =
+        Math.ceil(startMin / intervalMin) * intervalMin;
+      if (slotStart < startMin) slotStart += intervalMin;
+      for (; slotStart + durationMin <= endMin; slotStart += intervalMin) {
         const { hour, minute } = minutesToTime(slotStart);
         const starts = zonedLocalToUtc({
           year: y,
