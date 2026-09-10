@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { CampaignActivityDay } from "@/components/campaigns/CampaignOverviewMetrics";
 import {
   buildCampaignDials,
@@ -66,15 +66,8 @@ type LeadDrawerFilter =
   | { kind: "step"; position: number; title: string }
   | { kind: "hopper"; hopper: "staging" | "active"; title: string };
 
-async function authHeaders(): Promise<HeadersInit | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+async function authHeaders(): Promise<Record<string, string> | null> {
+  return getCoachAuthHeaders();
 }
 
 function statusLabel(status: string) {

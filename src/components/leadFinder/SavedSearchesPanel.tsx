@@ -12,7 +12,7 @@ import {
   type SearchMarket,
 } from "@/lib/salesNavigator/defaultSearches";
 import type { ProspectSearchStrategy } from "@/lib/salesNavigator/prospectSearch/types";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 const MARKET_STORAGE_KEY = "lead-finder-search-market";
 
@@ -64,13 +64,9 @@ export function SavedSearchesPanel({
     let cancelled = false;
     void (async () => {
       try {
-        const {
-          data: { session },
-        } = await supabaseClient.auth.getSession();
-        if (!session?.access_token || cancelled) return;
-        const res = await fetch("/api/coach/campaign-setup", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
+        const headers = await getCoachAuthHeaders();
+        if (!headers || cancelled) return;
+        const res = await fetch("/api/coach/campaign-setup", { headers });
         if (!res.ok || cancelled) return;
         const body = (await res.json()) as {
           selectedIcp?: {
@@ -157,10 +153,8 @@ export function SavedSearchesPanel({
     setLoadingStrategies(true);
     setStrategyError(null);
     try {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
+      const headers = await getCoachAuthHeaders();
+      if (!headers) {
         setStrategyError("Not signed in.");
         return null;
       }
@@ -168,10 +162,7 @@ export function SavedSearchesPanel({
         "/api/admin/lead-finder/prospect-search-strategies",
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({
             industry: industryHint.trim() || null,
             location: countryLabel(market),

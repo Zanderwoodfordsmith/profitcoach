@@ -9,7 +9,8 @@ import {
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import { DEFAULT_WEEKDAY_AVAILABILITY } from "@/lib/booking/computeBookingSlots";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -51,6 +52,7 @@ export function CallsCalendarSettings({
   hoursTitle = "Weekly hours",
   hoursHint,
 }: Props) {
+  const { impersonatingCoachId } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,16 +63,10 @@ export function CallsCalendarSettings({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const authHeaders = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return null;
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-  }, []);
+  const authHeaders = useCallback(
+    () => getCoachAuthHeaders(impersonatingCoachId),
+    [impersonatingCoachId]
+  );
 
   const load = useCallback(async () => {
     const headers = await authHeaders();

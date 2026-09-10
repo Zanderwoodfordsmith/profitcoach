@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { OutlinedTextField } from "@/components/settings/OutlinedFormField";
 import { ProfileFieldRow } from "@/components/settings/ProfileFormLayout";
@@ -34,6 +35,7 @@ export function AccountEmailPasswordFields({
   const [pwdOpen, setPwdOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [pwdBusy, setPwdBusy] = useState(false);
   const [pwdError, setPwdError] = useState<string | null>(null);
 
@@ -147,6 +149,7 @@ export function AccountEmailPasswordFields({
       setPwdOpen(false);
       setNewPassword("");
       setConfirmPassword("");
+      setShowPassword(false);
       return;
     }
     const { error } = await supabaseClient.auth.updateUser({
@@ -160,6 +163,7 @@ export function AccountEmailPasswordFields({
     setPwdOpen(false);
     setNewPassword("");
     setConfirmPassword("");
+    setShowPassword(false);
   }
 
   const emailRow = (
@@ -186,6 +190,7 @@ export function AccountEmailPasswordFields({
         type="button"
         onClick={() => {
           setPwdError(null);
+          setShowPassword(false);
           setPwdOpen(true);
         }}
         className={outlineButtonClass(false)}
@@ -194,6 +199,24 @@ export function AccountEmailPasswordFields({
       </button>
     </div>
   );
+
+  function passwordVisibilityToggle() {
+    return (
+      <button
+        type="button"
+        onClick={() => setShowPassword((current) => !current)}
+        className="rounded p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+        aria-label={showPassword ? "Hide password" : "Show password"}
+        aria-pressed={showPassword}
+      >
+        {showPassword ? (
+          <EyeOff className="h-4 w-4" strokeWidth={2} aria-hidden />
+        ) : (
+          <Eye className="h-4 w-4" strokeWidth={2} aria-hidden />
+        )}
+      </button>
+    );
+  }
 
   return (
     <div className={`${layout === "minimal" ? "space-y-0" : "max-w-md space-y-6"} ${className}`}>
@@ -233,6 +256,7 @@ export function AccountEmailPasswordFields({
               type="button"
               onClick={() => {
                 setPwdError(null);
+                setShowPassword(false);
                 setPwdOpen(true);
               }}
               className={outlineButtonClass(false)}
@@ -305,20 +329,22 @@ export function AccountEmailPasswordFields({
               <OutlinedTextField
                 id="account_modal_new_password"
                 label="New password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 autoComplete="new-password"
                 wrapperClassName="w-full"
+                endAdornment={passwordVisibilityToggle()}
               />
               <OutlinedTextField
                 id="account_modal_confirm_password"
                 label="Confirm password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
                 wrapperClassName="w-full"
+                endAdornment={passwordVisibilityToggle()}
               />
             </div>
             {pwdError ? (
@@ -327,7 +353,10 @@ export function AccountEmailPasswordFields({
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setPwdOpen(false)}
+                onClick={() => {
+                  setShowPassword(false);
+                  setPwdOpen(false);
+                }}
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
               >
                 Cancel

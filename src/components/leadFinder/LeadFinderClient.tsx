@@ -68,6 +68,7 @@ import {
   type SalesNavYearsAtCompanyId,
 } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
 import type { LeadReveal, LeadTeaser } from "@/lib/leadFinder/types";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type SearchResult = {
@@ -961,16 +962,7 @@ export function LeadFinderClient() {
     });
   }
 
-  const authHeaders = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return null;
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-  }, []);
+  const authHeaders = useCallback(() => getCoachAuthHeaders(), []);
 
   function buildLocations(): string[] {
     const city = location.trim();

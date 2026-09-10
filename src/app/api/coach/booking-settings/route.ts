@@ -6,45 +6,13 @@ import {
   upsertBookingSettings,
 } from "@/lib/booking/bookingService";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { requireCoachRequest } from "@/lib/requireCoachRequest";
 
 /**
- * Booking settings always apply to the signed-in user (admin or coach).
- * Impersonation is ignored so staff can set their own hours without
- * switching into another coach’s account.
+ * Booking settings for the effective coach (honors view-as impersonation).
  */
-async function requireSelfUser(request: Request) {
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
-  if (!token) {
-    return { error: "Missing access token." as const, userId: null };
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) {
-    return { error: "Invalid access token." as const, userId: null };
-  }
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return { error: "Not authorized." as const, userId: null };
-  }
-
-  return { error: null, userId: user.id as string };
-}
-
 export async function GET(request: Request) {
-  const auth = await requireSelfUser(request);
+  const auth = await requireCoachRequest(request, { allowAdminSelf: true });
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
@@ -84,7 +52,7 @@ type PatchBody = {
 };
 
 export async function PATCH(request: Request) {
-  const auth = await requireSelfUser(request);
+  const auth = await requireCoachRequest(request, { allowAdminSelf: true });
   if (auth.error || !auth.userId) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }

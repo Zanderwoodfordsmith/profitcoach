@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type Invite = {
   id: string;
@@ -15,15 +15,8 @@ type Invite = {
   invitation_text?: string | null;
 };
 
-async function authHeaders(): Promise<HeadersInit | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+async function authHeaders(): Promise<Record<string, string> | null> {
+  return getCoachAuthHeaders();
 }
 
 export function LinkedInPendingInvitesPanel() {

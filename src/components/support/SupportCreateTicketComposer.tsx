@@ -48,14 +48,18 @@ export type SupportCreateTicketCoachOption = {
   last_name: string | null;
 };
 
-function CoachSearchCombobox({
+export function CoachSearchCombobox({
   coaches,
   value,
   onChange,
+  placeholder = "Select coach…",
+  allowClear = false,
 }: {
   coaches: SupportCreateTicketCoachOption[];
   value: string;
   onChange: (id: string) => void;
+  placeholder?: string;
+  allowClear?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -125,7 +129,7 @@ function CoachSearchCombobox({
             selected ? "text-slate-900" : "text-slate-400"
           }`}
         >
-          {selected ? authorDisplayName(selected) : "Select coach…"}
+          {selected ? authorDisplayName(selected) : placeholder}
         </span>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${
@@ -153,6 +157,19 @@ function CoachSearchCombobox({
             />
           </div>
           <ul className="max-h-56 overflow-y-auto py-1">
+            {allowClear && value ? (
+              <li>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onClick={() => handleSelect("")}
+                  className="flex w-full px-3 py-2 text-left text-sm text-slate-500 transition-colors hover:bg-slate-50"
+                >
+                  Unlink coach
+                </button>
+              </li>
+            ) : null}
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-sm text-slate-500">No matches.</li>
             ) : (

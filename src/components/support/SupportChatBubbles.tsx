@@ -85,38 +85,186 @@ function previewText(text: string, max = 72): string {
   return `${oneLine.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
 }
 
-function SupportInternalNoteCard({ note }: { note: SupportInternalNote }) {
+function SupportInternalNoteCard({
+  note,
+  canManage = false,
+  onUpdateBody,
+  onDelete,
+}: {
+  note: SupportInternalNote;
+  canManage?: boolean;
+  onUpdateBody?: (noteId: string, body: string) => Promise<void>;
+  onDelete?: (noteId: string) => Promise<void>;
+}) {
   const [open, setOpen] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note.body);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const authorName = authorDisplayName(note.author) || "Admin";
+
+  useEffect(() => {
+    if (!editing) setDraft(note.body);
+  }, [editing, note.body]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [editing]);
+
+  const canSave = draft.trim().length > 0;
+
+  async function saveEdit(event?: FormEvent) {
+    event?.preventDefault();
+    if (!onUpdateBody || !canSave || busy) return;
+    const next = draft.trim();
+    if (next === note.body) {
+      setEditing(false);
+      setError(null);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await onUpdateBody(note.id, next);
+      setEditing(false);
+      setOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!onDelete || busy) return;
+    const confirmed = window.confirm(
+      "Delete this internal note? This cannot be undone."
+    );
+    if (!confirmed) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onDelete(note.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete");
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="flex justify-center px-1">
       <div className="w-full max-w-[min(92%,28rem)] overflow-hidden rounded-xl border border-dashed border-amber-200 bg-amber-50/80 text-sm text-amber-950">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left hover:bg-amber-50"
-        >
-          <Eye className="h-3.5 w-3.5 shrink-0 text-amber-600" strokeWidth={2} />
-          <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-amber-800">
-            Internal note
-            <span className="font-normal text-amber-700/70">
-              {" · "}
-              {authorName}
-              {!open ? ` · ${previewText(note.body)}` : null}
+        <div className="flex w-full items-center gap-2 px-3.5 py-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (editing) return;
+              setOpen((v) => !v);
+            }}
+            aria-expanded={open || editing}
+            className="flex min-w-0 flex-1 items-center gap-2 text-left hover:opacity-90"
+          >
+            <Eye
+              className="h-3.5 w-3.5 shrink-0 text-amber-600"
+              strokeWidth={2}
+            />
+            <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-amber-800">
+              Internal note
+              <span className="font-normal text-amber-700/70">
+                {" · "}
+                {authorName}
+                {!open && !editing ? ` · ${previewText(note.body)}` : null}
+              </span>
             </span>
-          </span>
+          </button>
           <span className="shrink-0 text-[10px] tabular-nums text-amber-600/70">
             {formatShortTime(note.created_at)}
           </span>
-        </button>
-        {open ? (
+          {note.edited_at ? (
+            <span className="shrink-0 text-[10px] text-amber-600/70">
+              · edited
+            </span>
+          ) : null}
+          {canManage && !editing ? (
+            <SupportReplyActionsMenu
+              replyId={note.id}
+              outbound={false}
+              busy={busy}
+              onEdit={() => {
+                setDraft(note.body);
+                setError(null);
+                setEditing(true);
+                setOpen(true);
+              }}
+              onDelete={() => void handleDelete()}
+            />
+          ) : null}
+        </div>
+        {editing ? (
+          <form
+            onSubmit={(e) => void saveEdit(e)}
+            className="space-y-2 border-t border-amber-200/60 px-3.5 py-2.5"
+          >
+            <textarea
+              ref={textareaRef}
+              rows={3}
+              value={draft}
+              disabled={busy}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setEditing(false);
+                  setError(null);
+                  setDraft(note.body);
+                }
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault();
+                  void saveEdit();
+                }
+              }}
+              className="w-full resize-y rounded-lg border border-amber-300 bg-white px-2.5 py-2 text-sm text-amber-950 placeholder:text-amber-800/40 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:opacity-60"
+              placeholder="Internal note…"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setEditing(false);
+                  setError(null);
+                  setDraft(note.body);
+                }}
+                className="rounded-md px-2 py-1 text-[11px] font-medium text-amber-900/75 hover:bg-amber-100 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy || !canSave}
+                className="rounded-md bg-amber-800 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-amber-900 disabled:cursor-not-allowed disabled:bg-amber-300"
+              >
+                {busy ? "Saving…" : "Save"}
+              </button>
+            </div>
+            {error ? (
+              <p className="text-[10px] text-rose-600">{error}</p>
+            ) : null}
+          </form>
+        ) : open ? (
           <div className="border-t border-amber-200/60 px-3.5 py-2.5">
             <SupportMessageBody
               body={note.body}
               className="min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-sm leading-relaxed text-amber-950"
             />
+            {error ? (
+              <p className="mt-1 text-[10px] text-rose-600">{error}</p>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -493,6 +641,8 @@ type ThreadProps = {
   emptyLabel?: string;
   onUpdateReplyBody?: (replyId: string, body: string) => Promise<void>;
   onDeleteReply?: (replyId: string) => Promise<void>;
+  onUpdateNoteBody?: (noteId: string, body: string) => Promise<void>;
+  onDeleteNote?: (noteId: string) => Promise<void>;
 };
 
 export function SupportChatThread({
@@ -503,10 +653,14 @@ export function SupportChatThread({
   emptyLabel,
   onUpdateReplyBody,
   onDeleteReply,
+  onUpdateNoteBody,
+  onDeleteNote,
 }: ThreadProps) {
-  const canManage =
+  const canManageReplies =
     perspective === "admin" &&
     Boolean(onUpdateReplyBody || onDeleteReply);
+  const canManageNotes =
+    perspective === "admin" && Boolean(onUpdateNoteBody || onDeleteNote);
 
   const items =
     perspective === "admin"
@@ -533,7 +687,13 @@ export function SupportChatThread({
           {group.items.map((item) => {
             if (item.kind === "note") {
               return (
-                <SupportInternalNoteCard key={item.note.id} note={item.note} />
+                <SupportInternalNoteCard
+                  key={item.note.id}
+                  note={item.note}
+                  canManage={canManageNotes}
+                  onUpdateBody={onUpdateNoteBody}
+                  onDelete={onDeleteNote}
+                />
               );
             }
 
@@ -548,7 +708,7 @@ export function SupportChatThread({
                 key={reply.id}
                 reply={reply}
                 outbound={outbound}
-                canManage={canManage}
+                canManage={canManageReplies}
                 onUpdateBody={onUpdateReplyBody}
                 onDelete={onDeleteReply}
                 fallbackName={

@@ -40,13 +40,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
 
-  // Admins can open Coach Clients tooling without impersonating (demo client on admin).
-  if (profile.role === "admin") {
+  const impersonateId = request.headers.get("x-impersonate-coach-id")?.trim();
+  const effectiveId =
+    profile.role === "admin" && impersonateId ? impersonateId : user.id;
+
+  // Admins browsing as themselves keep hub tooling (demo client on admin).
+  // View-as uses the target coach's tier / allowlist.
+  if (profile.role === "admin" && !impersonateId) {
     return NextResponse.json({ allowed: true, email: null });
   }
 
-  const email = await emailForUserId(user.id);
-  const access = await resolveCoachAccessForUserId(user.id);
+  const email = await emailForUserId(effectiveId);
+  const access = await resolveCoachAccessForUserId(effectiveId);
   const allowed =
     coachHasFeature(access, "nav.delivery") ||
     isCoachClientHubAllowedEmail(email);

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { CampaignCompactDial } from "@/components/campaigns/CampaignOverviewMetrics";
 
 type Account = {
@@ -37,15 +37,8 @@ type Campaign = {
   updated_at: string;
 };
 
-async function authHeaders(): Promise<HeadersInit | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+async function authHeaders(): Promise<Record<string, string> | null> {
+  return getCoachAuthHeaders();
 }
 
 function statusLabel(status: string) {

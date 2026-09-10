@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     target = await resolveCoachTarget({
       auth: { userId: auth.userId, role: auth.role },
       forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
     });
   } catch {
     return NextResponse.json(
@@ -52,16 +53,14 @@ export async function GET(request: Request) {
   }
 
   let calendars: Awaited<ReturnType<typeof listGoogleCalendars>> = [];
-  // Listing calendars needs a fresh token — only do that for self.
-  if (target.isSelf) {
-    try {
-      const accessToken = await getValidGoogleAccessToken(target.coach.id);
-      if (accessToken) {
-        calendars = await listGoogleCalendars(accessToken);
-      }
-    } catch (error) {
-      console.error("google calendar GET list:", error);
+  // Use the target coach's stored refresh token (works for view-as + self).
+  try {
+    const accessToken = await getValidGoogleAccessToken(target.coach.id);
+    if (accessToken) {
+      calendars = await listGoogleCalendars(accessToken);
     }
+  } catch (error) {
+    console.error("google calendar GET list:", error);
   }
 
   return NextResponse.json({
@@ -91,6 +90,7 @@ export async function PATCH(request: Request) {
     target = await resolveCoachTarget({
       auth: { userId: auth.userId, role: auth.role },
       forSlug: null,
+      impersonateCoachId: auth.impersonateCoachId,
     });
   } catch {
     return NextResponse.json(
@@ -101,6 +101,16 @@ export async function PATCH(request: Request) {
 
   if (!target.ok) {
     return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  if (!target.isSelf) {
+    return NextResponse.json(
+      {
+        error:
+          "Sign in as this coach to change Google Calendar preferences.",
+      },
+      { status: 403 }
+    );
   }
 
   const status = await loadGoogleConnectionPublic(target.coach.id);
@@ -171,6 +181,7 @@ export async function DELETE(request: Request) {
     target = await resolveCoachTarget({
       auth: { userId: auth.userId, role: auth.role },
       forSlug: null,
+      impersonateCoachId: auth.impersonateCoachId,
     });
   } catch {
     return NextResponse.json(
@@ -181,6 +192,13 @@ export async function DELETE(request: Request) {
 
   if (!target.ok) {
     return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  if (!target.isSelf) {
+    return NextResponse.json(
+      { error: "Sign in as this coach to disconnect Google Calendar." },
+      { status: 403 }
+    );
   }
 
   await deleteGoogleConnection(target.coach.id);

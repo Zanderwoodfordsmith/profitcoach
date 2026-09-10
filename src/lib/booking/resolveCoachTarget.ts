@@ -11,21 +11,49 @@ export type CoachAuthUser = {
 };
 
 /**
- * Resolve which coach's calendars to load/save.
- * Admins may pass forSlug for a support-call host; everyone else is self-only.
+ * Resolve which coach's calendars / Google connection to load/save.
+ * - Default: signed-in coach (or admin acting as self).
+ * - Admin + x-impersonate-coach-id: that coach (view-as).
+ * - Admin + forSlug: support-call host (zander / pam).
  */
 export async function resolveCoachTarget(input: {
   auth: CoachAuthUser;
   forSlug: string | null | undefined;
+  impersonateCoachId?: string | null;
 }): Promise<
   | { ok: true; coach: { id: string; slug: string }; isSelf: boolean }
   | { ok: false; error: string; status: number }
 > {
-  const self = await ensureCoachRowForUser(input.auth.userId);
+  const signedIn = await ensureCoachRowForUser(input.auth.userId);
+  const impersonateId = (input.impersonateCoachId ?? "").trim();
+
+  // View-as takes precedence over forSlug when both are present.
+  if (input.auth.role === "admin" && impersonateId) {
+    const { data: coach } = await supabaseAdmin
+      .from("coaches")
+      .select("id, slug")
+      .eq("id", impersonateId)
+      .maybeSingle();
+
+    if (!coach?.id || !(coach.slug as string | null)?.trim()) {
+      return { ok: false, error: "Coach not found.", status: 404 };
+    }
+
+    return {
+      ok: true,
+      coach: {
+        id: coach.id as string,
+        slug: (coach.slug as string).trim(),
+      },
+      // OAuth connect/disconnect only for the signed-in user's own row.
+      isSelf: coach.id === signedIn.id,
+    };
+  }
+
   const raw = (input.forSlug ?? "").trim().toLowerCase();
 
-  if (!raw || raw === self.slug.toLowerCase()) {
-    return { ok: true, coach: self, isSelf: true };
+  if (!raw || raw === signedIn.slug.toLowerCase()) {
+    return { ok: true, coach: signedIn, isSelf: true };
   }
 
   if (input.auth.role !== "admin") {
@@ -56,20 +84,30 @@ export async function resolveCoachTarget(input: {
       id: coach.id as string,
       slug: (coach.slug as string).trim(),
     },
-    isSelf: coach.id === self.id,
+    isSelf: coach.id === signedIn.id,
   };
 }
 
 export async function requireCoachOrAdmin(request: Request): Promise<
-  | { error: string; userId: null; role: null }
-  | { error: null; userId: string; role: string }
+  | { error: string; userId: null; role: null; impersonateCoachId: null }
+  | {
+      error: null;
+      userId: string;
+      role: string;
+      impersonateCoachId: string | null;
+    }
 > {
   const authHeader = request.headers.get("authorization") ?? "";
   const token = authHeader.startsWith("Bearer ")
     ? authHeader.slice("Bearer ".length)
     : null;
   if (!token) {
-    return { error: "Missing access token.", userId: null, role: null };
+    return {
+      error: "Missing access token.",
+      userId: null,
+      role: null,
+      impersonateCoachId: null,
+    };
   }
 
   const {
@@ -77,7 +115,12 @@ export async function requireCoachOrAdmin(request: Request): Promise<
     error,
   } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) {
-    return { error: "Invalid access token.", userId: null, role: null };
+    return {
+      error: "Invalid access token.",
+      userId: null,
+      role: null,
+      impersonateCoachId: null,
+    };
   }
 
   const { data: profile } = await supabaseAdmin
@@ -87,12 +130,23 @@ export async function requireCoachOrAdmin(request: Request): Promise<
     .maybeSingle();
 
   if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return { error: "Not authorized.", userId: null, role: null };
+    return {
+      error: "Not authorized.",
+      userId: null,
+      role: null,
+      impersonateCoachId: null,
+    };
   }
+
+  const impersonateCoachId =
+    profile.role === "admin"
+      ? request.headers.get("x-impersonate-coach-id")?.trim() || null
+      : null;
 
   return {
     error: null,
     userId: user.id as string,
     role: profile.role as string,
+    impersonateCoachId,
   };
 }

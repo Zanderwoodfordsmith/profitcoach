@@ -1,7 +1,6 @@
 "use client";
 
-import { MessageSquare, Phone, Plus } from "lucide-react";
-import Link from "next/link";
+import { MessageSquare, Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -13,8 +12,6 @@ import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { SupportCreateTicketComposer } from "@/components/support/SupportCreateTicketComposer";
 import { SupportTicketCard } from "@/components/support/SupportTicketCard";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
-import { buildSupportCallPrefillQuery } from "@/lib/support/supportCallPrefill";
-import { SUPPORT_CALL_HOSTS } from "@/lib/support/supportCallHosts";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
@@ -55,8 +52,6 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [viewer, setViewer] = useState<SupportTicketAuthor | null>(null);
-  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
-  const [viewerPhone, setViewerPhone] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [expandedTicketId, setExpandedTicketId] = useState<string | null>(null);
   const [justCreatedId, setJustCreatedId] = useState<string | null>(null);
@@ -85,14 +80,9 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
 
     const { data: profileRow } = await supabaseClient
       .from("profiles")
-      .select(`${SUPPORT_AUTHOR_SELECT}, phone`)
+      .select(SUPPORT_AUTHOR_SELECT)
       .eq("id", authorId)
       .maybeSingle();
-    if (generation !== loadGenerationRef.current) return;
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
     if (generation !== loadGenerationRef.current) return;
 
     const author: SupportTicketAuthor = {
@@ -104,10 +94,6 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
       role: profileRow?.role ?? null,
     };
     setViewer(author);
-    setViewerEmail(user?.email?.trim().toLowerCase() || null);
-    setViewerPhone(
-      typeof profileRow?.phone === "string" ? profileRow.phone.trim() || null : null
-    );
 
     const { data: reports, error: reportsError } = await supabaseClient
       .from("community_feedback_reports")
@@ -530,17 +516,6 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
   const emptyAll = !loading && tickets.length === 0 && !composeOpen;
   const emptyTab = !loading && !emptyAll && filtered.length === 0 && !composeOpen;
 
-  const supportCallPrefillQs = useMemo(
-    () =>
-      buildSupportCallPrefillQuery({
-        firstName: viewer?.first_name,
-        lastName: viewer?.last_name,
-        email: viewerEmail,
-        phone: viewerPhone,
-      }),
-    [viewer?.first_name, viewer?.last_name, viewerEmail, viewerPhone]
-  );
-
   const tabBtn = (id: ListTab, label: string, count?: number) => (
     <button
       type="button"
@@ -569,16 +544,6 @@ export function SupportTicketsPage(_props: SupportTicketsPageProps = {}) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {SUPPORT_CALL_HOSTS.map((host) => (
-            <Link
-              key={host.slug}
-              href={`${host.path}${supportCallPrefillQs}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
-            >
-              <Phone className="h-4 w-4 text-teal-700" aria-hidden />
-              Call {host.displayName}
-            </Link>
-          ))}
           <button
             type="button"
             disabled={composeOpen}

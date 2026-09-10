@@ -2,7 +2,6 @@
 
 /** First Campaign Setup wizard — client-side API helpers. */
 
-import { supabaseClient } from "@/lib/supabaseClient";
 import type { CampaignMessageDraft } from "@/lib/firstCampaign/types";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import {
@@ -14,6 +13,7 @@ import {
   type LeadListSummary,
   type MessagesState,
 } from "@/lib/firstCampaign/mapApi";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 export type LinkedInImportProfile = {
   linkedinUrl: string;
@@ -39,14 +39,7 @@ export type ApiResult<T> = {
 };
 
 export async function getAuthHeaders(): Promise<Record<string, string> | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+  return getCoachAuthHeaders();
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<ApiResult<T>> {

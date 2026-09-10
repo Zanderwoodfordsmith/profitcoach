@@ -61,8 +61,10 @@ import {
   saveAdminReplyDraft,
 } from "@/lib/support/adminReplyDrafts";
 import {
+  deleteSupportInternalNote,
   insertSupportInternalNote,
   loadSupportInternalNotes,
+  updateSupportInternalNote,
   type SupportInternalNote,
 } from "@/lib/support/internalNotes";
 import {
@@ -74,6 +76,15 @@ import {
   isSupportMessageSender,
   type SupportAssignee,
 } from "@/lib/support/assignees";
+import {
+  SUPPORT_CALL_HOSTS,
+  SUPPORT_CALL_PUBLIC_ORIGIN,
+  type SupportCallHostSlug,
+} from "@/lib/support/supportCallHosts";
+import {
+  buildSupportCallPrefillQuery,
+  type SupportCallContactPrefill,
+} from "@/lib/support/supportCallPrefill";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { isSupabaseAbortError } from "@/lib/supabaseErrorMessage";
 import {
@@ -122,6 +133,8 @@ type AdminTicketRepliesProps = {
   emailNotifyLabel?: string | null;
   /** Staff profiles the admin can send as (Zander, Pam, …). */
   sendAsOptions?: SupportAssignee[];
+  /** Prefill name/email/phone on support-call booking links from templates. */
+  supportCallContact?: SupportCallContactPrefill | null;
   /** Fired after an internal note is saved (for inbox attention refresh). */
   onInternalNoteSaved?: () => void;
 };
@@ -138,6 +151,7 @@ export function AdminTicketReplies({
   emailNotifyDefault = false,
   emailNotifyLabel = null,
   sendAsOptions = [],
+  supportCallContact = null,
   onInternalNoteSaved,
 }: AdminTicketRepliesProps) {
   const [replies, setReplies] = useState<SupportReply[]>([]);
@@ -163,6 +177,7 @@ export function AdminTicketReplies({
   const [sendAsMenuOpen, setSendAsMenuOpen] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [emailNotify, setEmailNotify] = useState(emailNotifyDefault);
   const [notifyNote, setNotifyNote] = useState<string | null>(null);
   const loadGenerationRef = useRef(0);
@@ -173,6 +188,7 @@ export function AdminTicketReplies({
   const sendAsMenuRef = useRef<HTMLDivElement>(null);
   const statusMenuRef = useRef<HTMLDivElement>(null);
   const emojiWrapRef = useRef<HTMLDivElement>(null);
+  const templatesWrapRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef(draft);
   const reportIdRef = useRef(reportId);
   const prevReportIdRef = useRef<string | null>(null);
@@ -333,6 +349,39 @@ export function AdminTicketReplies({
     [reportId]
   );
 
+  const updateNoteBody = useCallback(
+    async (noteId: string, body: string) => {
+      const { note, error: updateError } = await updateSupportInternalNote({
+        noteId,
+        reportId,
+        body,
+      });
+      if (updateError || !note) {
+        throw new Error(updateError || "Could not update note.");
+      }
+      setInternalNotes((current) =>
+        current.map((n) => (n.id === noteId ? note : n))
+      );
+      notifySupportCountsChanged();
+      onInternalNoteSaved?.();
+    },
+    [onInternalNoteSaved, reportId]
+  );
+
+  const deleteNote = useCallback(
+    async (noteId: string) => {
+      const { error: deleteError } = await deleteSupportInternalNote({
+        noteId,
+        reportId,
+      });
+      if (deleteError) throw new Error(deleteError);
+      setInternalNotes((current) => current.filter((n) => n.id !== noteId));
+      notifySupportCountsChanged();
+      onInternalNoteSaved?.();
+    },
+    [onInternalNoteSaved, reportId]
+  );
+
   useEffect(() => {
     void (async () => {
       const {
@@ -367,6 +416,7 @@ export function AdminTicketReplies({
     setComposerMode("reply");
     setSendAsMenuOpen(false);
     setEmojiOpen(false);
+    setTemplatesOpen(false);
     setDraft("");
     setNoteDraft("");
     clearPendingCommentImages(pendingImages);
@@ -409,7 +459,9 @@ export function AdminTicketReplies({
   }, []);
 
   useEffect(() => {
-    if (!sendAsMenuOpen && !emojiOpen && !statusMenuOpen) return;
+    if (!sendAsMenuOpen && !emojiOpen && !statusMenuOpen && !templatesOpen) {
+      return;
+    }
     const onDoc = (e: MouseEvent) => {
       const t = e.target as Node;
       if (
@@ -429,10 +481,17 @@ export function AdminTicketReplies({
       if (emojiOpen && emojiWrapRef.current && !emojiWrapRef.current.contains(t)) {
         setEmojiOpen(false);
       }
+      if (
+        templatesOpen &&
+        templatesWrapRef.current &&
+        !templatesWrapRef.current.contains(t)
+      ) {
+        setTemplatesOpen(false);
+      }
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [sendAsMenuOpen, emojiOpen, statusMenuOpen]);
+  }, [sendAsMenuOpen, emojiOpen, statusMenuOpen, templatesOpen]);
 
   useEffect(() => {
     if (!inbox) return;
@@ -443,6 +502,7 @@ export function AdminTicketReplies({
     setComposerMode(mode);
     setSendAsMenuOpen(false);
     setEmojiOpen(false);
+    setTemplatesOpen(false);
     setNotifyNote(null);
     if (mode === "note") {
       clearPendingCommentImages(pendingImages);
@@ -504,11 +564,37 @@ export function AdminTicketReplies({
     applyFormatResult(applyMarkdownLink(current, start, end));
   }
 
+  function insertSupportCallTemplate(hostSlug: SupportCallHostSlug) {
+    const host = SUPPORT_CALL_HOSTS.find((h) => h.slug === hostSlug);
+    if (!host) return;
+    const url = `${SUPPORT_CALL_PUBLIC_ORIGIN}${host.path}${buildSupportCallPrefillQuery(
+      supportCallContact ?? {}
+    )}`;
+    const snippet = `[Book a support call](${url})`;
+    const el = replyTextareaRef.current;
+    const current = composerMode === "note" ? noteDraft : draft;
+    const setCurrent = composerMode === "note" ? setNoteDraft : setDraft;
+    const start = el?.selectionStart ?? current.length;
+    const end = el?.selectionEnd ?? current.length;
+    const needsLeadingNewline =
+      start > 0 && current.slice(Math.max(0, start - 1), start) !== "\n";
+    const insert = `${needsLeadingNewline ? "\n" : ""}${snippet}`;
+    const next = current.slice(0, start) + insert + current.slice(end);
+    setCurrent(next);
+    setTemplatesOpen(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = start + insert.length;
+      el?.setSelectionRange(pos, pos);
+    });
+  }
+
   function minimizeComposer() {
     setComposerOpen(false);
     setComposerExpanded(false);
     setSendAsMenuOpen(false);
     setEmojiOpen(false);
+    setTemplatesOpen(false);
   }
 
   function addPendingImages(files: FileList | null) {
@@ -643,8 +729,12 @@ export function AdminTicketReplies({
           .from("community_feedback_reports")
           .update({ status: nextStatus })
           .eq("id", reportId);
-        if (!statusError) onStatusTouched?.();
+        if (statusError) {
+          setError(statusError.message);
+        }
       }
+      // Refresh inbox sections (age bands / waiting-on-reply) after any reply.
+      onStatusTouched?.();
 
       if (canEmailNotify && emailNotify && replyBody) {
         const {
@@ -1151,14 +1241,50 @@ export function AdminTicketReplies({
               toolbar={(micButton) => (
                 <div className="flex shrink-0 items-center justify-between gap-2">
                   <div className="flex items-center gap-0.5">
-                    <button
-                      type="button"
-                      title="Support templates (coming soon)"
-                      disabled
-                      className="rounded-md p-1.5 text-slate-300"
-                    >
-                      <FileText className="h-4 w-4" strokeWidth={1.75} />
-                    </button>
+                    <div className="relative" ref={templatesWrapRef}>
+                      <button
+                        type="button"
+                        title="Support templates"
+                        disabled={busy}
+                        aria-expanded={templatesOpen}
+                        onClick={() => {
+                          setTemplatesOpen((v) => !v);
+                          setEmojiOpen(false);
+                        }}
+                        className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40"
+                      >
+                        <FileText className="h-4 w-4" strokeWidth={1.75} />
+                      </button>
+                      {templatesOpen ? (
+                        <div
+                          role="menu"
+                          className="absolute bottom-full left-0 z-40 mb-2 min-w-[14rem] overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg shadow-slate-900/10"
+                        >
+                          <p className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                            Templates
+                          </p>
+                          {SUPPORT_CALL_HOSTS.map((host) => (
+                            <button
+                              key={host.slug}
+                              type="button"
+                              role="menuitem"
+                              disabled={busy}
+                              onClick={() =>
+                                insertSupportCallTemplate(host.slug)
+                              }
+                              className="flex w-full flex-col items-start gap-0.5 rounded-lg px-2.5 py-2 text-left hover:bg-slate-50 disabled:opacity-40"
+                            >
+                              <span className="text-sm font-medium text-slate-900">
+                                Book a support call
+                              </span>
+                              <span className="text-xs text-slate-500">
+                                Link to {host.displayName}&apos;s calendar
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                     <button
                       type="button"
                       title="Bold"
@@ -1229,7 +1355,10 @@ export function AdminTicketReplies({
                       <button
                         type="button"
                         title="Emoji"
-                        onClick={() => setEmojiOpen((v) => !v)}
+                        onClick={() => {
+                          setEmojiOpen((v) => !v);
+                          setTemplatesOpen(false);
+                        }}
                         className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                       >
                         <Smile className="h-4 w-4" strokeWidth={1.75} />
@@ -1526,6 +1655,8 @@ export function AdminTicketReplies({
                 perspective="admin"
                 onUpdateReplyBody={updateReplyBody}
                 onDeleteReply={deleteReply}
+                onUpdateNoteBody={updateNoteBody}
+                onDeleteNote={deleteNote}
               />
             )}
             <div ref={bottomRef} aria-hidden className="h-px w-full shrink-0" />
@@ -1553,6 +1684,8 @@ export function AdminTicketReplies({
             emptyLabel="No replies yet."
             onUpdateReplyBody={updateReplyBody}
             onDeleteReply={deleteReply}
+            onUpdateNoteBody={updateNoteBody}
+            onDeleteNote={deleteNote}
           />
         </div>
       )}

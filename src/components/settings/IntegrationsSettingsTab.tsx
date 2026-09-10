@@ -31,6 +31,7 @@ type GoogleStatus = {
   configured: boolean;
   connected: boolean;
   email: string | null;
+  is_self?: boolean;
 };
 
 function authHeaders(impersonatingCoachId: string | null) {
@@ -155,6 +156,7 @@ export function IntegrationsSettingsTab() {
           configured: Boolean(googleBody.configured),
           connected: Boolean(googleBody.connected),
           email: googleBody.email ?? null,
+          is_self: googleBody.is_self !== false,
         });
       } else {
         setGoogle(null);
@@ -306,6 +308,9 @@ export function IntegrationsSettingsTab() {
     byProvider.set(key, list);
   }
 
+  const isImpersonating = Boolean(impersonatingCoachId);
+  const googleIsSelf = google?.is_self !== false && !isImpersonating;
+
   const connectButtonClass =
     "inline-flex items-center gap-1 rounded-md bg-[#0c5290] px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50";
   const secondaryButtonClass =
@@ -316,6 +321,12 @@ export function IntegrationsSettingsTab() {
       title="Integrations"
       description="Connect channels and calendar for Conversations and booking."
     >
+      {isImpersonating ? (
+        <p className="mb-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          Viewing their integrations. Google Calendar connect/disconnect requires
+          signing in as this coach.
+        </p>
+      ) : null}
       <div className="mb-1 flex items-center justify-end">
         <button
           type="button"
@@ -367,7 +378,7 @@ export function IntegrationsSettingsTab() {
                 <Link href={calendarSettingsHref} className={secondaryButtonClass}>
                   Manage
                 </Link>
-              ) : (
+              ) : googleIsSelf ? (
                 <button
                   type="button"
                   disabled={
@@ -383,6 +394,8 @@ export function IntegrationsSettingsTab() {
                   )}
                   Connect
                 </button>
+              ) : (
+                <span className="text-xs text-slate-400">View only</span>
               )
             }
           />

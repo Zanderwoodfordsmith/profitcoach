@@ -23,6 +23,7 @@ import {
   formatApproxImportDuration,
   requestedTakePagesFromTargetCount,
 } from "@/lib/salesNavigator/importSizing";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const COOKIE_STORAGE_KEY = "lead-finder-sales-nav-cookie";
@@ -282,14 +283,7 @@ export function SalesNavResultsPanel({
   }, [openImportRunId]);
 
   async function authHeaders() {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return null;
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
+    return getCoachAuthHeaders();
   }
 
   function persistCookie(next: string) {

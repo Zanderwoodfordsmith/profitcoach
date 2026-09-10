@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import { MapPin, Save } from "lucide-react";
 
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
 export type MapMember = {
@@ -47,6 +49,7 @@ type MyLocation = {
 };
 
 export function CommunityMembersMap() {
+  const { impersonatingCoachId } = useImpersonation();
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
   const [myLocation, setMyLocation] = useState<MyLocation | null>(null);
@@ -103,8 +106,8 @@ export function CommunityMembersMap() {
   const loadMyLocation = useCallback(async (signal?: { cancelled: boolean }) => {
     const empty: MyLocation = { location: "", latitude: null, longitude: null };
     try {
-      const token = await getValidSupabaseAccessToken();
-      if (!token) {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) {
         if (!signal?.cancelled) {
           setMyLocation(empty);
           setLocationDraft("");
@@ -112,7 +115,7 @@ export function CommunityMembersMap() {
         return;
       }
       const res = await fetch("/api/coach/profile", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers,
         cache: "no-store",
       });
       if (!res.ok) {
@@ -147,7 +150,7 @@ export function CommunityMembersMap() {
         setLocationDraft("");
       }
     }
-  }, []);
+  }, [impersonatingCoachId]);
 
   useEffect(() => {
     const signal = { cancelled: false };
@@ -160,14 +163,11 @@ export function CommunityMembersMap() {
   }, [loadMembers, loadMyLocation, reloadKey]);
 
   async function patchProfile(body: Record<string, unknown>) {
-    const token = await getValidSupabaseAccessToken();
-    if (!token) throw new Error("Not signed in.");
+    const headers = await getCoachAuthHeaders(impersonatingCoachId);
+    if (!headers) throw new Error("Not signed in.");
     const res = await fetch("/api/coach/profile", {
       method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify(body),
     });
     const payload = (await res.json().catch(() => ({}))) as { error?: string };

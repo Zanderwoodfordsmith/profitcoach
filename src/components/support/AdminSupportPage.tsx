@@ -29,8 +29,12 @@ import {
   notifySupportCountsChanged,
 } from "@/components/layout/useNewFeedbackCount";
 import { AdminTicketReplies } from "@/components/support/AdminTicketReplies";
+import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefill";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
-import { SupportCreateTicketComposer } from "@/components/support/SupportCreateTicketComposer";
+import {
+  CoachSearchCombobox,
+  SupportCreateTicketComposer,
+} from "@/components/support/SupportCreateTicketComposer";
 import { SupportMailboxConnect } from "@/components/support/SupportMailboxConnect";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
@@ -58,6 +62,7 @@ import {
   formatSupportTicketId,
   normalizeSupportTicketType,
   supportTicketScore,
+  type SupportTicketAuthor,
   type SupportTicketSource,
   type SupportTicketStatus,
   type SupportTicketType,
@@ -85,6 +90,13 @@ type AdminTicketRow = {
   member_notify_email?: boolean;
   author: SupportAssignee | null;
   assignee: SupportAssignee | null;
+  /**
+   * When the member last wrote without a later staff reply.
+   * Used to age-band Open tickets (not ticket created_at).
+   */
+  lastUnrepliedMemberAt: string;
+  /** Latest ticket or reply activity. */
+  lastActivityAt: string;
 };
 
 type CoachOption = {
@@ -192,6 +204,22 @@ function ticketAuthorAvatarUrl(row: AdminTicketRow): string | null {
   return row.author?.avatar_url?.trim() || null;
 }
 
+function ticketSupportCallContact(row: AdminTicketRow): SupportCallContactPrefill {
+  let firstName = row.author?.first_name?.trim() || null;
+  let lastName = row.author?.last_name?.trim() || null;
+  if ((!firstName || !lastName) && row.submitter_name?.trim()) {
+    const parts = row.submitter_name.trim().split(/\s+/);
+    firstName = firstName || parts[0] || null;
+    lastName = lastName || parts.slice(1).join(" ") || null;
+  }
+  return {
+    firstName,
+    lastName,
+    email: row.contact_email?.trim() || null,
+    phone: row.author?.phone?.trim() || null,
+  };
+}
+
 function ListAvatar({
   label,
   avatarUrl,
@@ -252,6 +280,129 @@ function inboxAgeBand(iso: string, now = new Date()): string {
   return "Older";
 }
 
+const WAITING_ON_REPLY_BAND = "Waiting on reply";
+
+/**
+ * Open filter sections:
+ * - Needs our reply → Today / Yesterday / … by last unreplied member message
+ * - We've replied (or marked waiting) → "Waiting on reply" at the bottom
+ */
+function ticketNeedsStaffReply(row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt">): boolean {
+  if (row.status === "waiting_reply") return false;
+  if (row.status === "resolved") return false;
+  // Member still has the last word (or no replies yet — times equal ticket open).
+  return row.lastActivityAt === row.lastUnrepliedMemberAt;
+}
+
+function inboxListBand(
+  row: Pick<
+    AdminTicketRow,
+    "status" | "created_at" | "lastUnrepliedMemberAt" | "lastActivityAt"
+  >,
+  statusFilter: SupportStatusFilter
+): string {
+  if (statusFilter === "open" && !ticketNeedsStaffReply(row)) {
+    return WAITING_ON_REPLY_BAND;
+  }
+  const at =
+    statusFilter === "open"
+      ? row.lastUnrepliedMemberAt || row.created_at
+      : row.created_at;
+  return inboxAgeBand(at);
+}
+
+function personListBand(
+  group: PersonGroup,
+  statusFilter: SupportStatusFilter
+): string {
+  if (statusFilter === "open") {
+    const needsReply = group.tickets.some((t) => ticketNeedsStaffReply(t));
+    if (!needsReply) return WAITING_ON_REPLY_BAND;
+  }
+  return inboxAgeBand(group.latestAt);
+}
+
+type ReplyActivityRow = {
+  report_id: string;
+  created_at: string;
+  author: Pick<SupportTicketAuthor, "role"> | Pick<SupportTicketAuthor, "role">[] | null;
+};
+
+function normalizeReplyAuthorRole(
+  author: ReplyActivityRow["author"]
+): string | null {
+  if (!author) return null;
+  const row = Array.isArray(author) ? author[0] : author;
+  return row?.role ?? null;
+}
+
+/** Newest-first replies → last unreplied member message + last activity. */
+function ticketActivityFromReplies(
+  ticketCreatedAt: string,
+  repliesNewestFirst: { created_at: string; staff: boolean }[]
+): { lastUnrepliedMemberAt: string; lastActivityAt: string } {
+  const lastActivityAt = repliesNewestFirst[0]?.created_at ?? ticketCreatedAt;
+
+  if (repliesNewestFirst.length === 0) {
+    return { lastUnrepliedMemberAt: ticketCreatedAt, lastActivityAt };
+  }
+
+  const latest = repliesNewestFirst[0];
+  if (!latest.staff) {
+    return { lastUnrepliedMemberAt: latest.created_at, lastActivityAt };
+  }
+
+  const lastMember = repliesNewestFirst.find((r) => !r.staff);
+  return {
+    lastUnrepliedMemberAt: lastMember?.created_at ?? ticketCreatedAt,
+    lastActivityAt,
+  };
+}
+
+async function loadTicketReplyActivity(
+  reportIds: string[]
+): Promise<Map<string, { created_at: string; staff: boolean }[]>> {
+  const byTicket = new Map<
+    string,
+    { created_at: string; staff: boolean }[]
+  >();
+  if (reportIds.length === 0) return byTicket;
+
+  const chunkSize = 150;
+  for (let i = 0; i < reportIds.length; i += chunkSize) {
+    const chunk = reportIds.slice(i, i + chunkSize);
+    const { data, error } = await supabaseClient
+      .from("community_feedback_replies")
+      .select(
+        `
+        report_id,
+        created_at,
+        author:profiles!created_by ( role )
+      `
+      )
+      .in("report_id", chunk)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      if (!isSupabaseAbortError(error)) {
+        console.warn("support inbox reply activity:", error.message);
+      }
+      continue;
+    }
+
+    for (const raw of (data ?? []) as ReplyActivityRow[]) {
+      const list = byTicket.get(raw.report_id) ?? [];
+      list.push({
+        created_at: raw.created_at,
+        staff: normalizeReplyAuthorRole(raw.author) === "admin",
+      });
+      byTicket.set(raw.report_id, list);
+    }
+  }
+
+  return byTicket;
+}
+
 export function AdminSupportPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -281,6 +432,8 @@ export function AdminSupportPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [adminUserId, setAdminUserId] = useState<string | null>(null);
+  const [supportCallContact, setSupportCallContact] =
+    useState<SupportCallContactPrefill | null>(null);
   const [attentionByTicket, setAttentionByTicket] = useState<SupportAttentionMap>(
     {}
   );
@@ -379,7 +532,7 @@ export function AdminSupportPage() {
           ease,
           media,
           member_notify_email,
-          author:profiles!created_by ( id, full_name, first_name, last_name, avatar_url, role ),
+          author:profiles!created_by ( id, full_name, first_name, last_name, avatar_url, role, phone ),
           assignee:profiles!assigned_to ( id, full_name, first_name, last_name, avatar_url, role )
         `
         )
@@ -396,8 +549,15 @@ export function AdminSupportPage() {
       return;
     }
 
-    const mapped = ((data ?? []) as Array<
-      Omit<AdminTicketRow, "type" | "author" | "assignee"> & {
+    const mappedBase = ((data ?? []) as Array<
+      Omit<
+        AdminTicketRow,
+        | "type"
+        | "author"
+        | "assignee"
+        | "lastUnrepliedMemberAt"
+        | "lastActivityAt"
+      > & {
         type: string;
         author: SupportAssignee | SupportAssignee[] | null;
         assignee: SupportAssignee | SupportAssignee[] | null;
@@ -409,6 +569,25 @@ export function AdminSupportPage() {
       assignee: normalizeProfile(row.assignee),
       member_notify_email: row.member_notify_email !== false,
     }));
+
+    const openIds = mappedBase
+      .filter((row) => row.status !== "resolved")
+      .map((row) => row.id);
+    const replyLists = await loadTicketReplyActivity(openIds);
+    if (generation !== loadGenerationRef.current) return;
+
+    const mapped: AdminTicketRow[] = mappedBase.map((row) => {
+      const activity = ticketActivityFromReplies(
+        row.created_at,
+        replyLists.get(row.id) ?? []
+      );
+      return {
+        ...row,
+        lastUnrepliedMemberAt: activity.lastUnrepliedMemberAt,
+        lastActivityAt: activity.lastActivityAt,
+      };
+    });
+
     setRows(mapped);
     setLoading(false);
   }, [loadAttention]);
@@ -446,7 +625,7 @@ export function AdminSupportPage() {
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return rows.filter((row) => {
+    const next = rows.filter((row) => {
       const mentioned = mentionsByTicket[row.id] ?? [];
 
       if (assigneeFilter === "zander") {
@@ -484,6 +663,22 @@ export function AdminSupportPage() {
         .toLowerCase();
       return hay.includes(q);
     });
+
+    if (statusFilter !== "open") return next;
+
+    return [...next].sort((a, b) => {
+      const aWaiting = ticketNeedsStaffReply(a) ? 0 : 1;
+      const bWaiting = ticketNeedsStaffReply(b) ? 0 : 1;
+      if (aWaiting !== bWaiting) return aWaiting - bWaiting;
+      const aAt = aWaiting
+        ? a.lastActivityAt || a.created_at
+        : a.lastUnrepliedMemberAt || a.created_at;
+      const bAt = bWaiting
+        ? b.lastActivityAt || b.created_at
+        : b.lastUnrepliedMemberAt || b.created_at;
+      if (aAt !== bAt) return aAt < bAt ? 1 : -1;
+      return a.created_at < b.created_at ? 1 : -1;
+    });
   }, [
     rows,
     assigneeFilter,
@@ -498,12 +693,18 @@ export function AdminSupportPage() {
     const map = new Map<string, PersonGroup>();
     for (const row of filteredRows) {
       const key = ticketPersonKey(row);
+      const sortAt =
+        statusFilter === "open"
+          ? ticketNeedsStaffReply(row)
+            ? row.lastUnrepliedMemberAt || row.created_at
+            : row.lastActivityAt || row.created_at
+          : row.created_at;
       const existing = map.get(key);
       if (existing) {
         existing.tickets.push(row);
         if (row.status !== "resolved") existing.openCount += 1;
-        if (row.created_at > existing.latestAt) {
-          existing.latestAt = row.created_at;
+        if (sortAt > existing.latestAt) {
+          existing.latestAt = sortAt;
         }
         if (!existing.avatarUrl) {
           existing.avatarUrl = ticketAuthorAvatarUrl(row);
@@ -517,14 +718,19 @@ export function AdminSupportPage() {
           avatarUrl: ticketAuthorAvatarUrl(row),
           tickets: [row],
           openCount: row.status !== "resolved" ? 1 : 0,
-          latestAt: row.created_at,
+          latestAt: sortAt,
         });
       }
     }
-    return Array.from(map.values()).sort((a, b) =>
-      a.latestAt < b.latestAt ? 1 : -1
-    );
-  }, [filteredRows]);
+    return Array.from(map.values()).sort((a, b) => {
+      if (statusFilter === "open") {
+        const aNeeds = a.tickets.some((t) => ticketNeedsStaffReply(t));
+        const bNeeds = b.tickets.some((t) => ticketNeedsStaffReply(t));
+        if (aNeeds !== bNeeds) return aNeeds ? -1 : 1;
+      }
+      return a.latestAt < b.latestAt ? 1 : -1;
+    });
+  }, [filteredRows, statusFilter]);
 
   const listTickets = useMemo(() => {
     if (groupMode !== "people" || !selectedPersonKey) return filteredRows;
@@ -556,12 +762,53 @@ export function AdminSupportPage() {
     setSelectedPersonKey(null);
   }, [assigneeFilter, statusFilter, typeFilter, groupMode, searchQuery]);
 
+  useEffect(() => {
+    if (!selectedId) {
+      setSupportCallContact(null);
+      return;
+    }
+    const row = rows.find((r) => r.id === selectedId);
+    setSupportCallContact(row ? ticketSupportCallContact(row) : null);
+
+    let cancelled = false;
+    void (async () => {
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (!session?.access_token || cancelled) return;
+      const res = await fetch(
+        `/api/admin/support/tickets/${selectedId}/call-contact`,
+        {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }
+      ).catch(() => null);
+      if (!res?.ok || cancelled) return;
+      const body = (await res.json().catch(() => null)) as {
+        contact?: SupportCallContactPrefill;
+      } | null;
+      if (body?.contact && !cancelled) {
+        setSupportCallContact(body.contact);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-load when link / contact identity changes — not on every queue refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional narrow deps
+  }, [
+    selectedId,
+    selected?.created_by,
+    selected?.contact_email,
+    selected?.submitter_name,
+  ]);
+
   async function updateRow(
     id: string,
     patch: Partial<
       Pick<
         AdminTicketRow,
-        "status" | "importance" | "ease" | "assigned_to" | "type"
+        "status" | "importance" | "ease" | "assigned_to" | "type" | "created_by"
       >
     >
   ) {
@@ -584,6 +831,17 @@ export function AdminSupportPage() {
           next.assignee =
             assignees.find((a) => a.id === patch.assigned_to) ?? null;
         }
+        if (patch.created_by !== undefined) {
+          const coach = coaches.find((c) => c.id === patch.created_by);
+          next.author = coach
+            ? {
+                id: coach.id,
+                full_name: coach.full_name,
+                first_name: coach.first_name,
+                last_name: coach.last_name,
+              }
+            : null;
+        }
         return next;
       })
     );
@@ -604,6 +862,21 @@ export function AdminSupportPage() {
         }).catch(() => null);
       })();
     }
+  }
+
+  async function linkTicketCoach(ticketId: string, coachId: string | null) {
+    const row = rows.find((r) => r.id === ticketId);
+    await updateRow(ticketId, { created_by: coachId });
+    if (!coachId || !row?.contact_email?.trim()) return;
+    const email = row.contact_email.trim().toLowerCase();
+    await supabaseClient.from("support_email_aliases").upsert(
+      {
+        email,
+        profile_id: coachId,
+        created_by: adminUserId,
+      },
+      { onConflict: "email" }
+    );
   }
 
   async function deleteRow(row: AdminTicketRow) {
@@ -784,6 +1057,8 @@ export function AdminSupportPage() {
                         role: created.assignee.role,
                       }
                     : null,
+                  lastUnrepliedMemberAt: created.created_at,
+                  lastActivityAt: created.created_at,
                 };
                 setRows((prev) => [row, ...prev]);
                 setSelectedId(row.id);
@@ -908,10 +1183,10 @@ export function AdminSupportPage() {
                     </li>
                   ) : (
                     personGroups.map((group, index) => {
-                      const ageBand = inboxAgeBand(group.latestAt);
+                      const ageBand = personListBand(group, statusFilter);
                       const prevBand =
                         index > 0
-                          ? inboxAgeBand(personGroups[index - 1].latestAt)
+                          ? personListBand(personGroups[index - 1], statusFilter)
                           : null;
                       const showBandHeader = ageBand !== prevBand;
                       return (
@@ -996,12 +1271,18 @@ export function AdminSupportPage() {
                       const attention = attentionByTicket[row.id];
                       const badgeCount = supportAttentionBadgeCount(attention);
                       const isNew = Boolean(attention);
-                      const ageBand = inboxAgeBand(row.created_at);
+                      const ageBand = inboxListBand(row, statusFilter);
                       const prevBand =
                         index > 0
-                          ? inboxAgeBand(listTickets[index - 1].created_at)
+                          ? inboxListBand(listTickets[index - 1], statusFilter)
                           : null;
                       const showBandHeader = ageBand !== prevBand;
+                      const listAt =
+                        statusFilter === "open"
+                          ? ticketNeedsStaffReply(row)
+                            ? row.lastUnrepliedMemberAt || row.created_at
+                            : row.lastActivityAt || row.created_at
+                          : row.created_at;
                       return (
                         <Fragment key={row.id}>
                           {showBandHeader ? (
@@ -1065,7 +1346,7 @@ export function AdminSupportPage() {
                               </span>
                               <span className="flex shrink-0 flex-col items-end gap-1">
                                 <span className="text-[11px] tabular-nums text-slate-400">
-                                  {formatSupportRelativeCompact(row.created_at)}
+                                  {formatSupportRelativeCompact(listAt)}
                                 </span>
                                 <span
                                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${TYPE_STYLES[row.type]}`}
@@ -1173,6 +1454,9 @@ export function AdminSupportPage() {
                       emailNotifyDefault={emailNotifyDefault}
                       emailNotifyLabel={ticketAuthorLabel(selected)}
                       sendAsOptions={assignees}
+                      supportCallContact={
+                        supportCallContact ?? ticketSupportCallContact(selected)
+                      }
                       statusSaving={saving}
                       onStatusChange={(status) =>
                         void updateRow(selected.id, { status })
@@ -1339,6 +1623,28 @@ export function AdminSupportPage() {
                           {selected.contact_email}
                         </p>
                       ) : null}
+
+                      <label className="mt-3 block">
+                        <span className="mb-1 block text-xs font-semibold text-slate-600">
+                          Linked coach
+                        </span>
+                        <CoachSearchCombobox
+                          coaches={coaches}
+                          value={selected.created_by ?? ""}
+                          allowClear
+                          placeholder="Link to a coach…"
+                          onChange={(id) =>
+                            void linkTicketCoach(selected.id, id || null)
+                          }
+                        />
+                        {selected.contact_email && !selected.created_by ? (
+                          <p className="mt-1 text-[11px] text-slate-500">
+                            Linking also remembers this email for future inbox
+                            mail.
+                          </p>
+                        ) : null}
+                      </label>
+
                       {selected.created_by ? (
                         <button
                           type="button"

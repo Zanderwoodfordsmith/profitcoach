@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     target = await resolveCoachTarget({
       auth: { userId: auth.userId, role: auth.role },
       forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
     });
   } catch {
     return NextResponse.json(
@@ -77,6 +78,7 @@ export async function PATCH(request: Request) {
     target = await resolveCoachTarget({
       auth: { userId: auth.userId, role: auth.role },
       forSlug: body.forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
     });
   } catch {
     return NextResponse.json(

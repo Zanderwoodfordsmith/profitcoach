@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type {
   ActivityDayCounts,
   ActivityDayRange,
@@ -37,15 +37,8 @@ const LEVEL_CLASSES = [
   "bg-emerald-700",
 ] as const;
 
-async function authHeaders(): Promise<HeadersInit | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+async function authHeaders(): Promise<Record<string, string> | null> {
+  return getCoachAuthHeaders();
 }
 
 function countForLayer(row: ActivityDayCounts, layer: ActivityLayer): number {

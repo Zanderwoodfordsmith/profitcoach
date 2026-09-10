@@ -19,6 +19,8 @@ export type OutlinedTextFieldProps = {
   disabled?: boolean;
   /** Width of the field; default caps width (not full viewport). */
   wrapperClassName?: string;
+  /** Optional control rendered inside the field on the right (e.g. show-password). */
+  endAdornment?: React.ReactNode;
 };
 
 export function OutlinedTextField({
@@ -31,6 +33,7 @@ export function OutlinedTextField({
   autoComplete,
   disabled,
   wrapperClassName = "w-full max-w-md",
+  endAdornment,
 }: OutlinedTextFieldProps) {
   return (
     <div className={`relative ${wrapperClassName}`}>
@@ -45,8 +48,13 @@ export function OutlinedTextField({
         placeholder={placeholder}
         autoComplete={autoComplete}
         disabled={disabled}
-        className={controlClass}
+        className={endAdornment ? `${controlClass} pr-10` : controlClass}
       />
+      {endAdornment ? (
+        <div className="absolute inset-y-0 right-0 flex items-center pr-2.5">
+          {endAdornment}
+        </div>
+      ) : null}
     </div>
   );
 }

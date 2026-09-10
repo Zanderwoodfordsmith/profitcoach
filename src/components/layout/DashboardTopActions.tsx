@@ -8,6 +8,8 @@ import {
   profileInitialsFromName,
 } from "@/lib/communityProfile";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { extractMentionUserIds } from "@/lib/communityMentions";
@@ -127,6 +129,11 @@ export function DashboardTopActions({
 }: DashboardTopActionsProps) {
   const { profile, profileLoading, avatarLabel, avatarImageUrl } =
     useDashboardProfile(avatarOverride);
+  const { impersonatingCoachId } = useImpersonation();
+  const [notificationViewer, setNotificationViewer] = useState<{
+    id: string;
+    created_at: string | null;
+  } | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [section, setSection] = useState<NotificationSection>("community");
@@ -155,8 +162,42 @@ export function DashboardTopActions({
   const prospectsEnabled = variant === "coach";
 
   useEffect(() => {
-    if (!profile?.id) return;
-    const uid = profile.id;
+    let cancelled = false;
+    void (async () => {
+      if (impersonatingCoachId) {
+        const { data } = await supabaseClient
+          .from("profiles")
+          .select("id, created_at")
+          .eq("id", impersonatingCoachId)
+          .maybeSingle();
+        if (cancelled) return;
+        setNotificationViewer(
+          data
+            ? {
+                id: data.id as string,
+                created_at: (data.created_at as string | null) ?? null,
+              }
+            : { id: impersonatingCoachId, created_at: null }
+        );
+        return;
+      }
+      if (profile?.id) {
+        setNotificationViewer({
+          id: profile.id,
+          created_at: profile.created_at,
+        });
+      } else {
+        setNotificationViewer(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [impersonatingCoachId, profile?.created_at, profile?.id]);
+
+  useEffect(() => {
+    if (!notificationViewer?.id) return;
+    const uid = notificationViewer.id;
     setReadStateReady(false);
     const local = loadNotificationReadState(uid);
     // Only paint immediately when local already has cutoffs / marks. Empty local
@@ -174,10 +215,10 @@ export function DashboardTopActions({
     return () => {
       cancelled = true;
     };
-  }, [profile?.id]);
+  }, [notificationViewer?.id]);
 
   const loadNotifications = useCallback(async () => {
-    const uid = profile?.id;
+    const uid = notificationViewer?.id;
     if (!uid) return;
     setLoadingNotifications(true);
     try {
@@ -283,7 +324,7 @@ export function DashboardTopActions({
 
       // Only notify about announcements published after the user joined.
       // Without this, new coaches see every historical announcement as unread.
-      const joinedAt = profile?.created_at ?? null;
+      const joinedAt = notificationViewer?.created_at ?? null;
       let announcementsQuery = announcementsCategoryId
         ? supabaseClient
             .from("community_posts")
@@ -655,28 +696,23 @@ export function DashboardTopActions({
     } finally {
       setLoadingNotifications(false);
     }
-  }, [communityHref, profile?.created_at, profile?.id, variant]);
+  }, [communityHref, notificationViewer?.created_at, notificationViewer?.id, variant]);
 
   const loadProspectNotifications = useCallback(async () => {
     if (!prospectsEnabled) {
       setProspectNotifications([]);
       return;
     }
-    const uid = profile?.id;
-    if (!uid) return;
+    if (!notificationViewer?.id) return;
     setLoadingProspectNotifications(true);
     try {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) {
         setProspectNotifications([]);
         return;
       }
 
-      const res = await fetch("/api/notifications/prospects", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const res = await fetch("/api/notifications/prospects", { headers });
       if (!res.ok) {
         setProspectNotifications([]);
         return;
@@ -689,10 +725,10 @@ export function DashboardTopActions({
     } finally {
       setLoadingProspectNotifications(false);
     }
-  }, [profile?.id, prospectsEnabled]);
+  }, [impersonatingCoachId, notificationViewer?.id, prospectsEnabled]);
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!notificationViewer?.id) return;
     void loadNotifications();
     if (prospectsEnabled) {
       void loadProspectNotifications();
@@ -704,7 +740,12 @@ export function DashboardTopActions({
       }
     }, 60_000);
     return () => window.clearInterval(handle);
-  }, [loadNotifications, loadProspectNotifications, profile?.id, prospectsEnabled]);
+  }, [
+    loadNotifications,
+    loadProspectNotifications,
+    notificationViewer?.id,
+    prospectsEnabled,
+  ]);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -750,15 +791,15 @@ export function DashboardTopActions({
 
   const markSectionAsRead = useCallback(
     (target: NotificationSection) => {
-      if (!profile?.id) return;
-      setReadState(markNotificationSectionRead(profile.id, target));
+      if (!notificationViewer?.id) return;
+      setReadState(markNotificationSectionRead(notificationViewer.id, target));
     },
-    [profile?.id]
+    [notificationViewer?.id]
   );
 
   const markOneAsRead = useCallback(
     (id: string) => {
-      if (!profile?.id) return;
+      if (!notificationViewer?.id) return;
       setReadState((prev) => {
         if (prev.readIds[id] && !prev.unreadIds?.[id]) return prev;
         const nextUnreadIds = { ...(prev.unreadIds ?? {}) };
@@ -768,16 +809,16 @@ export function DashboardTopActions({
           readIds: { ...prev.readIds, [id]: true },
           unreadIds: nextUnreadIds,
         };
-        persistNotificationReadState(profile.id, next);
+        persistNotificationReadState(notificationViewer.id, next);
         return next;
       });
     },
-    [profile?.id]
+    [notificationViewer?.id]
   );
 
   const markOneAsUnread = useCallback(
     (id: string) => {
-      if (!profile?.id) return;
+      if (!notificationViewer?.id) return;
       setReadState((prev) => {
         const nextReadIds = { ...prev.readIds };
         delete nextReadIds[id];
@@ -786,11 +827,11 @@ export function DashboardTopActions({
           readIds: nextReadIds,
           unreadIds: { ...(prev.unreadIds ?? {}), [id]: true },
         };
-        persistNotificationReadState(profile.id, next);
+        persistNotificationReadState(notificationViewer.id, next);
         return next;
       });
     },
-    [profile?.id]
+    [notificationViewer?.id]
   );
 
   return (

@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type CalendarItem = {
   id: string;
@@ -69,6 +70,7 @@ export function GoogleCalendarBookingCard({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { impersonatingCoachId } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -82,16 +84,10 @@ export function GoogleCalendarBookingCard({
   const [googleOpen, setGoogleOpen] = useState(Boolean(compact));
   const [busyOpen, setBusyOpen] = useState(false);
 
-  const authHeaders = useCallback(async () => {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-    if (!session?.access_token) return null;
-    return {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    };
-  }, []);
+  const authHeaders = useCallback(
+    () => getCoachAuthHeaders(impersonatingCoachId),
+    [impersonatingCoachId]
+  );
 
   const load = useCallback(async () => {
     const headers = await authHeaders();
@@ -282,8 +278,8 @@ export function GoogleCalendarBookingCard({
 
       {!isSelf ? (
         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-          Google must be connected while signed in as this host. You can still
-          set their weekly hours above.
+          Viewing their Google Calendar status. Connect or disconnect only works
+          when signed in as this coach.
         </p>
       ) : null}
 

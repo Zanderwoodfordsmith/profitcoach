@@ -16,7 +16,7 @@ import {
   formatApproxImportDuration,
   requestedTakePagesFromTargetCount,
 } from "@/lib/salesNavigator/importSizing";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type ToastState =
   | {
@@ -64,14 +64,7 @@ const ERROR_TOAST_MS = 10_000;
 const LEAD_FINDER_PATH = "/admin/lead-finder";
 
 async function authHeaders(): Promise<Record<string, string> | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
+  return getCoachAuthHeaders();
 }
 
 function resumeHref(jobId: string) {

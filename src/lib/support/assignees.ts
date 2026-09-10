@@ -10,6 +10,7 @@ export type SupportAssignee = {
   last_name: string | null;
   avatar_url?: string | null;
   role?: string | null;
+  phone?: string | null;
 };
 
 export function assigneeDisplayName(

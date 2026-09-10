@@ -175,10 +175,11 @@ export const SUPPORT_STATUS_USER_LABELS: Record<SupportTicketStatus, string> = {
   resolved: "Resolved",
 };
 
+/** Menu order: Open → Resolved, with Waiting reply last (parked / side path). */
 export const SUPPORT_STATUS_ADMIN_LABELS: Record<SupportTicketStatus, string> = {
   open: "Open",
-  waiting_reply: "Waiting reply",
   resolved: "Resolved",
+  waiting_reply: "Waiting reply",
 };
 
 /** Map legacy + current DB values onto open / waiting_reply / resolved. */

@@ -32,6 +32,7 @@ export async function PATCH(
     target = await resolveCoachTarget({
       auth: { userId: auth.userId, role: auth.role },
       forSlug: body.forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
     });
   } catch {
     return NextResponse.json(

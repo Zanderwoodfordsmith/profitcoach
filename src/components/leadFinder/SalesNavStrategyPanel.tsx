@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Loader2, Sparkles, Check } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type {
   ProspectSearchStrategiesResult,
   ProspectSearchStrategy,
@@ -77,13 +77,9 @@ export function SalesNavStrategyPanel({
     void (async () => {
       setSeeding(true);
       try {
-        const {
-          data: { session },
-        } = await supabaseClient.auth.getSession();
-        if (!session?.access_token) return;
-        const res = await fetch("/api/coach/campaign-setup", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
+        const headers = await getCoachAuthHeaders();
+        if (!headers) return;
+        const res = await fetch("/api/coach/campaign-setup", { headers });
         if (!res.ok || cancelled) return;
         const body = (await res.json()) as {
           selectedIcp?: { industry?: string | null; label?: string | null } | null;
@@ -139,10 +135,8 @@ export function SalesNavStrategyPanel({
     setError(null);
     setAppliedId(null);
     try {
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
+      const headers = await getCoachAuthHeaders();
+      if (!headers) {
         setError("Not signed in.");
         return;
       }
@@ -150,10 +144,7 @@ export function SalesNavStrategyPanel({
         "/api/admin/lead-finder/prospect-search-strategies",
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({
             industry: industry.trim() || null,
             location: location.trim() || "United Kingdom",

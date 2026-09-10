@@ -16,6 +16,7 @@ import {
   parseSupportTicketNumberFromSubject,
   stripEmailQuotedReply,
 } from "@/lib/support/ingestEmailReply";
+import { findCoachProfileIdByEmail } from "@/lib/support/matchCoachByEmail";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   createHostedAuthLink,
@@ -446,32 +447,6 @@ export function parseUnipileEmailDate(
   // Reject absurd future dates (clock skew / bad payload).
   if (d.getTime() > Date.now() + 24 * 60 * 60 * 1000) return null;
   return d.toISOString();
-}
-
-async function findCoachProfileIdByEmail(
-  email: string | null
-): Promise<string | null> {
-  const normalized = email?.trim().toLowerCase();
-  if (!normalized) return null;
-
-  // Same pattern as primaryCoach: Auth email → profiles id.
-  const { data, error } = await supabaseAdmin.auth.admin.listUsers({
-    page: 1,
-    perPage: 1000,
-  });
-  if (error) return null;
-  const user = (data.users ?? []).find(
-    (u) => (u.email ?? "").trim().toLowerCase() === normalized
-  );
-  if (!user?.id) return null;
-
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .in("role", ["coach", "admin"])
-    .maybeSingle();
-  return (profile?.id as string | null) ?? null;
 }
 
 /**
