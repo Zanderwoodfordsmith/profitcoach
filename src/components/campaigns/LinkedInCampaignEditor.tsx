@@ -449,36 +449,37 @@ export function LinkedInCampaignEditor() {
     );
   }
 
+  const activeCampaign = campaign;
   const hasInviteStep = steps.some((s) => s.step_type === "invite");
-  const running = campaign.status === "running";
+  const running = activeCampaign.status === "running";
 
   function startEditingName() {
-    setNameDraft(campaign.name);
+    setNameDraft(activeCampaign.name);
     setEditingName(true);
   }
 
   async function commitNameEdit() {
     const next = nameDraft.trim();
     setEditingName(false);
-    if (!next || next === campaign.name) {
-      setNameDraft(campaign.name);
+    if (!next || next === activeCampaign.name) {
+      setNameDraft(activeCampaign.name);
       return;
     }
-    setCampaign({ ...campaign, name: next });
+    setCampaign({ ...activeCampaign, name: next });
     await saveSettings({ name: next });
   }
 
   function toggleRunning() {
-    if (campaign.status === "running") {
+    if (activeCampaign.status === "running") {
       void saveSettings({ status: "paused" });
       return;
     }
     void saveSettings({
       status: "running",
       outreach_account_id:
-        campaign.channel === "email"
-          ? campaign.outreach_account_id || mailingAccount?.id || null
-          : campaign.outreach_account_id || primaryAccount?.id || null,
+        activeCampaign.channel === "email"
+          ? activeCampaign.outreach_account_id || mailingAccount?.id || null
+          : activeCampaign.outreach_account_id || primaryAccount?.id || null,
     });
   }
 

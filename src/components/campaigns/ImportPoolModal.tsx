@@ -286,7 +286,6 @@ export function ImportPoolModal({
     setMapsTerm("");
     setMapsLocation("");
     setMapsMaxPlaces(100);
-    setMapsFindPeople(false);
     setPasteText("");
     setShowPasteLinks(false);
     setOneUrl("");

@@ -437,9 +437,10 @@ export async function POST(
 ) {
   const { id } = await params;
   const access = await resolveAccess(request);
-  if (access.error) {
+  if (access.error !== null) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
+  const authorUserId = access.userId;
 
   const { data: conversation } = await loadConversation(id, access.coachId);
   if (!conversation || conversation.hidden_at) {
@@ -729,7 +730,7 @@ export async function POST(
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("full_name, first_name, last_name, avatar_url")
-      .eq("id", access.userId)
+      .eq("id", authorUserId)
       .maybeSingle();
     const authorName =
       (profile?.full_name as string | null)?.trim() ||
@@ -752,7 +753,7 @@ export async function POST(
         to_address: "internal",
         metadata: {
           kind: "internal_comment",
-          author_user_id: access.userId,
+          author_user_id: authorUserId,
           author_name: authorName,
           author_avatar_url: authorAvatarUrl,
         },

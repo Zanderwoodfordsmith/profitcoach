@@ -42,8 +42,12 @@ function mapAccountStatus(raw: Record<string, unknown> | null | undefined): stri
   return "OK";
 }
 
-function createdAtMs(item: { created_at?: unknown }): number {
-  const t = Date.parse(String(item.created_at || ""));
+function createdAtMs(item: unknown): number {
+  const raw =
+    item && typeof item === "object"
+      ? (item as { created_at?: unknown })
+      : null;
+  const t = Date.parse(String(raw?.created_at || ""));
   return Number.isFinite(t) ? t : 0;
 }
 

@@ -326,7 +326,9 @@ export function ProspectsHub({
   );
 
   const statusOptions = useMemo(() => {
-    const seen = new Set(PROSPECT_STATUS_OPTIONS.map((option) => option.value));
+    const seen = new Set<string>(
+      PROSPECT_STATUS_OPTIONS.map((option) => option.value)
+    );
     const extras = [
       ...new Set(
         prospects
