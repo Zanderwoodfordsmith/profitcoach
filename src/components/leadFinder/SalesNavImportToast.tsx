@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Check, Loader2, X, XCircle } from "lucide-react";
 import {
@@ -57,8 +57,8 @@ type PollBody = {
   };
 };
 
-/** ~25s — pages take ~7–11s; no need to hammer Apify. */
-const POLL_MS = 25_000;
+/** Unipile pool imports update often; keep the toast live. */
+const POLL_MS = 3_000;
 const SUCCESS_TOAST_MS = 8000;
 const ERROR_TOAST_MS = 10_000;
 const LEAD_FINDER_PATH = "/admin/lead-finder";
@@ -67,7 +67,9 @@ async function authHeaders(): Promise<Record<string, string> | null> {
   return getCoachAuthHeaders();
 }
 
-function resumeHref(jobId: string) {
+function resumeHref(jobId: string, override?: string | null) {
+  const custom = override?.trim();
+  if (custom) return custom;
   return `${LEAD_FINDER_PATH}?importRun=${encodeURIComponent(jobId)}`;
 }
 
@@ -93,9 +95,14 @@ export function SalesNavImportToast() {
       }
     >
   >({});
+  const resumeByIdRef = useRef<Record<string, string>>({});
 
   const refreshWatched = useCallback(() => {
-    setWatched(listWatchedSalesNavImports());
+    const jobs = listWatchedSalesNavImports();
+    for (const job of jobs) {
+      if (job.resumeHref) resumeByIdRef.current[job.id] = job.resumeHref;
+    }
+    setWatched(jobs);
   }, []);
 
   useEffect(() => {
@@ -123,10 +130,11 @@ export function SalesNavImportToast() {
       for (const job of listWatchedSalesNavImports()) {
         if (cancelled) return;
         try {
-          const res = await fetch(
-            `/api/admin/lead-finder/sales-nav-import-runs/${job.id}`,
-            { headers }
-          );
+          const path =
+            job.kind === "google_maps"
+              ? `/api/coach/google-maps-import/${job.id}`
+              : `/api/coach/sales-nav-import/${job.id}`;
+          const res = await fetch(path, { headers });
           const body = (await res.json().catch(() => ({}))) as PollBody;
           if (!res.ok) continue;
 
@@ -252,6 +260,11 @@ export function SalesNavImportToast() {
   if (!toast) return null;
 
   const onLeadFinder = pathname?.startsWith(LEAD_FINDER_PATH);
+  const onCampaignsPool =
+    Boolean(pathname?.includes("/campaigns")) && toast.kind === "progress";
+  /** Pool hub already shows import progress on the list tab. */
+  if (onCampaignsPool) return null;
+
   const bottomClass = onLeadFinder
     ? "bottom-20 sm:bottom-20"
     : "bottom-5 sm:bottom-6";
@@ -308,7 +321,7 @@ export function SalesNavImportToast() {
     <div
       role="status"
       aria-live="polite"
-      className={`fixed right-5 z-[60] flex max-w-[min(22rem,calc(100vw-2.5rem))] items-start gap-3 rounded-lg px-3.5 py-3 text-sm font-medium shadow-lg transition-all duration-500 ease-out sm:right-6 ${bottomClass} ${colorClass} ${
+      className={`fixed right-5 z-[90] flex max-w-[min(22rem,calc(100vw-2.5rem))] items-start gap-3 rounded-lg px-3.5 py-3 text-sm font-medium shadow-lg transition-all duration-500 ease-out sm:right-6 ${bottomClass} ${colorClass} ${
         toastVisible || toast.kind === "progress"
           ? "translate-y-0 opacity-100"
           : "translate-y-2 opacity-0"
@@ -332,11 +345,12 @@ export function SalesNavImportToast() {
           if (toast.kind === "progress" || toast.kind === "success") {
             const id = toast.jobId;
             setToast(null);
+            const href = resumeHref(id, resumeByIdRef.current[id]);
             if (pathname?.startsWith(LEAD_FINDER_PATH)) {
               requestSalesNavImportResume(id);
-              router.replace(resumeHref(id), { scroll: false });
+              router.replace(href, { scroll: false });
             } else {
-              router.push(resumeHref(id));
+              router.push(href);
             }
           }
         }}

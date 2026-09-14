@@ -15,14 +15,14 @@ const siteToolsLinks = [
     hint: "All grid components (transposed, default, glass, bordered).",
   },
   {
-    href: "/admin/account?tab=calendar",
+    href: "/admin/calls?tab=settings",
     label: "My native booking (hours)",
     hint: "Set your own availability — no impersonation. Book link appears on that page after save.",
   },
   {
     href: "/zander",
     label: "My public book page (/zander)",
-    hint: "Enable Native discovery booking in Settings → Calendar, then share this URL.",
+    hint: "Enable Native discovery booking in Calls → Settings, then share this URL.",
   },
 ] as const;
 

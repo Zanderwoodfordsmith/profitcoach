@@ -94,7 +94,7 @@ export function resolveReportCalendarContact(options: {
   return toCalendarContactParams(merged);
 }
 
-function buildCalendarQuery(contact: CalendarContactParams): URLSearchParams {
+export function buildCalendarQuery(contact: CalendarContactParams): URLSearchParams {
   const q = new URLSearchParams();
   const first = contact.firstName?.trim();
   const last = contact.lastName?.trim();
@@ -105,6 +105,26 @@ function buildCalendarQuery(contact: CalendarContactParams): URLSearchParams {
   if (email) q.set("email", email);
   if (phone) q.set("phone", phone);
   return q;
+}
+
+/** Append contact prefill query params to a public http(s) URL. */
+export function appendContactParamsToUrl(
+  url: string,
+  contact: CalendarContactParams | null | undefined
+): string {
+  if (!hasCalendarContactParams(contact)) return url;
+  const extra = buildCalendarQuery(contact);
+  if (!extra.toString()) return url;
+  try {
+    const parsed = new URL(url);
+    for (const [key, value] of extra.entries()) {
+      parsed.searchParams.set(key, value);
+    }
+    return parsed.toString();
+  } catch {
+    const join = url.includes("?") ? "&" : "?";
+    return `${url}${join}${extra.toString()}`;
+  }
 }
 
 /** Appends GHL booking prefill params to iframe src URLs inside calendar embed HTML. */

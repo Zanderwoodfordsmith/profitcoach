@@ -1136,7 +1136,10 @@ export function LeadFinderClient() {
     }
     if (search.id === "base-town" || search.id === "base-postcode") {
       setLocation(search.location);
-    } else if (search.id === "base-country" || search.id === "base-1st") {
+    } else if (search.id === "base-1st") {
+      setSalesNavLocation("");
+      setLocation("");
+    } else if (search.id === "base-country") {
       setLocation("");
     }
   }
@@ -1296,8 +1299,9 @@ export function LeadFinderClient() {
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
-      <div className="border-b border-slate-200 px-5 pt-3 sm:px-6">
+      <div className="border-b border-slate-200 px-5 sm:px-6">
         <PageHeaderUnderlineTabs
+          placement="content"
           ariaLabel="Lead source"
           items={[
             {

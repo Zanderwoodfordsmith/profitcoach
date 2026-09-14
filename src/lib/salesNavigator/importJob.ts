@@ -63,10 +63,13 @@ export type SalesNavImportJobRow = {
   segment_index: number;
   segment_total: number;
   segment_plan: SalesNavImportSegmentPlan[] | null;
+  list_id: string | null;
+  save_list_id: string | null;
+  saved_to_list: boolean;
 };
 
 const JOB_SELECT =
-  "id, coach_id, status, name, sales_nav_url, take_pages, requested_take_pages, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, estimated_cost_usd, duration_ms, error_message, apify_run_id, apify_dataset_id, provider, unipile_account_id, unipile_cursor, lead_snapshot, started_at, finished_at, created_at, segmented, segment_index, segment_total, segment_plan";
+  "id, coach_id, status, name, sales_nav_url, take_pages, requested_take_pages, scraped_count, progress_count, cache_inserted, cache_updated, cache_skipped, estimated_cost_usd, duration_ms, error_message, apify_run_id, apify_dataset_id, provider, unipile_account_id, unipile_cursor, lead_snapshot, started_at, finished_at, created_at, segmented, segment_index, segment_total, segment_plan, list_id, save_list_id, saved_to_list";
 
 const TERMINAL_APIFY = new Set([
   "SUCCEEDED",
@@ -150,8 +153,19 @@ export function requestedPagesForJob(job: {
 export function targetCountForJob(job: {
   requested_take_pages?: number | null;
   take_pages?: number | null;
+  segment_plan?: Array<{ searchTotalCount?: number | null }> | null;
 }): number {
-  return salesNavLeadTarget(requestedPagesForJob(job));
+  const pageTarget = salesNavLeadTarget(requestedPagesForJob(job));
+  const known = job.segment_plan?.find(
+    (seg) =>
+      typeof seg?.searchTotalCount === "number" &&
+      Number.isFinite(seg.searchTotalCount) &&
+      seg.searchTotalCount >= 0
+  )?.searchTotalCount;
+  if (typeof known === "number") {
+    return Math.max(1, Math.min(pageTarget, Math.floor(known)));
+  }
+  return pageTarget;
 }
 
 function activeSegmentUrl(job: SalesNavImportJobRow): string | null {
@@ -455,6 +469,9 @@ function mapJobRow(r: Record<string, unknown>): SalesNavImportJobRow {
     segment_index: Number(r.segment_index ?? 0),
     segment_total: Number(r.segment_total ?? 1),
     segment_plan: parseSegmentPlan(r.segment_plan),
+    list_id: typeof r.list_id === "string" ? r.list_id : null,
+    save_list_id: typeof r.save_list_id === "string" ? r.save_list_id : null,
+    saved_to_list: Boolean(r.saved_to_list),
   };
 }
 

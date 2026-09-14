@@ -1,26 +1,176 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Copy, Link2 } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  ACCOUNT_SETTING_TIMEZONES,
-  accountTimezoneOptionLabel,
-} from "@/lib/accountProfileTimezones";
+  Check,
+  MoreVertical,
+  Pencil,
+  Share,
+  Trash2,
+} from "lucide-react";
+import { CallsCalendarEditor } from "@/components/calls/CallsCalendarEditor";
+import { WeeklyHoursEditor } from "@/components/booking/WeeklyHoursEditor";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import { DEFAULT_WEEKDAY_AVAILABILITY } from "@/lib/booking/computeBookingSlots";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
-const WEEKDAYS = [
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
-  { value: 0, label: "Sun" },
-] as const;
+function CalendarToggle({
+  on,
+  disabled,
+  busy,
+  onChange,
+}: {
+  on: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={on ? "Turn calendar off" : "Turn calendar on"}
+      disabled={disabled || busy}
+      onClick={onChange}
+      className={`relative h-6 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700/40 focus-visible:ring-offset-2 disabled:opacity-40 ${
+        on ? "bg-emerald-700" : "bg-slate-200"
+      }`}
+    >
+      {on ? (
+        <span
+          className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-[10px] font-bold tracking-wide text-white"
+          aria-hidden
+        >
+          On
+        </span>
+      ) : null}
+      <span
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
+          on ? "translate-x-6" : ""
+        }`}
+      />
+    </button>
+  );
+}
+
+function CalendarRowMenu({
+  open,
+  onOpenChange,
+  onEdit,
+  onDelete,
+  busy,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  busy: boolean;
+}) {
+  const menuId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMenuPos({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) {
+        onOpenChange(false);
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onOpenChange(false);
+    }
+    function onReposition() {
+      const next = buttonRef.current?.getBoundingClientRect();
+      if (next) {
+        setMenuPos({
+          top: next.bottom + 4,
+          right: window.innerWidth - next.right,
+        });
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onReposition);
+    window.addEventListener("scroll", onReposition, true);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onReposition);
+      window.removeEventListener("scroll", onReposition, true);
+    };
+  }, [open, onOpenChange]);
+
+  return (
+    <div ref={rootRef} className="relative flex justify-end">
+      <button
+        ref={buttonRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-label="Calendar actions"
+        disabled={busy}
+        onClick={() => onOpenChange(!open)}
+        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600/40 focus-visible:ring-offset-2"
+      >
+        <MoreVertical className="h-4 w-4" aria-hidden />
+      </button>
+      {open && menuPos ? (
+        <div
+          id={menuId}
+          role="menu"
+          style={{ top: menuPos.top, right: menuPos.right }}
+          className="fixed z-50 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+            onClick={() => {
+              onOpenChange(false);
+              onEdit();
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+            Edit
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            disabled={busy}
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+            onClick={() => {
+              onOpenChange(false);
+              onDelete();
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-rose-400" aria-hidden />
+            Delete
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 type Props = {
   appOrigin: string;
@@ -36,37 +186,55 @@ type Props = {
   hideHours?: boolean;
   /** Hide the booking calendars list (when parent owns that UI). */
   hideCalendars?: boolean;
+  /** Hide the reminder sequence editor. */
+  hideReminders?: boolean;
   /** Override weekly hours card title. */
   hoursTitle?: string;
   /** Override weekly hours card hint. */
   hoursHint?: string;
+  /** Open this calendar as its own editor screen. */
+  selectedCalendarSlug?: string | null;
+  /** Right-column content above weekly hours (e.g. integrations). */
+  sidebarTop?: ReactNode;
+  /** Right-column content below weekly hours (e.g. calendar provider). */
+  sidebarBottom?: ReactNode;
 };
 
 export function CallsCalendarSettings({
   appOrigin,
-  callsBasePath: _callsBasePath,
+  callsBasePath,
   forSlug = null,
   calendarSlugFilter = null,
   hideHours = false,
   hideCalendars = false,
+  hideReminders = false,
   hoursTitle = "Weekly hours",
   hoursHint,
+  selectedCalendarSlug = null,
+  sidebarTop = null,
+  sidebarBottom = null,
 }: Props) {
+  const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slug, setSlug] = useState<string | null>(null);
   const [timezone, setTimezone] = useState("Europe/London");
   const [rules, setRules] = useState<AvailabilityRuleRow[]>([]);
   const [calendars, setCalendars] = useState<CoachCalendarRow[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   const authHeaders = useCallback(
     () => getCoachAuthHeaders(impersonatingCoachId),
     [impersonatingCoachId]
   );
+
+  const settingsListHref = `${callsBasePath}?tab=settings`;
 
   const load = useCallback(async () => {
     const headers = await authHeaders();
@@ -106,6 +274,7 @@ export function CallsCalendarSettings({
         ? all.filter((c) => filter.includes(c.slug.toLowerCase()))
         : all
     );
+
     setLoading(false);
   }, [authHeaders, forSlug, calendarSlugFilter]);
 
@@ -141,11 +310,11 @@ export function CallsCalendarSettings({
   }
 
   async function patchCalendar(id: string, patch: Partial<CoachCalendarRow>) {
-    setSaving(true);
+    setBusy(true);
     setError(null);
     const headers = await authHeaders();
     if (!headers) {
-      setSaving(false);
+      setBusy(false);
       setError("Not signed in.");
       return;
     }
@@ -157,10 +326,11 @@ export function CallsCalendarSettings({
         ...(forSlug?.trim() ? { forSlug: forSlug.trim() } : {}),
       }),
     });
-    setSaving(false);
+    setBusy(false);
     if (!res.ok) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       setError(body.error ?? "Could not update calendar.");
+      void load();
       return;
     }
     const body = (await res.json()) as { calendar?: CoachCalendarRow };
@@ -194,23 +364,166 @@ export function CallsCalendarSettings({
     }
   }
 
-  function toggleWeekday(weekday: number) {
-    setRules((prev) => {
-      const has = prev.some((r) => r.weekday === weekday);
-      if (has) return prev.filter((r) => r.weekday !== weekday);
-      return [
-        ...prev,
-        { weekday, start_time: "09:00", end_time: "17:00" },
-      ].sort((a, b) => a.weekday - b.weekday);
+  async function toggleEnabled(cal: CoachCalendarRow) {
+    const next = !cal.is_enabled;
+    setCalendars((prev) =>
+      prev.map((c) =>
+        c.id === cal.id
+          ? { ...c, is_enabled: next, is_public: next ? true : c.is_public }
+          : c
+      )
+    );
+    await patchCalendar(cal.id, {
+      is_enabled: next,
+      ...(next ? { is_public: true } : {}),
     });
   }
 
-  const editing = calendars.find((c) => c.id === editingId) ?? null;
+  async function createCalendar() {
+    const name = newName.trim();
+    if (!name) {
+      setError("Name the calendar first.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const headers = await authHeaders();
+    if (!headers) {
+      setBusy(false);
+      setError("Not signed in.");
+      return;
+    }
+    const res = await fetch("/api/coach/calendars", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name,
+        ...(forSlug?.trim() ? { forSlug: forSlug.trim() } : {}),
+      }),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      calendar?: CoachCalendarRow;
+    };
+    setBusy(false);
+    if (!res.ok || !body.calendar) {
+      setError(body.error ?? "Could not create calendar.");
+      return;
+    }
+    setCalendars((prev) =>
+      prev.some((c) => c.id === body.calendar!.id)
+        ? prev
+        : [...prev, body.calendar!]
+    );
+    setShowCreate(false);
+    setNewName("");
+    router.push(
+      `${settingsListHref}&calendar=${encodeURIComponent(body.calendar.slug)}`
+    );
+  }
+
+  async function deleteCalendar(cal: CoachCalendarRow) {
+    const extra =
+      cal.slug === "discovery"
+        ? " This is the calendar used after a BOSS Score."
+        : "";
+    const ok = window.confirm(
+      `Delete “${cal.name}”?${extra} Existing bookings keep their times.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    const headers = await authHeaders();
+    if (!headers) {
+      setBusy(false);
+      setError("Not signed in.");
+      return;
+    }
+    const qs = forSlug?.trim()
+      ? `?forSlug=${encodeURIComponent(forSlug.trim())}`
+      : "";
+    const res = await fetch(
+      `/api/coach/calendars/${encodeURIComponent(cal.id)}${qs}`,
+      { method: "DELETE", headers }
+    );
+    setBusy(false);
+    if (!res.ok) {
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      setError(body.error ?? "Could not delete calendar.");
+      return;
+    }
+    setCalendars((prev) => prev.filter((c) => c.id !== cal.id));
+    setMenuOpenId(null);
+  }
+
+  function openEditor(calendarSlug: string) {
+    router.push(
+      `${settingsListHref}&calendar=${encodeURIComponent(calendarSlug)}`
+    );
+  }
+
+  const selectedSlug = selectedCalendarSlug?.trim().toLowerCase() || null;
+  const editing =
+    !hideCalendars && selectedSlug
+      ? calendars.find((c) => c.slug.toLowerCase() === selectedSlug) ?? null
+      : null;
   const activeDays = rules.length;
 
   if (loading) {
     return <p className="text-sm text-slate-600">Loading calendars…</p>;
   }
+
+  if (selectedSlug && !hideCalendars) {
+    return (
+      <div className="mx-auto w-full max-w-3xl space-y-4">
+        {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        {editing ? (
+          <CallsCalendarEditor
+            calendar={editing}
+            onChange={(next) =>
+              setCalendars((prev) =>
+                prev.map((c) => (c.id === next.id ? next : c))
+              )
+            }
+            onSave={() =>
+              void patchCalendar(editing.id, {
+                name: editing.name,
+                meeting_duration_minutes: editing.meeting_duration_minutes,
+                min_notice_hours: editing.min_notice_hours,
+                buffer_minutes: editing.buffer_minutes,
+                booking_window_days: editing.booking_window_days,
+                is_enabled: editing.is_enabled,
+                is_public: editing.is_public,
+                location_mode: editing.location_mode,
+                location_phone: editing.location_phone,
+                location_custom: editing.location_custom,
+                reminder_sequence: editing.reminder_sequence,
+              })
+            }
+            saving={busy}
+            backHref={settingsListHref}
+            bookUrl={bookUrl(editing.slug)}
+            copied={copied === editing.slug}
+            onCopyLink={() => void copyLink(editing.slug)}
+            hideReminders={hideReminders}
+          />
+        ) : (
+          <div className="space-y-2">
+            <Link
+              href={settingsListHref}
+              scroll={false}
+              className="text-sm font-medium text-sky-700 hover:underline"
+            >
+              Back to booking calendars
+            </Link>
+            <p className="text-sm text-slate-600">That calendar was not found.</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const showSidebar = Boolean(sidebarTop || sidebarBottom || !hideHours);
 
   return (
     <div className="space-y-4">
@@ -218,454 +531,162 @@ export function CallsCalendarSettings({
 
       <div
         className={
-          hideHours || hideCalendars
-            ? "space-y-6"
-            : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start"
+          !hideCalendars && showSidebar
+            ? "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start"
+            : "space-y-6"
         }
       >
         {!hideCalendars ? (
-        <section className="min-w-0 space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900">
-              Booking calendars
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Edit each calendar’s length, buffers, and public book link.
-            </p>
-          </div>
+          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Booking calendars
+              </h2>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setShowCreate((open) => !open);
+                  setError(null);
+                }}
+                className="text-xs font-semibold text-sky-700 hover:text-sky-800 disabled:opacity-50"
+              >
+                New calendar
+              </button>
+            </div>
 
-          <ul className="space-y-2">
-            {calendars.map((cal) => {
-              const open = editingId === cal.id;
-              return (
-                <li key={cal.id}>
-                  <div
-                    className={`overflow-hidden rounded-xl border bg-white transition-colors ${
-                      open
-                        ? "border-sky-300 ring-1 ring-sky-200"
-                        : "border-slate-200/80"
-                    }`}
-                  >
-                    <div className="flex w-full items-center gap-3 px-4 py-3.5">
-                      <button
-                        type="button"
-                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                        onClick={() =>
-                          setEditingId((id) => (id === cal.id ? null : cal.id))
-                        }
-                      >
-                        {open ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate text-sm font-semibold text-slate-900">
-                              {cal.name}
-                            </p>
-                            <span
-                              className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                                cal.is_enabled
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-slate-100 text-slate-500"
-                              }`}
-                            >
-                              {cal.is_enabled ? "Active" : "Off"}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {cal.meeting_duration_minutes} min
-                            {cal.is_public && cal.is_enabled
-                              ? " · Public link"
-                              : " · Private"}
-                          </p>
-                        </div>
-                      </button>
-                      {cal.is_public && cal.is_enabled ? (
+            {showCreate ? (
+              <div className="flex flex-wrap gap-2 border-b border-slate-100 px-4 py-3">
+                <input
+                  autoFocus
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. Strategy call"
+                  className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-600/20"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void createCalendar();
+                    if (e.key === "Escape") setShowCreate(false);
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void createCalendar()}
+                  className="rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
+                >
+                  {busy ? "Creating…" : "Create"}
+                </button>
+              </div>
+            ) : null}
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[28rem] border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                    <th scope="col" className="w-14 px-4 py-3 font-semibold">
+                      <span className="sr-only">On or off</span>
+                    </th>
+                    <th scope="col" className="px-3 py-3 font-semibold">
+                      Calendar
+                    </th>
+                    <th
+                      scope="col"
+                      className="w-24 px-3 py-3 font-semibold"
+                    >
+                      Duration
+                    </th>
+                    <th scope="col" className="w-10 px-1 py-3 font-semibold">
+                      <span className="sr-only">Share link</span>
+                    </th>
+                    <th scope="col" className="w-10 px-2 py-3 font-semibold">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {calendars.map((cal) => (
+                    <tr
+                      key={cal.id}
+                      className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70"
+                    >
+                      <td className="px-4 py-3.5 align-middle">
+                        <CalendarToggle
+                          on={cal.is_enabled}
+                          busy={busy}
+                          onChange={() => void toggleEnabled(cal)}
+                        />
+                      </td>
+                      <td className="min-w-0 px-3 py-3.5 align-middle">
                         <button
                           type="button"
-                          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
+                          onClick={() => openEditor(cal.slug)}
+                          className="truncate text-sm font-semibold text-slate-900 hover:text-sky-700"
+                        >
+                          {cal.name}
+                        </button>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm text-slate-600">
+                        {cal.meeting_duration_minutes} min
+                      </td>
+                      <td className="px-1 py-3.5 align-middle">
+                        <button
+                          type="button"
+                          aria-label={
+                            copied === cal.slug
+                              ? "Booking link copied"
+                              : "Copy booking link"
+                          }
                           onClick={() => void copyLink(cal.slug)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                         >
                           {copied === cal.slug ? (
-                            "Copied"
+                            <Check className="h-4 w-4 text-emerald-700" aria-hidden />
                           ) : (
-                            <>
-                              <Copy className="h-3.5 w-3.5" aria-hidden />
-                              Link
-                            </>
+                            <Share className="h-4 w-4" aria-hidden />
                           )}
                         </button>
-                      ) : (
-                        <Link2
-                          className="h-4 w-4 shrink-0 text-slate-300"
-                          aria-hidden
-                        />
-                      )}
-                    </div>
-
-                    {open && editing && editing.id === cal.id ? (
-                      <div className="space-y-4 border-t border-slate-100 px-4 py-4">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <label className="block text-sm sm:col-span-2">
-                            <span className="font-medium text-slate-700">
-                              Name
-                            </span>
-                            <input
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                              value={editing.name}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? { ...c, name: e.target.value }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                          </label>
-                          <label className="block text-sm">
-                            <span className="font-medium text-slate-700">
-                              Duration (min)
-                            </span>
-                            <input
-                              type="number"
-                              min={5}
-                              max={180}
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                              value={editing.meeting_duration_minutes}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? {
-                                          ...c,
-                                          meeting_duration_minutes:
-                                            Number(e.target.value) || 15,
-                                        }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                          </label>
-                          <label className="block text-sm">
-                            <span className="font-medium text-slate-700">
-                              Buffer (min)
-                            </span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={120}
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                              value={editing.buffer_minutes}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? {
-                                          ...c,
-                                          buffer_minutes:
-                                            Number(e.target.value) || 0,
-                                        }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                          </label>
-                          <label className="block text-sm">
-                            <span className="font-medium text-slate-700">
-                              Min notice (hours)
-                            </span>
-                            <input
-                              type="number"
-                              min={0}
-                              max={168}
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                              value={editing.min_notice_hours}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? {
-                                          ...c,
-                                          min_notice_hours:
-                                            Number(e.target.value) || 0,
-                                        }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                          </label>
-                          <label className="block text-sm">
-                            <span className="font-medium text-slate-700">
-                              Open days (rolling)
-                            </span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={90}
-                              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                              value={editing.booking_window_days}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? {
-                                          ...c,
-                                          booking_window_days:
-                                            Number(e.target.value) || 14,
-                                        }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                          </label>
-                          <label className="inline-flex items-center gap-2 text-sm sm:col-span-2">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-slate-300 text-sky-600"
-                              checked={editing.is_enabled}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? {
-                                          ...c,
-                                          is_enabled: e.target.checked,
-                                          is_public: e.target.checked
-                                            ? c.is_public
-                                            : false,
-                                        }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                            Enabled
-                          </label>
-                          <label className="inline-flex items-center gap-2 text-sm sm:col-span-2">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-slate-300 text-sky-600"
-                              checked={editing.is_public}
-                              disabled={!editing.is_enabled}
-                              onChange={(e) =>
-                                setCalendars((prev) =>
-                                  prev.map((c) =>
-                                    c.id === editing.id
-                                      ? { ...c, is_public: e.target.checked }
-                                      : c
-                                  )
-                                )
-                              }
-                            />
-                            Public book link
-                          </label>
-                          <fieldset className="sm:col-span-2">
-                            <legend className="text-sm font-medium text-slate-700">
-                              How the call happens
-                            </legend>
-                            <div className="mt-2 flex flex-wrap gap-3">
-                              {(
-                                [
-                                  ["google_meet", "Google Meet"],
-                                  ["phone", "Phone"],
-                                  ["custom", "Custom"],
-                                ] as const
-                              ).map(([value, label]) => (
-                                <label
-                                  key={value}
-                                  className="inline-flex items-center gap-2 text-sm"
-                                >
-                                  <input
-                                    type="radio"
-                                    name={`loc-${editing.id}`}
-                                    checked={editing.location_mode === value}
-                                    onChange={() =>
-                                      setCalendars((prev) =>
-                                        prev.map((c) =>
-                                          c.id === editing.id
-                                            ? { ...c, location_mode: value }
-                                            : c
-                                        )
-                                      )
-                                    }
-                                  />
-                                  {label}
-                                </label>
-                              ))}
-                            </div>
-                            {editing.location_mode === "phone" ? (
-                              <input
-                                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                placeholder="Phone number"
-                                value={editing.location_phone ?? ""}
-                                onChange={(e) =>
-                                  setCalendars((prev) =>
-                                    prev.map((c) =>
-                                      c.id === editing.id
-                                        ? {
-                                            ...c,
-                                            location_phone: e.target.value,
-                                          }
-                                        : c
-                                    )
-                                  )
-                                }
-                              />
-                            ) : null}
-                            {editing.location_mode === "custom" ? (
-                              <input
-                                className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                                placeholder="Custom link or note"
-                                value={editing.location_custom ?? ""}
-                                onChange={(e) =>
-                                  setCalendars((prev) =>
-                                    prev.map((c) =>
-                                      c.id === editing.id
-                                        ? {
-                                            ...c,
-                                            location_custom: e.target.value,
-                                          }
-                                        : c
-                                    )
-                                  )
-                                }
-                              />
-                            ) : null}
-                          </fieldset>
-                        </div>
-                        <button
-                          type="button"
-                          disabled={saving}
-                          className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
-                          onClick={() =>
-                            void patchCalendar(editing.id, {
-                              name: editing.name,
-                              meeting_duration_minutes:
-                                editing.meeting_duration_minutes,
-                              min_notice_hours: editing.min_notice_hours,
-                              buffer_minutes: editing.buffer_minutes,
-                              booking_window_days: editing.booking_window_days,
-                              is_enabled: editing.is_enabled,
-                              is_public: editing.is_public,
-                              location_mode: editing.location_mode,
-                              location_phone: editing.location_phone,
-                              location_custom: editing.location_custom,
-                            })
+                      </td>
+                      <td className="px-2 py-3.5 align-middle">
+                        <CalendarRowMenu
+                          open={menuOpenId === cal.id}
+                          onOpenChange={(open) =>
+                            setMenuOpenId(open ? cal.id : null)
                           }
-                        >
-                          {saving ? "Saving…" : "Save calendar"}
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+                          busy={busy}
+                          onEdit={() => openEditor(cal.slug)}
+                          onDelete={() => void deleteCalendar(cal)}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         ) : null}
 
-        {!hideHours ? (
-        <aside className="rounded-xl border border-slate-200/80 bg-white p-4 lg:sticky lg:top-20">
-          <h3 className="text-sm font-semibold text-slate-900">
-            {hoursTitle}
-          </h3>
-          <p className="mt-0.5 text-xs text-slate-500">
-            {hoursHint ??
-              `Shared across all calendars · ${activeDays} day${
-                activeDays === 1 ? "" : "s"
-              } open`}
-          </p>
-
-          <label className="mt-4 block text-sm">
-            <span className="font-medium text-slate-700">Timezone</span>
-            <select
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-            >
-              {ACCOUNT_SETTING_TIMEZONES.map((z) => (
-                <option key={z} value={z}>
-                  {accountTimezoneOptionLabel(z)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <ul className="mt-3 space-y-1.5">
-            {WEEKDAYS.map((day) => {
-              const rule = rules.find((r) => r.weekday === day.value);
-              return (
-                <li
-                  key={day.value}
-                  className="flex flex-wrap items-center gap-2 rounded-lg px-1 py-1"
-                >
-                  <label className="inline-flex w-10 items-center gap-1.5 text-xs font-semibold text-slate-700">
-                    <input
-                      type="checkbox"
-                      className="h-3.5 w-3.5 rounded border-slate-300 text-sky-600"
-                      checked={Boolean(rule)}
-                      onChange={() => toggleWeekday(day.value)}
-                    />
-                    {day.label}
-                  </label>
-                  {rule ? (
-                    <div className="flex min-w-0 flex-1 items-center gap-1">
-                      <input
-                        type="time"
-                        className="w-full min-w-0 rounded border border-slate-200 px-1.5 py-1 text-xs"
-                        value={rule.start_time.slice(0, 5)}
-                        onChange={(e) =>
-                          setRules((prev) =>
-                            prev.map((r) =>
-                              r.weekday === day.value
-                                ? { ...r, start_time: e.target.value }
-                                : r
-                            )
-                          )
-                        }
-                      />
-                      <span className="text-[10px] text-slate-400">–</span>
-                      <input
-                        type="time"
-                        className="w-full min-w-0 rounded border border-slate-200 px-1.5 py-1 text-xs"
-                        value={rule.end_time.slice(0, 5)}
-                        onChange={(e) =>
-                          setRules((prev) =>
-                            prev.map((r) =>
-                              r.weekday === day.value
-                                ? { ...r, end_time: e.target.value }
-                                : r
-                            )
-                          )
-                        }
-                      />
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-slate-400">Off</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void saveShared()}
-            className="mt-4 w-full rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save hours"}
-          </button>
-        </aside>
+        {showSidebar ? (
+          <aside className="space-y-4 lg:sticky lg:top-20">
+            {sidebarTop}
+            {!hideHours ? (
+              <WeeklyHoursEditor
+                title={hoursTitle}
+                hint={
+                  hoursHint ??
+                  `Shared across all calendars · ${activeDays} day${
+                    activeDays === 1 ? "" : "s"
+                  } open`
+                }
+                timezone={timezone}
+                onTimezoneChange={setTimezone}
+                rules={rules}
+                onRulesChange={setRules}
+                onSave={() => void saveShared()}
+                saving={saving}
+              />
+            ) : null}
+            {sidebarBottom}
+          </aside>
         ) : null}
       </div>
     </div>

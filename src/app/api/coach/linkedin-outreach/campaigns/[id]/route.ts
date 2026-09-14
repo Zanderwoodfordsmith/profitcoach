@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import {
   addCampaignLeads,
+  addCampaignLeadsFromContacts,
   applyCampaignPlaybook,
   deleteCampaignLead,
   duplicateCampaign,
@@ -84,12 +85,25 @@ export async function PATCH(request: Request, ctx: Ctx) {
         auth.coachId,
         id,
         body.leads as Array<{
-          linkedin_url: string;
+          linkedin_url?: string;
           first_name?: string;
           last_name?: string;
           company?: string;
           title?: string;
+          linkedin_provider_id?: string;
         }>
+      );
+      return NextResponse.json(result);
+    }
+
+    if (
+      body.action === "add_from_contacts" &&
+      Array.isArray(body.contact_ids)
+    ) {
+      const result = await addCampaignLeadsFromContacts(
+        auth.coachId,
+        id,
+        body.contact_ids
       );
       return NextResponse.json(result);
     }
@@ -106,6 +120,11 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
     if (body.action === "archive") {
       const campaign = await setCampaignStatus(auth.coachId, id, "archived");
+      return NextResponse.json({ campaign });
+    }
+
+    if (body.action === "unarchive") {
+      const campaign = await setCampaignStatus(auth.coachId, id, "paused");
       return NextResponse.json({ campaign });
     }
 

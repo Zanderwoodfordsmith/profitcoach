@@ -13,29 +13,9 @@ import {
 import { formatProspectPersonName } from "@/lib/prospectDisplayFormat";
 import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import type { ProspectRow } from "@/lib/prospectRow";
+import type { ProspectColumnKey } from "@/lib/prospects/prospectTableColumns";
 
-export type ProspectTableColumnKey =
-  | "business"
-  | "email"
-  | "phone"
-  | "coach"
-  | "actions"
-  | "boss_score"
-  | "boss_score_premium"
-  | "created_at"
-  | "revenue"
-  | "team_size"
-  | "years_in_business"
-  | "outcome"
-  | "obstacles"
-  | "preferred_support"
-  | "boss_level"
-  | "next_call"
-  | "next_action"
-  | "status"
-  | "source"
-  | "linkedin"
-  | "crm";
+export type ProspectTableColumnKey = ProspectColumnKey;
 
 export type ProspectExportColumnKey =
   | "name"
@@ -96,9 +76,6 @@ const EXPORT_COLUMN_DEFS: Array<{
 const TABLE_KEY_TO_EXPORT: Partial<
   Record<ProspectTableColumnKey, ProspectExportColumnKey[]>
 > = {
-  business: ["business"],
-  email: ["email"],
-  phone: ["phone"],
   linkedin: ["linkedin"],
   source: ["source"],
   coach: ["coach"],
@@ -106,13 +83,7 @@ const TABLE_KEY_TO_EXPORT: Partial<
   boss_score: ["boss_score", "boss_score_at"],
   boss_score_premium: ["boss_score_premium", "boss_score_premium_at"],
   created_at: ["created_at"],
-  revenue: ["revenue"],
-  team_size: ["team_size"],
-  years_in_business: ["years_in_business"],
-  outcome: ["outcome"],
-  obstacles: ["obstacles"],
-  preferred_support: ["preferred_support"],
-  boss_level: ["boss_level"],
+  business_stats: ["revenue", "team_size", "years_in_business"],
   next_call: ["next_call"],
   next_action: ["next_action", "next_action_due"],
 };
@@ -194,7 +165,13 @@ export type ExportProspectsCsvInput = {
 };
 
 function buildExportColumnKeys(input: ExportProspectsCsvInput): ProspectExportColumnKey[] {
-  const keys: ProspectExportColumnKey[] = ["name", "title", "business"];
+  const keys: ProspectExportColumnKey[] = [
+    "name",
+    "title",
+    "business",
+    "email",
+    "phone",
+  ];
   const seen = new Set<ProspectExportColumnKey>(keys);
 
   const tableKeys =

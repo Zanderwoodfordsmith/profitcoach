@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { updateCoachCalendar } from "@/lib/booking/bookingService";
+import {
+  deleteCoachCalendar,
+  updateCoachCalendar,
+} from "@/lib/booking/bookingService";
 import type { CoachCalendarPatch } from "@/lib/booking/coachCalendars";
+import { isMeetingLocationMode } from "@/lib/booking/locationMode";
 import {
   requireCoachOrAdmin,
   resolveCoachTarget,
@@ -49,9 +53,7 @@ export async function PATCH(
 
   if (
     patch.location_mode !== undefined &&
-    patch.location_mode !== "google_meet" &&
-    patch.location_mode !== "phone" &&
-    patch.location_mode !== "custom"
+    !isMeetingLocationMode(patch.location_mode)
   ) {
     return NextResponse.json(
       { error: "Invalid location_mode." },
@@ -71,6 +73,53 @@ export async function PATCH(
     return NextResponse.json({ calendar });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Could not update.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!id?.trim()) {
+    return NextResponse.json({ error: "Missing calendar id." }, { status: 400 });
+  }
+
+  const url = new URL(request.url);
+  const forSlug = url.searchParams.get("forSlug");
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
+  try {
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Could not set up coach profile." },
+      { status: 500 }
+    );
+  }
+
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  try {
+    const ok = await deleteCoachCalendar(target.coach.id, id.trim());
+    if (!ok) {
+      return NextResponse.json({ error: "Calendar not found." }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not delete.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

@@ -1,6 +1,6 @@
 import { normalizePhoneE164 } from "@/lib/bird/client";
 import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
-import { listOutreachAccounts } from "@/lib/unipile/accounts";
+import { listOutreachAccounts } from "@/lib/unipile/outreachAccounts";
 import { resolveUnipileUser, startUnipileChat } from "@/lib/unipile/client";
 import { linkedInPublicIdentifier } from "@/lib/unipile/linkedinUrl";
 import {
@@ -8,6 +8,8 @@ import {
   providerToAppChannel,
   type UnipileAppChannel,
 } from "@/lib/unipile/providers";
+import { instagramUsername } from "@/lib/unipile/instagramIdentity";
+import { facebookProfileIdentifier } from "@/lib/unipile/facebookIdentity";
 import { selectContactsWithOptionalPhone } from "@/lib/contactsSchemaSafeSelect";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -23,6 +25,8 @@ type ContactRow = {
   business_name: string | null;
   linkedin_url: string | null;
   photo_url: string | null;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
 };
 
 export async function findOrCreateConversationForContact(
@@ -38,7 +42,7 @@ export async function findOrCreateConversationForContact(
           .eq("id", contactId)
           .eq("coach_id", coachId),
       "id, coach_id, full_name, email, business_name",
-      ["linkedin_url", "photo_url"]
+      ["linkedin_url", "photo_url", "instagram_url", "facebook_url"]
     );
 
   if (contactError) throw new Error(contactError.message || "Contact lookup failed.");
@@ -135,6 +139,8 @@ export async function startFirstUnipileMessage(input: {
   contactId?: string | null;
   prospectPhone?: string | null;
   prospectLinkedInUrl?: string | null;
+  prospectInstagramUrl?: string | null;
+  prospectFacebookUrl?: string | null;
   unipileAccountId?: string | null;
 }): Promise<{ chatId: string; accountId: string; messageId: string | null }> {
   const text = input.text.trim();
@@ -159,12 +165,18 @@ export async function startFirstUnipileMessage(input: {
     contactId: input.contactId ?? null,
     prospectPhone: input.prospectPhone ?? null,
     prospectLinkedInUrl: input.prospectLinkedInUrl ?? null,
+    prospectInstagramUrl: input.prospectInstagramUrl ?? null,
+    prospectFacebookUrl: input.prospectFacebookUrl ?? null,
   });
   if (!attendeeId) {
     throw new Error(
       input.channel === "linkedin"
         ? "This person needs a LinkedIn profile URL before you can start a chat."
-        : "This person needs a phone number before you can start a chat."
+        : input.channel === "instagram"
+          ? "This person needs an Instagram profile URL before you can start a chat."
+          : input.channel === "messenger"
+            ? "This person needs a Facebook profile URL before you can start a chat."
+            : "This person needs a phone number before you can start a chat."
     );
   }
 
@@ -200,11 +212,61 @@ async function resolveAttendeeId(input: {
   contactId: string | null;
   prospectPhone: string | null;
   prospectLinkedInUrl: string | null;
+  prospectInstagramUrl?: string | null;
+  prospectFacebookUrl?: string | null;
 }): Promise<string | null> {
   if (input.channel === "whatsapp") {
     const e164 = normalizePhoneE164(input.prospectPhone);
     if (!e164) return null;
     return e164.replace(/^\+/, "");
+  }
+
+  if (input.channel === "instagram" || input.channel === "messenger") {
+    let instagramUrl = input.prospectInstagramUrl ?? null;
+    let facebookUrl = input.prospectFacebookUrl ?? null;
+    if (input.contactId && (!instagramUrl || !facebookUrl)) {
+      const { data: contacts } = await selectContactsWithOptionalPhone<{
+        instagram_url: string | null;
+        facebook_url: string | null;
+      }>(
+        async (columns) =>
+          supabaseAdmin
+            .from("contacts")
+            .select(columns)
+            .eq("id", input.contactId)
+            .eq("coach_id", input.coachId),
+        "id",
+        ["instagram_url", "facebook_url"]
+      );
+      instagramUrl = instagramUrl || contacts[0]?.instagram_url || null;
+      facebookUrl = facebookUrl || contacts[0]?.facebook_url || null;
+    }
+    if (input.channel === "instagram") {
+      const username = instagramUsername(instagramUrl);
+      if (!username) return null;
+      const resolved = await resolveUnipileUser(username, input.accountId);
+      if (!resolved.ok || !resolved.data) return username;
+      const data = resolved.data as Record<string, unknown>;
+      return (
+        (typeof data.provider_messaging_id === "string" &&
+          data.provider_messaging_id) ||
+        (typeof data.provider_id === "string" && data.provider_id) ||
+        username
+      );
+    }
+    const identifier = facebookProfileIdentifier(facebookUrl);
+    if (!identifier) return null;
+    const resolved = await resolveUnipileUser(identifier, input.accountId);
+    if (resolved.ok && resolved.data) {
+      const data = resolved.data as Record<string, unknown>;
+      return (
+        (typeof data.provider_id === "string" && data.provider_id) ||
+        (typeof data.provider_messaging_id === "string" &&
+          data.provider_messaging_id) ||
+        identifier
+      );
+    }
+    return identifier;
   }
 
   if (input.channel !== "linkedin") return null;

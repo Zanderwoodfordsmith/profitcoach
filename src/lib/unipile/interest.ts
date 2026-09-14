@@ -1,7 +1,46 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { buildPersonalisedAssessmentLink } from "@/lib/assessmentContactParams";
+import {
+  buildPersonalisedAssessmentLink,
+  buildPersonalisedAssessmentProLink,
+} from "@/lib/assessmentContactParams";
+import type { AbVariantStats } from "@/lib/unipile/abMetrics";
 
 export type InterestOutcome = "positive" | "soft" | "negative" | "unclear";
+
+export type ReplySentiment = "positive" | "negative" | "other";
+
+export type ReplyCounts = {
+  positive: number;
+  negative: number;
+  other: number;
+};
+
+export function emptyReplyCounts(): ReplyCounts {
+  return { positive: 0, negative: 0, other: 0 };
+}
+
+/** One exclusive bucket per lead that has replied or been scored. */
+export function classifyLeadReply(
+  status: string | null | undefined,
+  interestOutcome: string | null | undefined
+): ReplySentiment | null {
+  const outcome = (interestOutcome || "").toLowerCase();
+  const s = status || "";
+  if (
+    outcome === "positive" ||
+    s === "interested" ||
+    s === "assessment_sent" ||
+    s === "assessment_done" ||
+    s === "call_offered"
+  ) {
+    return "positive";
+  }
+  if (outcome === "negative") return "negative";
+  if (outcome === "soft" || outcome === "unclear" || s === "replied") {
+    return "other";
+  }
+  return null;
+}
 
 export type FunnelStatus =
   | "replied"
@@ -33,6 +72,25 @@ export async function buildLeadAssessmentUrl(input: {
   const slug = await resolveCoachSlug(input.coachId);
   if (!slug) return null;
   return buildPersonalisedAssessmentLink({
+    coachSlug: slug,
+    firstName: input.firstName || undefined,
+    lastName: input.lastName || undefined,
+    businessName: input.company || undefined,
+    email: input.email || undefined,
+    origin: PUBLIC_HOST,
+  });
+}
+
+export async function buildLeadAssessmentProUrl(input: {
+  coachId: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  company?: string | null;
+  email?: string | null;
+}): Promise<string | null> {
+  const slug = await resolveCoachSlug(input.coachId);
+  if (!slug) return null;
+  return buildPersonalisedAssessmentProLink({
     coachSlug: slug,
     firstName: input.firstName || undefined,
     lastName: input.lastName || undefined,
@@ -112,6 +170,22 @@ export async function logLeadInterest(input: {
     await cancelOpenSendJobs(input.leadId, "Paused — interested reply logged");
   }
 
+  if (nextStatus === "interested" && updated?.campaign_id) {
+    const { data: names } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("first_name, last_name")
+      .eq("id", input.leadId)
+      .maybeSingle();
+    const { fireCoachWatchRulesSafe } = await import("@/lib/coachWatch/fire");
+    fireCoachWatchRulesSafe({
+      coachId: input.coachId,
+      scopeKind: "campaign",
+      scopeId: String(updated.campaign_id),
+      event: "interested",
+      personName: [names?.first_name, names?.last_name].filter(Boolean).join(" "),
+    });
+  }
+
   return updated;
 }
 
@@ -150,6 +224,26 @@ export async function advanceLeadFunnel(input: {
 
   const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
   await cancelOpenSendJobs(input.leadId, `Paused — ${input.status}`);
+
+  if (input.status === "interested") {
+    const { data: leadRow } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("campaign_id, first_name, last_name")
+      .eq("id", input.leadId)
+      .maybeSingle();
+    if (leadRow?.campaign_id) {
+      const { fireCoachWatchRulesSafe } = await import("@/lib/coachWatch/fire");
+      fireCoachWatchRulesSafe({
+        coachId: input.coachId,
+        scopeKind: "campaign",
+        scopeId: String(leadRow.campaign_id),
+        event: "interested",
+        personName: [leadRow.first_name, leadRow.last_name]
+          .filter(Boolean)
+          .join(" "),
+      });
+    }
+  }
 
   return data;
 }
@@ -202,6 +296,7 @@ export async function resolveStepBodyForLead(input: {
   body: string | null;
   variants: unknown;
   abAssignments: unknown;
+  preferredVariantKey?: string | null;
 }): Promise<{ body: string; variantKey: string | null }> {
   const variants = parseStepVariants(input.variants);
   if (!variants.length) {
@@ -220,7 +315,11 @@ export async function resolveStepBodyForLead(input: {
 
   let key = assignments[input.stepId];
   if (!key || !variants.some((v) => v.key === key)) {
-    key = variants[Math.floor(Math.random() * variants.length)].key;
+    const preferred = input.preferredVariantKey?.trim();
+    key =
+      preferred && variants.some((v) => v.key === preferred)
+        ? preferred
+        : variants[Math.floor(Math.random() * variants.length)].key;
     assignments[input.stepId] = key;
     await supabaseAdmin
       .from("linkedin_campaign_leads")
@@ -233,6 +332,16 @@ export async function resolveStepBodyForLead(input: {
 }
 
 export async function abStatsForCampaign(campaignId: string) {
+  const CONNECTED_STATUSES = new Set([
+    "connected",
+    "in_sequence",
+    "replied",
+    "interested",
+    "assessment_sent",
+    "assessment_done",
+    "call_offered",
+    "completed",
+  ]);
   const { data: steps } = await supabaseAdmin
     .from("linkedin_campaign_steps")
     .select("id, position, step_type, variants")
@@ -244,10 +353,7 @@ export async function abStatsForCampaign(campaignId: string) {
     .select("id, status, interest_outcome, ab_assignments")
     .eq("campaign_id", campaignId);
 
-  const byStep: Record<
-    string,
-    Record<string, { assigned: number; interested: number; replied: number }>
-  > = {};
+  const byStep: Record<string, Record<string, AbVariantStats>> = {};
 
   for (const step of steps ?? []) {
     const variants = parseStepVariants(step.variants);
@@ -258,6 +364,8 @@ export async function abStatsForCampaign(campaignId: string) {
         assigned: 0,
         interested: 0,
         replied: 0,
+        connected: 0,
+        booked: 0,
       };
     }
   }
@@ -266,7 +374,8 @@ export async function abStatsForCampaign(campaignId: string) {
     const assigns = (lead.ab_assignments || {}) as Record<string, string>;
     for (const [stepId, key] of Object.entries(assigns)) {
       if (!byStep[stepId]?.[key]) continue;
-      byStep[stepId][key].assigned += 1;
+      const row = byStep[stepId][key];
+      row.assigned += 1;
       const st = lead.status as string;
       if (
         st === "interested" ||
@@ -276,7 +385,7 @@ export async function abStatsForCampaign(campaignId: string) {
         lead.interest_outcome === "positive" ||
         lead.interest_outcome === "soft"
       ) {
-        byStep[stepId][key].interested += 1;
+        row.interested += 1;
       }
       if (
         st === "replied" ||
@@ -285,8 +394,10 @@ export async function abStatsForCampaign(campaignId: string) {
         st === "assessment_done" ||
         st === "call_offered"
       ) {
-        byStep[stepId][key].replied += 1;
+        row.replied += 1;
       }
+      if (CONNECTED_STATUSES.has(st)) row.connected += 1;
+      if (st === "call_offered") row.booked += 1;
     }
   }
 

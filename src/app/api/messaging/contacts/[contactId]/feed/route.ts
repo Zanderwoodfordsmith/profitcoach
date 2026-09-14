@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { loadProspectActivity } from "@/lib/messaging/loadProspectActivity";
+import { loadProspectRecord } from "@/lib/messaging/loadProspectActivity";
+import { THREAD_MESSAGE_MAX_LIMIT } from "@/lib/messaging/threadWindow";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -83,17 +84,20 @@ export async function GET(
         "id, conversation_id, channel, direction, status, subject, body_text, from_address, to_address, provider_error, metadata, created_at"
       )
       .in("conversation_id", conversationIds)
-      .order("created_at", { ascending: true });
-    messages = messageRows ?? [];
+      .order("created_at", { ascending: false })
+      .limit(THREAD_MESSAGE_MAX_LIMIT);
+    messages = [...(messageRows ?? [])].reverse();
   }
 
-  const activity = await loadProspectActivity(contactId, {
+  const record = await loadProspectRecord(contactId, {
     coachId: coachId ?? undefined,
   });
 
   return NextResponse.json({
     conversations: conversations ?? [],
     messages,
-    activity,
+    activity: record.activity,
+    campaigns: record.campaigns,
+    calls: record.calls,
   });
 }

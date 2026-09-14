@@ -3,18 +3,20 @@ import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import {
   createProviderConnectLink,
   listOutreachAccounts,
+  parseUnipileConnectReturnTo,
   removeOutreachAccount,
   syncOutreachAccountsForCoach,
-} from "@/lib/unipile/accounts";
+} from "@/lib/unipile/outreachAccounts";
 import { isUnipileConfigured } from "@/lib/unipile/client";
 import {
   isConnectableProvider,
+  normalizeUnipileProvider,
   UNIPILE_CONNECT_PROVIDERS,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
 
 /**
- * Coach Settings → Integrations: list / connect / disconnect Unipile channels.
+ * Coach Settings → Integrations: list, connect, or disconnect Unipile channels.
  */
 export async function GET(request: Request) {
   const auth = await requireOutreachCoach(request);
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
     action?: string;
     account_id?: string;
     provider?: string;
+    returnTo?: string;
   };
   try {
     if (body.action === "sync") {
@@ -73,11 +76,21 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const accounts = await listOutreachAccounts(auth.coachId);
+    const existing = accounts.find((row) => {
+      if (normalizeUnipileProvider(row.provider) !== providerRaw) return false;
+      if (!row.unipile_account_id?.trim()) return false;
+      const status = (row.status || "").toUpperCase();
+      return status !== "OK" && status !== "CONNECTING";
+    });
     const { url } = await createProviderConnectLink(
       auth.coachId,
       request,
       providerRaw as UnipileConnectProvider,
-      { returnTo: "settings" }
+      {
+        returnTo: parseUnipileConnectReturnTo(body.returnTo),
+        reconnectAccountId: existing?.unipile_account_id,
+      }
     );
     return NextResponse.json({ url, provider: providerRaw });
   } catch (err) {

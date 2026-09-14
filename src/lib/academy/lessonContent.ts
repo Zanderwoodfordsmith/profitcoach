@@ -48,6 +48,22 @@ export type AcademyLessonContentRow = {
   updated_at: string;
 };
 
+export type LoadClassroomCourseOptions = LessonVisibilityOptions & {
+  /**
+   * When set, only this lesson (and its chapter source rows) get body,
+   * transcript, and chapter payloads. Sidebar lessons stay metadata-only.
+   */
+  activeLessonId?: string;
+};
+
+const LESSON_METADATA_COLUMNS =
+  "course_id, lesson_id, title, duration, video_url, is_draft, is_deleted, updated_at";
+
+const LESSON_FULL_COLUMNS =
+  "course_id, lesson_id, title, video_url, audio_url, body_markdown, guide_markdown, transcript_text, duration, recommended_actions, is_draft, is_deleted, video_chapters, updated_at";
+
+const LESSON_CONTENT_MAP_TTL_MS = 10 * 60 * 1000;
+
 function chapterSourceCourseIds(
   rows: AcademyLessonContentRow[],
   primaryCourseId: string,
@@ -65,6 +81,152 @@ function chapterSourceCourseIds(
     }
   }
   return [...ids];
+}
+
+function classroomSourceCourseIds(course: HubCourse): string[] {
+  return [
+    ...new Set(
+      flattenSections(course.sections).flatMap((section) =>
+        section.lessons.flatMap((lesson) =>
+          lessonWithSatellites(lesson).flatMap((l) =>
+            classroomLessonIdLookupKeys(l.id).map((id) => contentSourceCourseId(id))
+          )
+        )
+      )
+    ),
+  ];
+}
+
+function indexLessonContentRows(
+  byLesson: Map<string, AcademyLessonContentRow>,
+  incoming: AcademyLessonContentRow[]
+) {
+  for (const row of incoming) {
+    const expected = contentSourceCourseId(row.lesson_id);
+    const legacyKeys = classroomLessonIdLookupKeys(row.lesson_id);
+    const expectedSet = new Set(
+      legacyKeys.map((id) => contentSourceCourseId(id)).concat(expected)
+    );
+    if (!expectedSet.has(row.course_id)) continue;
+    for (const key of legacyKeys) {
+      if (!byLesson.has(key)) byLesson.set(key, row);
+    }
+    byLesson.set(row.lesson_id, row);
+  }
+}
+
+async function fetchLessonContentRows(
+  columns: string,
+  courseIds: string[],
+  lessonIds?: string[]
+): Promise<AcademyLessonContentRow[]> {
+  if (courseIds.length === 0) return [];
+  if (lessonIds && lessonIds.length === 0) return [];
+  let query = supabaseAdmin
+    .from("academy_lesson_content")
+    .select(columns)
+    .in("course_id", courseIds);
+  if (lessonIds) {
+    query = query.in("lesson_id", lessonIds);
+  }
+  const { data } = await query;
+  return ((data ?? []) as unknown) as AcademyLessonContentRow[];
+}
+
+type MetadataCacheEntry = {
+  rows: AcademyLessonContentRow[];
+  expiresAt: number;
+};
+
+const classroomMetadataCache = new Map<string, MetadataCacheEntry>();
+const classroomMetadataInflight = new Map<
+  string,
+  Promise<AcademyLessonContentRow[]>
+>();
+
+function classroomMetadataCacheKey(sourceIds: string[]): string {
+  return [...sourceIds].sort().join("|");
+}
+
+function invalidateClassroomContentCaches() {
+  classroomMetadataCache.clear();
+  classroomMetadataInflight.clear();
+  lessonContentMapCache = null;
+}
+
+async function fetchClassroomMetadataRows(
+  cacheKey: string
+): Promise<AcademyLessonContentRow[]> {
+  const sourceIds = cacheKey.split("|").filter(Boolean);
+  const now = Date.now();
+  const hit = classroomMetadataCache.get(cacheKey);
+  if (hit && hit.expiresAt > now) return hit.rows;
+  const pending = classroomMetadataInflight.get(cacheKey);
+  if (pending) return pending;
+  const request = fetchLessonContentRows(LESSON_METADATA_COLUMNS, sourceIds)
+    .then((rows) => {
+      classroomMetadataCache.set(cacheKey, {
+        rows,
+        expiresAt: Date.now() + LESSON_CONTENT_MAP_TTL_MS,
+      });
+      return rows;
+    })
+    .finally(() => {
+      classroomMetadataInflight.delete(cacheKey);
+    });
+  classroomMetadataInflight.set(cacheKey, request);
+  return request;
+}
+
+export async function warmupClassroomCourseMetadata(
+  course: HubCourse
+): Promise<void> {
+  const sourceIds = classroomSourceCourseIds(course);
+  if (sourceIds.length === 0) return;
+  await fetchClassroomMetadataRows(classroomMetadataCacheKey(sourceIds));
+}
+
+function slimInactiveLesson(
+  lesson: HubLesson,
+  keepIds: Set<string>
+): HubLesson {
+  const satellites = lesson.satellites?.map((sat) =>
+    slimInactiveLesson(sat, keepIds)
+  );
+  if (keepIds.has(lesson.id)) {
+    return satellites ? { ...lesson, satellites } : lesson;
+  }
+  const slim: HubLesson = {
+    id: lesson.id,
+    title: lesson.title,
+    duration: lesson.duration,
+    hasVideo: lesson.hasVideo || Boolean(lesson.videoUrl),
+    academyUrl: lesson.academyUrl,
+  };
+  if (lesson.description) slim.description = lesson.description;
+  if (lesson.notice) slim.notice = lesson.notice;
+  if (lesson.draft !== undefined) slim.draft = lesson.draft;
+  if (satellites) slim.satellites = satellites;
+  return slim;
+}
+
+/** Drop markdown / transcripts from lessons the player is not showing. */
+export function stripInactiveLessonBodies(
+  course: HubCourse,
+  activeLessonId: string
+): HubCourse {
+  const keepIds = new Set<string>([activeLessonId]);
+  return {
+    ...course,
+    sections: course.sections.map((section) => {
+      const slimSection = (node: HubSection): HubSection => ({
+        ...node,
+        lessons: node.lessons.map((lesson) => slimInactiveLesson(lesson, keepIds)),
+        sections: node.sections?.map(slimSection),
+      });
+      return slimSection(section);
+    }),
+  };
 }
 
 async function loadLessonContentRowsForCourses(
@@ -306,65 +468,80 @@ export async function loadLegacyCourseWithContent(
  * Simplified hub courses may mix lessons from multiple Current programmes
  * (e.g. Client Delivery onboarding + Profit Coach Certification). Resolve
  * content via each lesson's original source course id.
+ *
+ * Pass `activeLessonId` on the Classroom hot path so inactive lessons stay
+ * titles/durations only — no markdown or transcripts over the wire.
  */
 export async function loadClassroomCourseWithContent(
   course: HubCourse,
-  options: LessonVisibilityOptions = {}
+  options: LoadClassroomCourseOptions = {}
 ): Promise<HubCourse> {
-  const sourceIds = [
-    ...new Set(
-      flattenSections(course.sections).flatMap((section) =>
-        section.lessons.flatMap((lesson) =>
-          lessonWithSatellites(lesson).flatMap((l) =>
-            classroomLessonIdLookupKeys(l.id).map((id) => contentSourceCourseId(id))
-          )
-        )
-      )
-    ),
-  ];
+  const sourceIds = classroomSourceCourseIds(course);
   if (sourceIds.length === 0) {
-    return applyLegacyCourseVisibility(course, options);
+    const empty = applyLegacyCourseVisibility(course, options);
+    return options.activeLessonId
+      ? stripInactiveLessonBodies(empty, options.activeLessonId)
+      : empty;
   }
 
-  const { data: rows } = await supabaseAdmin
-    .from("academy_lesson_content")
-    .select("*")
-    .in("course_id", sourceIds);
-
-  const indexRows = (incoming: AcademyLessonContentRow[]) => {
-    for (const row of incoming) {
-      const expected = contentSourceCourseId(row.lesson_id);
-      const legacyKeys = classroomLessonIdLookupKeys(row.lesson_id);
-      const expectedSet = new Set(
-        legacyKeys.map((id) => contentSourceCourseId(id)).concat(expected)
-      );
-      if (!expectedSet.has(row.course_id)) continue;
-      for (const key of legacyKeys) {
-        if (!byLesson.has(key)) byLesson.set(key, row);
-      }
-      byLesson.set(row.lesson_id, row);
-    }
-  };
-
   const byLesson = new Map<string, AcademyLessonContentRow>();
-  indexRows((rows ?? []) as AcademyLessonContentRow[]);
+  const metadataRows = await fetchClassroomMetadataRows(
+    classroomMetadataCacheKey(sourceIds)
+  );
+  indexLessonContentRows(byLesson, metadataRows);
 
-  const indexedRows = [...byLesson.values()];
-  const extraCourseIds = [
-    ...new Set(
-      indexedRows.flatMap((row) =>
-        chapterSourceCourseIds([row], row.course_id).filter(
-          (id) => !sourceIds.includes(id)
+  const activeLessonId = options.activeLessonId?.trim() || null;
+  if (activeLessonId) {
+    const activeKeys = classroomLessonIdLookupKeys(activeLessonId);
+    const activeSourceIds = [
+      ...new Set(activeKeys.map((id) => contentSourceCourseId(id))),
+    ];
+    const fullRows = await fetchLessonContentRows(
+      LESSON_FULL_COLUMNS,
+      activeSourceIds,
+      activeKeys
+    );
+    indexLessonContentRows(byLesson, fullRows);
+
+    const extraLessonIds = [
+      ...new Set(
+        fullRows.flatMap((row) =>
+          parseLessonVideoChapters(row.video_chapters)
+            .map((chapter) => chapter.source_lesson_id)
+            .filter((id): id is string => Boolean(id))
         )
-      )
-    ),
-  ];
-  if (extraCourseIds.length > 0) {
-    const { data: extraRows } = await supabaseAdmin
-      .from("academy_lesson_content")
-      .select("*")
-      .in("course_id", extraCourseIds);
-    indexRows((extraRows ?? []) as AcademyLessonContentRow[]);
+      ),
+    ].filter((id) => !activeKeys.includes(id));
+    if (extraLessonIds.length > 0) {
+      const extraCourseIds = [
+        ...new Set(extraLessonIds.map((id) => contentSourceCourseId(id))),
+      ];
+      const extraRows = await fetchLessonContentRows(
+        LESSON_FULL_COLUMNS,
+        extraCourseIds,
+        extraLessonIds
+      );
+      indexLessonContentRows(byLesson, extraRows);
+    }
+  } else {
+    const fullRows = await fetchLessonContentRows(LESSON_FULL_COLUMNS, sourceIds);
+    indexLessonContentRows(byLesson, fullRows);
+    const extraCourseIds = [
+      ...new Set(
+        [...byLesson.values()].flatMap((row) =>
+          chapterSourceCourseIds([row], row.course_id).filter(
+            (id) => !sourceIds.includes(id)
+          )
+        )
+      ),
+    ];
+    if (extraCourseIds.length > 0) {
+      const extraRows = await fetchLessonContentRows(
+        LESSON_FULL_COLUMNS,
+        extraCourseIds
+      );
+      indexLessonContentRows(byLesson, extraRows);
+    }
   }
 
   const merged: HubCourse = {
@@ -373,7 +550,8 @@ export async function loadClassroomCourseWithContent(
       mergeLegacySectionTree(section, byLesson)
     ),
   };
-  return applyLegacyCourseVisibility(merged, options);
+  const visible = applyLegacyCourseVisibility(merged, options);
+  return activeLessonId ? stripInactiveLessonBodies(visible, activeLessonId) : visible;
 }
 
 async function fetchLessonContentMapUncached(): Promise<
@@ -392,13 +570,12 @@ async function fetchLessonContentMapUncached(): Promise<
   return map;
 }
 
-const LESSON_CONTENT_MAP_TTL_MS = 10 * 60 * 1000;
 let lessonContentMapCache:
   | { map: Map<string, AcademyLessonContentRow>; expiresAt: number }
   | null = null;
 
 function invalidateLessonContentMapCache() {
-  lessonContentMapCache = null;
+  invalidateClassroomContentCaches();
 }
 
 async function fetchLessonContentMap(): Promise<Map<string, AcademyLessonContentRow>> {

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function CoachFunnelSettingsPage() {
-  redirect("/coach/settings?tab=funnel");
+  redirect("/coach/campaigns?tab=magnets");
 }

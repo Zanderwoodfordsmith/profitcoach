@@ -107,6 +107,8 @@ type UsePersistedColumnSettingsArgs<TKey extends string> = {
   defaultOrder: readonly TKey[];
   validKeys: readonly TKey[];
   legacyKeyMap?: Record<string, TKey>;
+  /** When false, skip load/save so a parent can own the same storage key. */
+  enabled?: boolean;
 };
 
 export function usePersistedColumnSettings<TKey extends string>({
@@ -115,6 +117,7 @@ export function usePersistedColumnSettings<TKey extends string>({
   defaultOrder,
   validKeys,
   legacyKeyMap,
+  enabled = true,
 }: UsePersistedColumnSettingsArgs<TKey>) {
   const [columnVisibility, setColumnVisibility] =
     useState<Record<TKey, boolean>>(defaultVisibility);
@@ -125,7 +128,7 @@ export function usePersistedColumnSettings<TKey extends string>({
   // Defaults/keys are expected to be stable module-level constants; only
   // re-load when the storage key changes.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!enabled || typeof window === "undefined") return;
     setHasLoadedPersistedSettings(false);
     const raw = window.localStorage.getItem(storageKey);
     if (raw) {
@@ -148,16 +151,19 @@ export function usePersistedColumnSettings<TKey extends string>({
     }
     setHasLoadedPersistedSettings(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable module constants
-  }, [storageKey]);
+  }, [storageKey, enabled]);
 
   useEffect(() => {
-    if (!hasLoadedPersistedSettings || typeof window === "undefined") return;
+    if (!enabled || !hasLoadedPersistedSettings || typeof window === "undefined") {
+      return;
+    }
     const payload: PersistedColumnSettings<TKey> = {
       columnVisibility,
       columnOrder,
     };
     window.localStorage.setItem(storageKey, JSON.stringify(payload));
   }, [
+    enabled,
     hasLoadedPersistedSettings,
     storageKey,
     columnVisibility,

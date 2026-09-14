@@ -16,6 +16,7 @@ export type ZoomRecordingFile = {
   recording_type?: string;
   share_url?: string;
   play_url?: string;
+  download_url?: string;
   recording_start?: string;
   recording_end?: string;
 };
@@ -125,6 +126,29 @@ export function extractZoomRecordingShareUrl(
   return null;
 }
 
+function isTranscriptFile(file: ZoomRecordingFile): boolean {
+  const type = (file.file_type ?? "").toUpperCase();
+  const recordingType = (file.recording_type ?? "").toLowerCase();
+  return (
+    type === "TRANSCRIPT" ||
+    type === "TRANSCRIPT_VTT" ||
+    recordingType.includes("transcript")
+  );
+}
+
+export function extractZoomTranscriptDownloadUrl(
+  object: ZoomRecordingObject
+): string | null {
+  for (const file of object.recording_files ?? []) {
+    if (!isTranscriptFile(file)) continue;
+    const download = asHttpUrl(file.download_url);
+    if (download) return download;
+    const share = asHttpUrl(file.share_url);
+    if (share) return share;
+  }
+  return null;
+}
+
 export type ParsedZoomRecordingCompleted = {
   accountId: string | null;
   meetingId: string | null;
@@ -132,6 +156,7 @@ export type ParsedZoomRecordingCompleted = {
   topic: string | null;
   startTimeIso: string;
   shareUrl: string;
+  transcriptDownloadUrl: string | null;
 };
 
 export function parseZoomRecordingCompletedPayload(
@@ -159,5 +184,39 @@ export function parseZoomRecordingCompletedPayload(
     topic: asTrimmedString(object.topic),
     startTimeIso,
     shareUrl,
+    transcriptDownloadUrl: extractZoomTranscriptDownloadUrl(object),
+  };
+}
+
+export function parseZoomBookingRecordingPayload(
+  body: ZoomWebhookEnvelope
+): ParsedZoomRecordingCompleted | { error: string } {
+  const object = body.payload?.object;
+  if (!object || typeof object !== "object") {
+    return { error: "Missing recording payload object." };
+  }
+
+  const shareUrl = extractZoomRecordingShareUrl(object);
+  const transcriptDownloadUrl = extractZoomTranscriptDownloadUrl(object);
+  if (!shareUrl && !transcriptDownloadUrl) {
+    return {
+      error: "Recording payload did not include a share or transcript URL.",
+    };
+  }
+
+  const startTimeIso =
+    asTrimmedString(object.start_time) || new Date().toISOString();
+  if (Number.isNaN(Date.parse(startTimeIso))) {
+    return { error: "Recording payload did not include a valid start_time." };
+  }
+
+  return {
+    accountId: asTrimmedString(body.payload?.account_id),
+    meetingId: extractZoomMeetingId(object.id),
+    meetingUuid: asTrimmedString(object.uuid),
+    topic: asTrimmedString(object.topic),
+    startTimeIso,
+    shareUrl: shareUrl ?? "",
+    transcriptDownloadUrl,
   };
 }

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlayer";
 import { LessonProgressProvider } from "@/components/academy/LessonProgressControls";
+import { loadClassroomLessonPayload } from "@/lib/academy/classroomLessonPayload";
 import {
   classroomIdsNeedRedirect,
   classroomLessonQueryString,
@@ -14,9 +15,8 @@ import {
   classroomCourseIdForLesson,
   loadClassroomHub,
 } from "@/lib/academy/classroomHubLoad";
-import { loadClassroomCourseWithContent } from "@/lib/academy/lessonContent";
-import { loadLessonResources } from "@/lib/academy/resources";
-import { contentSourceCourseId } from "@/lib/academy/programmeContentSource";
+import { stripInactiveLessonBodies } from "@/lib/academy/lessonContent";
+import { applyLegacyCourseVisibility } from "@/lib/academy/lessonVisibility";
 import {
   legacyConsolidatedChapterRedirect,
 } from "@/lib/academy/lessonVideoChapters";
@@ -79,41 +79,27 @@ export default async function CoachAcademyClassroomLessonPage({
 
   const baseCourse = findHubCourse(data, courseId);
   if (!baseCourse) notFound();
+  const baseLesson = findLessonInCourse(baseCourse, lessonId);
+  if (!baseLesson) notFound();
 
-  const [course, lessonResources] = await Promise.all([
-    loadClassroomCourseWithContent(baseCourse),
-    loadLessonResources(contentSourceCourseId(lessonId), lessonId),
-  ]);
-  const lesson = findLessonInCourse(course, lessonId);
-  if (!lesson) notFound();
+  const shellCourse = stripInactiveLessonBodies(
+    applyLegacyCourseVisibility(baseCourse),
+    lessonId,
+  );
 
-  const videoUrl = "videoUrl" in lesson ? lesson.videoUrl : null;
-  const videoChapters =
-    "videoChapters" in lesson && Array.isArray(lesson.videoChapters)
-      ? lesson.videoChapters
-      : [];
-  const audioUrl = "audioUrl" in lesson ? lesson.audioUrl : null;
-  const bodyMarkdown = "bodyMarkdown" in lesson ? lesson.bodyMarkdown : "";
-  const guideMarkdown = "guideMarkdown" in lesson ? lesson.guideMarkdown : "";
-  const transcriptText = "transcriptText" in lesson ? lesson.transcriptText : null;
+  // Do not await — the rail and title paint from hub JSON while this loads.
+  const contentPromise = loadClassroomLessonPayload(baseCourse, lessonId);
 
   return (
     <div>
       <LessonProgressProvider courseId={courseId} activeLessonId={lessonId}>
         <ClassroomLessonPlayer
-          data={data}
-          course={course}
-          lesson={lesson}
+          course={shellCourse}
+          lesson={baseLesson}
+          contentPromise={contentPromise}
           basePath={BASE}
           classroomHref={BASE}
-          videoUrl={videoUrl}
-          videoChapters={videoChapters}
-          audioUrl={audioUrl}
           initialChapterId={initialChapterId ?? null}
-          bodyMarkdown={bodyMarkdown}
-          guideMarkdown={guideMarkdown}
-          transcriptText={transcriptText}
-          lessonResources={lessonResources}
           contentsPosition="left"
           chrome="minimal"
         />

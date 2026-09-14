@@ -50,6 +50,32 @@ export function formatProspectLabel(
   return formatWords(text);
 }
 
+const BUSINESS_LEGAL_SUFFIX =
+  /(?:\s+|,)+\b(?:limited|ltd|llp|llc|plc|inc|incorporated|corporation|corp)\.?$/i;
+
+function namesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const left = (a ?? "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
+  const right = (b ?? "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
+  return Boolean(left && right && left === right);
+}
+
+/** Title-case a company name and drop trailing Ltd / Limited / LLC / Inc. */
+export function formatBusinessLabel(
+  text: string | null | undefined
+): string | null {
+  const formatted = formatProspectLabel(text);
+  if (!formatted) return null;
+  const stripped = formatted.replace(BUSINESS_LEGAL_SUFFIX, "").trim();
+  return stripped || formatted;
+}
+
+export function businessNamesMatch(
+  a: string | null | undefined,
+  b: string | null | undefined
+): boolean {
+  return namesMatch(formatBusinessLabel(a), formatBusinessLabel(b));
+}
+
 const JOB_TITLE_SHORTENINGS: Array<{ pattern: RegExp; replacement: string }> = [
   { pattern: /\bManaging Director\b/gi, replacement: "MD" },
   { pattern: /\bBusiness Owner\b/gi, replacement: "Owner" },

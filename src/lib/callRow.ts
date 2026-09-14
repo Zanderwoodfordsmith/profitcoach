@@ -19,4 +19,6 @@ export type CallRow = {
   match_status: string;
   source: "native" | "ghl";
   meeting_join_url: string | null;
+  zoom_recording_url: string | null;
+  zoom_transcript_text: string | null;
 };

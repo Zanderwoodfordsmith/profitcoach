@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { Columns3, GripVertical } from "lucide-react";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import type { DataTableColumnOption } from "@/hooks/usePersistedColumnSettings";
@@ -20,6 +20,11 @@ type DataTableColumnsMenuProps<TKey extends string> = {
   align?: "left" | "right";
   triggerId?: string;
   menuId?: string;
+  label?: string;
+  appearance?: "icon" | "pill";
+  icon?: ReactNode;
+  /** When true, only the dropdown is rendered (parent owns the trigger). */
+  hideTrigger?: boolean;
 };
 
 export function DataTableColumnsMenu<TKey extends string>({
@@ -36,7 +41,14 @@ export function DataTableColumnsMenu<TKey extends string>({
   align = "left",
   triggerId,
   menuId,
+  label = "Columns",
+  appearance = "icon",
+  icon,
+  hideTrigger = false,
 }: DataTableColumnsMenuProps<TKey>) {
+  const triggerIcon = icon ?? (
+    <Columns3 className="h-5 w-5 text-slate-500" aria-hidden />
+  );
   function renderColumnRow(option: DataTableColumnOption<TKey>) {
     const { key, label } = option;
     return (
@@ -78,17 +90,34 @@ export function DataTableColumnsMenu<TKey extends string>({
   }
 
   return (
-    <div ref={menuRef} className="relative">
-      <TableToolbarButton
-        label="Columns"
-        id={triggerId}
-        aria-haspopup="true"
-        aria-expanded={open}
-        aria-controls={menuId}
-        active={open}
-        onClick={onToggle}
-        icon={<Columns3 className="h-5 w-5 text-slate-500" aria-hidden />}
-      />
+    <div ref={menuRef} className={hideTrigger ? undefined : "relative"}>
+      {hideTrigger ? null : appearance === "pill" ? (
+        <button
+          type="button"
+          id={triggerId}
+          aria-haspopup="true"
+          aria-expanded={open}
+          aria-controls={menuId}
+          onClick={onToggle}
+          className={`inline-flex h-9 items-center gap-2 rounded-full border bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm outline-none transition hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-sky-500 ${
+            open ? "border-slate-400" : "border-slate-200"
+          }`}
+        >
+          {triggerIcon}
+          {label}
+        </button>
+      ) : (
+        <TableToolbarButton
+          label={label}
+          id={triggerId}
+          aria-haspopup="true"
+          aria-expanded={open}
+          aria-controls={menuId}
+          active={open}
+          onClick={onToggle}
+          icon={triggerIcon}
+        />
+      )}
       {open ? (
         <div
           id={menuId}

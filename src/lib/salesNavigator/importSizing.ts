@@ -43,6 +43,36 @@ export function requestedTakePagesFromTargetCount(targetCount: number): number {
   );
 }
 
+/** Optional coach-facing pool caps. Null / omitted = full extract (LinkedIn max). */
+export const SALES_NAV_POOL_LIMIT_OPTIONS = [
+  100, 250, 500, 1_000, 2_500,
+] as const;
+
+export type SalesNavPoolLimitOption =
+  (typeof SALES_NAV_POOL_LIMIT_OPTIONS)[number];
+
+/** UI select value: "all" or a capped count. */
+export type SalesNavPoolSizeValue = "all" | SalesNavPoolLimitOption;
+
+export function parseSalesNavPoolLimit(raw: unknown): number | null {
+  if (raw === null || raw === undefined || raw === "" || raw === "all") {
+    return null;
+  }
+  const n = Math.floor(Number(raw));
+  return (SALES_NAV_POOL_LIMIT_OPTIONS as readonly number[]).includes(n)
+    ? n
+    : null;
+}
+
+/** Null = import every extractable result (per-query cap still applies). */
+export function salesNavGlobalLeadCapFromPages(
+  requestedTakePages: number
+): number | null {
+  const pages = normalizeRequestedTakePages(requestedTakePages);
+  if (pages >= SALES_NAV_MAX_TAKE_PAGES) return null;
+  return salesNavLeadTarget(pages);
+}
+
 /**
  * Soft duration band from the timed ~1,000-lead (~40 page) run ≈ 6–9 min.
  * Window stays about 3–5 minutes wide as size scales.

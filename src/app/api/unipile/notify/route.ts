@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { upsertOutreachAccountFromNotify } from "@/lib/unipile/accounts";
+import { upsertOutreachAccountFromNotify } from "@/lib/unipile/outreachAccounts";
 import {
   connectedByFromNotifyName,
   isSupportMailboxNotifyName,

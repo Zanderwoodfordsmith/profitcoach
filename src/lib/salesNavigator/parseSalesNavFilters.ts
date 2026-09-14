@@ -56,8 +56,22 @@ function fullyDecode(raw: string): string {
 }
 
 function filterSection(blob: string, type: string): string | null {
-  const re = new RegExp(`type:${type},values:List\\(([\\s\\S]*?)\\)\\)`);
-  return blob.match(re)?.[1] ?? null;
+  const marker = `type:${type},values:List(`;
+  const idx = blob.indexOf(marker);
+  if (idx === -1) return null;
+  const start = idx + marker.length;
+  let depth = 1;
+  let end = start;
+  for (; end < blob.length; end++) {
+    const ch = blob[end];
+    if (ch === "(") depth += 1;
+    if (ch === ")") {
+      depth -= 1;
+      if (depth === 0) break;
+    }
+  }
+  if (depth !== 0) return null;
+  return blob.slice(start, end);
 }
 
 function parseKeywordSection(section: string | null): ParsedSalesNavKeyword[] {

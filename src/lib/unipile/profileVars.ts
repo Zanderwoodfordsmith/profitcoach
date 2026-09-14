@@ -23,8 +23,17 @@ export const OUTREACH_TEMPLATE_VARIABLES = [
   "location",
   "assessment_url",
   "scorecard_url",
+  "assessment_pro_url",
   "coach_name",
   "review_name",
+  "boss_score",
+  "business_level_number",
+  "business_level_name",
+  "desired_outcome",
+  "focus_area_1",
+  "focus_area_2",
+  "focus_area_3",
+  "boss_score_report_link",
 ] as const;
 
 function pickString(...vals: unknown[]): string | null {
@@ -135,8 +144,17 @@ export function outreachTemplateVars(
     location,
     assessment_url: "",
     scorecard_url: "",
+    assessment_pro_url: "",
     coach_name: "",
     review_name: "Business Clarity Review",
+    boss_score: "",
+    business_level_number: "",
+    business_level_name: "",
+    desired_outcome: "",
+    focus_area_1: "",
+    focus_area_2: "",
+    focus_area_3: "",
+    boss_score_report_link: "",
     their_reply: "",
   };
   if (extras) {

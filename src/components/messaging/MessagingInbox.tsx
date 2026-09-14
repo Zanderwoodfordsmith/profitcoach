@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, Fragment, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowLeft,
   ArrowUpDown,
   Check,
   ChevronDown,
+  ChevronRight,
   Clock,
   Eye,
   Inbox,
@@ -33,6 +35,10 @@ import {
   formatShortTime,
 } from "@/lib/formatShortDate";
 import {
+  consumeMessagingComposeDraft,
+  peekMessagingComposeDraft,
+} from "@/lib/messaging/composeDraft";
+import {
   conversationPersonName,
   inboundReplyChannels,
 } from "@/lib/messaging/conversationDisplay";
@@ -44,9 +50,24 @@ import {
   reactionsFromMessageMetadata,
 } from "@/lib/messaging/messageReactions";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { isMailingProvider, providerLabel } from "@/lib/unipile/providers";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { PROSPECT_INTERNAL_NOTE_EVENT } from "@/lib/messaging/internalNoteEvent";
+import {
+  clearThreadCache,
+  readThreadCache,
+  writeThreadCache,
+} from "@/lib/messaging/threadCache";
+import {
+  mergeMessagesChronological,
+  shouldAutoloadOlder,
+  THREAD_LIST_FAST_LIMIT,
+  THREAD_MESSAGE_PAGE_SIZE,
+  THREAD_PREFETCH_COUNT,
+} from "@/lib/messaging/threadWindow";
+import { leadStatusLabel } from "@/lib/unipile/campaignLeadActivity";
 import { WhatsAppGlyph } from "@/components/icons/WhatsAppGlyph";
 import {
   ChatComposerTools,
@@ -60,10 +81,15 @@ import {
 import { NewConversationPicker } from "@/components/messaging/NewConversationPicker";
 import { ReplySnippetPicker } from "@/components/messaging/ReplySnippetPicker";
 import { ProspectContactFields } from "@/components/prospects/ProspectContactFields";
+import { ProspectDetailsHeader } from "@/components/prospects/ProspectDetailsHeader";
 import { ProspectMergeDuplicates } from "@/components/prospects/ProspectMergeDuplicates";
-import { ProspectTagsEditor } from "@/components/prospects/ProspectTagsEditor";
 import { formatPhoneDisplay } from "@/lib/formatPhoneDisplay";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
+import {
+  PROSPECT_STATUS_OPTIONS,
+  prospectStatusBadgeClass,
+} from "@/lib/prospectStatus";
+import "./prospectViewTransition.css";
 
 type InboxTab = "unread" | "all" | "recent" | "starred";
 type ChannelFilter =
@@ -103,7 +129,9 @@ type ConversationRow = {
   last_direction?: string | null;
   prospect_tags?: string[];
   in_campaign?: boolean;
+  campaign_ids?: string[];
   reply_channels?: string[];
+  unipile_chat_id?: string | null;
   /** How many channel threads were collapsed into this inbox row. */
   thread_count?: number;
   sibling_conversation_ids?: string[];
@@ -152,6 +180,10 @@ type ProspectDetails = {
   linkedin_url?: string | null;
   company_website?: string | null;
   phone: string | null;
+  headline?: string | null;
+  about?: string | null;
+  location?: string | null;
+  photo_url?: string | null;
   prospect_status: string | null;
   boss_score: number | null;
   boss_score_at: string | null;
@@ -182,6 +214,14 @@ type ActivityEvent = {
   title: string;
   detail?: string | null;
   href?: string | null;
+};
+
+type ProspectCampaignMembership = {
+  id: string;
+  campaignId: string;
+  name: string;
+  leadStatus: string;
+  addedAt: string;
 };
 
 type FeedItem =
@@ -270,7 +310,7 @@ function Avatar({
 }) {
   const [broken, setBroken] = useState(false);
   const sizeClass =
-    size === "lg" ? "h-16 w-16 text-lg" : size === "md" ? "h-9 w-9 text-[11px]" : "h-8 w-8 text-[10px]";
+    size === "lg" ? "h-11 w-11 text-sm" : size === "md" ? "h-9 w-9 text-[11px]" : "h-8 w-8 text-[10px]";
   const toneClass =
     tone === "sky"
       ? "bg-sky-100 text-sky-800 ring-sky-200/80"
@@ -529,34 +569,6 @@ function CollapsibleDetailSection({
   );
 }
 
-function BusinessNameField({
-  value,
-  onChange,
-  onSave,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  onSave: () => void;
-}) {
-  return (
-    <input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onSave}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-      placeholder="Add business name"
-      aria-label="Business name"
-      title="Edit business name"
-      className="mt-0.5 w-full border-0 border-b border-slate-300 bg-transparent px-0 py-0.5 text-[15px] leading-snug text-slate-800 outline-none placeholder:text-slate-400 hover:border-slate-400 focus:border-sky-500"
-    />
-  );
-}
-
 function AvatarWithChannels({
   name,
   url,
@@ -599,18 +611,21 @@ function ChannelIcon({
   );
 }
 
-function composerChannelOptions(selected: {
-  last_channel?: string | null;
-  prospect_email?: string | null;
-  prospect_phone?: string | null;
-  prospect_linkedin_url?: string | null;
-}): { id: ReplyChannel; label: string; enabled: boolean }[] {
+function composerChannelOptions(
+  selected: {
+    last_channel?: string | null;
+    prospect_email?: string | null;
+    prospect_phone?: string | null;
+    prospect_linkedin_url?: string | null;
+  },
+  options?: { includeInternalNote?: boolean }
+): { id: ReplyChannel; label: string; enabled: boolean }[] {
   const last = (selected.last_channel || "").toLowerCase();
   const hasPhone = Boolean(selected.prospect_phone);
   const hasEmail = Boolean(selected.prospect_email);
   const hasLinkedIn =
     Boolean(selected.prospect_linkedin_url) || last === "linkedin";
-  return [
+  const channels: { id: ReplyChannel; label: string; enabled: boolean }[] = [
     { id: "sms", label: "SMS", enabled: hasPhone },
     { id: "whatsapp", label: "WhatsApp", enabled: hasPhone || last === "whatsapp" },
     {
@@ -621,8 +636,11 @@ function composerChannelOptions(selected: {
     { id: "linkedin", label: "LinkedIn", enabled: hasLinkedIn },
     { id: "instagram", label: "Instagram", enabled: last === "instagram" },
     { id: "messenger", label: "Messenger", enabled: last === "messenger" },
-    { id: "comment", label: "Internal Comment", enabled: true },
   ];
+  if (options?.includeInternalNote !== false) {
+    channels.push({ id: "comment", label: "Internal Comment", enabled: true });
+  }
+  return channels;
 }
 
 function ChannelPickerMenu({
@@ -779,6 +797,7 @@ type InboxFilters = {
   needsReply: boolean;
   hasBooking: boolean;
   inCampaign: boolean;
+  campaignId: string | null;
   channel: ChannelFilter;
   tag: string | null;
 };
@@ -787,6 +806,7 @@ const EMPTY_INBOX_FILTERS: InboxFilters = {
   needsReply: false,
   hasBooking: false,
   inCampaign: false,
+  campaignId: null,
   channel: "all",
   tag: null,
 };
@@ -796,6 +816,7 @@ function inboxFiltersActive(filters: InboxFilters): boolean {
     filters.needsReply ||
     filters.hasBooking ||
     filters.inCampaign ||
+    Boolean(filters.campaignId) ||
     filters.channel !== "all" ||
     Boolean(filters.tag)
   );
@@ -811,6 +832,10 @@ function conversationMatchesFilters(
   }
   if (filters.hasBooking && !conversation.booking_id) return false;
   if (filters.inCampaign && !conversation.in_campaign) return false;
+  if (filters.campaignId) {
+    const ids = conversation.campaign_ids || [];
+    if (!ids.includes(filters.campaignId)) return false;
+  }
   if (filters.tag) {
     const needle = filters.tag.toLowerCase();
     const tags = conversation.prospect_tags || [];
@@ -890,7 +915,10 @@ type InboxAccountRow = {
   last_synced_at: string | null;
 };
 
-const PLATFORM_EMAIL_FROM = "bird";
+function mailboxFromLabel(account: InboxAccountRow): string {
+  const provider = providerLabel(account.provider);
+  return account.display_name ? `${provider} · ${account.display_name}` : provider;
+}
 
 function conversationMatchesSearch(
   conversation: ConversationRow,
@@ -917,10 +945,44 @@ function conversationMatchesSearch(
   return hay.includes(needle);
 }
 
-export function MessagingInbox() {
+export type MessagingInboxProps = {
+  /** Lock the inbox to one prospect: hide the conversation list, open their thread. */
+  contactId?: string;
+  /** Where the shared Details pane sits. Inbox default is right. */
+  detailsSide?: "left" | "right";
+  hideConversationList?: boolean;
+  /** Hide the “View prospect” link when we are already on the prospect page. */
+  hideProspectLink?: boolean;
+  /** Third pane on the prospect page (Activity / Calls / Notes). */
+  journeyPane?: ReactNode;
+  /** Prospect already loaded by the workspace — paint the real name immediately. */
+  initialProspect?: ProspectDetails | null;
+  /** Replaces the Details heading with a back link (prospect page). */
+  detailsBackHref?: string;
+  /** Label for that back link. Defaults to Prospects. */
+  detailsBackLabel?: string;
+};
+
+export function MessagingInbox({
+  contactId,
+  detailsSide: _detailsSide = "right",
+  hideConversationList = false,
+  hideProspectLink = false,
+  journeyPane,
+  detailsBackHref,
+  detailsBackLabel = "Prospects",
+  initialProspect = null,
+}: MessagingInboxProps = {}) {
   const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const campaignQuery = (searchParams.get("campaign") || "").trim() || null;
   const { impersonatingCoachId } = useImpersonation();
+  const prospectMode = Boolean(contactId) || hideConversationList;
   const [loading, setLoading] = useState(true);
+  const [campaignFilterLabel, setCampaignFilterLabel] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const html = document.documentElement;
@@ -983,18 +1045,25 @@ export function MessagingInbox() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [prospectDetails, setProspectDetails] = useState<ProspectDetails | null>(
-    null
+    () => initialProspect ?? null
   );
-  const [businessDraft, setBusinessDraft] = useState("");
+  const [businessDraft, setBusinessDraft] = useState(
+    () => initialProspect?.business_name?.trim() || ""
+  );
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
   );
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [tab, setTab] = useState<InboxTab>("all");
-  const [inboxFilters, setInboxFilters] =
-    useState<InboxFilters>(EMPTY_INBOX_FILTERS);
+  const [inboxFilters, setInboxFilters] = useState<InboxFilters>(() =>
+    campaignQuery
+      ? { ...EMPTY_INBOX_FILTERS, campaignId: campaignQuery }
+      : EMPTY_INBOX_FILTERS
+  );
   const [inboxSort, setInboxSort] = useState<InboxSort>("newest");
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
@@ -1018,8 +1087,10 @@ export function MessagingInbox() {
   const [replyChannel, setReplyChannel] = useState<ReplyChannel>("email");
   const [replyBody, setReplyBody] = useState("");
   const [replySubject, setReplySubject] = useState("");
-  const [fromName, setFromName] = useState("");
   const [scheduleSending, setScheduleSending] = useState(false);
+  const [connectingMailbox, setConnectingMailbox] = useState<
+    "GOOGLE" | "OUTLOOK" | null
+  >(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [pendingFiles, setPendingFiles] = useState<PendingComposerFile[]>([]);
   const [pendingVoice, setPendingVoice] = useState<PendingVoiceNote | null>(
@@ -1036,13 +1107,17 @@ export function MessagingInbox() {
   const [assessmentUrl, setAssessmentUrl] = useState<string | null>(null);
   const [detailSectionsOpen, setDetailSectionsOpen] = useState({
     contact: true,
-    tags: true,
+    profile: true,
+    campaigns: true,
     assessment: true,
     booking: true,
     conversation: true,
     notes: true,
   });
   const [coachTags, setCoachTags] = useState<string[]>([]);
+  const [prospectCampaigns, setProspectCampaigns] = useState<
+    ProspectCampaignMembership[]
+  >([]);
   const [savingTags, setSavingTags] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1056,19 +1131,31 @@ export function MessagingInbox() {
   const [accountsLoaded, setAccountsLoaded] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [syncNowTick, setSyncNowTick] = useState(0);
-  /** Unipile mailing account id, or `"bird"` for platform email. */
+  /** Unipile mailing account id. Empty lets the server pick this coach's mailbox. */
   const [emailFromAccountId, setEmailFromAccountId] = useState<string>("");
   const liSoftSyncAttempted = useRef(false);
   /** Avoid mid-sync list flashes; apply one refresh when sync finishes. */
   const liSyncingRef = useRef(false);
   const selectedIdRef = useRef<string | null>(null);
+  const conversationsRef = useRef<ConversationRow[]>([]);
   const composerDirtyRef = useRef(false);
+  const pendingDraftChannelRef = useRef<ReplyChannel | null>(null);
   const pendingListRefreshRef = useRef(false);
+  const threadInflightRef = useRef(new Map<string, Promise<void>>());
+  const warmupDoneRef = useRef(false);
+  const loadingOlderRef = useRef(false);
+  const loadThreadRef = useRef<
+    (id: string, opts?: { silent?: boolean; prefetch?: boolean }) => Promise<void>
+  >(async () => {});
+  const syncInboxRef = useRef<(force: boolean) => Promise<void>>(async () => {});
   const settingsIntegrationsHref = pathname?.startsWith("/admin")
     ? "/admin/account?tab=profile"
     : "/coach/settings?tab=profile";
+  const adminOrgWideInbox =
+    Boolean(pathname?.startsWith("/admin")) && !impersonatingCoachId;
 
   selectedIdRef.current = selectedId;
+  conversationsRef.current = conversations;
   composerDirtyRef.current =
     Boolean(replyBody.trim()) ||
     pendingFiles.length > 0 ||
@@ -1076,6 +1163,64 @@ export function MessagingInbox() {
     Boolean(pendingVideo) ||
     scheduleOpen ||
     scheduleSending;
+
+  useEffect(() => {
+    clearThreadCache();
+    warmupDoneRef.current = false;
+    liSoftSyncAttempted.current = false;
+    threadInflightRef.current.clear();
+  }, [impersonatingCoachId]);
+
+  useEffect(() => {
+    setInboxFilters((prev) => {
+      if (prev.campaignId === campaignQuery) return prev;
+      return { ...prev, campaignId: campaignQuery };
+    });
+  }, [campaignQuery]);
+
+  useEffect(() => {
+    const id = inboxFilters.campaignId;
+    if (!id) {
+      setCampaignFilterLabel(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = await getCoachAuthHeaders(impersonatingCoachId);
+        if (!headers) return;
+        const res = await fetch(
+          `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(id)}`,
+          { headers }
+        );
+        const body = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && body.campaign?.name) {
+          setCampaignFilterLabel(String(body.campaign.name));
+        } else {
+          setCampaignFilterLabel("Campaign");
+        }
+      } catch {
+        if (!cancelled) setCampaignFilterLabel("Campaign");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [inboxFilters.campaignId, impersonatingCoachId]);
+
+  function clearCampaignFilterFromUrl() {
+    if (!campaignQuery) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("campaign");
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  }
+
+  function clearInboxFilters() {
+    setInboxFilters(EMPTY_INBOX_FILTERS);
+    clearCampaignFilterFromUrl();
+  }
 
   const selected = useMemo(
     () =>
@@ -1206,8 +1351,41 @@ export function MessagingInbox() {
     return headers;
   }, [impersonatingCoachId]);
 
+  const connectMailbox = useCallback(
+    async (provider: "GOOGLE" | "OUTLOOK") => {
+      setConnectingMailbox(provider);
+      setSendError(null);
+      try {
+        const headers = await authHeaders();
+        if (!headers) {
+          setSendError("Sign in again, then retry.");
+          setConnectingMailbox(null);
+          return;
+        }
+        const res = await fetch("/api/coach/integrations/accounts", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ provider }),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          url?: string;
+        };
+        if (!res.ok || !body.url) {
+          throw new Error(body.error || "Could not start connect.");
+        }
+        window.location.href = body.url;
+      } catch (err) {
+        setSendError(err instanceof Error ? err.message : "Connect failed.");
+        setConnectingMailbox(null);
+      }
+    },
+    [authHeaders]
+  );
+
   const loadList = useCallback(
-    async (opts?: { silent?: boolean; fromSync?: boolean }) => {
+    async (opts?: { silent?: boolean; fromSync?: boolean; limit?: number }) => {
+      if (contactId) return;
       // While Unipile is writing chats, hold refreshes so the inbox doesn't
       // grow one row at a time under the user's cursor.
       if (liSyncingRef.current && !opts?.fromSync) {
@@ -1225,7 +1403,11 @@ export function MessagingInbox() {
           if (!silent) setError("Sign in again, then retry.");
           return;
         }
-        const res = await fetch("/api/messaging/conversations", { headers });
+        const qs =
+          typeof opts?.limit === "number"
+            ? `?limit=${encodeURIComponent(String(opts.limit))}`
+            : "";
+        const res = await fetch(`/api/messaging/conversations${qs}`, { headers });
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
           conversations?: ConversationRow[];
@@ -1240,12 +1422,25 @@ export function MessagingInbox() {
         const list = Array.isArray(body.conversations) ? body.conversations : [];
         setConversations(list);
         setSelectedId((prev) => {
+          const pending = peekMessagingComposeDraft();
+          if (
+            pending?.conversationId &&
+            list.some((c) => c.id === pending.conversationId)
+          ) {
+            return pending.conversationId;
+          }
           if (prev && list.some((c) => c.id === prev)) return prev;
           // Background sync refresh: never steal focus / auto-select.
           if (silent) return prev;
           return list[0]?.id ?? null;
         });
       } catch (err) {
+        if (
+          (err instanceof DOMException && err.name === "AbortError") ||
+          (err instanceof Error && /aborted/i.test(err.message))
+        ) {
+          return;
+        }
         if (!silent) {
           setError(err instanceof Error ? err.message : "Load failed.");
         }
@@ -1253,7 +1448,7 @@ export function MessagingInbox() {
         if (!silent) setLoading(false);
       }
     },
-    [authHeaders]
+    [authHeaders, contactId]
   );
 
   const loadInboxAccounts = useCallback(async () => {
@@ -1283,69 +1478,23 @@ export function MessagingInbox() {
     }
   }, [authHeaders]);
 
-  const loadThread = useCallback(
-    async (id: string, opts?: { silent?: boolean }) => {
-      const silent = Boolean(opts?.silent);
-      if (!silent) {
-        setLoadingThread(true);
-        setProspectDetails(null);
-        setBookingDetails(null);
-        setActivityEvents([]);
-        setCoachTags([]);
-      }
+  const loadThreadSide = useCallback(
+    async (id: string) => {
       try {
         const headers = await authHeaders();
         if (!headers) return;
         const res = await fetch(
-          `/api/messaging/conversations/${encodeURIComponent(id)}`,
+          `/api/messaging/conversations/${encodeURIComponent(id)}?part=side`,
           { headers }
         );
         const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
           conversation?: ConversationRow;
-          messages?: MessageRow[];
           prospect?: ProspectDetails | null;
           booking?: BookingDetails | null;
           activity?: ActivityEvent[];
           coachTags?: string[];
         };
-        if (!res.ok) {
-          if (!silent) {
-            setError(body.error || `Thread failed (${res.status}).`);
-            setMessages([]);
-            setProspectDetails(null);
-            setBookingDetails(null);
-            setActivityEvents([]);
-            setExpandedIds(new Set());
-          }
-          return;
-        }
-        // User switched away while this request was in flight.
-        if (selectedIdRef.current !== id) return;
-
-        const list = Array.isArray(body.messages) ? body.messages : [];
-        if (silent) {
-          setMessages((prev) => {
-            if (
-              prev.length === list.length &&
-              prev.every((m, i) => m.id === list[i]?.id)
-            ) {
-              return prev;
-            }
-            return list;
-          });
-          setExpandedIds((prev) => {
-            const known = new Set(list.map((m) => m.id));
-            const next = new Set([...prev].filter((mid) => known.has(mid)));
-            const newest = list[list.length - 1];
-            if (newest && !prev.has(newest.id)) next.add(newest.id);
-            return next;
-          });
-        } else {
-          setMessages(list);
-          const newest = list[list.length - 1];
-          setExpandedIds(newest ? new Set([newest.id]) : new Set());
-        }
+        if (!res.ok || selectedIdRef.current !== id) return;
         if (body.prospect !== undefined) {
           setProspectDetails(body.prospect ?? null);
         }
@@ -1358,7 +1507,6 @@ export function MessagingInbox() {
         if (Array.isArray(body.coachTags)) {
           setCoachTags(body.coachTags);
         }
-        // Lazy WhatsApp-on check when we have a phone but no cached yes yet.
         const prospectPhone = body.prospect?.phone?.trim();
         const prospectId = body.prospect?.id;
         if (
@@ -1388,31 +1536,238 @@ export function MessagingInbox() {
           })();
         }
         if (body.conversation) {
+          const contactName = body.prospect?.full_name?.trim() || null;
+          const contactBusiness = body.prospect?.business_name?.trim() || null;
           setConversations((prev) =>
             prev.map((c) =>
               c.id === id
-                ? { ...c, ...body.conversation, unread_count: 0 }
+                ? {
+                    ...c,
+                    ...body.conversation,
+                    unread_count: 0,
+                    prospect_name:
+                      contactName ||
+                      body.conversation?.prospect_name ||
+                      c.prospect_name,
+                    prospect_business_name:
+                      contactBusiness ||
+                      body.conversation?.prospect_business_name ||
+                      c.prospect_business_name,
+                  }
                 : c
             )
           );
-          if (!silent && body.conversation.subject) {
-            setReplySubject((s) => s || `Re: ${body.conversation!.subject}`);
-          }
-        } else {
-          setConversations((prev) =>
-            prev.map((c) => (c.id === id ? { ...c, unread_count: 0 } : c))
-          );
         }
-      } catch (err) {
-        if (!silent) {
-          setError(err instanceof Error ? err.message : "Thread load failed.");
-        }
-      } finally {
-        if (!silent) setLoadingThread(false);
+      } catch {
+        /* side panel is optional for first paint */
       }
     },
     [authHeaders]
   );
+
+  const loadOlderMessages = useCallback(
+    async (id: string, before: string) => {
+      if (loadingOlderRef.current) return;
+      loadingOlderRef.current = true;
+      if (selectedIdRef.current === id) setLoadingOlder(true);
+      try {
+        const headers = await authHeaders();
+        if (!headers) return;
+        const res = await fetch(
+          `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}&before=${encodeURIComponent(before)}`,
+          { headers }
+        );
+        const body = (await res.json().catch(() => ({}))) as {
+          messages?: MessageRow[];
+          has_older?: boolean;
+        };
+        if (!res.ok) return;
+        const list = Array.isArray(body.messages) ? body.messages : [];
+        const nextHasOlder = Boolean(body.has_older);
+        writeThreadCache(id, list, nextHasOlder);
+        if (selectedIdRef.current !== id) return;
+        const el = threadScrollRef.current;
+        const prevHeight = el?.scrollHeight ?? 0;
+        const prevTop = el?.scrollTop ?? 0;
+        setMessages((prev) => mergeMessagesChronological(prev, list));
+        setHasOlder(nextHasOlder);
+        requestAnimationFrame(() => {
+          if (!el || pinThreadToBottomRef.current) return;
+          el.scrollTop = prevTop + (el.scrollHeight - prevHeight);
+        });
+      } finally {
+        loadingOlderRef.current = false;
+        setLoadingOlder(false);
+      }
+    },
+    [authHeaders]
+  );
+
+  const loadThread = useCallback(
+    async (
+      id: string,
+      opts?: { silent?: boolean; prefetch?: boolean }
+    ) => {
+      const silent = Boolean(opts?.silent);
+      const prefetch = Boolean(opts?.prefetch);
+      const inflightKey = `recent:${id}`;
+      const existing = threadInflightRef.current.get(inflightKey);
+      if (existing && !silent) return existing;
+
+      const run = (async () => {
+        const isActive = () => selectedIdRef.current === id;
+        const cached = readThreadCache<MessageRow>(id);
+        if (!prefetch && isActive()) {
+          if (cached) {
+            setMessages(cached.messages);
+            setHasOlder(cached.hasOlder);
+            if (!silent) setLoadingThread(false);
+          } else if (!silent) {
+            setLoadingThread(true);
+            setMessages([]);
+            setHasOlder(false);
+            setExpandedIds(new Set());
+          }
+          if (!silent && !contactId) {
+            setProspectDetails(null);
+            setBookingDetails(null);
+            setActivityEvents([]);
+            setCoachTags([]);
+          }
+        }
+
+        try {
+          const headers = await authHeaders();
+          if (!headers) return;
+          if (!prefetch && isActive()) void loadThreadSide(id);
+          const res = await fetch(
+            `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}`,
+            { headers }
+          );
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            conversation?: ConversationRow;
+            messages?: MessageRow[];
+            has_older?: boolean;
+          };
+          if (!res.ok) {
+            if (!silent && !prefetch && isActive()) {
+              setError(body.error || `Thread failed (${res.status}).`);
+              if (!cached) {
+                setMessages([]);
+                setHasOlder(false);
+                setExpandedIds(new Set());
+              }
+            }
+            return;
+          }
+
+          const list = Array.isArray(body.messages) ? body.messages : [];
+          const pageHasOlder = Boolean(body.has_older);
+          const prior = readThreadCache<MessageRow>(id);
+          const merged = mergeMessagesChronological(
+            prior?.messages ?? [],
+            list
+          );
+          writeThreadCache(
+            id,
+            merged,
+            prior ? prior.hasOlder : pageHasOlder,
+            "replace"
+          );
+
+          if (prefetch || !isActive()) return;
+
+          setMessages(merged);
+          setHasOlder(prior ? prior.hasOlder : pageHasOlder);
+          setExpandedIds((prev) => {
+            if (silent) {
+              const known = new Set(merged.map((m) => m.id));
+              const next = new Set([...prev].filter((mid) => known.has(mid)));
+              const newest = merged[merged.length - 1];
+              if (newest && !prev.has(newest.id)) next.add(newest.id);
+              return next;
+            }
+            const newest = merged[merged.length - 1];
+            return newest ? new Set([newest.id]) : new Set();
+          });
+          if (body.conversation) {
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === id
+                  ? { ...c, ...body.conversation, unread_count: 0 }
+                  : c
+              )
+            );
+            if (!silent && body.conversation.subject) {
+              setReplySubject((s) => s || `Re: ${body.conversation!.subject}`);
+            }
+          } else {
+            setConversations((prev) =>
+              prev.map((c) => (c.id === id ? { ...c, unread_count: 0 } : c))
+            );
+          }
+
+          if (!silent && !prefetch) {
+            let current = merged;
+            let older = prior ? prior.hasOlder : pageHasOlder;
+            while (shouldAutoloadOlder(current, older) && isActive()) {
+              const oldest = current[0]?.created_at;
+              if (!oldest) break;
+              const olderRes = await fetch(
+                `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}&before=${encodeURIComponent(oldest)}`,
+                { headers }
+              );
+              const olderBody = (await olderRes.json().catch(() => ({}))) as {
+                messages?: MessageRow[];
+                has_older?: boolean;
+              };
+              if (!olderRes.ok) break;
+              const olderList = Array.isArray(olderBody.messages)
+                ? olderBody.messages
+                : [];
+              older = Boolean(olderBody.has_older);
+              current = mergeMessagesChronological(current, olderList);
+              writeThreadCache(id, current, older, "replace");
+              if (!isActive()) return;
+              setMessages(current);
+              setHasOlder(older);
+            }
+            if (isActive() && !warmupDoneRef.current) {
+              warmupDoneRef.current = true;
+              void (async () => {
+                const next = conversationsRef.current
+                  .filter((row) => row.id !== id)
+                  .slice(0, THREAD_PREFETCH_COUNT);
+                for (const row of next) {
+                  await loadThreadRef.current(row.id, { prefetch: true });
+                }
+                if (liSoftSyncAttempted.current) return;
+                liSoftSyncAttempted.current = true;
+                void syncInboxRef.current(false);
+              })();
+            }
+          }
+        } catch (err) {
+          if (!silent && !prefetch && isActive()) {
+            setError(err instanceof Error ? err.message : "Thread load failed.");
+          }
+        } finally {
+          if (!prefetch && isActive()) setLoadingThread(false);
+        }
+      })();
+
+      threadInflightRef.current.set(inflightKey, run);
+      try {
+        await run;
+      } finally {
+        threadInflightRef.current.delete(inflightKey);
+      }
+    },
+    [authHeaders, contactId, loadThreadSide]
+  );
+
+  loadThreadRef.current = loadThread;
 
   const syncLinkedInInbox = useCallback(
     async (force: boolean) => {
@@ -1423,10 +1778,17 @@ export function MessagingInbox() {
       try {
         const headers = await authHeaders();
         if (!headers) return;
+        const row = conversationsRef.current.find(
+          (c) => c.id === selectedIdRef.current
+        );
         const res = await fetch("/api/coach/linkedin-outreach/inbox-sync", {
           method: "POST",
           headers,
-          body: JSON.stringify({ force }),
+          body: JSON.stringify({
+            force,
+            priority_conversation_id: selectedIdRef.current,
+            priority_conversation_ids: row?.sibling_conversation_ids ?? [],
+          }),
         });
         const body = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -1499,6 +1861,8 @@ export function MessagingInbox() {
     },
     [authHeaders, loadInboxAccounts, loadList, loadThread]
   );
+
+  syncInboxRef.current = syncLinkedInInbox;
 
   const toggleExpanded = useCallback((id: string) => {
     setExpandedIds((prev) => {
@@ -1781,9 +2145,21 @@ export function MessagingInbox() {
       const conversationId = selected.id;
       const bodyText = replyBody;
       const subjectText = replySubject;
-      const fromNameText = fromName;
       const channel =
         replyChannel === "comment" ? "comment" : replyChannel;
+      if (channel === "email") {
+        const hasMailbox = inboxAccounts.some(
+          (row) =>
+            isMailingProvider(row.provider) &&
+            (row.status || "").toUpperCase() === "OK" &&
+            Boolean(row.unipile_account_id)
+        );
+        if (!hasMailbox && !adminOrgWideInbox) {
+          setSendError("Connect Gmail or Outlook to send email from your inbox.");
+          setComposerOpen(true);
+          return;
+        }
+      }
       const emailAccountIdText =
         channel === "email"
           ? emailFromAccountId || undefined
@@ -1901,7 +2277,6 @@ export function MessagingInbox() {
           form.append("channel", channel);
           form.append("body", bodyText);
           if (subjectText) form.append("subject", subjectText);
-          if (fromNameText) form.append("fromName", fromNameText);
           if (emailAccountIdText) {
             form.append("email_account_id", emailAccountIdText);
           }
@@ -1944,7 +2319,6 @@ export function MessagingInbox() {
                 channel,
                 body: bodyText,
                 subject: subjectText || undefined,
-                fromName: fromNameText || undefined,
                 email_account_id: emailAccountIdText,
               }),
             }
@@ -2012,6 +2386,7 @@ export function MessagingInbox() {
             setMessages((prev) => [...prev, body.message!]);
             setExpandedIds((prev) => new Set(prev).add(body.message!.id));
           }
+          writeThreadCache(conversationId, [body.message!]);
         } else if (optimisticId) {
           dismissOptimistic(optimisticId);
         }
@@ -2041,11 +2416,12 @@ export function MessagingInbox() {
       }
     },
     [
+      adminOrgWideInbox,
       authHeaders,
       clearPendingFiles,
       dismissOptimistic,
-      fromName,
       emailFromAccountId,
+      inboxAccounts,
       loadList,
       pendingFiles,
       pendingVideo,
@@ -2067,19 +2443,105 @@ export function MessagingInbox() {
   }, [selectedId, clearPendingFiles]);
 
   useEffect(() => {
+    if (contactId) return;
     let cancelled = false;
     async function boot() {
-      // Paint cached conversations first; background soft sync must not gate the list.
-      await loadList();
-      if (cancelled || liSoftSyncAttempted.current) return;
-      liSoftSyncAttempted.current = true;
-      void syncLinkedInInbox(false);
+      // Paint the first page of conversations; do not wait for Unipile import.
+      await loadList({ limit: THREAD_LIST_FAST_LIMIT });
+      if (cancelled) return;
+      void loadList({ silent: true });
     }
     void boot();
     return () => {
       cancelled = true;
     };
-  }, [loadList, syncLinkedInInbox]);
+  }, [contactId, loadList]);
+
+  useEffect(() => {
+    if (contactId || loading || liSoftSyncAttempted.current) return;
+    if (conversations.length > 0) return;
+    liSoftSyncAttempted.current = true;
+    void syncLinkedInInbox(false);
+  }, [contactId, loading, conversations.length, syncLinkedInInbox]);
+
+  useEffect(() => {
+    if (!contactId) return;
+    let cancelled = false;
+    async function bootProspect() {
+      setLoading(true);
+      setError(null);
+      const headers = await authHeaders();
+      if (!headers) {
+        if (!cancelled) {
+          setError("Sign in again, then retry.");
+          setLoading(false);
+        }
+        return;
+      }
+      try {
+        const res = await fetch("/api/messaging/conversations", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ contact_id: contactId }),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          conversation?: ConversationRow;
+        };
+        if (cancelled) return;
+        if (!res.ok || !body.conversation?.id) {
+          setError(body.error || "Could not open this conversation.");
+          setConversations([]);
+          setSelectedId(null);
+          return;
+        }
+        setConversations([body.conversation]);
+        setSelectedId(body.conversation.id);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Load failed.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void bootProspect();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders, contactId]);
+
+  useEffect(() => {
+    if (!contactId) {
+      setProspectCampaigns([]);
+      return;
+    }
+    const prospectContactId = contactId;
+    let cancelled = false;
+    async function loadCampaigns() {
+      const headers = await authHeaders();
+      if (!headers) return;
+      try {
+        const res = await fetch(
+          `/api/messaging/contacts/${encodeURIComponent(prospectContactId)}/feed`,
+          { headers, cache: "no-store" }
+        );
+        const body = (await res.json().catch(() => ({}))) as {
+          campaigns?: ProspectCampaignMembership[];
+        };
+        if (cancelled || !res.ok) return;
+        setProspectCampaigns(
+          Array.isArray(body.campaigns) ? body.campaigns : []
+        );
+      } catch {
+        if (!cancelled) setProspectCampaigns([]);
+      }
+    }
+    void loadCampaigns();
+    return () => {
+      cancelled = true;
+    };
+  }, [authHeaders, contactId]);
 
   useEffect(() => {
     void loadInboxAccounts();
@@ -2111,7 +2573,6 @@ export function MessagingInbox() {
         name,
         avatarUrl: (data.avatar_url as string | null) ?? null,
       });
-      setFromName((prev) => prev || name);
     }
     void loadCoach();
     return () => {
@@ -2162,7 +2623,9 @@ export function MessagingInbox() {
           pendingListRefreshRef.current = true;
           return;
         }
-        await loadList({ silent: true });
+        if (!contactId) {
+          await loadList({ silent: true });
+        }
         const openId = selectedIdRef.current;
         if (openId && !composerDirtyRef.current) {
           await loadThread(openId, { silent: true });
@@ -2177,14 +2640,16 @@ export function MessagingInbox() {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [authHeaders, loadList, loadThread]);
+  }, [authHeaders, contactId, loadList, loadThread]);
 
   useEffect(() => {
     if (selected?.id) {
-      setComposerOpen(false);
+      const draft = consumeMessagingComposeDraft(selected.id);
+      pendingDraftChannelRef.current = draft?.channel ?? null;
+      setComposerOpen(Boolean(draft));
       setChannelMenuOpen(false);
       setSendError(null);
-      setReplyBody("");
+      setReplyBody(draft?.body ?? "");
       setReplySubject(
         selected.subject ? `Re: ${selected.subject}` : ""
       );
@@ -2194,6 +2659,12 @@ export function MessagingInbox() {
 
   useEffect(() => {
     if (!selected) return;
+    const pendingChannel = pendingDraftChannelRef.current;
+    if (pendingChannel) {
+      pendingDraftChannelRef.current = null;
+      setReplyChannel(pendingChannel);
+      return;
+    }
     const last = (selected.last_channel || "").toLowerCase();
     if (
       last === "linkedin" ||
@@ -2214,25 +2685,45 @@ export function MessagingInbox() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selected.id only
   }, [selected?.id]);
 
+  useEffect(() => {
+    if (prospectMode && replyChannel === "comment") {
+      setReplyChannel("email");
+    }
+  }, [prospectMode, replyChannel]);
+
   const feedByDay = useMemo(() => {
     const optimisticForThread = selectedId
       ? optimisticMessages.filter((m) => m.conversationId === selectedId)
       : [];
     const items: FeedItem[] = [
-      ...messages.map(
-        (message): FeedItem => ({
-          kind: "message",
-          at: message.created_at,
-          message,
-        })
-      ),
-      ...optimisticForThread.map(
-        (message): FeedItem => ({
-          kind: "message",
-          at: message.created_at,
-          message,
-        })
-      ),
+      ...messages
+        .filter(
+          (message) =>
+            !(prospectMode && (message.channel || "").toLowerCase() === "system")
+        )
+        .map(
+          (message): FeedItem => ({
+            kind: "message",
+            at: message.created_at,
+            message,
+          })
+        ),
+      ...optimisticForThread
+        .filter(
+          (message) =>
+            !(
+              prospectMode &&
+              ((message.channel || "").toLowerCase() === "system" ||
+                (message.channel || "").toLowerCase() === "comment")
+            )
+        )
+        .map(
+          (message): FeedItem => ({
+            kind: "message",
+            at: message.created_at,
+            message,
+          })
+        ),
       ...activityEvents.map(
         (activity): FeedItem => ({
           kind: "activity",
@@ -2250,7 +2741,7 @@ export function MessagingInbox() {
       else groups.push({ label, items: [item] });
     }
     return groups;
-  }, [messages, activityEvents, optimisticMessages, selectedId]);
+  }, [messages, activityEvents, optimisticMessages, selectedId, prospectMode]);
 
   useEffect(() => {
     pinThreadToBottomRef.current = true;
@@ -2318,6 +2809,26 @@ export function MessagingInbox() {
     scrollThreadToBottom,
   ]);
 
+  useEffect(() => {
+    function onInternalNote(event: Event) {
+      const detail = (event as CustomEvent<{
+        conversationId?: string;
+        message?: MessageRow;
+      }>).detail;
+      const incoming = detail?.message;
+      const conversationId = detail?.conversationId;
+      if (!incoming?.id || !conversationId) return;
+      if (selectedIdRef.current !== conversationId) return;
+      setMessages((prev) =>
+        prev.some((row) => row.id === incoming.id) ? prev : [...prev, incoming]
+      );
+    }
+    window.addEventListener(PROSPECT_INTERNAL_NOTE_EVENT, onInternalNote);
+    return () => {
+      window.removeEventListener(PROSPECT_INTERNAL_NOTE_EVENT, onInternalNote);
+    };
+  }, []);
+
   const noteCount = useMemo(
     () => messages.filter((m) => m.channel === "system").length,
     [messages]
@@ -2340,7 +2851,8 @@ export function MessagingInbox() {
     prospectEmail: selected?.prospect_email,
     channel: selected?.last_channel,
   });
-  const prospectAvatarUrl = selected?.prospect_avatar_url || null;
+  const prospectAvatarUrl =
+    selected?.prospect_avatar_url || prospectDetails?.photo_url || null;
   const replyChannels = useMemo(() => {
     if (messages.length) {
       return inboundReplyChannels(messages, selected?.last_channel);
@@ -2584,11 +3096,26 @@ export function MessagingInbox() {
     [patchProspectContact]
   );
 
-  const prospectHref = selected?.contact_id
-    ? pathname?.startsWith("/admin")
-      ? `/admin/prospects/${selected.contact_id}`
-      : `/coach/prospects/${selected.contact_id}`
-    : null;
+  const prospectHref =
+    hideProspectLink || !selected?.contact_id
+      ? null
+      : pathname?.startsWith("/admin")
+        ? `/admin/prospects/${selected.contact_id}?from=conversations`
+        : `/coach/prospects/${selected.contact_id}?from=conversations`;
+  const canOpenProspectProfile = Boolean(prospectHref);
+
+  const openProspectProfile = useCallback(() => {
+    if (!prospectHref) return;
+    const go = () => router.push(prospectHref);
+    if (
+      typeof document.startViewTransition === "function" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      document.startViewTransition(go);
+      return;
+    }
+    go();
+  }, [prospectHref, router]);
 
   const connectedChannelLabels = useMemo(() => {
     const names = [
@@ -2615,13 +3142,12 @@ export function MessagingInbox() {
   useEffect(() => {
     if (replyChannel !== "email") return;
     const stillValid =
-      emailFromAccountId === PLATFORM_EMAIL_FROM ||
-      (emailFromAccountId !== "" &&
-        mailingAccounts.some(
-          (row) => row.unipile_account_id === emailFromAccountId
-        ));
-    if (stillValid && emailFromAccountId) return;
-    // Prefer a connected mailbox. Empty = let the server pick for this coach
+      emailFromAccountId !== "" &&
+      mailingAccounts.some(
+        (row) => row.unipile_account_id === emailFromAccountId
+      );
+    if (stillValid) return;
+    // Prefer a connected mailbox. Empty lets the server pick for this coach
     // (important on admin org-wide inbox without impersonation).
     setEmailFromAccountId(mailingAccounts[0]?.unipile_account_id || "");
   }, [replyChannel, mailingAccounts, emailFromAccountId]);
@@ -2635,7 +3161,8 @@ export function MessagingInbox() {
     <div className="flex h-full min-h-0 flex-col py-3 max-lg:h-auto max-lg:py-2">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white max-lg:min-h-[28rem]">
         <div className="grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)] overflow-hidden lg:grid-cols-[minmax(0,25%)_minmax(0,1fr)] xl:grid-cols-[minmax(0,25%)_minmax(0,50%)_minmax(0,25%)]">
-          {/* Left: inbox list */}
+          {/* Left: inbox list (hidden on the prospect page) */}
+          {prospectMode ? null : (
           <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden border-b border-slate-200 max-lg:max-h-[40vh] lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2.5">
             {searchOpen ? (
@@ -2730,7 +3257,7 @@ export function MessagingInbox() {
                       {inboxFiltersActive(inboxFilters) ? (
                         <button
                           type="button"
-                          onClick={() => setInboxFilters(EMPTY_INBOX_FILTERS)}
+                          onClick={() => clearInboxFilters()}
                           className="text-[12px] font-medium text-sky-700 hover:text-sky-800"
                         >
                           Clear
@@ -3033,6 +3560,29 @@ export function MessagingInbox() {
             })}
           </div>
 
+          {inboxFilters.campaignId ? (
+            <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+              <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-[12px] font-medium text-sky-800 ring-1 ring-sky-200/80">
+                <span className="truncate">
+                  {campaignFilterLabel
+                    ? `Campaign: ${campaignFilterLabel}`
+                    : "Campaign replies"}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Clear campaign filter"
+                  onClick={() => {
+                    setInboxFilters((prev) => ({ ...prev, campaignId: null }));
+                    clearCampaignFilterFromUrl();
+                  }}
+                  className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
+                >
+                  <X className="h-3 w-3" strokeWidth={2} />
+                </button>
+              </span>
+            </div>
+          ) : null}
+
           {checkedCount > 0 ? (
             <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
@@ -3250,41 +3800,89 @@ export function MessagingInbox() {
             })}
           </ul>
         </aside>
+          )}
 
         {/* Center: thread + composer */}
-        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden max-lg:h-[min(70dvh,36rem)] lg:min-h-0 lg:border-b-0 xl:border-b-0">
+        <section
+          className={`flex min-h-0 min-w-0 flex-col overflow-hidden max-lg:h-[min(70dvh,36rem)] lg:min-h-0 lg:border-b-0 xl:border-b-0 [view-transition-name:inbox-prospect-thread] ${
+            prospectMode ? "max-lg:order-1 lg:order-2" : ""
+          }`}
+        >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
             {selected ? (
               <>
-                <div className="flex min-w-0 items-center gap-3">
-                  <AvatarWithChannels
-                    name={displayName}
-                    url={prospectAvatarUrl}
-                    size="md"
-                    channels={replyChannels}
-                  />
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-900">
-                      {displayName}
-                    </div>
-                    {subtitle ? (
-                      <div className="truncate text-[13px] text-slate-700">
-                        {subtitle}
+                {canOpenProspectProfile ? (
+                  <button
+                    type="button"
+                    onClick={openProspectProfile}
+                    className="group flex min-w-0 items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
+                    aria-label={`Open ${displayName} profile`}
+                  >
+                    <AvatarWithChannels
+                      name={displayName}
+                      url={prospectAvatarUrl}
+                      size="md"
+                      channels={replyChannels}
+                    />
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-0.5">
+                        <div className="truncate text-sm font-semibold text-slate-900 group-hover:text-sky-800">
+                          {displayName}
+                        </div>
+                        <ChevronRight
+                          className="h-3.5 w-3.5 shrink-0 text-slate-400 transition group-hover:text-sky-700"
+                          aria-hidden
+                        />
                       </div>
-                    ) : null}
-                    <div className="truncate text-xs text-slate-500 xl:hidden">
-                      {[
-                        selected.prospect_email,
-                        selected.prospect_phone
-                          ? formatPhoneDisplay(selected.prospect_phone) ??
-                            selected.prospect_phone
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {subtitle ? (
+                        <div className="truncate text-[13px] text-slate-700">
+                          {subtitle}
+                        </div>
+                      ) : null}
+                      <div className="truncate text-xs text-slate-500 xl:hidden">
+                        {[
+                          selected.prospect_email,
+                          selected.prospect_phone
+                            ? formatPhoneDisplay(selected.prospect_phone) ??
+                              selected.prospect_phone
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex min-w-0 items-center gap-3">
+                    <AvatarWithChannels
+                      name={displayName}
+                      url={prospectAvatarUrl}
+                      size="md"
+                      channels={replyChannels}
+                    />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-slate-900">
+                        {displayName}
+                      </div>
+                      {subtitle ? (
+                        <div className="truncate text-[13px] text-slate-700">
+                          {subtitle}
+                        </div>
+                      ) : null}
+                      <div className="truncate text-xs text-slate-500 xl:hidden">
+                        {[
+                          selected.prospect_email,
+                          selected.prospect_phone
+                            ? formatPhoneDisplay(selected.prospect_phone) ??
+                              selected.prospect_phone
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 <div className="flex shrink-0 items-center gap-1">
                   {(selected.unread_count ?? 0) === 0 ? (
                     <button
@@ -3327,14 +3925,31 @@ export function MessagingInbox() {
             }`}
           >
             <div className="mt-auto space-y-5 px-3 py-4 sm:px-4">
-            {!selected ? null : loadingThread ? (
+            {!selected ? null : loadingThread && feedByDay.length === 0 ? (
               <p className="text-sm text-slate-500">Loading thread…</p>
             ) : feedByDay.length === 0 ? (
               <p className="text-sm text-slate-500">
                 No messages or activity yet.
               </p>
             ) : (
-              feedByDay.map((group) => (
+              <>
+              {hasOlder || loadingOlder ? (
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const oldest = messages[0]?.created_at;
+                      if (!selected.id || !oldest) return;
+                      void loadOlderMessages(selected.id, oldest);
+                    }}
+                    disabled={loadingOlder}
+                    className="rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80 hover:text-slate-700 disabled:opacity-60"
+                  >
+                    {loadingOlder ? "Loading earlier…" : "Load earlier messages"}
+                  </button>
+                </div>
+              ) : null}
+              {feedByDay.map((group) => (
                 <div key={group.label} className="space-y-3">
                   <div className="flex justify-center py-1">
                     <span className="rounded-full bg-white/90 px-3 py-0.5 text-[11px] font-medium text-slate-500 shadow-sm ring-1 ring-slate-200/80">
@@ -3788,7 +4403,8 @@ export function MessagingInbox() {
                     );
                   })}
                 </div>
-              ))
+              ))}
+              </>
             )}
             <div ref={threadBottomRef} aria-hidden className="h-px w-full shrink-0" />
           </div>
@@ -3842,12 +4458,15 @@ export function MessagingInbox() {
                     <ChannelPickerMenu
                       open={channelMenuOpen}
                       current={replyChannel}
-                      options={composerChannelOptions({
-                        ...selected,
-                        prospect_email: email,
-                        prospect_phone: phone,
-                        prospect_linkedin_url: linkedIn,
-                      })}
+                      options={composerChannelOptions(
+                        {
+                          ...selected,
+                          prospect_email: email,
+                          prospect_phone: phone,
+                          prospect_linkedin_url: linkedIn,
+                        },
+                        { includeInternalNote: !prospectMode }
+                      )}
                       onPick={(id) => {
                         setReplyChannel(id);
                         setChannelMenuOpen(false);
@@ -3903,12 +4522,15 @@ export function MessagingInbox() {
                     <ChannelPickerMenu
                       open={channelMenuOpen}
                       current={replyChannel}
-                      options={composerChannelOptions({
-                        ...selected,
-                        prospect_email: email,
-                        prospect_phone: phone,
-                        prospect_linkedin_url: linkedIn,
-                      })}
+                      options={composerChannelOptions(
+                        {
+                          ...selected,
+                          prospect_email: email,
+                          prospect_phone: phone,
+                          prospect_linkedin_url: linkedIn,
+                        },
+                        { includeInternalNote: !prospectMode }
+                      )}
                       onPick={(id) => {
                         setReplyChannel(id);
                         setChannelMenuOpen(false);
@@ -3919,56 +4541,78 @@ export function MessagingInbox() {
                   <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
                     {replyChannel === "email" ? (
                       <div className="shrink-0 space-y-2 text-sm">
-                        <label className="flex items-center gap-2">
-                          <span className="w-20 shrink-0 text-xs text-slate-500">
-                            From
-                          </span>
-                          <select
-                            value={
-                              emailFromAccountId ||
-                              mailingAccounts[0]?.unipile_account_id ||
-                              ""
-                            }
-                            onChange={(e) =>
-                              setEmailFromAccountId(e.target.value)
-                            }
-                            className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
-                          >
-                            {mailingAccounts.length === 0 ? (
-                              <option value="">
-                                Connected mailbox if available
-                              </option>
-                            ) : null}
-                            {mailingAccounts.map((account) => (
-                              <option
-                                key={account.unipile_account_id}
-                                value={account.unipile_account_id}
-                              >
-                                {providerLabel(account.provider)}
-                                {account.display_name
-                                  ? ` · ${account.display_name}`
-                                  : ""}
-                              </option>
-                            ))}
-                            <option value={PLATFORM_EMAIL_FROM}>
-                              Platform email (Bird)
-                              {mailingAccounts.length ? " · backup" : ""}
-                            </option>
-                          </select>
-                        </label>
-                        {emailFromAccountId === PLATFORM_EMAIL_FROM ? (
+                        {mailingAccounts.length > 1 ? (
                           <label className="flex items-center gap-2">
                             <span className="w-20 shrink-0 text-xs text-slate-500">
-                              From name
+                              From
                             </span>
-                            <input
-                              value={fromName}
-                              onChange={(e) => setFromName(e.target.value)}
-                              placeholder="Coach name"
-                              className="flex-1 rounded-md border border-slate-200 px-2.5 py-1.5 text-sm"
-                            />
+                            <select
+                              value={
+                                emailFromAccountId ||
+                                mailingAccounts[0]?.unipile_account_id ||
+                                ""
+                              }
+                              onChange={(e) =>
+                                setEmailFromAccountId(e.target.value)
+                              }
+                              className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
+                            >
+                              {mailingAccounts.map((account) => (
+                                <option
+                                  key={account.unipile_account_id}
+                                  value={account.unipile_account_id}
+                                >
+                                  {mailboxFromLabel(account)}
+                                </option>
+                              ))}
+                            </select>
                           </label>
-                        ) : null}
+                        ) : mailingAccounts.length === 1 ? (
+                          <div className="flex items-center gap-2">
+                            <span className="w-20 shrink-0 text-xs text-slate-500">
+                              From
+                            </span>
+                            <span className="truncate text-sm text-slate-700">
+                              {mailboxFromLabel(mailingAccounts[0])}
+                            </span>
+                          </div>
+                        ) : !accountsLoaded ? (
+                          <p className="text-xs text-slate-400">
+                            Checking connected mailbox…
+                          </p>
+                        ) : adminOrgWideInbox ? (
+                          <p className="text-xs text-slate-500">
+                            Sends from this coach’s connected Gmail or Outlook.
+                          </p>
+                        ) : (
+                          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                            <p className="text-xs leading-relaxed text-amber-950">
+                              Connect Gmail or Outlook first.
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void connectMailbox("GOOGLE")}
+                                disabled={connectingMailbox !== null}
+                                className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                {connectingMailbox === "GOOGLE"
+                                  ? "Connecting…"
+                                  : "Connect Google"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void connectMailbox("OUTLOOK")}
+                                disabled={connectingMailbox !== null}
+                                className="rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                {connectingMailbox === "OUTLOOK"
+                                  ? "Connecting…"
+                                  : "Connect Outlook"}
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           <span className="w-20 shrink-0 text-xs text-slate-500">
                             To
@@ -4101,12 +4745,17 @@ export function MessagingInbox() {
                         onSend={() => void sendReply()}
                         onOpenSchedule={() => setScheduleOpen(true)}
                         sending={scheduleSending}
-                        canSend={Boolean(
-                          replyBody.trim() ||
-                            pendingFiles.length ||
-                            pendingVoice ||
-                            pendingVideo
-                        )}
+                        canSend={
+                          Boolean(
+                            replyBody.trim() ||
+                              pendingFiles.length ||
+                              pendingVoice ||
+                              pendingVideo
+                          ) &&
+                          (replyChannel !== "email" ||
+                            mailingAccounts.length > 0 ||
+                            adminOrgWideInbox)
+                        }
                         showSchedule={mediaComposerEnabled}
                       />
                     </div>
@@ -4123,10 +4772,26 @@ export function MessagingInbox() {
           ) : null}
         </section>
 
-        {/* Right: contact / prospect details */}
-        <aside className="hidden min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-white xl:flex xl:border-l xl:border-t-0">
+        {/* Contact / prospect details — right in inbox, left on the prospect page */}
+        <aside
+          className={`min-h-0 min-w-0 flex-col overflow-hidden border-slate-200 bg-white [view-transition-name:inbox-prospect-details] ${
+            prospectMode
+              ? "flex max-lg:order-2 max-lg:max-h-[40vh] max-lg:border-t lg:order-1 lg:border-r lg:border-t-0"
+              : "hidden border-t xl:flex xl:border-l xl:border-t-0"
+          }`}
+        >
           <div className="shrink-0 border-b border-slate-100 px-4 py-3">
-            <h2 className="text-sm font-semibold text-slate-900">Details</h2>
+            {detailsBackHref ? (
+              <Link
+                href={detailsBackHref}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-900 hover:text-sky-800"
+              >
+                <ArrowLeft className="h-4 w-4" aria-hidden />
+                {detailsBackLabel}
+              </Link>
+            ) : (
+              <h2 className="text-sm font-semibold text-slate-900">Details</h2>
+            )}
           </div>
 
           {!selected ? (
@@ -4135,48 +4800,58 @@ export function MessagingInbox() {
             </div>
           ) : (
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              <div className="flex items-start gap-3 px-4 pb-4 pt-4">
-                <Avatar
-                  name={displayName}
-                  url={prospectAvatarUrl}
-                  size="lg"
+              <div
+                className={`px-4 pb-3 pt-3 ${
+                  canOpenProspectProfile
+                    ? "cursor-pointer hover:bg-slate-50/90"
+                    : ""
+                }`}
+                onClick={(event) => {
+                  if (!canOpenProspectProfile) return;
+                  const target = event.target as HTMLElement;
+                  if (
+                    target.closest(
+                      "a, button, input, textarea, [role='listbox']"
+                    )
+                  ) {
+                    return;
+                  }
+                  openProspectProfile();
+                }}
+              >
+                <ProspectDetailsHeader
+                  avatar={
+                    <Avatar
+                      name={displayName}
+                      url={prospectAvatarUrl}
+                      size="lg"
+                    />
+                  }
+                  displayName={displayName}
+                  jobTitle={prospectDetails?.job_title}
+                  businessDraft={businessDraft}
+                  onBusinessChange={setBusinessDraft}
+                  onBusinessSave={() => void saveBusinessName()}
+                  phone={phone}
+                  email={email}
+                  linkedIn={linkedIn}
+                  prospectHref={prospectHref}
+                  onOpenProfile={
+                    canOpenProspectProfile ? openProspectProfile : undefined
+                  }
+                  tags={prospectDetails?.tags ?? []}
+                  tagCatalog={coachTags}
+                  tagsSaving={savingTags}
+                  canEditTags={Boolean(
+                    prospectDetails?.id || selected.contact_id
+                  )}
+                  onTagsChange={saveProspectTags}
+                  onEmail={() => {
+                    setReplyChannel("email");
+                    setComposerOpen(true);
+                    setChannelMenuOpen(false);
+                  }}
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
-                    <h3 className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-slate-900">
-                      {displayName}
-                    </h3>
-                    {linkedIn ? (
-                      <a
-                        href={linkedIn}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="LinkedIn profile"
-                        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 transition hover:border-sky-300 hover:bg-sky-50"
-                      >
-                        <LinkedInSolidIcon className="h-3.5 w-3.5" />
-                      </a>
-                    ) : null}
-                  </div>
-                  {prospectDetails?.job_title?.trim() ? (
-                    <p className="truncate text-sm text-slate-600">
-                      {prospectDetails.job_title.trim()}
-                    </p>
-                  ) : null}
-                  <BusinessNameField
-                    value={businessDraft}
-                    onChange={setBusinessDraft}
-                    onSave={() => void saveBusinessName()}
-                  />
-                  {prospectHref ? (
-                    <a
-                      href={prospectHref}
-                      className="mt-2 inline-block text-xs font-medium text-sky-700 hover:text-sky-800"
-                    >
-                      View prospect →
-                    </a>
-                  ) : null}
-                </div>
               </div>
 
               <div className="space-y-5 border-t border-slate-100 px-4 py-4">
@@ -4226,16 +4901,31 @@ export function MessagingInbox() {
                       )}
                       <dl className="mt-3 space-y-2.5">
                         <DetailRow label="Status">
-                          {prospectDetails?.prospect_status ? (
-                            <span className="capitalize">
-                              {prospectDetails.prospect_status.replace(
-                                /_/g,
-                                " "
-                              )}
-                            </span>
-                          ) : (
-                            <DetailEmpty />
-                          )}
+                          <select
+                            aria-label="Prospect status"
+                            value={prospectDetails?.prospect_status ?? ""}
+                            disabled={savingContact}
+                            onChange={(e) => {
+                              const value = e.target.value || null;
+                              void saveProspectContact({
+                                prospect_status: value,
+                              });
+                            }}
+                            className={`w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200 ${
+                              prospectDetails?.prospect_status
+                                ? prospectStatusBadgeClass(
+                                    prospectDetails.prospect_status
+                                  )
+                                : "text-slate-600"
+                            }`}
+                          >
+                            <option value="">Auto</option>
+                            {PROSPECT_STATUS_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         </DetailRow>
                       </dl>
                     </>
@@ -4304,25 +4994,82 @@ export function MessagingInbox() {
                   )}
                 </CollapsibleDetailSection>
 
-                <CollapsibleDetailSection
-                  title="Tags"
-                  open={detailSectionsOpen.tags}
-                  onToggle={() => toggleDetailSection("tags")}
-                  panel
-                >
-                  {prospectDetails?.id || selected.contact_id ? (
-                    <ProspectTagsEditor
-                      tags={prospectDetails?.tags ?? []}
-                      suggestions={coachTags}
-                      saving={savingTags}
-                      onChange={saveProspectTags}
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      Link a prospect to add tags.
-                    </p>
-                  )}
-                </CollapsibleDetailSection>
+                {prospectDetails?.about?.trim() ||
+                prospectDetails?.headline?.trim() ||
+                prospectDetails?.location?.trim() ? (
+                  <CollapsibleDetailSection
+                    title="Profile"
+                    open={detailSectionsOpen.profile}
+                    onToggle={() => toggleDetailSection("profile")}
+                    panel
+                  >
+                    <dl className="space-y-2.5">
+                      {prospectDetails?.headline?.trim() ? (
+                        <DetailRow label="Headline">
+                          <span className="whitespace-pre-wrap text-sm leading-snug text-slate-800">
+                            {prospectDetails.headline.trim()}
+                          </span>
+                        </DetailRow>
+                      ) : null}
+                      {prospectDetails?.location?.trim() ? (
+                        <DetailRow label="Location">
+                          {prospectDetails.location.trim()}
+                        </DetailRow>
+                      ) : null}
+                      {prospectDetails?.about?.trim() ? (
+                        <DetailRow label="About">
+                          <span className="whitespace-pre-wrap text-sm leading-snug text-slate-800">
+                            {prospectDetails.about.trim()}
+                          </span>
+                        </DetailRow>
+                      ) : null}
+                    </dl>
+                  </CollapsibleDetailSection>
+                ) : null}
+
+                {prospectMode ? (
+                  <CollapsibleDetailSection
+                    title="Campaigns"
+                    open={detailSectionsOpen.campaigns}
+                    onToggle={() => toggleDetailSection("campaigns")}
+                    panel
+                    badge={
+                      prospectCampaigns.length > 0 ? (
+                        <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
+                          {prospectCampaigns.length}
+                        </span>
+                      ) : null
+                    }
+                  >
+                    {prospectCampaigns.length === 0 ? (
+                      <p className="text-sm text-slate-500">
+                        Not in a campaign yet.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {prospectCampaigns.map((campaign) => (
+                          <li key={campaign.id}>
+                            <Link
+                              href={`${
+                                pathname?.startsWith("/admin")
+                                  ? "/admin"
+                                  : "/coach"
+                              }/campaigns/${encodeURIComponent(campaign.campaignId)}`}
+                              className="block rounded-md hover:text-sky-800"
+                            >
+                              <p className="text-[15px] font-medium leading-snug text-slate-900">
+                                {campaign.name}
+                              </p>
+                              <p className="text-xs text-slate-500">
+                                {leadStatusLabel(campaign.leadStatus)}
+                              </p>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CollapsibleDetailSection>
+                ) : null}
 
                 <CollapsibleDetailSection
                   title="Assessment"
@@ -4373,7 +5120,7 @@ export function MessagingInbox() {
                   </dl>
                 </CollapsibleDetailSection>
 
-                {bookingDetails ? (
+                {bookingDetails && !prospectMode ? (
                   <CollapsibleDetailSection
                     title="Booking"
                     open={detailSectionsOpen.booking}
@@ -4406,161 +5153,165 @@ export function MessagingInbox() {
                   </CollapsibleDetailSection>
                 ) : null}
 
-                <CollapsibleDetailSection
-                  title="Conversation"
-                  open={detailSectionsOpen.conversation}
-                  onToggle={() => toggleDetailSection("conversation")}
-                  panel
-                >
-                  <dl className="space-y-2.5">
-                    <DetailRow label="Last activity">
-                      {formatShortDateTime(selected.last_message_at)}
-                    </DetailRow>
-                    <DetailRow label="Messages">{messages.length}</DetailRow>
-                  </dl>
-                </CollapsibleDetailSection>
+                {prospectMode ? null : (
+                  <CollapsibleDetailSection
+                    title="Conversation"
+                    open={detailSectionsOpen.conversation}
+                    onToggle={() => toggleDetailSection("conversation")}
+                    panel
+                  >
+                    <dl className="space-y-2.5">
+                      <DetailRow label="Last activity">
+                        {formatShortDateTime(selected.last_message_at)}
+                      </DetailRow>
+                      <DetailRow label="Messages">{messages.length}</DetailRow>
+                    </dl>
+                  </CollapsibleDetailSection>
+                )}
 
-                <CollapsibleDetailSection
-                  title="Notes"
-                  open={detailSectionsOpen.notes}
-                  onToggle={() => toggleDetailSection("notes")}
-                  badge={
-                    <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
-                      {noteCount}
-                    </span>
-                  }
-                >
-                  <div className="space-y-2.5">
-                    {noteMessages.length === 0 ? (
-                      <p className="text-sm text-slate-500">No notes yet.</p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {noteMessages.map((n) => (
-                          <li
-                            key={n.id}
-                            className="rounded-lg border border-amber-100 bg-amber-50/70 px-2.5 py-2 text-xs leading-snug text-amber-950"
-                          >
-                            <p className="whitespace-pre-wrap">
-                              {(n.body_text || "").trim() || "(empty)"}
-                            </p>
-                            <p className="mt-1 text-[10px] tabular-nums text-amber-700/70">
-                              {formatShortDateTime(n.created_at)}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReplyChannel("comment");
-                        setComposerOpen(true);
-                        setChannelMenuOpen(false);
-                      }}
-                      className="text-xs font-medium text-sky-700 hover:text-sky-800"
-                    >
-                      Add note
-                    </button>
-                  </div>
-                </CollapsibleDetailSection>
+                {journeyPane ? null : (
+                  <CollapsibleDetailSection
+                    title="Notes"
+                    open={detailSectionsOpen.notes}
+                    onToggle={() => toggleDetailSection("notes")}
+                    badge={
+                      <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-slate-100 px-1.5 text-[11px] font-semibold text-slate-600">
+                        {noteCount}
+                      </span>
+                    }
+                  >
+                    <div className="space-y-2.5">
+                      {noteMessages.length === 0 ? (
+                        <p className="text-sm text-slate-500">No notes yet.</p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {noteMessages.map((n) => (
+                            <li
+                              key={n.id}
+                              className="rounded-lg border border-amber-100 bg-amber-50/70 px-2.5 py-2 text-xs leading-snug text-amber-950"
+                            >
+                              <p className="whitespace-pre-wrap">
+                                {(n.body_text || "").trim() || "(empty)"}
+                              </p>
+                              <p className="mt-1 text-[10px] tabular-nums text-amber-700/70">
+                                {formatShortDateTime(n.created_at)}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyChannel("comment");
+                          setComposerOpen(true);
+                          setChannelMenuOpen(false);
+                        }}
+                        className="text-xs font-medium text-sky-700 hover:text-sky-800"
+                      >
+                        Add note
+                      </button>
+                    </div>
+                  </CollapsibleDetailSection>
+                )}
               </div>
             </div>
           )}
         </aside>
 
+        {prospectMode && journeyPane ? (
+          <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden border-t border-slate-200 bg-white max-xl:col-span-full max-xl:max-h-[42vh] xl:order-3 xl:border-l xl:border-t-0 [view-transition-name:inbox-prospect-journey]">
+            {journeyPane}
+          </aside>
+        ) : null}
+
         {/* Mobile details (below thread when the right sidebar is hidden) */}
-        {selected ? (
+        {selected && !prospectMode ? (
           <div className="col-span-full border-t border-slate-200 bg-white px-4 py-5 lg:hidden">
             <h2 className="mb-4 text-sm font-semibold text-slate-900">Details</h2>
-            <div className="flex items-start gap-3">
-              <Avatar
-                name={displayName}
-                url={prospectAvatarUrl}
-                size="md"
-              />
-              <div className="min-w-0 flex-1 space-y-1 text-sm">
-                <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1 font-semibold text-slate-900">
-                    {displayName}
-                  </div>
-                  {linkedIn ? (
-                    <a
-                      href={linkedIn}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="LinkedIn profile"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200"
-                    >
-                      <LinkedInSolidIcon className="h-3.5 w-3.5" />
-                    </a>
-                  ) : null}
-                </div>
-                {prospectDetails?.job_title?.trim() ? (
-                  <div className="text-slate-600">
-                    {prospectDetails.job_title.trim()}
-                  </div>
-                ) : null}
-                <BusinessNameField
-                  value={businessDraft}
-                  onChange={setBusinessDraft}
-                  onSave={() => void saveBusinessName()}
+            <ProspectDetailsHeader
+              avatar={
+                <Avatar
+                  name={displayName}
+                  url={prospectAvatarUrl}
+                  size="md"
                 />
-                {email ? (
-                  <a
-                    href={`mailto:${email}`}
-                    className="block text-sky-700 hover:text-sky-800"
-                  >
-                    {email}
-                  </a>
-                ) : null}
-                {phone ? (
-                  <a href={`tel:${phone}`} className="block text-sky-700 hover:text-sky-800">
-                    {phone}
-                  </a>
-                ) : null}
-                <div className="text-xs text-slate-400">
-                  Last activity {formatShortDateTime(selected.last_message_at)}
-                </div>
-              </div>
-            </div>
+              }
+              displayName={displayName}
+              jobTitle={prospectDetails?.job_title}
+              businessDraft={businessDraft}
+              onBusinessChange={setBusinessDraft}
+              onBusinessSave={() => void saveBusinessName()}
+              phone={phone}
+              email={email}
+              linkedIn={linkedIn}
+              prospectHref={prospectHref}
+              onOpenProfile={
+                canOpenProspectProfile ? openProspectProfile : undefined
+              }
+              tags={prospectDetails?.tags ?? []}
+              tagCatalog={coachTags}
+              tagsSaving={savingTags}
+              canEditTags={Boolean(prospectDetails?.id || selected.contact_id)}
+              onTagsChange={saveProspectTags}
+              onEmail={() => {
+                setReplyChannel("email");
+                setComposerOpen(true);
+                setChannelMenuOpen(false);
+              }}
+            />
+            <p className="mt-2 text-xs text-slate-400">
+              Last activity {formatShortDateTime(selected.last_message_at)}
+            </p>
             {prospectDetails?.id || selected.contact_id ? (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Contact
-                  </h3>
-                  <ProspectContactFields
-                    values={{
-                      email: prospectDetails?.email ?? email,
-                      phone: prospectDetails?.phone ?? phone,
-                      job_title: prospectDetails?.job_title ?? null,
-                      business_name:
-                        prospectDetails?.business_name ?? subtitle,
-                      company_website:
-                        prospectDetails?.company_website ?? null,
-                      linkedin_url:
-                        prospectDetails?.linkedin_url ?? linkedIn,
+              <div className="mt-4">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Contact
+                </h3>
+                <ProspectContactFields
+                  values={{
+                    email: prospectDetails?.email ?? email,
+                    phone: prospectDetails?.phone ?? phone,
+                    job_title: prospectDetails?.job_title ?? null,
+                    business_name:
+                      prospectDetails?.business_name ?? subtitle,
+                    company_website:
+                      prospectDetails?.company_website ?? null,
+                    linkedin_url:
+                      prospectDetails?.linkedin_url ?? linkedIn,
+                  }}
+                  saving={savingContact}
+                  whatsappKnown={
+                    Boolean(prospectDetails?.has_whatsapp) ||
+                    replyChannels.includes("whatsapp") ||
+                    selected.last_channel === "whatsapp"
+                  }
+                  onSave={saveProspectContact}
+                />
+                <label className="mt-3 block">
+                  <span className="mb-1 block text-xs font-medium text-slate-500">
+                    Status
+                  </span>
+                  <select
+                    aria-label="Prospect status"
+                    value={prospectDetails?.prospect_status ?? ""}
+                    disabled={savingContact}
+                    onChange={(e) => {
+                      const value = e.target.value || null;
+                      void saveProspectContact({
+                        prospect_status: value,
+                      });
                     }}
-                    saving={savingContact}
-                    whatsappKnown={
-                      Boolean(prospectDetails?.has_whatsapp) ||
-                      replyChannels.includes("whatsapp") ||
-                      selected.last_channel === "whatsapp"
-                    }
-                    onSave={saveProspectContact}
-                  />
-                </div>
-                <div>
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Tags
-                  </h3>
-                  <ProspectTagsEditor
-                    tags={prospectDetails?.tags ?? []}
-                    suggestions={coachTags}
-                    saving={savingTags}
-                    onChange={saveProspectTags}
-                  />
-                </div>
+                    className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
+                  >
+                    <option value="">Auto</option>
+                    {PROSPECT_STATUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             ) : null}
           </div>

@@ -40,7 +40,15 @@ export default function AdminLayout({
   const playbooksReader = isPlaybooksReaderPath(pathname);
   const conversationsPage = pathname === "/admin/conversations";
   const supportInboxPage = pathname === "/admin/support";
+  const prospectsListPage = pathname === "/admin/prospects";
+  const campaignsListPage = pathname === "/admin/campaigns";
+  const prospectWorkspacePage = pathname.startsWith("/admin/prospects/");
   const fullHeightInboxPage = conversationsPage || supportInboxPage;
+  const fullHeightPage =
+    fullHeightInboxPage ||
+    prospectsListPage ||
+    prospectWorkspacePage ||
+    campaignsListPage;
   const sidebarExpanded = sidebarOpen && !playbooksReader;
   const sidebarMounted = !playbooksReader;
   const sidebarCollapsed = sidebarMounted && !sidebarOpen;
@@ -110,7 +118,7 @@ export default function AdminLayout({
     <div
       data-ai-docked={aiPanelDocked ? true : undefined}
       className={`group/appshell ${
-        fullHeightInboxPage ? "h-dvh overflow-hidden" : "min-h-screen"
+        fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
         playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
@@ -148,8 +156,14 @@ export default function AdminLayout({
           ) : null}
           <main
             className={`min-w-0 w-full pt-0 ${
-              fullHeightInboxPage
+              fullHeightInboxPage || prospectWorkspacePage
                 ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
+                : prospectsListPage || campaignsListPage
+                ? `h-dvh overflow-hidden px-4 md:px-[60px] ${
+                    sidebarExpanded
+                      ? "pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                      : "pb-3"
+                  }`
                 : playbooksReader
                 ? "min-h-screen px-0 pb-10"
                 : `min-h-screen px-4 md:px-[60px] ${
@@ -161,7 +175,7 @@ export default function AdminLayout({
           >
             <div
               className={`flex w-full min-w-0 flex-col ${
-                fullHeightInboxPage
+                fullHeightPage
                   ? "h-full min-h-0 gap-0"
                   : playbooksReader
                     ? "gap-0"
@@ -170,12 +184,12 @@ export default function AdminLayout({
             >
               {chromeEnabled ? <DashboardChromeFallback /> : null}
               {/*
-                Full-height inboxes need a flex-1 / min-h-0 chain so the list
+                Full-height routes need a flex-1 / min-h-0 chain so the body
                 scrolls inside the viewport. Do not put overflow-hidden here —
                 StickyPageHeader bleeds with negative horizontal margins into
                 main's padding, and overflow on this wrapper clips that bar.
               */}
-              {fullHeightInboxPage ? (
+              {fullHeightPage ? (
                 <div className="flex min-h-0 flex-1 flex-col">
                   {children}
                 </div>

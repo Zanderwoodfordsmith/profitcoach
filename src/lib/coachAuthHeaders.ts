@@ -1,4 +1,4 @@
-import { supabaseClient } from "@/lib/supabaseClient";
+import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 
 const COACH_STORAGE_KEY = "boss_impersonate_coach";
 
@@ -21,13 +21,11 @@ export function getStoredImpersonatingCoachId(): string | null {
 export async function getCoachAuthHeaders(
   impersonatingCoachId?: string | null
 ): Promise<Record<string, string> | null> {
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
-  if (!session?.access_token) return null;
+  const accessToken = await getValidSupabaseAccessToken();
+  if (!accessToken) return null;
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${session.access_token}`,
+    Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
   };
 

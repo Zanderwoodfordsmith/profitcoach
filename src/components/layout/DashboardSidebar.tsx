@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useOptimisticPathname } from "@/hooks/useOptimisticPathname";
 import {
   ChevronDown,
   ChevronUp,
@@ -27,10 +27,7 @@ import {
   navLinkActive,
 } from "@/components/layout/dashboardNavItems";
 import type { CoachAccessTier, CoachFeature } from "@/lib/coachAccess/tiers";
-import {
-  membershipPreviewMode,
-  membershipSidebarPromoEnabled,
-} from "@/lib/membership/preview";
+import { membershipSidebarPromoEnabled } from "@/lib/membership/preview";
 import { MembershipSidebarPromo } from "@/components/membership/MembershipSidebarPromo";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
@@ -92,7 +89,7 @@ export function DashboardSidebar({
   coachAccessTier = null,
   collapsed = false,
 }: DashboardSidebarProps) {
-  const pathname = usePathname();
+  const { pathname, markPending } = useOptimisticPathname();
   const prefix = variant === "coach" ? "/coach" : "/admin";
   const supportHref = `${prefix}/support`;
   const supportActive = Boolean(pathname?.startsWith(supportHref));
@@ -200,14 +197,8 @@ export function DashboardSidebar({
     membershipTierEnforcementEnabled &&
     !alreadyPremiumOrVip &&
     !inProgrammeBuild;
-  // Soft-launch: hide Membership until promo/enforcement is live; Premium/VIP
-  // (and programme coaches) still get the Membership link once tiers are enforced.
-  const showMembershipNav =
-    variant === "coach" &&
-    !membershipPreviewMode() &&
-    (!sidebarPromoSoftLaunch ||
-      (membershipTierEnforcementEnabled &&
-        (alreadyPremiumOrVip || inProgrammeBuild)));
+  // Temporarily hidden from the sidebar; page remains at /coach/membership.
+  const showMembershipNav = false;
   const membershipPageActive =
     pathname === "/coach/membership" || pathname === "/membership";
 
@@ -248,7 +239,10 @@ export function DashboardSidebar({
       <Link
         key={item.href}
         href={item.href}
-        onClick={closeMobileSheets}
+        onClick={() => {
+          markPending(item.href);
+          closeMobileSheets();
+        }}
         className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-2 text-center ${
           active ? SIDEBAR_NAV_ACTIVE : "text-slate-100/90 active:bg-white/10"
         }`}
@@ -281,6 +275,7 @@ export function DashboardSidebar({
           <Link
             href={item.href}
             onClick={() => {
+              markPending(item.href);
               onNavigate?.();
               closeMobileSheets();
             }}
@@ -357,6 +352,7 @@ export function DashboardSidebar({
                   <Link
                     href={item.href}
                     title={collapsed ? item.label : undefined}
+                    onClick={() => markPending(item.href)}
                     className={navLinkClass(active)}
                   >
                     <span className="relative shrink-0">
@@ -393,6 +389,7 @@ export function DashboardSidebar({
                     <Link
                       href={item.href}
                       title={collapsed ? item.label : undefined}
+                      onClick={() => markPending(item.href)}
                       className={navLinkClass(active)}
                     >
                       <span className="relative shrink-0">
@@ -510,6 +507,7 @@ export function DashboardSidebar({
             <Link
               href="/coach/membership"
               title={collapsed ? "Membership" : undefined}
+              onClick={() => markPending("/coach/membership")}
               className={`mb-1 ${navLinkClass(membershipPageActive)}`}
             >
               <CreditCard className="h-5 w-5 shrink-0 opacity-95" />
@@ -523,6 +521,7 @@ export function DashboardSidebar({
           <Link
             href={supportHref}
             title={collapsed ? "Support" : undefined}
+            onClick={() => markPending(supportHref)}
             className={`mb-1 ${navLinkClass(supportActive)}`}
           >
             <span className="relative shrink-0">
@@ -606,6 +605,10 @@ export function DashboardSidebar({
                   <Settings className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
                   Settings
                 </Link>
+                <DemoCoachToggle
+                  variant="menu"
+                  onAction={() => setAccountMenuOpen(false)}
+                />
                 <button
                   type="button"
                   role="menuitem"

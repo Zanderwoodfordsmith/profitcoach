@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import { loadCallTableRows } from "@/lib/loadCallTableRows";
@@ -170,24 +170,26 @@ export default function AdminCallsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Get Clients"
-        description="Call list for coaches; calendar view and booking settings are admin preview."
+        description="Calendar is the working view; the call list and booking settings are still available."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
-      <CallsHub
-        calls={calls}
-        loading={loading}
-        error={error}
-        showCoachColumn={true}
-        appOrigin={appOrigin}
-        callsBasePath="/admin/calls"
-        onCallsChange={setCalls}
-        coachFilterOptions={coachOptions}
-        coachFilter={coachFilter}
-        onCoachFilterChange={setCoachFilter}
-        onRowClick={navigateToCall}
-        emptyMessage="No calls found. Bookings from native calendars and GHL will appear here."
-      />
+      <Suspense fallback={<p className="text-sm text-slate-600">Loading calls…</p>}>
+        <CallsHub
+          calls={calls}
+          loading={loading}
+          error={error}
+          showCoachColumn={true}
+          appOrigin={appOrigin}
+          callsBasePath="/admin/calls"
+          onCallsChange={setCalls}
+          coachFilterOptions={coachOptions}
+          coachFilter={coachFilter}
+          onCoachFilterChange={setCoachFilter}
+          onRowClick={navigateToCall}
+          emptyMessage="No calls found. Bookings from native calendars and GHL will appear here."
+        />
+      </Suspense>
     </div>
   );
 }

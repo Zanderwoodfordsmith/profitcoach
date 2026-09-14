@@ -117,9 +117,12 @@ export function mapUnipileSearchItem(
       .filter(Boolean)
       .join(" · ") || null;
 
-  const headline = asString(rec.headline) ?? asString(rec.summary);
+  // Unipile Sales Nav search: `summary` is the profile About section;
+  // `current_positions[].description` is the role blurb. Prefer About.
+  const headline = asString(rec.headline);
   const about =
     asString(rec.about) ??
+    asString(rec.summary) ??
     asString(position?.description) ??
     headline;
 

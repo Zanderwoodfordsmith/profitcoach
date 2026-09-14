@@ -46,6 +46,13 @@ export const GATED_ROUTES: GatedRoute[] = [
       "Import your LinkedIn, pick who you help first, then lock the Ideal Client Profile and Avatar.",
   },
   {
+    prefix: "/coach/campaigns",
+    feature: "nav.marketing",
+    title: "Campaigns",
+    description:
+      "Run LinkedIn outreach campaigns that start conversations and book calls, without leaving Profit Coach.",
+  },
+  {
     prefix: "/coach/prospects",
     feature: "nav.marketing",
     title: "Prospects",
@@ -67,6 +74,20 @@ export const GATED_ROUTES: GatedRoute[] = [
       "See and manage your booked calls in one place, so your calendar and pipeline stay in sync.",
   },
   {
+    prefix: "/coach/share",
+    feature: "nav.marketing",
+    title: "Links",
+    description:
+      "Copy and send your assessments, booking pages, reports, and socials from one place.",
+  },
+  {
+    prefix: "/coach/links",
+    feature: "nav.marketing",
+    title: "Links",
+    description:
+      "Copy and send your assessments, booking pages, reports, and socials from one place.",
+  },
+  {
     prefix: "/coach/funnel-analyzer",
     feature: "nav.marketing",
     title: "Funnel Analyzer",
@@ -76,16 +97,16 @@ export const GATED_ROUTES: GatedRoute[] = [
   {
     prefix: "/coach/funnel-settings",
     feature: "nav.marketing",
-    title: "Get Clients settings",
+    title: "Lead magnets",
     description:
-      "Set up your share links, CRM sync, and funnel landing copy so leads flow into your pipeline.",
+      "Share Boss Score and Boss Pro, set your public URL, and edit the sequences that follow them.",
   },
   {
     prefix: "/coach/lead-magnets",
     feature: "nav.marketing",
     title: "Lead Magnets",
     description:
-      "Share your Boss Score and Boss Score Pro assessment links to attract owners into your funnel.",
+      "Share your Boss Score and Boss Score Pro assessments, and edit the sequences that follow them, from Campaigns.",
   },
   {
     prefix: "/coach/message-generator",

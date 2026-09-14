@@ -183,7 +183,7 @@ export async function resolveOrCreateContact(
       "Unknown";
   }
   if (!insertPayload.prospect_status && (input.type ?? "prospect") === "prospect") {
-    insertPayload.prospect_status = input.prospectStatus ?? "new";
+    insertPayload.prospect_status = input.prospectStatus ?? "leads";
   }
 
   const { data, error } = await tryInsertContactStripping(insertPayload);

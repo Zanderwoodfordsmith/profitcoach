@@ -9,7 +9,6 @@ import { ClassroomLessonPlayer } from "@/components/academy/ClassroomLessonPlaye
 import { UnsavedChangesDialog } from "@/components/academy/UnsavedChangesDialog";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import type {
-  HubCatalog,
   HubCourse,
   HubLesson,
 } from "@/lib/academy/hubCatalog";
@@ -23,7 +22,6 @@ const FORM_ID = "legacy-lesson-edit-form";
 const SHELL_TARGET = "__shell__";
 
 type Props = {
-  data: HubCatalog;
   course: HubCourse;
   lesson: HubLesson;
   initialVideoUrl?: string | null;
@@ -58,7 +56,6 @@ function chapterDraftFrom(chapter: LessonVideoChapter): ChapterDraft {
 }
 
 export function AdminClassroomLessonEditor({
-  data,
   course: initialCourse,
   lesson: initialLesson,
   initialVideoUrl = null,
@@ -575,7 +572,6 @@ export function AdminClassroomLessonEditor({
       ) : null}
 
       <ClassroomLessonPlayer
-        data={data}
         course={course}
         lesson={displayLesson}
         basePath={basePath}

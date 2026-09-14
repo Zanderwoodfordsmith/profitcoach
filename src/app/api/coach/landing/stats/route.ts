@@ -8,7 +8,7 @@ import {
 } from "@/lib/landingAnalytics";
 
 export async function GET(request: Request) {
-  const auth = await requireCoachRequest(request);
+  const auth = await requireCoachRequest(request, { allowAdminSelf: true });
   if (auth.error || !auth.userId) {
     const status =
       auth.error === "Admin must pass x-impersonate-coach-id for this resource."

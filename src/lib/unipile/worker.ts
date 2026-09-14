@@ -12,6 +12,20 @@ import {
   listUnipileUserPosts,
 } from "@/lib/unipile/client";
 import { buildMessageBody } from "@/lib/unipile/campaigns";
+import { consumeNonOutboundSteps } from "@/lib/unipile/sequenceAdvance";
+import {
+  campaignStepCreatesJob,
+  isLinkedInOutreachStep,
+} from "@/lib/unipile/campaignStepTypes";
+import {
+  engageInstagramLatestPost,
+  followInstagramUser,
+  followLinkedInUser,
+  isMissingChannelContactError,
+  sendCampaignChannelMessage,
+  sendCampaignEmail,
+  sendCampaignWhatsApp,
+} from "@/lib/unipile/channelOutreach";
 import {
   hrefFromUnipileLinkedIn,
   linkedInPublicIdentifier,
@@ -22,34 +36,85 @@ import {
   mergeLeadFields,
   type OutreachLeadFields,
 } from "@/lib/unipile/profileVars";
+import {
+  nextCampaignSendAt,
+  parseCampaignSendRules,
+} from "@/lib/unipile/campaignSendWindow";
+import {
+  bumpDailyPlanAssigned,
+  ensureDailySendPlan,
+  isInvitePaused,
+  isRateLimited,
+  loadAccountSendSettings,
+  nextActionDelayForAccount,
+  pauseInvitesUntil,
+  setRateLimitedUntil,
+  type AccountSendSettings,
+} from "@/lib/unipile/accountSendPlan";
 
+/** Global jobs claimed per cron tick (across coaches). */
 const MAX_JOBS_PER_TICK = 8;
+/** Lookahead so we can pick one job per LinkedIn account. */
+const CANDIDATE_JOBS_PER_TICK = 48;
 
 function jitterSeconds(min: number, max: number) {
   return min + Math.floor(Math.random() * Math.max(1, max - min + 1));
 }
 
-async function countInvitesToday(coachId: string): Promise<number> {
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
-  const { data: jobs } = await supabaseAdmin
-    .from("linkedin_send_jobs")
-    .select("id, step_id")
-    .eq("coach_id", coachId)
-    .eq("status", "succeeded")
-    .gte("updated_at", start.toISOString());
-  if (!jobs?.length) return 0;
-  const stepIds = [...new Set(jobs.map((j) => j.step_id as string))];
-  const { data: steps } = await supabaseAdmin
-    .from("linkedin_campaign_steps")
-    .select("id, step_type")
-    .in("id", stepIds);
-  const inviteSteps = new Set(
-    (steps ?? [])
-      .filter((s) => s.step_type === "invite")
-      .map((s) => s.id as string)
+function isCannotResendYet(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /cannot_resend_yet|422/i.test(message);
+}
+
+function isHttp429(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /too many requests|\b429\b/i.test(message);
+}
+
+/**
+ * At most one due outbound job per outreach account (and per coach without one).
+ * Prefer earlier scheduled_for, then higher-priority campaigns.
+ */
+async function pickJobsOnePerAccount(
+  candidates: Array<Record<string, unknown>>
+): Promise<Array<Record<string, unknown>>> {
+  if (!candidates.length) return [];
+  const campaignIds = [
+    ...new Set(candidates.map((j) => String(j.campaign_id || ""))),
+  ].filter(Boolean);
+  const { data: campaigns } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("id, outreach_account_id, outreach_priority, outreach_weight, status")
+    .in("id", campaignIds);
+  const byId = new Map(
+    (campaigns ?? []).map((c) => [c.id as string, c] as const)
   );
-  return jobs.filter((j) => inviteSteps.has(j.step_id as string)).length;
+
+  const ranked = [...candidates].sort((a, b) => {
+    const ca = byId.get(String(a.campaign_id));
+    const cb = byId.get(String(b.campaign_id));
+    const pa = Number(ca?.outreach_priority ?? 100);
+    const pb = Number(cb?.outreach_priority ?? 100);
+    if (pa !== pb) return pa - pb;
+    const wa = Number(cb?.outreach_weight ?? 1) - Number(ca?.outreach_weight ?? 1);
+    if (wa !== 0) return wa;
+    return String(a.scheduled_for).localeCompare(String(b.scheduled_for));
+  });
+
+  const picked: Array<Record<string, unknown>> = [];
+  const seenAccounts = new Set<string>();
+  for (const job of ranked) {
+    if (picked.length >= MAX_JOBS_PER_TICK) break;
+    const campaign = byId.get(String(job.campaign_id));
+    if (!campaign || campaign.status !== "running") continue;
+    const accountKey =
+      (campaign.outreach_account_id as string | null) ||
+      `coach:${String(job.coach_id)}`;
+    if (seenAccounts.has(accountKey)) continue;
+    seenAccounts.add(accountKey);
+    picked.push(job);
+  }
+  return picked;
 }
 
 async function resolveProviderId(
@@ -178,28 +243,26 @@ export async function advanceLeadAfterStep(input: {
     .eq("campaign_id", input.campaignId)
     .order("position", { ascending: true });
 
-  let pos = input.nextPosition;
-  let nextAction = new Date();
-  let status = "in_sequence";
+  const consumed = await consumeNonOutboundSteps({
+    steps: (steps ?? []) as Array<{
+      id?: string;
+      position: number;
+      step_type: string;
+      wait_hours?: number | null;
+      config?: unknown;
+    }>,
+    lead: input.lead,
+    campaignId: input.campaignId,
+    coachId: input.coachId,
+    startPosition: input.nextPosition,
+  });
 
-  // Consume wait steps immediately by scheduling
-  while (true) {
-    const step = (steps ?? []).find((s) => s.position === pos);
-    if (!step) {
-      status = "completed";
-      break;
-    }
-    if (step.step_type === "wait") {
-      const hours = Number(step.wait_hours ?? 24);
-      nextAction = new Date(Date.now() + hours * 3600 * 1000);
-      pos += 1;
-      continue;
-    }
-    break;
-  }
+  const pos = consumed.position;
+  const nextAction = consumed.nextAction;
+  let status = consumed.completed ? "completed" : "in_sequence";
 
   const finalStep = (steps ?? []).find((s) => s.position === pos);
-  if (!finalStep && status !== "completed") status = "completed";
+  if (!finalStep) status = "completed";
 
   await supabaseAdmin
     .from("linkedin_campaign_leads")
@@ -215,11 +278,33 @@ export async function advanceLeadAfterStep(input: {
     })
     .eq("id", input.lead.id);
 
-  if (status !== "completed" && finalStep && finalStep.step_type !== "wait") {
+  const nextStatus =
+    status === "completed"
+      ? "completed"
+      : (input.patch?.status as string) || status;
+  if (nextStatus === "connected" || nextStatus === "completed") {
+    const { fireCoachWatchRulesSafe } = await import("@/lib/coachWatch/fire");
+    fireCoachWatchRulesSafe({
+      coachId: input.coachId,
+      scopeKind: "campaign",
+      scopeId: input.campaignId,
+      event: nextStatus === "connected" ? "connected" : "sequence_done",
+      personName: [input.lead.first_name, input.lead.last_name]
+        .filter(Boolean)
+        .join(" "),
+    });
+  }
+
+  if (
+    status !== "completed" &&
+    finalStep &&
+    campaignStepCreatesJob(String(finalStep.step_type), finalStep.config)
+  ) {
     const jobStatus = jobStatusForStep(
       finalStep.step_type === "message"
         ? (finalStep.send_mode as string | null)
-        : "auto"
+        : "auto",
+      String(finalStep.step_type)
     );
     await supabaseAdmin.from("linkedin_send_jobs").insert({
       coach_id: input.coachId,
@@ -264,33 +349,51 @@ export async function processOutreachJobsTick(): Promise<{
   const fallback = await processRemindFallbacks();
 
   const now = new Date().toISOString();
-  const { data: jobs, error } = await supabaseAdmin
+  const { data: candidates, error } = await supabaseAdmin
     .from("linkedin_send_jobs")
     .select("*")
     .eq("status", "pending")
     .lte("scheduled_for", now)
     .order("scheduled_for", { ascending: true })
-    .limit(MAX_JOBS_PER_TICK);
+    .limit(CANDIDATE_JOBS_PER_TICK);
 
   if (error) throw new Error(error.message);
+
+  const jobs = await pickJobsOnePerAccount(
+    (candidates ?? []) as Array<Record<string, unknown>>
+  );
 
   let processed = 0;
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
 
-  for (const job of jobs ?? []) {
+  for (const rawJob of jobs) {
     processed += 1;
-    await supabaseAdmin
+    const job = {
+      ...rawJob,
+      id: String(rawJob.id),
+      coach_id: String(rawJob.coach_id),
+      campaign_id: String(rawJob.campaign_id),
+      lead_id: String(rawJob.lead_id),
+      step_id: String(rawJob.step_id),
+      attempts: Number(rawJob.attempts) || 0,
+    };
+    const claim = await supabaseAdmin
       .from("linkedin_send_jobs")
-      .update({ status: "running", attempts: (job.attempts ?? 0) + 1 })
+      .update({ status: "running", attempts: job.attempts + 1 })
       .eq("id", job.id)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
+    if (!claim.data) continue;
 
     try {
       const { data: campaign } = await supabaseAdmin
         .from("linkedin_campaigns")
-        .select("*, linkedin_outreach_accounts(unipile_account_id, status)")
+        .select(
+          "*, linkedin_outreach_accounts(id, unipile_account_id, status, timezone, send_rules, weekly_invite_target, daily_message_target, daily_react_target, min_action_delay_seconds, max_action_delay_seconds, warmup_started_at, invite_paused_until, rate_limited_until, daily_send_plan, ssi_score, coach_id)"
+        )
         .eq("id", job.campaign_id)
         .maybeSingle();
 
@@ -300,16 +403,6 @@ export async function processOutreachJobsTick(): Promise<{
           .update({ status: "cancelled", last_error: "Campaign not running" })
           .eq("id", job.id);
         continue;
-      }
-
-      const accountRel = campaign.linkedin_outreach_accounts as
-        | { unipile_account_id?: string; status?: string }
-        | { unipile_account_id?: string; status?: string }[]
-        | null;
-      const account = Array.isArray(accountRel) ? accountRel[0] : accountRel;
-      const accountId = account?.unipile_account_id;
-      if (!accountId || account?.status === "CREDENTIALS") {
-        throw new Error("LinkedIn account missing or disconnected.");
       }
 
       const { data: step } = await supabaseAdmin
@@ -324,10 +417,11 @@ export async function processOutreachJobsTick(): Promise<{
         .maybeSingle();
       if (!step || !lead) throw new Error("Step or lead missing.");
 
-      // Remind steps must never auto-send — park for coach (or fallback tick).
+      // Remind / call steps must never auto-run — park for coach.
       if (
-        step.step_type === "message" &&
-        (step.send_mode as string) === "remind"
+        step.step_type === "call" ||
+        (step.step_type === "message" &&
+          (step.send_mode as string) === "remind")
       ) {
         await supabaseAdmin
           .from("linkedin_send_jobs")
@@ -338,6 +432,84 @@ export async function processOutreachJobsTick(): Promise<{
           .eq("id", job.id);
         continue;
       }
+
+      if ((campaign.channel as string | undefined) === "email") {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "cancelled",
+            last_error: "Email campaigns are not sent automatically yet.",
+          })
+          .eq("id", job.id);
+        continue;
+      }
+
+      const accountRel = campaign.linkedin_outreach_accounts as
+        | AccountSendSettings
+        | AccountSendSettings[]
+        | null;
+      let sendAccount = (
+        Array.isArray(accountRel) ? accountRel[0] : accountRel
+      ) as AccountSendSettings | null;
+
+      if (campaign.outreach_account_id && !sendAccount) {
+        sendAccount = await loadAccountSendSettings(
+          campaign.outreach_account_id as string
+        );
+      }
+
+      if (sendAccount && isRateLimited(sendAccount)) {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "pending",
+            scheduled_for: sendAccount.rate_limited_until,
+            last_error: "Account rate-limited; deferred.",
+          })
+          .eq("id", job.id);
+        continue;
+      }
+
+      let plan = sendAccount
+        ? (await ensureDailySendPlan(sendAccount)).plan
+        : null;
+      if (sendAccount) {
+        const refreshed = await loadAccountSendSettings(sendAccount.id);
+        if (refreshed) sendAccount = refreshed;
+      }
+
+      const timezone =
+        sendAccount?.timezone?.trim() ||
+        (campaign.timezone as string | null)?.trim() ||
+        "Europe/London";
+      const sendRules = parseCampaignSendRules(
+        sendAccount?.send_rules ?? campaign.send_rules
+      );
+      const sendAt = nextCampaignSendAt({ timezone, rules: sendRules });
+      if (sendAt.getTime() > Date.now() + 15_000) {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "pending",
+            scheduled_for: new Date(
+              sendAt.getTime() + jitterSeconds(60, 900) * 1000
+            ).toISOString(),
+            last_error: "Outside sending hours; deferred.",
+          })
+          .eq("id", job.id);
+        continue;
+      }
+
+      const linkedInAccountId = sendAccount?.unipile_account_id;
+      const stepType = step.step_type as string;
+      const needsLinkedIn = isLinkedInOutreachStep(stepType);
+      if (
+        needsLinkedIn &&
+        (!linkedInAccountId || sendAccount?.status === "CREDENTIALS")
+      ) {
+        throw new Error("LinkedIn account missing or disconnected.");
+      }
+      const accountId = linkedInAccountId ?? "";
 
       if (
         [
@@ -354,47 +526,86 @@ export async function processOutreachJobsTick(): Promise<{
       ) {
         await supabaseAdmin
           .from("linkedin_send_jobs")
-          .update({ status: "cancelled", last_error: `Lead status ${lead.status}` })
+          .update({
+            status: "cancelled",
+            last_error: `Lead status ${lead.status}`,
+          })
           .eq("id", job.id);
         continue;
       }
 
-      // Volume: invites per day
-      if (step.step_type === "invite") {
-        const used = await countInvitesToday(job.coach_id);
-        if (used >= (campaign.daily_invite_limit ?? 20)) {
-          const tomorrow = new Date();
-          tomorrow.setUTCHours(24, jitterSeconds(5, 30), 0, 0);
+      const isInvite =
+        stepType === "invite" || stepType === "instagram_follow";
+      const isMessage =
+        stepType === "message" ||
+        stepType === "instagram" ||
+        stepType === "messenger";
+      const isReact =
+        stepType === "react" || stepType === "instagram_react";
+
+      if (isInvite && sendAccount && isInvitePaused(sendAccount)) {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "pending",
+            scheduled_for:
+              sendAccount.invite_paused_until ||
+              new Date(Date.now() + 3600_000).toISOString(),
+            last_error: "Invite pause active; deferred.",
+          })
+          .eq("id", job.id);
+        continue;
+      }
+
+      // Account-level daily quotas (from today's plan).
+      if (plan && sendAccount) {
+        const overInvite =
+          isInvite && plan.invitesAssigned >= plan.inviteQuota;
+        const overMessage =
+          isMessage && plan.messagesAssigned >= plan.messageQuota;
+        const overReact = isReact && plan.reactsAssigned >= plan.reactQuota;
+        if (overInvite || overMessage || overReact) {
+          const nextWindow = nextCampaignSendAt({
+            timezone,
+            rules: sendRules,
+            afterCurrentWindow: true,
+          });
           await supabaseAdmin
             .from("linkedin_send_jobs")
             .update({
               status: "pending",
-              scheduled_for: tomorrow.toISOString(),
-              last_error: "Daily invite limit reached; deferred.",
+              scheduled_for: new Date(
+                nextWindow.getTime() + jitterSeconds(60, 600) * 1000
+              ).toISOString(),
+              last_error: "Account daily limit reached; deferred.",
             })
             .eq("id", job.id);
           continue;
         }
       }
 
-      const resolved = await resolveProviderId(
-        lead as {
-          id: string;
-          linkedin_url: string | null;
-          linkedin_provider_id: string | null;
-          first_name?: string | null;
-          last_name?: string | null;
-          company?: string | null;
-          title?: string | null;
-          metadata: Record<string, unknown> | null;
-        },
-        accountId
-      );
-      const providerId = resolved.providerId;
-      if (!providerId) throw new Error("Could not resolve LinkedIn provider id.");
-      const leadForMessage = { ...lead, ...resolved.lead };
+      let providerId: string | null = lead.linkedin_provider_id as string | null;
+      let leadForMessage = lead;
+      if (needsLinkedIn) {
+        const resolved = await resolveProviderId(
+          lead as {
+            id: string;
+            linkedin_url: string | null;
+            linkedin_provider_id: string | null;
+            first_name?: string | null;
+            last_name?: string | null;
+            company?: string | null;
+            title?: string | null;
+            metadata: Record<string, unknown> | null;
+          },
+          accountId
+        );
+        providerId = resolved.providerId;
+        if (!providerId) throw new Error("Could not resolve LinkedIn provider id.");
+        leadForMessage = { ...lead, ...resolved.lead };
+      }
 
-      const { resolveStepBodyForLead, buildLeadAssessmentUrl } = await import(
+      const { resolveStepBodyForLead, buildLeadAssessmentUrl, buildLeadAssessmentProUrl } = await import(
         "@/lib/unipile/interest"
       );
       const { data: coachRow } = await supabaseAdmin
@@ -412,11 +623,28 @@ export async function processOutreachJobsTick(): Promise<{
         lastName: leadForMessage.last_name as string | null,
         company: leadForMessage.company as string | null,
       });
+      const assessmentProUrl = await buildLeadAssessmentProUrl({
+        coachId: job.coach_id,
+        firstName: leadForMessage.first_name as string | null,
+        lastName: leadForMessage.last_name as string | null,
+        company: leadForMessage.company as string | null,
+      });
+      const { loadScorecardOutreachVars } = await import(
+        "@/lib/unipile/scorecardVars"
+      );
+      const scorecardVars = await loadScorecardOutreachVars({
+        coachId: job.coach_id,
+        contactId: (lead.contact_id as string | null) ?? null,
+      });
       const templateExtras = {
         assessment_url: assessmentUrl,
         scorecard_url: assessmentUrl,
+        assessment_pro_url: assessmentProUrl,
         coach_name: coachName,
         review_name: "Business Clarity Review",
+        ...(scorecardVars ?? {}),
+        boss_score_report_link:
+          scorecardVars?.boss_score_report_link || assessmentUrl || "",
       };
 
       async function renderedStepBody() {
@@ -426,6 +654,7 @@ export async function processOutreachJobsTick(): Promise<{
           body: (step.body as string) || "",
           variants: step.variants,
           abAssignments: lead.ab_assignments,
+          preferredVariantKey: scorecardVars?.business_level_number || null,
         });
         return {
           text: buildMessageBody(picked.body, leadForMessage, templateExtras),
@@ -439,7 +668,7 @@ export async function processOutreachJobsTick(): Promise<{
         const { text: note } = await renderedStepBody();
         const res = await sendUnipileInvitation({
           account_id: accountId,
-          provider_id: providerId,
+          provider_id: providerId as string,
           message: note || undefined,
         });
         if (!res.ok) {
@@ -488,7 +717,7 @@ export async function processOutreachJobsTick(): Promise<{
         } else {
           const res = await startUnipileChat({
             account_id: accountId,
-            attendees_ids: [providerId],
+            attendees_ids: [providerId as string],
             text,
           });
           if (!res.ok) throw new Error(res.error || "Start chat failed");
@@ -500,6 +729,192 @@ export async function processOutreachJobsTick(): Promise<{
               .update({ unipile_chat_id: chatId })
               .eq("id", lead.id);
           }
+        }
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "visit") {
+        const meta = (lead.metadata || {}) as Record<string, unknown>;
+        const pub =
+          (meta.public_identifier as string | undefined) ||
+          (lead.linkedin_url
+            ? linkedInPublicIdentifier(lead.linkedin_url as string)
+            : null) ||
+          providerId;
+        if (!pub) throw new Error("No profile identifier for visit.");
+        const res = await resolveUnipileUser(String(pub), accountId, {
+          notify: true,
+        });
+        if (!res.ok) throw new Error(res.error || "Profile visit failed");
+        providerRef = String(pub);
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "follow") {
+        const meta = (lead.metadata || {}) as Record<string, unknown>;
+        const pub =
+          (meta.public_identifier as string | undefined) ||
+          (lead.linkedin_url
+            ? linkedInPublicIdentifier(lead.linkedin_url as string)
+            : null) ||
+          providerId;
+        if (!pub) throw new Error("No profile identifier to follow.");
+        providerRef = await followLinkedInUser({
+          accountId,
+          identifier: String(pub),
+        });
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "instagram" || step.step_type === "messenger") {
+        const { text } = await renderedStepBody();
+        const sent = await sendCampaignChannelMessage({
+          coachId: job.coach_id,
+          channel: step.step_type,
+          lead: {
+            id: lead.id as string,
+            contact_id: (lead.contact_id as string | null) ?? null,
+            unipile_chat_id: (lead.unipile_chat_id as string | null) ?? null,
+            metadata: (lead.metadata || {}) as Record<string, unknown>,
+          },
+          text,
+        });
+        providerRef = sent.messageId;
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (
+        step.step_type === "instagram_react" ||
+        step.step_type === "instagram_comment"
+      ) {
+        const { text } =
+          step.step_type === "instagram_comment"
+            ? await renderedStepBody()
+            : { text: "" };
+        providerRef = await engageInstagramLatestPost({
+          coachId: job.coach_id,
+          lead: {
+            id: lead.id as string,
+            contact_id: (lead.contact_id as string | null) ?? null,
+            metadata: (lead.metadata || {}) as Record<string, unknown>,
+          },
+          mode: step.step_type === "instagram_react" ? "react" : "comment",
+          text,
+        });
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "instagram_follow") {
+        providerRef = await followInstagramUser({
+          coachId: job.coach_id,
+          lead: {
+            id: lead.id as string,
+            contact_id: (lead.contact_id as string | null) ?? null,
+            metadata: (lead.metadata || {}) as Record<string, unknown>,
+          },
+        });
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "email") {
+        const { text } = await renderedStepBody();
+        try {
+          providerRef = await sendCampaignEmail({
+            coachId: job.coach_id,
+            lead: {
+              id: lead.id as string,
+              contact_id: (lead.contact_id as string | null) ?? null,
+              first_name: (lead.first_name as string | null) ?? null,
+              last_name: (lead.last_name as string | null) ?? null,
+            },
+            packedBody: text,
+          });
+        } catch (err) {
+          if (!isMissingChannelContactError(err)) throw err;
+          await advanceLeadAfterStep({
+            lead,
+            campaignId: job.campaign_id,
+            coachId: job.coach_id,
+            nextPosition: (step.position as number) + 1,
+            patch: { status: "in_sequence" },
+          });
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "succeeded",
+              provider_ref: null,
+              sent_by: "worker",
+              last_error: "Skipped: no email on this lead.",
+            })
+            .eq("id", job.id);
+          succeeded += 1;
+          continue;
+        }
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "whatsapp") {
+        const { text } = await renderedStepBody();
+        try {
+          const sent = await sendCampaignWhatsApp({
+            coachId: job.coach_id,
+            lead: {
+              id: lead.id as string,
+              contact_id: (lead.contact_id as string | null) ?? null,
+              unipile_chat_id: (lead.unipile_chat_id as string | null) ?? null,
+              metadata: (lead.metadata || {}) as Record<string, unknown>,
+            },
+            text,
+          });
+          providerRef = sent.messageId;
+        } catch (err) {
+          if (!isMissingChannelContactError(err)) throw err;
+          await advanceLeadAfterStep({
+            lead,
+            campaignId: job.campaign_id,
+            coachId: job.coach_id,
+            nextPosition: (step.position as number) + 1,
+            patch: { status: "in_sequence" },
+          });
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "succeeded",
+              provider_ref: null,
+              sent_by: "worker",
+              last_error: "Skipped: no phone on this lead.",
+            })
+            .eq("id", job.id);
+          succeeded += 1;
+          continue;
         }
         await advanceLeadAfterStep({
           lead,
@@ -558,26 +973,63 @@ export async function processOutreachJobsTick(): Promise<{
           nextPosition: (step.position as number) + 1,
           patch: { status: "in_sequence" },
         });
+      } else if (
+        step.step_type === "notify" ||
+        step.step_type === "add_to_campaign"
+      ) {
+        await advanceLeadAfterStep({
+          lead,
+          campaignId: job.campaign_id,
+          coachId: job.coach_id,
+          nextPosition: (step.position as number) + 1,
+          patch: { status: "in_sequence" },
+        });
+      } else if (step.step_type === "call") {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "awaiting_coach",
+            last_error: null,
+          })
+          .eq("id", job.id);
+        continue;
       } else {
         throw new Error(`Unsupported step type ${step.step_type}`);
       }
 
-      // Space out next actions for this account
-      const delay = Math.max(
-        60,
-        (campaign.min_action_delay_seconds as number) || 180
-      ) + jitterSeconds(0, 60);
+      // Space out next actions for this account (one outbound at a time).
+      const delay = sendAccount
+        ? nextActionDelayForAccount(sendAccount, String(job.id))
+        : Math.max(60, (campaign.min_action_delay_seconds as number) || 180) +
+          jitterSeconds(0, 60);
       const deferUntil = new Date(Date.now() + delay * 1000).toISOString();
-      await supabaseAdmin
+      let pendingQuery = supabaseAdmin
         .from("linkedin_send_jobs")
         .update({
-          status: "pending",
           scheduled_for: deferUntil,
         })
         .eq("coach_id", job.coach_id)
         .eq("status", "pending")
         .neq("id", job.id)
         .lt("scheduled_for", deferUntil);
+      if (campaign.outreach_account_id) {
+        const { data: siblingCampaigns } = await supabaseAdmin
+          .from("linkedin_campaigns")
+          .select("id")
+          .eq("outreach_account_id", campaign.outreach_account_id as string);
+        const siblingIds = (siblingCampaigns ?? []).map((c) => c.id as string);
+        if (siblingIds.length) {
+          pendingQuery = pendingQuery.in("campaign_id", siblingIds);
+        }
+      }
+      await pendingQuery;
+
+      if (sendAccount) {
+        if (isInvite) await bumpDailyPlanAssigned(sendAccount.id, "invite");
+        else if (isMessage)
+          await bumpDailyPlanAssigned(sendAccount.id, "message");
+        else if (isReact) await bumpDailyPlanAssigned(sendAccount.id, "react");
+      }
 
       await supabaseAdmin
         .from("linkedin_send_jobs")
@@ -590,9 +1042,50 @@ export async function processOutreachJobsTick(): Promise<{
         .eq("id", job.id);
       succeeded += 1;
     } catch (err) {
-      failed += 1;
       const message = err instanceof Error ? err.message : "Job failed";
       errors.push(message);
+
+      // Circuit breakers — do not burn the account on LinkedIn throttles.
+      try {
+        const { data: camp } = await supabaseAdmin
+          .from("linkedin_campaigns")
+          .select("outreach_account_id")
+          .eq("id", job.campaign_id)
+          .maybeSingle();
+        const accId = camp?.outreach_account_id as string | null;
+        if (accId && isCannotResendYet(err)) {
+          const until = new Date(Date.now() + 24 * 3600 * 1000);
+          await pauseInvitesUntil(accId, until, "cannot_resend_yet");
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "pending",
+              scheduled_for: until.toISOString(),
+              last_error: "LinkedIn invite limit; paused 24h.",
+            })
+            .eq("id", job.id);
+          continue;
+        }
+        if (accId && isHttp429(err)) {
+          const until = new Date(
+            Date.now() + (30 + jitterSeconds(0, 90)) * 60 * 1000
+          );
+          await setRateLimitedUntil(accId, until);
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "pending",
+              scheduled_for: until.toISOString(),
+              last_error: "Rate limited; backing off.",
+            })
+            .eq("id", job.id);
+          continue;
+        }
+      } catch {
+        /* fall through to fail the job */
+      }
+
+      failed += 1;
       await supabaseAdmin
         .from("linkedin_send_jobs")
         .update({ status: "failed", last_error: message })

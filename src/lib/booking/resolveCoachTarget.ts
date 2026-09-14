@@ -88,6 +88,24 @@ export async function resolveCoachTarget(input: {
   };
 }
 
+/** Whether this coach/admin session may read or write the given coach's data. */
+export function canAccessCoachResource(
+  auth: {
+    role: string;
+    userId: string;
+    impersonateCoachId: string | null;
+  },
+  coachId: string
+): boolean {
+  if (auth.role === "admin") {
+    if (auth.impersonateCoachId && auth.impersonateCoachId !== coachId) {
+      return false;
+    }
+    return true;
+  }
+  return auth.userId === coachId;
+}
+
 export async function requireCoachOrAdmin(request: Request): Promise<
   | { error: string; userId: null; role: null; impersonateCoachId: null }
   | {

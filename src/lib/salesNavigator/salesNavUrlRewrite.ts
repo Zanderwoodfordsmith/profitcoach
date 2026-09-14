@@ -63,52 +63,74 @@ function yearsBucketFilterEncoded(
   return `(type%3A${type}%2Cvalues%3AList(${parts.join("%2C")}))`;
 }
 
-/** Remove one encoded filter block by type (e.g. COMPANY_HEADCOUNT). */
-function removeFilterType(encodedQuery: string, type: string): string {
+/**
+ * Bounds of one encoded `(type%3A…)` filter block, or null.
+ * LinkedIn rejects some searches when filters are reordered — prefer in-place
+ * replace over remove + insert-at-front.
+ */
+function findFilterBlock(
+  encodedQuery: string,
+  type: string
+): { start: number; end: number } | null {
   const marker = `type%3A${type}%2C`;
-  let out = encodedQuery;
-  for (;;) {
-    const idx = out.indexOf(marker);
-    if (idx === -1) break;
-    let start = idx;
-    while (start > 0 && out[start - 1] !== "(") start -= 1;
-    if (start > 0) start -= 1;
-    let depth = 0;
-    let end = start;
-    for (; end < out.length; end++) {
-      if (out[end] === "(") depth += 1;
-      if (out[end] === ")") {
-        depth -= 1;
-        if (depth === 0) {
-          end += 1;
-          break;
-        }
+  const idx = encodedQuery.indexOf(marker);
+  if (idx === -1) return null;
+  let start = idx;
+  while (start > 0 && encodedQuery[start - 1] !== "(") start -= 1;
+  if (start > 0) start -= 1;
+  let depth = 0;
+  let end = start;
+  for (; end < encodedQuery.length; end++) {
+    if (encodedQuery[end] === "(") depth += 1;
+    if (encodedQuery[end] === ")") {
+      depth -= 1;
+      if (depth === 0) {
+        end += 1;
+        break;
       }
     }
-    if (end < out.length && out[end] === ",") {
-      out = out.slice(0, start) + out.slice(end + 1);
-    } else if (start > 0 && out[start - 1] === ",") {
-      out = out.slice(0, start - 1) + out.slice(end);
-    } else {
-      out = out.slice(0, start) + out.slice(end);
-    }
   }
-  return out;
+  return { start, end };
 }
 
-function insertFilter(encodedQuery: string, filter: string): string {
+/** Replace an existing filter in place, or append inside filters%3AList(…). */
+function replaceOrAppendFilter(
+  encodedQuery: string,
+  type: string,
+  filter: string
+): string {
+  const existing = findFilterBlock(encodedQuery, type);
+  if (existing) {
+    return (
+      encodedQuery.slice(0, existing.start) +
+      filter +
+      encodedQuery.slice(existing.end)
+    );
+  }
+
   const listMarker = "filters%3AList(";
   const idx = encodedQuery.indexOf(listMarker);
   if (idx === -1) {
     throw new Error("Could not locate filters list in Sales Nav URL.");
   }
-  const insertAt = idx + listMarker.length;
-  const prefix = encodedQuery.slice(0, insertAt);
-  const suffix = encodedQuery.slice(insertAt);
-  if (suffix.startsWith(")")) {
-    return `${prefix}${filter}${suffix}`;
+  const openParen = idx + listMarker.length - 1;
+  let depth = 0;
+  let close = openParen;
+  for (; close < encodedQuery.length; close++) {
+    if (encodedQuery[close] === "(") depth += 1;
+    if (encodedQuery[close] === ")") {
+      depth -= 1;
+      if (depth === 0) break;
+    }
   }
-  return `${prefix}${filter}%2C${suffix}`;
+  if (close >= encodedQuery.length) {
+    throw new Error("Could not locate end of filters list in Sales Nav URL.");
+  }
+  const inner = encodedQuery.slice(openParen + 1, close);
+  const nextInner = inner ? `${inner}%2C${filter}` : filter;
+  return (
+    encodedQuery.slice(0, openParen + 1) + nextInner + encodedQuery.slice(close)
+  );
 }
 
 function rebuildSalesNavUrl(salesNavUrl: string, encodedQuery: string): string {
@@ -164,9 +186,11 @@ export function rewriteSalesNavUrlHeadcounts(
   }
   const query = extractQueryParam(salesNavUrl);
   if (!query) throw new Error("Sales Nav URL is missing query.");
-  const without = removeFilterType(query, "COMPANY_HEADCOUNT");
   const filter = headcountFilterEncoded(bands);
-  return rebuildSalesNavUrl(salesNavUrl, insertFilter(without, filter));
+  return rebuildSalesNavUrl(
+    salesNavUrl,
+    replaceOrAppendFilter(query, "COMPANY_HEADCOUNT", filter)
+  );
 }
 
 export function rewriteSalesNavUrlYearsAtCompany(
@@ -176,9 +200,11 @@ export function rewriteSalesNavUrlYearsAtCompany(
   if (yearsIds.length === 0) return salesNavUrl;
   const query = extractQueryParam(salesNavUrl);
   if (!query) throw new Error("Sales Nav URL is missing query.");
-  const without = removeFilterType(query, "YEARS_AT_CURRENT_COMPANY");
   const filter = yearsBucketFilterEncoded("YEARS_AT_CURRENT_COMPANY", yearsIds);
-  return rebuildSalesNavUrl(salesNavUrl, insertFilter(without, filter));
+  return rebuildSalesNavUrl(
+    salesNavUrl,
+    replaceOrAppendFilter(query, "YEARS_AT_CURRENT_COMPANY", filter)
+  );
 }
 
 /** LinkedIn SN "Years in current position" — same 1–5 bucket ids as company tenure. */
@@ -189,9 +215,11 @@ export function rewriteSalesNavUrlYearsAtPosition(
   if (yearsIds.length === 0) return salesNavUrl;
   const query = extractQueryParam(salesNavUrl);
   if (!query) throw new Error("Sales Nav URL is missing query.");
-  const without = removeFilterType(query, "YEARS_AT_CURRENT_POSITION");
   const filter = yearsBucketFilterEncoded("YEARS_AT_CURRENT_POSITION", yearsIds);
-  return rebuildSalesNavUrl(salesNavUrl, insertFilter(without, filter));
+  return rebuildSalesNavUrl(
+    salesNavUrl,
+    replaceOrAppendFilter(query, "YEARS_AT_CURRENT_POSITION", filter)
+  );
 }
 
 export function queryBlobFromSalesNavUrl(salesNavUrl: string): string {

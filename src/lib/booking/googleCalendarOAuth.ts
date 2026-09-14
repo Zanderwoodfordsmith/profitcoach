@@ -5,7 +5,7 @@ export type GoogleCalendarOAuthState = {
   nonce: string;
   iat: number;
   exp: number;
-  /** Relative path to return after connect, e.g. /coach/settings?tab=calendar */
+  /** Relative path to return after connect, e.g. /coach/calls?tab=settings */
   returnTo: string;
 };
 

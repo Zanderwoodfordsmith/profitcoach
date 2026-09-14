@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
-import { createCampaign, listCampaigns } from "@/lib/unipile/campaigns";
+import {
+  createCampaign,
+  listArchivedCampaigns,
+  listCampaigns,
+} from "@/lib/unipile/campaigns";
 
 export async function GET(request: Request) {
   const auth = await requireOutreachCoach(request);
@@ -8,7 +12,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
   try {
-    const campaigns = await listCampaigns(auth.coachId);
+    const archivedOnly =
+      new URL(request.url).searchParams.get("archived") === "1";
+    const campaigns = archivedOnly
+      ? await listArchivedCampaigns(auth.coachId)
+      : await listCampaigns(auth.coachId);
     return NextResponse.json({ campaigns });
   } catch (err) {
     return NextResponse.json(
@@ -26,11 +34,13 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as {
     name?: string;
     outreach_account_id?: string | null;
+    channel?: "linkedin" | "email";
   };
   try {
     const campaign = await createCampaign(auth.coachId, {
       name: body.name || "Untitled campaign",
       outreach_account_id: body.outreach_account_id ?? null,
+      channel: body.channel === "email" ? "email" : "linkedin",
     });
     return NextResponse.json({ campaign });
   } catch (err) {

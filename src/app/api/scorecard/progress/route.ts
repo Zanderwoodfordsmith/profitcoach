@@ -86,6 +86,14 @@ export async function POST(request: Request) {
   }
 
   const webhookUrl = await getCoachLeadWebhookUrl(coachId);
+  if (body.abandoned) {
+    const { fireBossScoreWatchSafe } = await import("@/lib/coachWatch/fire");
+    fireBossScoreWatchSafe({
+      coachId,
+      event: "abandoned",
+      personName: fullName,
+    });
+  }
   if (webhookUrl && body.abandoned) {
     const { first_name, last_name } = splitFullName(fullName ?? "");
     const event = "scorecard_abandoned" as const;

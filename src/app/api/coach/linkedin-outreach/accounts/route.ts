@@ -6,7 +6,7 @@ import {
   listOutreachAccounts,
   removeOutreachAccount,
   syncOutreachAccountsForCoach,
-} from "@/lib/unipile/accounts";
+} from "@/lib/unipile/outreachAccounts";
 import { isUnipileConfigured } from "@/lib/unipile/client";
 import {
   isConnectableProvider,

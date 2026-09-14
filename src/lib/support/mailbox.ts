@@ -23,6 +23,7 @@ import {
   deleteUnipileAccount,
   deleteUnipileEmail,
   getUnipileAccount,
+  getUnipileDsn,
   getUnipileEmail,
   isUnipileConfigured,
   listUnipileAccounts,
@@ -137,7 +138,7 @@ export async function createSupportMailboxConnectLink(
     throw new Error("Unipile is not configured (UNIPILE_DSN / UNIPILE_API_KEY).");
   }
   const base = getAppBaseUrl(request);
-  const dsn = (process.env.UNIPILE_DSN || "").replace(/\/$/, "");
+  const dsn = getUnipileDsn();
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
   const result = await createHostedAuthLink({

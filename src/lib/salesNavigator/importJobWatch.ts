@@ -8,6 +8,9 @@ export type WatchedSalesNavImport = {
   name: string | null;
   targetCount: number;
   startedAt: string;
+  resumeHref?: string | null;
+  saveListId?: string | null;
+  kind?: "sales_nav" | "google_maps";
 };
 
 const STORAGE_KEY = "sales-nav-import-watch-v1";
@@ -79,6 +82,9 @@ export function watchSalesNavImport(job: {
   id: string;
   name?: string | null;
   targetCount?: number;
+  resumeHref?: string | null;
+  saveListId?: string | null;
+  kind?: "sales_nav" | "google_maps";
 }): void {
   const id = job.id.trim();
   if (!id) return;
@@ -88,6 +94,9 @@ export function watchSalesNavImport(job: {
     name: job.name?.trim() || null,
     targetCount: Math.max(0, Math.floor(job.targetCount ?? 0)),
     startedAt: new Date().toISOString(),
+    resumeHref: job.resumeHref?.trim() || null,
+    saveListId: job.saveListId?.trim() || null,
+    kind: job.kind === "google_maps" ? "google_maps" : "sales_nav",
   });
   // Re-show progress toast if they start / resume this job.
   const dismissed = readDismissed();

@@ -13,6 +13,12 @@ export type ProspectRow = {
   linkedin_url?: string | null;
   company_website?: string | null;
   phone: string | null;
+  /** LinkedIn headline when stored on the contact. */
+  headline?: string | null;
+  /** LinkedIn About / summary when stored on the contact. */
+  about?: string | null;
+  location?: string | null;
+  photo_url?: string | null;
   type: string;
   prospect_status: string | null;
   status: ProspectStatusDisplay;
@@ -45,6 +51,8 @@ export type ProspectRow = {
   prospect_funnel?: string | null;
   /** How this prospect entered the pipeline (Sales Navigator, manual, etc.). */
   prospect_source?: string | null;
+  /** True when this contact is in an open campaign sequence. */
+  in_outreach?: boolean;
   /** Coach-defined labels (right sidebar). */
   tags?: string[];
   /** True when a WhatsApp conversation exists for this contact. */

@@ -1,11 +1,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { resolveClassroomLessonId } from "@/lib/academy/classroomIdAliases";
-import {
-  defaultCompanyKeywords,
-  defaultJobTitleKeywords,
-} from "@/lib/salesNavigator/baseSearchDefaults";
-import { buildSalesNavSearchUrl } from "@/lib/salesNavigator/buildSalesNavSearchUrl";
+import { SALES_NAV_BASE_SEARCH_URL } from "@/lib/salesNavigator/salesNavLinks";
 
 import {
   SALES_NAV_BASE_SEARCH_LESSON_ID,
@@ -13,15 +9,6 @@ import {
 } from "@/lib/academy/lessonVideoChapters";
 
 const BASE_SEARCH_LESSON_ID = SALES_NAV_BASE_SEARCH_LESSON_ID;
-
-/** Pre-filled Classroom base search (UK, owners/CEOs, 1–200, 2nd+3rd). */
-const SALES_NAV_BASE_SEARCH_URL = buildSalesNavSearchUrl({
-  titleKeywords: defaultJobTitleKeywords(),
-  companyKeywords: defaultCompanyKeywords(),
-  teamSizes: ["1-10", "11-50", "51-200"],
-  location: "United Kingdom",
-  degrees: ["2", "3"],
-});
 
 /** Shown on Build Your Base Search (legacy or consolidated Sales Nav lesson). */
 export function LessonBaseSearchCta({ lessonId }: { lessonId: string }) {

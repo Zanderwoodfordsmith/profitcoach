@@ -26,6 +26,7 @@ import {
   matchKnownContact,
 } from "@/lib/messaging/knownContacts";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
+import { prioritizeUnipileChats } from "@/lib/messaging/threadWindow";
 import {
   applyReactionToParentMessage,
   extractReactionEmoji,
@@ -34,6 +35,7 @@ import {
   parseUnipileMessageFlags,
   patchMessageReactionsByUnipileId,
 } from "@/lib/messaging/messageReactions";
+import { markContactRepliedOnInbound } from "@/lib/prospects/markContactReplied";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   counterpartForChat,
@@ -283,6 +285,8 @@ async function syncMessagingAccount(input: {
   messagesOnlyIfStale?: boolean;
   /** Cap expensive LinkedIn vanity↔provider resolves (0 = skip). */
   maxLinkedInPairResolves?: number;
+  /** Open inbox thread(s) — pull these chats first. */
+  priorityChatIds?: string[];
 }): Promise<{ chats: number; messages: number }> {
   let chats = 0;
   let messages = 0;
@@ -291,7 +295,14 @@ async function syncMessagingAccount(input: {
     limit: 80,
   });
   if (!listed.ok) return { chats, messages };
-  const items = listed.data?.items ?? [];
+  const items = prioritizeUnipileChats(
+    listed.data?.items ?? [],
+    (chat) => String(chat.id || chat.chat_id || ""),
+    input.priorityChatIds ?? []
+  );
+  const priorityChatSet = new Set(
+    (input.priorityChatIds ?? []).map((id) => id.trim()).filter(Boolean)
+  );
   const attendeesByProviderId = await loadAttendeesByProviderId(
     input.unipileAccountId
   );
@@ -534,7 +545,7 @@ async function syncMessagingAccount(input: {
       identity.prospect_linkedin_url = null;
       identity.prospect_linkedin_provider_id = null;
     }
-    if (known?.full_name && !looksLikePersonName(prospectName)) {
+    if (known?.full_name) {
       identity.prospect_name = known.full_name;
     }
 
@@ -607,7 +618,8 @@ async function syncMessagingAccount(input: {
     if (!conversationId) continue;
 
     let shouldPullMessages = includeMessages;
-    if (includeMessages && messagesOnlyIfStale) {
+    const isPriorityChat = priorityChatSet.has(chatId);
+    if (includeMessages && messagesOnlyIfStale && !isPriorityChat) {
       if (!existingConv?.id) {
         shouldPullMessages = true;
       } else {
@@ -751,14 +763,37 @@ async function syncMessagingAccount(input: {
         .eq("id", lead.campaign_id)
         .maybeSingle();
       if (campaign?.stop_on_reply !== false) {
-        await supabaseAdmin
+        const { data: updated } = await supabaseAdmin
           .from("linkedin_campaign_leads")
           .update({ status: "replied", next_action_at: null })
           .eq("id", lead.id)
-          .neq("status", "replied");
+          .neq("status", "replied")
+          .select("first_name, last_name")
+          .maybeSingle();
         const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
         await cancelOpenSendJobs(lead.id as string, "Lead replied");
+        if (updated) {
+          const { fireCoachWatchRulesSafe } = await import(
+            "@/lib/coachWatch/fire"
+          );
+          fireCoachWatchRulesSafe({
+            coachId: input.coachId,
+            scopeKind: "campaign",
+            scopeId: String(lead.campaign_id),
+            event: "replied",
+            personName: [updated.first_name, updated.last_name]
+              .filter(Boolean)
+              .join(" "),
+          });
+        }
       }
+    }
+
+    if (inboundSeen) {
+      await markContactRepliedOnInbound({
+        coachId: input.coachId,
+        contactId: linkedContactId,
+      });
     }
   }
 
@@ -881,6 +916,7 @@ async function syncMailingAccount(input: {
     let latestAt: string | null = null;
     let latestPreview: string | null = null;
     let latestDirection: "inbound" | "outbound" | null = null;
+    let inboundSeen = false;
 
     for (const email of emails) {
       const messageId = String(email.id || "");
@@ -912,6 +948,7 @@ async function syncMailingAccount(input: {
         },
       });
       if (ok) messages += 1;
+      if (direction === "inbound") inboundSeen = true;
 
       if (!latestAt || new Date(createdAt) >= new Date(latestAt)) {
         latestAt = createdAt;
@@ -936,6 +973,13 @@ async function syncMailingAccount(input: {
         })
         .eq("id", conversationId);
     }
+
+    if (inboundSeen) {
+      await markContactRepliedOnInbound({
+        coachId: input.coachId,
+        contactId: linkedContactId,
+      });
+    }
   }
 
   return { chats, messages };
@@ -947,7 +991,11 @@ async function syncMailingAccount(input: {
  */
 export async function syncUnipileInboxForCoach(
   coachId: string,
-  options?: { force?: boolean; minIntervalMs?: number }
+  options?: {
+    force?: boolean;
+    minIntervalMs?: number;
+    priorityChatIds?: string[];
+  }
 ): Promise<{
   chats: number;
   messages: number;
@@ -1051,6 +1099,7 @@ export async function syncUnipileInboxForCoach(
         includeMessages: true,
         messagesOnlyIfStale: softVisit,
         maxLinkedInPairResolves: softVisit ? 3 : undefined,
+        priorityChatIds: options?.priorityChatIds,
       });
     }
     chats += result.chats;
@@ -1068,7 +1117,11 @@ export async function syncUnipileInboxForCoach(
 /** @deprecated Alias — multi-channel sync. */
 export async function syncLinkedInInboxForCoach(
   coachId: string,
-  options?: { force?: boolean; minIntervalMs?: number }
+  options?: {
+    force?: boolean;
+    minIntervalMs?: number;
+    priorityChatIds?: string[];
+  }
 ) {
   return syncUnipileInboxForCoach(coachId, options);
 }

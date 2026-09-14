@@ -1,5 +1,13 @@
 export { DashboardPageSection } from "./DashboardPageSection";
 export type { DashboardPageSectionProps } from "./DashboardPageSection";
+export {
+  ContentWithRail,
+  ContentWithRailAside,
+  ContentWithRailMain,
+  CONTENT_WITH_RAIL_MAIN_CLASS,
+  CONTENT_WITH_RAIL_RAIL_CLASS,
+  CONTENT_WITH_RAIL_ROW_CLASS,
+} from "./ContentWithRail";
 export { DashboardChromeActions } from "./DashboardChromeActions";
 export { DashboardChromeFallback } from "./DashboardChromeFallback";
 export { StickyPageHeader } from "./StickyPageHeader";

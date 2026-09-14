@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  createCoachCalendar,
   ensureDefaultCoachCalendars,
   listCoachCalendars,
   loadBookingSettingsForCoach,
@@ -51,6 +52,56 @@ export async function GET(request: Request) {
     calendars,
     is_self: target.isSelf,
   });
+}
+
+type CreateBody = {
+  name?: string;
+  meeting_duration_minutes?: number;
+  forSlug?: string;
+};
+
+/** Create a booking calendar for the coach. */
+export async function POST(request: Request) {
+  const auth = await requireCoachOrAdmin(request);
+  if (auth.error || !auth.userId || !auth.role) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
+  }
+
+  let body: CreateBody;
+  try {
+    body = (await request.json()) as CreateBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+  }
+
+  let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
+  try {
+    target = await resolveCoachTarget({
+      auth: { userId: auth.userId, role: auth.role },
+      forSlug: body.forSlug,
+      impersonateCoachId: auth.impersonateCoachId,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Could not set up coach profile." },
+      { status: 500 }
+    );
+  }
+
+  if (!target.ok) {
+    return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  try {
+    const calendar = await createCoachCalendar(target.coach.id, {
+      name: body.name ?? "",
+      meeting_duration_minutes: body.meeting_duration_minutes,
+    });
+    return NextResponse.json({ calendar });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not create.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }
 
 type PatchBody = {

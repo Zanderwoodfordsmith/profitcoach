@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { mapLeadListRow } from "@/lib/firstCampaign/mapApi";
+import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
+import {
+  ensureCoachBlacklist,
+  ensureCoachPool,
+  loadEnrolledLinkedInUrls,
+  mapLeadListToSummary,
+  sortAudienceLists,
+} from "@/lib/leadLists/audienceLists";
 
 const MAX_LIST_ITEMS = 250;
 const INSERT_CHUNK_SIZE = 250;
@@ -41,6 +49,42 @@ export async function POST(request: Request) {
     0,
     MAX_LIST_ITEMS
   );
+
+  if (
+    leadFinderIds.length === 0 &&
+    connectionIds.length === 0 &&
+    !body.useLatestConnectionMatches
+  ) {
+    const name = body.name?.trim();
+    if (!name) {
+      return NextResponse.json(
+        { error: "Give this list a name." },
+        { status: 400 }
+      );
+    }
+    const { data: list, error: listError } = await supabaseAdmin
+      .from("coach_lead_lists")
+      .insert({
+        coach_id: coachId,
+        name,
+        source: "manual",
+        kind: "audience",
+        filters: body.filters ?? {},
+      })
+      .select("*")
+      .single();
+    if (listError || !list) {
+      return NextResponse.json(
+        { error: listError?.message ?? "Could not create list." },
+        { status: 500 }
+      );
+    }
+    return NextResponse.json({
+      list,
+      leadList: mapLeadListToSummary(list),
+      itemCount: 0,
+    });
+  }
 
   if (connectionIds.length === 0 && body.useLatestConnectionMatches) {
     const { data: latest } = await supabaseAdmin
@@ -249,7 +293,34 @@ export async function GET(request: Request) {
     if (!list) {
       return NextResponse.json({ error: "Lead list not found." }, { status: 404 });
     }
-    return NextResponse.json({ list, items: items ?? [] });
+
+    const enrolled = await loadEnrolledLinkedInUrls(auth.userId);
+    const mapped = (items ?? []).map((item) => {
+      const url = normalizeLinkedInProfileUrl(String(item.linkedin_url ?? ""));
+      return {
+        ...item,
+        in_campaign: url ? enrolled.has(url) : false,
+      };
+    });
+
+    return NextResponse.json({
+      list,
+      items: mapped,
+      leadList: mapLeadListToSummary(list),
+    });
+  }
+
+  try {
+    await ensureCoachBlacklist(auth.userId);
+    await ensureCoachPool(auth.userId);
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error ? err.message : "Could not load blacklist.",
+      },
+      { status: 500 }
+    );
   }
 
   const { data: lists, error } = await supabaseAdmin
@@ -262,5 +333,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ lists: lists ?? [] });
+  const summaries = sortAudienceLists(
+    (lists ?? []).map((row) => mapLeadListToSummary(row))
+  );
+
+  return NextResponse.json({
+    lists: lists ?? [],
+    leadLists: summaries,
+  });
 }

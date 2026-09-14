@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
 import {
   deleteGoogleConnection,
-  getValidGoogleAccessToken,
-  listGoogleCalendars,
-  loadGoogleConnectionPublic,
 } from "@/lib/booking/googleCalendar";
-import { isGoogleCalendarConfigured } from "@/lib/booking/googleCalendarOAuth";
+import {
+  loadCoachCalendarStatus,
+  upsertUnipileCalendarPrefs,
+  type CalendarMailingProvider,
+} from "@/lib/booking/unipileCalendar";
 import {
   requireCoachOrAdmin,
   resolveCoachTarget,
+  canAccessCoachResource,
 } from "@/lib/booking/resolveCoachTarget";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { removeOutreachAccount } from "@/lib/unipile/outreachAccounts";
+
+function parseProvider(raw: string | null): CalendarMailingProvider {
+  return raw?.trim().toUpperCase() === "OUTLOOK" ? "OUTLOOK" : "GOOGLE";
+}
 
 export async function GET(request: Request) {
   const auth = await requireCoachOrAdmin(request);
@@ -20,6 +26,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const forSlug = url.searchParams.get("forSlug");
+  const provider = parseProvider(url.searchParams.get("provider"));
 
   let target: Awaited<ReturnType<typeof resolveCoachTarget>>;
   try {
@@ -39,44 +46,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: target.error }, { status: target.status });
   }
 
-  const status = await loadGoogleConnectionPublic(target.coach.id);
-  if (!status?.connected) {
-    return NextResponse.json({
-      configured: isGoogleCalendarConfigured(),
-      connected: false,
-      email: null,
-      calendars: [],
-      busy_calendar_ids: [],
-      event_calendar_id: "primary",
-      is_self: target.isSelf,
-    });
-  }
-
-  let calendars: Awaited<ReturnType<typeof listGoogleCalendars>> = [];
-  // Use the target coach's stored refresh token (works for view-as + self).
   try {
-    const accessToken = await getValidGoogleAccessToken(target.coach.id);
-    if (accessToken) {
-      calendars = await listGoogleCalendars(accessToken);
-    }
+    const status = await loadCoachCalendarStatus({
+      coachId: target.coach.id,
+      provider,
+    });
+    return NextResponse.json({
+      ...status,
+      is_self: target.isSelf,
+      can_manage: canAccessCoachResource(auth, target.coach.id),
+    });
   } catch (error) {
-    console.error("google calendar GET list:", error);
+    console.error("unipile calendar GET:", error);
+    return NextResponse.json(
+      { error: "Could not load calendar status." },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    configured: status.configured,
-    connected: true,
-    email: status.email,
-    calendars,
-    busy_calendar_ids: status.busy_calendar_ids,
-    event_calendar_id: status.event_calendar_id,
-    is_self: target.isSelf,
-  });
 }
 
 type PatchBody = {
   busy_calendar_ids?: string[];
   event_calendar_id?: string;
+  provider?: string;
 };
 
 export async function PATCH(request: Request) {
@@ -103,21 +95,13 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: target.error }, { status: target.status });
   }
 
-  if (!target.isSelf) {
+  if (!canAccessCoachResource(auth, target.coach.id)) {
     return NextResponse.json(
       {
         error:
-          "Sign in as this coach to change Google Calendar preferences.",
+          "Sign in as this coach to change calendar preferences.",
       },
       { status: 403 }
-    );
-  }
-
-  const status = await loadGoogleConnectionPublic(target.coach.id);
-  if (!status?.connected) {
-    return NextResponse.json(
-      { error: "Google Calendar is not connected." },
-      { status: 400 }
     );
   }
 
@@ -128,45 +112,59 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const patch: Record<string, unknown> = {};
-  if (body.busy_calendar_ids !== undefined) {
-    if (
-      !Array.isArray(body.busy_calendar_ids) ||
-      body.busy_calendar_ids.some((id) => typeof id !== "string" || !id.trim())
-    ) {
-      return NextResponse.json(
-        { error: "busy_calendar_ids must be an array of calendar ids." },
-        { status: 400 }
-      );
-    }
-    patch.busy_calendar_ids = body.busy_calendar_ids.map((id) => id.trim());
-  }
-  if (body.event_calendar_id !== undefined) {
-    const id = body.event_calendar_id.trim();
-    if (!id) {
-      return NextResponse.json(
-        { error: "event_calendar_id is required." },
-        { status: 400 }
-      );
-    }
-    patch.event_calendar_id = id;
+  const provider = parseProvider(body.provider ?? null);
+  const status = await loadCoachCalendarStatus({
+    coachId: target.coach.id,
+    provider,
+  });
+  if (!status.connected || !status.unipile_account_id) {
+    return NextResponse.json(
+      { error: "Connect Google or Outlook before saving calendar preferences." },
+      { status: 400 }
+    );
   }
 
-  if (Object.keys(patch).length === 0) {
-    return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+  const busyIds =
+    body.busy_calendar_ids !== undefined
+      ? body.busy_calendar_ids
+      : status.busy_calendar_ids;
+  const eventId =
+    body.event_calendar_id !== undefined
+      ? body.event_calendar_id.trim()
+      : status.event_calendar_id;
+
+  if (
+    !Array.isArray(busyIds) ||
+    busyIds.some((id) => typeof id !== "string" || !id.trim())
+  ) {
+    return NextResponse.json(
+      { error: "busy_calendar_ids must be an array of calendar ids." },
+      { status: 400 }
+    );
+  }
+  if (!eventId) {
+    return NextResponse.json(
+      { error: "event_calendar_id is required." },
+      { status: 400 }
+    );
   }
 
-  const { error } = await supabaseAdmin
-    .from("coach_google_calendar_connections")
-    .update(patch)
-    .eq("coach_id", target.coach.id);
-
-  if (error) {
-    console.error("google calendar PATCH:", error);
+  try {
+    await upsertUnipileCalendarPrefs({
+      coachId: target.coach.id,
+      unipileAccountId: status.unipile_account_id,
+      busyCalendarIds: busyIds.map((id) => id.trim()),
+      eventCalendarId: eventId,
+    });
+  } catch (error) {
+    console.error("unipile calendar PATCH:", error);
     return NextResponse.json({ error: "Could not update." }, { status: 500 });
   }
 
-  const next = await loadGoogleConnectionPublic(target.coach.id);
+  const next = await loadCoachCalendarStatus({
+    coachId: target.coach.id,
+    provider,
+  });
   return NextResponse.json({ ...next, is_self: true });
 }
 
@@ -194,13 +192,32 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: target.error }, { status: target.status });
   }
 
-  if (!target.isSelf) {
+  if (!canAccessCoachResource(auth, target.coach.id)) {
     return NextResponse.json(
-      { error: "Sign in as this coach to disconnect Google Calendar." },
+      { error: "Sign in as this coach to disconnect Google." },
       { status: 403 }
     );
   }
 
-  await deleteGoogleConnection(target.coach.id);
+  const url = new URL(request.url);
+  const provider = parseProvider(url.searchParams.get("provider"));
+  const status = await loadCoachCalendarStatus({
+    coachId: target.coach.id,
+    provider,
+  });
+  if (status.outreach_account_id) {
+    try {
+      await removeOutreachAccount(target.coach.id, status.outreach_account_id);
+    } catch (error) {
+      console.error("unipile calendar DELETE:", error);
+      return NextResponse.json(
+        { error: "Could not disconnect." },
+        { status: 500 }
+      );
+    }
+  }
+  if (provider === "GOOGLE") {
+    await deleteGoogleConnection(target.coach.id);
+  }
   return NextResponse.json({ connected: false, is_self: true });
 }

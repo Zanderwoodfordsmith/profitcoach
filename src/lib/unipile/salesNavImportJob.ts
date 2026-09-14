@@ -27,18 +27,20 @@ import {
 } from "@/lib/salesNavigator/importSegments";
 import {
   normalizeRequestedTakePages,
+  salesNavGlobalLeadCapFromPages,
   salesNavLeadTarget,
 } from "@/lib/salesNavigator/importSizing";
 import { upsertSalesNavLeadsToCache } from "@/lib/salesNavigator/upsertSalesNavLeadsToCache";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { listOutreachAccounts } from "@/lib/unipile/accounts";
-import { isUnipileConfigured, linkedInSearch } from "@/lib/unipile/client";
+import { flushSalesNavSnapshotToList } from "@/lib/salesNavigator/flushImportToList";
+import { isUnipileConfigured, linkedInSearch, unipileLinkedInAccountError } from "@/lib/unipile/client";
+import { requireLiveLinkedInUnipileAccount } from "@/lib/unipile/linkedinSearchAccount";
 import { mapUnipileSearchItem } from "@/lib/unipile/salesNavLeads";
 
 const UNIPILE_PAGE_SIZE = 100;
 /** Pages per poll/tick — keep each sync under typical serverless time. */
-const PAGES_PER_SYNC = 3;
-const PAGE_DELAY_MS = 800;
+const PAGES_PER_SYNC = 12;
+const PAGE_DELAY_MS = 250;
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -105,6 +107,8 @@ export async function createUnipileSalesNavImportJob(opts: {
   salesNavUrl: string;
   name?: string | null;
   takePages?: number;
+  listId?: string | null;
+  saveListId?: string | null;
 }): Promise<{
   jobId: string;
   takePages: number;
@@ -127,15 +131,7 @@ export async function createUnipileSalesNavImportJob(opts: {
     );
   }
 
-  const accounts = await listOutreachAccounts(opts.coachId);
-  const account =
-    accounts.find((a) => a.status === "OK" && a.unipile_account_id) ??
-    accounts.find((a) => a.unipile_account_id);
-  if (!account?.unipile_account_id) {
-    throw new Error(
-      "Connect LinkedIn via Unipile first (Campaigns or the Connect button here). The connected account needs Sales Navigator."
-    );
-  }
+  const unipileAccountId = await requireLiveLinkedInUnipileAccount(opts.coachId);
 
   const requestedTakePages = normalizeRequestedTakePages(opts.takePages);
   const targetCount = salesNavLeadTarget(requestedTakePages);
@@ -163,11 +159,13 @@ export async function createUnipileSalesNavImportJob(opts: {
       cache_updated: 0,
       cache_skipped: 0,
       saved_to_list: false,
+      list_id: opts.listId?.trim() || null,
+      save_list_id: opts.saveListId?.trim() || null,
       profile_scraper_mode: "Unipile",
       estimated_cost_usd: 0,
       status: "running",
       provider: "unipile",
-      unipile_account_id: account.unipile_account_id,
+      unipile_account_id: unipileAccountId,
       unipile_cursor: null,
       apify_run_id: null,
       apify_dataset_id: null,
@@ -216,6 +214,9 @@ export async function syncUnipileSalesNavImportJob(
   }
 
   const segmentTarget = targetCountForJob(job);
+  const globalCap = salesNavGlobalLeadCapFromPages(
+    job.requested_take_pages ?? job.take_pages ?? 100
+  );
   type Snapshot = ReturnType<typeof toSalesNavImportLeadSnapshot>;
   let snapshot: Snapshot[] = Array.isArray(job.lead_snapshot)
     ? (job.lead_snapshot as Snapshot[])
@@ -228,7 +229,21 @@ export async function syncUnipileSalesNavImportJob(
   let segmentPlan = (job.segment_plan ?? []).map((s) => ({ ...s }));
   let pagesUsed = 0;
 
+  const finalizeNow = () =>
+    finalizeJob(job, {
+      snapshot,
+      cacheInserted,
+      cacheUpdated,
+      cacheSkipped,
+      segmentPlan,
+      segmentIndex,
+    });
+
   while (pagesUsed < PAGES_PER_SYNC) {
+    if (globalCap != null && snapshot.length >= globalCap) {
+      return finalizeNow();
+    }
+
     const current = segmentPlan[segmentIndex];
     const searchUrl =
       current?.salesNavUrl?.trim() || job.sales_nav_url?.trim() || "";
@@ -280,11 +295,20 @@ export async function syncUnipileSalesNavImportJob(
     if (pagesUsed > 0) await sleep(PAGE_DELAY_MS);
     pagesUsed += 1;
 
-    const remaining = segmentTarget - segmentScraped;
+    const remaining = Math.min(
+      segmentTarget - segmentScraped,
+      globalCap != null
+        ? Math.max(0, globalCap - snapshot.length)
+        : Number.POSITIVE_INFINITY
+    );
+    if (remaining <= 0) {
+      return finalizeNow();
+    }
     const isSegmentStart = !cursor && segmentScraped === 0;
     const probeForCap =
       isSegmentStart &&
       current != null &&
+      remaining >= SALES_NAV_EXTRACT_CAP &&
       shouldProbeSalesNavExtractCap(current);
     const limit = probeForCap
       ? 1
@@ -310,7 +334,7 @@ export async function syncUnipileSalesNavImportJob(
           done: false,
         });
       }
-      const message = res.error || `Unipile search failed (${res.status}).`;
+      const message = unipileLinkedInAccountError(res);
       return markFailed(job.id, job.started_at, job.created_at, message);
     }
 
@@ -345,6 +369,18 @@ export async function syncUnipileSalesNavImportJob(
       .filter((row): row is NonNullable<typeof row> => Boolean(row))
       .slice(0, remaining);
 
+    const totalFromProvider = searchTotalCount(res.data);
+    if (
+      totalFromProvider != null &&
+      segmentPlan[segmentIndex] &&
+      segmentPlan[segmentIndex].searchTotalCount == null
+    ) {
+      segmentPlan[segmentIndex] = {
+        ...segmentPlan[segmentIndex],
+        searchTotalCount: totalFromProvider,
+      };
+    }
+
     const nextCursor = nextCursorFromSearch(res.data);
     const stalledCursor = Boolean(nextCursor && cursor && nextCursor === cursor);
 
@@ -370,6 +406,17 @@ export async function syncUnipileSalesNavImportJob(
           errorMessage: null,
         };
       }
+    }
+
+    if (globalCap != null && snapshot.length >= globalCap) {
+      if (segmentPlan[segmentIndex]) {
+        segmentPlan[segmentIndex] = {
+          ...segmentPlan[segmentIndex],
+          status: "succeeded",
+          errorMessage: null,
+        };
+      }
+      return finalizeNow();
     }
 
     const segmentDone =
@@ -414,17 +461,6 @@ export async function syncUnipileSalesNavImportJob(
     }
 
     cursor = nextCursor;
-    const persisted = await persistProgress(job, {
-      snapshot,
-      cursor: nextCursor,
-      cacheInserted,
-      cacheUpdated,
-      cacheSkipped,
-      segmentPlan,
-      segmentIndex,
-      done: false,
-    });
-    if (persisted.status !== "running") return persisted;
   }
 
   return persistProgress(job, {
@@ -500,6 +536,42 @@ async function persistProgress(
   if (error) {
     return markFailed(job.id, job.started_at, job.created_at, error.message);
   }
+
+  const listId = job.list_id?.trim() || null;
+  const saveListId = job.save_list_id?.trim() || null;
+  /** Only write people into pool/list tabs when the job finishes — mid-run
+   * flushes were slow and made the Pool UI flicker if it reloaded. */
+  if (opts.done && (listId || saveListId)) {
+    try {
+      if (listId) {
+        await flushSalesNavSnapshotToList({
+          coachId: job.coach_id,
+          listId,
+          kind: "pool",
+          snapshot: opts.snapshot,
+        });
+      }
+      if (saveListId) {
+        await flushSalesNavSnapshotToList({
+          coachId: job.coach_id,
+          listId: saveListId,
+          kind: "audience",
+          snapshot: opts.snapshot,
+        });
+      }
+      await supabaseAdmin
+        .from("sales_nav_import_runs")
+        .update({ saved_to_list: true })
+        .eq("id", job.id);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Could not add imported people to the pool.";
+      return markFailed(job.id, job.started_at, job.created_at, message);
+    }
+  }
+
   return (await loadImportJob(job.id)) ?? job;
 }
 

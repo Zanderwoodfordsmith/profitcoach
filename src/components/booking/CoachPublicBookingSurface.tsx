@@ -127,7 +127,7 @@ export function CoachPublicBookingSurface({
       <p className="mt-2 text-xs text-slate-500">
         {loading
           ? "Hang tight while we load booking times."
-          : "Your coach can finish calendar setup in Settings → Calendar."}
+          : "Your coach can finish calendar setup."}
       </p>
     </div>
   );

@@ -2,8 +2,8 @@
 
 import { Globe } from "lucide-react";
 import {
+  formatBusinessLabel,
   formatProspectJobTitle,
-  formatProspectLabel,
 } from "@/lib/prospectDisplayFormat";
 import { companyWebsiteHref } from "@/lib/leadFinder/display";
 
@@ -15,6 +15,29 @@ type Props = {
   onEdit?: () => void;
 };
 
+export function WebsiteGlobe({
+  href,
+  label,
+}: {
+  href: string;
+  label: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-row-action
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex shrink-0 text-slate-400 hover:text-sky-700"
+      title={`Open ${label}`}
+      aria-label={`Open ${label}`}
+    >
+      <Globe className="h-3 w-3" aria-hidden />
+    </a>
+  );
+}
+
 export function ProspectLeadSubtitle({
   jobTitle,
   businessName,
@@ -23,11 +46,13 @@ export function ProspectLeadSubtitle({
   onEdit,
 }: Props) {
   const title = formatProspectJobTitle(jobTitle);
-  const business = formatProspectLabel(businessName);
+  const business = formatBusinessLabel(businessName);
   const websiteHref = companyWebsiteHref(companyWebsite);
+  const websiteLabel = business || "Website";
+  const openLabel = business ? `${business} website` : "website";
   const plain = [title, business].filter(Boolean).join(" · ");
 
-  if (!title && !business) {
+  if (!title && !business && !websiteHref) {
     if (!editable) return null;
     return (
       <button
@@ -45,16 +70,12 @@ export function ProspectLeadSubtitle({
     );
   }
 
-  // With a website, business is a link — don't wrap the whole subtitle in an edit button.
-  if (websiteHref && business) {
+  if (websiteHref) {
     return (
       <div className="mt-px flex min-w-0 max-w-full items-center gap-1 text-xs leading-snug text-slate-500">
-        {title ? (
-          <>
-            <span className="shrink-0">{title}</span>
-            <span className="shrink-0">·</span>
-          </>
-        ) : null}
+        {title ? <span className="min-w-0 truncate">{title}</span> : null}
+        {title ? <span className="shrink-0">·</span> : null}
+        <WebsiteGlobe href={websiteHref} label={openLabel} />
         <a
           href={websiteHref}
           target="_blank"
@@ -62,21 +83,9 @@ export function ProspectLeadSubtitle({
           data-row-action
           onClick={(e) => e.stopPropagation()}
           className="min-w-0 truncate text-sky-700 hover:underline"
-          title={`Open ${business} website`}
+          title={`Open ${openLabel}`}
         >
-          {business}
-        </a>
-        <a
-          href={websiteHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          data-row-action
-          onClick={(e) => e.stopPropagation()}
-          className="inline-flex shrink-0 text-slate-400 hover:text-sky-700"
-          title={`Open ${business} website`}
-          aria-label={`Open ${business} website`}
-        >
-          <Globe className="h-3 w-3" aria-hidden />
+          {websiteLabel}
         </a>
       </div>
     );

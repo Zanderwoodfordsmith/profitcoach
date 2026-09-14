@@ -34,6 +34,12 @@ function isStaffSnapshotAccessTierError(error: {
   );
 }
 
+function seedDefaultCampaigns(coachId: string) {
+  void import("@/lib/unipile/defaultCampaigns")
+    .then(({ ensureDefaultCampaigns }) => ensureDefaultCampaigns(coachId))
+    .catch((err) => console.error("seedDefaultCampaigns:", err));
+}
+
 async function insertCoachRow(
   userId: string,
   slug: string
@@ -103,6 +109,7 @@ async function createCoachProfileAndRowViaBootstrap(
     return "Unable to create coach profile.";
   }
 
+  void seedDefaultCampaigns(normalized.userId);
   return null;
 }
 
@@ -140,5 +147,6 @@ export async function createCoachProfileAndRow(
     return coachError;
   }
 
+  void seedDefaultCampaigns(normalized.userId);
   return null;
 }

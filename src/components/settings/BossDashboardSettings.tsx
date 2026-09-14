@@ -1,20 +1,17 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   DashboardPageSection,
   PageHeaderUnderlineTabs,
   StickyPageHeader,
 } from "@/components/layout";
-import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
-import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
-import { BookingCalendarProviderCard } from "@/components/settings/BookingCalendarProviderCard";
 import { AccountEmailPasswordFields } from "@/components/settings/AccountEmailPasswordFields";
 import { BillingSettingsTab } from "@/components/settings/BillingSettingsTab";
 import { IntegrationsSettingsTab } from "@/components/settings/IntegrationsSettingsTab";
 import { DirectorySettingsTab } from "@/components/settings/DirectorySettingsTab";
-import { FunnelSettingsClient } from "@/components/settings/FunnelSettingsClient";
 import { ProfileAvatarPicker } from "@/components/settings/ProfileAvatarPicker";
 import {
   ProfileFieldRow,
@@ -27,6 +24,7 @@ import { ProfileVoiceCard } from "@/components/settings/ProfileVoiceCard";
 import { MapLocationPickerModal } from "@/components/settings/MapLocationPickerModal";
 import { MyLadderTab } from "@/components/compass/MyLadderTab";
 import { notifyAcademyTrackedActionsChanged } from "@/lib/academy/trackedActionsEvents";
+import { callsCalendarsHref } from "@/lib/booking/callsCalendarsPath";
 import type { LinkedInProfileSnapshot } from "@/lib/apify/linkedinProfileTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
@@ -57,16 +55,12 @@ export type BossDashboardSettingsTabId =
   | "profile"
   | "billing"
   | "directory"
-  | "ladder"
-  | "funnel"
-  | "calendar";
+  | "ladder";
 
 const SETTINGS_TAB_IDS: BossDashboardSettingsTabId[] = [
   "profile",
   "billing",
   "directory",
-  "funnel",
-  "calendar",
   "ladder",
 ];
 
@@ -75,7 +69,6 @@ function parseSettingsTab(
   variant: BossDashboardSettingsProps["variant"]
 ): BossDashboardSettingsTabId | null {
   if (!raw) return null;
-  if (raw === "get-clients") return "funnel";
   // Legacy deep link — Integrations now lives on Profile.
   if (raw === "integrations") return "profile";
   if (raw === "billing" && variant !== "coach") return null;
@@ -127,7 +120,6 @@ export function BossDashboardSettings({
     useState<BossDashboardSettingsTabId>("profile");
   const activeTab = embed?.activeTab ?? internalTab;
   const [mapModalOpen, setMapModalOpen] = useState(false);
-  const [appOrigin, setAppOrigin] = useState("https://theprofitcoach.com");
 
   const loadProfile = useCallback(async () => {
     const {
@@ -215,6 +207,18 @@ export function BossDashboardSettings({
       }
       return;
     }
+    if (tab === "calendar") {
+      router.replace(callsCalendarsHref(variant === "admin"));
+      return;
+    }
+    if (tab === "funnel" || tab === "get-clients") {
+      router.replace(
+        variant === "admin"
+          ? "/admin/campaigns?tab=magnets"
+          : "/coach/campaigns?tab=magnets"
+      );
+      return;
+    }
     if (tab === "integrations" && !embed) {
       const connected = searchParams.get("connected");
       const qs = new URLSearchParams({ tab: "profile" });
@@ -229,12 +233,6 @@ export function BossDashboardSettings({
       setInternalTab(parsed);
     }
   }, [embed, router, variant, searchParams]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.origin) {
-      setAppOrigin(window.location.origin);
-    }
-  }, []);
 
   const selectTab = useCallback(
     (tab: BossDashboardSettingsTabId) => {
@@ -492,15 +490,13 @@ export function BossDashboardSettings({
       ? [{ id: "billing" as const, label: "Billing" }]
       : []),
     { id: "directory", label: "Directory" },
-    { id: "funnel", label: "Get Clients" },
-    { id: "calendar", label: "Calendar" },
     { id: "ladder", label: "My Ladder" },
   ];
 
   const settingsHeader = (
     <StickyPageHeader
       title="Settings"
-      description="Profile, billing, directory, Get Clients, calendar, and ladder."
+      description="Profile, billing, directory, and ladder."
       tabs={
         <PageHeaderUnderlineTabs
           ariaLabel="Settings sections"
@@ -579,34 +575,37 @@ export function BossDashboardSettings({
 
         <ProfileSectionCard title="Community">
           <ProfileFieldRow label="LinkedIn" htmlFor="linkedin_url" alignTop>
-            <div className="flex w-full flex-col gap-2">
-              <ProfileMinimalInput
-                id="linkedin_url"
-                type="url"
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
-                placeholder="https://www.linkedin.com/in/yourprofile/"
-              />
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <ProfileMinimalInput
+                    id="linkedin_url"
+                    type="url"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    placeholder="https://www.linkedin.com/in/yourprofile/"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => void handleLinkedInImport()}
                   disabled={linkedinImporting || !linkedinUrl.trim()}
-                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-[34px] shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {linkedinImporting
-                    ? "Importing…"
-                    : "Import from LinkedIn"}
+                  {linkedinImporting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                  ) : null}
+                  Import
                 </button>
-                {linkedinImport?.scrapedAt ? (
-                  <span className="text-xs text-slate-500">
-                    Last imported{" "}
-                    {new Date(linkedinImport.scrapedAt).toLocaleString()}
-                  </span>
-                ) : linkedinImportLoading ? (
-                  <span className="text-xs text-slate-400">Checking…</span>
-                ) : null}
               </div>
+              {linkedinImport?.scrapedAt ? (
+                <span className="text-[11px] text-slate-500">
+                  Last imported{" "}
+                  {new Date(linkedinImport.scrapedAt).toLocaleString()}
+                </span>
+              ) : linkedinImportLoading ? (
+                <span className="text-[11px] text-slate-500">Checking…</span>
+              ) : null}
               {linkedinImportError ? (
                 <p className="text-sm text-red-600">{linkedinImportError}</p>
               ) : null}
@@ -711,46 +710,6 @@ export function BossDashboardSettings({
         <BillingSettingsTab />
       ) : null}
 
-      {activeTab === "funnel" ? <FunnelSettingsClient embed /> : null}
-
-      {activeTab === "calendar" ? (
-        <div className="flex w-full min-w-0 flex-col gap-10">
-          {variant === "admin" && !impersonatingCoachId ? (
-            <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-              This tab is for{" "}
-              <span className="font-medium text-slate-800">
-                your personal / discovery booking calendars
-              </span>{" "}
-              (same system coaches use for clients). Team support-call pages are
-              managed separately under{" "}
-              <a
-                href="/admin/support?tab=settings"
-                className="font-medium text-sky-700 hover:underline"
-              >
-                Support → Settings
-              </a>
-              .
-            </p>
-          ) : null}
-          <BookingCalendarProviderCard />
-          <CallsCalendarSettings
-            appOrigin={appOrigin}
-            callsBasePath={
-              variant === "admin" ? "/admin/calls" : "/coach/calls"
-            }
-          />
-          <Suspense
-            fallback={
-              <section className="rounded-xl border border-slate-200/80 bg-white p-4">
-                <p className="text-sm text-slate-600">Loading integrations…</p>
-              </section>
-            }
-          >
-            <GoogleCalendarBookingCard />
-          </Suspense>
-        </div>
-      ) : null}
-
       {activeTab === "ladder" ? <MyLadderTab /> : null}
 
       <MapLocationPickerModal
@@ -771,8 +730,6 @@ export function BossDashboardSettings({
 
   const wideTab =
     activeTab === "ladder" ||
-    activeTab === "funnel" ||
-    activeTab === "calendar" ||
     activeTab === "directory" ||
     (activeTab === "profile" && variant === "coach");
 

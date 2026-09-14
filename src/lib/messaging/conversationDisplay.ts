@@ -32,10 +32,32 @@ export function isGenericConversationName(
   return false;
 }
 
+/**
+ * LinkedIn chat titles often look like "Pam at Business Coach Academy".
+ * That is not a person's name, and the company side is not our business field.
+ */
+export function splitLinkedInAtCompanyName(
+  name: string | null | undefined
+): { person: string; company: string } | null {
+  const n = (name || "").trim();
+  if (!n) return null;
+  const match = n.match(/^(.+?)\s+at\s+(.+)$/i);
+  if (!match) return null;
+  const person = match[1].trim();
+  const company = match[2].trim();
+  if (!person || company.length < 2) return null;
+  const personWords = person.split(/\s+/).filter(Boolean);
+  if (personWords.length === 0 || personWords.length > 4) return null;
+  if (/[?!]/.test(person) || /https?:\/\//i.test(person)) return null;
+  if (/https?:\/\//i.test(company)) return null;
+  return { person, company };
+}
+
 /** InMail subjects and first-message snippets are not a person's name. */
 export function looksLikePersonName(name: string | null | undefined): boolean {
   const n = (name || "").trim();
   if (!n || isGenericConversationName(n)) return false;
+  if (splitLinkedInAtCompanyName(n)) return false;
   if (n.length > 80) return false;
   if (/[?!]/.test(n) || /https?:\/\//i.test(n)) return false;
   const words = n.split(/\s+/).filter(Boolean);
@@ -64,6 +86,10 @@ export function conversationPersonName(input: {
     const value = (candidate || "").trim();
     if (value && looksLikePersonName(value)) {
       return value;
+    }
+    const fromLinkedInTitle = splitLinkedInAtCompanyName(value)?.person;
+    if (fromLinkedInTitle && looksLikePersonName(fromLinkedInTitle)) {
+      return fromLinkedInTitle;
     }
     if (value.includes("@") && !isGenericConversationName(value, input.channel)) {
       return value;

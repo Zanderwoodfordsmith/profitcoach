@@ -53,6 +53,10 @@ import {
 import { fetchHighestAchievedLevelByUserIds } from "@/lib/communityAuthorLadderLevel";
 import { CommunityMembersMap } from "@/components/community/CommunityMembersMap";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
+import {
+  CONTENT_WITH_RAIL_ROW_CLASS,
+  ContentWithRailMain,
+} from "@/components/layout";
 import { extractMentionUserIds } from "@/lib/communityMentions";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
 import { capitalizeFirstUnicodeLetter } from "@/lib/communityPostCapitalize";
@@ -2045,13 +2049,13 @@ export function CommunityFeed() {
 
   return (
     <>
-      <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
+      <div className={CONTENT_WITH_RAIL_ROW_CLASS}>
         {communityTab === "map" ? (
           <div className="min-w-0 w-full flex-1 pt-5 lg:pt-6">
             <CommunityMembersMap />
           </div>
         ) : (
-            <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col gap-6 pt-3 lg:mx-0 lg:pt-3.5">
+            <ContentWithRailMain className="flex min-h-0 flex-col gap-6 pt-3 lg:pt-3.5">
               {loadError ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
                   <p className="font-semibold text-rose-900">Community data could not be loaded</p>
@@ -2453,7 +2457,7 @@ export function CommunityFeed() {
                   onMarkPostUnread={markPostUnread}
                 />
               ) : null}
-            </div>
+            </ContentWithRailMain>
         )}
         {communityTab !== "map" ? (
           <CommunitySidebar

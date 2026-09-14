@@ -6,6 +6,7 @@ import {
   ymdInTimeZone,
   zonedLocalToUtc,
 } from "@/lib/booking/bookingTime";
+import type { MeetingLocationMode } from "@/lib/booking/locationMode";
 
 export type BookingSettingsRow = {
   timezone: string;
@@ -20,7 +21,7 @@ export type BookingSettingsRow = {
   booking_window_days: number;
   is_enabled: boolean;
   title: string;
-  location_mode: "google_meet" | "phone" | "custom";
+  location_mode: MeetingLocationMode;
   location_phone: string | null;
   location_custom: string | null;
 };
@@ -53,13 +54,40 @@ function overlaps(
   return aS < bEnd && aE > bStart;
 }
 
+/** Public booking: calendar days to scan when collecting open days. */
+export const PUBLIC_BOOKING_LOOKAHEAD_CAP_DAYS = 90;
+
+/** Coach booking their own calendar: rolling open days, ignoring public window. */
+export const COACH_SELF_BOOK_OPEN_DAYS = 90;
+
+/** Calendar-day scan cap for coach self-booking (covers ~90 weekday opens). */
+export const COACH_SELF_BOOK_LOOKAHEAD_DAYS = 180;
+
 /**
  * Calendar days to scan when collecting a rolling window of open days
- * (skips weekends / fully booked days). Capped at 90.
+ * (skips weekends / fully booked days).
  */
-export function bookingWindowLookaheadDays(bookingWindowDays: number): number {
+export function bookingWindowLookaheadDays(
+  bookingWindowDays: number,
+  maxLookaheadDays = PUBLIC_BOOKING_LOOKAHEAD_CAP_DAYS
+): number {
   const n = Math.max(1, Math.floor(bookingWindowDays));
-  return Math.min(90, Math.max(n * 4, n + 21));
+  const cap = Math.max(1, Math.floor(maxLookaheadDays));
+  return Math.min(cap, Math.max(n * 4, n + 21));
+}
+
+/** Horizon used to fetch existing bookings / busy time around slot search. */
+export function slotSearchHorizonDays(input: {
+  bookingWindowDays: number;
+  ignorePublicLimits?: boolean;
+}): number {
+  if (input.ignorePublicLimits) {
+    return bookingWindowLookaheadDays(
+      COACH_SELF_BOOK_OPEN_DAYS,
+      COACH_SELF_BOOK_LOOKAHEAD_DAYS
+    );
+  }
+  return bookingWindowLookaheadDays(input.bookingWindowDays);
 }
 
 /**
@@ -69,6 +97,9 @@ export function bookingWindowLookaheadDays(bookingWindowDays: number): number {
  * `booking_window_days` is a rolling count of days that still have at least
  * one open slot (not a raw calendar span from today). Late Friday with a
  * 3-day window and Mon–Fri rules → Mon/Tue/Wed, not Fri/Sat/Sun.
+ *
+ * `ignorePublicLimits` drops min-notice and the public advance window so a
+ * coach can book their own calendar. Weekly hours and conflicts still apply.
  */
 export function computeBookingSlots(input: {
   settings: BookingSettingsRow;
@@ -76,6 +107,7 @@ export function computeBookingSlots(input: {
   existing: ExistingBookingInterval[];
   /** Prospect/viewer timezone — only used to bound "today"; slots are absolute. */
   now?: Date;
+  ignorePublicLimits?: boolean;
 }): SlotOffer[] {
   const now = input.now ?? new Date();
   const coachTz = input.settings.timezone;
@@ -85,14 +117,21 @@ export function computeBookingSlots(input: {
     Math.floor(input.settings.slot_interval_minutes ?? durationMin)
   );
   const bufferMs = input.settings.buffer_minutes * 60_000;
-  const minNoticeMs = input.settings.min_notice_hours * 3_600_000;
+  const minNoticeMs = input.ignorePublicLimits
+    ? 0
+    : input.settings.min_notice_hours * 3_600_000;
   const earliestMs = now.getTime() + minNoticeMs;
 
-  const openDaysTarget = Math.max(1, Math.floor(input.settings.booking_window_days));
+  const openDaysTarget = input.ignorePublicLimits
+    ? COACH_SELF_BOOK_OPEN_DAYS
+    : Math.max(1, Math.floor(input.settings.booking_window_days));
   const coachToday = ymdInTimeZone(now, coachTz);
   const scanEndYmd = addDaysYmd(
     coachToday,
-    bookingWindowLookaheadDays(openDaysTarget) - 1
+    slotSearchHorizonDays({
+      bookingWindowDays: input.settings.booking_window_days,
+      ignorePublicLimits: input.ignorePublicLimits,
+    }) - 1
   );
 
   const existingMs = input.existing.map((b) => {
@@ -188,7 +227,7 @@ export const DEFAULT_BOOKING_SETTINGS: Omit<
   buffer_minutes: 0,
   min_notice_hours: 24,
   booking_window_days: 14,
-  is_enabled: false,
+  is_enabled: true,
   title: "15-Minute Discovery Call",
   location_mode: "google_meet",
   location_phone: null,

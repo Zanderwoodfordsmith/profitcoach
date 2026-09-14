@@ -52,6 +52,7 @@ export async function GET(request: Request) {
         crm_contact_id: string | null;
         prospect_funnel: string | null;
         prospect_source: string | null;
+        prospect_tags?: string[] | null;
         type: string;
         created_at: string;
       }>(async (columns) => {
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
         "company_website",
         "prospect_funnel",
         "prospect_source",
+        "prospect_tags",
       ]);
 
     if (contactsError) {
@@ -175,6 +177,7 @@ export async function GET(request: Request) {
         created_at: c.created_at ?? null,
         prospect_funnel: c.prospect_funnel ?? null,
         prospect_source: c.prospect_source ?? null,
+        prospect_tags: c.prospect_tags ?? [],
       };
     });
 

@@ -7,6 +7,10 @@ import {
 } from "@/lib/booking/bookingService";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
+import {
+  isMeetingLocationMode,
+  type MeetingLocationMode,
+} from "@/lib/booking/locationMode";
 
 /**
  * Booking settings for the effective coach (honors view-as impersonation).
@@ -45,7 +49,7 @@ type PatchBody = {
   booking_window_days?: number;
   is_enabled?: boolean;
   title?: string;
-  location_mode?: "google_meet" | "phone" | "custom";
+  location_mode?: MeetingLocationMode;
   location_phone?: string | null;
   location_custom?: string | null;
   rules?: AvailabilityRuleRow[];
@@ -113,11 +117,7 @@ export async function PATCH(request: Request) {
     patch.title = body.title.trim() || "15-Minute Discovery Call";
   }
   if (body.location_mode !== undefined) {
-    if (
-      body.location_mode !== "google_meet" &&
-      body.location_mode !== "phone" &&
-      body.location_mode !== "custom"
-    ) {
+    if (!isMeetingLocationMode(body.location_mode)) {
       return NextResponse.json(
         { error: "Invalid location_mode." },
         { status: 400 }

@@ -14,6 +14,7 @@ import {
 import { isCommunityOnline } from "@/lib/communityPresence";
 import { ladderOrdinal } from "@/lib/ladder";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
+import { ContentWithRail, ContentWithRailMain } from "@/components/layout";
 import {
   useCommunityMemberDirectory,
   type CommunityMembersFilter,
@@ -290,8 +291,8 @@ export function CommunityMembersView() {
 
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-start lg:gap-10">
-      <div className="mx-auto flex min-h-0 w-full max-w-3xl min-w-0 flex-col pt-5 lg:mx-0 lg:pt-6">
+    <ContentWithRail>
+      <ContentWithRailMain className="flex min-h-0 flex-col pt-5 lg:pt-6">
       {loadError ? (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {loadError}
@@ -569,8 +570,8 @@ export function CommunityMembersView() {
           No one in this list yet.
         </p>
       ) : null}
-      </div>
+      </ContentWithRailMain>
       <CommunitySidebar className="pt-5 lg:pt-6" />
-    </div>
+    </ContentWithRail>
   );
 }

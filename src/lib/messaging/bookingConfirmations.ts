@@ -1,13 +1,28 @@
 import {
-  birdSendEmail,
   birdSendSms,
-  conversationReplyToAddress,
   getBirdSenderDefaults,
   isBirdConfigured,
   normalizePhoneE164,
 } from "@/lib/bird/client";
+import { loadReminderSequence } from "@/lib/booking/bookingService";
+import {
+  confirmationStep,
+  dueReminderSteps,
+  interpolateReminderText,
+  MAX_REMINDER_LEAD_MINUTES,
+  reminderTextToHtml,
+  sentReminderStepIds,
+  type BookingNotifyVars,
+  type BookingReminderStep,
+} from "@/lib/booking/reminderSequence";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { getOkMailingAccount } from "@/lib/unipile/outreachAccounts";
+import {
+  getUnipileEmail,
+  isUnipileConfigured,
+  sendUnipileEmail,
+} from "@/lib/unipile/client";
 
 export type BookingNotifyInput = {
   bookingId: string;
@@ -15,6 +30,7 @@ export type BookingNotifyInput = {
   coachName: string;
   coachEmail?: string | null;
   contactId?: string | null;
+  calendarId?: string | null;
   calendarTitle: string;
   prospectName: string;
   prospectEmail: string;
@@ -26,6 +42,12 @@ export type BookingNotifyInput = {
   meetingJoinUrl?: string | null;
   /** Existing thread to append to; created if missing. */
   conversationId?: string | null;
+};
+
+export type BookingNotifyResult = {
+  conversationId: string | null;
+  emailOk: boolean;
+  smsOk: boolean;
 };
 
 function formatWhen(iso: string, timeZone: string): string {
@@ -45,30 +67,47 @@ function formatWhen(iso: string, timeZone: string): string {
   }
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function emailThreadKey(threadId: string | null | undefined, emailId: string) {
+  const tid = (threadId || "").trim();
+  if (tid) return `email_thread:${tid}`;
+  return `email:${emailId}`;
 }
 
-function escapeAttr(s: string): string {
-  return escapeHtml(s).replace(/'/g, "&#39;");
+function normalizeEmail(raw: string): string {
+  return raw.trim().toLowerCase();
 }
 
 async function ensureConversation(
   input: BookingNotifyInput,
-  subject: string
+  subject: string,
+  unipileAccountId?: string | null
 ): Promise<string | null> {
-  if (input.conversationId) return input.conversationId;
+  if (input.conversationId) {
+    if (unipileAccountId) {
+      await supabaseAdmin
+        .from("messaging_conversations")
+        .update({ unipile_account_id: unipileAccountId })
+        .eq("id", input.conversationId)
+        .is("unipile_account_id", null);
+    }
+    return input.conversationId;
+  }
 
   const { data: existing } = await supabaseAdmin
     .from("messaging_conversations")
     .select("id")
     .eq("booking_id", input.bookingId)
     .maybeSingle();
-  if (existing?.id) return existing.id as string;
+  if (existing?.id) {
+    if (unipileAccountId) {
+      await supabaseAdmin
+        .from("messaging_conversations")
+        .update({ unipile_account_id: unipileAccountId })
+        .eq("id", existing.id)
+        .is("unipile_account_id", null);
+    }
+    return existing.id as string;
+  }
 
   const { data: conversation, error } = await supabaseAdmin
     .from("messaging_conversations")
@@ -78,9 +117,11 @@ async function ensureConversation(
       booking_id: input.bookingId,
       subject,
       prospect_name: input.prospectName,
-      prospect_email: input.prospectEmail,
+      prospect_email: normalizeEmail(input.prospectEmail),
       prospect_phone: input.prospectPhone || null,
       last_message_at: new Date().toISOString(),
+      last_channel: "email",
+      unipile_account_id: unipileAccountId || null,
     })
     .select("id")
     .maybeSingle();
@@ -102,26 +143,49 @@ async function appendOutbound(args: {
   fromAddress: string;
   toAddress: string;
   birdId?: string | null;
+  unipileMessageId?: string | null;
   error?: string | null;
   status: string;
   meta: Record<string, string>;
-  raw?: unknown;
 }) {
-  await supabaseAdmin.from("messaging_messages").insert({
-    conversation_id: args.conversationId,
-    coach_id: args.coachId,
-    channel: args.channel,
-    direction: "outbound",
-    status: args.status,
-    subject: args.subject || null,
-    body_text: args.bodyText,
-    body_html: args.bodyHtml || null,
-    from_address: args.fromAddress,
-    to_address: args.toAddress,
-    bird_message_id: args.birdId || null,
-    provider_error: args.error || null,
-    metadata: { ...(args.raw as object), meta: args.meta },
-  });
+  if (args.unipileMessageId) {
+    await supabaseAdmin.from("messaging_messages").upsert(
+      {
+        conversation_id: args.conversationId,
+        coach_id: args.coachId,
+        channel: args.channel,
+        direction: "outbound",
+        status: args.status,
+        subject: args.subject || null,
+        body_text: args.bodyText,
+        body_html: args.bodyHtml || null,
+        from_address: args.fromAddress,
+        to_address: args.toAddress,
+        bird_message_id: args.birdId || null,
+        unipile_message_id: args.unipileMessageId,
+        provider_error: args.error || null,
+        metadata: args.meta,
+      },
+      { onConflict: "unipile_message_id", ignoreDuplicates: true }
+    );
+  } else {
+    await supabaseAdmin.from("messaging_messages").insert({
+      conversation_id: args.conversationId,
+      coach_id: args.coachId,
+      channel: args.channel,
+      direction: "outbound",
+      status: args.status,
+      subject: args.subject || null,
+      body_text: args.bodyText,
+      body_html: args.bodyHtml || null,
+      from_address: args.fromAddress,
+      to_address: args.toAddress,
+      bird_message_id: args.birdId || null,
+      unipile_message_id: null,
+      provider_error: args.error || null,
+      metadata: args.meta,
+    });
+  }
 
   const preview = args.bodyText.replace(/\s+/g, " ").trim().slice(0, 160);
   const { data: conv } = await supabaseAdmin
@@ -140,248 +204,385 @@ async function appendOutbound(args: {
         lastMessageAt: new Date().toISOString(),
         lastPreview: preview || args.subject || null,
       }),
-      // Surface new activity in Unread until the coach opens the thread.
       unread_count: unread + 1,
       ...(args.subject ? { subject: args.subject } : {}),
     })
     .eq("id", args.conversationId);
 }
 
-export async function sendBookingConfirmations(
-  input: BookingNotifyInput
-): Promise<{ conversationId: string | null; emailOk: boolean; smsOk: boolean }> {
-  if (!isBirdConfigured()) {
-    console.warn("Bird not configured — skipping booking confirmations.");
-    return { conversationId: null, emailOk: false, smsOk: false };
+async function linkConversationToEmailThread(args: {
+  conversationId: string;
+  accountId: string;
+  emailId: string;
+}) {
+  const full = await getUnipileEmail(args.emailId, args.accountId);
+  const threadId =
+    typeof full.data?.thread_id === "string" ? full.data.thread_id : null;
+  const key = emailThreadKey(threadId, args.emailId);
+  await supabaseAdmin
+    .from("messaging_conversations")
+    .update({
+      unipile_chat_id: key,
+      unipile_account_id: args.accountId,
+    })
+    .eq("id", args.conversationId);
+}
+
+async function lastUnipileEmailId(
+  conversationId: string
+): Promise<string | null> {
+  const { data } = await supabaseAdmin
+    .from("messaging_messages")
+    .select("unipile_message_id")
+    .eq("conversation_id", conversationId)
+    .eq("channel", "email")
+    .not("unipile_message_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const id = (data?.unipile_message_id as string | null)?.trim();
+  return id || null;
+}
+
+async function sendBookingEmail(args: {
+  input: BookingNotifyInput;
+  conversationId: string;
+  subject: string;
+  text: string;
+  html: string;
+  meta: Record<string, string>;
+  threadReply: boolean;
+}): Promise<boolean> {
+  const toEmail = normalizeEmail(args.input.prospectEmail);
+  if (!toEmail) {
+    await appendOutbound({
+      conversationId: args.conversationId,
+      coachId: args.input.coachId,
+      channel: "email",
+      subject: args.subject,
+      bodyText: args.text,
+      bodyHtml: args.html,
+      fromAddress: args.input.coachName,
+      toAddress: args.input.prospectEmail,
+      error: "No recipient email.",
+      status: "failed",
+      meta: { ...args.meta, via: "unipile" },
+    });
+    return false;
   }
 
+  if (!isUnipileConfigured()) {
+    await appendOutbound({
+      conversationId: args.conversationId,
+      coachId: args.input.coachId,
+      channel: "email",
+      subject: args.subject,
+      bodyText: args.text,
+      bodyHtml: args.html,
+      fromAddress: args.input.coachName,
+      toAddress: toEmail,
+      error: "Unipile is not configured.",
+      status: "failed",
+      meta: { ...args.meta, via: "unipile" },
+    });
+    return false;
+  }
+
+  let mailbox: Awaited<ReturnType<typeof getOkMailingAccount>> = null;
+  try {
+    mailbox = await getOkMailingAccount(args.input.coachId);
+  } catch (err) {
+    console.error("getOkMailingAccount:", err);
+  }
+
+  if (!mailbox) {
+    const error =
+      "Connect Gmail or Outlook to send booking emails from your inbox.";
+    console.warn(
+      `booking email skipped (${args.meta.kind}) booking=${args.input.bookingId}: ${error}`
+    );
+    await appendOutbound({
+      conversationId: args.conversationId,
+      coachId: args.input.coachId,
+      channel: "email",
+      subject: args.subject,
+      bodyText: args.text,
+      bodyHtml: args.html,
+      fromAddress: args.input.coachName,
+      toAddress: toEmail,
+      error,
+      status: "failed",
+      meta: { ...args.meta, via: "unipile", skip: "no_mailbox" },
+    });
+    return false;
+  }
+
+  const replyTo = args.threadReply
+    ? await lastUnipileEmailId(args.conversationId)
+    : undefined;
+
+  let res = await sendUnipileEmail({
+    account_id: mailbox.unipile_account_id,
+    to: [
+      {
+        identifier: toEmail,
+        display_name: args.input.prospectName,
+      },
+    ],
+    subject: args.subject,
+    body: args.html,
+    ...(replyTo ? { reply_to: replyTo } : {}),
+  });
+
+  if (!res.ok && replyTo) {
+    res = await sendUnipileEmail({
+      account_id: mailbox.unipile_account_id,
+      to: [
+        {
+          identifier: toEmail,
+          display_name: args.input.prospectName,
+        },
+      ],
+      subject: args.subject,
+      body: args.html,
+    });
+  }
+
+  const emailId = res.data?.tracking_id?.trim() || null;
+  await appendOutbound({
+    conversationId: args.conversationId,
+    coachId: args.input.coachId,
+    channel: "email",
+    subject: args.subject,
+    bodyText: args.text,
+    bodyHtml: args.html,
+    fromAddress: `${args.input.coachName} <${mailbox.display_name || "mailbox"}>`,
+    toAddress: toEmail,
+    unipileMessageId: emailId,
+    error: res.error || null,
+    status: res.ok ? "accepted" : "failed",
+    meta: {
+      ...args.meta,
+      via: "unipile",
+      account_id: mailbox.unipile_account_id,
+      ...(res.data?.provider_id
+        ? { provider_id: String(res.data.provider_id) }
+        : {}),
+    },
+  });
+
+  if (res.ok && emailId) {
+    try {
+      await linkConversationToEmailThread({
+        conversationId: args.conversationId,
+        accountId: mailbox.unipile_account_id,
+        emailId,
+      });
+    } catch (err) {
+      console.error("linkConversationToEmailThread:", err);
+    }
+  } else if (!res.ok) {
+    console.error(
+      `booking email failed (${args.meta.kind}) booking=${args.input.bookingId}:`,
+      res.error
+    );
+  }
+
+  return res.ok;
+}
+
+async function sendBookingSms(args: {
+  input: BookingNotifyInput;
+  conversationId: string;
+  text: string;
+  meta: Record<string, string>;
+}): Promise<boolean> {
+  if (!isBirdConfigured()) return false;
+  const sender = getBirdSenderDefaults();
+  const e164 = normalizePhoneE164(args.input.prospectPhone);
+  if (!sender.smsFrom || !e164) return false;
+
+  const smsRes = await birdSendSms({
+    to: e164,
+    from: sender.smsFrom,
+    text: args.text,
+    metadata: args.meta,
+  });
+
+  await appendOutbound({
+    conversationId: args.conversationId,
+    coachId: args.input.coachId,
+    channel: "sms",
+    bodyText: args.text,
+    fromAddress: sender.smsFrom,
+    toAddress: e164,
+    birdId: smsRes.id,
+    error: smsRes.error,
+    status: smsRes.ok ? smsRes.status || "accepted" : "failed",
+    meta: { ...args.meta, via: "bird" },
+  });
+
+  return smsRes.ok;
+}
+
+function notifyVars(input: BookingNotifyInput): BookingNotifyVars {
   const when = formatWhen(input.startsAtIso, input.timezone || "UTC");
-  const subject = `Confirmed: ${input.calendarTitle} with ${input.coachName}`;
-  const locationLine =
+  const where =
     input.meetingJoinUrl ||
     input.locationLabel ||
     "Details will follow closer to the call.";
-  const first = input.prospectName.split(/\s+/)[0] || "there";
+  return {
+    first_name: input.prospectName.split(/\s+/)[0] || "there",
+    coach_name: input.coachName,
+    calendar_title: input.calendarTitle,
+    when,
+    where,
+  };
+}
 
-  const text = [
-    `Hi ${first},`,
-    "",
-    `Your ${input.calendarTitle} with ${input.coachName} is booked.`,
-    "",
-    `When: ${when}`,
-    `Where: ${locationLine}`,
-    "",
-    "Reply to this email if you need to reschedule.",
-    "",
-    `— ${input.coachName}`,
-  ].join("\n");
+function asReminderSendsMap(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!key.trim()) continue;
+    out[key] = typeof value === "string" ? value : String(value);
+  }
+  return out;
+}
 
-  const html = `
-    <p>Hi ${escapeHtml(first)},</p>
-    <p>Your <strong>${escapeHtml(input.calendarTitle)}</strong> with
-    <strong>${escapeHtml(input.coachName)}</strong> is booked.</p>
-    <p><strong>When:</strong> ${escapeHtml(when)}<br/>
-    <strong>Where:</strong> ${
-      input.meetingJoinUrl
-        ? `<a href="${escapeAttr(input.meetingJoinUrl)}">${escapeHtml(input.meetingJoinUrl)}</a>`
-        : escapeHtml(locationLine)
-    }</p>
-    <p>Reply to this email if you need to reschedule.</p>
-    <p>— ${escapeHtml(input.coachName)}</p>
-  `.trim();
+async function markReminderSend(args: {
+  bookingId: string;
+  stepId: string;
+  reminderSentAt?: boolean;
+}) {
+  const { data } = await supabaseAdmin
+    .from("bookings")
+    .select("reminder_sends")
+    .eq("id", args.bookingId)
+    .maybeSingle();
+  const next = {
+    ...asReminderSendsMap(data?.reminder_sends),
+    [args.stepId]: new Date().toISOString(),
+  };
+  await supabaseAdmin
+    .from("bookings")
+    .update({
+      reminder_sends: next,
+      ...(args.reminderSentAt
+        ? { reminder_sent_at: new Date().toISOString() }
+        : {}),
+    })
+    .eq("id", args.bookingId);
+}
 
-  const conversationId = await ensureConversation(input, subject);
+async function sendBookingSequenceStep(args: {
+  input: BookingNotifyInput;
+  step: BookingReminderStep;
+  threadReply: boolean;
+}): Promise<BookingNotifyResult> {
+  const vars = notifyVars(args.input);
+  const subject = interpolateReminderText(args.step.subject, vars);
+  const text = interpolateReminderText(args.step.body, vars);
+  const html = reminderTextToHtml(text);
+
+  let mailboxId: string | null = null;
+  try {
+    mailboxId =
+      (await getOkMailingAccount(args.input.coachId))?.unipile_account_id ??
+      null;
+  } catch (err) {
+    console.error("getOkMailingAccount:", err);
+  }
+
+  const conversationId = await ensureConversation(
+    args.input,
+    subject,
+    mailboxId
+  );
   if (!conversationId) {
     return { conversationId: null, emailOk: false, smsOk: false };
   }
 
-  const sender = getBirdSenderDefaults();
   const meta = {
-    booking_id: input.bookingId,
+    booking_id: args.input.bookingId,
     conversation_id: conversationId,
-    coach_id: input.coachId,
-    kind: "confirmation",
+    coach_id: args.input.coachId,
+    kind: args.step.kind,
+    step_id: args.step.id,
   };
 
-  const emailRes = await birdSendEmail({
-    toEmail: input.prospectEmail,
-    toName: input.prospectName,
-    fromEmail: sender.fromEmail,
-    fromName: input.coachName || sender.fromName,
-    // Route replies into Bird on send.* so Conversations can ingest them.
-    replyTo: conversationReplyToAddress(conversationId),
-    subject,
-    text,
-    html,
-    metadata: meta,
-  });
-
-  await appendOutbound({
-    conversationId,
-    coachId: input.coachId,
-    channel: "email",
-    subject,
-    bodyText: text,
-    bodyHtml: html,
-    fromAddress: `${input.coachName} <${sender.fromEmail}>`,
-    toAddress: input.prospectEmail,
-    birdId: emailRes.id,
-    error: emailRes.error,
-    status: emailRes.ok ? emailRes.status || "accepted" : "failed",
-    meta,
-    raw: emailRes.raw,
-  });
-
-  let smsOk = false;
-  const e164 = normalizePhoneE164(input.prospectPhone);
-  if (sender.smsFrom && e164) {
-    const smsText =
-      `Confirmed: ${input.calendarTitle} with ${input.coachName} on ${when}. ` +
-      `${input.meetingJoinUrl ? `Join: ${input.meetingJoinUrl}` : ""}`.trim();
-
-    const smsRes = await birdSendSms({
-      to: e164,
-      from: sender.smsFrom,
-      text: smsText,
-      metadata: meta,
-    });
-    smsOk = smsRes.ok;
-
-    await appendOutbound({
+  let emailOk = true;
+  if (args.step.email) {
+    emailOk = await sendBookingEmail({
+      input: args.input,
       conversationId,
-      coachId: input.coachId,
-      channel: "sms",
-      bodyText: smsText,
-      fromAddress: sender.smsFrom,
-      toAddress: e164,
-      birdId: smsRes.id,
-      error: smsRes.error,
-      status: smsRes.ok ? smsRes.status || "accepted" : "failed",
+      subject,
+      text,
+      html,
       meta,
-      raw: smsRes.raw,
+      threadReply: args.threadReply,
     });
   }
 
-  return { conversationId, emailOk: emailRes.ok, smsOk };
+  let smsOk = true;
+  if (args.step.sms) {
+    smsOk = await sendBookingSms({
+      input: args.input,
+      conversationId,
+      text,
+      meta,
+    });
+  }
+
+  return { conversationId, emailOk, smsOk };
+}
+
+export async function sendBookingConfirmations(
+  input: BookingNotifyInput
+): Promise<BookingNotifyResult> {
+  const sequence = await loadReminderSequence(input.coachId, input.calendarId);
+  const step = confirmationStep(sequence);
+  if (!step.enabled || (!step.email && !step.sms)) {
+    return { conversationId: input.conversationId ?? null, emailOk: true, smsOk: true };
+  }
+
+  const result = await sendBookingSequenceStep({
+    input,
+    step,
+    threadReply: false,
+  });
+  try {
+    await markReminderSend({
+      bookingId: input.bookingId,
+      stepId: step.id,
+    });
+  } catch (err) {
+    console.error("markReminderSend confirmation:", err);
+  }
+  return result;
 }
 
 export async function sendBookingReminder(
-  input: BookingNotifyInput
-): Promise<{ conversationId: string | null; emailOk: boolean; smsOk: boolean }> {
-  if (!isBirdConfigured()) {
-    return { conversationId: null, emailOk: false, smsOk: false };
+  input: BookingNotifyInput,
+  step?: BookingReminderStep
+): Promise<BookingNotifyResult> {
+  const resolved =
+    step ??
+    (await loadReminderSequence(input.coachId, input.calendarId)).find(
+      (s) => s.kind === "reminder"
+    );
+  if (!resolved || resolved.kind !== "reminder") {
+    return {
+      conversationId: input.conversationId ?? null,
+      emailOk: false,
+      smsOk: false,
+    };
   }
-
-  const when = formatWhen(input.startsAtIso, input.timezone || "UTC");
-  const subject = `Reminder: ${input.calendarTitle} with ${input.coachName} in 2 hours`;
-  const locationLine =
-    input.meetingJoinUrl ||
-    input.locationLabel ||
-    "Check your confirmation email for details.";
-  const first = input.prospectName.split(/\s+/)[0] || "there";
-
-  const text = [
-    `Hi ${first},`,
-    "",
-    `Quick reminder — your ${input.calendarTitle} with ${input.coachName} starts in about 2 hours.`,
-    "",
-    `When: ${when}`,
-    `Where: ${locationLine}`,
-    "",
-    `— ${input.coachName}`,
-  ].join("\n");
-
-  const html = `
-    <p>Hi ${escapeHtml(first)},</p>
-    <p>Quick reminder — your <strong>${escapeHtml(input.calendarTitle)}</strong> with
-    <strong>${escapeHtml(input.coachName)}</strong> starts in about 2 hours.</p>
-    <p><strong>When:</strong> ${escapeHtml(when)}<br/>
-    <strong>Where:</strong> ${
-      input.meetingJoinUrl
-        ? `<a href="${escapeAttr(input.meetingJoinUrl)}">${escapeHtml(input.meetingJoinUrl)}</a>`
-        : escapeHtml(locationLine)
-    }</p>
-    <p>— ${escapeHtml(input.coachName)}</p>
-  `.trim();
-
-  const conversationId = await ensureConversation(input, subject);
-  if (!conversationId) {
-    return { conversationId: null, emailOk: false, smsOk: false };
-  }
-
-  const sender = getBirdSenderDefaults();
-  const meta = {
-    booking_id: input.bookingId,
-    conversation_id: conversationId,
-    coach_id: input.coachId,
-    kind: "reminder",
-  };
-
-  const emailRes = await birdSendEmail({
-    toEmail: input.prospectEmail,
-    toName: input.prospectName,
-    fromEmail: sender.fromEmail,
-    fromName: input.coachName || sender.fromName,
-    // Route replies into Bird on send.* so Conversations can ingest them.
-    replyTo: conversationReplyToAddress(conversationId),
-    subject,
-    text,
-    html,
-    metadata: meta,
+  return sendBookingSequenceStep({
+    input,
+    step: resolved,
+    threadReply: true,
   });
-
-  await appendOutbound({
-    conversationId,
-    coachId: input.coachId,
-    channel: "email",
-    subject,
-    bodyText: text,
-    bodyHtml: html,
-    fromAddress: `${input.coachName} <${sender.fromEmail}>`,
-    toAddress: input.prospectEmail,
-    birdId: emailRes.id,
-    error: emailRes.error,
-    status: emailRes.ok ? emailRes.status || "accepted" : "failed",
-    meta,
-    raw: emailRes.raw,
-  });
-
-  let smsOk = false;
-  const e164 = normalizePhoneE164(input.prospectPhone);
-  if (sender.smsFrom && e164) {
-    const smsText =
-      `Reminder: ${input.calendarTitle} with ${input.coachName} in ~2 hours (${when}). ` +
-      `${input.meetingJoinUrl ? `Join: ${input.meetingJoinUrl}` : ""}`.trim();
-    const smsRes = await birdSendSms({
-      to: e164,
-      from: sender.smsFrom,
-      text: smsText,
-      metadata: meta,
-    });
-    smsOk = smsRes.ok;
-    await appendOutbound({
-      conversationId,
-      coachId: input.coachId,
-      channel: "sms",
-      bodyText: smsText,
-      fromAddress: sender.smsFrom,
-      toAddress: e164,
-      birdId: smsRes.id,
-      error: smsRes.error,
-      status: smsRes.ok ? smsRes.status || "accepted" : "failed",
-      meta,
-      raw: smsRes.raw,
-    });
-  }
-
-  return { conversationId, emailOk: emailRes.ok, smsOk };
-}
-
-/** Minutes before starts_at to send the reminder (default 120). */
-export function bookingReminderLeadMinutes(): number {
-  const raw = process.env.BOOKING_REMINDER_MINUTES_BEFORE?.trim();
-  const n = raw ? Number(raw) : 120;
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 120;
 }
 
 export async function processDueBookingReminders(limit = 25): Promise<{
@@ -389,28 +590,22 @@ export async function processDueBookingReminders(limit = 25): Promise<{
   sent: number;
   errors: number;
 }> {
-  if (!isBirdConfigured()) {
-    return { scanned: 0, sent: 0, errors: 0 };
-  }
-
-  const leadMin = bookingReminderLeadMinutes();
   const now = Date.now();
   const windowStart = new Date(now).toISOString();
-  // Reminder is due when starts_at is between now and now+leadMin
-  // i.e. we're inside the lead window before the call.
-  const windowEnd = new Date(now + leadMin * 60_000).toISOString();
+  const windowEnd = new Date(
+    now + MAX_REMINDER_LEAD_MINUTES * 60_000
+  ).toISOString();
 
   const { data: bookings, error } = await supabaseAdmin
     .from("bookings")
     .select(
-      "id, coach_id, contact_id, calendar_id, starts_at, ends_at, prospect_name, prospect_email, prospect_phone, prospect_timezone, meeting_join_url, meeting_phone, meeting_instructions, meeting_location_type"
+      "id, coach_id, contact_id, calendar_id, starts_at, ends_at, created_at, reminder_sent_at, reminder_sends, prospect_name, prospect_email, prospect_phone, prospect_timezone, meeting_join_url, meeting_phone, meeting_instructions, meeting_location_type"
     )
     .eq("status", "booked")
-    .is("reminder_sent_at", null)
     .gt("starts_at", windowStart)
     .lte("starts_at", windowEnd)
     .order("starts_at", { ascending: true })
-    .limit(limit);
+    .limit(300);
 
   if (error) {
     console.error("processDueBookingReminders:", error);
@@ -418,23 +613,52 @@ export async function processDueBookingReminders(limit = 25): Promise<{
   }
 
   const rows = bookings ?? [];
+  const sequenceByKey = new Map<string, BookingReminderStep[]>();
   let sent = 0;
   let errors = 0;
+  let dispatched = 0;
 
   for (const b of rows) {
+    if (dispatched >= limit) break;
     try {
       if (!b.prospect_email) {
         errors += 1;
         continue;
       }
 
+      const coachId = b.coach_id as string;
+      const calendarId = (b.calendar_id as string | null) ?? null;
+      const sequenceKey = calendarId ?? `coach:${coachId}`;
+      if (!sequenceByKey.has(sequenceKey)) {
+        sequenceByKey.set(
+          sequenceKey,
+          await loadReminderSequence(coachId, calendarId)
+        );
+      }
+      const sequence = sequenceByKey.get(sequenceKey)!;
+      const sentIds = sentReminderStepIds({
+        reminderSends: b.reminder_sends,
+        reminderSentAt: (b.reminder_sent_at as string | null) ?? null,
+        sequence,
+      });
+      const due = dueReminderSteps({
+        sequence,
+        startsAtMs: new Date(b.starts_at as string).getTime(),
+        createdAtMs: new Date(
+          (b.created_at as string | null) || (b.starts_at as string)
+        ).getTime(),
+        nowMs: now,
+        sentStepIds: sentIds,
+      });
+      if (due.length === 0) continue;
+
       const { data: profile } = await supabaseAdmin
         .from("profiles")
         .select("full_name, coach_business_name")
-        .eq("id", b.coach_id)
+        .eq("id", coachId)
         .maybeSingle();
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(
-        b.coach_id as string
+        coachId
       );
       const { data: calendar } = b.calendar_id
         ? await supabaseAdmin
@@ -460,12 +684,13 @@ export async function processDueBookingReminders(limit = 25): Promise<{
         .eq("booking_id", b.id)
         .maybeSingle();
 
-      const result = await sendBookingReminder({
+      const input: BookingNotifyInput = {
         bookingId: b.id as string,
-        coachId: b.coach_id as string,
+        coachId,
         coachName,
         coachEmail: authUser.user?.email ?? null,
         contactId: (b.contact_id as string | null) ?? null,
+        calendarId,
         calendarTitle:
           (calendar?.name as string | null)?.trim() || "Discovery call",
         prospectName: (b.prospect_name as string) || "there",
@@ -477,16 +702,24 @@ export async function processDueBookingReminders(limit = 25): Promise<{
         locationLabel,
         meetingJoinUrl: (b.meeting_join_url as string | null) ?? null,
         conversationId: (conv?.id as string | null) ?? null,
-      });
+      };
 
-      // Mark sent even if one channel failed, so we don't spam retries every minute.
-      await supabaseAdmin
-        .from("bookings")
-        .update({ reminder_sent_at: new Date().toISOString() })
-        .eq("id", b.id);
-
-      if (result.emailOk || result.smsOk) sent += 1;
-      else errors += 1;
+      for (const step of due) {
+        if (dispatched >= limit) break;
+        dispatched += 1;
+        const result = await sendBookingSequenceStep({
+          input,
+          step,
+          threadReply: true,
+        });
+        await markReminderSend({
+          bookingId: input.bookingId,
+          stepId: step.id,
+          reminderSentAt: true,
+        });
+        if (result.emailOk || result.smsOk) sent += 1;
+        else errors += 1;
+      }
     } catch (err) {
       console.error("reminder for booking", b.id, err);
       errors += 1;

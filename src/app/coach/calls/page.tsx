@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadCallTableRows } from "@/lib/loadCallTableRows";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -59,10 +59,6 @@ export default function CoachCallsPage() {
         roleBody.role === "admin" && impersonatingCoachId
           ? impersonatingCoachId
           : user.id;
-      if (roleBody.role === "admin" && !impersonatingCoachId) {
-        router.replace("/admin/calls");
-        return;
-      }
 
       try {
         const rows = await loadCallTableRows(supabaseClient, {
@@ -97,21 +93,23 @@ export default function CoachCallsPage() {
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
-      <CallsHub
-        calls={calls}
-        loading={loading}
-        error={error}
-        showCoachColumn={false}
-        appOrigin={appOrigin}
-        callsBasePath="/coach/calls"
-        onCallsChange={setCalls}
-        onRowClick={(row) => {
-          if (row.contact_id && clientHubAllowed) {
-            router.push(bossProHubPath(row.contact_id));
-          }
-        }}
-        emptyMessage="No calls yet. When prospects book through your calendars, they will appear here."
-      />
+      <Suspense fallback={<p className="text-sm text-slate-600">Loading calls…</p>}>
+        <CallsHub
+          calls={calls}
+          loading={loading}
+          error={error}
+          showCoachColumn={false}
+          appOrigin={appOrigin}
+          callsBasePath="/coach/calls"
+          onCallsChange={setCalls}
+          onRowClick={(row) => {
+            if (row.contact_id && clientHubAllowed) {
+              router.push(bossProHubPath(row.contact_id));
+            }
+          }}
+          emptyMessage="No calls yet. When prospects book through your calendars, they will appear here."
+        />
+      </Suspense>
     </div>
   );
 }

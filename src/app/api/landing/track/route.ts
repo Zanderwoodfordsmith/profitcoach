@@ -90,6 +90,25 @@ export async function POST(request: Request) {
 
     const { error: insertError } = await supabaseAdmin.from("landing_events").insert(row);
 
+    if (
+      !insertError &&
+      coach_slug &&
+      (event_type === "start" || event_type === "finish")
+    ) {
+      const { data: coach } = await supabaseAdmin
+        .from("coaches")
+        .select("id")
+        .eq("slug", coach_slug)
+        .maybeSingle();
+      if (coach?.id) {
+        const { fireBossScoreWatchSafe } = await import("@/lib/coachWatch/fire");
+        fireBossScoreWatchSafe({
+          coachId: coach.id as string,
+          event: event_type === "start" ? "started" : "completed",
+        });
+      }
+    }
+
     if (insertError) {
       console.error("landing/track insert failed:", insertError.message, {
         variant,

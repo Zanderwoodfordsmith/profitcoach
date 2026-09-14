@@ -10,7 +10,9 @@ import { chunkArray } from "@/lib/chunkArray";
 import { mergeCoachFilterOptions } from "@/lib/mergeCoachFilterOptions";
 import { useStickyPageHeaderOffset } from "@/hooks/useStickyPageHeaderOffset";
 import type { ProspectRow } from "@/lib/prospectRow";
+import type { ProspectNextCall } from "@/lib/prospectNextCall";
 import { applyProspectPatch } from "@/lib/prospects/applyProspectPatch";
+import { resolveProspectStatus } from "@/lib/prospectStatus";
 import type {
   ProspectFieldPatch,
   UpdatedProspectFields,
@@ -154,15 +156,11 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
         return;
       }
 
-      // coach scope
+      // coach scope — admins without a view-as coach use their own roster
       const effectiveId =
         roleBody.role === "admin" && impersonatingCoachId
           ? impersonatingCoachId
           : user.id;
-      if (roleBody.role === "admin" && !impersonatingCoachId) {
-        router.replace("/admin");
-        return;
-      }
       setUserId(user.id);
       setEffectiveCoachId(effectiveId);
 
@@ -304,6 +302,29 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
     [scope, impersonatingCoachId, contactUrl]
   );
 
+  const handleProspectBooked = useCallback(
+    (row: ProspectRow, nextCall: ProspectNextCall) => {
+      setProspects((prev) =>
+        prev.map((p) => {
+          if (p.id !== row.id) return p;
+          const prospect_status = "booked";
+          return {
+            ...p,
+            prospect_status,
+            next_call: nextCall,
+            status: resolveProspectStatus({
+              prospect_status,
+              last_completed_at: p.last_assessed_at,
+              next_call: nextCall,
+              next_action: p.next_action,
+            }),
+          };
+        })
+      );
+    },
+    []
+  );
+
   const handleCreateProspect = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -386,6 +407,24 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
       router,
     ]
   );
+
+  const mergeImportedProspects = useCallback((rows: ProspectRow[]) => {
+    if (rows.length === 0) return;
+    setProspects((prev) => {
+      const byId = new Map(prev.map((row) => [row.id, row]));
+      const next = [...prev];
+      for (const row of rows) {
+        if (byId.has(row.id)) {
+          const idx = next.findIndex((item) => item.id === row.id);
+          if (idx >= 0) next[idx] = row;
+        } else {
+          next.unshift(row);
+          byId.set(row.id, row);
+        }
+      }
+      return next;
+    });
+  }, []);
 
   const openAddProspect = useCallback(() => {
     setShowAddProspect(true);
@@ -531,8 +570,10 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
     handleCreateProspect,
     handleDeleteProspect,
     handleUpdateProspect,
+    handleProspectBooked,
     openAddProspect,
     closeAddProspect,
     enrichVisibleIds,
+    mergeImportedProspects,
   };
 }

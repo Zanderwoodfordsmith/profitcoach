@@ -66,13 +66,13 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
     hint: "Also under Coaches hub tabs",
   },
   {
-    href: "/admin/account?tab=calendar",
+    href: "/admin/calls?tab=settings",
     label: "My native booking (hours)",
     hint: "Set your own availability — no impersonation. Book link appears after save.",
   },
   {
     href: "/zander",
     label: "My public book page (/zander)",
-    hint: "Enable booking under Settings → Calendar first, then share this URL.",
+    hint: "Enable booking under Calls → Settings first, then share this URL.",
   },
 ];

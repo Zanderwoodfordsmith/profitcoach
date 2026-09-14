@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Fragment } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowUpDown,
+  Banknote,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Contact,
+  GripVertical,
   Link2,
   Loader2,
   ListTodo,
+  MoreHorizontal,
+  Pencil,
   Play,
   Search,
   Trash2,
+  Users,
 } from "lucide-react";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -34,6 +40,17 @@ import {
   getProspectNextCallStatusLabel,
   type ProspectNextCall,
 } from "@/lib/prospectNextCall";
+import type { ProspectGroupSection } from "@/lib/prospects/prospectGrouping";
+import {
+  ALL_PROSPECT_COLUMN_KEYS,
+  DEFAULT_PROSPECT_COLUMN_ORDER,
+  DEFAULT_PROSPECT_COLUMN_VISIBILITY,
+  PROSPECT_COLUMN_LEGACY_KEY_MAP,
+  PROSPECTS_TABLE_COLUMN_OPTIONS,
+  PROSPECTS_TABLE_SETTINGS_STORAGE_KEY,
+  type ProspectColumnKey,
+  type ProspectColumnVisibility,
+} from "@/lib/prospects/prospectTableColumns";
 import type { ProspectRow } from "@/lib/prospectRow";
 import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
 import { ProspectContactEditModal } from "@/components/prospects/ProspectContactEditModal";
@@ -41,8 +58,10 @@ import { ProspectNextActionCell } from "@/components/prospects/ProspectNextActio
 import { ProspectEmptyValue } from "@/components/prospects/ProspectEmptyValue";
 import { ProspectStatusCell } from "@/components/prospects/ProspectStatusCell";
 import { ScorecardGlanceModal } from "@/components/scorecard/ScorecardGlanceModal";
-import { formatProspectLabel, formatProspectPersonName } from "@/lib/prospectDisplayFormat";
-import { companyWebsiteHref } from "@/lib/leadFinder/display";
+import {
+  formatProspectPersonName,
+} from "@/lib/prospectDisplayFormat";
+import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
 import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
 import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
@@ -66,6 +85,9 @@ type NextCallStatusFilter = "all" | "booked" | "confirmed" | "other";
 type ProspectStatusFilter = "all" | import("@/lib/prospectStatus").ProspectStatusValue;
 type ProspectSortField =
   | "name"
+  | "business"
+  | "email"
+  | "status"
   | "created_at"
   | "last_assessed"
   | "boss_score"
@@ -76,31 +98,6 @@ type ProspectSortOrder =
   | "desc"
   | "missing_first"
   | "no_call_last";
-
-type ProspectColumnKey =
-  | "business"
-  | "email"
-  | "phone"
-  | "coach"
-  | "actions"
-  | "boss_score"
-  | "boss_score_premium"
-  | "created_at"
-  | "revenue"
-  | "team_size"
-  | "years_in_business"
-  | "outcome"
-  | "obstacles"
-  | "preferred_support"
-  | "boss_level"
-  | "next_call"
-  | "next_action"
-  | "status"
-  | "source"
-  | "linkedin"
-  | "crm";
-
-type ProspectColumnVisibility = Record<ProspectColumnKey, boolean>;
 
 type CoachFilterOption = {
   id: string;
@@ -139,8 +136,22 @@ type Props = {
   onAddClick?: () => void;
   addActive?: boolean;
   addLabel?: string;
+  /** Kanban/list switcher, rendered at the end of the toolbar with Add. */
+  viewSwitcher?: React.ReactNode;
+  /** Replaces the default toolbar Add control when set. */
+  addButton?: React.ReactNode;
+  addPlacement?: "after-search" | "end";
   /** Height of sticky page header above this table (e.g. StickyPageHeader). */
   stickyTopOffset?: number;
+  /** Hide the local search/filter/export bar when a parent owns the chrome. */
+  hideToolbar?: boolean;
+  columnVisibility?: ProspectColumnVisibility;
+  columnOrder?: ProspectColumnKey[];
+  onColumnVisibilityChange?: (key: ProspectColumnKey, visible: boolean) => void;
+  onMoveColumn?: (draggedKey: ProspectColumnKey, targetKey: ProspectColumnKey) => void;
+  groupSections?: ProspectGroupSection[];
+  groupDraggable?: boolean;
+  onMoveGroup?: (fromKey: string, toKey: string) => void;
   /** Coach public slug for personalised Boss assessment links (coach prospects view). */
   coachSlug?: string | null;
   /** Coach slug per coach id (admin prospects view). */
@@ -151,9 +162,8 @@ type Props = {
   scoresEnriching?: boolean;
 };
 
-const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v9";
 const PROSPECTS_PAGE_SIZE_STORAGE_KEY = "prospects-table-page-size-v1";
-const PROSPECTS_PAGE_SIZE_OPTIONS = [50, 100, 250, 500] as const;
+const PROSPECTS_PAGE_SIZE_OPTIONS = [20, 50, 100, 250, 500] as const;
 type ProspectsPageSize = (typeof PROSPECTS_PAGE_SIZE_OPTIONS)[number];
 const DEFAULT_PROSPECTS_PAGE_SIZE: ProspectsPageSize = 50;
 
@@ -176,23 +186,18 @@ const TABLE_SECTION_PADDING = "px-5 sm:px-6";
 const TABLE_CHECKBOX_CELL = "px-1 text-center";
 const TABLE_CHECKBOX_INPUT =
   "h-3.5 w-3.5 rounded border-slate-300 text-sky-600 focus:ring-sky-500";
-const TABLE_CELL_Y = "py-2";
-const TABLE_HEAD_CELL = "h-10 bg-slate-50 py-0 align-middle";
+const TABLE_CELL_Y = "py-3";
+const TABLE_HEAD_CELL = "h-11 border-b border-slate-100 bg-white py-0 align-middle";
 const TABLE_CELL_X = "px-4";
 const TABLE_LEAD_CELL = "pl-1 pr-4";
 const TABLE_COACH_CELL = "whitespace-nowrap";
 const TABLE_NEXT_ACTION_CELL = "whitespace-nowrap";
 const TABLE_STATUS_CELL = "whitespace-nowrap";
-const TABLE_EMAIL_CELL = "pl-4 pr-6 min-w-0";
-const TABLE_PHONE_CELL = "whitespace-nowrap";
 
 const TABLE_CHECKBOX_COL_WIDTH = 36;
-const TABLE_LEAD_COL_WIDTH = 236;
-const TABLE_LINKEDIN_COL_WIDTH = 52;
+const TABLE_LEAD_COL_WIDTH = 440;
+const TABLE_KEBAB_COL_WIDTH = 44;
 const TABLE_BASE_LEFT_RAIL_WIDTH = TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH;
-const TABLE_PHONE_COL_WIDTH = 168;
-const TABLE_EMAIL_COL_WIDTH = 220;
-const TABLE_EMAIL_COL_WIDTH_EXPANDED = 320;
 
 const TABLE_STICKY_CHECKBOX_CELL = "sticky left-0 z-[12]";
 const TABLE_STICKY_LEAD_CELL = "sticky z-[11]";
@@ -203,17 +208,10 @@ function stickyProspectRowBg(isSelected: boolean) {
     : "bg-white group-hover:bg-slate-50";
 }
 
-function getProspectColumnWidth(
-  key: ProspectColumnKey,
-  emailExpanded = false
-): number {
+function getProspectColumnWidth(key: ProspectColumnKey): number {
   switch (key) {
-    case "phone":
-      return TABLE_PHONE_COL_WIDTH;
-    case "email":
-      return emailExpanded
-        ? TABLE_EMAIL_COL_WIDTH_EXPANDED
-        : TABLE_EMAIL_COL_WIDTH;
+    case "business_stats":
+      return 176;
     case "status":
       return 112;
     case "coach":
@@ -233,8 +231,6 @@ function getProspectColumnWidth(
       return 52;
     case "crm":
       return 52;
-    case "business":
-      return 160;
     case "actions":
       return 120;
     default:
@@ -242,62 +238,10 @@ function getProspectColumnWidth(
   }
 }
 
-const COLUMN_OPTIONS: Array<{ key: ProspectColumnKey; label: string }> = [
-  { key: "linkedin", label: "LinkedIn" },
-  { key: "crm", label: "CRM" },
-  { key: "business", label: "Business" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
-  { key: "source", label: "Source" },
-  { key: "coach", label: "Coach" },
-  { key: "actions", label: "Actions" },
-  { key: "status", label: "Status" },
-  { key: "boss_score", label: "Boss" },
-  { key: "boss_score_premium", label: "Boss Pro" },
-  { key: "created_at", label: "Date created" },
-  { key: "revenue", label: "Revenue" },
-  { key: "team_size", label: "Team size" },
-  { key: "years_in_business", label: "Years in business" },
-  { key: "outcome", label: "Outcome" },
-  { key: "obstacles", label: "Obstacles" },
-  { key: "preferred_support", label: "Preferred support" },
-  { key: "boss_level", label: "BOSS level" },
-  { key: "next_call", label: "Next call" },
-  { key: "next_action", label: "Next action" },
-];
-
-const DEFAULT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
-  business: false,
-  email: true,
-  phone: true,
-  linkedin: true,
-  crm: false,
-  source: true,
-  coach: true,
-  actions: false,
-  status: true,
-  boss_score: true,
-  boss_score_premium: true,
-  created_at: true,
-  revenue: false,
-  team_size: false,
-  years_in_business: false,
-  outcome: false,
-  obstacles: false,
-  preferred_support: false,
-  boss_level: false,
-  next_call: true,
-  next_action: true,
-};
-
-const DEFAULT_COLUMN_ORDER: ProspectColumnKey[] = COLUMN_OPTIONS.map(
-  (option) => option.key
-);
-const ALL_COLUMN_KEYS = DEFAULT_COLUMN_ORDER;
-const PROSPECT_COLUMN_LEGACY_KEY_MAP: Record<string, ProspectColumnKey> = {
-  last_score: "boss_score",
-  last_assessed: "boss_score",
-};
+const COLUMN_OPTIONS = PROSPECTS_TABLE_COLUMN_OPTIONS;
+const DEFAULT_COLUMN_VISIBILITY = DEFAULT_PROSPECT_COLUMN_VISIBILITY;
+const DEFAULT_COLUMN_ORDER = DEFAULT_PROSPECT_COLUMN_ORDER;
+const ALL_COLUMN_KEYS = ALL_PROSPECT_COLUMN_KEYS;
 
 function nextCallStatusClass(status: string | null | undefined): string {
   switch (status) {
@@ -429,6 +373,20 @@ function resolveCoachSlugForProspect(
   return null;
 }
 
+function compareText(
+  a: string | null | undefined,
+  b: string | null | undefined,
+  sortOrder: ProspectSortOrder
+): number {
+  const left = (a ?? "").trim();
+  const right = (b ?? "").trim();
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+  const cmp = left.localeCompare(right, undefined, { sensitivity: "base" });
+  return sortOrder === "desc" ? -cmp : cmp;
+}
+
 function compareNumericScores(
   aScore: number | null,
   bScore: number | null,
@@ -459,7 +417,17 @@ export function ProspectsTable({
   onAddClick,
   addActive = false,
   addLabel,
+  addButton,
+  addPlacement = "after-search",
   stickyTopOffset = 0,
+  hideToolbar = false,
+  columnVisibility: controlledColumnVisibility,
+  columnOrder: controlledColumnOrder,
+  onColumnVisibilityChange,
+  onMoveColumn: controlledMoveColumn,
+  groupSections,
+  groupDraggable = false,
+  onMoveGroup,
   coachSlug = null,
   coachSlugByCoachId,
   onVisibleIdsChange,
@@ -475,7 +443,6 @@ export function ProspectsTable({
     string | null
   >(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [emailColumnExpanded, setEmailColumnExpanded] = useState(false);
   const [assessmentFilter, setAssessmentFilter] =
     useState<AssessmentFilter>("all");
   const [bossScoreFilter, setBossScoreFilter] =
@@ -491,19 +458,26 @@ export function ProspectsTable({
   const [sortField, setSortField] = useState<ProspectSortField>("name");
   const [sortOrder, setSortOrder] = useState<ProspectSortOrder>("asc");
   const {
-    columnVisibility,
-    setColumnVisible,
-    columnOrder,
-    moveColumnInOrder,
+    columnVisibility: internalColumnVisibility,
+    setColumnVisible: setInternalColumnVisible,
+    columnOrder: internalColumnOrder,
+    moveColumnInOrder: moveInternalColumnInOrder,
   } = usePersistedColumnSettings<ProspectColumnKey>({
     storageKey: settingsStorageKey,
     defaultVisibility: DEFAULT_COLUMN_VISIBILITY,
     defaultOrder: DEFAULT_COLUMN_ORDER,
     validKeys: ALL_COLUMN_KEYS,
     legacyKeyMap: PROSPECT_COLUMN_LEGACY_KEY_MAP,
+    enabled: !controlledColumnVisibility,
   });
+  const columnVisibility = controlledColumnVisibility ?? internalColumnVisibility;
+  const setColumnVisible =
+    onColumnVisibilityChange ?? setInternalColumnVisible;
+  const columnOrder = controlledColumnOrder ?? internalColumnOrder;
+  const moveColumnInOrder = controlledMoveColumn ?? moveInternalColumnInOrder;
   const [draggingColumnKey, setDraggingColumnKey] =
     useState<ProspectColumnKey | null>(null);
+  const [draggingGroupKey, setDraggingGroupKey] = useState<string | null>(null);
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -531,6 +505,9 @@ export function ProspectsTable({
   const [pendingDelete, setPendingDelete] = useState<ProspectRow[] | null>(
     null
   );
+  const [rowMenuProspectId, setRowMenuProspectId] = useState<string | null>(
+    null
+  );
   const [copiedBossLinkProspectId, setCopiedBossLinkProspectId] = useState<
     string | null
   >(null);
@@ -549,6 +526,7 @@ export function ProspectsTable({
   const columnsMenuRef = useRef<HTMLDivElement | null>(null);
   const selectAllHeaderRef = useRef<HTMLInputElement | null>(null);
   const bulkNextActionRef = useRef<HTMLDivElement | null>(null);
+  const rowMenuRef = useRef<HTMLDivElement | null>(null);
   const bodyScrollRef = useRef<HTMLDivElement | null>(null);
   const lastSelectionAnchorIdRef = useRef<string | null>(null);
   const selectionShiftKeyRef = useRef(false);
@@ -562,7 +540,13 @@ export function ProspectsTable({
   );
 
   useEffect(() => {
-    if (!filtersMenuOpen && !sortMenuOpen && !columnsMenuOpen && !bulkNextActionOpen) {
+    if (
+      !filtersMenuOpen &&
+      !sortMenuOpen &&
+      !columnsMenuOpen &&
+      !bulkNextActionOpen &&
+      !rowMenuProspectId
+    ) {
       return;
     }
     function handlePointerDown(e: MouseEvent) {
@@ -571,14 +555,16 @@ export function ProspectsTable({
       if (sortMenuRef.current?.contains(target)) return;
       if (columnsMenuRef.current?.contains(target)) return;
       if (bulkNextActionRef.current?.contains(target)) return;
+      if (rowMenuRef.current?.contains(target)) return;
       setFiltersMenuOpen(false);
       setSortMenuOpen(false);
       setColumnsMenuOpen(false);
       setBulkNextActionOpen(false);
+      setRowMenuProspectId(null);
     }
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen, bulkNextActionOpen]);
+  }, [filtersMenuOpen, sortMenuOpen, columnsMenuOpen, bulkNextActionOpen, rowMenuProspectId]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -624,16 +610,11 @@ export function ProspectsTable({
   );
 
   const visibleColumns = shownColumnOptions;
-  const linkedinColumnVisible = columnVisibility.linkedin;
-  const scrollableColumns = useMemo(
-    () => visibleColumns.filter((column) => column.key !== "linkedin"),
-    [visibleColumns]
-  );
-  const leftRailWidth =
-    TABLE_BASE_LEFT_RAIL_WIDTH +
-    (linkedinColumnVisible ? TABLE_LINKEDIN_COL_WIDTH : 0);
+  const scrollableColumns = visibleColumns;
+  const leftRailWidth = TABLE_BASE_LEFT_RAIL_WIDTH;
 
   const filteredProspects = useMemo(() => {
+    if (hideToolbar) return prospects;
     const term = searchTerm.trim().toLowerCase();
 
     return prospects.filter((p) => {
@@ -713,6 +694,7 @@ export function ProspectsTable({
       return true;
     });
   }, [
+    hideToolbar,
     prospects,
     searchTerm,
     assessmentFilter,
@@ -726,6 +708,7 @@ export function ProspectsTable({
   ]);
 
   const sortedProspects = useMemo(() => {
+    if (hideToolbar) return filteredProspects;
     const rows = [...filteredProspects];
 
     rows.sort((a, b) => {
@@ -734,6 +717,16 @@ export function ProspectsTable({
           sensitivity: "base",
         });
         return sortOrder === "desc" ? -cmp : cmp;
+      }
+
+      if (sortField === "business") {
+        return compareText(a.business_name, b.business_name, sortOrder);
+      }
+      if (sortField === "email") {
+        return compareText(a.email, b.email, sortOrder);
+      }
+      if (sortField === "status") {
+        return compareText(a.status.label, b.status.label, sortOrder);
       }
 
       if (sortField === "boss_score") {
@@ -783,17 +776,40 @@ export function ProspectsTable({
     });
 
     return rows;
-  }, [filteredProspects, sortField, sortOrder]);
+  }, [hideToolbar, filteredProspects, sortField, sortOrder]);
+
+  const displayProspects = useMemo(() => {
+    if (!groupSections?.length) return sortedProspects;
+    return groupSections.flatMap((section) => section.prospects);
+  }, [groupSections, sortedProspects]);
 
   const totalPages = Math.max(
     1,
-    Math.ceil(sortedProspects.length / pageSize)
+    Math.ceil(displayProspects.length / pageSize)
   );
 
   const paginatedProspects = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return sortedProspects.slice(start, start + pageSize);
-  }, [sortedProspects, page, pageSize]);
+    return displayProspects.slice(start, start + pageSize);
+  }, [displayProspects, page, pageSize]);
+
+  const groupHeaderByFirstRowId = useMemo(() => {
+    const map = new Map<string, ProspectGroupSection>();
+    if (!groupSections?.length) return map;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    let seen = 0;
+    for (const section of groupSections) {
+      const sectionStart = seen;
+      const sectionEnd = seen + section.prospects.length;
+      seen = sectionEnd;
+      if (sectionEnd <= start || sectionStart >= end) continue;
+      const firstIndex = Math.max(0, start - sectionStart);
+      const first = section.prospects[firstIndex];
+      if (first) map.set(first.id, section);
+    }
+    return map;
+  }, [groupSections, page, pageSize]);
 
   const pageNumbers = useMemo(
     () => paginationItems(page, totalPages),
@@ -801,12 +817,12 @@ export function ProspectsTable({
   );
 
   const paginationRangeLabel =
-    sortedProspects.length === 0
+    displayProspects.length === 0
       ? "0 prospects"
       : `${(page - 1) * pageSize + 1}-${Math.min(
           page * pageSize,
-          sortedProspects.length
-        )} of ${sortedProspects.length}`;
+          displayProspects.length
+        )} of ${displayProspects.length}`;
 
   useEffect(() => {
     setPageSize(readStoredPageSize());
@@ -1038,30 +1054,25 @@ export function ProspectsTable({
     }
   }
 
-  const scrollableColCount =
-    2 + (linkedinColumnVisible ? 1 : 0) + scrollableColumns.length;
+  const scrollableColCount = 2 + scrollableColumns.length + 1;
   const colCount = scrollableColCount;
 
   const scrollableMiddleMinWidth = useMemo(
     () =>
       scrollableColumns.reduce(
-        (sum, column) =>
-          sum + getProspectColumnWidth(column.key, emailColumnExpanded),
+        (sum, column) => sum + getProspectColumnWidth(column.key),
         0
       ),
-    [scrollableColumns, emailColumnExpanded]
+    [scrollableColumns]
   );
 
-  const tableMinWidth = leftRailWidth + scrollableMiddleMinWidth;
+  const tableMinWidth = leftRailWidth + scrollableMiddleMinWidth + TABLE_KEBAB_COL_WIDTH;
 
   function renderLeftRailColGroup() {
     return (
       <colgroup>
         <col style={{ width: TABLE_CHECKBOX_COL_WIDTH }} />
         <col style={{ width: TABLE_LEAD_COL_WIDTH }} />
-        {linkedinColumnVisible ? (
-          <col style={{ width: TABLE_LINKEDIN_COL_WIDTH }} />
-        ) : null}
       </colgroup>
     );
   }
@@ -1073,10 +1084,11 @@ export function ProspectsTable({
           <col
             key={column.key}
             style={{
-              width: getProspectColumnWidth(column.key, emailColumnExpanded),
+              width: getProspectColumnWidth(column.key),
             }}
           />
         ))}
+        <col style={{ width: TABLE_KEBAB_COL_WIDTH }} />
       </colgroup>
     );
   }
@@ -1086,17 +1098,15 @@ export function ProspectsTable({
       <colgroup>
         <col style={{ width: TABLE_CHECKBOX_COL_WIDTH }} />
         <col style={{ width: TABLE_LEAD_COL_WIDTH }} />
-        {linkedinColumnVisible ? (
-          <col style={{ width: TABLE_LINKEDIN_COL_WIDTH }} />
-        ) : null}
         {scrollableColumns.map((column) => (
           <col
             key={column.key}
             style={{
-              width: getProspectColumnWidth(column.key, emailColumnExpanded),
+              width: getProspectColumnWidth(column.key),
             }}
           />
         ))}
+        <col style={{ width: TABLE_KEBAB_COL_WIDTH }} />
       </colgroup>
     );
   }
@@ -1113,7 +1123,12 @@ export function ProspectsTable({
   }, [visibleColumns, tableMinWidth]);
 
   const sortOrderOptions = useMemo(() => {
-    if (sortField === "name") {
+    if (
+      sortField === "name" ||
+      sortField === "business" ||
+      sortField === "email" ||
+      sortField === "status"
+    ) {
       return [
         { value: "asc" as const, label: "A → Z" },
         { value: "desc" as const, label: "Z → A" },
@@ -1158,6 +1173,25 @@ export function ProspectsTable({
     if (!editable || !onUpdateProspect) return;
     setEditModalProspect(prospect);
   }
+
+  function handleHeaderSort(field: ProspectSortField) {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortOrder(
+      field === "boss_score" || field === "boss_score_premium" ? "desc" : "asc"
+    );
+  }
+
+  const COLUMN_SORT_FIELD: Partial<Record<ProspectColumnKey, ProspectSortField>> = {
+    status: "status",
+    created_at: "created_at",
+    boss_score: "boss_score",
+    boss_score_premium: "boss_score_premium",
+    next_call: "next_call",
+  };
 
   async function copyPersonalisedAssessmentLink(
     prospect: ProspectRow,
@@ -1381,27 +1415,9 @@ export function ProspectsTable({
     );
   }
 
-  function renderPhoneCell(prospect: ProspectRow) {
+  function renderPhoneLine(prospect: ProspectRow) {
     const raw = prospect.phone?.trim();
-    if (!raw) {
-      if (editable && onUpdateProspect) {
-        return (
-          <button
-            type="button"
-            data-row-action
-            onClick={(e) => {
-              e.stopPropagation();
-              openContactEdit(prospect);
-            }}
-            className="text-left hover:text-sky-700"
-            title="Edit contact details"
-          >
-            <ProspectEmptyValue />
-          </button>
-        );
-      }
-      return <ProspectEmptyValue />;
-    }
+    if (!raw) return null;
 
     const formatted = formatPhoneDisplay(raw) ?? raw;
     const telHref = phoneToTelHref(raw);
@@ -1411,73 +1427,124 @@ export function ProspectsTable({
         <span className="sr-only">WhatsApp available</span>
       </span>
     ) : null;
-    if (!telHref) {
-      return (
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm text-slate-700">
-          <span className="min-w-0 truncate">{formatted}</span>
-          {waBadge}
-        </span>
-      );
-    }
+    const number = telHref ? (
+      <a
+        href={telHref}
+        data-row-action
+        onClick={(e) => e.stopPropagation()}
+        className="min-w-0 truncate text-sm tabular-nums text-slate-800 hover:text-sky-700 hover:underline"
+        title={`Call ${formatted}`}
+      >
+        {formatted}
+      </a>
+    ) : (
+      <span className="min-w-0 truncate text-sm tabular-nums text-slate-800">
+        {formatted}
+      </span>
+    );
 
     return (
       <span className="inline-flex min-w-0 items-center gap-1.5">
-        <a
-          href={telHref}
-          data-row-action
-          onClick={(e) => e.stopPropagation()}
-          className="min-w-0 truncate text-sm text-sky-600 hover:text-sky-800 hover:underline"
-          title={`Call ${formatted}`}
-        >
-          {formatted}
-        </a>
+        {number}
         {waBadge}
       </span>
     );
   }
 
-  function renderOptionalText(value: string | null | undefined) {
-    return value ? (
-      <span className="text-sm text-slate-700">{value}</span>
-    ) : (
-      <ProspectEmptyValue />
+  function renderEmailLine(prospect: ProspectRow, { primary = false } = {}) {
+    const trimmed = prospect.email?.trim();
+    if (!trimmed) return null;
+    return (
+      <a
+        href={`mailto:${trimmed}`}
+        data-row-action
+        onClick={(e) => e.stopPropagation()}
+        className={`min-w-0 truncate hover:text-sky-700 hover:underline ${
+          primary
+            ? "text-sm text-slate-800"
+            : "text-xs leading-snug text-slate-500"
+        }`}
+        title={trimmed}
+      >
+        {trimmed}
+      </a>
+    );
+  }
+
+  function renderContactCell(prospect: ProspectRow) {
+    const phoneLine = renderPhoneLine(prospect);
+    const emailLine = renderEmailLine(prospect, {
+      primary: !prospect.phone?.trim(),
+    });
+    if (!phoneLine && !emailLine) {
+      return renderEditableContactValue(prospect, null);
+    }
+    return (
+      <div className="flex min-w-0 flex-col justify-center gap-0.5">
+        {phoneLine}
+        {emailLine}
+      </div>
+    );
+  }
+
+  function renderBusinessStatRow({
+    icon: Icon,
+    label,
+    value,
+  }: {
+    icon: typeof Banknote;
+    label: string;
+    value: string | null | undefined;
+  }) {
+    const trimmed = value?.trim() ?? "";
+    return (
+      <span className="inline-flex min-w-0 items-center gap-1.5 text-xs">
+        <Icon
+          className="h-3 w-3 shrink-0 text-slate-400"
+          aria-hidden
+        />
+        {trimmed ? (
+          <span
+            className="min-w-0 truncate text-slate-600"
+            title={`${label}: ${trimmed}`}
+          >
+            {trimmed}
+          </span>
+        ) : (
+          <span title={`No ${label.toLowerCase()}`}>
+            <ProspectEmptyValue />
+          </span>
+        )}
+      </span>
+    );
+  }
+
+  function renderBusinessStatsCell(prospect: ProspectRow) {
+    return (
+      <div className="flex min-w-0 flex-col gap-0.5">
+        {renderBusinessStatRow({
+          icon: Banknote,
+          label: "Revenue",
+          value: prospect.revenue,
+        })}
+        {renderBusinessStatRow({
+          icon: Users,
+          label: "Team size",
+          value: prospect.team_size,
+        })}
+        {renderBusinessStatRow({
+          icon: CalendarDays,
+          label: "Years in business",
+          value: prospect.years_in_business,
+        })}
+      </div>
     );
   }
 
   function renderColumnCell(key: ProspectColumnKey, p: ProspectRow) {
     switch (key) {
-      case "business": {
-        const label = formatProspectLabel(p.business_name);
-        const href = companyWebsiteHref(p.company_website);
-        if (href && label) {
-          return (
-            <div className="flex min-w-0 items-center gap-1">
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-row-action
-                onClick={(e) => e.stopPropagation()}
-                className="min-w-0 truncate text-sm text-sky-700 hover:underline"
-                title={`Open ${label} website`}
-              >
-                {label}
-              </a>
-            </div>
-          );
-        }
-        return renderEditableContactValue(p, label);
-      }
-      case "email":
-        return emailColumnExpanded ? (
-          renderEditableContactValue(p, p.email, { truncate: false })
-        ) : (
-          <div className="min-w-0 truncate" title={p.email ?? undefined}>
-            {renderEditableContactValue(p, p.email)}
-          </div>
-        );
-      case "phone":
-        return renderPhoneCell(p);
+      case "business_stats":
+        return renderBusinessStatsCell(p);
       case "linkedin":
         return (
           <div className="flex justify-center">
@@ -1719,20 +1786,6 @@ export function ProspectsTable({
         ) : (
           <ProspectEmptyValue />
         );
-      case "revenue":
-        return renderOptionalText(p.revenue);
-      case "team_size":
-        return renderOptionalText(p.team_size);
-      case "years_in_business":
-        return renderOptionalText(p.years_in_business);
-      case "outcome":
-        return renderOptionalText(p.outcome);
-      case "obstacles":
-        return renderOptionalText(p.obstacles);
-      case "preferred_support":
-        return renderOptionalText(p.preferred_support);
-      case "boss_level":
-        return renderOptionalText(p.boss_level);
       case "next_call":
         return <ProspectNextCallCell next={p.next_call} />;
       case "next_action":
@@ -1757,42 +1810,36 @@ export function ProspectsTable({
     }
   }
 
+  function renderSortableLabel(
+    label: React.ReactNode,
+    field?: ProspectSortField
+  ) {
+    if (!field) return label;
+    const active = sortField === field;
+    return (
+      <button
+        type="button"
+        data-row-action
+        onClick={(e) => {
+          e.stopPropagation();
+          handleHeaderSort(field);
+        }}
+        className={`inline-flex items-center gap-1 text-xs font-medium ${
+          active ? "text-slate-800" : "text-slate-500"
+        }`}
+      >
+        {label}
+        <ArrowUpDown
+          className={`h-3.5 w-3.5 ${active ? "text-slate-500" : "text-slate-300"}`}
+          aria-hidden
+        />
+      </button>
+    );
+  }
+
   function renderColumnHeader(key: ProspectColumnKey) {
+    const sortFieldForColumn = COLUMN_SORT_FIELD[key];
     switch (key) {
-      case "email":
-        return (
-          <span className="inline-flex items-center gap-1 normal-case tracking-normal">
-            <span>Email</span>
-            <button
-              type="button"
-              data-row-action
-              onClick={(e) => {
-                e.stopPropagation();
-                setEmailColumnExpanded((expanded) => !expanded);
-              }}
-              className="inline-flex rounded p-0.5 text-slate-400 hover:bg-slate-200/80 hover:text-slate-600"
-              title={
-                emailColumnExpanded
-                  ? "Collapse email column"
-                  : "Expand email column"
-              }
-              aria-label={
-                emailColumnExpanded
-                  ? "Collapse email column"
-                  : "Expand email column"
-              }
-              aria-pressed={emailColumnExpanded}
-            >
-              {emailColumnExpanded ? (
-                <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-              ) : (
-                <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-              )}
-            </button>
-          </span>
-        );
-      case "boss_score":
-        return "Boss";
       case "linkedin":
         return (
           <span className="inline-flex w-full justify-center" title="LinkedIn">
@@ -1802,19 +1849,16 @@ export function ProspectsTable({
         );
       case "crm":
         return (
-          <span className="inline-flex w-full justify-center" title="CRM">
+          <span className="inline-flex w-full justify-center" title="CRM link">
             <Contact className="h-3.5 w-3.5 text-sky-600" aria-hidden />
-            <span className="sr-only">CRM</span>
+            <span className="sr-only">CRM link</span>
           </span>
         );
-      case "boss_score_premium":
-        return "Boss Pro";
-      case "next_call":
-        return "Next call";
-      case "next_action":
-        return "Next action";
-      default:
-        return COLUMN_OPTIONS.find((option) => option.key === key)?.label ?? key;
+      default: {
+        const label =
+          COLUMN_OPTIONS.find((option) => option.key === key)?.label ?? key;
+        return renderSortableLabel(label, sortFieldForColumn);
+      }
     }
   }
 
@@ -1847,12 +1891,6 @@ export function ProspectsTable({
 
   function renderColumnHeaderCellClass(key: ProspectColumnKey): string {
     const base = `${TABLE_HEAD_CELL} text-left`;
-    if (key === "email") {
-      return `${base} ${TABLE_EMAIL_CELL}`;
-    }
-    if (key === "phone") {
-      return `${base} ${TABLE_CELL_X} ${TABLE_PHONE_CELL}`;
-    }
     if (key === "linkedin" || key === "crm") {
       return `${base} ${TABLE_CELL_X} w-[52px] px-1 text-center`;
     }
@@ -1870,12 +1908,6 @@ export function ProspectsTable({
 
   function renderColumnBodyCellClass(key: ProspectColumnKey): string {
     const base = `${TABLE_CELL_Y} text-slate-700`;
-    if (key === "email") {
-      return `${base} ${TABLE_EMAIL_CELL}`;
-    }
-    if (key === "phone") {
-      return `${base} ${TABLE_CELL_X} ${TABLE_PHONE_CELL}`;
-    }
     if (key === "linkedin" || key === "crm") {
       return `${base} ${TABLE_CELL_X} w-[52px] px-1 text-center`;
     }
@@ -1902,7 +1934,7 @@ export function ProspectsTable({
 
   function renderProspectsLeftRailHead() {
     return (
-      <thead className="text-sm uppercase tracking-wide text-slate-500">
+      <thead className="text-xs font-medium text-slate-500">
         <tr>
           <th className={`${TABLE_HEAD_CELL} ${TABLE_CHECKBOX_CELL}`}>
             <div className="flex h-full items-center justify-center">
@@ -1918,17 +1950,10 @@ export function ProspectsTable({
             </div>
           </th>
           <th className={`${TABLE_HEAD_CELL} ${TABLE_LEAD_CELL} text-left`}>
-            <div className="flex h-full items-center">Lead</div>
+            <div className="flex h-full items-center">
+              {renderSortableLabel("Prospect", "name")}
+            </div>
           </th>
-          {linkedinColumnVisible ? (
-            <th
-              className={`${TABLE_HEAD_CELL} ${TABLE_CELL_X} w-[52px] px-1 text-center`}
-            >
-              <div className="flex h-full items-center justify-center">
-                {renderColumnHeader("linkedin")}
-              </div>
-            </th>
-          ) : null}
         </tr>
       </thead>
     );
@@ -1936,7 +1961,7 @@ export function ProspectsTable({
 
   function renderProspectsScrollableTableHead() {
     return (
-      <thead className="bg-slate-50 text-sm uppercase tracking-wide text-slate-500">
+      <thead className="bg-white text-xs font-medium text-slate-500">
         <tr>
           {scrollableColumns.map((column) => (
             <th
@@ -1946,39 +1971,46 @@ export function ProspectsTable({
               {renderColumnHeader(column.key)}
             </th>
           ))}
+          <th className={`${TABLE_HEAD_CELL} w-11 px-1`}>
+            <span className="sr-only">Row actions</span>
+          </th>
         </tr>
       </thead>
     );
   }
 
   return (
-    <div className="flex w-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
+      {hideToolbar && (rowDeleteError || (error && !loading)) ? (
+        <p className="text-sm text-rose-600">{rowDeleteError ?? error}</p>
+      ) : null}
+      {!hideToolbar ? (
       <div
-        className="sticky z-20 bg-white shadow-sm"
+        className="sticky z-20 bg-white"
         style={{ top: stickyTopOffset }}
       >
-      <div className={`border-b border-slate-100 py-3 ${TABLE_SECTION_PADDING}`}>
+      <div className="py-0">
         {(rowDeleteError || (error && !loading)) ? (
           <p className="mb-2 text-sm text-rose-600">
             {rowDeleteError ?? error}
           </p>
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-full sm:max-w-xs">
+          <label className="relative w-56 shrink-0">
             <Search
-              className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               aria-hidden
             />
             <input
               type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search prospects"
-              className="block w-full border-0 border-b border-slate-300 bg-transparent py-2 pl-5 pr-1 text-sm text-slate-900 outline-none focus:border-sky-500 focus:ring-0"
+              placeholder="Search prospects…"
+              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-200"
             />
-          </div>
+          </label>
 
-          {onAddClick ? (
+          {onAddClick && addPlacement !== "end" && !addButton ? (
             <TableToolbarAddButton
               onClick={onAddClick}
               active={addActive}
@@ -1986,9 +2018,10 @@ export function ProspectsTable({
             />
           ) : null}
 
+          <div className="flex shrink-0 items-center gap-1">
           <div ref={filtersMenuRef} className="relative">
             <TableToolbarButton
-              label="Filters"
+              label="Filter"
               aria-haspopup="true"
               aria-expanded={filtersMenuOpen}
               active={filtersMenuOpen}
@@ -2205,6 +2238,9 @@ export function ProspectsTable({
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="name">Name</option>
+                      <option value="business">Company</option>
+                      <option value="email">Email</option>
+                      <option value="status">Status</option>
                       <option value="created_at">Date created</option>
                       <option value="last_assessed">Last assessed</option>
                       <option value="boss_score">Boss</option>
@@ -2254,56 +2290,48 @@ export function ProspectsTable({
             onMoveColumn={moveColumnInOrder}
             draggingColumnKey={draggingColumnKey}
             onDraggingColumnKeyChange={setDraggingColumnKey}
+            appearance="icon"
+            align="left"
+            label="Columns"
           />
+          </div>
 
-          <TableCsvExportButton
-            disabled={loading || sortedProspects.length === 0}
-            selectedCount={selectedCount}
-            totalMatchingCount={sortedProspects.length}
-            onExportShown={(scope) => handleExportCsv("shown", scope)}
-            onExportAll={(scope) => handleExportCsv("all", scope)}
-          />
-
-          {!loading && prospects.length > 0 ? (
-            <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-              <span>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {!loading && prospects.length > 0 ? (
+              <span className="text-xs text-slate-500">
                 {selectedCount > 0
                   ? `${selectedCount} selected`
                   : sortedProspects.length === prospects.length
                     ? `${prospects.length} prospect${prospects.length === 1 ? "" : "s"}`
                     : `${sortedProspects.length} of ${prospects.length}`}
               </span>
-              <label className="inline-flex items-center gap-1.5">
-                <span className="text-slate-400">Per page</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) =>
-                    handlePageSizeChange(
-                      Number(e.target.value) as ProspectsPageSize
-                    )
-                  }
-                  className="rounded-md border border-slate-200 bg-white py-1 pl-2 pr-7 text-xs font-medium text-slate-700 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                  aria-label="Prospects per page"
-                >
-                  {PROSPECTS_PAGE_SIZE_OPTIONS.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {totalPages > 1 ? (
-                <span className="tabular-nums text-slate-400">
-                  {paginationRangeLabel}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
+            <TableCsvExportButton
+              disabled={loading || sortedProspects.length === 0}
+              selectedCount={selectedCount}
+              totalMatchingCount={sortedProspects.length}
+              onExportShown={(scope) => handleExportCsv("shown", scope)}
+              onExportAll={(scope) => handleExportCsv("all", scope)}
+            />
+            {addPlacement === "end"
+              ? addButton ??
+                (onAddClick ? (
+                  <TableToolbarAddButton
+                    onClick={onAddClick}
+                    active={addActive}
+                    label={addLabel}
+                  />
+                ) : null)
+              : null}
+          </div>
         </div>
       </div>
+      </div>
+      ) : null}
 
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       {selectedCount > 0 ? (
-        <div className={`flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-sky-100 bg-sky-50 py-2 text-sm ${TABLE_SECTION_PADDING}`}>
+        <div className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-sky-100 bg-sky-50 py-2 text-sm ${TABLE_SECTION_PADDING}`}>
           <span className="font-medium text-sky-900">
             {selectedCount} selected
           </span>
@@ -2418,9 +2446,9 @@ export function ProspectsTable({
         </div>
       ) : null}
       {showProspectsTable ? (
-        <div className="flex border-b border-slate-200 bg-slate-50">
+        <div className="flex shrink-0 border-b border-slate-200 bg-white">
           <div
-            className="shrink-0 bg-slate-50"
+            className="shrink-0 bg-white"
             style={{ width: leftRailWidth }}
           >
             <table
@@ -2435,7 +2463,7 @@ export function ProspectsTable({
             <div style={{ transform: `translateX(-${tableScrollLeft}px)` }}>
               <table
                 className={prospectsTableClassName}
-                style={{ minWidth: scrollableMiddleMinWidth }}
+                style={{ minWidth: scrollableMiddleMinWidth + TABLE_KEBAB_COL_WIDTH }}
               >
                 {renderScrollableColGroup()}
                 {renderProspectsScrollableTableHead()}
@@ -2444,12 +2472,11 @@ export function ProspectsTable({
           </div>
         </div>
       ) : null}
-      </div>
 
-      <div className="flex min-w-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div
           ref={bodyScrollRef}
-          className="min-w-0 flex-1 overflow-x-auto"
+          className="min-h-0 min-w-0 flex-1 overflow-auto"
           onScroll={(e) => setTableScrollLeft(e.currentTarget.scrollLeft)}
         >
           {scoreFilterNeedsEnrichment ? (
@@ -2472,9 +2499,60 @@ export function ProspectsTable({
               <tbody>
               {paginatedProspects.map((p) => {
                 const isSelected = selectedIdSet.has(p.id);
+                const group = groupHeaderByFirstRowId.get(p.id);
                 return (
+                <Fragment key={p.id}>
+                {group ? (
+                  <tr
+                    className={
+                      draggingGroupKey === group.key ? "bg-slate-100" : "bg-slate-50"
+                    }
+                    draggable={groupDraggable}
+                    onDragStart={(e) => {
+                      if (!groupDraggable) return;
+                      setDraggingGroupKey(group.key);
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/plain", group.key);
+                    }}
+                    onDragOver={(e) => {
+                      if (!groupDraggable) return;
+                      e.preventDefault();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const fromKey =
+                        e.dataTransfer.getData("text/plain") || draggingGroupKey;
+                      if (fromKey) onMoveGroup?.(fromKey, group.key);
+                      setDraggingGroupKey(null);
+                    }}
+                    onDragEnd={() => setDraggingGroupKey(null)}
+                  >
+                    <td
+                      colSpan={2}
+                      className={`${TABLE_STICKY_CHECKBOX_CELL} bg-slate-50 ${TABLE_CELL_Y} pl-3 pr-2`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {groupDraggable ? (
+                          <GripVertical
+                            className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                            aria-hidden
+                          />
+                        ) : null}
+                        <span className="text-xs font-semibold text-slate-800">
+                          {group.label}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          {group.prospects.length}
+                        </span>
+                      </div>
+                    </td>
+                    <td
+                      colSpan={scrollableColumns.length + 1}
+                      className="bg-slate-50"
+                    />
+                  </tr>
+                ) : null}
                 <tr
-                  key={p.id}
                   className={
                     onRowClick
                       ? `group cursor-pointer border-t border-slate-100 hover:bg-slate-50${isSelected ? " bg-sky-50/70" : ""}`
@@ -2525,58 +2603,33 @@ export function ProspectsTable({
                     />
                   </td>
                   <td
-                    className={`${TABLE_STICKY_LEAD_CELL} ${stickyProspectRowBg(isSelected)} ${TABLE_LEAD_CELL} ${TABLE_CELL_Y} font-medium text-slate-900`}
+                    className={`${TABLE_STICKY_LEAD_CELL} ${stickyProspectRowBg(isSelected)} ${TABLE_LEAD_CELL} ${TABLE_CELL_Y} text-slate-900`}
                     style={{ left: TABLE_CHECKBOX_COL_WIDTH }}
                   >
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-1">
-                        {editable && onUpdateProspect ? (
-                          <button
-                            type="button"
-                            data-row-action
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openContactEdit(p);
-                            }}
-                            className="min-w-0 truncate text-left hover:text-sky-700"
-                            title="Edit contact details"
-                          >
-                            {formatProspectPersonName(p.full_name) || p.full_name}
-                          </button>
-                        ) : (
-                          <span className="min-w-0 truncate">
-                            {formatProspectPersonName(p.full_name) || p.full_name}
-                          </span>
-                        )}
-                      </div>
-                      <ProspectLeadSubtitle
-                        jobTitle={p.job_title}
-                        businessName={p.business_name}
-                        companyWebsite={p.company_website}
-                        editable={editable && Boolean(onUpdateProspect)}
-                        onEdit={() => openContactEdit(p)}
+                    <div className="flex min-w-0 items-center gap-3">
+                      <ProspectTableAvatar
+                        name={
+                          formatProspectPersonName(p.full_name) || p.full_name
+                        }
                       />
+                      <div className="min-w-0 flex-1">
+                        <div className="min-w-0 truncate text-sm font-medium">
+                          {formatProspectPersonName(p.full_name) ||
+                            p.full_name}
+                        </div>
+                        {p.job_title || p.business_name ? (
+                          <ProspectLeadSubtitle
+                            jobTitle={p.job_title}
+                            businessName={p.business_name}
+                            companyWebsite={p.company_website}
+                          />
+                        ) : null}
+                      </div>
+                      <div className="w-[11.5rem] shrink-0">
+                        {renderContactCell(p)}
+                      </div>
                     </div>
                   </td>
-                  {linkedinColumnVisible ? (
-                    <td
-                      className={`${TABLE_STICKY_LEAD_CELL} ${stickyProspectRowBg(isSelected)} ${TABLE_CELL_Y} w-[52px] px-1 text-center align-middle`}
-                      style={{
-                        left: TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH,
-                      }}
-                      data-row-action
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex justify-center">
-                        <ProspectLeadLinkedInLink
-                          row={p}
-                          onAddClick={
-                            onRowClick ? () => onRowClick(p.id) : undefined
-                          }
-                        />
-                      </div>
-                    </td>
-                  ) : null}
                   {scrollableColumns.map((column) => (
                     <td
                       key={column.key}
@@ -2592,7 +2645,78 @@ export function ProspectsTable({
                       {renderColumnCell(column.key, p)}
                     </td>
                   ))}
+                  <td
+                    className={`${TABLE_CELL_Y} w-11 px-1 text-center align-middle`}
+                    data-row-action
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="relative flex justify-center" ref={rowMenuProspectId === p.id ? rowMenuRef : undefined}>
+                      <button
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded={rowMenuProspectId === p.id}
+                        aria-label={`Actions for ${p.full_name}`}
+                        onClick={() =>
+                          setRowMenuProspectId((id) =>
+                            id === p.id ? null : p.id
+                          )
+                        }
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden />
+                      </button>
+                      {rowMenuProspectId === p.id ? (
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full z-[100] mt-1 w-44 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                        >
+                          {onRowClick ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              className="block w-full px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              onClick={() => {
+                                setRowMenuProspectId(null);
+                                onRowClick(p.id);
+                              }}
+                            >
+                              Open
+                            </button>
+                          ) : null}
+                          {editable && onUpdateProspect ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50"
+                              onClick={() => {
+                                setRowMenuProspectId(null);
+                                openContactEdit(p);
+                              }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" aria-hidden />
+                              Edit contact
+                            </button>
+                          ) : null}
+                          {onDelete ? (
+                            <button
+                              type="button"
+                              role="menuitem"
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-rose-600 hover:bg-rose-50"
+                              onClick={() => {
+                                setRowMenuProspectId(null);
+                                setPendingDelete([p]);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </td>
                 </tr>
+                </Fragment>
               );
               })}
               {loading ? (
@@ -2611,86 +2735,86 @@ export function ProspectsTable({
         </div>
       </div>
 
-      {!loading && sortedProspects.length > 0 ? (
+      {!loading && displayProspects.length > 0 ? (
         <nav
-          className={`flex flex-col gap-3 border-t border-slate-100 py-3 sm:flex-row sm:items-center sm:justify-between ${TABLE_SECTION_PADDING}`}
+          className={`flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between ${TABLE_SECTION_PADDING}`}
           aria-label="Prospects pagination"
         >
-          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+          <label className="inline-flex items-center gap-2 text-sm text-slate-500">
+            <span>Show</span>
+            <select
+              value={pageSize}
+              onChange={(e) =>
+                handlePageSizeChange(
+                  Number(e.target.value) as ProspectsPageSize
+                )
+              }
+              className="h-8 rounded-lg border border-slate-200 bg-white py-0 pl-2 pr-7 text-sm font-medium text-slate-700 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              aria-label="Prospects per page"
+            >
+              {PROSPECTS_PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <span>per page</span>
+          </label>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <p className="tabular-nums text-sm text-slate-500">
+              {paginationRangeLabel}
+            </p>
             {totalPages > 1 ? (
-              <>
+              <div className="flex flex-wrap items-center gap-1">
                 <button
                   type="button"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Previous page"
                 >
-                  <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
-                  Previous
+                  <ChevronLeft className="h-4 w-4" aria-hidden />
                 </button>
-                <div className="flex flex-wrap items-center gap-1 pl-1">
-                  {pageNumbers.map((item, idx) =>
-                    item === "ellipsis" ? (
-                      <span
-                        key={`e-${idx}`}
-                        className="px-1.5 text-sm text-slate-500"
-                        aria-hidden
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => setPage(item)}
-                        className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
-                          item === page
-                            ? "bg-sky-100 text-sky-800"
-                            : "text-slate-600 hover:bg-slate-100"
-                        }`}
-                        aria-current={item === page ? "page" : undefined}
-                      >
-                        {item}
-                      </button>
-                    )
-                  )}
-                </div>
+                {pageNumbers.map((item, idx) =>
+                  item === "ellipsis" ? (
+                    <span
+                      key={`e-${idx}`}
+                      className="px-1.5 text-sm text-slate-400"
+                      aria-hidden
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setPage(item)}
+                      className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
+                        item === page
+                          ? "bg-sky-100 text-sky-800"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                      aria-current={item === page ? "page" : undefined}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
                 <button
                   type="button"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-sm font-medium text-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Next page"
                 >
-                  Next
-                  <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+                  <ChevronRight className="h-4 w-4" aria-hidden />
                 </button>
-              </>
+              </div>
             ) : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 sm:justify-end">
-            <label className="inline-flex items-center gap-1.5 text-xs">
-              <span className="text-slate-400">Per page</span>
-              <select
-                value={pageSize}
-                onChange={(e) =>
-                  handlePageSizeChange(
-                    Number(e.target.value) as ProspectsPageSize
-                  )
-                }
-                className="rounded-md border border-slate-200 bg-white py-1 pl-2 pr-7 text-xs font-medium text-slate-700 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                aria-label="Prospects per page"
-              >
-                {PROSPECTS_PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="tabular-nums sm:text-right">{paginationRangeLabel}</p>
           </div>
         </nav>
       ) : null}
+      </div>
 
       <ProspectContactEditModal
         prospect={editModalProspect}

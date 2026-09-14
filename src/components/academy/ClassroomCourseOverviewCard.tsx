@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ClassroomCardProgress } from "@/components/academy/ClassroomCardProgress";
+import { useOptionalLessonProgress } from "@/components/academy/LessonProgressControls";
 import type { LessonProgressMap } from "@/lib/academy/lessonProgressTypes";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -35,12 +36,13 @@ export function ClassroomCourseOverviewCard({
   lessons,
 }: Props) {
   const totalLessons = lessons.length;
-  const [progressLabel, setProgressLabel] = useState(
-    totalLessons ? `${totalLessons} lessons` : "Open this path",
+  const sharedProgress = useOptionalLessonProgress();
+  const [fallbackProgress, setFallbackProgress] = useState<LessonProgressMap | null>(
+    null,
   );
-  const [progressValue, setProgressValue] = useState(0);
 
   useEffect(() => {
+    if (sharedProgress || !totalLessons) return;
     let cancelled = false;
 
     async function load() {
@@ -48,29 +50,41 @@ export function ClassroomCourseOverviewCard({
         data: { session },
       } = await supabaseClient.auth.getSession();
       const token = session?.access_token;
-      if (!token || !totalLessons || cancelled) return;
+      if (!token || cancelled) return;
 
       const response = await fetch(
         `/api/coach/academy/lesson-progress/${encodeURIComponent(courseId)}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      const body = (await response.json().catch(() => ({}))) as { progress?: LessonProgressMap };
-      if (cancelled) return;
-
-      const progress = body.progress ?? {};
-      const completed = lessons.reduce(
-        (count, lesson) => count + (progress[lesson.id] === "completed" ? 1 : 0),
-        0,
-      );
-      setProgressLabel(`${completed} of ${totalLessons} complete`);
-      setProgressValue(Math.round((completed / totalLessons) * 100));
+      const body = (await response.json().catch(() => ({}))) as {
+        progress?: LessonProgressMap;
+      };
+      if (!cancelled) setFallbackProgress(body.progress ?? {});
     }
 
     void load();
     return () => {
       cancelled = true;
     };
-  }, [courseId, lessons, totalLessons]);
+  }, [courseId, sharedProgress, totalLessons]);
+
+  const progress = sharedProgress?.progress ?? fallbackProgress ?? {};
+  const completed = useMemo(
+    () =>
+      lessons.reduce(
+        (count, lesson) => count + (progress[lesson.id] === "completed" ? 1 : 0),
+        0,
+      ),
+    [lessons, progress],
+  );
+  const progressLabel = totalLessons
+    ? fallbackProgress || sharedProgress
+      ? `${completed} of ${totalLessons} complete`
+      : `${totalLessons} lessons`
+    : "Open this path";
+  const progressValue = totalLessons
+    ? Math.round((completed / totalLessons) * 100)
+    : 0;
 
   return (
     <Link

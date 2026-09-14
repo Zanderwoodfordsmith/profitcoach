@@ -76,16 +76,22 @@ const SCREEN_RULES: ScreenRule[] = [
     describe: "in the Create hub",
   },
   {
+    prefix: "/campaigns",
+    label: "Campaigns",
+    suggestedOutputId: "linkedin_connector",
+    describe: "working on LinkedIn outreach campaigns",
+  },
+  {
     prefix: "/prospects",
     label: "Prospects",
     suggestedOutputId: "linkedin_connector",
-    describe: "looking at their prospect list",
+    describe: "looking at their prospect pipeline or list",
   },
   {
     prefix: "/pipeline",
-    label: "Pipeline",
+    label: "Prospects",
     suggestedOutputId: "linkedin_connector",
-    describe: "looking at their prospect pipeline board",
+    describe: "looking at their prospect pipeline or list",
   },
   {
     prefix: "/conversations",
@@ -95,7 +101,7 @@ const SCREEN_RULES: ScreenRule[] = [
   },
   {
     prefix: "/calls",
-    label: "Calendar",
+    label: "Calls",
     suggestedOutputId: null,
     describe: "looking at their booked calls calendar",
   },

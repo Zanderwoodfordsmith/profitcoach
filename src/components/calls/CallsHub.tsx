@@ -1,12 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { Lock } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
+import { BookCallFromListModal } from "@/components/calls/BookCallFromListModal";
+import { BookProspectModal } from "@/components/prospects/BookProspectModal";
 import { CallsTable } from "@/components/calls/CallsTable";
+import type { ProspectRow } from "@/lib/prospectRow";
 import { CallsWeekView } from "@/components/calls/CallsWeekView";
+import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
+import { CallsManageView } from "@/components/calls/CallsManageView";
+import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
+import { BookingCalendarProviderCard } from "@/components/settings/BookingCalendarProviderCard";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { CallRow } from "@/lib/callRow";
+import type {
+  CalendarFilterItem,
+  CalendarViewType,
+} from "@/lib/calls/calendarView";
+import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import {
   callStatusClass,
   formatCallWhen,
@@ -16,7 +29,13 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
 
-type HubTab = "calendar" | "list";
+type HubTab = "calendar" | "list" | "settings";
+
+function parseCallsHubTab(raw: string | null): HubTab {
+  if (raw === "settings" || raw === "calendars") return "settings";
+  if (raw === "list") return "list";
+  return "calendar";
+}
 
 type Props = {
   calls: CallRow[];
@@ -33,23 +52,13 @@ type Props = {
   emptyMessage?: string;
 };
 
-function previewTabLabel(label: string): ReactNode {
-  return (
-    <span className="inline-flex items-center gap-1">
-      {label}
-      <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-      <span className="sr-only">(admin preview — not released to coaches)</span>
-    </span>
-  );
-}
-
 export function CallsHub({
   calls,
   loading,
   error,
   showCoachColumn = false,
-  appOrigin: _appOrigin,
-  callsBasePath: _callsBasePath,
+  appOrigin,
+  callsBasePath,
   onRowClick,
   onCallsChange,
   coachFilterOptions,
@@ -58,15 +67,27 @@ export function CallsHub({
   emptyMessage,
 }: Props) {
   const pathname = usePathname() ?? "";
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { impersonatingCoachId } = useImpersonation();
   const onAdminPath = pathname.startsWith("/admin");
   const [isAdminUser, setIsAdminUser] = useState(onAdminPath);
-  const [tab, setTab] = useState<HubTab>("list");
+  const tab = parseCallsHubTab(searchParams.get("tab"));
+  const selectedCalendarSlug = searchParams.get("calendar")?.trim() || null;
+  const calendarEditorOpen = tab === "settings" && Boolean(selectedCalendarSlug);
   const [manageOpen, setManageOpen] = useState(true);
+  const [viewType, setViewType] = useState<CalendarViewType>("all");
   const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(
     () => new Set()
   );
+  const [bookingCalendars, setBookingCalendars] = useState<CoachCalendarRow[]>(
+    []
+  );
+  const [calendarsLoading, setCalendarsLoading] = useState(true);
   const [detail, setDetail] = useState<CallRow | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
+  const [bookPickerOpen, setBookPickerOpen] = useState(false);
+  const [bookProspect, setBookProspect] = useState<ProspectRow | null>(null);
 
   useEffect(() => {
     if (onAdminPath) {
@@ -97,25 +118,69 @@ export function CallsHub({
   }, [onAdminPath]);
 
   useEffect(() => {
-    if (!isAdminUser && tab === "calendar") {
-      setTab("list");
-    }
-  }, [isAdminUser, tab]);
+    let cancelled = false;
+    setCalendarsLoading(true);
+    void (async () => {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) {
+        if (!cancelled) setCalendarsLoading(false);
+        return;
+      }
+      const res = await fetch("/api/coach/calendars", { headers });
+      const body = (await res.json().catch(() => ({}))) as {
+        calendars?: CoachCalendarRow[];
+      };
+      if (cancelled) return;
+      setBookingCalendars(res.ok && Array.isArray(body.calendars) ? body.calendars : []);
+      setCalendarsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [impersonatingCoachId]);
 
-  const calendarNames = useMemo(() => {
-    const names = new Set<string>();
-    for (const c of calls) {
-      const n = c.calendar_name?.trim() || c.title?.trim();
-      if (n) names.add(n);
-    }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  }, [calls]);
+  function setTab(next: HubTab) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("calendar");
+    if (next === "calendar") params.delete("tab");
+    else params.set("tab", next);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
 
+  const calendarFilters = useMemo<CalendarFilterItem[]>(() => {
+    const byName = new Map<string, CalendarFilterItem>();
+    const booking = [...bookingCalendars].sort(
+      (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name)
+    );
+    for (const cal of booking) {
+      const name = cal.name.trim();
+      if (!name) continue;
+      byName.set(name, { name, enabled: cal.is_enabled });
+    }
+    for (const row of calls) {
+      const name = row.calendar_name?.trim() || row.title?.trim();
+      if (!name || byName.has(name)) continue;
+      byName.set(name, { name, enabled: true });
+    }
+    return Array.from(byName.values());
+  }, [bookingCalendars, calls]);
+
+  const offeredCalendarNames = useRef(new Set<string>());
   useEffect(() => {
-    if (selectedCalendars.size === 0 && calendarNames.length > 0) {
-      setSelectedCalendars(new Set(calendarNames));
+    const toSelect: string[] = [];
+    for (const item of calendarFilters) {
+      if (offeredCalendarNames.current.has(item.name)) continue;
+      offeredCalendarNames.current.add(item.name);
+      if (item.enabled) toSelect.push(item.name);
     }
-  }, [calendarNames, selectedCalendars.size]);
+    if (toSelect.length === 0) return;
+    setSelectedCalendars((prev) => {
+      const next = new Set(prev);
+      for (const name of toSelect) next.add(name);
+      return next;
+    });
+  }, [calendarFilters]);
 
   const timezone = defaultCommunityCalendarTimezone();
 
@@ -129,10 +194,8 @@ export function CallsHub({
     async (row: CallRow, status: "booked" | "cancelled" | "completed" | "noshow") => {
       if (row.source !== "native") return;
       setStatusBusy(true);
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) {
         setStatusBusy(false);
         return;
       }
@@ -140,10 +203,7 @@ export function CallsHub({
         `/api/coach/bookings/${encodeURIComponent(row.id)}`,
         {
           method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({ status }),
         }
       );
@@ -173,7 +233,41 @@ export function CallsHub({
           : d
       );
     },
-    [calls, onCallsChange]
+    [calls, impersonatingCoachId, onCallsChange]
+  );
+
+  const openCallDetail = useCallback(
+    async (row: CallRow) => {
+      setDetail(row);
+      if (row.source !== "native") return;
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) return;
+      try {
+        const res = await fetch(`/api/coach/bookings/${row.id}`, { headers });
+        const body = (await res.json().catch(() => ({}))) as {
+          booking?: {
+            zoom_recording_url?: string | null;
+            zoom_transcript_text?: string | null;
+          };
+        };
+        if (!res.ok || !body.booking) return;
+        setDetail((current) =>
+          current?.id === row.id
+            ? {
+                ...current,
+                zoom_recording_url:
+                  body.booking?.zoom_recording_url ?? current.zoom_recording_url,
+                zoom_transcript_text:
+                  body.booking?.zoom_transcript_text ??
+                  current.zoom_transcript_text,
+              }
+            : current
+        );
+      } catch {
+        /* keep the row we already have */
+      }
+    },
+    [impersonatingCoachId]
   );
 
   function toggleCalendar(name: string) {
@@ -236,35 +330,52 @@ export function CallsHub({
     />
   );
 
-  if (!isAdminUser) {
-    return callList;
-  }
+  const tabItems = [
+    {
+      kind: "button" as const,
+      id: "calendar",
+      label: "Calendar",
+      active: tab === "calendar",
+      onClick: () => setTab("calendar"),
+    },
+    {
+      kind: "button" as const,
+      id: "list",
+      label: "Call list",
+      active: tab === "list",
+      onClick: () => setTab("list"),
+    },
+    {
+      kind: "button" as const,
+      id: "settings",
+      label: "Settings",
+      active: tab === "settings",
+      onClick: () => setTab("settings"),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeaderUnderlineTabs
-        ariaLabel="Calls sections"
-        items={[
-          {
-            kind: "button",
-            id: "list",
-            label: "Call list",
-            active: tab === "list",
-            onClick: () => setTab("list"),
-          },
-          {
-            kind: "button",
-            id: "calendar",
-            label: previewTabLabel("Calendar view"),
-            active: tab === "calendar",
-            onClick: () => setTab("calendar"),
-            variant: "subtle",
-          },
-        ]}
-      />
+      <div className="border-b border-slate-200">
+        <PageHeaderUnderlineTabs
+          placement="content"
+          ariaLabel="Calls sections"
+          items={tabItems}
+        />
+      </div>
 
       {tab === "calendar" ? (
-        <div className="flex flex-col gap-4 lg:flex-row">
+        <div className="flex flex-col gap-4">
+          {!manageOpen ? (
+            <button
+              type="button"
+              className="self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm lg:hidden"
+              onClick={() => setManageOpen(true)}
+            >
+              Manage view
+            </button>
+          ) : null}
+          <div className="flex flex-col gap-4 lg:flex-row">
           <div className="min-w-0 flex-1">
             {loading ? (
               <p className="text-sm text-slate-600">Loading…</p>
@@ -274,93 +385,98 @@ export function CallsHub({
                 timezone={timezone}
                 selectedCalendarNames={selectedCalendars}
                 selectedCoachIds={selectedCoachIds}
+                viewType={viewType}
+                settingsHref={`${callsBasePath}?tab=settings`}
                 onSelectCall={(row) => {
-                  setDetail(row);
+                  void openCallDetail(row);
                 }}
               />
             )}
           </div>
-          <aside
-            className={`w-full shrink-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:w-64 ${
-              manageOpen ? "" : "hidden lg:block"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Manage view
-              </h3>
-              <button
-                type="button"
-                className="text-xs text-slate-500 lg:hidden"
-                onClick={() => setManageOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <p className="mt-3 text-xs font-medium uppercase tracking-wide text-slate-400">
-              Calendars
-            </p>
-            <ul className="mt-2 space-y-2">
-              {calendarNames.map((name) => (
-                <li key={name}>
-                  <label className="flex items-center gap-2 text-sm text-slate-800">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300 text-sky-600"
-                      checked={selectedCalendars.has(name)}
-                      onChange={() => toggleCalendar(name)}
-                    />
-                    <span className="truncate">{name}</span>
-                  </label>
-                </li>
-              ))}
-              {calendarNames.length === 0 ? (
-                <li className="text-xs text-slate-400">No calendars yet</li>
-              ) : null}
-            </ul>
-            {showCoachColumn && coachFilterOptions && onCoachFilterChange ? (
-              <div className="mt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  Coaches
-                </p>
-                <select
-                  className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-                  value={coachFilter ?? "all"}
-                  onChange={(e) =>
-                    onCoachFilterChange(
-                      e.target.value === "all" ? "all" : e.target.value
-                    )
-                  }
-                >
-                  <option value="all">All coaches</option>
-                  {coachFilterOptions.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-            <div className="mt-4 space-y-1 text-[11px] text-slate-500">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm bg-sky-500" /> Confirmed
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm bg-emerald-600" />{" "}
-                Completed
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm bg-amber-500" /> No-show
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-sm bg-rose-500" /> Cancelled
-              </div>
-            </div>
-          </aside>
+          <CallsManageView
+            open={manageOpen}
+            onClose={() => setManageOpen(false)}
+            calendars={calendarFilters}
+            calendarsLoading={calendarsLoading}
+            settingsHref={`${callsBasePath}?tab=settings`}
+            selectedCalendars={selectedCalendars}
+            onToggleCalendar={toggleCalendar}
+            viewType={viewType}
+            onViewTypeChange={setViewType}
+            showCoachFilter={Boolean(
+              showCoachColumn && coachFilterOptions && onCoachFilterChange
+            )}
+            coachFilterOptions={coachFilterOptions}
+            coachFilter={coachFilter}
+            onCoachFilterChange={onCoachFilterChange}
+          />
+          </div>
         </div>
       ) : null}
 
-      {tab === "list" ? callList : null}
+      {tab === "list" ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setBookPickerOpen(true)}
+              className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700"
+            >
+              Book a call
+            </button>
+          </div>
+          {callList}
+        </div>
+      ) : null}
+
+      {tab === "settings" ? (
+        <div className="flex w-full min-w-0 flex-col gap-4">
+          {!calendarEditorOpen && onAdminPath && !impersonatingCoachId ? (
+            <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+              These are{" "}
+              <span className="font-medium text-slate-800">
+                your personal booking calendars
+              </span>{" "}
+              (same system coaches use). Team support-call pages are managed
+              under{" "}
+              <a
+                href="/admin/support?tab=settings"
+                className="font-medium text-sky-700 hover:underline"
+              >
+                Support → Settings
+              </a>
+              .
+            </p>
+          ) : null}
+          <CallsCalendarSettings
+            appOrigin={appOrigin}
+            callsBasePath={callsBasePath}
+            selectedCalendarSlug={selectedCalendarSlug}
+            sidebarTop={
+              calendarEditorOpen ? null : (
+                <Suspense
+                  fallback={
+                    <section className="rounded-xl border border-slate-200/80 bg-white p-4">
+                      <p className="text-sm text-slate-600">
+                        Loading integrations…
+                      </p>
+                    </section>
+                  }
+                >
+                  <GoogleCalendarBookingCard
+                    returnTo={`${callsBasePath}?tab=settings`}
+                  />
+                </Suspense>
+              )
+            }
+            sidebarBottom={
+              calendarEditorOpen ? null : (
+                <BookingCalendarProviderCard compact />
+              )
+            }
+          />
+        </div>
+      ) : null}
 
       {detail ? (
         <div
@@ -396,8 +512,23 @@ export function CallsHub({
                 rel="noreferrer"
                 className="mt-3 inline-block text-sm font-semibold text-sky-700 hover:underline"
               >
-                Join Google Meet
+                Join meeting
               </a>
+            ) : null}
+            {detail.zoom_recording_url ? (
+              <a
+                href={detail.zoom_recording_url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 block text-sm font-semibold text-sky-700 hover:underline"
+              >
+                Watch recording
+              </a>
+            ) : null}
+            {detail.zoom_transcript_text ? (
+              <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
+                {detail.zoom_transcript_text}
+              </pre>
             ) : null}
             {detail.prospect_email ? (
               <p className="mt-2 text-sm text-slate-600">{detail.prospect_email}</p>
@@ -437,6 +568,47 @@ export function CallsHub({
           </div>
         </div>
       ) : null}
+
+      <BookCallFromListModal
+        open={bookPickerOpen}
+        onClose={() => setBookPickerOpen(false)}
+        onPick={(prospect) => {
+          setBookPickerOpen(false);
+          setBookProspect(prospect);
+        }}
+      />
+      <BookProspectModal
+        prospect={bookProspect}
+        onClose={() => setBookProspect(null)}
+        onBooked={(row, nextCall) => {
+          const added: CallRow = {
+            id: `${row.id}:${nextCall.start_time}`,
+            contact_id: row.id,
+            coach_id: row.coach_id ?? null,
+            coach_name: row.coach_name ?? null,
+            coach_business_name: row.coach_business_name ?? null,
+            prospect_name: row.full_name,
+            prospect_email: row.email,
+            prospect_phone: row.phone,
+            business_name: row.business_name,
+            calendar_name: nextCall.calendar_name,
+            calendar_id: null,
+            calendar_slug: null,
+            title: nextCall.title,
+            status_normalized: nextCall.status_normalized || "confirmed",
+            status_raw: "booked",
+            start_time: nextCall.start_time,
+            end_time: null,
+            match_status: "matched",
+            source: "native",
+            meeting_join_url: null,
+            zoom_recording_url: null,
+            zoom_transcript_text: null,
+          };
+          onCallsChange?.([added, ...calls]);
+          setBookProspect(null);
+        }}
+      />
     </div>
   );
 }

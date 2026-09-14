@@ -3,6 +3,7 @@ import { collapseConversationsByContact } from "@/lib/messaging/collapseConversa
 import { enrichConversationFilters } from "@/lib/messaging/enrichConversationFilters";
 import { enrichMessagingConversationPeople } from "@/lib/messaging/enrichConversationPeople";
 import { findOrCreateConversationForContact } from "@/lib/messaging/startConversation";
+import { clampConversationListLimit } from "@/lib/messaging/threadWindow";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -30,6 +31,10 @@ export async function GET(request: Request) {
     coachId = coach.userId;
   }
 
+  const limit = clampConversationListLimit(
+    new URL(request.url).searchParams.get("limit")
+  );
+
   let q = supabaseAdmin
     .from("messaging_conversations")
     .select(
@@ -37,7 +42,7 @@ export async function GET(request: Request) {
     )
     .is("hidden_at", null)
     .order("last_message_at", { ascending: false })
-    .limit(250);
+    .limit(limit);
 
   if (coachId) q = q.eq("coach_id", coachId);
 

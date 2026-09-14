@@ -166,17 +166,20 @@ function pack(input: {
   stateCode?: string | null;
   ready: boolean;
   missingHint: string | null;
+  /** 1st-degree network search — do not pin a region. */
+  omitLocation?: boolean;
 }): AppliedDefaultSearch {
   const companyKeywords = input.companyKeywords ?? defaultCompanyKeywords();
   const jobTitleKeywords = input.jobTitleKeywords ?? defaultJobTitleKeywords();
   const keywordsBoolean = input.keywordsBoolean ?? "";
   const teamSizes = [...BASE_SEARCH_TEAM_SIZES];
+  const location = input.omitLocation ? "" : input.location;
   const url = input.ready
     ? buildSalesNavSearchUrl({
         titleKeywords: jobTitleKeywords,
         companyKeywords,
         teamSizes,
-        location: input.location,
+        location: location || null,
         degrees: input.degrees,
         keywordsBoolean,
       })
@@ -187,7 +190,7 @@ function pack(input: {
     label: input.label,
     description: input.description,
     market: input.market,
-    location: input.location,
+    location,
     degrees: input.degrees,
     companyKeywords,
     jobTitleKeywords,
@@ -382,14 +385,18 @@ export function buildDefaultSearches(
     [...BASE_SEARCH_DEGREES]
   );
 
-  const firstDegree = baseAt(
-    "base-1st",
-    "Base search · 1st degree",
-    "Same base filters, 1st-degree connections only — warm outreach.",
+  const firstDegree = pack({
+    id: "base-1st",
+    label: "Base search · 1st degree",
+    description:
+      "Same base filters, 1st-degree connections only — no location. Warm outreach.",
     market,
-    country,
-    FIRST_DEGREE
-  );
+    location: "",
+    degrees: FIRST_DEGREE,
+    omitLocation: true,
+    ready: true,
+    missingHint: null,
+  });
 
   const out: AppliedDefaultSearch[] = [countrySearch, firstDegree];
 

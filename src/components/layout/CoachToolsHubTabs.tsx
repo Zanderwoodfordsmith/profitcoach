@@ -122,7 +122,7 @@ function CoachToolsHubTabsInner({ hub }: Props) {
       if (item.adminPreview && !showAdminPreview) return false;
       return true;
     });
-    const contentHref = "/admin/linkedin";
+    const contentHref = `${prefix}/linkedin`;
     return (
       <PageHeaderUnderlineTabs
         ariaLabel="Get Clients tools"

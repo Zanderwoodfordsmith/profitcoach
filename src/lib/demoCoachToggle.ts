@@ -2,9 +2,16 @@ import { adminPreviewCoachRouteForPath } from "@/lib/coachAccess/adminPreviewRou
 import {
   DEMO_COACH_LABEL,
   DEMO_COACH_SLUG,
+  PAM_DEMO_COACH_LABEL,
+  PAM_DEMO_COACH_SLUG,
 } from "@/lib/primaryCoach";
 
-export { DEMO_COACH_LABEL, DEMO_COACH_SLUG };
+export {
+  DEMO_COACH_LABEL,
+  DEMO_COACH_SLUG,
+  PAM_DEMO_COACH_LABEL,
+  PAM_DEMO_COACH_SLUG,
+};
 
 export type DemoCoachToggleUser = {
   email: string;
@@ -12,19 +19,25 @@ export type DemoCoachToggleUser = {
   label: string;
 };
 
-/** Admins who can one-click toggle into their coaching demo account. */
+const ZANDER_STAFF_EMAIL = "zander@businesscoachacademy.com";
+const PAM_STAFF_EMAIL = "pam@businesscoachacademy.com";
+
+/** Admins who own a one-click coaching demo account. */
 export const DEMO_COACH_TOGGLE_USERS: DemoCoachToggleUser[] = [
   {
-    email: "zander@businesscoachacademy.com",
+    email: ZANDER_STAFF_EMAIL,
     coachSlug: DEMO_COACH_SLUG,
     label: DEMO_COACH_LABEL,
   },
   {
-    email: "pam@businesscoachacademy.com",
-    coachSlug: "pam",
-    label: "Coach Pam",
+    email: PAM_STAFF_EMAIL,
+    coachSlug: PAM_DEMO_COACH_SLUG,
+    label: PAM_DEMO_COACH_LABEL,
   },
 ];
+
+/** Staff who can also jump into the other person's demo (not only their own). */
+const STAFF_DEMO_CROSS_ACCESS_EMAILS = new Set([ZANDER_STAFF_EMAIL]);
 
 export function demoCoachToggleUserForEmail(
   email: string | null | undefined
@@ -34,6 +47,20 @@ export function demoCoachToggleUserForEmail(
   return (
     DEMO_COACH_TOGGLE_USERS.find((user) => user.email === normalized) ?? null
   );
+}
+
+/** Demos this admin can open from the sidebar (own first, then others they can enter). */
+export function staffDemosAccessibleToEmail(
+  email: string | null | undefined
+): DemoCoachToggleUser[] {
+  if (!email?.trim()) return [];
+  const normalized = email.trim().toLowerCase();
+  const own = DEMO_COACH_TOGGLE_USERS.filter((user) => user.email === normalized);
+  if (!STAFF_DEMO_CROSS_ACCESS_EMAILS.has(normalized)) return own;
+  const others = DEMO_COACH_TOGGLE_USERS.filter(
+    (user) => user.email !== normalized
+  );
+  return [...own, ...others];
 }
 
 /** Admin-only routes with no coach surface equivalent. */
@@ -61,7 +88,6 @@ const ADMIN_ONLY_PREFIXES = [
   "/admin/links",
   "/admin/map",
   "/admin/feedback",
-  "/admin/lead-magnets",
 ];
 
 /** Coach-only routes with no admin surface equivalent. */

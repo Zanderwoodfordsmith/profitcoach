@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { usePathname } from "next/navigation";
+
+import { useOptimisticPathname } from "@/hooks/useOptimisticPathname";
 
 import {
   PageHeaderUnderlineTabs,
@@ -10,7 +11,7 @@ import {
 import { StickyPageHeader } from "@/components/layout";
 
 export function ClassroomShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname() ?? "";
+  const { pathname, markPending } = useOptimisticPathname();
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
 
   const resourcesRoot = `${prefix}/academy/resources`;
@@ -40,6 +41,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         label: "Classroom",
         active: isClassroom,
         scroll: false,
+        onNavigate: () => markPending(classroomRoot),
       },
       {
         kind: "link",
@@ -47,6 +49,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         label: "System",
         active: isSystem,
         scroll: false,
+        onNavigate: () => markPending(systemRoot),
       },
       {
         kind: "link",
@@ -54,6 +57,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         label: "My Actions",
         active: isActions,
         scroll: false,
+        onNavigate: () => markPending(actionsRoot),
       },
       {
         kind: "link",
@@ -61,6 +65,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         label: "Resources",
         active: isResources,
         scroll: false,
+        onNavigate: () => markPending(resourcesRoot),
       },
       {
         kind: "link",
@@ -68,6 +73,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
         label: "My Compass",
         active: isCompass,
         scroll: false,
+        onNavigate: () => markPending(compassRoot),
       },
     ];
 
@@ -78,6 +84,7 @@ export function ClassroomShell({ children }: { children: React.ReactNode }) {
     classroomRoot,
     compassRoot,
     actionsRoot,
+    markPending,
   ]);
 
   const description = useMemo(() => {

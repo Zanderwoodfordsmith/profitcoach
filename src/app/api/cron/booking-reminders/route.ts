@@ -16,7 +16,7 @@ function isCronRequest(request: Request): boolean {
 }
 
 /**
- * Send T-2h booking reminders (email + SMS) for due bookings.
+ * Send booking reminder sequence (Unipile email + Bird SMS) for due bookings.
  * Auth: Vercel cron / CRON_SECRET, or admin session (for local testing).
  */
 export async function GET(request: Request) {

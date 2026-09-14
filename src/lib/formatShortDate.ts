@@ -52,6 +52,31 @@ export function formatShortDateTime(iso: string): string {
   return `${formatShortDate(iso)}, ${formatShortTime(iso)}`;
 }
 
+/** Relative time for CRM lists: `just now`, `15 mins ago`, `Yesterday`, or `10 Aug`. */
+export function formatRelativeAgo(iso: string, now = Date.now()): string {
+  try {
+    const t = new Date(iso).getTime();
+    if (Number.isNaN(t)) return iso;
+    const diff = Math.max(0, now - t);
+    const minute = 60_000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+    if (diff < 45_000) return "just now";
+    if (diff < hour) {
+      const m = Math.max(1, Math.floor(diff / minute));
+      return m === 1 ? "1 min ago" : `${m} mins ago`;
+    }
+    if (diff < day) {
+      const h = Math.max(1, Math.floor(diff / hour));
+      return h === 1 ? "1 hour ago" : `${h} hours ago`;
+    }
+    if (diff < 2 * day) return "Yesterday";
+    return formatShortDate(iso);
+  } catch {
+    return iso;
+  }
+}
+
 /** Day chip: Today / Yesterday / `10 Aug` (year only if needed). */
 export function formatDayLabel(iso: string): string {
   try {

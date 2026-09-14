@@ -1,20 +1,24 @@
-import { getAppBaseUrl } from "@/lib/appBaseUrl";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
-  createHostedAuthLink,
   deleteUnipileAccount,
   getUnipileAccount,
-  isUnipileConfigured,
+  isUnipileWorkspaceApiKeyError,
   listUnipileAccounts,
+  UNIPILE_WORKSPACE_API_KEY_ERROR,
 } from "@/lib/unipile/client";
 import {
   displayNameFromUnipileAccount,
-  isConnectableProvider,
   isMailingProvider,
   normalizeUnipileProvider,
-  type UnipileConnectProvider,
   UNIPILE_CONNECT_PROVIDERS,
 } from "@/lib/unipile/providers";
+
+export {
+  createLinkedInConnectLink,
+  createProviderConnectLink,
+  parseUnipileConnectReturnTo,
+  type UnipileConnectReturnTo,
+} from "@/lib/unipile/hostedAuth";
 
 export type OutreachAccountRow = {
   id: string;
@@ -38,6 +42,11 @@ function mapAccountStatus(raw: Record<string, unknown> | null | undefined): stri
   return "OK";
 }
 
+function createdAtMs(item: { created_at?: unknown }): number {
+  const t = Date.parse(String(item.created_at || ""));
+  return Number.isFinite(t) ? t : 0;
+}
+
 export async function listOutreachAccounts(coachId: string) {
   const { data, error } = await supabaseAdmin
     .from("linkedin_outreach_accounts")
@@ -50,90 +59,70 @@ export async function listOutreachAccounts(coachId: string) {
   return (data ?? []) as OutreachAccountRow[];
 }
 
-function settingsReturnPrefix(request: Request): "/coach" | "/admin" {
-  const referer = request.headers.get("referer") || "";
-  if (referer.includes("/coach/") || referer.includes("/coach?")) return "/coach";
-  return "/admin";
+/** Connected LinkedIn account that can run outreach and SSI. */
+export async function getOkLinkedInAccount(
+  coachId: string
+): Promise<OutreachAccountRow | null> {
+  const accounts = await listOutreachAccounts(coachId);
+  return (
+    accounts.find(
+      (row) =>
+        normalizeUnipileProvider(row.provider) === "LINKEDIN" &&
+        (row.status || "").toUpperCase() === "OK" &&
+        Boolean(row.unipile_account_id?.trim())
+    ) ?? null
+  );
 }
 
-export async function createProviderConnectLink(
-  coachId: string,
-  request: Request,
-  provider: UnipileConnectProvider,
-  options?: { returnTo?: "settings" | "campaigns" | "lead-finder" }
-): Promise<{ url: string }> {
-  if (!isUnipileConfigured()) {
-    throw new Error("Unipile is not configured (UNIPILE_DSN / UNIPILE_API_KEY).");
-  }
-  if (!isConnectableProvider(provider)) {
-    throw new Error(`Unsupported provider: ${provider}`);
-  }
-
-  const base = getAppBaseUrl(request);
-  const dsn = (process.env.UNIPILE_DSN || "").replace(/\/$/, "");
-  const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-  const returnPrefix = settingsReturnPrefix(request);
-  const returnTo = options?.returnTo ?? "settings";
-  const successPath =
-    returnTo === "campaigns"
-      ? `${returnPrefix}/campaigns?linkedin=connected`
-      : returnTo === "lead-finder"
-        ? "/admin/lead-finder?linkedin=connected"
-      : returnPrefix === "/coach"
-        ? `${returnPrefix}/settings?tab=profile&connected=${provider}`
-        : `${returnPrefix}/account?tab=profile&connected=${provider}`;
-  const failurePath =
-    returnTo === "campaigns"
-      ? `${returnPrefix}/campaigns?linkedin=failed`
-      : returnTo === "lead-finder"
-        ? "/admin/lead-finder?linkedin=failed"
-      : returnPrefix === "/coach"
-        ? `${returnPrefix}/settings?tab=profile&connected=failed`
-        : `${returnPrefix}/account?tab=profile&connected=failed`;
-
-  const result = await createHostedAuthLink({
-    type: "create",
-    apiUrl: dsn,
-    expiresOn: expires,
-    providers: [provider],
-    name: coachId,
-    success_redirect_url: `${base}${successPath}`,
-    failure_redirect_url: `${base}${failurePath}`,
-    notify_url: `${base}/api/unipile/notify`,
-    bypass_success_screen: true,
-  });
-  if (!result.ok || !result.data?.url) {
-    throw new Error(result.error || "Could not create Unipile connect link.");
-  }
-  return { url: result.data.url };
-}
-
-/** @deprecated Prefer createProviderConnectLink — kept for LinkedIn campaign UIs. */
-export async function createLinkedInConnectLink(
-  coachId: string,
-  request: Request
-): Promise<{ url: string }> {
-  return createProviderConnectLink(coachId, request, "LINKEDIN", {
-    returnTo: "campaigns",
-  });
+/** Connected Gmail/Outlook/IMAP mailbox that can send coach-identity email. */
+export async function getOkMailingAccount(
+  coachId: string
+): Promise<OutreachAccountRow | null> {
+  const accounts = await listOutreachAccounts(coachId);
+  return (
+    accounts.find(
+      (row) =>
+        isMailingProvider(row.provider) &&
+        (row.status || "").toUpperCase() === "OK" &&
+        Boolean(row.unipile_account_id?.trim())
+    ) ?? null
+  );
 }
 
 /** Persist / refresh accounts for a coach from Unipile list. */
 export async function syncOutreachAccountsForCoach(coachId: string) {
   const listed = await listUnipileAccounts();
-  if (!listed.ok) throw new Error(listed.error || "Could not list Unipile accounts.");
+  if (!listed.ok) {
+    throw new Error(
+      isUnipileWorkspaceApiKeyError(listed)
+        ? UNIPILE_WORKSPACE_API_KEY_ERROR
+        : listed.error || "Could not list Unipile accounts."
+    );
+  }
   const items = listed.data?.items ?? [];
   const now = new Date().toISOString();
 
   const { data: existing } = await supabaseAdmin
     .from("linkedin_outreach_accounts")
-    .select("id, unipile_account_id, provider")
+    .select("id, unipile_account_id, provider, status")
     .eq("coach_id", coachId);
   const known = new Set((existing ?? []).map((r) => r.unipile_account_id as string));
   const knownByProvider = new Map<string, number>();
+  const liveStatus = new Map<string, { provider: string; status: string }>();
   for (const row of existing ?? []) {
     const p = normalizeUnipileProvider(row.provider as string);
     knownByProvider.set(p, (knownByProvider.get(p) || 0) + 1);
+    liveStatus.set(row.unipile_account_id as string, {
+      provider: p,
+      status: String(row.status || "").toUpperCase(),
+    });
+  }
+
+  function hasOkProvider(provider: string) {
+    for (const row of liveStatus.values()) {
+      if (row.provider === provider && row.status === "OK") return true;
+    }
+    return false;
   }
 
   const { data: claimedRows } = await supabaseAdmin
@@ -154,35 +143,27 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
     /* ignore during migrate */
   }
 
-  for (const item of items) {
-    if (!item?.id) continue;
+  const usable = items.filter((item) => {
+    if (!item?.id) return false;
     const provider = normalizeUnipileProvider(
       String(item.type || item.provider || "")
     );
-    if (
-      !(UNIPILE_CONNECT_PROVIDERS as readonly string[]).includes(provider) &&
-      !isMailingProvider(provider)
-    ) {
-      continue;
-    }
+    return (
+      (UNIPILE_CONNECT_PROVIDERS as readonly string[]).includes(provider) ||
+      isMailingProvider(provider)
+    );
+  });
 
-    const name = String(item.name || "");
-    const providerCount = knownByProvider.get(provider) || 0;
-    const claimForCoach =
-      known.has(item.id) ||
-      name === coachId ||
-      // Dev fallback when notify can't reach localhost: claim one unassigned
-      // account per provider type for this coach.
-      (providerCount === 0 && !claimed.has(item.id));
-
-    if (!claimForCoach) continue;
-
+  async function persist(item: (typeof usable)[number]) {
+    const provider = normalizeUnipileProvider(
+      String(item.type || item.provider || "")
+    );
     const status = mapAccountStatus(item as Record<string, unknown>);
     const display = displayNameFromUnipileAccount(
       item as Record<string, unknown>,
       coachId
     );
-
+    const isNew = !known.has(item.id);
     await supabaseAdmin.from("linkedin_outreach_accounts").upsert(
       {
         coach_id: coachId,
@@ -197,7 +178,38 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
     );
     known.add(item.id);
     claimed.add(item.id);
-    knownByProvider.set(provider, providerCount + 1);
+    liveStatus.set(item.id, { provider, status });
+    if (isNew) {
+      knownByProvider.set(provider, (knownByProvider.get(provider) || 0) + 1);
+    }
+    return { provider, status };
+  }
+
+  // Refresh rows we already own first so a dead session is not treated as OK.
+  for (const item of usable) {
+    if (!known.has(item.id)) continue;
+    await persist(item);
+  }
+
+  // Hosted auth sets name=coachId, but WhatsApp overwrites it with the phone
+  // number. Reconnect also creates a new Unipile account, so claim a fresh OK
+  // session when this coach's existing one is dead.
+  const unclaimed = usable
+    .filter((item) => !known.has(item.id) && !claimed.has(item.id))
+    .sort((a, b) => createdAtMs(b) - createdAtMs(a));
+  for (const item of unclaimed) {
+    const provider = normalizeUnipileProvider(
+      String(item.type || item.provider || "")
+    );
+    const name = String(item.name || "");
+    const status = mapAccountStatus(item as Record<string, unknown>);
+    const providerCount = knownByProvider.get(provider) || 0;
+    const claimForCoach =
+      name === coachId ||
+      providerCount === 0 ||
+      (status === "OK" && !hasOkProvider(provider));
+    if (!claimForCoach) continue;
+    await persist(item);
   }
 
   return listOutreachAccounts(coachId);
@@ -250,7 +262,10 @@ export async function removeOutreachAccount(
 
   const remote = await deleteUnipileAccount(row.unipile_account_id as string);
   if (!remote.ok && remote.status !== 404) {
-    throw new Error(remote.error || "Could not delete Unipile account.");
+    console.error("unipile delete account failed:", {
+      status: remote.status,
+      error: remote.error,
+    });
   }
 
   const provider = normalizeUnipileProvider(row.provider as string);
@@ -291,6 +306,15 @@ export async function removeOutreachAccount(
     .eq("id", outreachAccountId)
     .eq("coach_id", coachId);
   if (delErr) throw new Error(delErr.message);
+
+  const unipileAccountId = String(row.unipile_account_id ?? "").trim();
+  if (unipileAccountId) {
+    await supabaseAdmin
+      .from("coach_unipile_calendar_prefs")
+      .delete()
+      .eq("coach_id", coachId)
+      .eq("unipile_account_id", unipileAccountId);
+  }
 
   return listOutreachAccounts(coachId);
 }

@@ -26,7 +26,7 @@ function nativeCalendarSyncStatus(audience: "admin" | "coach"): CalendarSyncStat
     tone: "success",
     message:
       audience === "coach"
-        ? "Using Profit Coach calendars — manage availability under Settings → Calendar."
+        ? "Using Profit Coach calendars — manage availability under Calls → Settings."
         : "Using Profit Coach calendars (native discovery).",
   };
 }
@@ -56,7 +56,7 @@ export function buildCoachCalendarSyncFields(
           tone: "warning" as const,
           message:
             audience === "coach"
-              ? "Turn on your Discovery calendar under Settings → Calendar."
+              ? "Turn on your Discovery calendar under Calls → Settings."
               : "Native discovery calendar is not enabled/public yet.",
         };
 

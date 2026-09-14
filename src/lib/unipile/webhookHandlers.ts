@@ -24,10 +24,101 @@ import {
   type UnipileAppChannel,
 } from "@/lib/unipile/providers";
 import { whatsappPhoneDigits } from "@/lib/unipile/whatsappIdentity";
+import { markContactRepliedOnInbound } from "@/lib/prospects/markContactReplied";
 
 function previewOf(text: string | null | undefined) {
   const t = (text || "").replace(/\s+/g, " ").trim();
   return t.slice(0, 160);
+}
+
+async function findExistingMailConversation(opts: {
+  coachId: string;
+  accountId: string;
+  threadKey: string;
+  emailId: string;
+  prospectEmail: string | null;
+}): Promise<{ id: string; contact_id: string | null } | null> {
+  const { data: byThread } = await supabaseAdmin
+    .from("messaging_conversations")
+    .select("id, contact_id")
+    .eq("coach_id", opts.coachId)
+    .eq("unipile_chat_id", opts.threadKey)
+    .maybeSingle();
+  if (byThread?.id) {
+    return {
+      id: byThread.id as string,
+      contact_id: (byThread.contact_id as string | null) ?? null,
+    };
+  }
+
+  const { data: byMsg } = await supabaseAdmin
+    .from("messaging_messages")
+    .select("conversation_id")
+    .eq("coach_id", opts.coachId)
+    .eq("unipile_message_id", opts.emailId)
+    .maybeSingle();
+  if (byMsg?.conversation_id) {
+    const { data: conv } = await supabaseAdmin
+      .from("messaging_conversations")
+      .select("id, contact_id")
+      .eq("id", byMsg.conversation_id)
+      .maybeSingle();
+    if (conv?.id) {
+      return {
+        id: conv.id as string,
+        contact_id: (conv.contact_id as string | null) ?? null,
+      };
+    }
+  }
+
+  const email = opts.prospectEmail?.trim().toLowerCase();
+  if (!email) return null;
+
+  const emailCandidates = Array.from(
+    new Set(
+      [email, opts.prospectEmail?.trim()].filter(
+        (value): value is string => Boolean(value)
+      )
+    )
+  );
+
+  for (const candidate of emailCandidates) {
+    const { data: byBooking } = await supabaseAdmin
+      .from("messaging_conversations")
+      .select("id, contact_id")
+      .eq("coach_id", opts.coachId)
+      .eq("prospect_email", candidate)
+      .not("booking_id", "is", null)
+      .is("unipile_chat_id", null)
+      .order("last_message_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (byBooking?.id) {
+      return {
+        id: byBooking.id as string,
+        contact_id: (byBooking.contact_id as string | null) ?? null,
+      };
+    }
+  }
+
+  const { data: waiting } = await supabaseAdmin
+    .from("messaging_conversations")
+    .select("id, contact_id")
+    .eq("coach_id", opts.coachId)
+    .eq("unipile_account_id", opts.accountId)
+    .eq("prospect_email", email)
+    .is("unipile_chat_id", null)
+    .order("last_message_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (waiting?.id) {
+    return {
+      id: waiting.id as string,
+      contact_id: (waiting.contact_id as string | null) ?? null,
+    };
+  }
+
+  return null;
 }
 
 async function accountForUnipileId(
@@ -369,7 +460,7 @@ export async function handleUnipileMessageReceived(
 
     const { data: lead } = await supabaseAdmin
       .from("linkedin_campaign_leads")
-      .select("id, campaign_id")
+      .select("id, campaign_id, contact_id")
       .eq("coach_id", coachId)
       .eq("unipile_chat_id", chatId)
       .maybeSingle();
@@ -381,15 +472,40 @@ export async function handleUnipileMessageReceived(
         .eq("id", lead.campaign_id)
         .maybeSingle();
       if (campaign?.stop_on_reply !== false) {
-        await supabaseAdmin
+        const { data: updated } = await supabaseAdmin
           .from("linkedin_campaign_leads")
           .update({ status: "replied", next_action_at: null })
           .eq("id", lead.id)
-          .neq("status", "replied");
+          .neq("status", "replied")
+          .select("first_name, last_name")
+          .maybeSingle();
         const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
         await cancelOpenSendJobs(lead.id as string, "Lead replied");
+        if (updated) {
+          const { fireCoachWatchRulesSafe } = await import(
+            "@/lib/coachWatch/fire"
+          );
+          fireCoachWatchRulesSafe({
+            coachId,
+            scopeKind: "campaign",
+            scopeId: String(lead.campaign_id),
+            event: "replied",
+            personName: [updated.first_name, updated.last_name]
+              .filter(Boolean)
+              .join(" "),
+          });
+        }
       }
     }
+
+    await markContactRepliedOnInbound({
+      coachId,
+      contactId:
+        gate.contact?.id ||
+        (existingConv?.contact_id as string | null) ||
+        (lead?.contact_id as string | null) ||
+        null,
+    });
   }
 
   return `message:${conversationId}`;
@@ -448,12 +564,13 @@ export async function handleUnipileMailReceived(
     "Email";
 
   let conversationId: string | null = null;
-  const { data: existingConv } = await supabaseAdmin
-    .from("messaging_conversations")
-    .select("id, contact_id")
-    .eq("coach_id", coachId)
-    .eq("unipile_chat_id", threadKey)
-    .maybeSingle();
+  const existingConv = await findExistingMailConversation({
+    coachId,
+    accountId,
+    threadKey,
+    emailId,
+    prospectEmail,
+  });
 
   const gate = await allowPersonalChannelIngest({
     coachId,
@@ -473,7 +590,9 @@ export async function handleUnipileMailReceived(
         contact_id: gate.contact?.id ?? null,
         prospect_name:
           gate.contact?.full_name || String(prospectName).slice(0, 200),
-        prospect_email: prospectEmail || gate.contact?.email || null,
+        prospect_email: (prospectEmail || gate.contact?.email || null)
+          ?.trim()
+          .toLowerCase() || null,
         subject,
         unipile_chat_id: threadKey,
         unipile_account_id: accountId,
@@ -528,6 +647,8 @@ export async function handleUnipileMailReceived(
       }),
       subject,
       prospect_email: prospectEmail || undefined,
+      unipile_chat_id: threadKey,
+      unipile_account_id: accountId,
     })
     .eq("id", conversationId);
 
@@ -541,6 +662,14 @@ export async function handleUnipileMailReceived(
       .from("messaging_conversations")
       .update({ unread_count: (conv?.unread_count ?? 0) + 1 })
       .eq("id", conversationId);
+
+    await markContactRepliedOnInbound({
+      coachId,
+      contactId:
+        gate.contact?.id ||
+        (existingConv?.contact_id as string | null) ||
+        null,
+    });
   }
 
   return `mail:${conversationId}`;

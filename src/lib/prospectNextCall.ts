@@ -169,6 +169,39 @@ export function formatProspectNextCallWhen(
   return `${datePart} · ${formatCompactTime(date)}`;
 }
 
+function dayOrdinal(day: number): string {
+  const v = day % 100;
+  if (v >= 11 && v <= 13) return "th";
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+}
+
+/** Compact chip, e.g. "5 Sep, 8pm". */
+export function formatProspectNextCallChip(
+  next: ProspectNextCall | null | undefined
+): string | null {
+  if (!next?.start_time) return null;
+  const date = new Date(next.start_time);
+  if (Number.isNaN(date.getTime())) return null;
+  const day = date.getDate();
+  const month = new Intl.DateTimeFormat("en-GB", { month: "short" }).format(
+    date
+  );
+  const year =
+    date.getFullYear() === new Date().getFullYear()
+      ? ""
+      : ` ${date.getFullYear()}`;
+  return `${day}${dayOrdinal(day)} ${month}${year}, ${formatCompactTime(date)}`;
+}
+
 /** @deprecated Use formatProspectNextCallWhen + getProspectNextCallName for table cells. */
 export function formatProspectNextCall(
   next: ProspectNextCall | null | undefined

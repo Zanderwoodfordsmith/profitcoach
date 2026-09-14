@@ -13,6 +13,7 @@ import {
   CommunityMemberProfileHoverTrigger,
   communityMemberStatusLabel,
 } from "@/components/community/communityMemberProfileHover";
+import { CONTENT_WITH_RAIL_RAIL_CLASS } from "@/components/layout";
 
 const BANNER_SRC = "/brand/profit-coach-logo-colour-white-bg.png";
 
@@ -99,7 +100,8 @@ export function CommunitySidebar({
   return (
     <aside
       className={[
-        "w-full shrink-0 lg:w-80 lg:sticky lg:top-4 lg:self-start",
+        CONTENT_WITH_RAIL_RAIL_CLASS,
+        "lg:top-4",
         className,
       ]
         .filter(Boolean)

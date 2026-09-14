@@ -6,7 +6,12 @@ import {
 } from "@/lib/prospectDisplayFormat";
 import { splitFullName } from "@/lib/splitFullName";
 
-const EXTENSION_STATUSES = new Set(["new", "contacted", "follow_up"]);
+const EXTENSION_STATUSES = new Set([
+  "new",
+  "leads",
+  "contacted",
+  "follow_up",
+]);
 
 export type LinkedInProspectInput = {
   linkedinUrl: string;
@@ -85,6 +90,11 @@ export async function upsertProspectFromLinkedIn(
     type: "prospect",
     prospectSource: "linkedin",
     prospectStatus: prospectStatus ?? undefined,
+    extra: {
+      headline: input.headline?.trim() || null,
+      about: input.about?.trim() || null,
+      location: input.location?.trim() || null,
+    },
   });
 
   return {

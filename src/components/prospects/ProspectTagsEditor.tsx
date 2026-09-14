@@ -1,12 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { ProspectTagChip } from "@/components/prospects/ProspectTagChip";
 import {
   MAX_PROSPECT_TAG_LENGTH,
   MAX_PROSPECT_TAGS,
   normalizeProspectTag,
 } from "@/lib/prospects/tags";
+import {
+  DEFAULT_PROSPECT_TAGS,
+  mergeProspectTagCatalog,
+} from "@/lib/prospects/tagAppearance";
 
 type Props = {
   tags: string[];
@@ -26,7 +30,9 @@ export function ProspectTagsEditor({
 
   const unusedSuggestions = useMemo(() => {
     const have = new Set(tags.map((tag) => tag.toLowerCase()));
-    return suggestions.filter((tag) => !have.has(tag.toLowerCase())).slice(0, 8);
+    return mergeProspectTagCatalog(DEFAULT_PROSPECT_TAGS, suggestions)
+      .filter((tag) => !have.has(tag.toLowerCase()))
+      .slice(0, 8);
   }, [suggestions, tags]);
 
   async function commit(next: string[]) {
@@ -57,23 +63,15 @@ export function ProspectTagsEditor({
     <div>
       <div className="flex flex-wrap gap-1.5">
         {tags.map((tag) => (
-          <span
+          <ProspectTagChip
             key={tag}
-            className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[12px] font-medium text-sky-900 ring-1 ring-inset ring-sky-200"
-          >
-            {tag}
-            <button
-              type="button"
-              aria-label={`Remove ${tag}`}
-              disabled={saving}
-              onClick={() =>
-                void commit(tags.filter((item) => item.toLowerCase() !== tag.toLowerCase()))
-              }
-              className="rounded-full p-0.5 text-sky-700 hover:bg-sky-100 disabled:opacity-50"
-            >
-              <X className="h-3 w-3" strokeWidth={2} aria-hidden />
-            </button>
-          </span>
+            tag={tag}
+            size="editor"
+            disabled={saving}
+            onRemove={() =>
+              void commit(tags.filter((item) => item.toLowerCase() !== tag.toLowerCase()))
+            }
+          />
         ))}
       </div>
       <form
@@ -103,15 +101,14 @@ export function ProspectTagsEditor({
       {unusedSuggestions.length ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {unusedSuggestions.map((tag) => (
-            <button
+            <ProspectTagChip
               key={tag}
-              type="button"
+              tag={tag}
+              size="editor"
               disabled={saving}
+              title={`Add ${tag}`}
               onClick={() => void addTag(tag)}
-              className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-100 disabled:opacity-50"
-            >
-              {tag}
-            </button>
+            />
           ))}
         </div>
       ) : null}

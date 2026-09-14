@@ -12,7 +12,9 @@ import { advanceLeadAfterStep } from "@/lib/unipile/worker";
 import {
   resolveStepBodyForLead,
   buildLeadAssessmentUrl,
+  buildLeadAssessmentProUrl,
 } from "@/lib/unipile/interest";
+import { callWaitFrom } from "@/lib/unipile/campaignStepTypes";
 
 export type RemindQueueItem = {
   job_id: string;
@@ -20,6 +22,7 @@ export type RemindQueueItem = {
   campaign_name: string;
   lead_id: string;
   step_id: string;
+  step_type: string;
   step_position: number;
   scheduled_for: string;
   draft_body: string | null;
@@ -32,9 +35,14 @@ export type RemindQueueItem = {
   company: string | null;
   linkedin_url: string | null;
   contact_id: string | null;
+  call_wait: boolean;
 };
 
-function jobStatusForStep(sendMode: string | null | undefined): "pending" | "awaiting_coach" {
+function jobStatusForStep(
+  sendMode: string | null | undefined,
+  stepType?: string | null
+): "pending" | "awaiting_coach" {
+  if (stepType === "call") return "awaiting_coach";
   return sendMode === "remind" ? "awaiting_coach" : "pending";
 }
 
@@ -83,12 +91,34 @@ async function renderPreviewForJob(input: {
     lastName: input.lead.last_name as string | null,
     company: input.lead.company as string | null,
   });
+  const assessmentProUrl = await buildLeadAssessmentProUrl({
+    coachId: input.coachId,
+    firstName: input.lead.first_name as string | null,
+    lastName: input.lead.last_name as string | null,
+    company: input.lead.company as string | null,
+  });
+  const { loadScorecardOutreachVars } = await import(
+    "@/lib/unipile/scorecardVars"
+  );
+  const scorecardVars = await loadScorecardOutreachVars({
+    coachId: input.coachId,
+    contactId: (input.lead.contact_id as string | null) ?? null,
+  });
   const extras = {
     assessment_url: assessmentUrl,
     scorecard_url: assessmentUrl,
+    assessment_pro_url: assessmentProUrl,
     coach_name: coachName,
     review_name: "Business Clarity Review",
+    ...(scorecardVars ?? {}),
+    boss_score_report_link:
+      scorecardVars?.boss_score_report_link || assessmentUrl || "",
   };
+
+  if (input.step.step_type === "call") {
+    const notes = (input.draftBody || (input.step.body as string) || "").trim();
+    return notes || "Call them";
+  }
 
   if (input.draftBody?.trim()) {
     return buildMessageBody(input.draftBody, input.lead as never, extras);
@@ -110,6 +140,7 @@ async function renderPreviewForJob(input: {
     body: template,
     variants: input.step.variants,
     abAssignments: input.lead.ab_assignments,
+    preferredVariantKey: scorecardVars?.business_level_number || null,
   });
   return buildMessageBody(picked.body, input.lead as never, extras);
 }
@@ -201,7 +232,7 @@ export async function listRemindQueue(
       supabaseAdmin
         .from("linkedin_campaign_steps")
         .select(
-          "id, position, body, fallback_body, fallback_hours, variants, send_mode"
+          "id, position, body, fallback_body, fallback_hours, variants, send_mode, step_type, config"
         )
         .in("id", stepIds),
     ]);
@@ -243,6 +274,7 @@ export async function listRemindQueue(
       campaign_name: (campaign.name as string) || "Campaign",
       lead_id: job.lead_id as string,
       step_id: job.step_id as string,
+      step_type: String(step.step_type || "message"),
       step_position: Number(step.position ?? 0),
       scheduled_for: job.scheduled_for as string,
       draft_body: (job.draft_body as string | null) ?? null,
@@ -255,6 +287,7 @@ export async function listRemindQueue(
       company: (lead.company as string | null) ?? null,
       linkedin_url: (lead.linkedin_url as string | null) ?? null,
       contact_id: (lead.contact_id as string | null) ?? null,
+      call_wait: callWaitFrom(step.config),
     });
   }
 
@@ -295,6 +328,29 @@ async function loadAwaitingJob(coachId: string, jobId: string) {
   if (!step || !lead) throw new Error("Step or lead missing.");
 
   return { job, campaign, step, lead };
+}
+
+function leadIsStillOnStep(
+  lead: Record<string, unknown>,
+  step: Record<string, unknown>
+): boolean {
+  return Number(lead.current_step_position ?? 0) === Number(step.position);
+}
+
+async function advanceIfStillOnStep(input: {
+  coachId: string;
+  campaignId: string;
+  lead: Record<string, unknown>;
+  step: Record<string, unknown>;
+}) {
+  if (!leadIsStillOnStep(input.lead, input.step)) return;
+  await advanceLeadAfterStep({
+    lead: input.lead,
+    campaignId: input.campaignId,
+    coachId: input.coachId,
+    nextPosition: Number(input.step.position) + 1,
+    patch: { status: "in_sequence" },
+  });
 }
 
 async function sendLinkedInMessageForLead(input: {
@@ -451,6 +507,44 @@ export async function sendRemindJob(input: {
   }
 }
 
+/** Coach marks a call reminder done. Sequence only advances if it was waiting. */
+export async function completeCallJob(input: {
+  coachId: string;
+  jobId: string;
+}) {
+  const { job, step, lead } = await loadAwaitingJob(input.coachId, input.jobId);
+  if (step.step_type !== "call") {
+    throw new Error("Only phone-call steps can be marked called.");
+  }
+
+  const { data: claimed } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .update({ status: "running", attempts: (job.attempts ?? 0) + 1 })
+    .eq("id", job.id)
+    .eq("status", "awaiting_coach")
+    .select("id")
+    .maybeSingle();
+  if (!claimed) throw new Error("Call job not found or already handled.");
+
+  await advanceIfStillOnStep({
+    coachId: input.coachId,
+    campaignId: job.campaign_id as string,
+    lead,
+    step,
+  });
+
+  await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .update({
+      status: "succeeded",
+      sent_by: "coach",
+      last_error: null,
+    })
+    .eq("id", job.id);
+
+  return { ok: true as const };
+}
+
 export async function skipRemindJob(input: {
   coachId: string;
   jobId: string;
@@ -467,12 +561,11 @@ export async function skipRemindJob(input: {
     .eq("id", job.id)
     .eq("status", "awaiting_coach");
 
-  await advanceLeadAfterStep({
-    lead,
-    campaignId: job.campaign_id as string,
+  await advanceIfStillOnStep({
     coachId: input.coachId,
-    nextPosition: (step.position as number) + 1,
-    patch: { status: "in_sequence" },
+    campaignId: job.campaign_id as string,
+    lead,
+    step,
   });
 
   return { ok: true as const };
@@ -546,7 +639,8 @@ export async function processRemindFallbacks(): Promise<{
       .select("*")
       .eq("id", job.step_id)
       .maybeSingle();
-    if (!step || step.send_mode !== "remind") continue;
+    if (!step || step.step_type === "call") continue;
+    if (step.send_mode !== "remind") continue;
     if (step.fallback_hours == null) continue;
     const fallbackHours = Number(step.fallback_hours);
     if (!Number.isFinite(fallbackHours) || fallbackHours <= 0) continue;

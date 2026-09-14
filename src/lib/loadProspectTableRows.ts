@@ -12,6 +12,8 @@ import {
 } from "./prospectNextCall";
 import { latestProspectAssessmentAt, type ProspectRow } from "./prospectRow";
 import { resolveProspectStatus } from "./prospectStatus";
+import { OPEN_CAMPAIGN_LEAD_STATUSES } from "./unipile/campaignLeadActivity";
+import { chunkArray, SUPABASE_IN_FILTER_CHUNK } from "./chunkArray";
 
 type ContactRecord = {
   id: string;
@@ -82,6 +84,7 @@ export function toLiteProspectRows(contacts: ContactRecord[]): ProspectRow[] {
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+      in_outreach: false,
       tags: Array.isArray(contact.prospect_tags) ? contact.prospect_tags : [],
       has_whatsapp: contact.whatsapp_on === true,
       whatsapp_on: contact.whatsapp_on ?? null,
@@ -104,6 +107,7 @@ export async function enrichProspectRows(
     nextActionByContact,
     fallbackPhonesByContact,
     whatsappContactIds,
+    outreachContactIds,
   ] = await Promise.all([
     loadLatestScorecardByContactId(supabase, contactIds),
     loadLatestPremiumDiagnosticByContactId(supabase, contactIds),
@@ -113,6 +117,7 @@ export async function enrichProspectRows(
     loadProspectNextActionsForContacts(supabase, contacts),
     loadFallbackPhonesByContactId(supabase, contacts),
     loadWhatsAppContactIds(supabase, contactIds),
+    loadOpenCampaignContactIds(supabase, contactIds),
   ]);
 
   return contacts.map((contact) => {
@@ -189,6 +194,7 @@ export async function enrichProspectRows(
       created_at: contact.created_at ?? null,
       prospect_funnel: contact.prospect_funnel ?? null,
       prospect_source: contact.prospect_source ?? null,
+      in_outreach: outreachContactIds.has(contact.id),
       tags: Array.isArray(contact.prospect_tags) ? contact.prospect_tags : [],
       has_whatsapp:
         contact.whatsapp_on === true || whatsappContactIds.has(contact.id),
@@ -214,6 +220,31 @@ async function loadWhatsAppContactIds(
   for (const row of data ?? []) {
     const id = row.contact_id as string | null;
     if (id) ids.add(id);
+  }
+  return ids;
+}
+
+async function loadOpenCampaignContactIds(
+  supabase: SupabaseClient,
+  contactIds: string[]
+): Promise<Set<string>> {
+  const ids = new Set<string>();
+  if (!contactIds.length) return ids;
+  const statuses = [...OPEN_CAMPAIGN_LEAD_STATUSES];
+  for (const idChunk of chunkArray(contactIds, SUPABASE_IN_FILTER_CHUNK)) {
+    const { data, error } = await supabase
+      .from("linkedin_campaign_leads")
+      .select("contact_id")
+      .in("contact_id", idChunk)
+      .in("status", statuses);
+    if (error) {
+      console.warn("loadOpenCampaignContactIds:", error.message);
+      return ids;
+    }
+    for (const row of data ?? []) {
+      const id = row.contact_id as string | null;
+      if (id) ids.add(id);
+    }
   }
   return ids;
 }

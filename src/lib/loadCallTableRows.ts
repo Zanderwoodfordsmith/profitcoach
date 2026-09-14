@@ -37,6 +37,8 @@ type NativeBookingRecord = {
   starts_at: string | null;
   ends_at: string | null;
   meeting_join_url: string | null;
+  zoom_recording_url: string | null;
+  zoom_transcript_text: string | null;
   coach_calendars?: {
     name?: string | null;
     slug?: string | null;
@@ -116,6 +118,8 @@ function mapAppointmentRow(
     match_status: row.match_status,
     source: "ghl",
     meeting_join_url: null,
+    zoom_recording_url: null,
+    zoom_transcript_text: null,
   };
 }
 
@@ -164,6 +168,8 @@ function mapNativeBookingRow(
     match_status: row.contact_id ? "matched" : "unmatched_contact",
     source: "native",
     meeting_join_url: row.meeting_join_url ?? null,
+    zoom_recording_url: row.zoom_recording_url ?? null,
+    zoom_transcript_text: row.zoom_transcript_text ?? null,
   };
 }
 
@@ -227,6 +233,8 @@ async function loadNativeBookingRows(
         starts_at,
         ends_at,
         meeting_join_url,
+        zoom_recording_url,
+        zoom_transcript_text,
         coach_calendars ( name, slug ),
         contacts ( full_name, email, business_name, phone )
       `
@@ -269,6 +277,8 @@ async function loadNativeBookingRows(
         ...((r as unknown) as NativeBookingRecord),
         calendar_id: null,
         meeting_join_url: null,
+        zoom_recording_url: null,
+        zoom_transcript_text: null,
         coach_calendars: null,
       }));
     }

@@ -168,7 +168,7 @@ function bossScoreNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
 }
 
 function callsNavItem(prefix: "/coach" | "/admin"): DashboardNavItem {
-  return { href: `${prefix}/calls`, label: "Calendar", icon: IconPhoneCall };
+  return { href: `${prefix}/calls`, label: "Calls", icon: IconPhoneCall };
 }
 
 function IconPhoneCall({ className }: { className?: string }) {
@@ -293,24 +293,26 @@ export type CoachClientsTabItem = {
 };
 
 /**
- * Get Clients peer tabs — GHL-style order:
- * Conversations → Calendar → Prospects → Pipeline → Content → …
+ * Get Clients peer tabs — Classroom Get Calls order:
+ * Campaigns generate conversations, conversations book calls.
+ * Campaigns → Conversations → Calls → Prospects → Content → Links
  * Create tools live in Profit Coach AI (fullscreen Create tab).
+ *
+ * Links lives at `/share` so it does not collide with the admin toolkit
+ * page at `/admin/links`.
  */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
   const items: ToolsHubTabItem[] = [
     {
+      href: `${prefix}/campaigns`,
+      label: "Campaigns",
+    },
+    {
       href: `${prefix}/conversations`,
       label: "Conversations",
     },
-    {
-      href: `${prefix}/campaigns`,
-      label: "Campaigns",
-      adminPreview: true,
-    },
-    { href: `${prefix}/calls`, label: "Calendar" },
+    { href: `${prefix}/calls`, label: "Calls" },
     { href: `${prefix}/prospects`, label: "Prospects" },
-    { href: `${prefix}/pipeline`, label: "Pipeline", adminPreview: true },
   ];
   if (prefix === "/admin") {
     items.push({
@@ -323,17 +325,10 @@ export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem
       label: "Content",
     });
   }
-  items.push(
-    { href: `${prefix}/lead-magnets`, label: "Lead Magnets" },
-    {
-      href:
-        prefix === "/admin"
-          ? "/admin/account?tab=funnel"
-          : "/coach/settings?tab=funnel",
-      label: "Settings",
-      iconOnly: true,
-    }
-  );
+  items.push({
+    href: `${prefix}/share`,
+    label: "Links",
+  });
   return items;
 }
 
@@ -347,8 +342,14 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     `${prefix}/message-generator`,
     `${prefix}/linkedin-profile`,
     `${prefix}/campaigns`,
+    `${prefix}/lead-magnets`,
+    `${prefix}/pipeline`,
     `${prefix}/linkedin`,
+    `${prefix}/share`,
   ];
+  if (prefix === "/coach") {
+    paths.push("/coach/links");
+  }
   if (prefix === "/admin") {
     paths.push(
       "/admin/lead-finder",

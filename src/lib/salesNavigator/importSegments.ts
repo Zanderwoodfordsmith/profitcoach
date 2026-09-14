@@ -40,6 +40,8 @@ export type SalesNavImportSegmentPlan = {
   cacheInserted: number;
   cacheUpdated: number;
   errorMessage: string | null;
+  /** Unipile paging.total_count once known — clamps progress UI. */
+  searchTotalCount?: number | null;
 };
 
 type SalesNavImportSegmentDraft = Omit<

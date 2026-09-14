@@ -1,8 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { ChevronDown, ChevronLeft, FilePenLine, Play } from "lucide-react";
 
 import { AdminLessonSidebarMenu } from "@/components/academy/AdminLessonSidebarMenu";
@@ -12,21 +21,16 @@ import {
   useLessonProgress,
   useReportLessonWatchProgress,
 } from "@/components/academy/LessonProgressControls";
-import { LessonChapterGuidesPanel } from "@/components/academy/LessonChapterGuidesPanel";
-import { LessonGuidePanel } from "@/components/academy/LessonGuidePanel";
-import { LessonOverviewPanel } from "@/components/academy/LessonOverviewPanel";
+import { ClassroomLessonBodySkeleton } from "@/components/academy/ClassroomLessonSkeleton";
 import { LessonPageEyebrow } from "@/components/academy/LessonPageEyebrow";
 import { LessonPlayerTabs } from "@/components/academy/LessonPlayerTabs";
-import { LessonQaPanel } from "@/components/academy/LessonQaPanel";
-import { LessonTranscriptPanel } from "@/components/academy/LessonTranscriptPanel";
-import { LessonMediaPlayer } from "@/components/academy/LessonMediaPlayer";
+import type { ClassroomLessonPayload } from "@/lib/academy/classroomLessonPayload";
 import type { LessonSeekRequest } from "@/lib/academy/lessonSeekRequest";
 import {
   hasInAppLessonContent,
   splitSectionTitleEyebrow,
 } from "@/lib/academy/lessonContentUtils";
 import type {
-  HubCatalog,
   HubCourse,
   HubLesson,
   HubSection,
@@ -45,8 +49,45 @@ import {
   sectionContainsLesson,
   sectionDurationLabel,
 } from "@/lib/academy/hubCatalog";
-import { LessonVideoHandoff } from "@/components/academy/LessonVideoHandoff";
 import { isDirectVideoFileUrl } from "@/lib/academy/videoUrl";
+
+const LessonMediaPlayer = dynamic(
+  () =>
+    import("@/components/academy/LessonMediaPlayer").then(
+      (mod) => mod.LessonMediaPlayer,
+    ),
+  {
+    loading: () => (
+      <div className="aspect-video animate-pulse rounded-xl bg-slate-100" />
+    ),
+  },
+);
+const LessonVideoHandoff = dynamic(() =>
+  import("@/components/academy/LessonVideoHandoff").then(
+    (mod) => mod.LessonVideoHandoff,
+  ),
+);
+const LessonOverviewPanel = dynamic(() =>
+  import("@/components/academy/LessonOverviewPanel").then(
+    (mod) => mod.LessonOverviewPanel,
+  ),
+);
+const LessonGuidePanel = dynamic(() =>
+  import("@/components/academy/LessonGuidePanel").then((mod) => mod.LessonGuidePanel),
+);
+const LessonChapterGuidesPanel = dynamic(() =>
+  import("@/components/academy/LessonChapterGuidesPanel").then(
+    (mod) => mod.LessonChapterGuidesPanel,
+  ),
+);
+const LessonTranscriptPanel = dynamic(() =>
+  import("@/components/academy/LessonTranscriptPanel").then(
+    (mod) => mod.LessonTranscriptPanel,
+  ),
+);
+const LessonQaPanel = dynamic(() =>
+  import("@/components/academy/LessonQaPanel").then((mod) => mod.LessonQaPanel),
+);
 import {
   buildLessonTranscriptFromChapters,
   chapterHasStepContent,
@@ -57,7 +98,6 @@ import {
 import { parseLessonVideoEmbed } from "@/lib/videoEmbed";
 
 type Props = {
-  data: HubCatalog;
   course: HubCourse;
   lesson: HubLesson;
   basePath: string;
@@ -70,6 +110,11 @@ type Props = {
   guideMarkdown?: string;
   transcriptText?: string | null;
   lessonResources?: AcademyResourceRow[];
+  /**
+   * When set, the course rail and lesson title paint immediately from hub
+   * data; video and markdown stream in when this promise resolves.
+   */
+  contentPromise?: Promise<ClassroomLessonPayload>;
   /** When true, treat the viewer as admin for Ask & Share / impersonation. */
   viewerIsAdmin?: boolean | null;
   /**
@@ -396,8 +441,254 @@ function LessonSidebarRow({
   );
 }
 
+function LessonBodyFromFields({
+  videoUrl,
+  videoChapters,
+  audioUrl,
+  bodyMarkdown,
+  guideMarkdown,
+  transcriptText,
+  lessonResources,
+  recommendedActions,
+  courseId,
+  lessonId,
+  lessonTitle,
+  contentCourseId,
+  qaCourseId,
+  initialChapterId,
+  viewerIsAdmin,
+  pathname,
+  nextLessonTitle,
+  nextLessonHref,
+  myActionsHref,
+  relatedPlaylist,
+  seekRequest,
+  onSeekToTranscript,
+  showVideoHandoff,
+  onShowHandoff,
+  onHideHandoff,
+  onContinueNext,
+  reportWatchProgress,
+}: {
+  videoUrl: string | null;
+  videoChapters: LessonVideoChapter[];
+  audioUrl: string | null;
+  bodyMarkdown: string;
+  guideMarkdown: string;
+  transcriptText: string | null;
+  lessonResources: AcademyResourceRow[];
+  recommendedActions: HubLesson["recommendedActions"];
+  courseId: string;
+  lessonId: string;
+  lessonTitle: string;
+  contentCourseId: string;
+  qaCourseId: string;
+  initialChapterId: string | null;
+  viewerIsAdmin: boolean | null;
+  pathname: string;
+  nextLessonTitle: string | null;
+  nextLessonHref: string | null;
+  myActionsHref: string;
+  relatedPlaylist: ReactNode;
+  seekRequest: LessonSeekRequest | null;
+  onSeekToTranscript: (seconds: number) => void;
+  showVideoHandoff: boolean;
+  onShowHandoff: () => void;
+  onHideHandoff: () => void;
+  onContinueNext: () => void;
+  reportWatchProgress: (currentTimeSeconds: number, durationSeconds: number) => void;
+}) {
+  const hasChapterPlayback = lessonHasVideoChapters(videoChapters);
+  const hasContentSteps = lessonHasContentSteps(videoChapters);
+  const chapterTranscript = buildLessonTranscriptFromChapters(videoChapters);
+  const effectiveTranscript = transcriptText?.trim()
+    ? transcriptText.trim()
+    : chapterTranscript;
+  const contentSteps = videoChapters.filter(chapterHasStepContent);
+  const chapterGuides = videoChapters.filter((chapter) =>
+    chapter.guideMarkdown?.trim(),
+  );
+  const showGuideTab =
+    Boolean(guideMarkdown.trim()) ||
+    (hasChapterPlayback && chapterGuides.length > 0) ||
+    hasContentSteps;
+  const inApp = hasInAppLessonContent(
+    videoUrl,
+    bodyMarkdown,
+    transcriptText,
+    guideMarkdown,
+    audioUrl,
+    videoChapters,
+  );
+  const videoEmbed = videoUrl ? parseLessonVideoEmbed(videoUrl) : null;
+  const directVideoUrl =
+    videoUrl && !videoEmbed && isDirectVideoFileUrl(videoUrl) ? videoUrl : null;
+  const handoffActionCount = (recommendedActions ?? []).filter((a) =>
+    a.text.trim(),
+  ).length;
+  const hasMedia = Boolean(
+    videoUrl || hasChapterPlayback || audioUrl?.trim(),
+  );
+
+  if (!inApp) {
+    return (
+      <div className={LESSON_SLAB_BODY}>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center">
+          <p className="text-base font-medium text-slate-700">
+            This lesson’s content is coming soon.
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+            We’re preparing the video and materials for this lesson.
+            In the meantime, carry on with the rest of the course or ask
+            the community below.
+          </p>
+        </div>
+        <LessonPlayerTabs
+          overview={
+            <LessonOverviewPanel
+              courseId={courseId}
+              lessonId={lessonId}
+              bodyMarkdown=""
+              recommendedActions={recommendedActions ?? []}
+              resources={lessonResources}
+              readOnlyActions={Boolean(viewerIsAdmin)}
+              emptyOverview={
+                <p className="text-sm text-slate-500">
+                  This lesson’s content is coming soon. Ask a question
+                  below in the meantime.
+                </p>
+              }
+            />
+          }
+          showRelated={Boolean(relatedPlaylist)}
+          related={relatedPlaylist}
+          qa={
+            <LessonQaPanel
+              courseId={qaCourseId}
+              lessonId={lessonId}
+              lessonPath={pathname}
+              viewerIsAdmin={viewerIsAdmin}
+            />
+          }
+          qaLabel={lessonCommunityTabLabel(lessonId)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {hasMedia ? (
+        <div className={LESSON_SLAB_VIDEO}>
+          <LessonMediaPlayer
+            courseId={contentCourseId}
+            lessonId={lessonId}
+            title={lessonTitle}
+            videoUrl={videoUrl}
+            videoChapters={videoChapters}
+            audioUrl={audioUrl}
+            initialChapterId={initialChapterId}
+            onWatchProgress={reportWatchProgress}
+            onEnded={onShowHandoff}
+            seekRequest={seekRequest}
+            handoff={
+              showVideoHandoff &&
+              (videoEmbed?.kind === "youtube" ||
+                directVideoUrl ||
+                hasChapterPlayback) ? (
+                <LessonVideoHandoff
+                  nextLessonTitle={nextLessonTitle}
+                  nextLessonHref={nextLessonHref}
+                  actionCount={handoffActionCount}
+                  myActionsHref={myActionsHref}
+                  onStay={onHideHandoff}
+                  onContinue={onContinueNext}
+                />
+              ) : null
+            }
+          />
+        </div>
+      ) : null}
+      <div className={hasMedia ? LESSON_SLAB_BODY_AFTER_VIDEO : LESSON_SLAB_BODY}>
+        <LessonPlayerTabs
+          flush
+          overview={
+            <LessonOverviewPanel
+              courseId={courseId}
+              lessonId={lessonId}
+              bodyMarkdown={bodyMarkdown}
+              hasGuide={showGuideTab}
+              recommendedActions={recommendedActions ?? []}
+              resources={lessonResources}
+              readOnlyActions={Boolean(viewerIsAdmin)}
+            />
+          }
+          showGuide={showGuideTab}
+          guide={
+            (hasChapterPlayback && chapterGuides.length > 0) || hasContentSteps ? (
+              <div className="space-y-6">
+                {guideMarkdown.trim() ? (
+                  <LessonGuidePanel
+                    guideMarkdown={guideMarkdown}
+                    lessonId={lessonId}
+                  />
+                ) : null}
+                <LessonChapterGuidesPanel
+                  chapters={hasChapterPlayback ? videoChapters : contentSteps}
+                  initialChapterId={initialChapterId}
+                />
+              </div>
+            ) : guideMarkdown.trim() ? (
+              <LessonGuidePanel
+                guideMarkdown={guideMarkdown}
+                lessonId={lessonId}
+              />
+            ) : null
+          }
+          showRelated={Boolean(relatedPlaylist)}
+          related={relatedPlaylist}
+          qa={
+            <LessonQaPanel
+              courseId={qaCourseId}
+              lessonId={lessonId}
+              lessonPath={pathname}
+              viewerIsAdmin={viewerIsAdmin}
+            />
+          }
+          qaLabel={lessonCommunityTabLabel(lessonId)}
+          showTranscript={Boolean(effectiveTranscript?.trim())}
+          transcript={
+            effectiveTranscript?.trim() ? (
+              <LessonTranscriptPanel
+                transcriptText={effectiveTranscript.trim()}
+                videoChapters={hasChapterPlayback ? videoChapters : undefined}
+                onSeekToSeconds={onSeekToTranscript}
+              />
+            ) : null
+          }
+        />
+      </div>
+    </>
+  );
+}
+
+function ClassroomLessonStreamedFields({
+  contentPromise,
+  onPayload,
+  children,
+}: {
+  contentPromise: Promise<ClassroomLessonPayload>;
+  onPayload: (payload: ClassroomLessonPayload) => void;
+  children: (payload: ClassroomLessonPayload) => ReactNode;
+}) {
+  const payload = use(contentPromise);
+  useEffect(() => {
+    onPayload(payload);
+  }, [onPayload, payload]);
+  return children(payload);
+}
+
 export function ClassroomLessonPlayer({
-  data,
   course: courseProp,
   lesson,
   basePath,
@@ -410,6 +701,7 @@ export function ClassroomLessonPlayer({
   guideMarkdown = "",
   transcriptText = null,
   lessonResources = [],
+  contentPromise,
   viewerIsAdmin = null,
   contentSource = "course",
   canEditLessons = false,
@@ -424,6 +716,9 @@ export function ClassroomLessonPlayer({
   const resolvedVideoChapters =
     videoChapters.length > 0 ? videoChapters : lesson.videoChapters ?? [];
   const [course, setCourse] = useState(courseProp);
+  const handlePayload = useCallback((payload: ClassroomLessonPayload) => {
+    setCourse(payload.course);
+  }, []);
   const [openSectionIds, setOpenSectionIds] = useState<Set<string>>(() =>
     initialOpenSectionIds(courseProp, lesson.id)
   );
@@ -478,30 +773,6 @@ export function ClassroomLessonPlayer({
   const parentLesson = ctx?.parentLesson ?? null;
   const satelliteSiblings =
     parentLesson?.satellites ?? lesson.satellites ?? null;
-  const hasChapterPlayback = lessonHasVideoChapters(resolvedVideoChapters);
-  const hasContentSteps = lessonHasContentSteps(resolvedVideoChapters);
-  // A chaptered lesson is treated as one recording: stack every chapter's
-  // transcript into a single lesson transcript (no per-chapter/active view).
-  const chapterTranscript = useMemo(
-    () => buildLessonTranscriptFromChapters(resolvedVideoChapters),
-    [resolvedVideoChapters]
-  );
-  const effectiveTranscript = transcriptText?.trim()
-    ? transcriptText.trim()
-    : chapterTranscript;
-  const contentSteps = useMemo(
-    () => resolvedVideoChapters.filter(chapterHasStepContent),
-    [resolvedVideoChapters]
-  );
-  const chapterGuides = useMemo(
-    () => resolvedVideoChapters.filter((chapter) => chapter.guideMarkdown?.trim()),
-    [resolvedVideoChapters]
-  );
-  const showGuideTab =
-    Boolean(guideMarkdown.trim()) ||
-    (hasChapterPlayback && chapterGuides.length > 0) ||
-    hasContentSteps;
-
   const inApp = hasInAppLessonContent(
     videoUrl,
     bodyMarkdown,
@@ -510,9 +781,6 @@ export function ClassroomLessonPlayer({
     audioUrl,
     resolvedVideoChapters
   );
-  const videoEmbed = videoUrl ? parseLessonVideoEmbed(videoUrl) : null;
-  const directVideoUrl =
-    videoUrl && !videoEmbed && isDirectVideoFileUrl(videoUrl) ? videoUrl : null;
   const reportWatchProgress = useReportLessonWatchProgress(lesson.id);
   const nextLesson = useMemo(
     () =>
@@ -524,9 +792,6 @@ export function ClassroomLessonPlayer({
   const nextLessonHref = nextLesson
     ? `${basePath}/${encodeURIComponent(course.id)}/${encodeURIComponent(nextLesson.id)}`
     : null;
-  const handoffActionCount = (lesson.recommendedActions ?? []).filter((a) =>
-    a.text.trim(),
-  ).length;
   const myActionsHref = pathname.startsWith("/admin")
     ? "/admin/signature/actions"
     : "/coach/signature/actions";
@@ -652,6 +917,40 @@ export function ClassroomLessonPlayer({
       </section>
     );
   }
+
+  const lessonBodyChrome = {
+    courseId: course.id,
+    lessonId: lesson.id,
+    lessonTitle: lesson.title,
+    contentCourseId: resolveContentCourseId(lesson.id),
+    qaCourseId:
+      contentSource === "classroom"
+        ? contentSourceCourseId(lesson.id)
+        : course.id,
+    initialChapterId,
+    viewerIsAdmin,
+    pathname: pathname ?? "",
+    nextLessonTitle: nextLesson?.title ?? null,
+    nextLessonHref,
+    myActionsHref,
+    relatedPlaylist: satelliteSiblings?.length
+      ? renderSatellitePlaylist(satelliteSiblings, Boolean(parentLesson))
+      : null,
+    seekRequest,
+    onSeekToTranscript: seekToTranscriptTime,
+    showVideoHandoff,
+    onShowHandoff: () => setShowVideoHandoff(true),
+    onHideHandoff: () => setShowVideoHandoff(false),
+    onContinueNext: () => {
+      if (!nextLessonHref) {
+        setShowVideoHandoff(false);
+        return;
+      }
+      setShowVideoHandoff(false);
+      router.push(nextLessonHref);
+    },
+    reportWatchProgress,
+  };
 
   /** Tier label only (Core / Premium) — left-aligned, not an accordion. */
   function renderRuleSection(section: HubSection, depth: number, muted = false) {
@@ -917,7 +1216,7 @@ export function ClassroomLessonPlayer({
                     </Link>
                   </p>
                 ) : null}
-                {!inApp ? (
+                {!contentPromise && !inApp ? (
                   <p className="mt-2 text-sm text-slate-500">Content coming soon</p>
                 ) : null}
               </div>
@@ -927,182 +1226,39 @@ export function ClassroomLessonPlayer({
               </div>
             </header>
 
-            {inApp ? (
-              <>
-                {videoUrl || hasChapterPlayback || audioUrl?.trim() ? (
-                  <div className={LESSON_SLAB_VIDEO}>
-                    <LessonMediaPlayer
-                      courseId={resolveContentCourseId(lesson.id)}
-                      lessonId={lesson.id}
-                      title={lesson.title}
-                      videoUrl={videoUrl}
-                      videoChapters={resolvedVideoChapters}
-                      audioUrl={audioUrl}
-                      initialChapterId={initialChapterId}
-                      onWatchProgress={reportWatchProgress}
-                      onEnded={() => setShowVideoHandoff(true)}
-                      seekRequest={seekRequest}
-                      handoff={
-                        showVideoHandoff &&
-                        (videoEmbed?.kind === "youtube" ||
-                          directVideoUrl ||
-                          hasChapterPlayback) ? (
-                          <LessonVideoHandoff
-                            nextLessonTitle={nextLesson?.title ?? null}
-                            nextLessonHref={nextLessonHref}
-                            actionCount={handoffActionCount}
-                            myActionsHref={myActionsHref}
-                            onStay={() => setShowVideoHandoff(false)}
-                            onContinue={() => {
-                              if (!nextLessonHref) {
-                                setShowVideoHandoff(false);
-                                return;
-                              }
-                              setShowVideoHandoff(false);
-                              router.push(nextLessonHref);
-                            }}
-                          />
-                        ) : null
-                      }
-                    />
-                  </div>
-                ) : null}
-
-                <div
-                  className={
-                    videoUrl || hasChapterPlayback || audioUrl?.trim()
-                      ? LESSON_SLAB_BODY_AFTER_VIDEO
-                      : LESSON_SLAB_BODY
-                  }
+            {contentPromise ? (
+              <Suspense fallback={<ClassroomLessonBodySkeleton />}>
+                <ClassroomLessonStreamedFields
+                  contentPromise={contentPromise}
+                  onPayload={handlePayload}
                 >
-                  <LessonPlayerTabs
-                    flush
-                    overview={
-                      <LessonOverviewPanel
-                        courseId={course.id}
-                        lessonId={lesson.id}
-                        bodyMarkdown={bodyMarkdown}
-                        hasGuide={showGuideTab}
-                        recommendedActions={lesson.recommendedActions ?? []}
-                        resources={lessonResources}
-                        readOnlyActions={Boolean(viewerIsAdmin)}
-                      />
-                    }
-                    showGuide={showGuideTab}
-                    guide={
-                      (hasChapterPlayback && chapterGuides.length > 0) || hasContentSteps ? (
-                        <div className="space-y-6">
-                          {guideMarkdown.trim() ? (
-                            <LessonGuidePanel
-                              guideMarkdown={guideMarkdown}
-                              lessonId={lesson.id}
-                            />
-                          ) : null}
-                          <LessonChapterGuidesPanel
-                            chapters={
-                              hasChapterPlayback ? resolvedVideoChapters : contentSteps
-                            }
-                            initialChapterId={initialChapterId}
-                          />
-                        </div>
-                      ) : guideMarkdown.trim() ? (
-                        <LessonGuidePanel
-                          guideMarkdown={guideMarkdown}
-                          lessonId={lesson.id}
-                        />
-                      ) : null
-                    }
-                    showRelated={Boolean(satelliteSiblings?.length)}
-                    related={
-                      satelliteSiblings?.length
-                        ? renderSatellitePlaylist(
-                            satelliteSiblings,
-                            Boolean(parentLesson),
-                          )
-                        : null
-                    }
-                    qa={
-                      <LessonQaPanel
-                        courseId={
-                          contentSource === "classroom"
-                            ? contentSourceCourseId(lesson.id)
-                            : course.id
-                        }
-                        lessonId={lesson.id}
-                        lessonPath={pathname}
-                        viewerIsAdmin={viewerIsAdmin}
-                      />
-                    }
-                    qaLabel={lessonCommunityTabLabel(lesson.id)}
-                    showTranscript={Boolean(effectiveTranscript?.trim())}
-                    transcript={
-                      effectiveTranscript?.trim() ? (
-                        <LessonTranscriptPanel
-                          transcriptText={effectiveTranscript.trim()}
-                          videoChapters={
-                            hasChapterPlayback ? resolvedVideoChapters : undefined
-                          }
-                          onSeekToSeconds={seekToTranscriptTime}
-                        />
-                      ) : null
-                    }
-                  />
-                </div>
-              </>
+                  {(payload) => (
+                    <LessonBodyFromFields
+                      videoUrl={payload.videoUrl}
+                      videoChapters={payload.videoChapters}
+                      audioUrl={payload.audioUrl}
+                      bodyMarkdown={payload.bodyMarkdown}
+                      guideMarkdown={payload.guideMarkdown}
+                      transcriptText={payload.transcriptText}
+                      lessonResources={payload.lessonResources}
+                      recommendedActions={payload.lesson.recommendedActions ?? []}
+                      {...lessonBodyChrome}
+                    />
+                  )}
+                </ClassroomLessonStreamedFields>
+              </Suspense>
             ) : (
-              <div className={LESSON_SLAB_BODY}>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center">
-                  <p className="text-base font-medium text-slate-700">
-                    This lesson’s content is coming soon.
-                  </p>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                    We’re preparing the video and materials for this lesson.
-                    In the meantime, carry on with the rest of the course or ask
-                    the community below.
-                  </p>
-                </div>
-
-                <LessonPlayerTabs
-                  overview={
-                    <LessonOverviewPanel
-                      courseId={course.id}
-                      lessonId={lesson.id}
-                      bodyMarkdown=""
-                      recommendedActions={lesson.recommendedActions ?? []}
-                      resources={lessonResources}
-                      readOnlyActions={Boolean(viewerIsAdmin)}
-                      emptyOverview={
-                        <p className="text-sm text-slate-500">
-                          This lesson’s content is coming soon. Ask a question
-                          below in the meantime.
-                        </p>
-                      }
-                    />
-                  }
-                  showRelated={Boolean(satelliteSiblings?.length)}
-                  related={
-                    satelliteSiblings?.length
-                      ? renderSatellitePlaylist(
-                          satelliteSiblings,
-                          Boolean(parentLesson),
-                        )
-                      : null
-                  }
-                  qa={
-                    <LessonQaPanel
-                      courseId={
-                        contentSource === "classroom"
-                          ? contentSourceCourseId(lesson.id)
-                          : course.id
-                      }
-                      lessonId={lesson.id}
-                      lessonPath={pathname}
-                      viewerIsAdmin={viewerIsAdmin}
-                    />
-                  }
-                  qaLabel={lessonCommunityTabLabel(lesson.id)}
-                />
-              </div>
+              <LessonBodyFromFields
+                videoUrl={videoUrl}
+                videoChapters={resolvedVideoChapters}
+                audioUrl={audioUrl}
+                bodyMarkdown={bodyMarkdown}
+                guideMarkdown={guideMarkdown}
+                transcriptText={transcriptText}
+                lessonResources={lessonResources}
+                recommendedActions={lesson.recommendedActions ?? []}
+                {...lessonBodyChrome}
+              />
             )}
           </div>
         </article>

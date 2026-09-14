@@ -78,6 +78,7 @@ export async function patchHubLessonContent(
     // Need resolved chapters from DB-merged course, not hub stub.
     const mergedForAuth = await loadClassroomCourseWithContent(course, {
       includeDrafts: true,
+      activeLessonId: lessonId,
     });
     const authLesson =
       findLessonInCourse(mergedForAuth, lessonId) ?? baseLesson;
@@ -113,6 +114,7 @@ export async function patchHubLessonContent(
 
   const mergedCourse = await loadClassroomCourseWithContent(course, {
     includeDrafts: true,
+    activeLessonId: lessonId,
   });
   const lesson = findLessonInCourse(mergedCourse, lessonId) ?? baseLesson;
   return NextResponse.json({ course: mergedCourse, lesson });

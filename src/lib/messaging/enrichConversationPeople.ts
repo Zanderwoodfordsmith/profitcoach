@@ -190,6 +190,7 @@ export async function enrichMessagingConversationPeople<
   }
 
   const stalePhoneUpdates: { id: string; phone: string }[] = [];
+  const staleNameUpdates: { id: string; name: string }[] = [];
   const staleLinkedInClears: string[] = [];
   const staleLinkedInPatches: {
     id: string;
@@ -209,13 +210,18 @@ export async function enrichMessagingConversationPeople<
       : undefined;
     const leadName = leadDisplayName(lead);
 
+    const contactName =
+      (contact?.full_name || "").trim() ||
+      (leadContact?.full_name || "").trim() ||
+      null;
     let prospect_name = row.prospect_name ?? null;
-    if (!looksLikePersonName(prospect_name)) {
-      const better =
-        (contact?.full_name || "").trim() ||
-        leadName ||
-        (leadContact?.full_name || "").trim() ||
-        null;
+    if (contactName) {
+      prospect_name = contactName;
+      if (row.id && (row.prospect_name || "").trim() !== contactName) {
+        staleNameUpdates.push({ id: row.id, name: contactName });
+      }
+    } else if (!looksLikePersonName(prospect_name)) {
+      const better = leadName || null;
       if (better) prospect_name = better;
     }
 
@@ -331,6 +337,7 @@ export async function enrichMessagingConversationPeople<
 
   if (
     stalePhoneUpdates.length ||
+    staleNameUpdates.length ||
     staleLinkedInClears.length ||
     staleLinkedInPatches.length
   ) {
@@ -339,6 +346,12 @@ export async function enrichMessagingConversationPeople<
         supabaseAdmin
           .from("messaging_conversations")
           .update({ prospect_phone: phone })
+          .eq("id", id)
+      ),
+      ...staleNameUpdates.map(({ id, name }) =>
+        supabaseAdmin
+          .from("messaging_conversations")
+          .update({ prospect_name: name })
           .eq("id", id)
       ),
       ...staleLinkedInClears.map((id) =>

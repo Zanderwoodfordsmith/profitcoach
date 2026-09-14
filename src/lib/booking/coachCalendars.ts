@@ -1,3 +1,12 @@
+import {
+  parseReminderSequence,
+  type BookingReminderStep,
+} from "@/lib/booking/reminderSequence";
+import {
+  parseMeetingLocationMode,
+  type MeetingLocationMode,
+} from "@/lib/booking/locationMode";
+
 /** Default calendars seeded for each coach (public book slugs). */
 export const DEFAULT_COACH_CALENDARS = [
   {
@@ -50,11 +59,21 @@ export type CoachCalendarRow = {
   booking_window_days: number;
   is_enabled: boolean;
   is_public: boolean;
-  location_mode: "google_meet" | "phone" | "custom";
+  location_mode: MeetingLocationMode;
   location_phone: string | null;
   location_custom: string | null;
   sort_order: number;
+  reminder_sequence: BookingReminderStep[];
 };
+
+export function calendarSlugFromName(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "calendar";
+}
 
 export type CoachCalendarPatch = Partial<{
   name: string;
@@ -65,22 +84,18 @@ export type CoachCalendarPatch = Partial<{
   booking_window_days: number;
   is_enabled: boolean;
   is_public: boolean;
-  location_mode: "google_meet" | "phone" | "custom";
+  location_mode: MeetingLocationMode;
   location_phone: string | null;
   location_custom: string | null;
   sort_order: number;
   slug: string;
+  reminder_sequence: BookingReminderStep[];
 }>;
 
 export function mapCoachCalendarRow(
   row: Record<string, unknown>
 ): CoachCalendarRow {
-  const modeRaw =
-    typeof row.location_mode === "string" ? row.location_mode.trim() : "";
-  const location_mode =
-    modeRaw === "phone" || modeRaw === "custom" || modeRaw === "google_meet"
-      ? modeRaw
-      : "google_meet";
+  const location_mode = parseMeetingLocationMode(row.location_mode);
 
   return {
     id: String(row.id),
@@ -115,6 +130,7 @@ export function mapCoachCalendarRow(
         ? row.location_custom.trim()
         : null,
     sort_order: typeof row.sort_order === "number" ? row.sort_order : 0,
+    reminder_sequence: parseReminderSequence(row.reminder_sequence),
   };
 }
 
@@ -131,7 +147,7 @@ export function calendarToBookingSettings(
   booking_window_days: number;
   is_enabled: boolean;
   title: string;
-  location_mode: "google_meet" | "phone" | "custom";
+  location_mode: MeetingLocationMode;
   location_phone: string | null;
   location_custom: string | null;
 } {

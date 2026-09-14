@@ -7,7 +7,7 @@ export type ProspectSourceKind =
   | "manual";
 
 /** Stored on `contacts.prospect_source`. */
-export type ProspectSourceValue = ProspectSourceKind | "ghl";
+export type ProspectSourceValue = ProspectSourceKind | "ghl" | "linkedin_campaign";
 
 export const PROSPECT_SOURCE_CHART_STACK_ORDER: ProspectSourceKind[] = [
   "manual",
@@ -64,6 +64,7 @@ export function prospectSourceKindChartClass(kind: ProspectSourceKind): string {
 const SOURCE_VALUE_LABELS: Record<ProspectSourceValue, string> = {
   sales_navigator: "Sales Navigator",
   linkedin: "LinkedIn",
+  linkedin_campaign: "Campaign",
   manual: "Manual",
   boss_score: "BOSS Score",
   boss_pro: "BOSS Pro",
@@ -72,10 +73,11 @@ const SOURCE_VALUE_LABELS: Record<ProspectSourceValue, string> = {
 };
 
 function sourceValueToKind(value: string): ProspectSourceKind | null {
-  if (value in SOURCE_VALUE_LABELS && value !== "ghl") {
+  if (value === "ghl") return "manual";
+  if (value === "linkedin_campaign") return "linkedin";
+  if (value in SOURCE_VALUE_LABELS) {
     return value as ProspectSourceKind;
   }
-  if (value === "ghl") return "manual";
   return null;
 }
 

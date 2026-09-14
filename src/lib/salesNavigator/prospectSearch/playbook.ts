@@ -16,11 +16,12 @@ Take the ~600k+ "base search" business owners in a geography and narrow to a hig
 
 ## Always start from the BASE SEARCH
 Keep these on every Sales Nav strategy (unless expanding after exhaustion):
-- Connections: 2nd + 3rd (for connector campaigns). Optionally check 1st later for warm outreach.
+- Connections: 2nd + 3rd (for connector campaigns). Optionally check 1st later for warm outreach — 1st-degree searches have no geography (whole network).
 - Geography: usually country (UK) or US state / nearby states.
 - Company headcount: 1–10, 11–50, 51–200 (sweet spot). Include 1–10 because many real 20–30 person firms are mislisted. Skip "Self-employed". 201–500 only if targeting larger.
 - Current titles (include): Owner, co-owner, Founder, co-founder, CEO, Managing director, co-managing director, Managing partner, co-managing partner (+ industry-specific titles e.g. Head Architect).
 - Exclude on BOTH Current Company AND Current Title (unless that IS the niche): coach, coaching, consultant, consulting, consultants, psychologist, recruiter, recruiting, recruitment, recruit.
+- Also exclude Current Company: consultancy.
 - Zander rarely uses the LinkedIn Industry filter — prefer Current Company name / Keywords.
 
 Save reusable searches: "Base Search – [Location]", then "[Industry] prospects – [count]".

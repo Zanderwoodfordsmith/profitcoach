@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { MessagingInbox } from "@/components/messaging/MessagingInbox";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
@@ -19,7 +20,13 @@ export default function CoachConversationsPage() {
         />
       }
     >
-      <MessagingInbox />
+      <Suspense
+        fallback={
+          <p className="px-4 py-8 text-sm text-slate-500">Loading inbox…</p>
+        }
+      >
+        <MessagingInbox />
+      </Suspense>
     </DashboardPageSection>
   );
 }

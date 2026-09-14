@@ -1,4 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { addDaysYmd, ymdInTimeZone, zonedLocalToUtc } from "@/lib/booking/bookingTime";
+import { startOfZonedDay } from "@/lib/unipile/campaignSendWindow";
+import { campaignStepHeatmapBucket } from "@/lib/unipile/campaignStepTypes";
 
 export const ACTIVITY_DAY_RANGES = [90, 180, 365] as const;
 export type ActivityDayRange = (typeof ACTIVITY_DAY_RANGES)[number];
@@ -108,11 +111,11 @@ export async function loadActivityHeatmap(
     const stepType = Array.isArray(step)
       ? step[0]?.step_type
       : step?.step_type;
-    if (stepType === "invite") bump(byDay, day, "invite");
-    else if (stepType === "message") bump(byDay, day, "message");
-    else if (stepType === "comment" || stepType === "react") {
-      bump(byDay, day, "engagement");
-    }
+    const bucket = campaignStepHeatmapBucket(stepType);
+    if (bucket === "invite") bump(byDay, day, "invite");
+    else if (bucket === "message") bump(byDay, day, "message");
+    else if (bucket === "email") bump(byDay, day, "email");
+    else if (bucket === "engagement") bump(byDay, day, "engagement");
   }
 
   const { data: emails, error: emailError } = await supabaseAdmin
@@ -247,11 +250,10 @@ export async function loadCampaignActivity(
     const day = utcDayKey(String(row.updated_at || ""));
     if (!day || day < start || day > end) continue;
     const stepType = stepTypeById.get(String(row.step_id || "")) || "";
-    if (stepType === "invite") bumpDay(day, "invite");
-    else if (stepType === "message") bumpDay(day, "message");
-    else if (stepType === "comment" || stepType === "react") {
-      bumpDay(day, "engagement");
-    }
+    const bucket = campaignStepHeatmapBucket(stepType);
+    if (bucket === "invite") bumpDay(day, "invite");
+    else if (bucket === "message" || bucket === "email") bumpDay(day, "message");
+    else if (bucket === "engagement") bumpDay(day, "engagement");
   }
 
   const acceptedLeadDays = new Map<string, string>();
@@ -315,4 +317,194 @@ export async function loadCampaignActivity(
     buckets,
     totals,
   };
+}
+
+function ymdToZonedStart(ymd: string, timeZone: string): Date {
+  const [year, month, day] = ymd.split("-").map(Number);
+  return zonedLocalToUtc({
+    year: year || 1970,
+    month: month || 1,
+    day: day || 1,
+    hour: 0,
+    minute: 0,
+    timeZone,
+  });
+}
+
+function zonedDayKey(iso: string, timeZone: string): string | null {
+  const parsed = Date.parse(iso.includes("T") ? iso : `${iso}T12:00:00.000Z`);
+  if (Number.isNaN(parsed)) return null;
+  return ymdInTimeZone(new Date(parsed), timeZone);
+}
+
+function classifyStepType(
+  stepType: string | undefined
+): "invite" | "message" | "email" | "engagement" | null {
+  return campaignStepHeatmapBucket(stepType);
+}
+
+/**
+ * Distinct people touched in the window (campaign timezone).
+ * Prefer contact_id when present so multi-step / multi-channel
+ * sends to the same person count once; fall back to lead / conversation.
+ */
+export async function countPeopleReachedInRange(
+  coachId: string,
+  startYmd: string,
+  endYmd: string,
+  timeZone: string
+): Promise<number> {
+  if (endYmd < startYmd) return 0;
+
+  const sinceIso = ymdToZonedStart(startYmd, timeZone).toISOString();
+  const untilIso = ymdToZonedStart(addDaysYmd(endYmd, 1), timeZone).toISOString();
+  const keys = new Set<string>();
+
+  const { data: jobs, error: jobsError } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .select("lead_id, updated_at, linkedin_campaign_leads(contact_id)")
+    .eq("coach_id", coachId)
+    .eq("status", "succeeded")
+    .gte("updated_at", sinceIso)
+    .lt("updated_at", untilIso);
+
+  if (jobsError) {
+    throw new Error(jobsError.message || "Could not load people reached.");
+  }
+
+  for (const row of jobs ?? []) {
+    const day = zonedDayKey(String(row.updated_at || ""), timeZone);
+    if (!day || day < startYmd || day > endYmd) continue;
+    const lead = row.linkedin_campaign_leads as
+      | { contact_id?: string | null }
+      | { contact_id?: string | null }[]
+      | null;
+    const contactId = Array.isArray(lead)
+      ? lead[0]?.contact_id
+      : lead?.contact_id;
+    if (contactId) keys.add(`c:${contactId}`);
+    else if (row.lead_id) keys.add(`l:${row.lead_id}`);
+  }
+
+  const { data: emails, error: emailError } = await supabaseAdmin
+    .from("messaging_messages")
+    .select("created_at, messaging_conversations(contact_id, id)")
+    .eq("coach_id", coachId)
+    .eq("direction", "outbound")
+    .eq("channel", "email")
+    .gte("created_at", sinceIso)
+    .lt("created_at", untilIso);
+
+  if (emailError) {
+    throw new Error(emailError.message || "Could not load email reaches.");
+  }
+
+  for (const row of emails ?? []) {
+    const day = zonedDayKey(String(row.created_at || ""), timeZone);
+    if (!day || day < startYmd || day > endYmd) continue;
+    const conv = row.messaging_conversations as
+      | { contact_id?: string | null; id?: string }
+      | { contact_id?: string | null; id?: string }[]
+      | null;
+    const conversation = Array.isArray(conv) ? conv[0] : conv;
+    if (conversation?.contact_id) keys.add(`c:${conversation.contact_id}`);
+    else if (conversation?.id) keys.add(`v:${conversation.id}`);
+  }
+
+  return keys.size;
+}
+
+/** Window-scoped outbound counts in the campaign timezone (not trailing UTC). */
+export async function loadActivityInRange(
+  coachId: string,
+  startYmd: string,
+  endYmd: string,
+  timeZone: string
+): Promise<ActivityDayCounts[]> {
+  if (endYmd < startYmd) return [];
+
+  const sinceIso = ymdToZonedStart(startYmd, timeZone).toISOString();
+  const untilIso = ymdToZonedStart(addDaysYmd(endYmd, 1), timeZone).toISOString();
+  const byDay = new Map<string, Omit<ActivityDayCounts, "date">>();
+
+  const { data: jobs, error: jobsError } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .select("updated_at, linkedin_campaign_steps(step_type)")
+    .eq("coach_id", coachId)
+    .eq("status", "succeeded")
+    .gte("updated_at", sinceIso)
+    .lt("updated_at", untilIso);
+
+  if (jobsError) {
+    throw new Error(jobsError.message || "Could not load send jobs.");
+  }
+
+  for (const row of jobs ?? []) {
+    const day = zonedDayKey(String(row.updated_at || ""), timeZone);
+    if (!day || day < startYmd || day > endYmd) continue;
+    const step = row.linkedin_campaign_steps as
+      | { step_type?: string }
+      | { step_type?: string }[]
+      | null;
+    const stepType = Array.isArray(step)
+      ? step[0]?.step_type
+      : step?.step_type;
+    const field = classifyStepType(stepType);
+    if (field) bump(byDay, day, field);
+  }
+
+  const { data: emails, error: emailError } = await supabaseAdmin
+    .from("messaging_messages")
+    .select("created_at")
+    .eq("coach_id", coachId)
+    .eq("direction", "outbound")
+    .eq("channel", "email")
+    .gte("created_at", sinceIso)
+    .lt("created_at", untilIso);
+
+  if (emailError) {
+    throw new Error(emailError.message || "Could not load emails.");
+  }
+
+  for (const row of emails ?? []) {
+    const day = zonedDayKey(String(row.created_at || ""), timeZone);
+    if (!day || day < startYmd || day > endYmd) continue;
+    bump(byDay, day, "email");
+  }
+
+  const buckets: ActivityDayCounts[] = [];
+  let cur = startYmd;
+  while (cur <= endYmd) {
+    const counts = byDay.get(cur) ?? emptyCounts();
+    buckets.push({ date: cur, ...counts });
+    const next = addDaysToKey(cur, 1);
+    if (next <= cur) break;
+    cur = next;
+  }
+  return buckets;
+}
+
+export async function countSucceededInvitesToday(
+  coachId: string,
+  timeZone: string
+): Promise<number> {
+  const start = startOfZonedDay(new Date(), timeZone || "Europe/London");
+  const { data: jobs } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .select("id, step_id")
+    .eq("coach_id", coachId)
+    .eq("status", "succeeded")
+    .gte("updated_at", start.toISOString());
+  if (!jobs?.length) return 0;
+  const stepIds = [...new Set(jobs.map((j) => j.step_id as string))];
+  const { data: steps } = await supabaseAdmin
+    .from("linkedin_campaign_steps")
+    .select("id, step_type")
+    .in("id", stepIds);
+  const inviteIds = new Set(
+    (steps ?? [])
+      .filter((s) => s.step_type === "invite")
+      .map((s) => s.id as string)
+  );
+  return jobs.filter((j) => inviteIds.has(j.step_id as string)).length;
 }

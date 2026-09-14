@@ -36,6 +36,7 @@ export const BASE_SEARCH_COMPANY_EXCLUDES = [
   "consultant",
   "consulting",
   "consultants",
+  "consultancy",
   "psychologist",
   "recruiter",
   "recruiting",

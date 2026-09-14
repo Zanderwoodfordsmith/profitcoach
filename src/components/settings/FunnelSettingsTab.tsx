@@ -3,6 +3,7 @@
 import type { FormEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronDown, Info, Play } from "lucide-react";
 import {
   CALENDAR_SYNC_TONE_SHELL,
@@ -20,6 +21,7 @@ import {
   type CalendarSyncStatus,
 } from "@/lib/ghlCalendarSync";
 import { buildEmbedSnippet } from "@/lib/embedMode";
+import { callsCalendarsHref } from "@/lib/booking/callsCalendarsPath";
 import { ProspectsLandingStats } from "@/components/prospects/ProspectsLandingStats";
 import { ShareQrCodeModal } from "@/components/settings/ShareQrCodeModal";
 
@@ -518,6 +520,7 @@ function CrmLeadCaptureFields({
   leadWebhookUrl,
   onLeadWebhookUrlChange,
   showCalendarEmbed = true,
+  calendarsHref,
 }: {
   crmProfileName: string;
   onCrmProfileNameChange: (value: string) => void;
@@ -528,6 +531,7 @@ function CrmLeadCaptureFields({
   leadWebhookUrl: string;
   onLeadWebhookUrlChange: (value: string) => void;
   showCalendarEmbed?: boolean;
+  calendarsHref: string;
 }) {
   const platformHref = proCoachPlatformHref(crmLocationId);
 
@@ -549,7 +553,10 @@ function CrmLeadCaptureFields({
         <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950">
           Prospects book on <span className="font-medium">Profit Coach calendars</span>.
           Switch back to CRM calendars or manage availability under{" "}
-          <span className="font-medium">Settings → Calendar</span>.
+          <Link href={calendarsHref} className="font-medium text-sky-800 hover:underline">
+            Calls → Settings
+          </Link>
+          .
         </p>
       ) : null}
 
@@ -659,6 +666,8 @@ export function FunnelSettingsTab({
   saveError,
   onSubmit,
 }: FunnelSettingsTabProps) {
+  const pathname = usePathname() ?? "";
+  const calendarsHref = callsCalendarsHref(pathname.startsWith("/admin"));
   const slugReady = coachSlug.trim().length > 0;
   const slug = coachSlug.trim();
   const scorePath = slugReady ? `/score/${slug}` : "/score/your-slug";
@@ -721,6 +730,7 @@ export function FunnelSettingsTab({
               leadWebhookUrl={leadWebhookUrl}
               onLeadWebhookUrlChange={onLeadWebhookUrlChange}
               showCalendarEmbed={bookingCalendarProvider === "ghl"}
+              calendarsHref={calendarsHref}
             />
           </CollapsibleCrmSection>
 

@@ -79,7 +79,10 @@ export default async function AdminAcademyClassroomLessonPage({
   if (!baseCourse) notFound();
 
   const [course, lessonResources] = await Promise.all([
-    loadClassroomCourseWithContent(baseCourse, { includeDrafts: true }),
+    loadClassroomCourseWithContent(baseCourse, {
+      includeDrafts: true,
+      activeLessonId: lessonId,
+    }),
     loadLessonResources(contentSourceCourseId(lessonId), lessonId),
   ]);
   const lesson = findLessonInCourse(course, lessonId);
@@ -89,7 +92,6 @@ export default async function AdminAcademyClassroomLessonPage({
     <div>
       <LessonProgressProvider courseId={courseId} activeLessonId={lessonId}>
         <AdminClassroomLessonEditor
-          data={data}
           course={course}
           lesson={lesson}
           initialVideoUrl={lesson.videoUrl ?? null}

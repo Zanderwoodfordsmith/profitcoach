@@ -7,10 +7,16 @@ import {
 } from "@/lib/booking/computeBookingSlots";
 import {
   DEFAULT_COACH_CALENDARS,
+  calendarSlugFromName,
   mapCoachCalendarRow,
   type CoachCalendarPatch,
   type CoachCalendarRow,
 } from "@/lib/booking/coachCalendars";
+import { parseMeetingLocationMode } from "@/lib/booking/locationMode";
+import {
+  parseReminderSequence,
+  type BookingReminderStep,
+} from "@/lib/booking/reminderSequence";
 
 export type { CoachCalendarRow, CoachCalendarPatch };
 
@@ -112,12 +118,10 @@ export function mapSettingsRow(
   if (!row) {
     return { ...DEFAULT_BOOKING_SETTINGS };
   }
-  const modeRaw =
-    typeof row.location_mode === "string" ? row.location_mode.trim() : "";
-  const location_mode =
-    modeRaw === "phone" || modeRaw === "custom" || modeRaw === "google_meet"
-      ? modeRaw
-      : DEFAULT_BOOKING_SETTINGS.location_mode;
+  const location_mode = parseMeetingLocationMode(
+    row.location_mode,
+    DEFAULT_BOOKING_SETTINGS.location_mode
+  );
 
   return {
     timezone:
@@ -362,7 +366,7 @@ export async function findOrCreateProspectContact(input: {
 }
 
 const CALENDAR_SELECT =
-  "id, coach_id, slug, name, description, meeting_duration_minutes, buffer_minutes, min_notice_hours, booking_window_days, is_enabled, is_public, location_mode, location_phone, location_custom, sort_order";
+  "id, coach_id, slug, name, description, meeting_duration_minutes, buffer_minutes, min_notice_hours, booking_window_days, is_enabled, is_public, location_mode, location_phone, location_custom, sort_order, reminder_sequence";
 
 export async function listCoachCalendars(
   coachId: string
@@ -413,57 +417,78 @@ export async function loadCoachCalendarById(
   return mapCoachCalendarRow(data as Record<string, unknown>);
 }
 
+export async function loadCoachCalendarByPrimaryId(
+  calendarId: string
+): Promise<CoachCalendarRow | null> {
+  const id = calendarId.trim();
+  if (!id) return null;
+  const { data } = await supabaseAdmin
+    .from("coach_calendars")
+    .select(CALENDAR_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (!data) return null;
+  return mapCoachCalendarRow(data as Record<string, unknown>);
+}
+
+export async function loadCoachDisplayName(coachId: string): Promise<string> {
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("full_name, coach_business_name")
+    .eq("id", coachId)
+    .maybeSingle();
+  return (
+    (profile?.coach_business_name as string | null)?.trim() ||
+    (profile?.full_name as string | null)?.trim() ||
+    "Coach"
+  );
+}
+
 /**
- * Ensure the five default calendars exist. Discovery inherits enablement
- * from coach_booking_settings when present.
+ * Seed default calendars only when a coach has none. Deleting a default
+ * must stick — do not re-insert missing slugs on later visits.
  */
 export async function ensureDefaultCoachCalendars(
   coachId: string
 ): Promise<CoachCalendarRow[]> {
   const existing = await listCoachCalendars(coachId);
-  if (existing.length >= DEFAULT_COACH_CALENDARS.length) {
+  if (existing.length > 0) {
     return existing;
   }
 
   const { settings } = await loadBookingSettingsForCoach(coachId);
-  const have = new Set(existing.map((c) => c.slug));
 
-  const toInsert = DEFAULT_COACH_CALENDARS.filter((d) => !have.has(d.slug)).map(
-    (d) => {
-      const isDiscovery = d.slug === "discovery";
-      return {
-        coach_id: coachId,
-        slug: d.slug,
-        name: d.name,
-        meeting_duration_minutes: isDiscovery
-          ? settings.meeting_duration_minutes
-          : d.meeting_duration_minutes,
-        buffer_minutes: isDiscovery ? settings.buffer_minutes : 0,
-        min_notice_hours: isDiscovery ? settings.min_notice_hours : 24,
-        booking_window_days: isDiscovery ? settings.booking_window_days : 14,
-        is_enabled: isDiscovery ? settings.is_enabled : false,
-        is_public: isDiscovery ? settings.is_enabled : false,
-        location_mode: isDiscovery ? settings.location_mode : "google_meet",
-        location_phone: isDiscovery ? settings.location_phone : null,
-        location_custom: isDiscovery ? settings.location_custom : null,
-        sort_order: d.sort_order,
-      };
-    }
-  );
+  const toInsert = DEFAULT_COACH_CALENDARS.map((d) => {
+    const isDiscovery = d.slug === "discovery";
+    return {
+      coach_id: coachId,
+      slug: d.slug,
+      name: d.name,
+      meeting_duration_minutes: isDiscovery
+        ? settings.meeting_duration_minutes
+        : d.meeting_duration_minutes,
+      buffer_minutes: isDiscovery ? settings.buffer_minutes : 0,
+      min_notice_hours: isDiscovery ? settings.min_notice_hours : 24,
+      booking_window_days: isDiscovery ? settings.booking_window_days : 14,
+      is_enabled: true,
+      is_public: isDiscovery,
+      location_mode: isDiscovery ? settings.location_mode : "google_meet",
+      location_phone: isDiscovery ? settings.location_phone : null,
+      location_custom: isDiscovery ? settings.location_custom : null,
+      sort_order: d.sort_order,
+    };
+  });
 
-  if (toInsert.length > 0) {
-    const { error } = await supabaseAdmin
-      .from("coach_calendars")
-      .upsert(toInsert, { onConflict: "coach_id,slug" });
-    if (error) console.error("ensureDefaultCoachCalendars:", error);
-  }
+  const { error } = await supabaseAdmin
+    .from("coach_calendars")
+    .upsert(toInsert, { onConflict: "coach_id,slug" });
+  if (error) console.error("ensureDefaultCoachCalendars:", error);
 
-  // Ensure settings row exists for timezone
   await supabaseAdmin.from("coach_booking_settings").upsert(
     {
       coach_id: coachId,
       timezone: settings.timezone,
-      is_enabled: settings.is_enabled || existing.some((c) => c.is_enabled),
+      is_enabled: true,
     },
     { onConflict: "coach_id" }
   );
@@ -541,6 +566,9 @@ export async function updateCoachCalendar(
       .replace(/^-+|-+$/g, "");
     if (slug) next.slug = slug;
   }
+  if (patch.reminder_sequence !== undefined) {
+    next.reminder_sequence = parseReminderSequence(patch.reminder_sequence);
+  }
 
   if (Object.keys(next).length === 0) return current;
 
@@ -572,7 +600,116 @@ export async function updateCoachCalendar(
   return loadCoachCalendarById(coachId, calendarId);
 }
 
+export async function createCoachCalendar(
+  coachId: string,
+  input: { name: string; meeting_duration_minutes?: number }
+): Promise<CoachCalendarRow> {
+  const name = input.name.trim();
+  if (!name) throw new Error("Name is required.");
+  if (name.length > 80) throw new Error("Name is too long.");
+
+  const existing = await listCoachCalendars(coachId);
+  const taken = new Set(existing.map((c) => c.slug));
+  const base = calendarSlugFromName(name);
+  let slug = base;
+  let n = 2;
+  while (taken.has(slug)) {
+    slug = `${base}-${n}`;
+    n += 1;
+  }
+
+  const duration =
+    typeof input.meeting_duration_minutes === "number" &&
+    input.meeting_duration_minutes > 0
+      ? Math.min(180, Math.round(input.meeting_duration_minutes))
+      : 30;
+
+  const sort_order =
+    existing.reduce((max, c) => Math.max(max, c.sort_order), -1) + 1;
+
+  const { data, error } = await supabaseAdmin
+    .from("coach_calendars")
+    .insert({
+      coach_id: coachId,
+      slug,
+      name,
+      meeting_duration_minutes: duration,
+      buffer_minutes: 0,
+      min_notice_hours: 24,
+      booking_window_days: 14,
+      is_enabled: true,
+      is_public: true,
+      location_mode: "google_meet",
+      sort_order,
+    })
+    .select(CALENDAR_SELECT)
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message || "Could not create calendar.");
+  }
+  return mapCoachCalendarRow(data as Record<string, unknown>);
+}
+
+export async function deleteCoachCalendar(
+  coachId: string,
+  calendarId: string
+): Promise<boolean> {
+  const current = await loadCoachCalendarById(coachId, calendarId);
+  if (!current) return false;
+
+  const { error } = await supabaseAdmin
+    .from("coach_calendars")
+    .delete()
+    .eq("id", calendarId)
+    .eq("coach_id", coachId);
+
+  if (error) {
+    throw new Error(error.message || "Could not delete calendar.");
+  }
+
+  const all = await listCoachCalendars(coachId);
+  const anyEnabled = all.some((c) => c.is_enabled);
+  await supabaseAdmin
+    .from("coach_booking_settings")
+    .upsert(
+      { coach_id: coachId, is_enabled: anyEnabled },
+      { onConflict: "coach_id" }
+    );
+
+  return true;
+}
+
 export async function loadCoachTimezone(coachId: string): Promise<string> {
   const { settings } = await loadBookingSettingsForCoach(coachId);
   return settings.timezone;
+}
+
+function sequenceFromJson(raw: unknown): BookingReminderStep[] | null {
+  return Array.isArray(raw) && raw.length > 0
+    ? parseReminderSequence(raw)
+    : null;
+}
+
+export async function loadReminderSequence(
+  coachId: string,
+  calendarId?: string | null
+): Promise<BookingReminderStep[]> {
+  if (calendarId) {
+    const { data: calendar } = await supabaseAdmin
+      .from("coach_calendars")
+      .select("reminder_sequence")
+      .eq("id", calendarId)
+      .eq("coach_id", coachId)
+      .maybeSingle();
+    const fromCalendar = sequenceFromJson(calendar?.reminder_sequence);
+    if (fromCalendar) return fromCalendar;
+  }
+
+  const { data } = await supabaseAdmin
+    .from("coach_booking_settings")
+    .select("reminder_sequence")
+    .eq("coach_id", coachId)
+    .maybeSingle();
+  return parseReminderSequence(data?.reminder_sequence);
 }

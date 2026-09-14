@@ -16,7 +16,8 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, LayoutList, Lock, Plus, Users, X } from "lucide-react";
+import { GripVertical, LayoutList, Lock, Plus, Users } from "lucide-react";
+import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
 import {
   DEFAULT_COACH_TABLE_VIEW_NAME,
   isDefaultCoachTableViewName,
@@ -133,11 +134,9 @@ function SortableViewTab({
           <button
             type="button"
             onClick={() => onSwitchView(view.id)}
-            onDoubleClick={() => {
-              if (!canRename) return;
-              onStartRename(view);
-            }}
             className={`-mb-px inline-flex items-center gap-1.5 border-b-[3px] px-2 pb-2 text-sm font-medium transition-colors ${
+              canRename || canDelete ? "pr-6" : ""
+            } ${
               active
                 ? "border-slate-800 text-slate-900"
                 : "border-transparent text-slate-500 hover:border-slate-200 hover:text-slate-800"
@@ -146,7 +145,7 @@ function SortableViewTab({
               isAllView
                 ? "Shared with every admin. Saves update All for everyone."
                 : canRename
-                  ? `${privacyLabel}. Double-click to rename. Drag handle to reorder.`
+                  ? `${privacyLabel}. Drag handle to reorder.`
                   : `${privacyLabel}. Created by another admin. Drag handle to reorder.`
             }
           >
@@ -170,16 +169,15 @@ function SortableViewTab({
               </span>
             ) : null}
           </button>
-          {canDelete ? (
-            <button
-              type="button"
-              onClick={() => onDeleteView(view.id)}
-              className="absolute -right-1 top-0 rounded p-0.5 text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100"
-              aria-label={`Delete view ${view.name}`}
-            >
-              <X className="h-3 w-3" aria-hidden />
-            </button>
-          ) : null}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <TabOverflowMenu
+              label={view.name}
+              canRename={canRename}
+              canDelete={canDelete}
+              onRename={() => onStartRename(view)}
+              onDelete={() => onDeleteView(view.id)}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -28,10 +28,14 @@ export const PRIMARY_COACH_GHL_CALENDAR_ID = "8jyZoTDwjgn8kTDZlv7y";
 /** Internal marketing / GHL / QA demo accounts — not real member join dates. */
 export const DEMO_COACH_SLUG = "zander-demo";
 export const DEMO_COACH_LABEL = "Zander Demo";
+/** Pam's staff coach identity (same auth user as her admin login). */
+export const PAM_DEMO_COACH_SLUG = "pam";
+export const PAM_DEMO_COACH_LABEL = "Pam Demo";
 
 const SYSTEM_COACH_SLUGS = new Set([
   PRIMARY_COACH_SLUG_FALLBACK,
   DEMO_COACH_SLUG,
+  PAM_DEMO_COACH_SLUG,
 ]);
 
 export function isSystemCoachSlug(slug: string | null | undefined): boolean {

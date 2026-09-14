@@ -9,7 +9,8 @@ export type LeadListSource =
   | "connections"
   | "sales_nav_csv"
   | "sales_nav"
-  | "mixed";
+  | "mixed"
+  | "manual";
 
 export type HouseIcpFilters = {
   roleTitles: string[];

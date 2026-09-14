@@ -44,11 +44,15 @@ export default function AdminCampaignsPage() {
 
   return (
     <DashboardPageSection
-      contentMaxWidthClass="max-w-7xl"
+      contentMaxWidthClass="max-w-none"
+      gapClass="gap-3"
+      outerClassName="h-full min-h-0 flex-1"
+      contentClassName="min-h-0 flex-1 overflow-hidden"
       header={
         <StickyPageHeader
+          className="shrink-0"
           title="Get Clients"
-          description="LinkedIn outreach campaigns."
+          description="Outreach campaigns and the lead magnets they send people to."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

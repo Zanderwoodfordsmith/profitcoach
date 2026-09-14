@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { StickyPageHeader } from "@/components/layout";
+import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
-import { ProspectsTable } from "@/components/prospects/ProspectsTable";
 import { AddProspectForm } from "@/components/prospects/AddProspectForm";
+import { ProspectsHub } from "@/components/prospects/ProspectsHub";
 import { prospectWorkspacePath } from "@/lib/prospects/loadEnrichedProspect";
 import { useProspectsPage } from "@/hooks/useProspectsPage";
 
@@ -13,20 +13,25 @@ export default function CoachProspectsPage() {
   const page = useProspectsPage({ scope: "coach" });
 
   return (
-    <div className="flex flex-col gap-4">
-      <StickyPageHeader
-        rootRef={page.pageHeaderRef}
-        title="Get Clients"
-        description="Add prospects and share your assessment link, or view those who have completed assessments."
-        tabs={<CoachToolsHubTabs hub="get-clients" />}
-      />
-
-      {page.loading && (
-        <p className="text-sm text-slate-600">Loading…</p>
-      )}
+    <DashboardPageSection
+      contentMaxWidthClass="max-w-none"
+      gapClass="gap-4"
+      outerClassName="h-full min-h-0 flex-1"
+      contentClassName="min-h-0 flex-1"
+      header={
+        <StickyPageHeader
+          className="shrink-0"
+          rootRef={page.pageHeaderRef}
+          title="Get Clients"
+          description="Add prospects and share your assessment link, or view those who have completed assessments."
+          tabs={<CoachToolsHubTabs hub="get-clients" />}
+        />
+      }
+    >
       {page.error && <p className="text-sm text-rose-600">{page.error}</p>}
 
       {page.showAddProspect && page.effectiveCoachId && (
+        <div className="shrink-0">
         <AddProspectForm
           fullName={page.newFullName}
           email={page.newEmail}
@@ -46,28 +51,29 @@ export default function CoachProspectsPage() {
           description="Create a prospect and optionally copy your assessment link to email them."
           inviteCheckboxLabel="Copy my assessment link to clipboard after creating"
         />
+        </div>
       )}
 
-      <div className="min-w-0 sm:-mx-3 sm:w-[calc(100%+1.5rem)]">
-        <ProspectsTable
-          prospects={page.prospects}
-          loading={page.loading}
-          error={page.error}
-          stickyTopOffset={page.pageHeaderHeight}
-          showCoachColumn={false}
-          onAddClick={page.openAddProspect}
-          addActive={page.showAddProspect}
-          onRowClick={(id) => router.push(prospectWorkspacePath(id))}
-          editable
-          onUpdateProspect={page.handleUpdateProspect}
-          onDelete={page.handleDeleteProspect}
-          deletingId={page.deletingId}
-          coachSlug={page.coachSlug}
-          onVisibleIdsChange={page.enrichVisibleIds}
-          scoresEnriching={page.scoresEnriching}
-          emptyMessage="No prospects yet. Add one below or share your assessment link."
-        />
-      </div>
-    </div>
+      <ProspectsHub
+        prospects={page.prospects}
+        loading={page.loading}
+        error={page.error}
+        surface="coach"
+        stickyTopOffset={page.pageHeaderHeight}
+        onAddClick={page.openAddProspect}
+        addActive={page.showAddProspect}
+        onProspectClick={(row) => router.push(prospectWorkspacePath(row.id))}
+        onUpdateProspect={page.handleUpdateProspect}
+        onProspectBooked={page.handleProspectBooked}
+        onDelete={page.handleDeleteProspect}
+        deletingId={page.deletingId}
+        coachSlug={page.coachSlug}
+        onVisibleIdsChange={page.enrichVisibleIds}
+        scoresEnriching={page.scoresEnriching}
+        emptyMessage="No prospects yet. Add one below or share your assessment link."
+        importUrl="/api/coach/contacts/import"
+        onImportedProspects={page.mergeImportedProspects}
+      />
+    </DashboardPageSection>
   );
 }

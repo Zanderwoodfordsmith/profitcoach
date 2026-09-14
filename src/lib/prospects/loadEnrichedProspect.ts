@@ -24,6 +24,10 @@ export async function loadEnrichedProspectById(
     job_title: string | null;
     linkedin_url: string | null;
     company_website: string | null;
+    headline: string | null;
+    about: string | null;
+    location: string | null;
+    photo_url: string | null;
     prospect_status: string | null;
     phone: string | null;
     crm_contact_id: string | null;
@@ -48,7 +52,19 @@ export async function loadEnrichedProspectById(
       return query;
     },
     "id, full_name, email, business_name, job_title, prospect_status, type, coach_id, created_at",
-    ["crm_contact_id", "prospect_funnel", "linkedin_url", "company_website", "prospect_source", "prospect_tags", "whatsapp_on"]
+    [
+      "crm_contact_id",
+      "prospect_funnel",
+      "linkedin_url",
+      "company_website",
+      "prospect_source",
+      "prospect_tags",
+      "whatsapp_on",
+      "headline",
+      "about",
+      "location",
+      "photo_url",
+    ]
   );
 
   if (error || !contacts?.length) {
@@ -109,7 +125,16 @@ export async function loadEnrichedProspectById(
 
   const prospect = enriched[0];
   if (!prospect) return null;
-  return { prospect, coachSlug };
+  return {
+    prospect: {
+      ...prospect,
+      headline: contact.headline ?? null,
+      about: contact.about ?? null,
+      location: contact.location ?? null,
+      photo_url: contact.photo_url ?? null,
+    },
+    coachSlug,
+  };
 }
 
 export function prospectWorkspacePath(

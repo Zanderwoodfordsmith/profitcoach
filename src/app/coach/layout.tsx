@@ -16,6 +16,7 @@ import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast
 import { BossWorkshopChromeContext } from "@/contexts/BossWorkshopChromeContext";
 import { DashboardChromeProvider } from "@/contexts/DashboardChromeContext";
 import { useCoachAccess } from "@/hooks/useCoachAccess";
+import { useIsDemoCoachImpersonation } from "@/hooks/useIsDemoCoachImpersonation";
 import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard";
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
@@ -162,6 +163,10 @@ export default function CoachLayout({
   }
 
   const isImpersonatingCoach = Boolean(impersonatingCoachId);
+  const { ready: demoImpersonationReady, isDemoCoach: isDemoCoachImpersonation } =
+    useIsDemoCoachImpersonation(impersonatingCoachId);
+  const showImpersonationBanner =
+    isImpersonatingCoach && demoImpersonationReady && !isDemoCoachImpersonation;
   const isSignaturePage = pathname === "/coach/signature";
   const bossWorkshopPage = isBossWorkshopPath(pathname);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -174,6 +179,14 @@ export default function CoachLayout({
 
   const membershipPage = pathname === "/coach/membership";
   const conversationsPage = pathname === "/coach/conversations";
+  const prospectsListPage = pathname === "/coach/prospects";
+  const campaignsListPage = pathname === "/coach/campaigns";
+  const prospectWorkspacePage = pathname.startsWith("/coach/prospects/");
+  const fullHeightPage =
+    conversationsPage ||
+    prospectsListPage ||
+    prospectWorkspacePage ||
+    campaignsListPage;
   const fullBleed = isPlaybooksReaderPath(pathname) || membershipPage;
   const playbooksReader = fullBleed;
   const sidebarExpanded = sidebarOpen && !playbooksReader;
@@ -245,7 +258,7 @@ export default function CoachLayout({
     <div
       data-ai-docked={aiPanelDocked ? true : undefined}
       className={`group/appshell ${
-        conversationsPage ? "h-dvh overflow-hidden" : "min-h-screen"
+        fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
         membershipPage ? "bg-[#f5f8fc]" : playbooksReader ? "bg-[#fbfbfa]" : "app-canvas-bg"
       }`}
@@ -264,7 +277,7 @@ export default function CoachLayout({
       >
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {playbooksReader ? (
-          isImpersonatingCoach ? (
+          showImpersonationBanner ? (
             <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
               <div
                 className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
@@ -290,12 +303,12 @@ export default function CoachLayout({
             </div>
           ) : null
         ) : isMinimalWorkshopChrome ? (
-          workshopTopRightSlot || isImpersonatingCoach ? (
+          workshopTopRightSlot || showImpersonationBanner ? (
             <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
               {workshopTopRightSlot ? (
                 <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
               ) : null}
-              {isImpersonatingCoach ? (
+              {showImpersonationBanner ? (
                 <div
                   className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
                   role="status"
@@ -320,7 +333,7 @@ export default function CoachLayout({
               ) : null}
             </div>
           ) : null
-        ) : isImpersonatingCoach ? (
+        ) : showImpersonationBanner ? (
           <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6 md:top-16">
             <div
               className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
@@ -365,8 +378,14 @@ export default function CoachLayout({
       ) : null}
         <main
           className={`min-w-0 w-full pt-0 ${
-            conversationsPage
+            conversationsPage || prospectWorkspacePage
               ? "h-dvh overflow-hidden px-4 pb-0 md:px-[60px]"
+              : prospectsListPage || campaignsListPage
+              ? `h-dvh overflow-hidden px-4 md:px-[60px] ${
+                  sidebarExpanded
+                    ? "pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                    : "pb-3"
+                }`
               : membershipPage
               ? "min-h-screen px-0 pb-0"
               : playbooksReader
@@ -380,7 +399,7 @@ export default function CoachLayout({
         >
           <div
             className={`flex w-full min-w-0 flex-col ${
-              conversationsPage
+              fullHeightPage
                 ? "h-full min-h-0 gap-0"
                 : isSignaturePage
                   ? "max-w-none gap-0"
@@ -394,7 +413,19 @@ export default function CoachLayout({
                 bleedInset={membershipPage ? "px-4 md:px-[60px]" : undefined}
               />
             ) : null}
-            <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
+            {/*
+              Full-height routes need a flex-1 / min-h-0 chain so the body
+              scrolls inside the viewport. Do not put overflow-hidden here —
+              StickyPageHeader bleeds with negative horizontal margins into
+              main's padding, and overflow on this wrapper clips that bar.
+            */}
+            {fullHeightPage ? (
+              <div className="flex min-h-0 flex-1 flex-col">
+                <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
+              </div>
+            ) : (
+              <CoachRouteAccessGuard>{children}</CoachRouteAccessGuard>
+            )}
           </div>
         </main>
       </BossWorkshopChromeContext.Provider>

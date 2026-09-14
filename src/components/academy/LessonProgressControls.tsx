@@ -62,6 +62,43 @@ export function useLessonProgress() {
   return ctx;
 }
 
+/** Safe when a catalog card may render without a provider. */
+export function useOptionalLessonProgress() {
+  return useLessonProgressContext();
+}
+
+function LessonViewRecorder({
+  courseId,
+  lessonId,
+}: {
+  courseId: string;
+  lessonId: string;
+}) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function recordView() {
+      const token = await getAccessToken();
+      if (!token || cancelled) return;
+
+      await fetch(
+        `/api/coach/academy/lesson-progress/${encodeURIComponent(courseId)}/${encodeURIComponent(lessonId)}/view`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+    }
+
+    void recordView();
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId, lessonId]);
+
+  return null;
+}
+
 /** Safe for players that may render without a progress provider (e.g. admin preview). */
 export function useReportLessonWatchProgress(lessonId: string | null | undefined) {
   const ctx = useLessonProgressContext();
@@ -101,13 +138,12 @@ async function getAccessToken(): Promise<string | null> {
   return session?.access_token ?? null;
 }
 
-export function LessonProgressProvider({
+function LessonProgressProviderInner({
   courseId,
   activeLessonId,
   children,
 }: {
   courseId: string;
-  /** When set, records this lesson as last opened for Resume Training. */
   activeLessonId?: string;
   children: ReactNode;
 }) {
@@ -152,29 +188,6 @@ export function LessonProgressProvider({
       cancelled = true;
     };
   }, [courseId]);
-
-  useEffect(() => {
-    if (!activeLessonId) return;
-    let cancelled = false;
-
-    async function recordView() {
-      const token = await getAccessToken();
-      if (!token || cancelled) return;
-
-      await fetch(
-        `/api/coach/academy/lesson-progress/${encodeURIComponent(courseId)}/${encodeURIComponent(activeLessonId!)}/view`,
-        {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-    }
-
-    void recordView();
-    return () => {
-      cancelled = true;
-    };
-  }, [courseId, activeLessonId]);
 
   const getStatus = useCallback(
     (lessonId: string): LessonProgressStatus => progress[lessonId] ?? "not_started",
@@ -384,7 +397,41 @@ export function LessonProgressProvider({
   );
 
   return (
-    <LessonProgressContext.Provider value={value}>{children}</LessonProgressContext.Provider>
+    <LessonProgressContext.Provider value={value}>
+      {activeLessonId ? (
+        <LessonViewRecorder courseId={courseId} lessonId={activeLessonId} />
+      ) : null}
+      {children}
+    </LessonProgressContext.Provider>
+  );
+}
+
+export function LessonProgressProvider({
+  courseId,
+  activeLessonId,
+  children,
+}: {
+  courseId: string;
+  /** When set, records this lesson as last opened for Resume Training. */
+  activeLessonId?: string;
+  children: ReactNode;
+}) {
+  const existing = useLessonProgressContext();
+  if (existing) {
+    return (
+      <>
+        {activeLessonId ? (
+          <LessonViewRecorder courseId={existing.courseId} lessonId={activeLessonId} />
+        ) : null}
+        {children}
+      </>
+    );
+  }
+
+  return (
+    <LessonProgressProviderInner courseId={courseId} activeLessonId={activeLessonId}>
+      {children}
+    </LessonProgressProviderInner>
   );
 }
 

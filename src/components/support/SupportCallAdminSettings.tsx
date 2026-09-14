@@ -78,7 +78,7 @@ export function SupportCallAdminSettings({ appOrigin }: Props) {
 
       <p className="text-sm text-slate-500">
         Set when {activeHost.displayName} is available and how far ahead people
-        can book. Google Calendar is for busy times and invites; join link is{" "}
+        can book. Connect Google for busy times and invites; join link is{" "}
         <a
           className="font-medium text-sky-700 hover:underline"
           href={`https://theprofitcoach.com/zoom-${host}`}
@@ -98,6 +98,7 @@ export function SupportCallAdminSettings({ appOrigin }: Props) {
         callsBasePath="/admin/calls"
         forSlug={host}
         hideCalendars
+        hideReminders
         hoursTitle="Weekly hours"
         hoursHint="When this host can take support calls"
       />

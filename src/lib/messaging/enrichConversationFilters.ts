@@ -16,10 +16,11 @@ export type ConversationFilterRow = {
   unipile_chat_id?: string | null;
   prospect_tags?: string[];
   in_campaign?: boolean;
+  campaign_ids?: string[];
 };
 
 /**
- * Attach prospect tags + "in an active LinkedIn campaign" for inbox filters.
+ * Attach prospect tags + campaign membership for inbox filters.
  */
 export async function enrichConversationFilters<T extends ConversationFilterRow>(
   rows: T[],
@@ -64,8 +65,19 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
     }
   }
 
-  const campaignContactIds = new Set<string>();
-  const campaignChatIds = new Set<string>();
+  const campaignIdsByContact = new Map<string, Set<string>>();
+  const campaignIdsByChat = new Map<string, Set<string>>();
+
+  function addCampaignId(
+    map: Map<string, Set<string>>,
+    key: string | null,
+    campaignId: string | null
+  ) {
+    if (!key || !campaignId) return;
+    const set = map.get(key) ?? new Set<string>();
+    set.add(campaignId);
+    map.set(key, set);
+  }
 
   async function loadCampaignMatches(
     column: "contact_id" | "unipile_chat_id",
@@ -74,7 +86,7 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
     if (!ids.length) return;
     let q = supabaseAdmin
       .from("linkedin_campaign_leads")
-      .select("contact_id, unipile_chat_id")
+      .select("contact_id, unipile_chat_id, campaign_id")
       .in(column, ids)
       .in("status", [...ACTIVE_CAMPAIGN_STATUSES]);
     if (coachId) q = q.eq("coach_id", coachId);
@@ -84,10 +96,11 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
       return;
     }
     for (const row of data ?? []) {
+      const campaignId = (row.campaign_id as string | null)?.trim() || null;
       const contactId = row.contact_id as string | null;
       const chatId = row.unipile_chat_id as string | null;
-      if (contactId) campaignContactIds.add(contactId);
-      if (chatId) campaignChatIds.add(chatId);
+      addCampaignId(campaignIdsByContact, contactId, campaignId);
+      addCampaignId(campaignIdsByChat, chatId, campaignId);
     }
   }
 
@@ -99,13 +112,19 @@ export async function enrichConversationFilters<T extends ConversationFilterRow>
   return rows.map((row) => {
     const contactId = row.contact_id?.trim() || null;
     const chatId = row.unipile_chat_id?.trim() || null;
-    const inCampaign =
-      (contactId != null && campaignContactIds.has(contactId)) ||
-      (chatId != null && campaignChatIds.has(chatId));
+    const ids = new Set<string>();
+    if (contactId) {
+      for (const id of campaignIdsByContact.get(contactId) ?? []) ids.add(id);
+    }
+    if (chatId) {
+      for (const id of campaignIdsByChat.get(chatId) ?? []) ids.add(id);
+    }
+    const campaignIds = [...ids];
     return {
       ...row,
       prospect_tags: contactId ? tagsByContact.get(contactId) ?? [] : [],
-      in_campaign: inCampaign,
+      in_campaign: campaignIds.length > 0,
+      campaign_ids: campaignIds,
     };
   });
 }

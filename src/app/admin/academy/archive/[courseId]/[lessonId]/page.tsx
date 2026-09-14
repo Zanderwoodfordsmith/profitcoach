@@ -22,6 +22,7 @@ export default async function AdminAcademyArchiveLessonPage({ params }: Props) {
   // Archive course mixes Kickstart / Client Acquisition / Client Delivery ids.
   const course = await loadClassroomCourseWithContent(baseCourse, {
     includeDrafts: true,
+    activeLessonId: lessonId,
   });
   const lesson = findLessonInCourse(course, lessonId);
   if (!lesson) notFound();
@@ -35,7 +36,6 @@ export default async function AdminAcademyArchiveLessonPage({ params }: Props) {
     <div>
       <LessonProgressProvider courseId={courseId} activeLessonId={lessonId}>
         <AdminClassroomLessonEditor
-          data={data}
           course={course}
           lesson={lesson}
           initialVideoUrl={lesson.videoUrl ?? null}

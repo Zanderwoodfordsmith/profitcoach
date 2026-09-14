@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import {
+  completeCallJob,
   countRemindDue,
   listRemindQueue,
   saveRemindDraft,
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
   }
 }
 
-/** send | skip | snooze | draft */
+/** send | complete | skip | snooze | draft */
 export async function POST(request: Request) {
   const auth = await requireOutreachCoach(request);
   if (auth.error || !auth.coachId) {
@@ -58,6 +59,10 @@ export async function POST(request: Request) {
       });
       return NextResponse.json({ ok: true });
     }
+    if (body.action === "complete") {
+      await completeCallJob({ coachId: auth.coachId, jobId: body.job_id });
+      return NextResponse.json({ ok: true });
+    }
     if (body.action === "skip") {
       await skipRemindJob({ coachId: auth.coachId, jobId: body.job_id });
       return NextResponse.json({ ok: true });
@@ -80,7 +85,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
     return NextResponse.json(
-      { error: "action must be send, skip, snooze, or draft." },
+      { error: "action must be send, complete, skip, snooze, or draft." },
       { status: 400 }
     );
   } catch (err) {

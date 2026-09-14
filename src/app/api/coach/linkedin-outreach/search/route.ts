@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
-import { linkedInSearch } from "@/lib/unipile/client";
-import { listOutreachAccounts } from "@/lib/unipile/accounts";
+import { linkedInSearch, unipileLinkedInAccountError } from "@/lib/unipile/client";
+import { requireLiveLinkedInUnipileAccount } from "@/lib/unipile/linkedinSearchAccount";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 
 function mapSearchItem(raw: Record<string, unknown>) {
@@ -78,11 +78,15 @@ export async function POST(request: Request) {
     limit?: number;
   };
 
-  const accounts = await listOutreachAccounts(auth.coachId);
-  const account = accounts.find((a) => a.status === "OK") ?? accounts[0];
-  if (!account?.unipile_account_id) {
+  let accountId: string;
+  try {
+    accountId = await requireLiveLinkedInUnipileAccount(auth.coachId);
+  } catch (err) {
     return NextResponse.json(
-      { error: "Connect LinkedIn first." },
+      {
+        error:
+          err instanceof Error ? err.message : "Connect LinkedIn first.",
+      },
       { status: 400 }
     );
   }
@@ -97,7 +101,7 @@ export async function POST(request: Request) {
   }
 
   const payload: Record<string, unknown> = {
-    account_id: account.unipile_account_id,
+    account_id: accountId,
   };
   if (body.cursor) {
     payload.cursor = body.cursor;
@@ -112,8 +116,8 @@ export async function POST(request: Request) {
   const res = await linkedInSearch(payload as Parameters<typeof linkedInSearch>[0]);
   if (!res.ok) {
     return NextResponse.json(
-      { error: res.error || "Search failed." },
-      { status: 502 }
+      { error: unipileLinkedInAccountError(res) },
+      { status: res.status === 404 ? 400 : 502 }
     );
   }
 

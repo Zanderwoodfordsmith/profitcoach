@@ -11,14 +11,23 @@ export type UnipileResult<T> = {
   raw?: unknown;
 };
 
-function unipileConfig() {
-  const dsn = (
+/** Dashboard copy-paste is often `api22.unipile.com:15238` with no scheme. */
+export function getUnipileDsn(): string {
+  const raw = (
     process.env.UNIPILE_DSN?.trim() ||
     process.env.UNIPILE_API_URL?.trim() ||
     ""
   ).replace(/\/$/, "");
-  const apiKey = process.env.UNIPILE_API_KEY?.trim() || "";
-  return { dsn, apiKey };
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
+}
+
+function unipileConfig() {
+  return {
+    dsn: getUnipileDsn(),
+    apiKey: process.env.UNIPILE_API_KEY?.trim() || "",
+  };
 }
 
 export function isUnipileConfigured(): boolean {
@@ -26,10 +35,70 @@ export function isUnipileConfigured(): boolean {
   return Boolean(dsn && apiKey);
 }
 
-async function unipileFetch<T>(
+/** HTTP 401 / `errors/invalid_credentials` on workspace calls = API key, not LinkedIn. */
+export const UNIPILE_WORKSPACE_API_KEY_ERROR =
+  "Unipile rejected the workspace API key — this is not your LinkedIn login. In the Unipile dashboard for this DSN, create a new API key, set UNIPILE_API_KEY, and restart the server.";
+
+export function isUnipileWorkspaceApiKeyError(
+  result: UnipileResult<unknown>
+): boolean {
+  if (result.ok) return false;
+  const type = (result.raw as { type?: string } | undefined)?.type ?? "";
+  const blob = `${result.error ?? ""} ${type}`.toLowerCase();
+  return (
+    result.status === 401 ||
+    type === "errors/invalid_credentials" ||
+    blob.includes("invalid credentials")
+  );
+}
+
+export function isUnipileAccountNotFound(
+  result: UnipileResult<unknown>
+): boolean {
+  if (result.ok) return false;
+  const type = (result.raw as { type?: string } | undefined)?.type ?? "";
+  const blob = `${result.error ?? ""} ${type}`.toLowerCase();
+  return (
+    result.status === 404 &&
+    (type === "errors/resource_not_found" || blob.includes("account not found"))
+  );
+}
+
+export const UNIPILE_LINKEDIN_RECONNECT_ERROR =
+  "LinkedIn was disconnected. Reconnect LinkedIn, then try again.";
+
+export const UNIPILE_SALES_NAV_REJECTED_ERROR =
+  "LinkedIn rejected this Sales Navigator search for import. Reconnect LinkedIn if you just paid or renewed Sales Nav, then try again. If it still fails, paste a fresh people-search URL from Sales Nav and retry.";
+
+export function isUnipileProviderRejected(
+  result: UnipileResult<unknown>
+): boolean {
+  if (result.ok) return false;
+  const type = (result.raw as { type?: string } | undefined)?.type ?? "";
+  const blob = `${result.error ?? ""} ${type}`.toLowerCase();
+  return (
+    type === "errors/malformed_request" ||
+    blob.includes("rejected by the provider")
+  );
+}
+
+export function unipileLinkedInAccountError(
+  result: UnipileResult<unknown>
+): string {
+  if (isUnipileAccountNotFound(result)) {
+    return UNIPILE_LINKEDIN_RECONNECT_ERROR;
+  }
+  if (isUnipileProviderRejected(result)) {
+    return UNIPILE_SALES_NAV_REJECTED_ERROR;
+  }
+  return result.error || "LinkedIn search failed.";
+}
+
+export async function unipileFetch<T>(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  options?: { timeoutMs?: number; maxBytes?: number }
 ): Promise<UnipileResult<T>> {
   const { dsn, apiKey } = unipileConfig();
   if (!dsn || !apiKey) {
@@ -42,12 +111,26 @@ async function unipileFetch<T>(
       method,
       headers: {
         "X-API-KEY": apiKey,
+        Authorization: `Bearer ${apiKey}`,
         accept: "application/json",
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      ...(options?.timeoutMs
+        ? { signal: AbortSignal.timeout(options.timeoutMs) }
+        : {}),
     });
     const text = await res.text();
+    if (
+      typeof options?.maxBytes === "number" &&
+      text.length > options.maxBytes
+    ) {
+      return {
+        ok: false,
+        status: res.status,
+        error: "Unipile response was too large.",
+      };
+    }
     let raw: unknown = null;
     try {
       raw = text ? JSON.parse(text) : null;
@@ -66,10 +149,17 @@ async function unipileFetch<T>(
     }
     return { ok: true, status: res.status, data: raw as T, raw };
   } catch (err) {
+    const timedOut =
+      err instanceof Error &&
+      (err.name === "TimeoutError" || err.name === "AbortError");
     return {
       ok: false,
       status: 0,
-      error: err instanceof Error ? err.message : "Unipile request failed.",
+      error: timedOut
+        ? "Unipile request timed out."
+        : err instanceof Error
+          ? err.message
+          : "Unipile request failed.",
     };
   }
 }
@@ -88,6 +178,7 @@ async function unipileFormFetch<T>(
       method: "POST",
       headers: {
         "X-API-KEY": apiKey,
+        Authorization: `Bearer ${apiKey}`,
         accept: "application/json",
       },
       body: form,
@@ -153,13 +244,17 @@ export async function createHostedAuthLink(input: {
   notify_url?: string;
   reconnect_account?: string;
   bypass_success_screen?: boolean;
+  google_scopes?: string;
+  microsoft_scopes?: string;
 }) {
   const body: Record<string, unknown> = {
     type: input.type,
     api_url: input.apiUrl,
     expiresOn: input.expiresOn,
-    providers: input.providers ?? ["LINKEDIN"],
   };
+  if (input.type === "create") {
+    body.providers = input.providers ?? ["LINKEDIN"];
+  }
   if (input.name) body.name = input.name;
   if (input.success_redirect_url)
     body.success_redirect_url = input.success_redirect_url;
@@ -169,6 +264,8 @@ export async function createHostedAuthLink(input: {
   if (input.reconnect_account) body.reconnect_account = input.reconnect_account;
   if (input.bypass_success_screen != null)
     body.bypass_success_screen = input.bypass_success_screen;
+  if (input.google_scopes) body.google_scopes = input.google_scopes;
+  if (input.microsoft_scopes) body.microsoft_scopes = input.microsoft_scopes;
 
   return unipileFetch<{ object: string; url: string }>(
     "POST",
@@ -179,12 +276,28 @@ export async function createHostedAuthLink(input: {
 
 export async function resolveUnipileUser(
   identifier: string,
-  accountId: string
+  accountId: string,
+  options?: { notify?: boolean }
 ) {
   const qs = new URLSearchParams({ account_id: accountId });
+  if (options?.notify) qs.set("notify", "true");
   return unipileFetch<Record<string, unknown>>(
     "GET",
     `/api/v1/users/${encodeURIComponent(identifier)}?${qs.toString()}`
+  );
+}
+
+export async function followUnipileUser(input: {
+  account_id: string;
+  identifier: string;
+}) {
+  return unipileFetch<{ object?: string; invitation_id?: string }>(
+    "POST",
+    "/api/v1/users/follow",
+    {
+      account_id: input.account_id,
+      identifier: input.identifier,
+    }
   );
 }
 
@@ -584,6 +697,31 @@ export async function linkedInSearch(input: {
       total_count?: number | null;
     };
   }>("POST", `/api/v1/linkedin/search?${qs.toString()}`, body);
+}
+
+/** Own-account SSI only. URL is fixed so callers cannot proxy arbitrary LinkedIn paths. */
+const LINKEDIN_OWN_SSI_URL = "https://www.linkedin.com/sales-api/salesApiSsi";
+
+export async function fetchOwnLinkedInSsi(unipileAccountId: string) {
+  const accountId = unipileAccountId.trim();
+  if (!accountId) {
+    return {
+      ok: false as const,
+      status: 0,
+      error: "Missing Unipile account id.",
+    };
+  }
+  return unipileFetch<{ object?: string; data?: unknown }>(
+    "POST",
+    "/api/v1/linkedin",
+    {
+      account_id: accountId,
+      request_url: LINKEDIN_OWN_SSI_URL,
+      force_api: true,
+      method: "GET",
+    },
+    { timeoutMs: 12_000, maxBytes: 200_000 }
+  );
 }
 
 export async function listUnipileEmails(input: {

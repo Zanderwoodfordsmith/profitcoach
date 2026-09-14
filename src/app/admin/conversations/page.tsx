@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessagingInbox } from "@/components/messaging/MessagingInbox";
 import { DashboardPageSection, StickyPageHeader } from "@/components/layout";
@@ -60,7 +60,13 @@ export default function AdminConversationsPage() {
       {checkingRole ? (
         <p className="text-sm text-slate-600">Checking access…</p>
       ) : (
-        <MessagingInbox />
+        <Suspense
+          fallback={
+            <p className="px-4 py-8 text-sm text-slate-500">Loading inbox…</p>
+          }
+        >
+          <MessagingInbox />
+        </Suspense>
       )}
     </DashboardPageSection>
   );

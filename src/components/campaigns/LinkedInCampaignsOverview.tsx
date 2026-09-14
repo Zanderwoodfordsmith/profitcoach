@@ -1,17 +1,43 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Copy, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, Copy, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { CampaignCompactDial } from "@/components/campaigns/CampaignOverviewMetrics";
+import { isMailingProvider } from "@/lib/unipile/providers";
+import { CampaignChannelPills } from "@/components/campaigns/CampaignChannelPills";
+import { CampaignOverviewHero } from "@/components/campaigns/CampaignOverviewHero";
+import { CampaignActivityPane } from "@/components/campaigns/CampaignActivityPane";
+import { CampaignSsiCard } from "@/components/campaigns/CampaignSsiCard";
+import { AccountSendingModal } from "@/components/campaigns/AccountSendingModal";
+import { CampaignInvitesRailCard } from "@/components/campaigns/CampaignInvitesRailCard";
+import { CampaignPoolHub } from "@/components/campaigns/CampaignPoolHub";
+import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
+import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
+import { LeadMagnetsList } from "@/components/leadMagnets/LeadMagnetsList";
+import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
+import {
+  CampaignCompactDial,
+  CampaignQueueCell,
+  CampaignReplyMix,
+} from "@/components/campaigns/CampaignOverviewMetrics";
+import { partitionOutreachCampaigns } from "@/lib/leadMagnets/catalog";
+import {
+  DEMO_PREVIEW_ACCOUNT,
+  demoPreviewCampaigns,
+  isDemoPreviewId,
+} from "@/lib/campaigns/demoPreview";
+import { useCampaignDemoPreview } from "@/hooks/useCampaignDemoPreview";
+import { CampaignDemoPreviewToggle } from "@/components/campaigns/CampaignDemoPreviewToggle";
 
 type Account = {
   id: string;
   unipile_account_id: string;
   status: string;
   display_name: string | null;
+  provider?: string;
 };
 
 type CampaignProgress = {
@@ -22,12 +48,17 @@ type CampaignProgress = {
   failed: number;
   queued: number;
   remaining: number;
+  in_followup?: number;
+  replies?: { positive: number; negative: number; other: number };
 };
 
 type Campaign = {
   id: string;
   name: string;
   status: string;
+  channel?: string;
+  channels?: string[];
+  source_playbook_id?: string | null;
   daily_invite_limit: number;
   lead_count?: number;
   has_invite_step?: boolean;
@@ -41,34 +72,13 @@ async function authHeaders(): Promise<Record<string, string> | null> {
   return getCoachAuthHeaders();
 }
 
-function statusLabel(status: string) {
-  if (status === "running") return "Active";
-  return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function statusTone(status: string) {
-  switch (status) {
-    case "running":
-      return "bg-emerald-50 text-emerald-700 ring-emerald-200";
-    case "paused":
-      return "bg-amber-50 text-amber-800 ring-amber-200";
-    case "completed":
-      return "bg-slate-100 text-slate-600 ring-slate-200";
-    case "draft":
-    default:
-      return "bg-sky-50 text-sky-800 ring-sky-200";
-  }
-}
-
-function relativeTime(iso: string) {
-  const ms = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 48) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+function campaignStatusLabel(c: {
+  channel?: string;
+  status: string;
+}): string | null {
+  // Off is already clear from the toggle — only surface terminal "Done".
+  if (c.status === "completed") return "Done";
+  return null;
 }
 
 function campaignRates(c: Campaign) {
@@ -80,46 +90,16 @@ function campaignRates(c: Campaign) {
     failed: 0,
     queued: c.lead_count ?? 0,
     remaining: c.lead_count ?? 0,
+    in_followup: 0,
+    replies: { positive: 0, negative: 0, other: 0 },
   };
   const interested = progress.interested ?? 0;
-  const replied = progress.replied ?? 0;
-  const interestNumerator = interested > 0 ? interested : replied;
-  return { progress, interested, interestNumerator };
-}
-
-function CampaignToggle({
-  on,
-  disabled,
-  busy,
-  onChange,
-}: {
-  on: boolean;
-  disabled?: boolean;
-  busy?: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={on ? "Turn campaign off" : "Turn campaign on"}
-      disabled={disabled || busy}
-      onClick={(e) => {
-        e.stopPropagation();
-        onChange();
-      }}
-      className={`relative h-6 w-11 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2 disabled:opacity-40 ${
-        on ? "bg-[#0c5290]" : "bg-slate-200"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-          on ? "translate-x-5" : ""
-        }`}
-      />
-    </button>
-  );
+  const replies = progress.replies ?? {
+    positive: interested,
+    negative: 0,
+    other: Math.max(0, (progress.replied ?? 0) - interested),
+  };
+  return { progress, interested, replies };
 }
 
 function RowMenu({
@@ -127,25 +107,66 @@ function RowMenu({
   onOpenChange,
   onEdit,
   onDuplicate,
-  onDelete,
+  onArchive,
+  onUnarchive,
   busy,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: () => void;
   onDuplicate: () => void;
-  onDelete: () => void;
+  onArchive?: () => void;
+  onUnarchive?: () => void;
   busy: boolean;
 }) {
   const menuId = useId();
-  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null
+  );
+  const menuWidth = 176;
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPosition(null);
+      return;
+    }
+    function updatePosition() {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const menuHeight = menuRef.current?.offsetHeight ?? 140;
+      const gap = 4;
+      const openUp = rect.bottom + gap + menuHeight > window.innerHeight - 8;
+      const top = openUp
+        ? Math.max(8, rect.top - menuHeight - gap)
+        : rect.bottom + gap;
+      const left = Math.min(
+        Math.max(8, rect.right - menuWidth),
+        window.innerWidth - menuWidth - 8
+      );
+      setPosition({ top, left });
+    }
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        onOpenChange(false);
+      const target = e.target as Node;
+      if (
+        buttonRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
       }
+      onOpenChange(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onOpenChange(false);
@@ -158,9 +179,89 @@ function RowMenu({
     };
   }, [open, onOpenChange]);
 
+  const menu =
+    open && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={menuRef}
+            id={menuId}
+            role="menu"
+            className="fixed z-[220] w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
+            style={{
+              top: position?.top ?? 0,
+              left: position?.left ?? 0,
+              visibility: position ? "visible" : "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenChange(false);
+                onEdit();
+              }}
+            >
+              <Pencil className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+              Edit
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={busy}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenChange(false);
+                onDuplicate();
+              }}
+            >
+              <Copy className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+              Duplicate
+            </button>
+            {onUnarchive ? (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenChange(false);
+                  onUnarchive();
+                }}
+              >
+                <RotateCcw className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                Unarchive
+              </button>
+            ) : onArchive ? (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenChange(false);
+                  onArchive();
+                }}
+              >
+                <Archive className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                Archive
+              </button>
+            ) : null}
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
-    <div ref={rootRef} className="relative flex justify-end">
+    <div className="relative flex justify-end">
       <button
+        ref={buttonRef}
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -175,56 +276,130 @@ function RowMenu({
       >
         <MoreVertical className="h-4 w-4" aria-hidden />
       </button>
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-[0_4px_16px_rgba(15,23,42,0.08)]"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenChange(false);
-              onEdit();
-            }}
-          >
-            <Pencil className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-            Edit
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={busy}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenChange(false);
-              onDuplicate();
-            }}
-          >
-            <Copy className="h-3.5 w-3.5 text-slate-400" aria-hidden />
-            Duplicate
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            disabled={busy}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-40"
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenChange(false);
-              onDelete();
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5 text-rose-400" aria-hidden />
-            Delete
-          </button>
-        </div>
-      ) : null}
+      {menu}
     </div>
+  );
+}
+
+function CampaignTableRow({
+  campaign: c,
+  archived = false,
+  busy,
+  menuOpen,
+  onMenuOpenChange,
+  canToggle,
+  onToggle,
+  onEdit,
+  onDuplicate,
+  onArchive,
+  onUnarchive,
+}: {
+  campaign: Campaign;
+  archived?: boolean;
+  busy: boolean;
+  menuOpen: boolean;
+  onMenuOpenChange: (open: boolean) => void;
+  canToggle: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
+  onDuplicate: () => void;
+  onArchive?: () => void;
+  onUnarchive?: () => void;
+}) {
+  const contacts = c.lead_count ?? 0;
+  const { progress, replies } = campaignRates(c);
+  const isRunning = !archived && c.status === "running";
+  const isDemo = isDemoPreviewId(c.id);
+  const hasInvite = c.has_invite_step !== false;
+  const statusLabel = campaignStatusLabel(c);
+
+  return (
+    <tr
+      onClick={onEdit}
+      onKeyDown={(e) => {
+        if (isDemo) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onEdit();
+        }
+      }}
+      tabIndex={isDemo ? undefined : 0}
+      title={
+        isDemo
+          ? "Sample data — turn off Sample data to open a campaign"
+          : undefined
+      }
+      className={`group border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0c5290]/40 ${
+        isDemo ? "" : "cursor-pointer"
+      }`}
+    >
+      <td className="px-4 py-3.5 align-middle">
+        <CampaignOnOffToggle
+          on={isRunning}
+          busy={busy}
+          disabled={archived || (!canToggle && !isRunning)}
+          onChange={onToggle}
+        />
+      </td>
+      <td className="min-w-0 px-3 py-3.5 align-middle">
+        <div className="flex min-w-0 max-w-full items-center gap-2 text-left">
+          <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
+            {c.name}
+          </span>
+          {statusLabel ? (
+            <span className="shrink-0 text-[11px] font-medium text-slate-400">
+              {statusLabel}
+            </span>
+          ) : null}
+        </div>
+        <div className="mt-1 max-w-[14rem]">
+          <CampaignQueueCell
+            queued={progress.queued}
+            total={contacts}
+            inFollowUp={progress.in_followup ?? 0}
+            dailyLimit={c.daily_invite_limit}
+            running={isRunning}
+            hasInviteStep={hasInvite}
+            layout="row"
+          />
+        </div>
+      </td>
+      <td className="px-3 py-3.5 align-middle">
+        <div className="flex justify-center">
+          <CampaignChannelPills
+            channels={c.channels}
+            campaignChannel={c.channel}
+            variant="stack"
+          />
+        </div>
+      </td>
+      <td className="px-4 py-3.5 align-middle">
+        <CampaignCompactDial
+          label="Connect"
+          numerator={progress.connected}
+          denominator={progress.sent}
+          muted={!hasInvite}
+        />
+      </td>
+      <td className="px-4 py-3.5 align-middle">
+        <CampaignReplyMix
+          positive={replies.positive}
+          negative={replies.negative}
+          other={replies.other}
+        />
+      </td>
+      <td className="px-3 py-3.5 align-middle">
+        <RowMenu
+          open={menuOpen}
+          onOpenChange={onMenuOpenChange}
+          busy={busy || isDemo}
+          onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onArchive={onArchive}
+          onUnarchive={onUnarchive}
+        />
+      </td>
+    </tr>
   );
 }
 
@@ -232,38 +407,104 @@ export function LinkedInCampaignsOverview() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
+  const prefix = (pathname.startsWith("/admin") ? "/admin" : "/coach") as
+    | "/admin"
+    | "/coach";
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [archivedCampaigns, setArchivedCampaigns] = useState<Campaign[]>([]);
+  const [archivedOpen, setArchivedOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showSending, setShowSending] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newChannel, setNewChannel] = useState<"linkedin" | "email">("linkedin");
   const [configured, setConfigured] = useState(true);
-  const [inviteTotal, setInviteTotal] = useState(0);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [coachSlug, setCoachSlug] = useState<string | null>(null);
+  const [appOrigin, setAppOrigin] = useState("");
+  const { enabled: preview, setEnabled: setPreview } = useCampaignDemoPreview();
+  const tab = searchParams.get("tab");
+  const magnetsTab = tab === "magnets";
+  const poolTab = tab === "pool" || tab === "lists";
+  const [poolHubMounted, setPoolHubMounted] = useState(poolTab);
+  const linkedinConnected = searchParams.get("linkedin");
 
-  const primaryAccount = accounts[0] ?? null;
+  useEffect(() => {
+    if (poolTab) setPoolHubMounted(true);
+  }, [poolTab]);
+
+  const { ordered, more } = useMemo(
+    () =>
+      partitionOutreachCampaigns(
+        preview ? demoPreviewCampaigns() : campaigns
+      ),
+    [campaigns, preview]
+  );
+  const sorted = useMemo(() => [...ordered, ...more], [ordered, more]);
+  const poolCampaigns = useMemo(() => {
+    const partitioned = partitionOutreachCampaigns(campaigns);
+    return [...partitioned.ordered, ...partitioned.more];
+  }, [campaigns]);
+  const rates = useMemo(() => {
+    let connected = 0;
+    let sent = 0;
+    const replies = { positive: 0, negative: 0, other: 0 };
+    const source = preview ? demoPreviewCampaigns() : campaigns;
+    for (const campaign of source) {
+      const next = campaignRates(campaign);
+      connected += next.progress.connected;
+      sent += next.progress.sent;
+      replies.positive += next.replies.positive;
+      replies.negative += next.replies.negative;
+      replies.other += next.replies.other;
+    }
+    return {
+      connect: { numerator: connected, denominator: sent },
+      replies,
+    };
+  }, [campaigns, preview]);
+  const displayAccounts = preview ? [DEMO_PREVIEW_ACCOUNT] : accounts;
+  const primaryAccount = displayAccounts[0] ?? null;
+  const mailingAccount =
+    accounts.find(
+      (account) =>
+        account.status === "OK" && isMailingProvider(account.provider ?? "")
+    ) ?? null;
+
+  useEffect(() => {
+    setAppOrigin(window.location.origin);
+  }, []);
 
   const load = useCallback(async () => {
     const headers = await authHeaders();
     if (!headers) return;
-    const [accRes, campRes, invRes] = await Promise.all([
+    const [accRes, campRes, archivedRes, profileRes] = await Promise.all([
       fetch("/api/coach/linkedin-outreach/accounts", { headers }),
       fetch("/api/coach/linkedin-outreach/campaigns", { headers }),
-      fetch("/api/coach/linkedin-outreach/invitations", { headers }),
+      fetch("/api/coach/linkedin-outreach/campaigns?archived=1", { headers }),
+      fetch("/api/coach/profile", { headers }),
     ]);
     const accBody = await accRes.json().catch(() => ({}));
     const campBody = await campRes.json().catch(() => ({}));
-    const invBody = await invRes.json().catch(() => ({}));
+    const archivedBody = await archivedRes.json().catch(() => ({}));
+    const profileBody = await profileRes.json().catch(() => ({}));
     if (!accRes.ok) throw new Error(accBody.error || "Could not load accounts.");
     if (!campRes.ok) throw new Error(campBody.error || "Could not load campaigns.");
     setConfigured(accBody.configured !== false);
     setAccounts(accBody.accounts ?? []);
     setCampaigns(campBody.campaigns ?? []);
-    setInviteTotal(invBody.total ?? 0);
+    if (archivedRes.ok) {
+      setArchivedCampaigns(archivedBody.campaigns ?? []);
+    }
+    setCoachSlug(
+      typeof profileBody.coach_slug === "string"
+        ? profileBody.coach_slug.trim() || null
+        : null
+    );
   }, []);
 
   useEffect(() => {
@@ -273,7 +514,7 @@ export function LinkedInCampaignsOverview() {
       setError(null);
       try {
         await load();
-        if (searchParams.get("linkedin") === "connected") {
+        if (linkedinConnected === "connected") {
           const headers = await authHeaders();
           if (headers) {
             await fetch("/api/coach/linkedin-outreach/accounts", {
@@ -285,8 +526,12 @@ export function LinkedInCampaignsOverview() {
           }
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Load failed.");
+        const message = err instanceof Error ? err.message : "Load failed.";
+        if (
+          !cancelled &&
+          !/aborted|AbortError/i.test(message)
+        ) {
+          setError(message);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -295,19 +540,7 @@ export function LinkedInCampaignsOverview() {
     return () => {
       cancelled = true;
     };
-  }, [load, searchParams]);
-
-  const sorted = useMemo(() => {
-    return [...campaigns].sort((a, b) => {
-      const order = (s: string) =>
-        s === "running" ? 0 : s === "paused" ? 1 : s === "draft" ? 2 : 3;
-      const byStatus = order(a.status) - order(b.status);
-      if (byStatus !== 0) return byStatus;
-      return (
-        new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
-    });
-  }, [campaigns]);
+  }, [load, linkedinConnected]);
 
   async function connectLinkedIn() {
     setBusy(true);
@@ -342,12 +575,17 @@ export function LinkedInCampaignsOverview() {
         headers,
         body: JSON.stringify({
           name: newName.trim() || "Untitled campaign",
-          outreach_account_id: primaryAccount?.id ?? null,
+          outreach_account_id:
+            newChannel === "email"
+              ? mailingAccount?.id ?? null
+              : primaryAccount?.id ?? null,
+          channel: newChannel,
         }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Create failed.");
       setNewName("");
+      setNewChannel("linkedin");
       setShowCreate(false);
       router.push(`${prefix}/campaigns/${body.campaign.id}`);
     } catch (err) {
@@ -357,14 +595,18 @@ export function LinkedInCampaignsOverview() {
   }
 
   async function quickToggle(campaign: Campaign) {
-    if (campaign.status === "completed") return;
+    if (isDemoPreviewId(campaign.id) || campaign.status === "completed") return;
     setBusy(true);
     setError(null);
     try {
       const headers = await authHeaders();
       if (!headers) throw new Error("Sign in required.");
       const next = campaign.status === "running" ? "paused" : "running";
-      if (next === "running" && !primaryAccount) {
+      if (next === "running" && campaign.channel === "email") {
+        if (!mailingAccount) {
+          throw new Error("Connect Gmail or Outlook before starting an email campaign.");
+        }
+      } else if (next === "running" && !primaryAccount) {
         throw new Error("Connect LinkedIn before starting a campaign.");
       }
       const res = await fetch(
@@ -389,6 +631,7 @@ export function LinkedInCampaignsOverview() {
   }
 
   async function duplicateCampaign(campaign: Campaign) {
+    if (isDemoPreviewId(campaign.id)) return;
     setBusy(true);
     setError(null);
     try {
@@ -416,8 +659,9 @@ export function LinkedInCampaignsOverview() {
   }
 
   async function archiveCampaign(campaign: Campaign) {
+    if (isDemoPreviewId(campaign.id)) return;
     const ok = window.confirm(
-      `Delete “${campaign.name}”? It will be removed from your campaigns list.`
+      `Archive “${campaign.name}”? You can restore it later from Archived.`
     );
     if (!ok) return;
     setBusy(true);
@@ -434,245 +678,399 @@ export function LinkedInCampaignsOverview() {
         }
       );
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Delete failed.");
+      if (!res.ok) throw new Error(body.error || "Archive failed.");
+      setArchivedOpen(true);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed.");
+      setError(err instanceof Error ? err.message : "Archive failed.");
     } finally {
       setBusy(false);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="py-16 text-center text-sm text-slate-500">
-        Loading campaigns…
-      </div>
-    );
+  async function unarchiveCampaign(campaign: Campaign) {
+    if (isDemoPreviewId(campaign.id)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaign.id)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "unarchive" }),
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Could not restore campaign.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not restore campaign.");
+    } finally {
+      setBusy(false);
+    }
   }
 
+  const campaignsTab = !poolTab && !magnetsTab;
+
   return (
-    <div className="flex w-full flex-col gap-5 pb-16">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div className="shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           {error}
         </div>
       ) : null}
 
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-slate-900">
-            Campaigns
-          </h1>
-          {!primaryAccount && configured ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void connectLinkedIn()}
-              className="mt-1 text-xs font-medium text-[#0c5290] hover:underline disabled:opacity-50"
-            >
-              Connect LinkedIn
-            </button>
-          ) : primaryAccount ? (
-            <p className="mt-1 text-[11px] text-slate-500">
-              {primaryAccount.display_name || "LinkedIn connected"}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href={`${prefix}/campaigns/invites`}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
-          >
-            Invites{inviteTotal ? ` (${inviteTotal})` : ""}
-          </Link>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => setShowCreate((v) => !v)}
-            className="rounded-xl bg-[#0c5290] px-3.5 py-2 text-xs font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
-          >
-            + Create
-          </button>
-        </div>
-      </header>
+      <div className="shrink-0">
+        <CampaignsSubTabs
+          prefix={prefix}
+          active={magnetsTab ? "magnets" : poolTab ? "pool" : "campaigns"}
+          actions={
+            campaignsTab ? (
+              <>
+                {!primaryAccount && configured && !preview ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void connectLinkedIn()}
+                    className="text-sm font-medium text-[#0c5290] hover:underline disabled:opacity-50"
+                  >
+                    Connect LinkedIn
+                  </button>
+                ) : null}
+                {preview || primaryAccount ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowSending(true)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-transparent px-3 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                  >
+                    <SlidersHorizontal
+                      className="h-3.5 w-3.5 text-slate-500"
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
+                    Settings
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setShowCreate((v) => !v)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#0c5290] px-3 text-sm font-semibold text-white hover:bg-[#0a457a] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                  Create campaign
+                </button>
+              </>
+            ) : undefined
+          }
+        />
+      </div>
 
-      {showCreate ? (
-        <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40">
-          <input
-            autoFocus
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="e.g. SaaS Founders Outreach"
-            className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void createCampaign();
-              if (e.key === "Escape") setShowCreate(false);
-            }}
-          />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void createCampaign()}
-            className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
-          >
-            Create
-          </button>
+      {campaignsTab ? (
+        <div className="min-h-0 flex-1 overflow-y-auto pb-28">
+          <div className="flex flex-col gap-4 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr]">
+            <div className="xl:col-start-1 xl:row-start-1">
+              <CampaignOverviewHero
+                connectRate={rates.connect}
+                replies={rates.replies}
+                preview={preview}
+              />
+            </div>
+            {loading && !preview ? (
+              <div className="py-16 text-center text-sm text-slate-500 xl:col-start-1 xl:row-start-2">
+                Loading campaigns…
+              </div>
+            ) : (
+              <div className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40 xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0">
+                {showCreate ? (
+                  <div className="flex shrink-0 flex-wrap gap-2 border-b border-slate-100 px-4 py-4">
+                    <input
+                      autoFocus
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="e.g. SaaS Founders Outreach"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 outline-none ring-[#0c5290]/30 placeholder:text-slate-400 focus:ring-2"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") void createCampaign();
+                        if (e.key === "Escape") setShowCreate(false);
+                      }}
+                    />
+                    <select
+                      value={newChannel}
+                      onChange={(e) =>
+                        setNewChannel(
+                          e.target.value === "email" ? "email" : "linkedin"
+                        )
+                      }
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#0c5290]/30"
+                      aria-label="Campaign channel"
+                    >
+                      <option value="linkedin">LinkedIn</option>
+                      <option value="email">Email</option>
+                    </select>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void createCampaign()}
+                      className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      Create
+                    </button>
+                  </div>
+                ) : null}
+
+                {sorted.length === 0 && archivedCampaigns.length === 0 ? (
+                  <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+                    <p className="text-sm font-medium text-slate-800">
+                      No campaigns yet
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Create one to build a sequence and add LinkedIn leads.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreate(true)}
+                      className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#0c5290] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0a457a]"
+                    >
+                      <Plus
+                        className="h-4 w-4"
+                        strokeWidth={2.25}
+                        aria-hidden
+                      />
+                      Create campaign
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-left">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
+                            <th
+                              scope="col"
+                              className="w-14 px-4 py-3 font-semibold"
+                            >
+                              <span className="sr-only">On or off</span>
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-3 py-3 font-semibold"
+                            >
+                              Campaign
+                            </th>
+                            <th
+                              scope="col"
+                              className="w-[5rem] px-3 py-3 text-center font-semibold"
+                            >
+                              Via
+                            </th>
+                            <th
+                              scope="col"
+                              className="w-[13rem] px-4 py-3 font-semibold"
+                            >
+                              Connect
+                            </th>
+                            <th
+                              scope="col"
+                              className="w-[12rem] px-4 py-3 font-semibold"
+                            >
+                              Replies
+                            </th>
+                            <th scope="col" className="w-12 px-3 py-3">
+                              <span className="sr-only">Actions</span>
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sorted.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-10 text-center">
+                                <p className="text-sm font-medium text-slate-800">
+                                  No active campaigns
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Restore one from Archived, or create a new
+                                  campaign.
+                                </p>
+                              </td>
+                            </tr>
+                          ) : (
+                            sorted.map((c) => {
+                              const isRunning = c.status === "running";
+                              const isEmail = c.channel === "email";
+                              const isDemo = isDemoPreviewId(c.id);
+                              const canToggle =
+                                !isDemo &&
+                                c.status !== "completed" &&
+                                (isRunning ||
+                                  (isEmail
+                                    ? Boolean(mailingAccount)
+                                    : Boolean(primaryAccount)));
+                              return (
+                                <CampaignTableRow
+                                  key={c.id}
+                                  campaign={c}
+                                  busy={busy}
+                                  menuOpen={menuOpenId === c.id}
+                                  onMenuOpenChange={(next) =>
+                                    setMenuOpenId(next ? c.id : null)
+                                  }
+                                  canToggle={canToggle}
+                                  onToggle={() => void quickToggle(c)}
+                                  onEdit={() => {
+                                    if (isDemo) return;
+                                    router.push(`${prefix}/campaigns/${c.id}`);
+                                  }}
+                                  onDuplicate={() => void duplicateCampaign(c)}
+                                  onArchive={() => void archiveCampaign(c)}
+                                />
+                              );
+                            })
+                          )}
+                          {!preview && archivedCampaigns.length > 0 ? (
+                            <>
+                              <tr>
+                                <td colSpan={6} className="p-0">
+                                  <button
+                                    type="button"
+                                    aria-expanded={archivedOpen}
+                                    onClick={() =>
+                                      setArchivedOpen((open) => !open)
+                                    }
+                                    className="flex w-full items-center justify-center gap-1.5 bg-slate-100 px-4 py-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-200/70 hover:text-slate-800"
+                                  >
+                                    <Archive
+                                      className="h-3.5 w-3.5 shrink-0"
+                                      aria-hidden
+                                    />
+                                    <span>
+                                      Archived
+                                      <span className="font-normal text-slate-400">
+                                        {" "}
+                                        · {archivedCampaigns.length}
+                                      </span>
+                                    </span>
+                                    <ChevronDown
+                                      className={`h-3.5 w-3.5 shrink-0 text-slate-500 transition ${
+                                        archivedOpen ? "rotate-180" : ""
+                                      }`}
+                                      aria-hidden
+                                    />
+                                  </button>
+                                </td>
+                              </tr>
+                              {archivedOpen
+                                ? archivedCampaigns.map((c) => (
+                                    <CampaignTableRow
+                                      key={c.id}
+                                      campaign={c}
+                                      archived
+                                      busy={busy}
+                                      menuOpen={menuOpenId === c.id}
+                                      onMenuOpenChange={(next) =>
+                                        setMenuOpenId(next ? c.id : null)
+                                      }
+                                      canToggle={false}
+                                      onToggle={() => undefined}
+                                      onEdit={() =>
+                                        router.push(
+                                          `${prefix}/campaigns/${c.id}`
+                                        )
+                                      }
+                                      onDuplicate={() =>
+                                        void duplicateCampaign(c)
+                                      }
+                                      onUnarchive={() =>
+                                        void unarchiveCampaign(c)
+                                      }
+                                    />
+                                  ))
+                                : null}
+                            </>
+                          ) : null}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <aside className="flex w-full flex-col gap-3 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:w-auto">
+              <div className="flex h-[min(34rem,calc(100dvh-12rem))] shrink-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+                <CampaignActivityPane preview={preview} />
+              </div>
+              <CampaignSsiCard
+                preview={preview}
+                linkedInConnected={preview || Boolean(primaryAccount)}
+              />
+              <CampaignInvitesRailCard preview={preview} />
+            </aside>
+          </div>
         </div>
       ) : null}
 
-      {campaigns.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
-          <p className="text-sm font-medium text-slate-800">No campaigns yet</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Create one to build a sequence and add LinkedIn leads.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="mt-4 rounded-xl bg-[#0c5290] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0a457a]"
-          >
-            + Create
-          </button>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
-          <table className="w-full min-w-[720px] border-collapse text-left">
-            <thead>
-              <tr className="border-b border-slate-100 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">
-                <th scope="col" className="w-14 px-4 py-3 font-semibold">
-                  <span className="sr-only">On or off</span>
-                </th>
-                <th scope="col" className="px-3 py-3 font-semibold">
-                  Campaign
-                </th>
-                <th
-                  scope="col"
-                  className="w-[5.5rem] px-2 py-3 text-center font-semibold"
-                >
-                  Progress
-                </th>
-                <th
-                  scope="col"
-                  className="w-[5.5rem] px-2 py-3 text-center font-semibold"
-                >
-                  Connect
-                </th>
-                <th
-                  scope="col"
-                  className="w-[5.5rem] px-2 py-3 text-center font-semibold"
-                >
-                  Interest
-                </th>
-                <th scope="col" className="w-12 px-3 py-3">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((c) => {
-                const contacts = c.lead_count ?? 0;
-                const { progress, interestNumerator } = campaignRates(c);
-                const isRunning = c.status === "running";
-                const canToggle =
-                  c.status !== "completed" &&
-                  (isRunning || Boolean(primaryAccount));
-                const hasInvite = c.has_invite_step !== false;
+      <AccountSendingModal
+        open={showSending}
+        onClose={() => setShowSending(false)}
+        preview={preview}
+        linkedInConnected={preview || Boolean(primaryAccount)}
+      />
 
-                return (
-                  <tr
-                    key={c.id}
-                    className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70"
-                  >
-                    <td className="px-4 py-3.5 align-middle">
-                      <CampaignToggle
-                        on={isRunning}
-                        busy={busy}
-                        disabled={!canToggle && !isRunning}
-                        onChange={() => void quickToggle(c)}
-                      />
-                    </td>
-                    <td className="min-w-0 px-3 py-3.5 align-middle">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          router.push(`${prefix}/campaigns/${c.id}`)
-                        }
-                        className="group flex min-w-0 max-w-xl flex-col items-start text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2"
-                      >
-                        <span className="flex min-w-0 flex-wrap items-center gap-2">
-                          <span className="truncate text-[15px] font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
-                            {c.name}
-                          </span>
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-inset ${statusTone(c.status)}`}
-                          >
-                            {statusLabel(c.status)}
-                          </span>
-                        </span>
-                        <span className="mt-0.5 text-xs text-slate-500">
-                          {contacts
-                            ? `${contacts} contact${contacts === 1 ? "" : "s"}`
-                            : "No contacts yet"}
-                          {" · "}
-                          {isRunning
-                            ? `updated ${relativeTime(c.updated_at)}`
-                            : c.status === "draft"
-                              ? "not launched"
-                              : `updated ${relativeTime(c.updated_at)}`}
-                        </span>
-                      </button>
-                    </td>
-                    <td className="px-2 py-3.5 align-middle">
-                      <div className="flex justify-center">
-                        <CampaignCompactDial
-                          label="Progress"
-                          numerator={progress.sent}
-                          denominator={Math.max(contacts, progress.sent)}
-                          showFraction
-                        />
-                      </div>
-                    </td>
-                    <td className="px-2 py-3.5 align-middle">
-                      <div className="flex justify-center">
-                        <CampaignCompactDial
-                          label="Connect"
-                          numerator={progress.connected}
-                          denominator={progress.sent}
-                          muted={!hasInvite}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-2 py-3.5 align-middle">
-                      <div className="flex justify-center">
-                        <CampaignCompactDial
-                          label="Interest"
-                          numerator={interestNumerator}
-                          denominator={progress.connected}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-3 py-3.5 align-middle">
-                      <RowMenu
-                        open={menuOpenId === c.id}
-                        onOpenChange={(next) =>
-                          setMenuOpenId(next ? c.id : null)
-                        }
-                        busy={busy}
-                        onEdit={() =>
-                          router.push(`${prefix}/campaigns/${c.id}`)
-                        }
-                        onDuplicate={() => void duplicateCampaign(c)}
-                        onDelete={() => void archiveCampaign(c)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {poolHubMounted ? (
+        <div
+          className={
+            poolTab
+              ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pt-4"
+              : "hidden"
+          }
+        >
+          <CampaignPoolHub
+            campaigns={poolCampaigns}
+            onToggleCampaign={(campaign) => {
+              const full = campaigns.find((row) => row.id === campaign.id);
+              if (full) void quickToggle(full);
+            }}
+            toggleBusy={busy}
+            linkedInConnected={Boolean(primaryAccount)}
+            emailConnected={Boolean(mailingAccount)}
+          />
         </div>
-      )}
+      ) : null}
+
+      {magnetsTab ? (
+        <div className="min-h-0 flex-1 overflow-y-auto pb-28 pt-4">
+          {loading && !preview ? (
+            <div className="py-16 text-center text-sm text-slate-500">
+              Loading lead magnets…
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <PublicSlugEditor
+                  slug={coachSlug ?? ""}
+                  onSlugChange={(next) => setCoachSlug(next)}
+                  framed={false}
+                />
+              </div>
+              {!coachSlug ? (
+                <p className="border-b border-slate-100 bg-amber-50 px-5 py-3 text-sm text-amber-900">
+                  Add your public URL slug so shareable links work.
+                </p>
+              ) : null}
+              <LeadMagnetsList coachSlug={coachSlug} appOrigin={appOrigin} />
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      <CampaignDemoPreviewToggle
+        enabled={preview}
+        onChange={setPreview}
+        coachSlug={coachSlug}
+      />
     </div>
   );
 }
