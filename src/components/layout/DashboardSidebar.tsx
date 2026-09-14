@@ -71,12 +71,64 @@ function isCommunityCalendarActive(pathname: string | null, communityHref: strin
 const ADMIN_NAV_EXPANDED_KEY = "pc-admin-nav-expanded";
 
 function readAdminNavExpanded(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
   try {
-    return window.localStorage.getItem(ADMIN_NAV_EXPANDED_KEY) === "1";
+    return window.localStorage.getItem(ADMIN_NAV_EXPANDED_KEY) !== "0";
   } catch {
-    return false;
+    return true;
   }
+}
+
+const ADMIN_HEADER_CLASS =
+  "flex items-center rounded-md text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:text-sky-100";
+
+function AdminNavHeader({
+  expanded,
+  collapsed,
+  onToggle,
+  onGoToHub,
+}: {
+  expanded: boolean;
+  collapsed: boolean;
+  onToggle: () => void;
+  onGoToHub: () => void;
+}) {
+  const Chevron = expanded ? ChevronDown : ChevronUp;
+  const toggleLabel = expanded ? "Collapse admin menu" : "Expand admin menu";
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-label={toggleLabel}
+        title="Admin"
+        className={`${ADMIN_HEADER_CLASS} w-full justify-center px-0 py-2 hover:bg-white/10`}
+      >
+        <Chevron className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      </button>
+    );
+  }
+  return (
+    <div className={`${ADMIN_HEADER_CLASS} w-full gap-0 ${expanded ? "mb-1" : ""}`}>
+      <Link
+        href="/admin"
+        onClick={onGoToHub}
+        className="min-w-0 flex-1 rounded-md px-4 py-1.5 text-left hover:bg-white/10"
+      >
+        Admin
+      </Link>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        aria-label={toggleLabel}
+        className="rounded-md p-1.5 hover:bg-white/10"
+      >
+        <Chevron className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      </button>
+    </div>
+  );
 }
 
 export function DashboardSidebar({
@@ -95,7 +147,7 @@ export function DashboardSidebar({
   const supportActive = Boolean(pathname?.startsWith(supportHref));
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [adminNavExpanded, setAdminNavExpanded] = useState(false);
+  const [adminNavExpanded, setAdminNavExpanded] = useState(true);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const showAdminSection = variant === "admin";
 
@@ -130,6 +182,18 @@ export function DashboardSidebar({
       }
       return next;
     });
+  };
+
+  const goToAdminHub = () => {
+    markPending("/admin");
+    if (!adminNavExpanded) {
+      setAdminNavExpanded(true);
+      try {
+        window.localStorage.setItem(ADMIN_NAV_EXPANDED_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   const featureCheck =
@@ -415,27 +479,12 @@ export function DashboardSidebar({
           >
             {adminNavExpanded ? (
               <div className="mb-1">
-                <button
-                  type="button"
-                  onClick={toggleAdminNav}
-                  aria-expanded={true}
-                  aria-label="Collapse admin menu"
-                  title={collapsed ? "Admin" : undefined}
-                  className={`mb-1 flex w-full items-center rounded-md text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100 ${
-                    collapsed
-                      ? "justify-center px-0 py-2"
-                      : "gap-2 px-4 py-1.5"
-                  }`}
-                >
-                  {collapsed ? (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  ) : (
-                    <>
-                      <span className="min-w-0 flex-1 text-left">Admin</span>
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    </>
-                  )}
-                </button>
+                <AdminNavHeader
+                  expanded
+                  collapsed={collapsed}
+                  onToggle={toggleAdminNav}
+                  onGoToHub={goToAdminHub}
+                />
                 <ul className={`space-y-0.5 ${collapsed ? "" : "px-1"}`}>
                   {adminSectionNavItems.map((item) => {
                     const active = adminSectionNavItemActive(pathname, item);
@@ -468,27 +517,12 @@ export function DashboardSidebar({
                 </ul>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={toggleAdminNav}
-                aria-expanded={false}
-                aria-label="Expand admin menu"
-                title={collapsed ? "Admin" : undefined}
-                className={`flex w-full items-center rounded-md text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100 ${
-                  collapsed
-                    ? "justify-center px-0 py-2"
-                    : "gap-2 px-4 py-1.5"
-                }`}
-              >
-                {collapsed ? (
-                  <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                ) : (
-                  <>
-                    <span className="min-w-0 flex-1 text-left">Admin</span>
-                    <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  </>
-                )}
-              </button>
+              <AdminNavHeader
+                expanded={false}
+                collapsed={collapsed}
+                onToggle={toggleAdminNav}
+                onGoToHub={goToAdminHub}
+              />
             )}
           </div>
         ) : null}
@@ -742,16 +776,15 @@ export function DashboardSidebar({
               <div className="px-4 pb-3">
                 {adminNavExpanded ? (
                   <div>
-                    <button
-                      type="button"
-                      onClick={toggleAdminNav}
-                      aria-expanded={true}
-                      aria-label="Collapse admin menu"
-                      className="mb-2 flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100"
-                    >
-                      <span className="min-w-0 flex-1 text-left">Admin</span>
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    </button>
+                    <AdminNavHeader
+                      expanded
+                      collapsed={false}
+                      onToggle={toggleAdminNav}
+                      onGoToHub={() => {
+                        goToAdminHub();
+                        closeMobileSheets();
+                      }}
+                    />
                     <ul className="space-y-0.5">
                       {adminSectionNavItems.map((item) => {
                         const active = adminSectionNavItemActive(pathname, item);
@@ -776,15 +809,15 @@ export function DashboardSidebar({
                     </ul>
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={toggleAdminNav}
-                    aria-expanded={false}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55 hover:bg-white/10 hover:text-sky-100"
-                  >
-                    <span className="min-w-0 flex-1 text-left">Admin</span>
-                    <ChevronUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  </button>
+                  <AdminNavHeader
+                    expanded={false}
+                    collapsed={false}
+                    onToggle={toggleAdminNav}
+                    onGoToHub={() => {
+                      goToAdminHub();
+                      closeMobileSheets();
+                    }}
+                  />
                 )}
               </div>
             ) : null}

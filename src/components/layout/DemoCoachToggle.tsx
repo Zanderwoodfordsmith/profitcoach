@@ -76,7 +76,7 @@ function useStaffDemoSwitch() {
 
   async function exitToAdmin() {
     clearImpersonation();
-    router.push(pathAfterDemoCoachToggle(pathname ?? "/admin", "admin"));
+    router.push("/admin");
   }
 
   async function enterDemo(demo: DemoCoachToggleUser) {
