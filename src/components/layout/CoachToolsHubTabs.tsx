@@ -205,7 +205,7 @@ export function CoachToolsHubTabs(props: Props) {
     <Suspense
       fallback={
         <nav
-          className="flex flex-wrap items-end justify-start gap-x-4 gap-y-1"
+          className="flex flex-nowrap items-end justify-start gap-x-4"
           aria-label="Get Clients tools"
         />
       }

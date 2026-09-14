@@ -28,6 +28,8 @@ export type PoolPerson = {
   linkedinCampaignable: boolean;
   emailCampaignable: boolean;
   canFindPerson: boolean;
+  /** Prospect contact from a previous open; skip the find-or-create round trip. */
+  contact_id: string | null;
 };
 
 export type PoolStats = {

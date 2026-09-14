@@ -185,9 +185,10 @@ function SsiPillarBars({ pillars }: { pillars: SsiPillar[] }) {
 
 export function CampaignSsiCard({
   preview = false,
-  linkedInConnected = false,
+  linkedInConnected,
 }: {
   preview?: boolean;
+  /** `undefined` while accounts are still loading. */
   linkedInConnected?: boolean;
 }) {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -200,8 +201,12 @@ export function CampaignSsiCard({
       setSsi(DEMO_PREVIEW_SSI);
       return;
     }
-    if (!linkedInConnected) {
-      setSsi({ available: false, reason: "not_connected" });
+    if (linkedInConnected !== true) {
+      setSsi(
+        linkedInConnected === false
+          ? { available: false, reason: "not_connected" }
+          : null
+      );
       return;
     }
     let cancelled = false;
@@ -226,16 +231,16 @@ export function CampaignSsiCard({
     };
   }, [preview, linkedInConnected]);
 
-  if (!preview && !linkedInConnected) return null;
-  if (!preview && ssi?.reason === "not_connected") return null;
-
-  const loading = !preview && ssi == null;
+  const disconnected =
+    !preview && (linkedInConnected === false || ssi?.reason === "not_connected");
+  const loading = !preview && !disconnected && ssi == null;
   const unavailable = ssi?.reason === "unavailable";
   const score = typeof ssi?.score === "number" ? ssi.score : null;
   const pillars = (ssi?.pillars ?? []).filter(
     (p) => typeof p.score === "number" && p.max > 0
   );
-  const canBreakdown = pillars.length > 0 && !unavailable && !loading;
+  const canBreakdown =
+    pillars.length > 0 && !unavailable && !loading && !disconnected;
 
   return (
     <section className="relative z-10 shrink-0 overflow-visible rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-200/40">
@@ -260,7 +265,9 @@ export function CampaignSsiCard({
               />
             </button>
           ) : (
-            <p className="mt-2 text-[11px] text-slate-500">LinkedIn score</p>
+            <p className="mt-2 text-[11px] text-slate-500">
+              {disconnected ? "Connect LinkedIn to load this" : "LinkedIn score"}
+            </p>
           )}
         </div>
         {loading ? (
@@ -270,7 +277,7 @@ export function CampaignSsiCard({
             {ssi?.message || "Couldn't load SSI right now."}
           </p>
         ) : (
-          <SsiSpeedDial score={score} compact />
+          <SsiSpeedDial score={disconnected ? null : score} compact />
         )}
       </div>
 

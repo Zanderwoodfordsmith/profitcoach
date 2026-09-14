@@ -1,4 +1,5 @@
-const PERSON_CLASS = "bg-slate-100 text-slate-600";
+const PERSON_CLASS =
+  "bg-[#d8eee4] text-[#1f5c43] ring-1 ring-inset ring-[#b7dcc8]/90";
 
 export function prospectInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);

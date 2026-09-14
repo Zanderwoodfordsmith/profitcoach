@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Archive, ChevronDown, Copy, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { isMailingProvider } from "@/lib/unipile/providers";
+import { isMailingProvider, normalizeUnipileProvider } from "@/lib/unipile/providers";
 import { CampaignChannelPills } from "@/components/campaigns/CampaignChannelPills";
 import { CampaignOverviewHero } from "@/components/campaigns/CampaignOverviewHero";
 import { CampaignActivityPane } from "@/components/campaigns/CampaignActivityPane";
@@ -79,6 +79,16 @@ function campaignStatusLabel(c: {
   // Off is already clear from the toggle — only surface terminal "Done".
   if (c.status === "completed") return "Done";
   return null;
+}
+
+function isOkLinkedInAccount(account: {
+  provider?: string;
+  status: string;
+}): boolean {
+  return (
+    normalizeUnipileProvider(account.provider) === "LINKEDIN" &&
+    (account.status || "").toUpperCase() === "OK"
+  );
 }
 
 function campaignRates(c: Campaign) {
@@ -469,6 +479,10 @@ export function LinkedInCampaignsOverview() {
   }, [campaigns, preview]);
   const displayAccounts = preview ? [DEMO_PREVIEW_ACCOUNT] : accounts;
   const primaryAccount = displayAccounts[0] ?? null;
+  const okLinkedInAccount =
+    displayAccounts.find((account) => isOkLinkedInAccount(account)) ?? null;
+  const showConnectLinkedIn =
+    !preview && configured && !okLinkedInAccount && !loading;
   const mailingAccount =
     accounts.find(
       (account) =>
@@ -730,7 +744,7 @@ export function LinkedInCampaignsOverview() {
           actions={
             campaignsTab ? (
               <>
-                {!primaryAccount && configured && !preview ? (
+                {!okLinkedInAccount && configured && !preview ? (
                   <button
                     type="button"
                     disabled={busy}
@@ -740,7 +754,7 @@ export function LinkedInCampaignsOverview() {
                     Connect LinkedIn
                   </button>
                 ) : null}
-                {preview || primaryAccount ? (
+                {preview || okLinkedInAccount ? (
                   <button
                     type="button"
                     onClick={() => setShowSending(true)}
@@ -771,7 +785,25 @@ export function LinkedInCampaignsOverview() {
 
       {campaignsTab ? (
         <div className="min-h-0 flex-1 overflow-y-auto pb-28">
-          <div className="flex flex-col gap-4 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr]">
+          {showConnectLinkedIn ? (
+            <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
+              Connect LinkedIn to load SSI, pending invites, and send from
+              campaigns.{" "}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void connectLinkedIn()}
+                className="font-semibold text-[#0c5290] hover:underline disabled:opacity-50"
+              >
+                Connect LinkedIn
+              </button>
+            </p>
+          ) : null}
+          <div
+            className={`flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr] ${
+              showConnectLinkedIn ? "pt-3" : "pt-4"
+            }`}
+          >
             <div className="xl:col-start-1 xl:row-start-1">
               <CampaignOverviewHero
                 connectRate={rates.connect}
@@ -1004,9 +1036,16 @@ export function LinkedInCampaignsOverview() {
               </div>
               <CampaignSsiCard
                 preview={preview}
-                linkedInConnected={preview || Boolean(primaryAccount)}
+                linkedInConnected={
+                  preview ? true : loading ? undefined : Boolean(okLinkedInAccount)
+                }
               />
-              <CampaignInvitesRailCard preview={preview} />
+              <CampaignInvitesRailCard
+                preview={preview}
+                linkedInConnected={
+                  preview ? true : loading ? undefined : Boolean(okLinkedInAccount)
+                }
+              />
             </aside>
           </div>
         </div>
@@ -1016,7 +1055,7 @@ export function LinkedInCampaignsOverview() {
         open={showSending}
         onClose={() => setShowSending(false)}
         preview={preview}
-        linkedInConnected={preview || Boolean(primaryAccount)}
+        linkedInConnected={preview || Boolean(okLinkedInAccount)}
       />
 
       {poolHubMounted ? (

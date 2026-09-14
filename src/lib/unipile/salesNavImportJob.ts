@@ -41,6 +41,28 @@ const UNIPILE_PAGE_SIZE = 100;
 /** Pages per poll/tick — keep each sync under typical serverless time. */
 const PAGES_PER_SYNC = 12;
 const PAGE_DELAY_MS = 250;
+/** Coach GET is 60s; stop the tick in time to persist cursor. Cron ticks can chain. */
+const TICK_BUDGET_MS = 20_000;
+const SEARCH_TIMEOUT_MS = 20_000;
+
+const syncInFlight = new Map<string, Promise<SalesNavImportJobRow>>();
+
+function isRetryableUnipileSearch(res: {
+  ok: boolean;
+  status: number;
+  error?: string;
+}): boolean {
+  if (res.ok) return false;
+  if (res.status === 429 || res.status === 503 || res.status === 504) return true;
+  const blob = `${res.error ?? ""}`.toLowerCase();
+  return (
+    res.status === 0 &&
+    (blob.includes("timed out") ||
+      blob.includes("timeout") ||
+      blob.includes("network") ||
+      blob.includes("fetch"))
+  );
+}
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -203,6 +225,20 @@ export async function syncUnipileSalesNavImportJob(
     return job;
   }
 
+  const existing = syncInFlight.get(job.id);
+  if (existing) return existing;
+
+  const promise = syncUnipileSalesNavImportJobInner(job).finally(() => {
+    if (syncInFlight.get(job.id) === promise) syncInFlight.delete(job.id);
+  });
+  syncInFlight.set(job.id, promise);
+  return promise;
+}
+
+async function syncUnipileSalesNavImportJobInner(
+  job: SalesNavImportJobRow
+): Promise<SalesNavImportJobRow> {
+
   const accountId = job.unipile_account_id?.trim();
   if (!accountId) {
     return markFailed(
@@ -228,6 +264,7 @@ export async function syncUnipileSalesNavImportJob(
   let segmentIndex = job.segment_index ?? 0;
   let segmentPlan = (job.segment_plan ?? []).map((s) => ({ ...s }));
   let pagesUsed = 0;
+  const tickStarted = Date.now();
 
   const finalizeNow = () =>
     finalizeJob(job, {
@@ -239,7 +276,10 @@ export async function syncUnipileSalesNavImportJob(
       segmentIndex,
     });
 
-  while (pagesUsed < PAGES_PER_SYNC) {
+  while (
+    pagesUsed < PAGES_PER_SYNC &&
+    Date.now() - tickStarted < TICK_BUDGET_MS
+  ) {
     if (globalCap != null && snapshot.length >= globalCap) {
       return finalizeNow();
     }
@@ -319,10 +359,11 @@ export async function syncUnipileSalesNavImportJob(
       url: searchUrl,
       cursor: cursor || undefined,
       limit,
+      timeoutMs: SEARCH_TIMEOUT_MS,
     });
 
     if (!res.ok) {
-      if (res.status === 429) {
+      if (isRetryableUnipileSearch(res)) {
         return persistProgress(job, {
           snapshot,
           cursor,
@@ -461,6 +502,17 @@ export async function syncUnipileSalesNavImportJob(
     }
 
     cursor = nextCursor;
+    await persistProgress(job, {
+      snapshot,
+      cursor,
+      cacheInserted,
+      cacheUpdated,
+      cacheSkipped,
+      segmentPlan,
+      segmentIndex,
+      done: false,
+      reload: false,
+    });
   }
 
   return persistProgress(job, {
@@ -498,6 +550,7 @@ async function persistProgress(
     segmentPlan: SalesNavImportSegmentPlan[];
     segmentIndex: number;
     done: boolean;
+    reload?: boolean;
   }
 ): Promise<SalesNavImportJobRow> {
   const { error } = await supabaseAdmin
@@ -572,6 +625,7 @@ async function persistProgress(
     }
   }
 
+  if (opts.reload === false) return job;
   return (await loadImportJob(job.id)) ?? job;
 }
 

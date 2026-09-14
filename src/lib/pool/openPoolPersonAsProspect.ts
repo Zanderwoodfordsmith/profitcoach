@@ -1,6 +1,7 @@
 /**
- * Find-or-create a prospect contact from a coach pool / import list item,
- * enriching blank fields from leadrocks_leads Sales Nav cache when present.
+ * Find-or-create a prospect contact from a coach pool / import list item.
+ * Stored Sales Nav fields on the pool row are used as-is; opening does not
+ * wait on a Leadrocks lookup.
  */
 
 import { resolveOrCreateContact } from "@/lib/contacts/resolveOrCreateContact";
@@ -80,50 +81,8 @@ function salesNavEnrichment(raw: Record<string, unknown> | null): {
   };
 }
 
-async function loadLeadrocksEnrichment(linkedinUrl: string): Promise<{
-  headline: string | null;
-  about: string | null;
-  photoUrl: string | null;
-  location: string | null;
-  providerId: string | null;
-  email: string | null;
-  phone: string | null;
-}> {
-  const variants = Array.from(
-    new Set([
-      linkedinUrl,
-      linkedinUrl.replace(/\/+$/, ""),
-      linkedinUrl.toLowerCase(),
-      linkedinUrl.replace(/\/+$/, "").toLowerCase(),
-    ])
-  );
-
-  const { data } = await supabaseAdmin
-    .from("leadrocks_leads")
-    .select("email, phone, location, raw")
-    .in("linkedin_url", variants)
-    .limit(1)
-    .maybeSingle();
-
-  if (!data) {
-    return {
-      headline: null,
-      about: null,
-      photoUrl: null,
-      location: null,
-      providerId: null,
-      email: null,
-      phone: null,
-    };
-  }
-
-  const fromRaw = salesNavEnrichment(asRecord(data.raw));
-  return {
-    ...fromRaw,
-    location: fromRaw.location ?? asString(data.location),
-    email: asString(data.email),
-    phone: asString(data.phone),
-  };
+function workspaceHref(contactId: string, admin?: boolean): string {
+  return `${prospectWorkspacePath(contactId, { admin })}?from=pool`;
 }
 
 export async function openPoolPersonAsProspect(opts: {
@@ -134,7 +93,7 @@ export async function openPoolPersonAsProspect(opts: {
   const { data: item, error } = await supabaseAdmin
     .from("coach_lead_list_items")
     .select(
-      "id, coach_id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, raw, source, tags"
+      "id, coach_id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, raw, source, tags, contact_id"
     )
     .eq("id", opts.itemId)
     .eq("coach_id", opts.coachId)
@@ -142,6 +101,15 @@ export async function openPoolPersonAsProspect(opts: {
 
   if (error) throw new Error(error.message);
   if (!item) throw new Error("Pool person not found.");
+
+  const existingContactId = asString(item.contact_id);
+  if (existingContactId) {
+    return {
+      contactId: existingContactId,
+      created: false,
+      href: workspaceHref(existingContactId, opts.admin),
+    };
+  }
 
   const linkedinUrl = normalizeLinkedInProfileUrl(
     String(item.linkedin_url ?? "")
@@ -171,36 +139,25 @@ export async function openPoolPersonAsProspect(opts: {
     split.last_name ||
     null;
 
-  const enrichment = linkedinUrl
-    ? await loadLeadrocksEnrichment(linkedinUrl)
-    : {
-        headline: null,
-        about: null,
-        photoUrl: null,
-        location: null,
-        providerId: null,
-        email: null,
-        phone: null,
-      };
-
   const itemRaw = asRecord(item.raw);
+  const fromRaw = salesNavEnrichment(itemRaw);
   const itemProviderId =
-    asString(itemRaw?.linkedin_provider_id) ?? enrichment.providerId;
+    asString(itemRaw?.linkedin_provider_id) ?? fromRaw.providerId;
 
   const resolved = await resolveOrCreateContact({
     coachId: opts.coachId,
     fullName,
     firstName,
     lastName,
-    email: email ?? enrichment.email,
-    phone: phone ?? enrichment.phone,
+    email,
+    phone,
     linkedinUrl,
     linkedinProviderId: itemProviderId,
     jobTitle:
       (typeof item.job_title === "string" && item.job_title.trim()) || null,
     businessName:
       (typeof item.company === "string" && item.company.trim()) || null,
-    photoUrl: enrichment.photoUrl,
+    photoUrl: fromRaw.photoUrl,
     type: "prospect",
     prospectSource:
       typeof item.source === "string" && item.source.trim()
@@ -208,22 +165,32 @@ export async function openPoolPersonAsProspect(opts: {
         : "sales_nav",
     prospectStatus: "leads",
     extra: {
-      headline: enrichment.headline,
-      about: enrichment.about,
-      location: enrichment.location,
+      headline: fromRaw.headline,
+      about: fromRaw.about,
+      location: fromRaw.location,
     },
   });
+
+  const persistContact = supabaseAdmin
+    .from("coach_lead_list_items")
+    .update({ contact_id: resolved.contactId })
+    .eq("id", item.id)
+    .eq("coach_id", opts.coachId);
 
   const poolTags = normalizeProspectTags(
     (item as { tags?: unknown }).tags
   );
+
   if (poolTags.length) {
-    const { data: contact } = await supabaseAdmin
-      .from("contacts")
-      .select("prospect_tags")
-      .eq("id", resolved.contactId)
-      .eq("coach_id", opts.coachId)
-      .maybeSingle();
+    const [{ data: contact }] = await Promise.all([
+      supabaseAdmin
+        .from("contacts")
+        .select("prospect_tags")
+        .eq("id", resolved.contactId)
+        .eq("coach_id", opts.coachId)
+        .maybeSingle(),
+      persistContact,
+    ]);
     const merged = normalizeProspectTags([
       ...normalizeProspectTags(contact?.prospect_tags),
       ...poolTags,
@@ -233,13 +200,13 @@ export async function openPoolPersonAsProspect(opts: {
       .update({ prospect_tags: merged })
       .eq("id", resolved.contactId)
       .eq("coach_id", opts.coachId);
+  } else {
+    await persistContact;
   }
 
   return {
     contactId: resolved.contactId,
     created: resolved.created,
-    href: `${prospectWorkspacePath(resolved.contactId, {
-      admin: opts.admin,
-    })}?from=pool`,
+    href: workspaceHref(resolved.contactId, opts.admin),
   };
 }

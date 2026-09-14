@@ -276,67 +276,21 @@ export default function CoachLayout({
         chromeEnabled={chromeEnabled}
       >
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
-        {playbooksReader ? (
-          showImpersonationBanner ? (
-            <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
-              <div
-                className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
-                role="status"
-                aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
-              >
-                <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
-                  Admin
-                </span>
-                <AdminCoachImpersonationSwitcher
-                  coachName={coachName}
-                  accessTier={access.tier}
-                  enforcementEnabled={access.enforcementEnabled}
-                />
-                <button
-                  type="button"
-                  onClick={handleExit}
-                  className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
-                >
-                  Exit
-                </button>
-              </div>
-            </div>
-          ) : null
-        ) : isMinimalWorkshopChrome ? (
-          workshopTopRightSlot || showImpersonationBanner ? (
-            <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
-              {workshopTopRightSlot ? (
-                <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
-              ) : null}
-              {showImpersonationBanner ? (
-                <div
-                  className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
-                  role="status"
-                  aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
-                >
-                  <span className="shrink-0 rounded bg-amber-200/90 px-1 py-px text-[9px] font-bold uppercase tracking-wider text-amber-950 sm:text-[10px]">
-                    Admin
-                  </span>
-                  <AdminCoachImpersonationSwitcher
-                  coachName={coachName}
-                  accessTier={access.tier}
-                  enforcementEnabled={access.enforcementEnabled}
-                />
-                  <button
-                    type="button"
-                    onClick={handleExit}
-                    className="shrink-0 rounded-md bg-amber-300/80 px-2 py-0.5 text-[10px] font-semibold text-amber-950 hover:bg-amber-400/90 sm:text-xs"
-                  >
-                    Exit
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null
-        ) : showImpersonationBanner ? (
-          <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6 md:top-16">
+        {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (
+          <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">
+            <div className="w-full min-w-0 text-right">{workshopTopRightSlot}</div>
+          </div>
+        ) : null}
+        {showImpersonationBanner ? (
+          <div
+            className={`fixed right-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6 ${
+              playbooksReader || isMinimalWorkshopChrome || sidebarCollapsed
+                ? "bottom-3 sm:bottom-6"
+                : "bottom-[calc(4.25rem+env(safe-area-inset-bottom))] md:bottom-6"
+            }`}
+          >
             <div
-              className="flex items-center gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
+              className="flex max-w-full flex-wrap items-center justify-end gap-1.5 rounded-lg border border-amber-300/90 bg-amber-100 py-1 pl-2 pr-1 shadow-md sm:gap-2 sm:py-1 sm:pl-2.5 sm:pr-1.5"
               role="status"
               aria-label={`Viewing coach dashboard as ${coachName ?? "Coach"}`}
             >

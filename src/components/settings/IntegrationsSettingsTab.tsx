@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -144,14 +145,45 @@ function SectionInfoTip({
 }) {
   const panelId = useId();
   const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const panelWidth = wide ? 320 : 208;
+
+  const placePanel = useCallback(() => {
+    const btn = btnRef.current;
+    const panel = panelRef.current;
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const gap = 4;
+    const left = Math.max(
+      8,
+      Math.min(rect.left, window.innerWidth - panelWidth - 8)
+    );
+    const height = panel?.offsetHeight ?? 0;
+    const below = rect.bottom + gap;
+    const top =
+      height > 0 && below + height > window.innerHeight - 8
+        ? Math.max(8, rect.top - height - gap)
+        : below;
+    setPos({ top, left });
+  }, [panelWidth]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    placePanel();
+    const id = requestAnimationFrame(placePanel);
+    return () => cancelAnimationFrame(id);
+  }, [open, placePanel]);
 
   useEffect(() => {
     if (!open) return;
     function onDocMouseDown(e: MouseEvent) {
-      if (btnRef.current?.contains(e.target as Node)) return;
-      const panel = document.getElementById(panelId);
-      if (panel?.contains(e.target as Node)) return;
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || panelRef.current?.contains(t)) return;
       setOpen(false);
     }
     function onKeyDown(e: KeyboardEvent) {
@@ -159,11 +191,15 @@ function SectionInfoTip({
     }
     document.addEventListener("mousedown", onDocMouseDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", placePanel);
+    window.addEventListener("scroll", placePanel, true);
     return () => {
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", placePanel);
+      window.removeEventListener("scroll", placePanel, true);
     };
-  }, [open, panelId]);
+  }, [open, placePanel]);
 
   return (
     <>
@@ -178,17 +214,26 @@ function SectionInfoTip({
       >
         <Info className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
       </button>
-      {open ? (
-        <div
-          id={panelId}
-          role="tooltip"
-          className={`absolute left-0 top-full z-20 mt-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-relaxed text-slate-600 shadow-lg ${
-            wide ? "w-72" : "w-52"
-          }`}
-        >
-          {text}
-        </div>
-      ) : null}
+      {open
+        ? createPortal(
+            <div
+              ref={panelRef}
+              id={panelId}
+              role="tooltip"
+              style={{
+                top: pos?.top ?? 0,
+                left: pos?.left ?? 0,
+                visibility: pos ? "visible" : "hidden",
+              }}
+              className={`fixed z-50 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm leading-relaxed text-slate-600 shadow-lg ${
+                wide ? "w-80" : "w-52"
+              }`}
+            >
+              {text}
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }

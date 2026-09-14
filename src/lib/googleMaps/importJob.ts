@@ -12,6 +12,11 @@ import {
   GOOGLE_MAPS_FIND_PERSON_MAX,
 } from "@/lib/googleMaps/cost";
 import { flushGoogleMapsPlacesToPool } from "@/lib/googleMaps/flushPlacesToPool";
+import { limitGoogleMapsPlaces } from "@/lib/googleMaps/mapPlaceToPool";
+import {
+  joinGoogleMapsSearchTerms,
+  parseGoogleMapsSearchTerms,
+} from "@/lib/googleMaps/searchTerms";
 import {
   isLeadListUuid,
   MAX_LIST_ITEMS_TOTAL,
@@ -156,16 +161,24 @@ export async function createGoogleMapsSearchJob(opts: {
   coachId: string;
   listId: string;
   saveListId?: string | null;
-  searchTerm: string;
+  searchTerm?: string;
+  searchTerms?: string[];
   location: string;
   maxPlaces: number;
   findPeople: boolean;
 }): Promise<{ jobId: string; targetCount: number; estimatedCostUsd: number }> {
   await assertNoRunningJob(opts.coachId);
+  const searchTerms = parseGoogleMapsSearchTerms(
+    opts.searchTerms ?? opts.searchTerm
+  );
+  if (!searchTerms.length) {
+    throw new Error("Enter a search like plumbers or dental practices.");
+  }
+  const searchTerm = joinGoogleMapsSearchTerms(searchTerms);
   const maxPlaces = clampGoogleMapsMaxPlaces(opts.maxPlaces);
   const findPeople = Boolean(opts.findPeople);
   const started = await startGoogleMapsSearch({
-    searchTerm: opts.searchTerm,
+    searchTerms,
     location: opts.location,
     maxPlaces,
     findPeople,
@@ -181,7 +194,7 @@ export async function createGoogleMapsSearchJob(opts: {
     save_list_id: opts.saveListId?.trim() || null,
     kind: "search",
     status: "running",
-    search_term: opts.searchTerm.trim(),
+    search_term: searchTerm,
     location_query: opts.location.trim(),
     max_places: maxPlaces,
     find_people: findPeople,
@@ -334,10 +347,14 @@ export async function syncGoogleMapsImportJob(
 
   try {
     const maxItems = Math.max(job.max_places ?? 100, progressCount) + 50;
-    const places = await fetchMappedGoogleMapsPlaces({
+    const mapped = await fetchMappedGoogleMapsPlaces({
       datasetId,
       maxItems,
     });
+    const places =
+      job.kind === "find_person"
+        ? mapped
+        : limitGoogleMapsPlaces(mapped, job.max_places ?? 100);
     if (!job.list_id) {
       throw new Error("Import has no pool list.");
     }
@@ -430,5 +447,13 @@ export function googleMapsImportJobPayload(job: GoogleMapsImportJob) {
     error: job.error_message,
     findPeople: job.find_people,
     saveListId: job.save_list_id,
+    startedAt: job.started_at,
+    phase:
+      job.status === "running" &&
+      job.progress_count > 0 &&
+      (job.max_places ?? 0) > 0 &&
+      job.progress_count >= (job.max_places ?? 0)
+        ? ("finalizing" as const)
+        : ("scraping" as const),
   };
 }

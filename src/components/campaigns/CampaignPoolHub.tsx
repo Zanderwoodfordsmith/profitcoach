@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fragment } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
@@ -17,7 +18,9 @@ import {
   UserSearch,
 } from "lucide-react";
 import { ImportPoolModal } from "@/components/campaigns/ImportPoolModal";
+import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
+import { googleMapsImportProgressPercent } from "@/lib/googleMaps/cost";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
@@ -119,6 +122,13 @@ const DROPDOWN =
   "absolute left-0 z-[90] mt-1 w-56 rounded-md border border-slate-200 bg-white p-3 shadow-lg";
 
 const CAMPAIGN_PICKER_WIDTH = 288;
+
+function poolPersonHref(contactId: string, isAdmin: boolean): string {
+  const base = isAdmin
+    ? `/admin/prospects/${encodeURIComponent(contactId)}`
+    : `/coach/prospects/${encodeURIComponent(contactId)}`;
+  return `${base}?from=pool`;
+}
 
 function PoolCampaignPickerList({
   people,
@@ -313,6 +323,9 @@ export function CampaignPoolHub({
   );
   const [renameImportValue, setRenameImportValue] = useState("");
   const renameImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [addingList, setAddingList] = useState(false);
+  const [newTabListName, setNewTabListName] = useState("");
+  const addListInputRef = useRef<HTMLInputElement | null>(null);
   const [watchedImports, setWatchedImports] = useState<WatchedSalesNavImport[]>(
     []
   );
@@ -324,9 +337,15 @@ export function CampaignPoolHub({
         targetCount: number;
         phase: "scraping" | "finalizing";
         name: string | null;
+        peopleFound: number;
+        kind: "sales_nav" | "google_maps";
       }
     >
   >({});
+  const [savingImportListId, setSavingImportListId] = useState<string | null>(
+    null
+  );
+  const [importClockMs, setImportClockMs] = useState(() => Date.now());
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [campaignMenu, setCampaignMenu] = useState<CampaignMenuState>(null);
   const [tagsMenuOpen, setTagsMenuOpen] = useState(false);
@@ -436,6 +455,10 @@ export function CampaignPoolHub({
   useEffect(() => {
     if (renamingImportListId) renameImportInputRef.current?.focus();
   }, [renamingImportListId]);
+
+  useEffect(() => {
+    if (addingList) addListInputRef.current?.focus();
+  }, [addingList]);
 
   const load = useCallback(async (opts?: { soft?: boolean }) => {
     const gen = ++loadGenRef.current;
@@ -563,6 +586,13 @@ export function CampaignPoolHub({
   }, [reloadPeople, loadImportLists]);
 
   useEffect(() => {
+    const mapsWatching = watchedImports.some((j) => j.kind === "google_maps");
+    if (!mapsWatching) return;
+    const handle = window.setInterval(() => setImportClockMs(Date.now()), 1000);
+    return () => window.clearInterval(handle);
+  }, [watchedImports]);
+
+  useEffect(() => {
     if (watchedImports.length === 0) {
       setImportLiveById({});
       return;
@@ -589,6 +619,7 @@ export function CampaignPoolHub({
             targetCount?: number;
             phase?: "scraping" | "finalizing" | null;
             added?: number;
+            peopleFound?: number;
             saveListId?: string | null;
             run?: {
               name?: string | null;
@@ -614,17 +645,33 @@ export function CampaignPoolHub({
               0
           );
           const name = body.run?.name?.trim() || job.name;
+          const peopleFound = Math.max(0, Number(body.peopleFound ?? 0));
+          const kind =
+            job.kind === "google_maps" ? "google_maps" : "sales_nav";
 
           if (body.status === "succeeded") {
             unwatchSalesNavImport(job.id);
             const added = Math.max(0, body.added ?? progressCount);
+            const saveListId = body.saveListId ?? job.saveListId ?? null;
+            if (saveListId) setSavingImportListId(saveListId);
             setNotice(
-              `Added ${added.toLocaleString()} ${
-                added === 1 ? "person" : "people"
-              } to the pool.`
+              kind === "google_maps"
+                ? `Added ${added.toLocaleString()} ${
+                    added === 1 ? "business" : "businesses"
+                  } to the pool${
+                    peopleFound
+                      ? ` · ${peopleFound.toLocaleString()} ${
+                          peopleFound === 1 ? "person" : "people"
+                        } found`
+                      : ""
+                  }.`
+                : `Added ${added.toLocaleString()} ${
+                    added === 1 ? "person" : "people"
+                  } to the pool.`
             );
             await loadImportLists();
             await reloadPeople();
+            setSavingImportListId(null);
             continue;
           }
           if (body.status === "failed") {
@@ -638,12 +685,14 @@ export function CampaignPoolHub({
             [job.id]: {
               progressCount,
               targetCount,
-              name,
               phase:
                 body.phase === "finalizing" ||
                 body.run?.phase === "finalizing"
                   ? "finalizing"
                   : "scraping",
+              name,
+              peopleFound,
+              kind,
             },
           }));
         } catch {
@@ -1453,6 +1502,47 @@ export function CampaignPoolHub({
     }
   }
 
+  async function createEmptyPoolList(name: string) {
+    const trimmed = name.trim().slice(0, 120);
+    if (!trimmed) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const headers = await getAuthHeaders();
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch("/api/coach/lead-lists", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: trimmed,
+          filters: { from_pool_import: true },
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        leadList?: AudienceListSummary;
+      };
+      if (!res.ok) throw new Error(body.error || "Could not create list.");
+      const created = body.leadList;
+      if (!created?.id) throw new Error("Could not create list.");
+      setAddingList(false);
+      setNewTabListName("");
+      setImportLists((prev) => {
+        if (prev.some((list) => list.id === created.id)) return prev;
+        return [...prev, created].slice(-12);
+      });
+      setActiveViewId(created.id);
+      setNotice(
+        `Created “${created.name}”. Open All, select people, then Add to list.`
+      );
+      await loadImportLists();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create list.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function duplicateImportList(id: string) {
     setBusy(true);
     setError(null);
@@ -1562,8 +1652,22 @@ export function CampaignPoolHub({
     );
   }
 
+  function rememberPoolContact(itemId: string, contactId: string) {
+    const patch = (rows: PoolPerson[]) =>
+      rows.map((row) =>
+        row.id === itemId ? { ...row, contact_id: contactId } : row
+      );
+    setPeople(patch);
+    const cached = peopleCacheRef.current.get(activeViewId);
+    if (cached) peopleCacheRef.current.set(activeViewId, patch(cached));
+  }
+
   async function openPoolPerson(row: PoolPerson) {
     if (openingId || busy) return;
+    if (row.contact_id) {
+      router.push(poolPersonHref(row.contact_id, isAdmin));
+      return;
+    }
     if (!row.linkedin_url && !row.email && !row.phone) {
       setError(
         "Add a LinkedIn profile, email, or phone before opening this person."
@@ -1586,11 +1690,13 @@ export function CampaignPoolHub({
       const body = (await res.json().catch(() => ({}))) as {
         error?: string;
         href?: string;
+        contactId?: string;
       };
       if (!res.ok || !body.href) {
         setError(body.error || "Could not open this person.");
         return;
       }
+      if (body.contactId) rememberPoolContact(row.id, body.contactId);
       const href = isAdmin
         ? body.href.replace(/^\/coach\//, "/admin/")
         : body.href;
@@ -1639,31 +1745,42 @@ export function CampaignPoolHub({
           <div className="flex min-w-0 items-center gap-3">
             <ProspectTableAvatar name={displayName} />
             <div className="min-w-0 flex-1">
-              <button
-                type="button"
-                className={`block w-full min-w-0 truncate text-left text-sm font-medium ${
-                  canOpen
-                    ? "text-[#0c5290] hover:underline"
-                    : "cursor-default text-slate-900"
-                }`}
-                title={
-                  canOpen
-                    ? `Open ${displayName}`
-                    : "Add LinkedIn, email, or phone to open"
-                }
-                disabled={actionBusy || !canOpen}
-                aria-busy={isOpening}
-                onClick={() => void openPoolPerson(row)}
-              >
-                {isOpening ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Opening…
-                  </span>
-                ) : (
-                  displayName
-                )}
-              </button>
+              {row.contact_id ? (
+                <Link
+                  href={poolPersonHref(row.contact_id, isAdmin)}
+                  prefetch
+                  className="block w-full min-w-0 truncate text-left text-sm font-medium text-[#0c5290] hover:underline"
+                  title={`Open ${displayName}`}
+                >
+                  {displayName}
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className={`block w-full min-w-0 truncate text-left text-sm font-medium ${
+                    canOpen
+                      ? "text-[#0c5290] hover:underline"
+                      : "cursor-default text-slate-900"
+                  }`}
+                  title={
+                    canOpen
+                      ? `Open ${displayName}`
+                      : "Add LinkedIn, email, or phone to open"
+                  }
+                  disabled={actionBusy || !canOpen}
+                  aria-busy={isOpening}
+                  onClick={() => void openPoolPerson(row)}
+                >
+                  {isOpening ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Opening…
+                    </span>
+                  ) : (
+                    displayName
+                  )}
+                </button>
+              )}
               <ProspectLeadSubtitle
                 jobTitle={columnVisibility.title ? null : row.job_title}
                 businessName={leadCompany}
@@ -2439,8 +2556,7 @@ export function CampaignPoolHub({
             void tableViews.duplicateView(viewId);
           }}
           afterViews={
-            importLists.length > 0 ? (
-              <>
+            <>
                 {importLists.map((list) => {
                   const job = watchedImports.find(
                     (j) => j.saveListId === list.id
@@ -2450,6 +2566,27 @@ export function CampaignPoolHub({
                   const progressCount = live?.progressCount ?? 0;
                   const targetCount =
                     live?.targetCount || job?.targetCount || 0;
+                  const mapsImport =
+                    (live?.kind ?? job?.kind) === "google_maps";
+                  const tabPct =
+                    importing && targetCount > 0
+                      ? mapsImport
+                        ? googleMapsImportProgressPercent({
+                            progressCount,
+                            targetCount,
+                            startedAtMs: Date.parse(
+                              job?.startedAt || new Date().toISOString()
+                            ),
+                            nowMs: importClockMs,
+                            phase: live?.phase ?? "scraping",
+                          })
+                        : Math.min(
+                            100,
+                            Math.round(
+                              (progressCount / Math.max(1, targetCount)) * 100
+                            )
+                          )
+                      : 0;
                   const selected = activeViewId === list.id;
                   const renaming = renamingImportListId === list.id;
                   const tabSurface = importing
@@ -2549,15 +2686,9 @@ export function CampaignPoolHub({
                           aria-hidden
                         >
                           <span
-                            className="block h-full bg-amber-500 transition-[width] duration-500"
+                            className="block h-full bg-amber-500 transition-[width] duration-700"
                             style={{
-                              width: `${Math.min(
-                                100,
-                                Math.round(
-                                  (progressCount / Math.max(1, targetCount)) *
-                                    100
-                                )
-                              )}%`,
+                              width: `${tabPct}%`,
                             }}
                           />
                         </span>
@@ -2565,8 +2696,61 @@ export function CampaignPoolHub({
                     </div>
                   );
                 })}
+                {addingList ? (
+                  <form
+                    className="flex items-center gap-2 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void createEmptyPoolList(newTabListName);
+                    }}
+                  >
+                    <input
+                      ref={addListInputRef}
+                      type="text"
+                      value={newTabListName}
+                      onChange={(e) => setNewTabListName(e.target.value)}
+                      onBlur={() => {
+                        if (!newTabListName.trim()) {
+                          setAddingList(false);
+                          setNewTabListName("");
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") {
+                          setAddingList(false);
+                          setNewTabListName("");
+                        }
+                      }}
+                      placeholder="List name"
+                      disabled={busy}
+                      className="w-36 rounded border border-slate-300 px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      aria-label="New list name"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busy || !newTabListName.trim()}
+                      onMouseDown={(e) => e.preventDefault()}
+                      className="rounded px-2 py-0.5 text-xs font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50"
+                    >
+                      Add
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      setRenamingImportListId(null);
+                      setAddingList(true);
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-300/70 hover:text-slate-800 disabled:opacity-50"
+                    aria-label="Add list"
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    List
+                  </button>
+                )}
               </>
-            ) : null
           }
         />
       </div>
@@ -2596,8 +2780,8 @@ export function CampaignPoolHub({
         </div>
       ) : null}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+      <div className="absolute inset-0 overflow-auto overscroll-contain [container-type:inline-size]">
         <table
           className="w-full table-fixed border-separate border-spacing-0"
           style={{ minWidth: tableMinWidth }}
@@ -2651,24 +2835,63 @@ export function CampaignPoolHub({
               <tr>
                 <td
                   colSpan={3 + shownColumnOptions.length}
-                  className="px-3 py-12 text-center text-sm text-slate-600"
+                  className="p-0"
                 >
-                  Loading pool…
+                  <div className="sticky left-0 w-[100cqw] px-3 py-12 text-center text-sm text-slate-600">
+                  {savingImportListId &&
+                  (savingImportListId === activeViewId ||
+                    activeViewId === "pool")
+                    ? "Saving businesses into your pool…"
+                    : watchedImports.some((j) => j.saveListId === activeViewId)
+                      ? "Still importing — hang tight…"
+                      : "Loading pool…"}
+                  </div>
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td
                   colSpan={3 + shownColumnOptions.length}
-                  className="px-3 py-12 text-center text-sm text-slate-600"
+                  className="p-0"
                 >
-                  {people.length === 0
-                    ? activeViewId === "pool"
-                      ? "The pool is empty. Add a person, upload a CSV, or import from Sales Nav or Google Maps."
-                      : watchedImports.some((j) => j.saveListId === activeViewId)
-                        ? "Import in progress — people will show here when it finishes."
-                        : "This list is empty."
-                    : "No people match this smart list."}
+                  <div className="sticky left-0 w-[100cqw] px-3 py-10 text-center text-sm text-slate-600">
+                  {(() => {
+                    const activeImport = watchedImports.find(
+                      (j) => j.saveListId === activeViewId
+                    );
+                    const live = activeImport
+                      ? importLiveById[activeImport.id]
+                      : null;
+                    if (
+                      activeImport &&
+                      (live?.kind === "google_maps" ||
+                        activeImport.kind === "google_maps")
+                    ) {
+                      return (
+                        <GoogleMapsImportWaitPanel
+                          progressCount={live?.progressCount ?? 0}
+                          targetCount={
+                            live?.targetCount || activeImport.targetCount || 0
+                          }
+                          startedAt={activeImport.startedAt}
+                          phase={live?.phase ?? "scraping"}
+                          peopleFound={live?.peopleFound ?? 0}
+                          listName={activeImport.name}
+                        />
+                      );
+                    }
+                    if (people.length === 0) {
+                      if (activeViewId === "pool") {
+                        return "The pool is empty. Add a person, upload a CSV, or import from Sales Nav or Google Maps.";
+                      }
+                      if (activeImport) {
+                        return "Import in progress — people will show here when it finishes.";
+                      }
+                      return "This list is empty.";
+                    }
+                    return "No people match this smart list.";
+                  })()}
+                  </div>
                 </td>
               </tr>
             ) : (

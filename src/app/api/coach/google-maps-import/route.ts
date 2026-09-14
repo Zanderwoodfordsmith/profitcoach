@@ -7,6 +7,11 @@ import {
 } from "@/lib/leadLists/audienceLists";
 import { createGoogleMapsSearchJob } from "@/lib/googleMaps/importJob";
 import { clampGoogleMapsMaxPlaces } from "@/lib/googleMaps/cost";
+import {
+  formatGoogleMapsSearchLabel,
+  joinGoogleMapsSearchTerms,
+  parseGoogleMapsSearchTerms,
+} from "@/lib/googleMaps/searchTerms";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 
 export const maxDuration = 60;
@@ -19,14 +24,18 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => ({}))) as {
     searchTerm?: string;
+    searchTerms?: string[];
     location?: string;
     maxPlaces?: number;
     saveListName?: string;
   };
 
-  const searchTerm = body.searchTerm?.trim() || "";
+  const searchTerms = parseGoogleMapsSearchTerms(
+    body.searchTerms ?? body.searchTerm
+  );
+  const searchTerm = joinGoogleMapsSearchTerms(searchTerms);
   const location = body.location?.trim() || "";
-  if (searchTerm.length < 2 || searchTerm.length > 120) {
+  if (!searchTerms.length) {
     return NextResponse.json(
       { error: "Enter a search like plumbers or dental practices." },
       { status: 400 }
@@ -44,7 +53,7 @@ export async function POST(request: Request) {
     const maxPlaces = clampGoogleMapsMaxPlaces(body.maxPlaces);
     const saveListName =
       body.saveListName?.trim() ||
-      `${defaultPoolImportListName("google_maps")} · ${searchTerm}`;
+      `${defaultPoolImportListName("google_maps")} · ${formatGoogleMapsSearchLabel(searchTerms)}`;
     const saveList = await createCoachAudienceList({
       coachId: auth.coachId,
       name: saveListName.slice(0, 120),
@@ -52,6 +61,7 @@ export async function POST(request: Request) {
       filters: {
         from_pool_import: true,
         search_term: searchTerm,
+        search_terms: searchTerms,
         location,
         max_places: maxPlaces,
         list_cap: MAX_LIST_ITEMS_TOTAL,
@@ -61,7 +71,7 @@ export async function POST(request: Request) {
       coachId: auth.coachId,
       listId: pool.id,
       saveListId: saveList.id,
-      searchTerm,
+      searchTerms,
       location,
       maxPlaces,
       findPeople: true,

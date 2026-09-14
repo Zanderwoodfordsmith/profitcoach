@@ -39,7 +39,10 @@ export type StickyPageHeaderProps = {
   bleedInset?: string | false;
   /** Ref on the outer sticky shell — for measuring height without breaking stickiness. */
   rootRef?: Ref<HTMLDivElement>;
-  /** Keep title and actions on one row (e.g. Boss Pro session picker). */
+  /**
+   * Title, tabs, and chrome stay on one row. Defaults to true — the bar
+   * never stacks; tabs overflow into More / a menu instead.
+   */
   nowrap?: boolean;
   /**
    * Include layout search / notifications / AI. Default true when chrome context
@@ -61,7 +64,7 @@ export function StickyPageHeader({
   // 28rem = docked AI panel width (COACH_AI_PANEL_WIDTH_REM); 60px = main px.
   bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px] md:group-data-[ai-docked]/appshell:-mr-[calc(60px_+_28rem)] md:group-data-[ai-docked]/appshell:pr-[calc(60px_+_28rem)]",
   rootRef,
-  nowrap = false,
+  nowrap = true,
   showChrome,
 }: StickyPageHeaderProps) {
   const chrome = useDashboardChrome();
@@ -85,7 +88,7 @@ export function StickyPageHeader({
   const rightCluster =
     actions || includeChrome ? (
       <div
-        className={`relative z-40 flex shrink-0 flex-wrap items-center justify-end gap-2 overflow-visible ${
+        className={`relative z-40 flex shrink-0 flex-nowrap items-center justify-end gap-2 overflow-visible ${
           tabs ? "" : "self-start"
         }`}
       >
@@ -119,10 +122,10 @@ export function StickyPageHeader({
                 : `flex min-w-0 flex-nowrap gap-x-6 ${tabs ? "items-end" : "items-center"}`
             }
           >
-            <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2 sm:shrink-0">
               {title != null && title !== "" ? (
                 typeof title === "string" ? (
-                  <h1 className="py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                  <h1 className="truncate py-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                     {title}
                   </h1>
                 ) : (
@@ -136,7 +139,7 @@ export function StickyPageHeader({
               ) : null}
             </div>
             {tabs ? (
-              <div className="min-w-0 flex-1 overflow-x-auto pb-px">
+              <div className="flex min-w-[2.75rem] flex-1 overflow-hidden pb-px">
                 {tabs}
               </div>
             ) : null}

@@ -9,6 +9,7 @@ import {
   Link2,
   Loader2,
   MapPin,
+  Plus,
   Search,
   UserPlus,
   X,
@@ -31,7 +32,21 @@ import {
   SALES_NAV_BASE_SEARCH_1ST_URL,
   SALES_NAV_BASE_SEARCH_URL,
 } from "@/lib/salesNavigator/salesNavLinks";
-import { GOOGLE_MAPS_SIZE_OPTIONS } from "@/lib/googleMaps/cost";
+import { GOOGLE_MAPS_SIZE_OPTIONS, formatGoogleMapsApproxDuration } from "@/lib/googleMaps/cost";
+import {
+  GOOGLE_MAPS_MAX_SEARCH_TERMS,
+  formatGoogleMapsSplitHint,
+  parseGoogleMapsSearchTerms,
+} from "@/lib/googleMaps/searchTerms";
+import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
+
+const MAPS_TERM_PLACEHOLDERS = [
+  "dentists",
+  "orthodontist",
+  "dental clinic",
+  "gyms",
+  "cafes",
+];
 
 type Mode = "pick" | "search" | "maps" | "csv" | "one";
 type ImportKind = "sales_nav" | "google_maps";
@@ -72,6 +87,7 @@ type ImportProgress = {
   segmentLabel: string | null;
   segmentIndex: number;
   segmentTotal: number;
+  peopleFound?: number;
 };
 
 const UNIPILE_POLL_MS = 2_000;
@@ -142,7 +158,7 @@ export function ImportPoolModal({
   const [salesNavSource, setSalesNavSource] = useState<SalesNavSource | null>(
     null
   );
-  const [poolSize, setPoolSize] = useState<SalesNavPoolSizeValue>(100);
+  const [poolSize, setPoolSize] = useState<SalesNavPoolSizeValue>("all");
   const pendingSaveListNameRef = useRef<string | null>(null);
   const [importJobId, setImportJobId] = useState<string | null>(null);
   const [importKind, setImportKind] = useState<ImportKind>("sales_nav");
@@ -150,9 +166,10 @@ export function ImportPoolModal({
     null
   );
 
-  const [mapsTerm, setMapsTerm] = useState("");
+  const [mapsTerms, setMapsTerms] = useState<string[]>([""]);
   const [mapsLocation, setMapsLocation] = useState("");
   const [mapsMaxPlaces, setMapsMaxPlaces] = useState(100);
+  const [mapsStartedAt, setMapsStartedAt] = useState<string | null>(null);
 
   const salesNavCapRef = useRef(0);
   const [pasteText, setPasteText] = useState("");
@@ -223,6 +240,7 @@ export function ImportPoolModal({
         segmentLabel: body.run?.segmentLabel ?? null,
         segmentIndex: body.run?.segmentIndex ?? 0,
         segmentTotal: body.run?.segmentTotal ?? 1,
+        peopleFound: Math.max(0, body.peopleFound ?? 0),
       });
 
       if (body.status === "succeeded") {
@@ -269,6 +287,12 @@ export function ImportPoolModal({
     };
   }, [importJobId, importKind]);
 
+  const mapsParsedTerms = parseGoogleMapsSearchTerms(mapsTerms);
+  const mapsSplitHint = formatGoogleMapsSplitHint(
+    mapsMaxPlaces,
+    mapsParsedTerms.length
+  );
+
   if (!open) return null;
 
   function reset() {
@@ -278,12 +302,12 @@ export function ImportPoolModal({
     setNotice(null);
     setSearchUrl("");
     setSalesNavSource(null);
-    setPoolSize(100);
+    setPoolSize("all");
     pendingSaveListNameRef.current = null;
     setImportJobId(null);
     setImportKind("sales_nav");
     setImportProgress(null);
-    setMapsTerm("");
+    setMapsTerms([""]);
     setMapsLocation("");
     setMapsMaxPlaces(100);
     setPasteText("");
@@ -372,9 +396,9 @@ export function ImportPoolModal({
   }
 
   async function startMapsImport() {
-    const searchTerm = mapsTerm.trim();
+    const searchTerms = parseGoogleMapsSearchTerms(mapsTerms);
     const location = mapsLocation.trim();
-    if (searchTerm.length < 2 || location.length < 2) {
+    if (!searchTerms.length || location.length < 2) {
       setError("Enter a search and a city or area.");
       return;
     }
@@ -389,7 +413,7 @@ export function ImportPoolModal({
         method: "POST",
         headers,
         body: JSON.stringify({
-          searchTerm,
+          searchTerms,
           location,
           maxPlaces: mapsMaxPlaces,
           findPeople: true,
@@ -409,6 +433,7 @@ export function ImportPoolModal({
       }
       const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
       const saveListName = body.saveListName?.trim() || "Google Maps import";
+      const startedAt = new Date().toISOString();
       pendingSaveListNameRef.current = saveListName;
       watchSalesNavImport({
         id: body.jobId,
@@ -425,9 +450,19 @@ export function ImportPoolModal({
         targetCount: body.targetCount ?? mapsMaxPlaces,
         kind: "google_maps",
       });
+      setMapsStartedAt(startedAt);
+      setImportJobId(body.jobId);
+      setImportKind("google_maps");
+      setImportProgress({
+        progressCount: 0,
+        targetCount: body.targetCount ?? mapsMaxPlaces,
+        phase: "scraping",
+        segmentLabel: null,
+        segmentIndex: 0,
+        segmentTotal: 1,
+        peopleFound: 0,
+      });
       setBusy(false);
-      setMode("pick");
-      setImportProgress(null);
     } catch (err) {
       setBusy(false);
       setError(err instanceof Error ? err.message : "Import failed.");
@@ -785,15 +820,12 @@ export function ImportPoolModal({
                       disabled={Boolean(importJobId)}
                       className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm"
                     >
-                      <option value="100">100</option>
-                      {SALES_NAV_POOL_LIMIT_OPTIONS.filter((n) => n !== 100).map(
-                        (n) => (
-                          <option key={n} value={n}>
-                            {n.toLocaleString()}
-                          </option>
-                        )
-                      )}
                       <option value="all">All available</option>
+                      {SALES_NAV_POOL_LIMIT_OPTIONS.map((n) => (
+                        <option key={n} value={n}>
+                          {n.toLocaleString()}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <button
@@ -822,18 +854,57 @@ export function ImportPoolModal({
 
           {mode === "maps" ? (
             <div className="space-y-3">
-              <label className="block">
+              <div>
                 <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-                  Search
+                  {mapsTerms.length > 1 ? "Searches" : "Search"}
                 </span>
-                <input
-                  value={mapsTerm}
-                  onChange={(e) => setMapsTerm(e.target.value)}
-                  placeholder="Plumbers, dental practices, gyms…"
-                  disabled={Boolean(importJobId)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                />
-              </label>
+                <div className="space-y-2">
+                  {mapsTerms.map((term, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        value={term}
+                        onChange={(e) => {
+                          const next = [...mapsTerms];
+                          next[index] = e.target.value;
+                          setMapsTerms(next);
+                        }}
+                        placeholder={
+                          MAPS_TERM_PLACEHOLDERS[index] ?? "another trade"
+                        }
+                        disabled={Boolean(importJobId)}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                      />
+                      {mapsTerms.length > 1 ? (
+                        <button
+                          type="button"
+                          aria-label="Remove search"
+                          disabled={Boolean(importJobId)}
+                          onClick={() =>
+                            setMapsTerms(
+                              mapsTerms.filter((_, i) => i !== index)
+                            )
+                          }
+                          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50"
+                        >
+                          <X className="h-4 w-4" strokeWidth={2} />
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+                {mapsTerms.length < GOOGLE_MAPS_MAX_SEARCH_TERMS &&
+                mapsParsedTerms.length > 0 &&
+                !importJobId ? (
+                  <button
+                    type="button"
+                    onClick={() => setMapsTerms([...mapsTerms, ""])}
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-[#0c5290] hover:underline"
+                  >
+                    <Plus className="h-3.5 w-3.5" aria-hidden />
+                    Add another search
+                  </button>
+                ) : null}
+              </div>
               <label className="block">
                 <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
                   City or area
@@ -858,56 +929,41 @@ export function ImportPoolModal({
                 >
                   {GOOGLE_MAPS_SIZE_OPTIONS.map((size) => (
                     <option key={size} value={size}>
-                      {size.toLocaleString()} businesses
+                      {size.toLocaleString()} businesses ·{" "}
+                      {formatGoogleMapsApproxDuration(size)}
                     </option>
                   ))}
                 </select>
+                {mapsSplitHint ? (
+                  <p className="mt-1.5 text-xs leading-snug text-slate-500">
+                    {mapsSplitHint}
+                  </p>
+                ) : null}
               </label>
-              <button
-                type="button"
-                disabled={
-                  busy ||
-                  Boolean(importJobId) ||
-                  mapsTerm.trim().length < 2 ||
-                  mapsLocation.trim().length < 2
-                }
-                onClick={() => void startMapsImport()}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                {importJobId && importKind === "google_maps" ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Importing…
-                  </>
-                ) : (
-                  "Import to pool"
-                )}
-              </button>
               {importProgress && importKind === "google_maps" ? (
-                <div>
-                  <div className="mb-1.5 flex justify-between gap-3 text-xs text-slate-500">
-                    <span>
-                      {importProgress.progressCount.toLocaleString()} /{" "}
-                      {importProgress.targetCount.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-[#0c5290] transition-[width] duration-500"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.round(
-                            (importProgress.progressCount /
-                              Math.max(1, importProgress.targetCount)) *
-                              100
-                          )
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : null}
+                <GoogleMapsImportWaitPanel
+                  compact
+                  progressCount={importProgress.progressCount}
+                  targetCount={importProgress.targetCount}
+                  startedAt={mapsStartedAt}
+                  phase={importProgress.phase}
+                  peopleFound={importProgress.peopleFound ?? 0}
+                />
+              ) : (
+                <button
+                  type="button"
+                  disabled={
+                    busy ||
+                    Boolean(importJobId) ||
+                    mapsParsedTerms.length < 1 ||
+                    mapsLocation.trim().length < 2
+                  }
+                  onClick={() => void startMapsImport()}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  Import to pool
+                </button>
+              )}
             </div>
           ) : null}
 

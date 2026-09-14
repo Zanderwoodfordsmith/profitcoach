@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { mapGoogleMapsDatasetItems } from "./mapPlaceToPool";
+import {
+  limitGoogleMapsPlaces,
+  mapGoogleMapsDatasetItems,
+} from "./mapPlaceToPool";
 
 describe("map Google Maps dataset", () => {
   it("maps a business with website contacts and a nested person", () => {
@@ -74,4 +77,55 @@ describe("map Google Maps dataset", () => {
     assert.equal(places.length, 1);
     assert.equal(places[0]?.lead?.fullName, "Benjamin White");
   });
+
+  it("keeps one row when the same place appears in two searches", () => {
+    const places = mapGoogleMapsDatasetItems([
+      {
+        title: "Smile Dental",
+        placeId: "ChIJreV9aqYWdkgROM_boL6YbwA",
+      },
+      {
+        title: "Smile Dental",
+        placeId: "ChIJreV9aqYWdkgROM_boL6YbwA",
+        leadsEnrichment: [
+          {
+            fullName: "Ada Smile",
+            linkedinProfile: "https://www.linkedin.com/in/ada-smile",
+          },
+        ],
+      },
+    ]);
+    assert.equal(places.length, 1);
+    assert.equal(places[0]?.lead?.fullName, "Ada Smile");
+  });
+
+  it("caps unique places at the requested total", () => {
+    const places = limitGoogleMapsPlaces(
+      [
+        { ...emptyPlace("A"), placeId: "place-a" },
+        { ...emptyPlace("B"), placeId: "place-b" },
+        { ...emptyPlace("C"), placeId: "place-c" },
+      ],
+      2
+    );
+    assert.equal(places.length, 2);
+    assert.equal(places[0]?.title, "A");
+    assert.equal(places[1]?.title, "B");
+  });
 });
+
+function emptyPlace(title: string) {
+  return {
+    placeId: null as string | null,
+    title,
+    website: null,
+    phone: null,
+    email: null,
+    address: null,
+    category: null,
+    instagrams: [] as string[],
+    facebooks: [] as string[],
+    companyLinkedIns: [] as string[],
+    lead: null,
+  };
+}

@@ -673,9 +673,10 @@ export async function linkedInSearch(input: {
   category?: string;
   keywords?: string;
   limit?: number;
+  timeoutMs?: number;
   [key: string]: unknown;
 }) {
-  const { account_id, cursor, limit, ...rest } = input;
+  const { account_id, cursor, limit, timeoutMs, ...rest } = input;
   const qs = new URLSearchParams({ account_id });
   if (cursor) qs.set("cursor", String(cursor));
   if (typeof limit === "number" && Number.isFinite(limit)) {
@@ -685,6 +686,7 @@ export async function linkedInSearch(input: {
   delete body.account_id;
   delete body.cursor;
   delete body.limit;
+  delete body.timeoutMs;
   return unipileFetch<{
     object?: string;
     items?: Array<Record<string, unknown>>;
@@ -696,7 +698,9 @@ export async function linkedInSearch(input: {
       page_count?: number;
       total_count?: number | null;
     };
-  }>("POST", `/api/v1/linkedin/search?${qs.toString()}`, body);
+  }>("POST", `/api/v1/linkedin/search?${qs.toString()}`, body, {
+    timeoutMs: typeof timeoutMs === "number" ? timeoutMs : 45_000,
+  });
 }
 
 /** Own-account SSI only. URL is fixed so callers cannot proxy arbitrary LinkedIn paths. */

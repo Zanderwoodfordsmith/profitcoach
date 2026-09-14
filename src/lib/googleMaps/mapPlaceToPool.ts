@@ -1,3 +1,4 @@
+import { clampGoogleMapsMaxPlaces } from "@/lib/googleMaps/cost";
 import { splitPersonName } from "@/lib/leadLists/audienceLists";
 import {
   normalizeGooglePlaceId,
@@ -173,6 +174,11 @@ export function mapGoogleMapsDatasetItems(
       companyLinkedIns: asStringList(rec.linkedIns),
       lead: leadsFromPlace(rec)[0] ?? null,
     };
+    if (placeId && byPlaceId.has(placeId)) {
+      const existing = byPlaceId.get(placeId)!;
+      if (!existing.lead && mapped.lead) existing.lead = mapped.lead;
+      continue;
+    }
     places.push(mapped);
     if (placeId) byPlaceId.set(placeId, mapped);
   }
@@ -182,6 +188,22 @@ export function mapGoogleMapsDatasetItems(
     if (unmatched) unmatched.lead = lead;
   }
 
-  void byPlaceId;
   return places;
+}
+
+export function limitGoogleMapsPlaces(
+  places: MappedGoogleMapsPlace[],
+  maxPlaces: number
+): MappedGoogleMapsPlace[] {
+  const cap = clampGoogleMapsMaxPlaces(maxPlaces);
+  const out: MappedGoogleMapsPlace[] = [];
+  const seen = new Set<string>();
+  for (const place of places) {
+    const key = place.placeId || `title:${place.title.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(place);
+    if (out.length >= cap) break;
+  }
+  return out;
 }

@@ -16,6 +16,7 @@ import {
   formatApproxImportDuration,
   requestedTakePagesFromTargetCount,
 } from "@/lib/salesNavigator/importSizing";
+import { formatGoogleMapsApproxDuration } from "@/lib/googleMaps/cost";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
 type ToastState =
@@ -276,6 +277,11 @@ export function SalesNavImportToast() {
         ? "bg-rose-600 text-white shadow-rose-900/20"
         : "bg-amber-500 text-white shadow-amber-900/15";
 
+  const toastJob =
+    watched.find((j) => j.id === toast.jobId) ??
+    listWatchedSalesNavImports().find((j) => j.id === toast.jobId) ??
+    null;
+
   const title =
     toast.kind === "success"
       ? `Imported ${toast.scrapedCount.toLocaleString()} ${
@@ -286,18 +292,24 @@ export function SalesNavImportToast() {
             : ""
         }`
       : toast.kind === "error"
-        ? "Sales Nav import failed"
+        ? toastJob?.kind === "google_maps"
+          ? "Google Maps import failed"
+          : "Sales Nav import failed"
         : toast.phase === "finalizing"
           ? "Finishing up"
-          : "In progress";
+          : toastJob?.kind === "google_maps"
+            ? "Google Maps import"
+            : "In progress";
 
   const progressShown =
     toast.kind === "progress" ? toast.progressCount : 0;
   const approx =
     toast.kind === "progress"
-      ? formatApproxImportDuration(
-          requestedTakePagesFromTargetCount(toast.targetCount)
-        )
+      ? toastJob?.kind === "google_maps"
+        ? formatGoogleMapsApproxDuration(toast.targetCount)
+        : formatApproxImportDuration(
+            requestedTakePagesFromTargetCount(toast.targetCount)
+          )
       : null;
 
   const detail =
@@ -308,7 +320,9 @@ export function SalesNavImportToast() {
             toast.name ? `“${toast.name}”` : null,
             toast.phase === "finalizing"
               ? `${progressShown.toLocaleString()} scraped · saving`
-              : `${progressShown.toLocaleString()} / ${toast.targetCount.toLocaleString()}`,
+              : toastJob?.kind === "google_maps"
+                ? `${progressShown.toLocaleString()} / ${toast.targetCount.toLocaleString()} businesses`
+                : `${progressShown.toLocaleString()} / ${toast.targetCount.toLocaleString()}`,
             toast.phase === "finalizing" ? null : approx,
           ]
             .filter(Boolean)

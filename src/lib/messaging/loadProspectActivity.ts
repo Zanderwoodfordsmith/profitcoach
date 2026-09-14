@@ -1,4 +1,5 @@
 import { formatShortDateTime } from "@/lib/formatShortDate";
+import { prospectCreatedActivityTitle } from "@/lib/messaging/prospectCreatedActivityTitle";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type ProspectActivityType =
@@ -98,7 +99,7 @@ export async function loadProspectRecord(
 
   let contactQuery = supabaseAdmin
     .from("contacts")
-    .select("id, created_at, full_name, type")
+    .select("id, created_at, full_name, type, prospect_source")
     .eq("id", id)
     .in("type", ["prospect", "client"])
     .limit(1);
@@ -112,6 +113,7 @@ export async function loadProspectRecord(
         created_at: string;
         full_name: string | null;
         type: string | null;
+        prospect_source: string | null;
       }
     | undefined;
   if (!contact) return { activity: [], campaigns: [], calls: [] };
@@ -189,8 +191,11 @@ export async function loadProspectRecord(
     id: `prospect-created-${contact.id}`,
     type: "prospect_created",
     at: contact.created_at,
-    title: isClient ? "Became a client" : "Became a lead",
-    detail: contact.full_name || null,
+    title: prospectCreatedActivityTitle({
+      isClient,
+      prospectSource: contact.prospect_source,
+    }),
+    detail: null,
   });
 
   for (const row of landingRes.data ?? []) {

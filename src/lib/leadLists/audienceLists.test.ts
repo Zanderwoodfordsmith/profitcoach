@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 import {
   audienceItemSourceLabel,
   displayListPersonName,
+  listItemCapForKind,
   mapAudiencePeopleInput,
+  MAX_POOL_ITEMS_TOTAL,
   parsePastedAudienceLines,
   sortAudienceLists,
   splitPersonName,
@@ -81,6 +83,12 @@ describe("audience lists", () => {
       ]),
       "Sales Nav · 14 Sep copy 2"
     );
+  });
+
+  it("lets named lists grow as large as the pool", () => {
+    assert.equal(listItemCapForKind("audience"), MAX_POOL_ITEMS_TOTAL);
+    assert.equal(listItemCapForKind("blacklist"), MAX_POOL_ITEMS_TOTAL);
+    assert.equal(listItemCapForKind("pool"), MAX_POOL_ITEMS_TOTAL);
   });
 
   it("labels sources and names for the table", () => {

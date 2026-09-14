@@ -8,6 +8,10 @@ import {
   GOOGLE_MAPS_FIND_PERSON_MAX,
 } from "@/lib/googleMaps/cost";
 import { mapGoogleMapsDatasetItems } from "@/lib/googleMaps/mapPlaceToPool";
+import {
+  googleMapsPlacesPerSearch,
+  parseGoogleMapsSearchTerms,
+} from "@/lib/googleMaps/searchTerms";
 
 export { abortApifyRun, getApifyRunState };
 
@@ -43,7 +47,8 @@ function resolveActorId(): string {
 }
 
 export type StartGoogleMapsSearchInput = {
-  searchTerm: string;
+  searchTerm?: string;
+  searchTerms?: string[];
   location: string;
   maxPlaces: number;
   findPeople: boolean;
@@ -62,13 +67,15 @@ export type StartGoogleMapsRunResult = {
 };
 
 function requireSearchInput(input: StartGoogleMapsSearchInput): {
-  searchTerm: string;
+  searchTerms: string[];
   location: string;
   maxPlaces: number;
 } {
-  const searchTerm = input.searchTerm.trim();
+  const searchTerms = parseGoogleMapsSearchTerms(
+    input.searchTerms ?? input.searchTerm
+  );
   const location = input.location.trim();
-  if (searchTerm.length < 2 || searchTerm.length > 120) {
+  if (!searchTerms.length) {
     throw new GoogleMapsScrapeError(
       "Enter a search like plumbers or dental practices.",
       "invalid_input"
@@ -81,7 +88,7 @@ function requireSearchInput(input: StartGoogleMapsSearchInput): {
     );
   }
   return {
-    searchTerm,
+    searchTerms,
     location,
     maxPlaces: clampGoogleMapsMaxPlaces(input.maxPlaces),
   };
@@ -91,12 +98,15 @@ export async function startGoogleMapsSearch(
   input: StartGoogleMapsSearchInput
 ): Promise<StartGoogleMapsRunResult> {
   const token = requireApifyToken();
-  const { searchTerm, location, maxPlaces } = requireSearchInput(input);
+  const { searchTerms, location, maxPlaces } = requireSearchInput(input);
   const client = new ApifyClient({ token });
   const runInput: Record<string, unknown> = {
-    searchStringsArray: [searchTerm],
+    searchStringsArray: searchTerms,
     locationQuery: location,
-    maxCrawledPlacesPerSearch: maxPlaces,
+    maxCrawledPlacesPerSearch: googleMapsPlacesPerSearch(
+      maxPlaces,
+      searchTerms.length
+    ),
     language: "en",
     skipClosedPlaces: input.skipClosed !== false,
     scrapeContacts: input.scrapeContacts !== false,

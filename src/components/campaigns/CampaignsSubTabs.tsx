@@ -12,7 +12,7 @@ type Props = {
 export function CampaignsSubTabs({ prefix, active, actions }: Props) {
   return (
     <div className="border-b border-slate-200 pt-1">
-      <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <div className="flex min-h-10 flex-nowrap items-center justify-between gap-x-4">
         <PageHeaderUnderlineTabs
           placement="header"
           className="min-w-0 self-end"

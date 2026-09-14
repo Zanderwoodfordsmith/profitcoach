@@ -1,3 +1,4 @@
+import { fetchAllSupabasePages } from "@/lib/contactsSchemaSafeSelect";
 import { normalizeLinkedInProfileUrl } from "@/lib/unipile/linkedinUrl";
 import { normalizePoolEmail } from "@/lib/pool/identity";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
@@ -6,8 +7,10 @@ export const LEAD_LIST_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const MAX_LIST_ITEMS_PER_REQUEST = 250;
-export const MAX_LIST_ITEMS_TOTAL = 1000;
 export const MAX_POOL_ITEMS_TOTAL = 25_000;
+/** Named lists used to be the inventory, so they were capped at 1,000.
+ * Pool is the inventory now; a named list is a bag of the same size. */
+export const MAX_LIST_ITEMS_TOTAL = MAX_POOL_ITEMS_TOTAL;
 export const MAX_POOL_ITEMS_PER_REQUEST = 2_500;
 
 export const AUDIENCE_LIST_KINDS = ["audience", "blacklist", "pool"] as const;
@@ -366,14 +369,14 @@ export async function loadBlacklistedLinkedInUrls(
     .maybeSingle();
   if (!list?.id) return new Set();
 
-  const { data: items } = await supabaseAdmin
-    .from("coach_lead_list_items")
-    .select("linkedin_url")
-    .eq("coach_id", coachId)
-    .eq("list_id", list.id);
+  const items = await loadAllListItemRows<{ linkedin_url: string | null }>(
+    coachId,
+    list.id,
+    "linkedin_url"
+  );
 
   const urls = new Set<string>();
-  for (const item of items ?? []) {
+  for (const item of items) {
     const url = normalizeLinkedInProfileUrl(String(item.linkedin_url ?? ""));
     if (url) urls.add(url);
   }
@@ -391,14 +394,14 @@ export async function loadBlacklistedEmails(
     .maybeSingle();
   if (!list?.id) return new Set();
 
-  const { data: items } = await supabaseAdmin
-    .from("coach_lead_list_items")
-    .select("email")
-    .eq("coach_id", coachId)
-    .eq("list_id", list.id);
+  const items = await loadAllListItemRows<{ email: string | null }>(
+    coachId,
+    list.id,
+    "email"
+  );
 
   const emails = new Set<string>();
-  for (const item of items ?? []) {
+  for (const item of items) {
     const email = normalizePoolEmail(
       typeof item.email === "string" ? item.email : null
     );
@@ -514,17 +517,39 @@ function toChunks<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+async function loadAllListItemRows<T>(
+  coachId: string,
+  listId: string,
+  columns: string
+): Promise<T[]> {
+  const page = await fetchAllSupabasePages<T>(
+    async (from, to) =>
+      supabaseAdmin
+        .from("coach_lead_list_items")
+        .select(columns)
+        .eq("coach_id", coachId)
+        .eq("list_id", listId)
+        .range(from, to),
+    1000,
+    MAX_POOL_ITEMS_TOTAL
+  );
+  if (page.error) {
+    throw new Error(page.error.message || "Unable to load list items.");
+  }
+  return page.data;
+}
+
 async function existingUrlsOnList(
   coachId: string,
   listId: string
 ): Promise<Set<string>> {
-  const { data } = await supabaseAdmin
-    .from("coach_lead_list_items")
-    .select("linkedin_url")
-    .eq("coach_id", coachId)
-    .eq("list_id", listId);
+  const data = await loadAllListItemRows<{ linkedin_url: string | null }>(
+    coachId,
+    listId,
+    "linkedin_url"
+  );
   const urls = new Set<string>();
-  for (const row of data ?? []) {
+  for (const row of data) {
     const url = normalizeLinkedInProfileUrl(String(row.linkedin_url ?? ""));
     if (url) urls.add(url);
   }
@@ -732,14 +757,11 @@ export async function copyLeadListItems(opts: {
     return { added: 0, skipped: itemIds.length, itemCount: currentCount ?? 0 };
   }
 
-  const { data: existingKeys, error: keysError } = await supabaseAdmin
-    .from("coach_lead_list_items")
-    .select("identity_key")
-    .eq("coach_id", opts.coachId)
-    .eq("list_id", opts.targetListId);
-  if (keysError) throw new Error(keysError.message);
+  const existingKeys = await loadAllListItemRows<{
+    identity_key: string | null;
+  }>(opts.coachId, opts.targetListId, "identity_key");
   const usedKeys = new Set(
-    (existingKeys ?? [])
+    existingKeys
       .map((row) =>
         typeof row.identity_key === "string" ? row.identity_key : null
       )
@@ -933,17 +955,13 @@ export async function duplicateCoachAudienceList(opts: {
     filters,
   });
 
-  const { data: items, error: itemsError } = await supabaseAdmin
-    .from("coach_lead_list_items")
-    .select("id")
-    .eq("coach_id", opts.coachId)
-    .eq("list_id", opts.listId)
-    .limit(MAX_LIST_ITEMS_TOTAL);
-  if (itemsError) throw new Error(itemsError.message);
+  const items = await loadAllListItemRows<{ id: string }>(
+    opts.coachId,
+    opts.listId,
+    "id"
+  );
 
-  const itemIds = (items ?? [])
-    .map((row) => row.id as string)
-    .filter(isLeadListUuid);
+  const itemIds = items.map((row) => row.id).filter(isLeadListUuid);
   for (const chunk of toChunks(itemIds, MAX_LIST_ITEMS_PER_REQUEST)) {
     if (!chunk.length) continue;
     await copyLeadListItems({

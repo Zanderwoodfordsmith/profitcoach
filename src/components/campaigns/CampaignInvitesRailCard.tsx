@@ -79,9 +79,13 @@ function AutoCleanInfo() {
 
 export function CampaignInvitesRailCard({
   preview = false,
+  linkedInConnected,
 }: {
   preview?: boolean;
+  /** `undefined` while accounts are still loading. */
+  linkedInConnected?: boolean;
 }) {
+  const disconnected = !preview && linkedInConnected === false;
   const [snap, setSnap] = useState<Snapshot | null>(
     preview
       ? {
@@ -100,7 +104,7 @@ export function CampaignInvitesRailCard({
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (preview) return;
+    if (preview || linkedInConnected !== true) return;
     try {
       const headers = await getCoachAuthHeaders();
       if (!headers) return;
@@ -128,13 +132,14 @@ export function CampaignInvitesRailCard({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load.");
     }
-  }, [preview]);
+  }, [preview, linkedInConnected]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   async function saveAuto(on: boolean) {
+    if (disconnected) return;
     if (preview) {
       setSnap((current) =>
         current
@@ -204,37 +209,43 @@ export function CampaignInvitesRailCard({
           <h2 className="text-base font-semibold tracking-tight text-slate-900">
             Pending invites
           </h2>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-700">
-              Auto-clean
-              <AutoCleanInfo />
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={autoOn}
-              aria-label="Auto-clean pending invites"
-              disabled={saving || snap == null}
-              onClick={() => void saveAuto(!autoOn)}
-              className={`relative h-5 w-9 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800/40 focus-visible:ring-offset-2 disabled:opacity-40 ${
-                autoOn ? "bg-emerald-800" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition ${
-                  autoOn ? "translate-x-4" : ""
+          {disconnected ? (
+            <p className="mt-2 text-[11px] text-slate-500">
+              Connect LinkedIn to load this
+            </p>
+          ) : (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-700">
+                Auto-clean
+                <AutoCleanInfo />
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoOn}
+                aria-label="Auto-clean pending invites"
+                disabled={saving || snap == null}
+                onClick={() => void saveAuto(!autoOn)}
+                className={`relative h-5 w-9 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-800/40 focus-visible:ring-offset-2 disabled:opacity-40 ${
+                  autoOn ? "bg-emerald-800" : "bg-slate-300"
                 }`}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition ${
+                    autoOn ? "translate-x-4" : ""
+                  }`}
+                />
+              </button>
+            </div>
+          )}
           {error ? (
             <p className="mt-2 text-[11px] text-rose-900">{error}</p>
           ) : null}
         </div>
 
         <PendingInvitesSpeedDial
-          count={snap == null && !error ? null : total}
-          loading={snap == null && !error}
+          count={disconnected || snap == null ? null : total}
+          loading={!disconnected && snap == null && !error}
           compact
         />
       </div>

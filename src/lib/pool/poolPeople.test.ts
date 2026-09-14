@@ -33,6 +33,7 @@ function person(partial: Partial<PoolPerson>): PoolPerson {
     linkedinCampaignable: true,
     emailCampaignable: true,
     canFindPerson: false,
+    contact_id: null,
     ...partial,
   };
 }

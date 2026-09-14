@@ -24,7 +24,7 @@ import { poolAddressFromRaw, type PoolPerson, type PoolStats } from "@/lib/pool/
 import { normalizeProspectTags } from "@/lib/prospects/tags";
 
 const POOL_ITEM_SELECT =
-  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw";
+  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id";
 
 const POOL_PREVIEW_MAX = 50;
 
@@ -71,6 +71,10 @@ function mapPoolItem(
     linkedinCampaignable,
     emailCampaignable,
     canFindPerson: Boolean(placeId) && !url,
+    contact_id:
+      typeof item.contact_id === "string" && item.contact_id
+        ? item.contact_id
+        : null,
   };
 }
 
