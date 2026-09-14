@@ -523,13 +523,18 @@ async function loadAllListItemRows<T>(
   columns: string
 ): Promise<T[]> {
   const page = await fetchAllSupabasePages<T>(
-    async (from, to) =>
-      supabaseAdmin
+    async (from, to) => {
+      const result = await supabaseAdmin
         .from("coach_lead_list_items")
         .select(columns)
         .eq("coach_id", coachId)
         .eq("list_id", listId)
-        .range(from, to),
+        .range(from, to);
+      return {
+        data: (result.data ?? null) as T[] | null,
+        error: result.error,
+      };
+    },
     1000,
     MAX_POOL_ITEMS_TOTAL
   );

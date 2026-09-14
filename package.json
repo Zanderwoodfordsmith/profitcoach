@@ -8,6 +8,7 @@
     "dev:clean": "rm -rf .next node_modules/.cache && next dev",
     "dev:clean:webpack": "rm -rf .next node_modules/.cache && next dev --webpack",
     "build": "next build",
+    "typecheck": "tsc --noEmit",
     "start": "next start",
     "lint": "eslint",
     "sync-playbooks": "npx tsx scripts/sync-playbooks-from-md.ts",

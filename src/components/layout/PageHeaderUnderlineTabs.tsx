@@ -265,10 +265,9 @@ export function PageHeaderUnderlineTabs({
   const [menuOpen, setMenuOpen] = useState(false);
 
   useLayoutEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-
     function update() {
+      const nav = navRef.current;
+      if (!nav) return;
       const current = itemsRef.current;
       itemMeasureRefs.current = itemMeasureRefs.current.slice(0, current.length);
       const available = nav.clientWidth;
@@ -298,6 +297,8 @@ export function PageHeaderUnderlineTabs({
       );
     }
 
+    const nav = navRef.current;
+    if (!nav) return;
     update();
     const observer = new ResizeObserver(update);
     observer.observe(nav);
