@@ -8,6 +8,10 @@ import {
   enrichProspectRows,
   toLiteProspectRows,
 } from "@/lib/loadProspectTableRows";
+import {
+  excludePoolOnlyContacts,
+  loadPoolLinkedContactIds,
+} from "@/lib/prospects/excludePoolPeople";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function GET(request: Request) {
@@ -33,7 +37,7 @@ export async function GET(request: Request) {
     .map((id) => id.trim())
     .filter(Boolean);
 
-  const [{ data: contacts, error: contactsError }, { data: coachRow }] =
+  const [{ data: contacts, error: contactsError }, { data: coachRow }, poolLinkedIds] =
     await Promise.all([
       selectContactsWithOptionalPhone<{
         id: string;
@@ -81,6 +85,7 @@ export async function GET(request: Request) {
         .select("crm_location_id, slug")
         .eq("id", coachId)
         .maybeSingle(),
+      loadPoolLinkedContactIds(supabaseAdmin, coachId),
     ]);
 
   if (contactsError) {
@@ -96,7 +101,8 @@ export async function GET(request: Request) {
       | string
       | null) ?? null;
 
-  const contactRecords = contacts.map((c) => ({
+  const contactRecords = excludePoolOnlyContacts(
+    contacts.map((c) => ({
     id: c.id,
     full_name: c.full_name,
     job_title: c.job_title ?? null,
@@ -115,7 +121,9 @@ export async function GET(request: Request) {
     prospect_source: (c as { prospect_source?: string | null }).prospect_source ?? null,
     prospect_tags: (c as { prospect_tags?: string[] | null }).prospect_tags ?? [],
     whatsapp_on: (c as { whatsapp_on?: boolean | null }).whatsapp_on ?? null,
-  }));
+  })),
+    poolLinkedIds
+  );
 
   const prospects =
     enrichIds && enrichIds.length > 0

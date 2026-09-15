@@ -26,12 +26,14 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Prospect not found." }, { status: 404 });
   }
 
+  const coachTags = loaded.prospect.coach_id
+    ? await listCoachProspectTags(loaded.prospect.coach_id)
+    : [];
+
   return NextResponse.json({
     prospect: loaded.prospect,
     coachSlug: loaded.coachSlug,
-    coachTags: loaded.prospect.coach_id
-      ? await listCoachProspectTags(loaded.prospect.coach_id)
-      : [],
+    coachTags,
   });
 }
 

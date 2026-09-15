@@ -3,20 +3,28 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
-import { loadCallTableRows } from "@/lib/loadCallTableRows";
-import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { StickyPageHeader } from "@/components/layout";
 import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CallsHub } from "@/components/calls/CallsHub";
 import type { CallRow } from "@/lib/callRow";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { useRequireAdminRole } from "@/hooks/useRequireAdminRole";
+import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import {
+  loadCallsHubPayload,
+  type CallsHubPayload,
+} from "@/lib/getClients/hubFetchers";
 
 export default function AdminCallsPage() {
   const router = useRouter();
   const { setImpersonatingCoachId } = useImpersonation();
-  const [calls, setCalls] = useState<CallRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { checking } = useRequireAdminRole("/coach/calls");
+  const cacheKey = hubQueryKey("calls:admin");
+  const cached = peekHubQuery<CallsHubPayload>(cacheKey);
+  const [calls, setCalls] = useState<CallRow[]>(() => cached?.calls ?? []);
+  const [loading, setLoading] = useState(() => !cached);
   const [error, setError] = useState<string | null>(null);
   const [appOrigin, setAppOrigin] = useState("");
   const [coachFilter, setCoachFilter] = useState<string | "all">("all");
@@ -26,7 +34,7 @@ export default function AdminCallsPage() {
       full_name: string | null;
       coach_business_name: string | null;
     }>
-  >([]);
+  >(() => cached?.coaches ?? []);
 
   useEffect(() => {
     setAppOrigin(window.location.origin);
@@ -35,90 +43,36 @@ export default function AdminCallsPage() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      setLoading(true);
+      const hit = peekHubQuery<CallsHubPayload>(cacheKey);
+      if (hit) {
+        setCalls(hit.calls);
+        setCoaches(hit.coaches);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError(null);
-
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
-        role?: string;
-        error?: string;
-      };
-      if (!roleRes.ok || !roleBody.role) {
-        setError("Unable to load your profile.");
-        setLoading(false);
-        return;
-      }
-      if (roleBody.role !== "admin") {
-        router.replace("/coach/calls");
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
-        setError("Unable to load calls.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const [rows, coachesRes] = await Promise.all([
-          loadCallTableRows(supabaseClient),
-          fetch("/api/admin/coaches", {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          }),
-        ]);
-
+        const payload = await fetchHubQuery(cacheKey, () =>
+          loadCallsHubPayload({ admin: true })
+        );
         if (cancelled) return;
-        setCalls(rows);
-
-        if (coachesRes.ok) {
-          const coachesBody = (await coachesRes.json()) as {
-            coaches?: Array<{
-              id: string;
-              full_name?: string | null;
-              coach_business_name?: string | null;
-            }>;
-          };
-          setCoaches(
-            (coachesBody.coaches ?? []).map((coach) => ({
-              id: coach.id,
-              full_name: coach.full_name ?? null,
-              coach_business_name: coach.coach_business_name ?? null,
-            }))
-          );
-        }
+        setCalls(payload.calls);
+        setCoaches(payload.coaches);
       } catch (err) {
         console.error("admin/calls load:", err);
-        if (!cancelled) {
-          setError("Unable to load calls.");
-        }
+        if (!cancelled && !hit) setError("Unable to load calls.");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
+    if (checking) return;
     void init();
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [cacheKey, checking]);
 
   const coachOptionsFromCalls = Array.from(
     new Map(
@@ -166,6 +120,18 @@ export default function AdminCallsPage() {
     [router, setImpersonatingCoachId]
   );
 
+  const handleCallsChange = useCallback(
+    (next: CallRow[]) => {
+      setCalls(next);
+      const current = peekHubQuery<CallsHubPayload>(cacheKey);
+      writeHubQuery(cacheKey, {
+        calls: next,
+        coaches: current?.coaches ?? coaches,
+      });
+    },
+    [cacheKey, coaches]
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
@@ -182,7 +148,7 @@ export default function AdminCallsPage() {
           showCoachColumn={true}
           appOrigin={appOrigin}
           callsBasePath="/admin/calls"
-          onCallsChange={setCalls}
+          onCallsChange={handleCallsChange}
           coachFilterOptions={coachOptions}
           coachFilter={coachFilter}
           onCoachFilterChange={setCoachFilter}

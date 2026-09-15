@@ -1,9 +1,51 @@
 import { displayNameFromProfile, type ProfileNames } from "@/lib/communityProfile";
+import {
+  BROADCAST_MENTION_LABEL,
+  type BroadcastMentionGroup,
+} from "@/lib/communityMentions";
 
 export type MentionProfileRow = ProfileNames & {
   id: string;
   role?: string | null;
 };
+
+export type BroadcastMentionUser = {
+  id: string;
+  display_name: string;
+  avatar_url: null;
+  role: "group";
+  broadcast: BroadcastMentionGroup;
+};
+
+const BROADCAST_MENTION_SEARCH: Record<BroadcastMentionGroup, string[]> = {
+  everyone: ["everyone", "every", "everybody"],
+  coaches: ["profit", "coach", "coaches", "profitcoaches", "profit-coaches"],
+};
+
+/** Picker rows for @everyone / @Profit Coaches (notify the whole community). */
+export function broadcastMentionsForQuery(query: string): BroadcastMentionUser[] {
+  const needle = query.trim().toLowerCase().replace(/\s+/g, "");
+  return (Object.keys(BROADCAST_MENTION_LABEL) as BroadcastMentionGroup[])
+    .filter((group) => broadcastMentionMatchesQuery(group, needle))
+    .map((group) => ({
+      id: `group:${group}`,
+      display_name: BROADCAST_MENTION_LABEL[group],
+      avatar_url: null,
+      role: "group" as const,
+      broadcast: group,
+    }));
+}
+
+export function broadcastMentionMatchesQuery(
+  group: BroadcastMentionGroup,
+  needle: string
+): boolean {
+  if (!needle) return true;
+  const label = BROADCAST_MENTION_LABEL[group].toLowerCase();
+  const compact = label.replace(/\s+/g, "");
+  if (label.startsWith(needle) || compact.startsWith(needle)) return true;
+  return BROADCAST_MENTION_SEARCH[group].some((term) => term.startsWith(needle));
+}
 
 /** Default @-mention picker order when the query is empty (bare `@`). */
 export const ADMIN_MENTION_FIRST_NAMES = ["Pam", "Zander"] as const;

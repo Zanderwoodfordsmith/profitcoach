@@ -15,6 +15,7 @@ import {
   type ProspectGroupField,
   type ProspectGroupOrder,
 } from "@/lib/prospects/prospectGrouping";
+import { completeColumnOrder } from "@/lib/table/completeColumnOrder";
 
 export type ProspectTableViewSurface = "coach" | "admin";
 
@@ -73,6 +74,14 @@ export const PROSPECT_TABLE_VIEWS_MIGRATED_KEY = "pc-prospect-table-views-migrat
 export const MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH = 80;
 export const MAX_PROSPECT_TABLE_VIEW_SETTINGS_BYTES = 32_768;
 
+/** Built-in Prospects lists — pipeline stages after All. */
+export const DEFAULT_PROSPECT_SMART_LISTS = [
+  { name: "Replied", statusFilter: "replied" },
+  { name: "Interested", statusFilter: "interested" },
+  { name: "Booked", statusFilter: "booked" },
+  { name: "Follow-up", statusFilter: "follow_up" },
+] as const;
+
 export const PROSPECT_LIST_SORT_FIELDS: ProspectListSortField[] = [
   "name",
   "company",
@@ -90,6 +99,22 @@ export function isProspectTableViewSurface(
 
 export function isDefaultProspectTableViewName(name: string): boolean {
   return name.trim().toLowerCase() === DEFAULT_PROSPECT_TABLE_VIEW_NAME.toLowerCase();
+}
+
+export function canonicalProspectSmartListName(name: string): string | null {
+  const lower = name.trim().toLowerCase();
+  return (
+    DEFAULT_PROSPECT_SMART_LISTS.find((list) => list.name.toLowerCase() === lower)
+      ?.name ?? null
+  );
+}
+
+export function isProspectSmartListName(name: string): boolean {
+  return canonicalProspectSmartListName(name) != null;
+}
+
+export function isProtectedProspectViewName(name: string): boolean {
+  return isDefaultProspectTableViewName(name) || isProspectSmartListName(name);
 }
 
 export function isProspectListSortField(
@@ -120,6 +145,60 @@ export function createDefaultProspectTableViewSettings(): ProspectTableViewSetti
     columnVisibility: { ...DEFAULT_PROSPECT_COLUMN_VISIBILITY },
     columnOrder: [...DEFAULT_PROSPECT_COLUMN_ORDER],
   };
+}
+
+export function createProspectSmartListSettings(
+  statusFilter: string
+): ProspectTableViewSettings {
+  return {
+    ...createDefaultProspectTableViewSettings(),
+    statusFilter,
+  };
+}
+
+export function arrangeProspectTableViews<T extends { name: string }>(
+  views: T[]
+): T[] {
+  const used = new Set<number>();
+  const arranged: T[] = [];
+  const allIndex = views.findIndex((view) =>
+    isDefaultProspectTableViewName(view.name)
+  );
+  if (allIndex >= 0) {
+    arranged.push(views[allIndex]);
+    used.add(allIndex);
+  }
+  for (const list of DEFAULT_PROSPECT_SMART_LISTS) {
+    const index = views.findIndex(
+      (view, i) =>
+        !used.has(i) && view.name.trim().toLowerCase() === list.name.toLowerCase()
+    );
+    if (index >= 0) {
+      arranged.push(views[index]);
+      used.add(index);
+    }
+  }
+  views.forEach((view, index) => {
+    if (!used.has(index)) arranged.push(view);
+  });
+  return arranged;
+}
+
+export function prospectSmartListIdsInOrder<T extends { id: string; name: string }>(
+  views: T[]
+): string[] {
+  return DEFAULT_PROSPECT_SMART_LISTS.map(
+    (list) =>
+      views.find(
+        (view) => view.name.trim().toLowerCase() === list.name.toLowerCase()
+      )?.id
+  ).filter((id): id is string => Boolean(id));
+}
+
+export function prependMissingIds(order: string[], ids: string[]): string[] {
+  const have = new Set(order);
+  const missing = ids.filter((id) => !have.has(id));
+  return missing.length ? [...missing, ...order] : order;
 }
 
 function asNonEmptyString(value: unknown, fallback: string): string {
@@ -183,20 +262,20 @@ function normalizeColumns(raw: {
   }
 
   const seen = new Set<ProspectColumnKey>();
-  const columnOrder: ProspectColumnKey[] = [];
+  const fromSource: ProspectColumnKey[] = [];
   const rawOrder = Array.isArray(raw.columnOrder) ? raw.columnOrder : [];
   for (const rawKey of rawOrder) {
     if (typeof rawKey !== "string") continue;
     const key = resolveColumnKey(rawKey);
     if (!key || seen.has(key)) continue;
-    columnOrder.push(key);
+    fromSource.push(key);
     seen.add(key);
   }
-  for (const key of DEFAULT_PROSPECT_COLUMN_ORDER) {
-    if (!seen.has(key)) columnOrder.push(key);
-  }
 
-  return { columnVisibility, columnOrder };
+  return {
+    columnVisibility,
+    columnOrder: completeColumnOrder(fromSource, DEFAULT_PROSPECT_COLUMN_ORDER),
+  };
 }
 
 export function normalizeProspectTableViewSettings(
@@ -285,25 +364,56 @@ export function orderProspectTableViews(
   viewOrder: string[] = []
 ): ProspectTableView[] {
   const allView = pickCanonicalAllView(views);
-  const otherViews = views.filter(
-    (view) => !isDefaultProspectTableViewName(view.name)
+  const smartLists = DEFAULT_PROSPECT_SMART_LISTS.map((list) =>
+    views.find(
+      (view) => view.name.trim().toLowerCase() === list.name.toLowerCase()
+    )
+  ).filter((view): view is ProspectTableView => Boolean(view));
+  const smartIds = new Set(smartLists.map((view) => view.id));
+  const customViews = views.filter(
+    (view) =>
+      !isDefaultProspectTableViewName(view.name) && !smartIds.has(view.id)
   );
-  const byId = new Map(otherViews.map((view) => [view.id, view]));
-  const ordered: ProspectTableView[] = [];
+  const byId = new Map(customViews.map((view) => [view.id, view]));
+  const orderedCustom: ProspectTableView[] = [];
   for (const id of viewOrder) {
     const view = byId.get(id);
     if (!view) continue;
-    ordered.push(view);
+    orderedCustom.push(view);
     byId.delete(id);
   }
-  for (const view of otherViews) {
-    if (byId.has(view.id)) ordered.push(view);
+  for (const view of customViews) {
+    if (byId.has(view.id)) orderedCustom.push(view);
   }
-  return allView ? [allView, ...ordered] : ordered;
+  return [
+    ...(allView ? [allView] : []),
+    ...smartLists,
+    ...orderedCustom,
+  ];
 }
 
 export function nonAllProspectViewOrder(views: ProspectTableView[]): string[] {
   return views
     .filter((view) => !isDefaultProspectTableViewName(view.name))
     .map((view) => view.id);
+}
+
+export function uniqueProspectViewCopyName(
+  sourceName: string,
+  existingNames: string[]
+): string {
+  const used = new Set(
+    existingNames.map((name) => name.trim().toLowerCase()).filter(Boolean)
+  );
+  const label = isDefaultProspectTableViewName(sourceName)
+    ? DEFAULT_PROSPECT_TABLE_VIEW_NAME
+    : sourceName.trim() || "View";
+  const base = `${label} copy`.slice(0, MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH);
+  if (!used.has(base.toLowerCase())) return base;
+  for (let n = 2; n < 100; n += 1) {
+    const suffix = ` ${n}`;
+    const candidate = `${base.slice(0, MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH - suffix.length)}${suffix}`;
+    if (!used.has(candidate.toLowerCase())) return candidate;
+  }
+  return `${base} ${Date.now()}`.slice(0, MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH);
 }

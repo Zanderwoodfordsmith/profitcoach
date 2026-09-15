@@ -1,13 +1,16 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   listOutreachAccounts,
+  syncOutreachAccountsForCoach,
   type OutreachAccountRow,
 } from "@/lib/unipile/outreachAccounts";
 import {
+  calendarBusyDisplayTitle,
   calendarFeatureErrorMessage,
   createUnipileCalendarEvent,
   eventTimeToIso,
   getUnipileCalendarEvent,
+  isOwnedUnipileCalendar,
   isUnipileCalendarFeatureError,
   listUnipileCalendarEvents,
   listUnipileCalendars,
@@ -101,6 +104,19 @@ export async function listOkCalendarAccounts(
   });
 }
 
+async function listOkCalendarAccountsMaybeSync(
+  coachId: string
+): Promise<OutreachAccountRow[]> {
+  const first = await listOkCalendarAccounts(coachId);
+  if (first.length > 0) return first;
+  try {
+    await syncOutreachAccountsForCoach(coachId);
+  } catch (err) {
+    console.error("unipile calendar account sync:", err);
+  }
+  return listOkCalendarAccounts(coachId);
+}
+
 export async function loadUnipileCalendarPrefs(
   coachId: string
 ): Promise<UnipileCalendarPrefs | null> {
@@ -181,9 +197,18 @@ async function persistDefaultPrefs(
   account: OutreachAccountRow,
   calendars: Awaited<ReturnType<typeof listUnipileCalendars>>["data"]
 ): Promise<{ busyCalendarIds: string[]; eventCalendarId: string }> {
-  const picked = pickDefaultUnipileCalendar(calendars ?? []);
+  const list = calendars ?? [];
+  const picked = pickDefaultUnipileCalendar(list);
   const eventCalendarId = picked?.id ?? "";
-  const busyCalendarIds = eventCalendarId ? [eventCalendarId] : [];
+  const ownedBusyIds = list
+    .filter((cal) => isOwnedUnipileCalendar(cal) && !cal.is_read_only)
+    .map((cal) => cal.id);
+  const busyCalendarIds =
+    ownedBusyIds.length > 0
+      ? ownedBusyIds
+      : eventCalendarId
+        ? [eventCalendarId]
+        : [];
   if (eventCalendarId) {
     await upsertUnipileCalendarPrefs({
       coachId,
@@ -216,7 +241,7 @@ export async function loadCoachCalendarStatus(input: {
   if (!configured) return empty;
 
   const [accounts, prefs] = await Promise.all([
-    listOkCalendarAccounts(input.coachId),
+    listOkCalendarAccountsMaybeSync(input.coachId),
     loadUnipileCalendarPrefs(input.coachId),
   ]);
   const account = pickAccount(
@@ -311,7 +336,7 @@ async function resolveCalendarContext(
   coachId: string
 ): Promise<CalendarContextResult> {
   const [accounts, prefs] = await Promise.all([
-    listOkCalendarAccounts(coachId),
+    listOkCalendarAccountsMaybeSync(coachId),
     loadUnipileCalendarPrefs(coachId),
   ]);
   const account = pickAccount(accounts, prefs?.unipile_account_id, null);
@@ -409,11 +434,35 @@ export async function loadUnipileBusyForRange(input: {
     return { intervals: [], connected: true, calendar_error: null };
   }
 
+  const calendarList = await listUnipileCalendars(ctx.account.unipile_account_id);
+  const calendars = calendarList.ok ? calendarList.data ?? [] : [];
+  const byId = new Map(calendars.map((cal) => [cal.id, cal]));
+  const busyIds = calendarList.ok
+    ? ctx.busyCalendarIds.filter((id) => {
+        const cal = byId.get(id);
+        if (!cal) return false;
+        if (cal.is_primary || cal.is_default) return true;
+        // Shared calendars on this Google account are someone else's events.
+        return cal.is_owned_by_user !== false;
+      })
+    : ctx.busyCalendarIds;
+  if (busyIds.length === 0) {
+    return {
+      intervals: [],
+      connected: true,
+      calendar_error: calendarList.ok
+        ? null
+        : isUnipileCalendarFeatureError(calendarList)
+          ? calendarFeatureErrorMessage(calendarList)
+          : calendarList.error || "Could not load calendar events.",
+    };
+  }
+
   const lookbackStart = new Date(windowStart - 24 * 60 * 60 * 1000).toISOString();
   const out: BusyInterval[] = [];
   let eventError: string | null = null;
 
-  for (const calendarId of ctx.busyCalendarIds) {
+  for (const calendarId of busyIds) {
     const listed = await listUnipileCalendarEvents({
       accountId: ctx.account.unipile_account_id,
       calendarId,
@@ -448,7 +497,19 @@ export async function loadUnipileBusyForRange(input: {
         id: `${calendarId}:${event.id}:${starts}`,
         starts_at: starts,
         ends_at: ends,
-        title: event.title?.trim() || "Busy",
+        title: calendarBusyDisplayTitle(
+          event.title,
+          calendarList.ok
+            ? isOwnedUnipileCalendar(
+                byId.get(calendarId) ?? {
+                  id: calendarId,
+                  name: calendarId,
+                  is_read_only: false,
+                  is_owned_by_user: true,
+                }
+              )
+            : true
+        ),
         all_day: allDay,
       });
     }

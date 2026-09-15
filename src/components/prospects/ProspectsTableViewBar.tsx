@@ -24,19 +24,17 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  GripVertical,
-  Plus,
-} from "lucide-react";
+import { GripVertical, Lock, Plus } from "lucide-react";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
-import { Modal } from "@/components/ui/Modal";
 import {
   DEFAULT_PROSPECT_TABLE_VIEW_NAME,
   isDefaultProspectTableViewName,
+  isProtectedProspectViewName,
 } from "@/lib/prospects/prospectTableViews";
+
+/** Ghost add-tab control — same chrome as Pool, without a filled tab surface. */
+export const VIEW_BAR_ADD_TAB_CLASS =
+  "inline-flex shrink-0 items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent px-2 py-1.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-200/50 hover:text-slate-700";
 
 type SavedViewTab = {
   id: string;
@@ -94,6 +92,7 @@ function SortableViewTab({
   onDuplicate?: () => void;
 }) {
   const isAllView = isDefaultProspectTableViewName(view.name);
+  const isProtected = isProtectedProspectViewName(view.name);
   const {
     attributes,
     listeners,
@@ -103,7 +102,7 @@ function SortableViewTab({
     isDragging,
   } = useSortable({
     id: view.id,
-    disabled: isAllView,
+    disabled: isProtected,
   });
 
   const style = {
@@ -147,11 +146,11 @@ function SortableViewTab({
       ) : (
         <div
           className={`group relative flex touch-none items-center rounded-tl-md rounded-tr-md ${tabSurface} ${
-            isAllView ? "" : "cursor-grab active:cursor-grabbing"
+            isProtected ? "" : "cursor-grab active:cursor-grabbing"
           }`}
-          {...(isAllView ? {} : { ...attributes, ...listeners })}
+          {...(isProtected ? {} : { ...attributes, ...listeners })}
         >
-          {!isAllView ? (
+          {!isProtected ? (
             <span
               className="ml-0.5 rounded p-0.5 text-slate-400"
               aria-hidden
@@ -167,10 +166,15 @@ function SortableViewTab({
             }`}
             title={
               isAllView
-                ? "Everyone in this list."
-                : "Drag to reorder. Click to open."
+                ? "Built-in list. Everyone in this list."
+                : isProtected
+                  ? "Built-in list. Cannot be renamed or deleted."
+                  : "Drag to reorder. Click to open."
             }
           >
+            {isProtected ? (
+              <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+            ) : null}
             <span className="max-w-[12rem] truncate">
               {isAllView ? DEFAULT_PROSPECT_TABLE_VIEW_NAME : view.name}
             </span>
@@ -213,7 +217,6 @@ export function ProspectsTableViewBar({
   const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [reorderOpen, setReorderOpen] = useState(false);
   const addInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
@@ -222,15 +225,6 @@ export function ProspectsTableViewBar({
   );
 
   const sortableIds = useMemo(() => views.map((view) => view.id), [views]);
-  const reorderableViews = useMemo(
-    () => views.filter((view) => !isDefaultProspectTableViewName(view.name)),
-    [views]
-  );
-  const allView = useMemo(
-    () => views.find((view) => isDefaultProspectTableViewName(view.name)),
-    [views]
-  );
-  const showReorder = reorderableViews.length > 1;
   const draggingView = draggingId
     ? views.find((view) => view.id === draggingId) ?? null
     : null;
@@ -282,12 +276,17 @@ export function ProspectsTableViewBar({
     const oldIndex = views.findIndex((view) => view.id === active.id);
     const newIndex = views.findIndex((view) => view.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
+    if (isProtectedProspectViewName(views[oldIndex]?.name ?? "")) return;
 
     const allIndex = views.findIndex((view) =>
       isDefaultProspectTableViewName(view.name)
     );
+    const lastPinnedIndex = views.reduce((last, view, index) => {
+      return isProtectedProspectViewName(view.name) ? index : last;
+    }, allIndex);
     if (allIndex === 0 && newIndex === 0) return;
-    const clampedNewIndex = allIndex === 0 ? Math.max(newIndex, 1) : newIndex;
+    const minIndex = Math.max(lastPinnedIndex + 1, allIndex === 0 ? 1 : 0);
+    const clampedNewIndex = Math.max(newIndex, minIndex);
     if (oldIndex === clampedNewIndex) return;
 
     commitOrder(arrayMove(views, oldIndex, clampedNewIndex));
@@ -297,201 +296,120 @@ export function ProspectsTableViewBar({
     setDraggingId(null);
   }
 
-  function moveReorderable(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= reorderableViews.length) return;
-    commitOrder([
-      ...(allView ? [allView] : []),
-      ...arrayMove(reorderableViews, index, target),
-    ]);
-  }
-
   return (
-    <>
-      <nav
-        className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto pt-1"
-        aria-label="Saved prospect views"
+    <nav
+      className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto pt-1"
+      aria-label="Saved prospect views"
+    >
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragCancel={handleDragCancel}
+        <SortableContext
+          items={sortableIds}
+          strategy={horizontalListSortingStrategy}
         >
-          <SortableContext
-            items={sortableIds}
-            strategy={horizontalListSortingStrategy}
+          {views.map((view) => {
+            const active = view.id === activeViewId;
+            const isProtected = isProtectedProspectViewName(view.name);
+            const canDelete = views.length > 1 && view.canEdit && !isProtected;
+            const canRename = view.canEdit && !isProtected;
+
+            return (
+              <SortableViewTab
+                key={view.id}
+                view={view}
+                active={active}
+                renamingViewId={renamingViewId}
+                renameValue={renameValue}
+                renameInputRef={renameInputRef}
+                onSwitchView={onSwitchView}
+                onStartRename={(row) => {
+                  setRenamingViewId(row.id);
+                  setRenameValue(row.name);
+                }}
+                onRenameChange={setRenameValue}
+                onSubmitRename={submitRename}
+                onCancelRename={() => {
+                  setRenamingViewId(null);
+                  setRenameValue("");
+                }}
+                onDeleteView={onDeleteView}
+                canDelete={canDelete}
+                canRename={canRename}
+                canDuplicate={Boolean(onDuplicateView)}
+                onDuplicate={
+                  onDuplicateView
+                    ? () => onDuplicateView(view.id)
+                    : undefined
+                }
+              />
+            );
+          })}
+        </SortableContext>
+        <DragOverlay dropAnimation={null}>
+          {draggingView ? (
+            <div className="inline-flex cursor-grabbing items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-sky-600 bg-sky-100 px-2 py-1.5 text-sm font-medium text-sky-800 shadow-md">
+              <GripVertical className="h-3.5 w-3.5 text-sky-500" aria-hidden />
+              <span className="max-w-[12rem] truncate">{draggingView.name}</span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {afterViews}
+
+      {showAddView ? (
+        addingView ? (
+          <form
+            className="flex items-center gap-2 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent px-2 py-1.5"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitNewView();
+            }}
           >
-            {views.map((view) => {
-              const active = view.id === activeViewId;
-              const isAllView = isDefaultProspectTableViewName(view.name);
-              const canDelete = views.length > 1 && view.canEdit && !isAllView;
-              const canRename = view.canEdit && !isAllView;
-
-              return (
-                <SortableViewTab
-                  key={view.id}
-                  view={view}
-                  active={active}
-                  renamingViewId={renamingViewId}
-                  renameValue={renameValue}
-                  renameInputRef={renameInputRef}
-                  onSwitchView={onSwitchView}
-                  onStartRename={(row) => {
-                    setRenamingViewId(row.id);
-                    setRenameValue(row.name);
-                  }}
-                  onRenameChange={setRenameValue}
-                  onSubmitRename={submitRename}
-                  onCancelRename={() => {
-                    setRenamingViewId(null);
-                    setRenameValue("");
-                  }}
-                  onDeleteView={onDeleteView}
-                  canDelete={canDelete}
-                  canRename={canRename}
-                  canDuplicate={Boolean(onDuplicateView)}
-                  onDuplicate={
-                    onDuplicateView
-                      ? () => onDuplicateView(view.id)
-                      : undefined
-                  }
-                />
-              );
-            })}
-          </SortableContext>
-          <DragOverlay dropAnimation={null}>
-            {draggingView ? (
-              <div className="inline-flex cursor-grabbing items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-sky-600 bg-sky-100 px-2 py-1.5 text-sm font-medium text-sky-800 shadow-md">
-                <GripVertical className="h-3.5 w-3.5 text-sky-500" aria-hidden />
-                <span className="max-w-[12rem] truncate">{draggingView.name}</span>
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-
-        {afterViews}
-
-        {showReorder ? (
+            <input
+              ref={addInputRef}
+              type="text"
+              value={newViewName}
+              onChange={(e) => setNewViewName(e.target.value)}
+              onBlur={() => {
+                if (!newViewName.trim()) {
+                  setAddingView(false);
+                  setNewViewName("");
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setAddingView(false);
+                  setNewViewName("");
+                }
+              }}
+              placeholder="View name"
+              className="w-36 rounded border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+              aria-label="New view name"
+            />
+            <button
+              type="submit"
+              className="rounded px-2 py-0.5 text-xs font-medium text-sky-700 hover:bg-sky-50"
+            >
+              Add
+            </button>
+          </form>
+        ) : (
           <button
             type="button"
-            onClick={() => setReorderOpen(true)}
-            className="inline-flex shrink-0 items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-300/70 hover:text-slate-800"
-            title="Reorder tabs"
-            aria-label="Reorder tabs"
+            onClick={() => setAddingView(true)}
+            className={VIEW_BAR_ADD_TAB_CLASS}
           >
-            <ArrowUpDown className="h-3.5 w-3.5" aria-hidden />
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            {addViewLabel}
           </button>
-        ) : null}
-
-        {showAddView ? (
-          addingView ? (
-            <form
-              className="flex items-center gap-2 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5"
-              onSubmit={(e) => {
-                e.preventDefault();
-                submitNewView();
-              }}
-            >
-              <input
-                ref={addInputRef}
-                type="text"
-                value={newViewName}
-                onChange={(e) => setNewViewName(e.target.value)}
-                onBlur={() => {
-                  if (!newViewName.trim()) {
-                    setAddingView(false);
-                    setNewViewName("");
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Escape") {
-                    setAddingView(false);
-                    setNewViewName("");
-                  }
-                }}
-                placeholder="View name"
-                className="w-36 rounded border border-slate-300 px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-                aria-label="New view name"
-              />
-              <button
-                type="submit"
-                className="rounded px-2 py-0.5 text-xs font-medium text-sky-700 hover:bg-sky-50"
-              >
-                Add
-              </button>
-            </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setAddingView(true)}
-              className="inline-flex shrink-0 items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-300/70 hover:text-slate-800"
-            >
-              <Plus className="h-3.5 w-3.5" aria-hidden />
-              {addViewLabel}
-            </button>
-          )
-        ) : null}
-      </nav>
-
-      <Modal
-        open={reorderOpen}
-        onClose={() => setReorderOpen(false)}
-        title="Reorder tabs"
-        subtitle="All stays first. Move the rest up or down."
-        maxWidthClassName="max-w-sm"
-        footer={
-          <div className="flex justify-end border-t border-slate-100 px-5 py-3">
-            <button
-              type="button"
-              onClick={() => setReorderOpen(false)}
-              className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
-            >
-              Done
-            </button>
-          </div>
-        }
-      >
-        <ul className="space-y-1 px-5 py-4">
-          {allView ? (
-            <li className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500">
-              <span className="min-w-0 flex-1 truncate font-medium">
-                {DEFAULT_PROSPECT_TABLE_VIEW_NAME}
-              </span>
-              <span className="shrink-0 text-xs">Pinned</span>
-            </li>
-          ) : null}
-          {reorderableViews.map((view, index) => (
-            <li
-              key={view.id}
-              className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5"
-            >
-              <span className="min-w-0 flex-1 truncate px-1 text-sm font-medium text-slate-800">
-                {view.name}
-              </span>
-              <button
-                type="button"
-                disabled={index === 0}
-                onClick={() => moveReorderable(index, -1)}
-                className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label={`Move ${view.name} up`}
-              >
-                <ArrowUp className="h-4 w-4" aria-hidden />
-              </button>
-              <button
-                type="button"
-                disabled={index === reorderableViews.length - 1}
-                onClick={() => moveReorderable(index, 1)}
-                className="rounded p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label={`Move ${view.name} down`}
-              >
-                <ArrowDown className="h-4 w-4" aria-hidden />
-              </button>
-            </li>
-          ))}
-        </ul>
-      </Modal>
-    </>
+        )
+      ) : null}
+    </nav>
   );
 }

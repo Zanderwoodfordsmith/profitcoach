@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import {
+  loadProspectsHubPayload,
+  type ProspectsHubPayload,
+} from "@/lib/getClients/hubFetchers";
 import { copyCoachLandingLinkOnInvite } from "@/lib/buildCoachLandingLink";
 import { chunkArray } from "@/lib/chunkArray";
 import { mergeCoachFilterOptions } from "@/lib/mergeCoachFilterOptions";
@@ -35,9 +41,13 @@ type UseProspectsPageOptions = {
 export function useProspectsPage({ scope }: UseProspectsPageOptions) {
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
+  const cacheKey = hubQueryKey(`prospects:${scope}`, impersonatingCoachId);
+  const cached = peekHubQuery<ProspectsHubPayload>(cacheKey);
 
-  const [prospects, setProspects] = useState<ProspectRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [prospects, setProspects] = useState<ProspectRow[]>(
+    () => cached?.prospects ?? []
+  );
+  const [loading, setLoading] = useState(() => !cached);
   const [error, setError] = useState<string | null>(null);
   const [showAddProspect, setShowAddProspect] = useState(false);
   const [creatingProspect, setCreatingProspect] = useState(false);
@@ -49,12 +59,22 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
   const [newBusinessName, setNewBusinessName] = useState("");
   const [sendInvite, setSendInvite] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [coaches, setCoaches] = useState<CoachListRow[]>([]);
-  const [coachSlug, setCoachSlug] = useState<string | null>(null);
-  const [effectiveCoachId, setEffectiveCoachId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [coaches, setCoaches] = useState<CoachListRow[]>(
+    () => cached?.coaches ?? []
+  );
+  const [coachSlug, setCoachSlug] = useState<string | null>(
+    () => cached?.coachSlug ?? null
+  );
+  const [effectiveCoachId, setEffectiveCoachId] = useState<string | null>(
+    () => cached?.effectiveCoachId ?? null
+  );
+  const [userId, setUserId] = useState<string | null>(
+    () => cached?.userId ?? null
+  );
   const [scoresEnriching, setScoresEnriching] = useState(false);
-  const [prospectListVersion, setProspectListVersion] = useState(0);
+  const [prospectListVersion, setProspectListVersion] = useState(() =>
+    cached ? 1 : 0
+  );
 
   const { pageHeaderRef, pageHeaderHeight } = useStickyPageHeaderOffset([
     loading,
@@ -68,134 +88,91 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      setLoading(true);
+      const hit = peekHubQuery<ProspectsHubPayload>(cacheKey);
+      if (hit) {
+        setProspects(hit.prospects);
+        setCoaches(hit.coaches);
+        setCoachSlug(hit.coachSlug);
+        setUserId(hit.userId);
+        setEffectiveCoachId(hit.effectiveCoachId);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
+      try {
+        if (scope === "admin") {
+          const {
+            data: { user },
+          } = await supabaseClient.auth.getUser();
+          if (!user) {
+            router.replace("/login");
+            return;
+          }
+          const { fetchCachedProfileRole } = await import(
+            "@/lib/getClients/cachedProfileRole"
+          );
+          const roleBody = await fetchCachedProfileRole(user.id);
+          if (roleBody.role !== "admin") {
+            router.replace("/coach");
+            return;
+          }
+        }
 
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
-        role?: string;
-        error?: string;
-      };
-      if (!roleRes.ok || !roleBody.role) {
-        setError("Unable to load your profile.");
-        setLoading(false);
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await supabaseClient.auth.getSession();
-      if (!session?.access_token) {
-        if (scope === "coach") {
+        const payload = await fetchHubQuery(cacheKey, () =>
+          loadProspectsHubPayload(scope)
+        );
+        if (cancelled) return;
+        enrichedIdsRef.current = new Set();
+        enrichInFlightRef.current = new Set();
+        setProspects(payload.prospects);
+        setCoaches(payload.coaches);
+        setCoachSlug(payload.coachSlug);
+        setUserId(payload.userId);
+        setEffectiveCoachId(payload.effectiveCoachId);
+        setProspectListVersion((version) => version + 1);
+      } catch (err) {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : "Unable to load prospects.";
+        if (message === "Sign in required.") {
           router.replace("/login");
           return;
         }
-        setError("Unable to load prospects.");
-        setLoading(false);
-        return;
+        if (!hit) setError(message);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      if (scope === "admin") {
-        if (roleBody.role !== "admin") {
-          router.replace("/coach");
-          return;
-        }
-        const headers = { Authorization: `Bearer ${session.access_token}` };
-        const [contactsRes, coachesRes] = await Promise.all([
-          fetch("/api/admin/contacts?type=prospect", { headers }),
-          fetch("/api/admin/coaches", { headers }),
-        ]);
-        if (cancelled) return;
-        if (!contactsRes.ok) {
-          const body = (await contactsRes.json().catch(() => ({}))) as {
-            error?: string;
-          };
-          setError(body?.error ?? "Unable to load prospects.");
-          setLoading(false);
-          return;
-        }
-        const contactsBody = (await contactsRes.json()) as {
-          prospects?: ProspectRow[];
-        };
-        enrichedIdsRef.current = new Set();
-        enrichInFlightRef.current = new Set();
-        setProspects(contactsBody.prospects ?? []);
-        setProspectListVersion((version) => version + 1);
-        if (coachesRes.ok) {
-          const coachesBody = (await coachesRes.json()) as {
-            coaches?: Array<{
-              id: string;
-              slug: string;
-              full_name?: string | null;
-              coach_business_name?: string | null;
-            }>;
-          };
-          setCoaches(
-            (coachesBody.coaches ?? []).map((c) => ({
-              id: c.id,
-              slug: c.slug,
-              full_name: c.full_name ?? null,
-              coach_business_name: c.coach_business_name ?? null,
-            }))
-          );
-        }
-        setLoading(false);
-        return;
-      }
-
-      // coach scope — admins without a view-as coach use their own roster
-      const effectiveId =
-        roleBody.role === "admin" && impersonatingCoachId
-          ? impersonatingCoachId
-          : user.id;
-      setUserId(user.id);
-      setEffectiveCoachId(effectiveId);
-
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${session.access_token}`,
-      };
-      if (roleBody.role === "admin" && impersonatingCoachId) {
-        headers["x-impersonate-coach-id"] = impersonatingCoachId;
-      }
-
-      const res = await fetch("/api/coach/prospects", { headers });
-      const body = (await res.json().catch(() => ({}))) as {
-        prospects?: ProspectRow[];
-        coachSlug?: string | null;
-        error?: string;
-      };
-      if (cancelled) return;
-      if (!res.ok) {
-        setError(body.error ?? "Unable to load prospects.");
-        setLoading(false);
-        return;
-      }
-      enrichedIdsRef.current = new Set();
-      enrichInFlightRef.current = new Set();
-      setProspects(body.prospects ?? []);
-      setProspectListVersion((version) => version + 1);
-      setCoachSlug(body.coachSlug ?? null);
-      setLoading(false);
     }
 
     void init();
     return () => {
       cancelled = true;
     };
-  }, [router, scope, impersonatingCoachId]);
+  }, [cacheKey, router, scope]);
+
+  useEffect(() => {
+    if (loading) return;
+    const current = peekHubQuery<ProspectsHubPayload>(cacheKey);
+    if (!current) return;
+    writeHubQuery(cacheKey, {
+      ...current,
+      prospects,
+      coaches,
+      coachSlug,
+      userId: userId ?? current.userId,
+      effectiveCoachId: effectiveCoachId ?? current.effectiveCoachId,
+    });
+  }, [
+    cacheKey,
+    coaches,
+    coachSlug,
+    effectiveCoachId,
+    loading,
+    prospects,
+    userId,
+  ]);
 
   const coachOptions = useMemo(
     () => mergeCoachFilterOptions(prospects, coaches),

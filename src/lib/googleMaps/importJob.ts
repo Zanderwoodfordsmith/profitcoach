@@ -164,6 +164,8 @@ export async function createGoogleMapsSearchJob(opts: {
   searchTerm?: string;
   searchTerms?: string[];
   location: string;
+  countryCode?: string | null;
+  stateLabel?: string | null;
   maxPlaces: number;
   findPeople: boolean;
 }): Promise<{ jobId: string; targetCount: number; estimatedCostUsd: number }> {
@@ -180,6 +182,8 @@ export async function createGoogleMapsSearchJob(opts: {
   const started = await startGoogleMapsSearch({
     searchTerms,
     location: opts.location,
+    countryCode: opts.countryCode,
+    state: opts.stateLabel,
     maxPlaces,
     findPeople,
   });

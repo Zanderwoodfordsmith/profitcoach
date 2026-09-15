@@ -17,6 +17,7 @@ import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
+import { GetClientsHubWarmup } from "@/components/layout/GetClientsHubWarmup";
 
 export default function AdminLayout({
   children,
@@ -124,6 +125,7 @@ export default function AdminLayout({
       }`}
     >
       <UsageTracker />
+      <GetClientsHubWarmup />
       <DashboardChromeProvider
         variant="admin"
         signingOut={signingOut}

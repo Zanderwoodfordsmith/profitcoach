@@ -16,6 +16,7 @@ export type CallRow = {
   status_raw: string | null;
   start_time: string | null;
   end_time: string | null;
+  created_at: string | null;
   match_status: string;
   source: "native" | "ghl";
   meeting_join_url: string | null;

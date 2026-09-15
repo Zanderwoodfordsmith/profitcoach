@@ -163,7 +163,7 @@ export function TabOverflowMenu({
           e.stopPropagation();
           setOpen((value) => !value);
         }}
-        className="rounded p-0.5 text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-30"
+        className="rounded p-0.5 text-slate-400 opacity-80 transition hover:bg-slate-100 hover:text-slate-600 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-30"
       >
         <MoreVertical className="h-3.5 w-3.5" aria-hidden />
       </button>

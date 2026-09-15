@@ -25,6 +25,7 @@ import {
   mobileNavShortLabel,
   mobilePrimaryNavItems,
   navLinkActive,
+  type DashboardNavItem,
 } from "@/components/layout/dashboardNavItems";
 import type { CoachAccessTier, CoachFeature } from "@/lib/coachAccess/tiers";
 import { membershipSidebarPromoEnabled } from "@/lib/membership/preview";
@@ -33,6 +34,12 @@ import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { useNewFeedbackCount, useCoachUnreadSupportCount } from "@/components/layout/useNewFeedbackCount";
 import { DemoCoachToggle } from "@/components/layout/DemoCoachToggle";
 import { profileInitialsFromName } from "@/lib/communityProfile";
+import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
+import {
+  getClientsHubHomeHref,
+  readGetClientsLastTabHref,
+  rememberGetClientsLastTab,
+} from "@/lib/getClients/lastHubTab";
 
 /** Selected nav pill — restrained cooler-blue gradient (between solid sky and full wash). */
 const SIDEBAR_NAV_ACTIVE =
@@ -148,6 +155,9 @@ export function DashboardSidebar({
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [adminNavExpanded, setAdminNavExpanded] = useState(true);
+  const [getClientsHref, setGetClientsHref] = useState(() =>
+    getClientsHubHomeHref(prefix)
+  );
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const showAdminSection = variant === "admin";
 
@@ -171,6 +181,11 @@ export function DashboardSidebar({
   useEffect(() => {
     if (collapsed) setAccountMenuOpen(false);
   }, [collapsed]);
+
+  useEffect(() => {
+    rememberGetClientsLastTab(pathname ?? "");
+    setGetClientsHref(readGetClientsLastTabHref(prefix));
+  }, [pathname, prefix]);
 
   const toggleAdminNav = () => {
     setAdminNavExpanded((prev) => {
@@ -237,14 +252,18 @@ export function DashboardSidebar({
   const toolsNavItems = coachToolsNavItems(prefix);
   const getClientsHrefs = getClientsHubPaths(prefix);
   const coachClientsHrefs = coachClientsTabHrefs(prefix);
-  const isToolsNavActive = (itemHref: string) => {
-    if (itemHref === `${prefix}/prospects`) {
+
+  const resolveToolsHref = (item: DashboardNavItem) =>
+    item.toolsHub === "get-clients" ? getClientsHref : item.href;
+
+  const isToolsNavActive = (item: DashboardNavItem) => {
+    if (item.toolsHub === "get-clients") {
       return isToolsHubPath(pathname, getClientsHrefs);
     }
-    if (itemHref === `${prefix}/clients`) {
+    if (item.toolsHub === "coach-clients") {
       return isToolsHubPath(pathname, coachClientsHrefs);
     }
-    return navLinkActive(pathname, itemHref);
+    return navLinkActive(pathname, item.href);
   };
   const settingsHref = variant === "coach" ? "/coach/settings" : "/admin/account";
   const settingsActive =
@@ -444,16 +463,22 @@ export function DashboardSidebar({
             )}
             <ul className="space-y-0.5">
               {toolsNavItems.map((item) => {
-                const active = isToolsNavActive(item.href);
+                const href = resolveToolsHref(item);
+                const active = isToolsNavActive(item);
                 const Icon = item.icon;
                 const locked =
                   variant === "coach" && navItemLocked(item.requiredFeature);
                 return (
-                  <li key={item.href}>
+                  <li key={item.toolsHub ?? item.href}>
                     <Link
-                      href={item.href}
+                      href={href}
                       title={collapsed ? item.label : undefined}
-                      onClick={() => markPending(item.href)}
+                      onClick={() => markPending(href)}
+                      onMouseEnter={() => {
+                        if (item.toolsHub === "get-clients") {
+                          prefetchGetClientsHref(href);
+                        }
+                      }}
                       className={navLinkClass(active)}
                     >
                       <span className="relative shrink-0">
@@ -748,14 +773,15 @@ export function DashboardSidebar({
               </p>
               <ul className="space-y-0.5">
                 {toolsNavItems.map((item) => {
-                  const active = isToolsNavActive(item.href);
+                  const href = resolveToolsHref(item);
+                  const active = isToolsNavActive(item);
                   const Icon = item.icon;
                   const locked =
                     variant === "coach" && navItemLocked(item.requiredFeature);
                   return (
-                    <li key={item.href}>
+                    <li key={item.toolsHub ?? item.href}>
                       <Link
-                        href={item.href}
+                        href={href}
                         onClick={closeMobileSheets}
                         className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
                           active

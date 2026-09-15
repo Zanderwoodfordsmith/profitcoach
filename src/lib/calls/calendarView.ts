@@ -30,8 +30,8 @@ export const CALENDAR_VIEW_TYPES: {
   },
   {
     id: "blocked",
-    label: "Blocked slots",
-    hint: "Events from connected calendars",
+    label: "Imported",
+    hint: "Events from your connected Google/Outlook calendars",
   },
 ];
 

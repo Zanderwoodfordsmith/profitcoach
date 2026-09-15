@@ -20,6 +20,8 @@ export type DashboardNavItem = {
   icon: (props: { className?: string }) => React.ReactElement;
   /** When set, item is hidden unless the coach has this feature. */
   requiredFeature?: CoachFeature;
+  /** Tools hub: sidebar stays active across every tab in the hub. */
+  toolsHub?: "get-clients" | "coach-clients";
 };
 
 export type AdminSectionNavItem = DashboardNavItem & {
@@ -227,20 +229,26 @@ export function deliveryNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[
   ];
 }
 
-/** Coach sidebar: Marketing + Delivery collapsed into two Tools hubs. */
+/**
+ * Coach sidebar: Marketing + Delivery collapsed into two Tools hubs.
+ * Get Clients href is Conversations on first visit; the sidebar overrides it
+ * with the last hub tab from this session.
+ */
 export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavItem[] {
   return [
     {
-      href: `${prefix}/prospects`,
+      href: `${prefix}/conversations`,
       label: "Get Clients",
       icon: IconUserPlus,
       requiredFeature: "nav.marketing",
+      toolsHub: "get-clients",
     },
     {
       href: `${prefix}/clients`,
       label: "Coach Clients",
       icon: IconBriefcase,
       requiredFeature: "nav.delivery",
+      toolsHub: "coach-clients",
     },
   ];
 }

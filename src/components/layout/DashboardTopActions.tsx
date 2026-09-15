@@ -12,7 +12,13 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { fetchCommunityMentionNameMap } from "@/lib/communityFetchMentionNameMap";
-import { extractMentionUserIds } from "@/lib/communityMentions";
+import {
+  broadcastMentionNotifiesViewer,
+  communityMentionNotificationTitle,
+  extractBroadcastMentionGroups,
+  extractMentionUserIds,
+  mentionNotificationBodyOrFilter,
+} from "@/lib/communityMentions";
 import {
   bodyMentionsViewerForNotification,
   mentionNotificationSearchIds,
@@ -277,9 +283,7 @@ export function DashboardTopActions({
 
       const nowIso = new Date().toISOString();
       const mentionSearchIds = mentionNotificationSearchIds(uid);
-      const mentionBodyOrFilter = mentionSearchIds
-        .map((id) => `body.ilike.%${id}%`)
-        .join(",");
+      const mentionBodyOrFilter = mentionNotificationBodyOrFilter(mentionSearchIds);
 
       const postMentionsPromise = supabaseClient
         .from("community_posts")
@@ -515,13 +519,15 @@ export function DashboardTopActions({
         }>;
         for (const row of rows) {
           const contentAt = row.published_at ?? row.created_at;
+          const personallyMentioned = bodyMentionsViewerForNotification(
+            row.body,
+            uid,
+            contentAt,
+            extractMentionUserIds
+          );
           if (
-            !bodyMentionsViewerForNotification(
-              row.body,
-              uid,
-              contentAt,
-              extractMentionUserIds
-            )
+            !personallyMentioned &&
+            !broadcastMentionNotifiesViewer(row.body, contentAt, joinedAt)
           ) {
             continue;
           }
@@ -536,7 +542,12 @@ export function DashboardTopActions({
             created_at: contentAt,
             actor_name: actor,
             actor_avatar_url: author.avatar_url ?? null,
-            title: `${actor} mentioned you in a post`,
+            title: communityMentionNotificationTitle(
+              actor,
+              "post",
+              personallyMentioned,
+              extractBroadcastMentionGroups(row.body)
+            ),
             body: row.body.trim() || row.title?.trim() || "Community post",
             href: communityPostPath(communityHref, {
               title: row.title?.trim() || row.body?.trim() || "Community post",
@@ -549,13 +560,15 @@ export function DashboardTopActions({
         const rows = (commentMentionsRes.data ?? []) as CommentRow[];
         for (const row of rows) {
           if (repliedCommentIds.has(row.id)) continue;
+          const personallyMentioned = bodyMentionsViewerForNotification(
+            row.body,
+            uid,
+            row.created_at,
+            extractMentionUserIds
+          );
           if (
-            !bodyMentionsViewerForNotification(
-              row.body,
-              uid,
-              row.created_at,
-              extractMentionUserIds
-            )
+            !personallyMentioned &&
+            !broadcastMentionNotifiesViewer(row.body, row.created_at, joinedAt)
           ) {
             continue;
           }
@@ -573,7 +586,12 @@ export function DashboardTopActions({
             created_at: row.created_at,
             actor_name: actor,
             actor_avatar_url: author.avatar_url ?? null,
-            title: `${actor} mentioned you in a comment`,
+            title: communityMentionNotificationTitle(
+              actor,
+              "comment",
+              personallyMentioned,
+              extractBroadcastMentionGroups(row.body)
+            ),
             body: row.body.trim() || `On: ${post.title ?? "Community post"}`,
             href: communityPostPath(communityHref, {
               title: post.title ?? "Community post",

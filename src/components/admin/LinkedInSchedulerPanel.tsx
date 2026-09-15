@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import {
   CalendarDays,
@@ -13,11 +14,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { LinkedInCalendarTab } from "./linkedin/LinkedInCalendarTab";
 import { LinkedInComposeTab } from "./linkedin/LinkedInComposeTab";
-import { LinkedInLibraryTab } from "./linkedin/LinkedInLibraryTab";
-import { LinkedInQueueTab } from "./linkedin/LinkedInQueueTab";
-import { LinkedInInsightsTab } from "./linkedin/LinkedInInsightsTab";
 import {
   displayName,
   LI_BLUE,
@@ -25,6 +22,36 @@ import {
   type LinkedInPostItem,
   type LinkedInProfilePreview,
 } from "./linkedin/types";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import {
+  loadContentScheduledPayload,
+  loadContentStatusPayload,
+  type ContentScheduledPayload,
+  type ContentStatusPayload,
+} from "@/lib/getClients/hubFetchers";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+
+const LinkedInCalendarTab = dynamic(() =>
+  import("./linkedin/LinkedInCalendarTab").then((m) => ({
+    default: m.LinkedInCalendarTab,
+  }))
+);
+const LinkedInLibraryTab = dynamic(() =>
+  import("./linkedin/LinkedInLibraryTab").then((m) => ({
+    default: m.LinkedInLibraryTab,
+  }))
+);
+const LinkedInQueueTab = dynamic(() =>
+  import("./linkedin/LinkedInQueueTab").then((m) => ({
+    default: m.LinkedInQueueTab,
+  }))
+);
+const LinkedInInsightsTab = dynamic(() =>
+  import("./linkedin/LinkedInInsightsTab").then((m) => ({
+    default: m.LinkedInInsightsTab,
+  }))
+);
 
 type TabId =
   | "compose"
@@ -46,30 +73,43 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
 export function LinkedInSchedulerPanel() {
   const searchParams = useSearchParams();
   const linkedinStatus = searchParams.get("linkedin");
+  const { impersonatingCoachId } = useImpersonation();
+  const statusKey = hubQueryKey("content:status", impersonatingCoachId);
+  const scheduledKey = hubQueryKey("content:scheduled", impersonatingCoachId);
+  const cachedStatus = peekHubQuery<ContentStatusPayload>(statusKey);
+  const cachedScheduled = peekHubQuery<ContentScheduledPayload>(scheduledKey);
 
   const [tab, setTab] = useState<TabId>("compose");
-  const [loading, setLoading] = useState(true);
-  const [connected, setConnected] = useState<boolean | null>(null);
+  const [connected, setConnected] = useState<boolean | null>(
+    () => cachedStatus?.connected ?? null
+  );
   const [profile, setProfile] = useState<LinkedInProfilePreview>({
-    name: null,
-    headline: null,
-    photoUrl: null,
-    email: null,
-    tokenExpiry: null,
-    scopes: [],
-    websiteLabel: "Visit my website",
-    websiteUrl: null,
-    quoteHandle: "Profit Coach",
+    name: cachedStatus?.profile.name ?? null,
+    headline: cachedStatus?.profile.headline ?? null,
+    photoUrl: cachedStatus?.profile.photoUrl ?? null,
+    email: cachedStatus?.profile.email ?? null,
+    tokenExpiry: cachedStatus?.profile.tokenExpiry ?? null,
+    scopes: cachedStatus?.profile.scopes ?? [],
+    websiteLabel: cachedStatus?.profile.websiteLabel ?? "Visit my website",
+    websiteUrl: cachedStatus?.profile.websiteUrl ?? null,
+    quoteHandle: cachedStatus?.profile.quoteHandle ?? "Profit Coach",
   });
   const [settingsDraft, setSettingsDraft] = useState({
-    display_headline: "",
-    website_label: "Visit my website",
-    website_url: "",
-    quote_handle: "Profit Coach",
+    display_headline: cachedStatus?.profile.headline ?? "",
+    website_label: cachedStatus?.profile.websiteLabel ?? "Visit my website",
+    website_url: cachedStatus?.profile.websiteUrl ?? "",
+    quote_handle: cachedStatus?.profile.quoteHandle ?? "Profit Coach",
   });
   const [savingSettings, setSavingSettings] = useState(false);
-  const [items, setItems] = useState<LinkedInPostItem[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [items, setItems] = useState<LinkedInPostItem[]>(
+    () => (cachedScheduled?.items as LinkedInPostItem[]) ?? []
+  );
+  const [categories, setCategories] = useState<string[]>(
+    () => cachedScheduled?.categories ?? []
+  );
+  const [scheduledReady, setScheduledReady] = useState(() =>
+    Boolean(cachedScheduled)
+  );
   const [connecting, setConnecting] = useState(false);
   const [publishingDue, setPublishingDue] = useState(false);
   const publishingDueRef = useRef(false);
@@ -96,73 +136,68 @@ export function LinkedInSchedulerPanel() {
     []
   );
 
+  const applyStatus = useCallback((payload: ContentStatusPayload) => {
+    setConnected(payload.connected);
+    const nextProfile: LinkedInProfilePreview = {
+      name: payload.profile.name,
+      headline: payload.profile.headline,
+      photoUrl: payload.profile.photoUrl,
+      email: payload.profile.email,
+      tokenExpiry: payload.profile.tokenExpiry,
+      scopes: payload.profile.scopes,
+      websiteLabel: payload.profile.websiteLabel,
+      websiteUrl: payload.profile.websiteUrl,
+      quoteHandle: payload.profile.quoteHandle,
+    };
+    setProfile(nextProfile);
+    setSettingsDraft({
+      display_headline: nextProfile.headline ?? "",
+      website_label: nextProfile.websiteLabel,
+      website_url: nextProfile.websiteUrl ?? "",
+      quote_handle: nextProfile.quoteHandle,
+    });
+  }, []);
+
+  const applyScheduled = useCallback((payload: ContentScheduledPayload) => {
+    setItems((payload.items as LinkedInPostItem[]) ?? []);
+    setCategories(payload.categories ?? []);
+    setScheduledReady(true);
+  }, []);
+
   const loadPanel = useCallback(async () => {
     try {
-      const token = await getToken();
-      const [statusRes, scheduledRes] = await Promise.all([
-        fetch("/api/linkedin/status", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/linkedin/scheduled", {
-          headers: { Authorization: `Bearer ${token}` },
+      const [status, scheduled] = await Promise.all([
+        fetchHubQuery(statusKey, loadContentStatusPayload, { force: true }),
+        fetchHubQuery(scheduledKey, loadContentScheduledPayload, {
+          force: true,
         }),
       ]);
-
-      const statusBody = (await statusRes.json().catch(() => ({}))) as {
-        connected?: boolean;
-        connection?: {
-          scope?: string[];
-          token_expires_at?: string | null;
-        } | null;
-        account?: {
-          name?: string | null;
-          email?: string | null;
-        } | null;
-        profile?: {
-          name?: string | null;
-          headline?: string | null;
-          photo_url?: string | null;
-          website_label?: string | null;
-          website_url?: string | null;
-          quote_handle?: string | null;
-        } | null;
-      };
-      const scheduledBody = (await scheduledRes.json().catch(() => ({}))) as {
-        items?: LinkedInPostItem[];
-        categories?: string[];
-      };
-
-      setConnected(!!statusBody.connected);
-      const nextProfile: LinkedInProfilePreview = {
-        name: statusBody.profile?.name ?? statusBody.account?.name ?? null,
-        headline: statusBody.profile?.headline ?? null,
-        photoUrl: statusBody.profile?.photo_url ?? null,
-        email: statusBody.account?.email ?? null,
-        tokenExpiry: statusBody.connection?.token_expires_at ?? null,
-        scopes: statusBody.connection?.scope ?? [],
-        websiteLabel: statusBody.profile?.website_label || "Visit my website",
-        websiteUrl: statusBody.profile?.website_url ?? null,
-        quoteHandle: statusBody.profile?.quote_handle || "Profit Coach",
-      };
-      setProfile(nextProfile);
-      setSettingsDraft({
-        display_headline: nextProfile.headline ?? "",
-        website_label: nextProfile.websiteLabel,
-        website_url: nextProfile.websiteUrl ?? "",
-        quote_handle: nextProfile.quoteHandle,
-      });
-      setItems(scheduledBody.items ?? []);
-      setCategories(scheduledBody.categories ?? []);
+      applyStatus(status);
+      applyScheduled(scheduled);
     } catch {
       onMessage("Could not load LinkedIn workspace.", "error");
-    } finally {
-      setLoading(false);
     }
-  }, [getToken, onMessage]);
+  }, [applyScheduled, applyStatus, onMessage, scheduledKey, statusKey]);
 
   useEffect(() => {
-    void loadPanel();
-  }, [loadPanel]);
+    const statusHit = peekHubQuery<ContentStatusPayload>(statusKey);
+    if (statusHit) applyStatus(statusHit);
+    const scheduledHit = peekHubQuery<ContentScheduledPayload>(scheduledKey);
+    if (scheduledHit) applyScheduled(scheduledHit);
+
+    void fetchHubQuery(statusKey, loadContentStatusPayload).then(
+      applyStatus,
+      () => {
+        if (!peekHubQuery(statusKey)) setConnected(false);
+      }
+    );
+    void fetchHubQuery(scheduledKey, loadContentScheduledPayload).then(
+      applyScheduled,
+      () => {
+        setScheduledReady(true);
+      }
+    );
+  }, [applyScheduled, applyStatus, scheduledKey, statusKey]);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
@@ -319,16 +354,41 @@ export function LinkedInSchedulerPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected]);
 
-  if (loading) {
+  if (connected === null) {
     return (
-      <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading LinkedIn workspace…
+      <div className="space-y-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <nav className="inline-flex flex-wrap gap-1 rounded-full bg-slate-100/90 p-1 shadow-inner">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setTab(t.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                    active
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+        <div className="flex items-center justify-center gap-2 rounded-3xl border border-slate-200/80 bg-white px-6 py-16 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Checking LinkedIn…
+        </div>
       </div>
     );
   }
 
-  if (!connected) {
+  if (connected === false) {
     return (
       <div className="mx-auto max-w-lg rounded-3xl border border-slate-200/80 bg-white px-8 py-12 text-center shadow-sm">
         <div
@@ -444,6 +504,12 @@ export function LinkedInSchedulerPanel() {
           />
         ) : null}
         {tab === "queue" ? (
+          !scheduledReady ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading queue…
+            </div>
+          ) : (
           <LinkedInQueueTab
             items={items}
             categories={categories}
@@ -455,14 +521,28 @@ export function LinkedInSchedulerPanel() {
               setTab("compose");
             }}
           />
+          )
         ) : null}
         {tab === "calendar" ? (
+          !scheduledReady ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading calendar…
+            </div>
+          ) : (
           <LinkedInCalendarTab
             items={items}
             onSelectPost={() => setTab("queue")}
           />
+          )
         ) : null}
         {tab === "library" ? (
+          !scheduledReady ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading library…
+            </div>
+          ) : (
           <LinkedInLibraryTab
             items={items}
             getToken={getToken}
@@ -473,13 +553,21 @@ export function LinkedInSchedulerPanel() {
               setTab("compose");
             }}
           />
+          )
         ) : null}
         {tab === "insights" ? (
+          !scheduledReady ? (
+            <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading insights…
+            </div>
+          ) : (
           <LinkedInInsightsTab
             items={items}
             getToken={getToken}
             onMessage={onMessage}
           />
+          )
         ) : null}
         {tab === "settings" ? (
           <div className="mx-auto max-w-lg space-y-5 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">

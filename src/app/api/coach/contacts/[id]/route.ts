@@ -31,9 +31,12 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Missing contact id." }, { status: 400 });
   }
 
-  const loaded = await loadEnrichedProspectById(contactId, {
-    coachId: authCheck.userId,
-  });
+  const [loaded, coachTags] = await Promise.all([
+    loadEnrichedProspectById(contactId, {
+      coachId: authCheck.userId,
+    }),
+    listCoachProspectTags(authCheck.userId),
+  ]);
   if (!loaded) {
     return NextResponse.json({ error: "Prospect not found." }, { status: 404 });
   }
@@ -41,7 +44,7 @@ export async function GET(request: Request, context: RouteContext) {
   return NextResponse.json({
     prospect: loaded.prospect,
     coachSlug: loaded.coachSlug,
-    coachTags: await listCoachProspectTags(authCheck.userId),
+    coachTags,
   });
 }
 

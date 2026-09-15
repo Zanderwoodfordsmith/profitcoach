@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { loadCallTableRows } from "@/lib/loadCallTableRows";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { useCoachClientHubAccess } from "@/hooks/useCoachClientHubAccess";
@@ -11,13 +10,21 @@ import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { CallsHub } from "@/components/calls/CallsHub";
 import type { CallRow } from "@/lib/callRow";
 import { bossProHubPath } from "@/lib/isBossWorkshopPath";
+import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import {
+  loadCallsHubPayload,
+  type CallsHubPayload,
+} from "@/lib/getClients/hubFetchers";
 
 export default function CoachCallsPage() {
   const router = useRouter();
   const { impersonatingCoachId } = useImpersonation();
   const { allowed: clientHubAllowed } = useCoachClientHubAccess(impersonatingCoachId);
-  const [calls, setCalls] = useState<CallRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = hubQueryKey("calls:coach", impersonatingCoachId);
+  const cached = peekHubQuery<CallsHubPayload>(cacheKey);
+  const [calls, setCalls] = useState<CallRow[]>(() => cached?.calls ?? []);
+  const [loading, setLoading] = useState(() => !cached);
   const [error, setError] = useState<string | null>(null);
   const [appOrigin, setAppOrigin] = useState("");
 
@@ -28,54 +35,35 @@ export default function CoachCallsPage() {
   useEffect(() => {
     let cancelled = false;
     async function init() {
-      setLoading(true);
+      const hit = peekHubQuery<CallsHubPayload>(cacheKey);
+      if (hit) {
+        setCalls(hit.calls);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
       const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      const user = session?.user;
       if (!user) {
         router.replace("/login");
         return;
       }
 
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
-        role?: string;
-        error?: string;
-      };
-      if (!roleRes.ok || !roleBody.role) {
-        setError("Unable to load your profile.");
-        setLoading(false);
-        return;
-      }
-
-      const effectiveId =
-        roleBody.role === "admin" && impersonatingCoachId
-          ? impersonatingCoachId
-          : user.id;
-
+      const effectiveId = impersonatingCoachId || user.id;
       try {
-        const rows = await loadCallTableRows(supabaseClient, {
-          coachId: effectiveId,
-        });
-        if (!cancelled) {
-          setCalls(rows);
-        }
+        const payload = await fetchHubQuery(cacheKey, () =>
+          loadCallsHubPayload({ admin: false, coachId: effectiveId })
+        );
+        if (!cancelled) setCalls(payload.calls);
       } catch (err) {
         console.error("coach/calls load:", err);
-        if (!cancelled) {
-          setError("Unable to load calls.");
-        }
+        if (!cancelled && !hit) setError("Unable to load calls.");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -83,7 +71,19 @@ export default function CoachCallsPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, impersonatingCoachId]);
+  }, [cacheKey, impersonatingCoachId, router]);
+
+  const handleCallsChange = useCallback(
+    (next: CallRow[]) => {
+      setCalls(next);
+      const current = peekHubQuery<CallsHubPayload>(cacheKey);
+      writeHubQuery(cacheKey, {
+        calls: next,
+        coaches: current?.coaches ?? [],
+      });
+    },
+    [cacheKey]
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -101,7 +101,7 @@ export default function CoachCallsPage() {
           showCoachColumn={false}
           appOrigin={appOrigin}
           callsBasePath="/coach/calls"
-          onCallsChange={setCalls}
+          onCallsChange={handleCallsChange}
           onRowClick={(row) => {
             if (row.contact_id && clientHubAllowed) {
               router.push(bossProHubPath(row.contact_id));

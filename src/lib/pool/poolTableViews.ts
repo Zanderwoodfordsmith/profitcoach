@@ -17,12 +17,14 @@ import {
   type PoolSortOrder,
   type PoolTagFilter,
 } from "@/lib/pool/poolPeople";
+import { completeColumnOrder } from "@/lib/table/completeColumnOrder";
 import {
   DEFAULT_PROSPECT_TABLE_VIEW_NAME,
   generateProspectTableViewId,
   isDefaultProspectTableViewName,
   MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH,
   MAX_PROSPECT_TABLE_VIEW_SETTINGS_BYTES,
+  uniqueProspectViewCopyName,
 } from "@/lib/prospects/prospectTableViews";
 
 export const POOL_TABLE_VIEW_SURFACE = "pool" as const;
@@ -131,35 +133,14 @@ function normalizeColumns(source: Partial<PoolTableViewSettings>): {
     for (const key of POOL_LEAD_FOLDED_COLUMN_KEYS) {
       columnVisibility[key] = DEFAULT_POOL_COLUMN_VISIBILITY[key];
     }
+    columnVisibility.contact_info = true;
   }
   const fromSource = Array.isArray(source.columnOrder)
     ? source.columnOrder.filter(isPoolColumnKey)
     : [];
-  const seen = new Set<PoolColumnKey>();
-  const columnOrder: PoolColumnKey[] = [];
-  for (const key of fromSource) {
-    if (seen.has(key)) continue;
-    seen.add(key);
-    columnOrder.push(key);
-  }
-  for (const key of DEFAULT_POOL_COLUMN_ORDER) {
-    if (seen.has(key)) continue;
-    const defaultIndex = DEFAULT_POOL_COLUMN_ORDER.indexOf(key);
-    let insertAt = columnOrder.length;
-    for (let i = defaultIndex - 1; i >= 0; i -= 1) {
-      const prev = DEFAULT_POOL_COLUMN_ORDER[i];
-      const pos = columnOrder.indexOf(prev);
-      if (pos >= 0) {
-        insertAt = pos + 1;
-        break;
-      }
-    }
-    columnOrder.splice(insertAt, 0, key);
-    seen.add(key);
-  }
   return {
     columnVisibility,
-    columnOrder,
+    columnOrder: completeColumnOrder(fromSource, DEFAULT_POOL_COLUMN_ORDER),
     columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
   };
 }
@@ -292,20 +273,7 @@ export function uniquePoolViewCopyName(
   sourceName: string,
   existingNames: string[]
 ): string {
-  const used = new Set(
-    existingNames.map((name) => name.trim().toLowerCase()).filter(Boolean)
-  );
-  const label = isDefaultProspectTableViewName(sourceName)
-    ? DEFAULT_POOL_TABLE_VIEW_NAME
-    : sourceName.trim() || "View";
-  const base = `${label} copy`.slice(0, MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH);
-  if (!used.has(base.toLowerCase())) return base;
-  for (let n = 2; n < 100; n += 1) {
-    const suffix = ` ${n}`;
-    const candidate = `${base.slice(0, MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH - suffix.length)}${suffix}`;
-    if (!used.has(candidate.toLowerCase())) return candidate;
-  }
-  return `${base} ${Date.now()}`.slice(0, MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH);
+  return uniqueProspectViewCopyName(sourceName, existingNames);
 }
 
 export function nonAllPoolViewOrder(views: PoolTableView[]): string[] {

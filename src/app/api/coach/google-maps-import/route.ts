@@ -7,6 +7,7 @@ import {
 } from "@/lib/leadLists/audienceLists";
 import { createGoogleMapsSearchJob } from "@/lib/googleMaps/importJob";
 import { clampGoogleMapsMaxPlaces } from "@/lib/googleMaps/cost";
+import { resolveGoogleMapsLocation } from "@/lib/googleMaps/location";
 import {
   formatGoogleMapsSearchLabel,
   joinGoogleMapsSearchTerms,
@@ -26,6 +27,10 @@ export async function POST(request: Request) {
     searchTerm?: string;
     searchTerms?: string[];
     location?: string;
+    city?: string;
+    countryCode?: string;
+    countryName?: string;
+    stateCode?: string;
     maxPlaces?: number;
     saveListName?: string;
   };
@@ -34,18 +39,21 @@ export async function POST(request: Request) {
     body.searchTerms ?? body.searchTerm
   );
   const searchTerm = joinGoogleMapsSearchTerms(searchTerms);
-  const location = body.location?.trim() || "";
+  const location = resolveGoogleMapsLocation({
+    city: body.city,
+    countryCode: body.countryCode,
+    countryName: body.countryName,
+    stateCode: body.stateCode,
+    location: body.location,
+  });
   if (!searchTerms.length) {
     return NextResponse.json(
       { error: "Enter a search like plumbers or dental practices." },
       { status: 400 }
     );
   }
-  if (location.length < 2 || location.length > 120) {
-    return NextResponse.json(
-      { error: "Enter a city or area, for example Manchester, UK." },
-      { status: 400 }
-    );
+  if ("error" in location) {
+    return NextResponse.json({ error: location.error }, { status: 400 });
   }
 
   try {
@@ -62,7 +70,9 @@ export async function POST(request: Request) {
         from_pool_import: true,
         search_term: searchTerm,
         search_terms: searchTerms,
-        location,
+        location: location.locationQuery,
+        country_code: location.countryCode,
+        state_code: location.stateCode,
         max_places: maxPlaces,
         list_cap: MAX_LIST_ITEMS_TOTAL,
       },
@@ -72,7 +82,9 @@ export async function POST(request: Request) {
       listId: pool.id,
       saveListId: saveList.id,
       searchTerms,
-      location,
+      location: location.locationQuery,
+      countryCode: location.countryCode,
+      stateLabel: location.stateLabel,
       maxPlaces,
       findPeople: true,
     });

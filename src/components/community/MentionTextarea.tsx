@@ -8,16 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  BookOpen,
-  Bold,
-  GraduationCap,
-  Heading1,
-  Heading2,
-  Heading3,
-  Link2,
-  List,
-} from "lucide-react";
+import { BookOpen, Bold, GraduationCap, Heading1, Heading2, Heading3, Link2, List, Users } from "lucide-react";
 import { COMMUNITY_EXTERNAL_LINK_CLASS } from "@/lib/communityAutolink";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
@@ -30,12 +21,14 @@ import {
   AcademyMentionPicker,
   type AcademyMentionPick,
 } from "@/components/community/AcademyMentionPicker";
+import { broadcastMentionsForQuery } from "@/lib/communityMentionUsers";
 
 export type MentionUser = {
   id: string;
   display_name: string;
   avatar_url: string | null;
   role: string;
+  broadcast?: "everyone" | "coaches";
 };
 
 type Props = {
@@ -52,6 +45,11 @@ type Props = {
   showFormattingToolbar?: boolean;
   /** Post author (or similar) surfaced first in the @-mention picker. */
   prioritizeUserId?: string;
+  /**
+   * Include @everyone / @Profit Coaches (notifies every community member).
+   * Off for support notes so a ticket cannot ping the whole community.
+   */
+  allowBroadcastMentions?: boolean;
 };
 
 type KnownMention = {
@@ -391,6 +389,7 @@ export function MentionTextarea({
   minAutoHeightPx = 0,
   showFormattingToolbar = false,
   prioritizeUserId,
+  allowBroadcastMentions = true,
 }: Props) {
   const taRef = useRef<HTMLTextAreaElement>(null);
   const mirrorInnerRef = useRef<HTMLDivElement>(null);
@@ -483,16 +482,34 @@ export function MentionTextarea({
     [highlightIdx, mentionUsers]
   );
 
+  const applyMentionUsers = useCallback(
+    (users: MentionUser[], query: string) => {
+      const broadcasts = allowBroadcastMentions
+        ? broadcastMentionsForQuery(query)
+        : [];
+      const merged: MentionUser[] = [
+        ...broadcasts,
+        ...users.filter((user) => !user.broadcast),
+      ];
+      setMentionUsers(merged);
+      const broadcastCount = broadcasts.length;
+      setHighlightIdx(
+        query.length === 0 && merged.length > broadcastCount ? broadcastCount : 0
+      );
+    },
+    [allowBroadcastMentions]
+  );
+
   const runMentionFetch = useCallback(
     (query: string) => {
       setMentionOpen(true);
-      setHighlightIdx(0);
 
       const cached = readMentionCache(query, prioritizeUserId);
       if (cached) {
-        setMentionUsers(cached);
+        applyMentionUsers(cached, query);
         setMentionLoading(false);
       } else {
+        applyMentionUsers([], query);
         setMentionLoading(true);
       }
 
@@ -501,12 +518,12 @@ export function MentionTextarea({
         fetchMentionUsers(query, prioritizeUserId)
           .then((users) => {
             if (fetchSeq.current !== seq) return;
-            setMentionUsers(users);
+            applyMentionUsers(users, query);
             setMentionLoading(false);
           })
           .catch(() => {
             if (fetchSeq.current !== seq) return;
-            setMentionUsers([]);
+            applyMentionUsers([], query);
             setMentionLoading(false);
           });
       };
@@ -523,7 +540,7 @@ export function MentionTextarea({
 
       mentionDebounceRef.current = setTimeout(doFetch, MENTION_SEARCH_DEBOUNCE_MS);
     },
-    [prioritizeUserId]
+    [applyMentionUsers, prioritizeUserId]
   );
 
   const syncMentionFromDom = useCallback(() => {
@@ -545,11 +562,14 @@ export function MentionTextarea({
       const ctx = getActiveMentionQuery(displayValue, sel);
       if (!ctx) return;
 
+      const isBroadcast = Boolean(user.broadcast);
       const safeName =
         user.display_name.replace(/[[\]()]/g, "").replace(/\s+/g, " ").trim() ||
-        "member";
-      const prefix = atPrefixForMentionType("user");
-      const target = buildMentionTarget({ type: "user", userId: user.id });
+        (isBroadcast ? "everyone" : "member");
+      const prefix = atPrefixForMentionType(isBroadcast ? "group" : "user");
+      const target = isBroadcast
+        ? buildMentionTarget({ type: "group", group: user.broadcast! })
+        : buildMentionTarget({ type: "user", userId: user.id });
       const mentionText = `${prefix}${safeName}`;
       const nextDisplay =
         displayValue.slice(0, ctx.start) + mentionText + " " + displayValue.slice(sel);
@@ -991,41 +1011,59 @@ export function MentionTextarea({
           className="absolute left-0 right-0 top-full z-20 mt-1 max-h-52 overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
           role="listbox"
         >
-          {mentionLoading ? (
+          {mentionLoading && mentionUsers.length === 0 ? (
             <li className="px-3 py-2 text-sm text-slate-500">Loading…</li>
           ) : mentionUsers.length === 0 ? (
             <li className="px-3 py-2 text-sm text-slate-500">No matches</li>
           ) : (
-            mentionUsers.map((u, idx) => (
-              <li key={u.id} role="option" aria-selected={idx === safeHighlightIdx}>
-                <button
-                  type="button"
-                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
-                    idx === safeHighlightIdx ? "bg-amber-50" : "hover:bg-slate-50"
-                  }`}
-                  onMouseDown={(ev) => {
-                    ev.preventDefault();
-                    insertMention(u);
-                  }}
-                >
-                  {u.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={u.avatar_url}
-                      alt=""
-                      className="h-8 w-8 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
-                      {profileInitialsFromName(u.display_name)}
+            mentionUsers.map((u, idx) => {
+              const next = mentionUsers[idx + 1];
+              const showDivider = Boolean(u.broadcast) && next && !next.broadcast;
+              return (
+                <li key={u.id} role="option" aria-selected={idx === safeHighlightIdx}>
+                  <button
+                    type="button"
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                      idx === safeHighlightIdx ? "bg-amber-50" : "hover:bg-slate-50"
+                    }`}
+                    onMouseDown={(ev) => {
+                      ev.preventDefault();
+                      insertMention(u);
+                    }}
+                  >
+                    {u.broadcast ? (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                        <Users className="h-4 w-4" strokeWidth={2} />
+                      </span>
+                    ) : u.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={u.avatar_url}
+                        alt=""
+                        className="h-8 w-8 shrink-0 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-600">
+                        {profileInitialsFromName(u.display_name)}
+                      </span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-slate-900">
+                        {u.broadcast ? `@${u.display_name}` : u.display_name}
+                      </span>
+                      {u.broadcast ? (
+                        <span className="block text-xs text-slate-500">
+                          Notifies everyone
+                        </span>
+                      ) : null}
                     </span>
-                  )}
-                  <span className="min-w-0 flex-1 truncate font-medium text-slate-900">
-                    {u.display_name}
-                  </span>
-                </button>
-              </li>
-            ))
+                  </button>
+                  {showDivider ? (
+                    <div className="my-1 border-t border-slate-100" role="separator" />
+                  ) : null}
+                </li>
+              );
+            })
           )}
         </ul>
       ) : null}

@@ -7,6 +7,7 @@ import {
   clampGoogleMapsMaxPlaces,
   GOOGLE_MAPS_FIND_PERSON_MAX,
 } from "@/lib/googleMaps/cost";
+import { expandGoogleMapsLocationAliases } from "@/lib/googleMaps/location";
 import { mapGoogleMapsDatasetItems } from "@/lib/googleMaps/mapPlaceToPool";
 import {
   googleMapsPlacesPerSearch,
@@ -50,6 +51,8 @@ export type StartGoogleMapsSearchInput = {
   searchTerm?: string;
   searchTerms?: string[];
   location: string;
+  countryCode?: string | null;
+  state?: string | null;
   maxPlaces: number;
   findPeople: boolean;
   skipClosed?: boolean;
@@ -74,7 +77,7 @@ function requireSearchInput(input: StartGoogleMapsSearchInput): {
   const searchTerms = parseGoogleMapsSearchTerms(
     input.searchTerms ?? input.searchTerm
   );
-  const location = input.location.trim();
+  const location = expandGoogleMapsLocationAliases(input.location);
   if (!searchTerms.length) {
     throw new GoogleMapsScrapeError(
       "Enter a search like plumbers or dental practices.",
@@ -83,7 +86,7 @@ function requireSearchInput(input: StartGoogleMapsSearchInput): {
   }
   if (location.length < 2 || location.length > 120) {
     throw new GoogleMapsScrapeError(
-      "Enter a city or area, for example Manchester, UK.",
+      "Pick a country, or enter a city and country.",
       "invalid_input"
     );
   }
@@ -103,6 +106,10 @@ export async function startGoogleMapsSearch(
   const runInput: Record<string, unknown> = {
     searchStringsArray: searchTerms,
     locationQuery: location,
+    ...(input.countryCode?.trim()
+      ? { countryCode: input.countryCode.trim().toUpperCase() }
+      : {}),
+    ...(input.state?.trim() ? { state: input.state.trim() } : {}),
     maxCrawledPlacesPerSearch: googleMapsPlacesPerSearch(
       maxPlaces,
       searchTerms.length

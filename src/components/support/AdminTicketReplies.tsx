@@ -1190,6 +1190,7 @@ export function AdminTicketReplies({
                   disabled={busy}
                   rows={composerExpanded ? 12 : 4}
                   placeholder="Add an internal note… Type @ to mention Pam or Zander"
+                  allowBroadcastMentions={false}
                   className="min-h-[5.5rem] w-full resize-none border-0 bg-transparent px-3 py-2.5 text-sm leading-normal text-slate-900 outline-none placeholder:text-slate-400"
                 />
               ) : (
@@ -1427,6 +1428,7 @@ export function AdminTicketReplies({
                 disabled={busy}
                 rows={2}
                 placeholder="Add an internal note… Type @ to mention Pam or Zander"
+                allowBroadcastMentions={false}
                 className="min-h-[2.5rem] w-full resize-none rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               />
             </div>

@@ -42,6 +42,48 @@ function mapAccountStatus(raw: Record<string, unknown> | null | undefined): stri
   return "OK";
 }
 
+/**
+ * Unclaimed Unipile sessions may be claimed only when hosted auth stamped
+ * this coach's id onto the account. Auto-claiming "any free Google" is how
+ * one coach would see another coach's calendar.
+ */
+export function shouldClaimUnclaimedUnipileAccount(
+  accountName: string,
+  coachId: string
+): boolean {
+  const name = accountName.trim();
+  const id = coachId.trim();
+  return Boolean(name) && Boolean(id) && name === id;
+}
+
+/** Localhost Unipile notify_url never arrives; claim only a just-created mailbox. */
+export const RECENT_UNCLAIMED_MAILING_CLAIM_MS = 30 * 60 * 1000;
+
+/**
+ * After Google OAuth, Unipile overwrites hosted-auth `name` (coach UUID) with
+ * the mailbox email, so UUID matching fails. If this coach has no mailbox of
+ * that provider yet, claim an unclaimed mailing account created in the last
+ * 30 minutes — the localhost notify gap. Never claim LinkedIn this way.
+ */
+export function shouldClaimRecentUnclaimedMailingAccount(input: {
+  accountName: string;
+  coachId: string;
+  provider: string;
+  createdAt: string | null | undefined;
+  coachHasAccountForProvider: boolean;
+  nowMs?: number;
+}): boolean {
+  if (shouldClaimUnclaimedUnipileAccount(input.accountName, input.coachId)) {
+    return true;
+  }
+  if (input.coachHasAccountForProvider) return false;
+  if (!isMailingProvider(input.provider)) return false;
+  const created = Date.parse(String(input.createdAt || ""));
+  if (!Number.isFinite(created)) return false;
+  const now = input.nowMs ?? Date.now();
+  return now - created >= 0 && now - created <= RECENT_UNCLAIMED_MAILING_CLAIM_MS;
+}
+
 function createdAtMs(item: unknown): number {
   const raw =
     item && typeof item === "object"
@@ -111,23 +153,6 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
     .select("id, unipile_account_id, provider, status")
     .eq("coach_id", coachId);
   const known = new Set((existing ?? []).map((r) => r.unipile_account_id as string));
-  const knownByProvider = new Map<string, number>();
-  const liveStatus = new Map<string, { provider: string; status: string }>();
-  for (const row of existing ?? []) {
-    const p = normalizeUnipileProvider(row.provider as string);
-    knownByProvider.set(p, (knownByProvider.get(p) || 0) + 1);
-    liveStatus.set(row.unipile_account_id as string, {
-      provider: p,
-      status: String(row.status || "").toUpperCase(),
-    });
-  }
-
-  function hasOkProvider(provider: string) {
-    for (const row of liveStatus.values()) {
-      if (row.provider === provider && row.status === "OK") return true;
-    }
-    return false;
-  }
 
   const { data: claimedRows } = await supabaseAdmin
     .from("linkedin_outreach_accounts")
@@ -167,8 +192,7 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
       item as Record<string, unknown>,
       coachId
     );
-    const isNew = !known.has(item.id);
-    await supabaseAdmin.from("linkedin_outreach_accounts").upsert(
+    const { error } = await supabaseAdmin.from("linkedin_outreach_accounts").upsert(
       {
         coach_id: coachId,
         unipile_account_id: item.id,
@@ -180,12 +204,12 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
       },
       { onConflict: "coach_id,unipile_account_id" }
     );
+    if (error) {
+      if (error.code === "23505") return { provider, status };
+      throw new Error(error.message);
+    }
     known.add(item.id);
     claimed.add(item.id);
-    liveStatus.set(item.id, { provider, status });
-    if (isNew) {
-      knownByProvider.set(provider, (knownByProvider.get(provider) || 0) + 1);
-    }
     return { provider, status };
   }
 
@@ -195,25 +219,38 @@ export async function syncOutreachAccountsForCoach(coachId: string) {
     await persist(item);
   }
 
-  // Hosted auth sets name=coachId, but WhatsApp overwrites it with the phone
-  // number. Reconnect also creates a new Unipile account, so claim a fresh OK
-  // session when this coach's existing one is dead.
+  const ownedProviders = new Set(
+    (existing ?? []).map((r) => normalizeUnipileProvider(r.provider))
+  );
+
+  // Hosted auth stamps name=coachId. Unipile then overwrites name with the
+  // Gmail address, and localhost notify_url never persists the row — so also
+  // claim a just-created unclaimed mailbox when this coach has none yet.
   const unclaimed = usable
     .filter((item) => !known.has(item.id) && !claimed.has(item.id))
     .sort((a, b) => createdAtMs(b) - createdAtMs(a));
   for (const item of unclaimed) {
+    const name = String(item.name || "");
     const provider = normalizeUnipileProvider(
       String(item.type || item.provider || "")
     );
-    const name = String(item.name || "");
-    const status = mapAccountStatus(item as Record<string, unknown>);
-    const providerCount = knownByProvider.get(provider) || 0;
-    const claimForCoach =
-      name === coachId ||
-      providerCount === 0 ||
-      (status === "OK" && !hasOkProvider(provider));
-    if (!claimForCoach) continue;
+    const createdAt =
+      item && typeof item === "object"
+        ? String((item as { created_at?: unknown }).created_at || "")
+        : "";
+    if (
+      !shouldClaimRecentUnclaimedMailingAccount({
+        accountName: name,
+        coachId,
+        provider,
+        createdAt,
+        coachHasAccountForProvider: ownedProviders.has(provider),
+      })
+    ) {
+      continue;
+    }
     await persist(item);
+    ownedProviders.add(provider);
   }
 
   return listOutreachAccounts(coachId);
@@ -223,6 +260,20 @@ export async function upsertOutreachAccountFromNotify(input: {
   coachId: string;
   unipileAccountId: string;
 }) {
+  const { data: existingOwner } = await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .select("coach_id")
+    .eq("unipile_account_id", input.unipileAccountId)
+    .maybeSingle();
+  if (
+    existingOwner?.coach_id &&
+    existingOwner.coach_id !== input.coachId
+  ) {
+    throw new Error(
+      "This connected account already belongs to another coach."
+    );
+  }
+
   const got = await getUnipileAccount(input.unipileAccountId);
   const raw = (got.data ?? { id: input.unipileAccountId }) as Record<
     string,

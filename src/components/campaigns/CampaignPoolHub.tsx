@@ -4,11 +4,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, Fra
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   Ban,
   Check,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   ListMinus,
   ListPlus,
   Loader2,
@@ -22,6 +24,7 @@ import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImpo
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { googleMapsImportProgressPercent } from "@/lib/googleMaps/cost";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { ContactInfoCell } from "@/components/table/ContactInfoCell";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
@@ -29,7 +32,10 @@ import {
   ProspectsPipelineToolbar,
   type ProspectsToolbarMenu,
 } from "@/components/prospects/ProspectsPipelineToolbar";
-import { ProspectsTableViewBar } from "@/components/prospects/ProspectsTableViewBar";
+import {
+  ProspectsTableViewBar,
+  VIEW_BAR_ADD_TAB_CLASS,
+} from "@/components/prospects/ProspectsTableViewBar";
 import { ProspectLeadSubtitle } from "@/components/prospects/ProspectLeadSubtitle";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
 import { ProspectTagChip } from "@/components/prospects/ProspectTagChip";
@@ -46,8 +52,11 @@ import {
   partitionOrderedColumns,
 } from "@/hooks/usePersistedColumnSettings";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
-import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
 import { formatShortDate } from "@/lib/formatShortDate";
+import {
+  buildGroupedTableItems,
+  toggleCollapsedGroupKey,
+} from "@/lib/table/groupedTableItems";
 import { normalizePoolWebsite } from "@/lib/pool/identity";
 import {
   estimateGoogleMapsFindPersonCostUsd,
@@ -84,7 +93,6 @@ import {
   type PoolDateAddedFilter,
   type PoolGroupField,
   type PoolGroupOrder,
-  type PoolGroupSection,
   type PoolPerson,
   type PersistedPoolGrouping,
   type PoolTagFilter,
@@ -96,6 +104,12 @@ import {
 import { paginationItems } from "@/lib/communityPagination";
 import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
 import type { CsvExportScope } from "@/components/table/TableCsvExportButton";
+import {
+  prefetchProspectContact,
+  seedProspectContactCache,
+} from "@/lib/getClients/hubFetchers";
+import type { ProspectRow } from "@/lib/prospectRow";
+import { resolveProspectStatus } from "@/lib/prospectStatus";
 
 type CampaignOption = {
   id: string;
@@ -128,6 +142,64 @@ function poolPersonHref(contactId: string, isAdmin: boolean): string {
     ? `/admin/prospects/${encodeURIComponent(contactId)}`
     : `/coach/prospects/${encodeURIComponent(contactId)}`;
   return `${base}?from=pool`;
+}
+
+function liteProspectFromPool(row: PoolPerson, contactId: string): ProspectRow {
+  return {
+    id: contactId,
+    full_name: row.full_name,
+    job_title: row.job_title,
+    email: row.email,
+    business_name: row.company,
+    linkedin_url: row.linkedin_url,
+    company_website: row.website,
+    phone: row.phone,
+    type: "prospect",
+    prospect_status: "leads",
+    status: resolveProspectStatus({
+      prospect_status: "leads",
+      last_completed_at: null,
+      next_call: null,
+      last_past_call_status: null,
+      next_action: null,
+    }),
+    boss_score: null,
+    boss_score_at: null,
+    boss_score_report_token: null,
+    boss_score_premium: null,
+    boss_score_premium_at: null,
+    boss_score_premium_source: null,
+    last_assessed_at: null,
+    revenue: null,
+    team_size: null,
+    years_in_business: null,
+    outcome: null,
+    obstacles: null,
+    preferred_support: null,
+    boss_level: null,
+    tags: row.tags,
+  };
+}
+
+function warmPoolPerson(
+  row: PoolPerson,
+  isAdmin: boolean,
+  prefetchHref: (href: string) => void,
+  impersonatingCoachId?: string | null
+) {
+  if (!row.contact_id) return;
+  seedProspectContactCache(
+    row.contact_id,
+    isAdmin,
+    liteProspectFromPool(row, row.contact_id),
+    impersonatingCoachId
+  );
+  prefetchProspectContact(row.contact_id, isAdmin, impersonatingCoachId);
+  try {
+    prefetchHref(poolPersonHref(row.contact_id, isAdmin));
+  } catch {
+    /* prefetch is best-effort */
+  }
 }
 
 function PoolCampaignPickerList({
@@ -209,18 +281,15 @@ const DEFAULT_POOL_PAGE_SIZE: PoolPageSize = 50;
 const TABLE_SECTION_PADDING = "px-5 sm:px-6";
 const TABLE_CHECKBOX_COL_WIDTH = 28;
 const TABLE_NAME_COL_WIDTH = 280;
-const TABLE_CONTACT_COL_WIDTH = 184;
 
 function getPoolColumnWidth(key: PoolColumnKey): number {
   switch (key) {
+    case "contact_info":
+      return 184;
     case "title":
       return 140;
     case "company":
       return 160;
-    case "email":
-      return 180;
-    case "phone":
-      return 140;
     case "website":
       return 140;
     case "source":
@@ -284,6 +353,7 @@ export function CampaignPoolHub({
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
+  const { impersonatingCoachId } = useImpersonation();
   const [people, setPeople] = useState<PoolPerson[]>([]);
   const [poolListId, setPoolListId] = useState<string | null>(null);
   const [activeViewId, setActiveViewId] = useState<"pool" | string>("pool");
@@ -359,6 +429,9 @@ export function CampaignPoolHub({
   const [newTagDraft, setNewTagDraft] = useState("");
   const [findPersonJobId, setFindPersonJobId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(
+    () => new Set()
+  );
   const [pageSize, setPageSize] = useState<PoolPageSize>(DEFAULT_POOL_PAGE_SIZE);
   const [draggingColumnKey, setDraggingColumnKey] = useState<PoolColumnKey | null>(
     null
@@ -792,33 +865,34 @@ export function CampaignPoolHub({
     [filtered, groupSections]
   );
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(displayPeople.length / pageSize)
-  );
+  const groupedItems = useMemo(() => {
+    if (!groupSections?.length) return null;
+    return buildGroupedTableItems(
+      groupSections,
+      collapsedGroupKeys,
+      (section) => section.people
+    );
+  }, [collapsedGroupKeys, groupSections]);
+
+  const paginationLength = groupedItems?.length ?? displayPeople.length;
+
+  const totalPages = Math.max(1, Math.ceil(paginationLength / pageSize));
+
+  const paginatedGroupedItems = useMemo(() => {
+    if (!groupedItems) return null;
+    const start = (page - 1) * pageSize;
+    return groupedItems.slice(start, start + pageSize);
+  }, [groupedItems, page, pageSize]);
 
   const pagedPeople = useMemo(() => {
+    if (paginatedGroupedItems) {
+      return paginatedGroupedItems
+        .filter((item) => item.type === "row")
+        .map((item) => item.row);
+    }
     const start = (page - 1) * pageSize;
     return displayPeople.slice(start, start + pageSize);
-  }, [displayPeople, page, pageSize]);
-
-  const groupHeaderByFirstRowId = useMemo(() => {
-    const map = new Map<string, PoolGroupSection>();
-    if (!groupSections?.length) return map;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    let seen = 0;
-    for (const section of groupSections) {
-      const sectionStart = seen;
-      const sectionEnd = seen + section.people.length;
-      seen = sectionEnd;
-      if (sectionEnd <= start || sectionStart >= end) continue;
-      const firstIndex = Math.max(0, start - sectionStart);
-      const first = section.people[firstIndex];
-      if (first) map.set(first.id, section);
-    }
-    return map;
-  }, [groupSections, page, pageSize]);
+  }, [displayPeople, page, pageSize, paginatedGroupedItems]);
 
   const pageNumbers = useMemo(
     () => paginationItems(page, totalPages),
@@ -826,12 +900,12 @@ export function CampaignPoolHub({
   );
 
   const paginationRangeLabel =
-    displayPeople.length === 0
+    paginationLength === 0
       ? "0 people"
       : `${(page - 1) * pageSize + 1}-${Math.min(
           page * pageSize,
-          displayPeople.length
-        )} of ${displayPeople.length}`;
+          paginationLength
+        )} of ${paginationLength}`;
 
   const pageIds = useMemo(
     () => pagedPeople.map((row) => row.id),
@@ -851,7 +925,6 @@ export function CampaignPoolHub({
   const tableMinWidth =
     TABLE_CHECKBOX_COL_WIDTH +
     TABLE_NAME_COL_WIDTH +
-    TABLE_CONTACT_COL_WIDTH +
     shownColumnOptions.reduce((sum, column) => sum + getPoolColumnWidth(column.key), 0);
 
   const setColumnVisible = useCallback(
@@ -1581,12 +1654,16 @@ export function CampaignPoolHub({
       mode === "shown"
         ? shownColumnOptions.map((option) => option.key)
         : columnOrder.filter((key) => columnVisibility[key]);
-    const identityKeys: PoolColumnKey[] = ["company", "email", "phone"];
-    const exportKeys = [
-      ...identityKeys.filter((key) => !keys.includes(key)),
-      ...keys,
+    const tableKeys = keys.filter((key) => key !== "contact_info");
+    const exportKeys: Array<"email" | "phone" | PoolColumnKey> = [
+      ...(tableKeys.includes("company") ? [] : (["company"] as const)),
+      "email",
+      "phone",
+      ...tableKeys,
     ];
     const header = ["Name", ...exportKeys.map((key) => {
+      if (key === "email") return "Email";
+      if (key === "phone") return "Phone";
       const option = POOL_TABLE_COLUMN_OPTIONS.find((item) => item.key === key);
       return option?.label ?? key;
     })];
@@ -1612,46 +1689,6 @@ export function CampaignPoolHub({
     downloadCsv("pool.csv", [header, ...rows]);
   }
 
-  function renderPoolContact(row: PoolPerson) {
-    const phone = row.phone?.trim() || null;
-    const email = row.email?.trim() || null;
-    if (!phone && !email) return null;
-    const formattedPhone = phone ? formatPhoneDisplay(phone) ?? phone : null;
-    const telHref = phone ? phoneToTelHref(phone) : null;
-    return (
-      <div className="flex min-w-0 flex-col justify-center gap-0.5">
-        {phone ? (
-          telHref ? (
-            <a
-              href={telHref}
-              className="min-w-0 truncate text-sm tabular-nums text-slate-800 hover:text-sky-700 hover:underline"
-              title={`Call ${formattedPhone}`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {formattedPhone}
-            </a>
-          ) : (
-            <span className="min-w-0 truncate text-sm tabular-nums text-slate-800">
-              {formattedPhone}
-            </span>
-          )
-        ) : null}
-        {email ? (
-          <a
-            href={`mailto:${email}`}
-            className={`min-w-0 truncate hover:text-sky-700 hover:underline ${
-              phone ? "text-xs leading-snug text-slate-500" : "text-sm text-slate-800"
-            }`}
-            title={email}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {email}
-          </a>
-        ) : null}
-      </div>
-    );
-  }
-
   function rememberPoolContact(itemId: string, contactId: string) {
     const patch = (rows: PoolPerson[]) =>
       rows.map((row) =>
@@ -1665,6 +1702,7 @@ export function CampaignPoolHub({
   async function openPoolPerson(row: PoolPerson) {
     if (openingId || busy) return;
     if (row.contact_id) {
+      warmPoolPerson(row, isAdmin, (href) => router.prefetch(href), impersonatingCoachId);
       router.push(poolPersonHref(row.contact_id, isAdmin));
       return;
     }
@@ -1696,7 +1734,16 @@ export function CampaignPoolHub({
         setError(body.error || "Could not open this person.");
         return;
       }
-      if (body.contactId) rememberPoolContact(row.id, body.contactId);
+      if (body.contactId) {
+        rememberPoolContact(row.id, body.contactId);
+        seedProspectContactCache(
+          body.contactId,
+          isAdmin,
+          liteProspectFromPool(row, body.contactId),
+          impersonatingCoachId
+        );
+        prefetchProspectContact(body.contactId, isAdmin, impersonatingCoachId);
+      }
       const href = isAdmin
         ? body.href.replace(/^\/coach\//, "/admin/")
         : body.href;
@@ -1715,7 +1762,6 @@ export function CampaignPoolHub({
         ? null
         : poolLeadCompany(row);
       const website = columnVisibility.website ? null : row.website;
-      const contact = renderPoolContact(row);
       const canOpen = Boolean(row.linkedin_url || row.email || row.phone);
       const isOpening = openingId === row.id;
       return (
@@ -1724,6 +1770,14 @@ export function CampaignPoolHub({
         className={`border-t border-slate-100 ${
           canOpen ? "hover:bg-slate-50/80" : "hover:bg-slate-50/40"
         }`}
+        onPointerEnter={() =>
+          warmPoolPerson(
+            row,
+            isAdmin,
+            (href) => router.prefetch(href),
+            impersonatingCoachId
+          )
+        }
       >
         <td
           className="overflow-hidden px-1 py-2.5 text-center"
@@ -1789,12 +1843,11 @@ export function CampaignPoolHub({
             </div>
           </div>
         </td>
-        <td className="overflow-hidden px-3 py-2.5 align-middle">
-          {contact ?? <span className="text-sm text-slate-400">—</span>}
-        </td>
         {shownColumnOptions.map((option) => (
           <td key={option.key} className="overflow-hidden px-3 py-2.5 text-sm text-slate-700">
-            {option.key === "title" ? (
+            {option.key === "contact_info" ? (
+              <ContactInfoCell phone={row.phone} email={row.email} />
+            ) : option.key === "title" ? (
               row.job_title || "—"
             ) : option.key === "company" ? (
               row.company || "—"
@@ -1872,37 +1925,6 @@ export function CampaignPoolHub({
               )
             ) : option.key === "created_at" ? (
               row.created_at ? formatShortDate(row.created_at) : "—"
-            ) : option.key === "email" ? (
-              row.email ? (
-                <a
-                  href={`mailto:${row.email}`}
-                  className="block max-w-[14rem] truncate text-[#0c5290] hover:underline"
-                  title={row.email}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {row.email}
-                </a>
-              ) : (
-                "—"
-              )
-            ) : option.key === "phone" ? (
-              row.phone ? (
-                phoneToTelHref(row.phone) ? (
-                  <a
-                    href={phoneToTelHref(row.phone) ?? undefined}
-                    className="tabular-nums text-slate-800 hover:text-sky-700 hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {formatPhoneDisplay(row.phone) ?? row.phone}
-                  </a>
-                ) : (
-                  <span className="tabular-nums">
-                    {formatPhoneDisplay(row.phone) ?? row.phone}
-                  </span>
-                )
-              ) : (
-                "—"
-              )
             ) : option.key === "website" ? (
               row.website && poolWebsiteHref(row.website) ? (
                 <a
@@ -2698,7 +2720,7 @@ export function CampaignPoolHub({
                 })}
                 {addingList ? (
                   <form
-                    className="flex items-center gap-2 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5"
+                    className="flex items-center gap-2 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent px-2 py-1.5"
                     onSubmit={(e) => {
                       e.preventDefault();
                       void createEmptyPoolList(newTabListName);
@@ -2723,7 +2745,7 @@ export function CampaignPoolHub({
                       }}
                       placeholder="List name"
                       disabled={busy}
-                      className="w-36 rounded border border-slate-300 px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      className="w-36 rounded border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                       aria-label="New list name"
                     />
                     <button
@@ -2743,7 +2765,7 @@ export function CampaignPoolHub({
                       setRenamingImportListId(null);
                       setAddingList(true);
                     }}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent bg-slate-200/90 px-2 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-300/70 hover:text-slate-800 disabled:opacity-50"
+                    className={`${VIEW_BAR_ADD_TAB_CLASS} disabled:opacity-50`}
                     aria-label="Add list"
                   >
                     <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -2795,7 +2817,6 @@ export function CampaignPoolHub({
               }}
             />
             <col style={{ width: TABLE_NAME_COL_WIDTH }} />
-            <col style={{ width: TABLE_CONTACT_COL_WIDTH }} />
             {shownColumnOptions.map((column) => (
               <col
                 key={column.key}
@@ -2822,7 +2843,6 @@ export function CampaignPoolHub({
                 />
               </th>
               <th className="overflow-hidden py-2 pl-1 pr-3">Name</th>
-              <th className="overflow-hidden px-3 py-2">Contact Info</th>
               {shownColumnOptions.map((option) => (
                 <th key={option.key} className="overflow-hidden px-3 py-2">
                   {option.label}
@@ -2834,7 +2854,7 @@ export function CampaignPoolHub({
             {loading ? (
               <tr>
                 <td
-                  colSpan={3 + shownColumnOptions.length}
+                  colSpan={2 + shownColumnOptions.length}
                   className="p-0"
                 >
                   <div className="sticky left-0 w-[100cqw] px-3 py-12 text-center text-sm text-slate-600">
@@ -2851,7 +2871,7 @@ export function CampaignPoolHub({
             ) : filtered.length === 0 ? (
               <tr>
                 <td
-                  colSpan={3 + shownColumnOptions.length}
+                  colSpan={2 + shownColumnOptions.length}
                   className="p-0"
                 >
                   <div className="sticky left-0 w-[100cqw] px-3 py-10 text-center text-sm text-slate-600">
@@ -2895,24 +2915,52 @@ export function CampaignPoolHub({
                 </td>
               </tr>
             ) : (
-              pagedPeople.map((row) => {
-                const section = groupHeaderByFirstRowId.get(row.id);
-                return (
-                  <Fragment key={row.id}>
-                    {section ? (
-                      <tr>
-                        <td
-                          colSpan={3 + shownColumnOptions.length}
-                          className="border-t border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+              (
+                paginatedGroupedItems ??
+                pagedPeople.map((row) => ({ type: "row" as const, row }))
+              ).map((item) => {
+                if (item.type === "header") {
+                  const section = item.section;
+                  const collapsed = collapsedGroupKeys.has(section.key);
+                  return (
+                    <tr key={`group:${section.key}`}>
+                      <td
+                        colSpan={2 + shownColumnOptions.length}
+                        className="border-t border-slate-100 bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500"
+                      >
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1.5 text-left hover:text-slate-800"
+                          aria-expanded={!collapsed}
+                          onClick={() =>
+                            setCollapsedGroupKeys((prev) =>
+                              toggleCollapsedGroupKey(prev, section.key)
+                            )
+                          }
                         >
-                          {section.label}
-                          <span className="ml-2 font-medium normal-case text-slate-400">
+                          {collapsed ? (
+                            <ChevronRight
+                              className="h-3.5 w-3.5 shrink-0"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ChevronDown
+                              className="h-3.5 w-3.5 shrink-0"
+                              aria-hidden
+                            />
+                          )}
+                          <span>{section.label}</span>
+                          <span className="font-medium normal-case text-slate-400">
                             {section.people.length}
                           </span>
-                        </td>
-                      </tr>
-                    ) : null}
-                    {renderRows([row])}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }
+                return (
+                  <Fragment key={item.row.id}>
+                    {renderRows([item.row])}
                   </Fragment>
                 );
               })

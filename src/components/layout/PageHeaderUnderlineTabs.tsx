@@ -40,6 +40,7 @@ export type PageHeaderUnderlineTabLinkItem = {
   /** Passed to Next.js Link; default false for in-page tab switches. */
   scroll?: boolean;
   onNavigate?: () => void;
+  onPrefetch?: () => void;
   /** Lower-emphasis tab (e.g. admin-only preview). */
   variant?: "default" | "subtle";
 };
@@ -178,6 +179,8 @@ function OverflowMenu({
               role="menuitem"
               href={item.href}
               scroll={item.scroll ?? false}
+              onMouseEnter={() => item.onPrefetch?.()}
+              onFocus={() => item.onPrefetch?.()}
               onClick={() => {
                 item.onNavigate?.();
                 onClose();
@@ -215,6 +218,9 @@ function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
       <Link
         href={item.href}
         scroll={item.scroll ?? false}
+        prefetch
+        onMouseEnter={() => item.onPrefetch?.()}
+        onFocus={() => item.onPrefetch?.()}
         onClick={item.onNavigate}
         className={cls}
       >

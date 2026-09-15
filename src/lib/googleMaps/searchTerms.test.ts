@@ -55,7 +55,7 @@ describe("Google Maps place split", () => {
   it("explains the split for the import form", () => {
     assert.equal(
       formatGoogleMapsSplitHint(100, 2),
-      "Up to 100 businesses total, split across 2 searches (about 50 each). Same listing is only added once."
+      "100 businesses total, split across 2 searches (about 50 each). Same listing is only added once."
     );
     assert.equal(formatGoogleMapsSplitHint(100, 1), null);
   });

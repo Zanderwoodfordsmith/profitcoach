@@ -4,6 +4,7 @@ import { splitTextWithHttpUrls } from "@/lib/communityAutolink";
 import {
   MENTION_UUID_REGEX,
   splitMentionSegments,
+  BROADCAST_MENTION_LABEL,
 } from "@/lib/communityMentions";
 
 const MD_FRAGMENT_PLACEHOLDER = "\uE000md";
@@ -134,7 +135,12 @@ export function communityPostCardPreview(
   return splitMentionSegments(body)
     .map((seg) => {
       if (seg.kind === "mention") {
-        const fallback = seg.mentionType === "user" ? "member" : seg.mentionType;
+        const fallback =
+          seg.mentionType === "user"
+            ? "member"
+            : seg.mentionType === "group"
+              ? (seg.group ? BROADCAST_MENTION_LABEL[seg.group] : "everyone")
+              : seg.mentionType;
         const raw =
           seg.labelFromToken ??
           (seg.mentionType === "user" ? nameById[seg.userId ?? ""] : undefined) ??

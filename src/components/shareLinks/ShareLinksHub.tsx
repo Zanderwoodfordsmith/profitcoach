@@ -18,6 +18,9 @@ import {
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { callsCalendarsHref } from "@/lib/booking/callsCalendarsPath";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import { loadShareHubPayload } from "@/lib/getClients/hubFetchers";
 import {
   LEAD_MAGNETS,
   magnetShareCopyUrl,
@@ -229,14 +232,31 @@ export function ShareLinksHub() {
   const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
   const { impersonatingCoachId } = useImpersonation();
+  const cacheKey = hubQueryKey("share", impersonatingCoachId);
+  const cached = peekHubQuery<ShareHubPayload>(cacheKey);
+  const cachedSocials: SocialDraft | null = cached
+    ? {
+        ...emptySocialDraft(),
+        linkedin: cached.linkedin_url ?? "",
+        ...cached.social_links,
+      }
+    : null;
   const [appOrigin, setAppOrigin] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cached);
   const [error, setError] = useState<string | null>(null);
-  const [slug, setSlug] = useState("");
-  const [calendars, setCalendars] = useState<ShareHubCalendar[]>([]);
-  const [customLinks, setCustomLinks] = useState<CoachCustomLink[]>([]);
-  const [socials, setSocials] = useState<SocialDraft>(emptySocialDraft());
-  const [savedSocials, setSavedSocials] = useState<SocialDraft>(emptySocialDraft());
+  const [slug, setSlug] = useState(cached?.coach_slug ?? "");
+  const [calendars, setCalendars] = useState<ShareHubCalendar[]>(
+    () => cached?.calendars ?? []
+  );
+  const [customLinks, setCustomLinks] = useState<CoachCustomLink[]>(
+    () => cached?.custom_links ?? []
+  );
+  const [socials, setSocials] = useState<SocialDraft>(
+    () => cachedSocials ?? emptySocialDraft()
+  );
+  const [savedSocials, setSavedSocials] = useState<SocialDraft>(
+    () => cachedSocials ?? emptySocialDraft()
+  );
   const [socialSaving, setSocialSaving] = useState(false);
   const [socialMessage, setSocialMessage] = useState<string | null>(null);
   const [addingSocial, setAddingSocial] = useState<SocialNetwork | null>(null);
@@ -263,24 +283,7 @@ export function ShareLinksHub() {
     [impersonatingCoachId]
   );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const headers = await authHeaders();
-    if (!headers) {
-      setError("Sign in to load your links.");
-      setLoading(false);
-      return;
-    }
-    const res = await fetch("/api/coach/share-hub", { headers });
-    const body = (await res.json().catch(() => ({}))) as ShareHubPayload & {
-      error?: string;
-    };
-    if (!res.ok) {
-      setError(body.error ?? "Could not load links.");
-      setLoading(false);
-      return;
-    }
+  const applySharePayload = useCallback((body: ShareHubPayload) => {
     setSlug(body.coach_slug ?? "");
     setCalendars(body.calendars ?? []);
     setCustomLinks(body.custom_links ?? []);
@@ -291,12 +294,45 @@ export function ShareLinksHub() {
     };
     setSocials(nextSocials);
     setSavedSocials(nextSocials);
-    setLoading(false);
-  }, [authHeaders]);
+  }, []);
+
+  const load = useCallback(
+    async (force = false) => {
+      const hit = peekHubQuery<ShareHubPayload>(cacheKey);
+      if (!hit) setLoading(true);
+      setError(null);
+      try {
+        const body = await fetchHubQuery(cacheKey, loadShareHubPayload, {
+          force,
+        });
+        applySharePayload(body);
+      } catch (err) {
+        if (!hit) {
+          setError(
+            err instanceof Error ? err.message : "Could not load links."
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [applySharePayload, cacheKey]
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (loading) return;
+    writeHubQuery(cacheKey, {
+      coach_slug: slug || null,
+      linkedin_url: savedSocials.linkedin || null,
+      social_links: savedSocials,
+      custom_links: customLinks,
+      calendars,
+    } satisfies ShareHubPayload);
+  }, [cacheKey, calendars, customLinks, loading, savedSocials, slug]);
 
   async function copy(key: string, url: string) {
     try {

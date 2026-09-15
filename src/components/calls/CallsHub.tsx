@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
+import { ChevronLeft } from "lucide-react";
 import { BookCallFromListModal } from "@/components/calls/BookCallFromListModal";
 import { BookProspectModal } from "@/components/prospects/BookProspectModal";
 import { CallsTable } from "@/components/calls/CallsTable";
@@ -10,8 +10,14 @@ import type { ProspectRow } from "@/lib/prospectRow";
 import { CallsWeekView } from "@/components/calls/CallsWeekView";
 import { CallsCalendarSettings } from "@/components/calls/CallsCalendarSettings";
 import { CallsManageView } from "@/components/calls/CallsManageView";
+import {
+  CallsToolbar,
+  type CallsToolbarMenu,
+} from "@/components/calls/CallsToolbar";
+import type { CallsWorkspaceView } from "@/components/calls/CallsViewSwitcher";
 import { GoogleCalendarBookingCard } from "@/components/booking/GoogleCalendarBookingCard";
 import { BookingCalendarProviderCard } from "@/components/settings/BookingCalendarProviderCard";
+import { useCallsTableControls } from "@/hooks/useCallsTableControls";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import type { CallRow } from "@/lib/callRow";
@@ -28,6 +34,11 @@ import {
 } from "@/lib/callStatusUi";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { defaultCommunityCalendarTimezone } from "@/lib/communityCalendarTimezones";
+
+const LIST_DROPDOWN =
+  "absolute left-0 z-[90] mt-1 w-[min(92vw,20rem)] rounded-md border border-slate-200 bg-white p-3 shadow-lg";
+const CALENDAR_DROPDOWN =
+  "absolute left-0 z-[90] mt-1 w-[min(92vw,20rem)] max-h-[min(70vh,32rem)] overflow-y-auto rounded-md border border-slate-200 bg-white px-3 shadow-lg";
 
 type HubTab = "calendar" | "list" | "settings";
 
@@ -75,7 +86,12 @@ export function CallsHub({
   const tab = parseCallsHubTab(searchParams.get("tab"));
   const selectedCalendarSlug = searchParams.get("calendar")?.trim() || null;
   const calendarEditorOpen = tab === "settings" && Boolean(selectedCalendarSlug);
-  const [manageOpen, setManageOpen] = useState(true);
+  const lastWorkTab = useRef<CallsWorkspaceView>(
+    tab === "list" ? "list" : "calendar"
+  );
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
+  const [menu, setMenu] = useState<CallsToolbarMenu>(null);
   const [viewType, setViewType] = useState<CalendarViewType>("all");
   const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(
     () => new Set()
@@ -147,6 +163,21 @@ export function CallsHub({
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
+
+  useEffect(() => {
+    if (tab === "calendar" || tab === "list") lastWorkTab.current = tab;
+  }, [tab]);
+
+  useEffect(() => {
+    if (!menu) return;
+    function handlePointerDown(e: MouseEvent) {
+      const target = e.target as Node;
+      if (toolbarRef.current?.contains(target)) return;
+      setMenu(null);
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [menu]);
 
   const calendarFilters = useMemo<CalendarFilterItem[]>(() => {
     const byName = new Map<string, CalendarFilterItem>();
@@ -287,18 +318,49 @@ export function CallsHub({
     });
   }, [calls, selectedCalendars, isAdminUser]);
 
+  const listControls = useCallsTableControls({
+    calls: listFiltered,
+    searchTerm: search,
+    coachFilterOptions,
+    coachFilter,
+    onCoachFilterChange,
+  });
+
+  const workspaceView: CallsWorkspaceView = tab === "list" ? "list" : "calendar";
+
+  const calendarFilterCount = useMemo(() => {
+    let count = 0;
+    const enabled = calendarFilters.filter((item) => item.enabled);
+    const allEnabledSelected =
+      enabled.length > 0 &&
+      enabled.every((item) => selectedCalendars.has(item.name)) &&
+      selectedCalendars.size === enabled.length;
+    if (calendarFilters.length > 0 && !allEnabledSelected) count += 1;
+    if (viewType !== "all") count += 1;
+    if (showCoachColumn && coachFilter && coachFilter !== "all") count += 1;
+    return count;
+  }, [
+    calendarFilters,
+    selectedCalendars,
+    viewType,
+    showCoachColumn,
+    coachFilter,
+  ]);
+
+  const filterCount =
+    workspaceView === "list" ? listControls.filterCount : calendarFilterCount;
+
+  const settingsHref = `${callsBasePath}?tab=settings`;
+
   const callList = (
     <CallsTable
-      calls={listFiltered}
+      rows={listControls.sortedCalls}
       loading={loading}
       error={error}
-      showCoachColumn={showCoachColumn}
       onRowClick={onRowClick}
       emptyMessage={emptyMessage}
-      coachFilterOptions={coachFilterOptions}
-      coachFilter={coachFilter}
-      onCoachFilterChange={onCoachFilterChange}
-      renderRowActions={(row) =>
+      showCoachColumn={showCoachColumn}
+      renderCallStatus={(row) =>
         row.source === "native" ? (
           <select
             className="rounded border border-slate-200 px-1.5 py-1 text-xs"
@@ -330,107 +392,18 @@ export function CallsHub({
     />
   );
 
-  const tabItems = [
-    {
-      kind: "button" as const,
-      id: "calendar",
-      label: "Calendar",
-      active: tab === "calendar",
-      onClick: () => setTab("calendar"),
-    },
-    {
-      kind: "button" as const,
-      id: "list",
-      label: "Call list",
-      active: tab === "list",
-      onClick: () => setTab("list"),
-    },
-    {
-      kind: "button" as const,
-      id: "settings",
-      label: "Settings",
-      active: tab === "settings",
-      onClick: () => setTab("settings"),
-    },
-  ];
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="border-b border-slate-200">
-        <PageHeaderUnderlineTabs
-          placement="content"
-          ariaLabel="Calls sections"
-          items={tabItems}
-        />
-      </div>
-
-      {tab === "calendar" ? (
-        <div className="flex flex-col gap-4">
-          {!manageOpen ? (
-            <button
-              type="button"
-              className="self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 shadow-sm lg:hidden"
-              onClick={() => setManageOpen(true)}
-            >
-              Manage view
-            </button>
-          ) : null}
-          <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="min-w-0 flex-1">
-            {loading ? (
-              <p className="text-sm text-slate-600">Loading…</p>
-            ) : (
-              <CallsWeekView
-                calls={calls}
-                timezone={timezone}
-                selectedCalendarNames={selectedCalendars}
-                selectedCoachIds={selectedCoachIds}
-                viewType={viewType}
-                settingsHref={`${callsBasePath}?tab=settings`}
-                onSelectCall={(row) => {
-                  void openCallDetail(row);
-                }}
-              />
-            )}
-          </div>
-          <CallsManageView
-            open={manageOpen}
-            onClose={() => setManageOpen(false)}
-            calendars={calendarFilters}
-            calendarsLoading={calendarsLoading}
-            settingsHref={`${callsBasePath}?tab=settings`}
-            selectedCalendars={selectedCalendars}
-            onToggleCalendar={toggleCalendar}
-            viewType={viewType}
-            onViewTypeChange={setViewType}
-            showCoachFilter={Boolean(
-              showCoachColumn && coachFilterOptions && onCoachFilterChange
-            )}
-            coachFilterOptions={coachFilterOptions}
-            coachFilter={coachFilter}
-            onCoachFilterChange={onCoachFilterChange}
-          />
-          </div>
-        </div>
-      ) : null}
-
-      {tab === "list" ? (
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setBookPickerOpen(true)}
-              className="rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-sky-700"
-            >
-              Book a call
-            </button>
-          </div>
-          {callList}
-        </div>
-      ) : null}
-
       {tab === "settings" ? (
         <div className="flex w-full min-w-0 flex-col gap-4">
+          <button
+            type="button"
+            onClick={() => setTab(lastWorkTab.current)}
+            className="inline-flex w-fit items-center gap-1 text-sm font-medium text-sky-700 hover:underline"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2} aria-hidden />
+            Calls
+          </button>
           {!calendarEditorOpen && onAdminPath && !impersonatingCoachId ? (
             <p className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
               These are{" "}
@@ -476,7 +449,199 @@ export function CallsHub({
             }
           />
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div ref={toolbarRef}>
+            <CallsToolbar
+              search={search}
+              onSearchChange={setSearch}
+              view={workspaceView}
+              onViewChange={(next) => {
+                setMenu(null);
+                setTab(next);
+              }}
+              menu={menu}
+              onMenuChange={setMenu}
+              filterCount={filterCount}
+              filterMenu={
+                workspaceView === "list" ? (
+                  <div role="menu" className={LIST_DROPDOWN}>
+                    <div className="space-y-3">
+                      {listControls.showCoachFilter ? (
+                        <div>
+                          <label
+                            htmlFor="call-coach-filter"
+                            className="mb-1 block text-xs font-medium text-slate-600"
+                          >
+                            Coach
+                          </label>
+                          <select
+                            id="call-coach-filter"
+                            value={listControls.coachFilter}
+                            onChange={(e) =>
+                              listControls.setCoachFilter(
+                                (e.target.value || "all") as string | "all"
+                              )
+                            }
+                            className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                          >
+                            <option value="all">All coaches</option>
+                            {listControls.coachFilterOptions?.map((coach) => (
+                              <option key={coach.id} value={coach.id}>
+                                {coach.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : null}
+                      <div>
+                        <label
+                          htmlFor="call-timing-filter"
+                          className="mb-1 block text-xs font-medium text-slate-600"
+                        >
+                          Timing
+                        </label>
+                        <select
+                          id="call-timing-filter"
+                          value={listControls.timingFilter}
+                          onChange={(e) =>
+                            listControls.setTimingFilter(
+                              e.target.value as typeof listControls.timingFilter
+                            )
+                          }
+                          className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        >
+                          <option value="all">All</option>
+                          <option value="upcoming">Upcoming</option>
+                          <option value="past">Past</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="call-status-filter"
+                          className="mb-1 block text-xs font-medium text-slate-600"
+                        >
+                          Call status
+                        </label>
+                        <select
+                          id="call-status-filter"
+                          value={listControls.statusFilter}
+                          onChange={(e) =>
+                            listControls.setStatusFilter(
+                              e.target.value as typeof listControls.statusFilter
+                            )
+                          }
+                          className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                        >
+                          <option value="all">All</option>
+                          <option value="confirmed">Confirmed</option>
+                          <option value="completed">Completed</option>
+                          <option value="noshow">No-show</option>
+                          <option value="cancelled">Cancelled</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div role="menu" className={CALENDAR_DROPDOWN}>
+                    <CallsManageView
+                      calendars={calendarFilters}
+                      calendarsLoading={calendarsLoading}
+                      settingsHref={settingsHref}
+                      selectedCalendars={selectedCalendars}
+                      onToggleCalendar={toggleCalendar}
+                      viewType={viewType}
+                      onViewTypeChange={setViewType}
+                      showCoachFilter={Boolean(
+                        showCoachColumn &&
+                          coachFilterOptions &&
+                          onCoachFilterChange
+                      )}
+                      coachFilterOptions={coachFilterOptions}
+                      coachFilter={coachFilter}
+                      onCoachFilterChange={onCoachFilterChange}
+                    />
+                  </div>
+                )
+              }
+              sortActive={listControls.hasActiveSort}
+              sortMenu={
+                <div role="menu" className={LIST_DROPDOWN}>
+                  <div className="space-y-3">
+                    <div>
+                      <label
+                        htmlFor="call-sort-field"
+                        className="mb-1 block text-xs font-medium text-slate-600"
+                      >
+                        Sort by
+                      </label>
+                      <select
+                        id="call-sort-field"
+                        value={listControls.sortField}
+                        onChange={(e) =>
+                          listControls.setSortField(
+                            e.target.value as typeof listControls.sortField
+                          )
+                        }
+                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="start_time">Call time</option>
+                        <option value="created_at">Date added</option>
+                        <option value="prospect">Prospect</option>
+                        <option value="status">Call status</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="call-sort-order"
+                        className="mb-1 block text-xs font-medium text-slate-600"
+                      >
+                        Order
+                      </label>
+                      <select
+                        id="call-sort-order"
+                        value={listControls.sortOrder}
+                        onChange={(e) =>
+                          listControls.setSortOrder(
+                            e.target.value as typeof listControls.sortOrder
+                          )
+                        }
+                        className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                      >
+                        {listControls.sortOrderOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              }
+              onSettings={() => setTab("settings")}
+              onBook={() => setBookPickerOpen(true)}
+            />
+          </div>
+
+          {workspaceView === "calendar" ? (
+            <CallsWeekView
+              calls={calls}
+              timezone={timezone}
+              selectedCalendarNames={selectedCalendars}
+              selectedCoachIds={selectedCoachIds}
+              viewType={viewType}
+              search={search}
+              settingsHref={settingsHref}
+              onSelectCall={(row) => {
+                void openCallDetail(row);
+              }}
+            />
+          ) : (
+            callList
+          )}
+        </>
+      )}
 
       {detail ? (
         <div
@@ -599,6 +764,7 @@ export function CallsHub({
             status_raw: "booked",
             start_time: nextCall.start_time,
             end_time: null,
+            created_at: new Date().toISOString(),
             match_status: "matched",
             source: "native",
             meeting_join_url: null,

@@ -74,7 +74,7 @@ export function BookCallFromListModal({ open, onClose, onPick }: Props) {
     <Modal
       open={open}
       onClose={onClose}
-      title="Book a call"
+      title="Add a call"
       titleId="book-call-from-list-title"
       subtitle="Choose who you are meeting"
       maxWidthClassName="max-w-lg"

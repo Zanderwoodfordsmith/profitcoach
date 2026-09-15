@@ -10,6 +10,7 @@ import {
   isConnectableProvider,
   type UnipileConnectProvider,
 } from "@/lib/unipile/providers";
+import { hostedAuthMailCalendarScopes } from "@/lib/unipile/hostedAuthScopes";
 
 export type UnipileConnectReturnTo =
   | "settings"
@@ -97,6 +98,7 @@ export async function createProviderConnectLink(
     failure_redirect_url: `${base}${failurePath}`,
     notify_url: `${base}/api/unipile/notify`,
     bypass_success_screen: true,
+    ...hostedAuthMailCalendarScopes(provider),
     ...(reconnectAccountId ? { reconnect_account: reconnectAccountId } : {}),
   });
 

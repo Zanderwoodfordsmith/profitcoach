@@ -6,7 +6,9 @@ import type { ProfileNames } from "@/lib/communityProfile";
 export async function fetchCommunityMentionNameMap(
   ids: string[]
 ): Promise<Record<string, string>> {
-  const unique = [...new Set(ids)].filter(Boolean);
+  const unique = [...new Set(ids)].filter((id) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  );
   if (unique.length === 0) return {};
   const { data, error } = await supabaseClient
     .from("profiles")

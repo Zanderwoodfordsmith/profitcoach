@@ -5,6 +5,8 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { CallRow } from "@/lib/callRow";
+import { CallsCalendarKey } from "@/components/calls/CallsCalendarKey";
+import { callMatchesSearch } from "@/lib/calls/callSearch";
 import {
   blockedSlotCalendarClass,
   callStatusCalendarClass,
@@ -26,6 +28,7 @@ type Props = {
   selectedCalendarNames: Set<string> | null;
   selectedCoachIds: Set<string> | null;
   viewType: CalendarViewType;
+  search?: string;
   settingsHref?: string;
   onSelectCall?: (row: CallRow) => void;
 };
@@ -76,6 +79,41 @@ function groupByDay(
   return byDay;
 }
 
+function formatEventCardTimeRange(start: DateTime, end: DateTime): string {
+  const sameMeridiem = start.toFormat("a") === end.toFormat("a");
+  const clock = (dt: DateTime, omitMeridiem: boolean) => {
+    const meridiem = dt.toFormat("a").toLowerCase();
+    const hour12 = dt.hour % 12 || 12;
+    const core =
+      dt.minute === 0
+        ? String(hour12)
+        : `${hour12}:${String(dt.minute).padStart(2, "0")}`;
+    return omitMeridiem ? core : `${core}${meridiem}`;
+  };
+  return `${clock(start, sameMeridiem)} – ${clock(end, false)}`;
+}
+
+function EventCardCopy({
+  title,
+  timeRange,
+}: {
+  title: string;
+  timeRange: string;
+}) {
+  return (
+    <>
+      <div className="truncate text-[14px] font-semibold leading-tight">
+        {title}
+      </div>
+      <div className="truncate text-[14px] font-medium leading-tight opacity-90">
+        {timeRange}
+      </div>
+    </>
+  );
+}
+
+const timedEventCardInsetClass = "absolute left-0 right-2";
+
 function busyOverlapsDay(
   block: CalendarBusyBlock,
   day: DateTime,
@@ -97,7 +135,6 @@ function TimedDayGrid({
   showAppointments,
   showBlocked,
   now,
-  compact,
   onSelectCall,
   onDayHeaderClick,
 }: {
@@ -108,12 +145,11 @@ function TimedDayGrid({
   showAppointments: boolean;
   showBlocked: boolean;
   now: DateTime;
-  compact: boolean;
   onSelectCall?: (row: CallRow) => void;
   onDayHeaderClick?: (day: DateTime) => void;
 }) {
   const hours = Array.from({ length: GRID_HOURS }, (_, i) => i + GRID_START_HOUR);
-  const colTemplate = `56px repeat(${days.length}, minmax(0, 1fr))`;
+  const colTemplate = `4.25rem repeat(${days.length}, minmax(0, 1fr))`;
 
   return (
     <div className="overflow-x-auto">
@@ -160,7 +196,7 @@ function TimedDayGrid({
             className="grid border-b border-slate-100"
             style={{ gridTemplateColumns: colTemplate }}
           >
-            <div className="px-1 py-1 text-[10px] font-medium text-slate-400">
+            <div className="px-1 py-1 text-[13px] font-medium text-slate-700">
               All day
             </div>
             {days.map((d) => {
@@ -196,7 +232,7 @@ function TimedDayGrid({
             {hours.map((h) => (
               <div
                 key={h}
-                className="border-b border-slate-50 pr-2 text-right text-[10px] text-slate-400"
+                className="border-b border-slate-50 pr-2 pt-0.5 text-right text-[13px] font-medium leading-none text-slate-700"
                 style={{ height: HOUR_PX }}
               >
                 {DateTime.fromObject({ hour: h }).toFormat("h a")}
@@ -252,16 +288,17 @@ function TimedDayGrid({
                   return (
                     <div
                       key={block.id}
-                      className={`absolute left-1 right-1 z-[1] overflow-hidden rounded-md border px-1.5 py-0.5 text-left font-semibold ${
-                        compact ? "text-[10px]" : "text-xs"
-                      } ${blockedSlotCalendarClass}`}
+                      className={`${timedEventCardInsetClass} z-[1] overflow-hidden rounded-r-md border px-1.5 py-1 text-left ${blockedSlotCalendarClass}`}
                       style={{
                         top,
                         height: Math.min(height, HOUR_PX * GRID_HOURS - top),
                       }}
-                      title={block.title}
+                      title={`${block.title} · ${formatEventCardTimeRange(clipStart, clipEnd)}`}
                     >
-                      <div className="truncate">{block.title}</div>
+                      <EventCardCopy
+                        title={block.title}
+                        timeRange={formatEventCardTimeRange(clipStart, clipEnd)}
+                      />
                     </div>
                   );
                 })}
@@ -285,22 +322,17 @@ function TimedDayGrid({
                       key={call.id}
                       type="button"
                       onClick={() => onSelectCall?.(call)}
-                      className={`absolute left-1 right-1 z-10 overflow-hidden rounded-md border px-1.5 py-0.5 text-left font-semibold shadow-sm ${
-                        compact ? "text-[10px]" : "text-xs"
-                      } ${callStatusCalendarClass(call.status_normalized)}`}
+                      className={`${timedEventCardInsetClass} z-10 overflow-hidden rounded-r-md border px-1.5 py-1 text-left shadow-sm ${callStatusCalendarClass(call.status_normalized)}`}
                       style={{
                         top,
                         height: Math.min(height, HOUR_PX * GRID_HOURS - top),
                       }}
-                      title={`${getCallDisplayName(call)} · ${call.prospect_name}`}
+                      title={`${getCallDisplayName(call)} · ${call.prospect_name} · ${formatEventCardTimeRange(start, end)}`}
                     >
-                      <div className="truncate">
-                        {formatCompactTime(start.toJSDate())}{" "}
-                        {call.prospect_name}
-                      </div>
-                      <div className="truncate opacity-90">
-                        {getCallDisplayName(call)}
-                      </div>
+                      <EventCardCopy
+                        title={call.prospect_name || getCallDisplayName(call)}
+                        timeRange={formatEventCardTimeRange(start, end)}
+                      />
                     </button>
                   );
                 })}
@@ -330,6 +362,7 @@ export function CallsWeekView({
   selectedCalendarNames,
   selectedCoachIds,
   viewType,
+  search = "",
   settingsHref,
   onSelectCall,
 }: Props) {
@@ -406,10 +439,11 @@ export function CallsWeekView({
   const showAppointments = viewType !== "blocked";
   const showBlocked = viewType !== "appointments";
 
-  const filtered = useMemo(
-    () => filterCalls(calls, selectedCalendarNames, selectedCoachIds),
-    [calls, selectedCalendarNames, selectedCoachIds]
-  );
+  const filtered = useMemo(() => {
+    const rows = filterCalls(calls, selectedCalendarNames, selectedCoachIds);
+    if (!search.trim()) return rows;
+    return rows.filter((row) => callMatchesSearch(row, search));
+  }, [calls, selectedCalendarNames, selectedCoachIds, search]);
 
   const dayKeys = days.map((d) => d.toISODate()!);
   const byDay = useMemo(
@@ -498,15 +532,18 @@ export function CallsWeekView({
           </div>
         </div>
 
-        <p className="text-xs text-slate-500">
-          {timezone}
-          {viewType !== "appointments" &&
-          !busyLoading &&
-          !busyConnected &&
-          !busyError
-            ? " · Connect Google or Outlook in Settings to see calendar events"
-            : null}
-        </p>
+        <div className="flex min-w-0 flex-col items-start gap-1 sm:items-end">
+          <CallsCalendarKey />
+          <p className="text-xs text-slate-500">
+            {timezone}
+            {viewType !== "appointments" &&
+            !busyLoading &&
+            !busyConnected &&
+            !busyError
+              ? " · Connect Google or Outlook in Settings to see calendar events"
+              : null}
+          </p>
+        </div>
       </div>
 
       {viewType !== "appointments" && busyError ? (
@@ -635,7 +672,6 @@ export function CallsWeekView({
           showAppointments={showAppointments}
           showBlocked={showBlocked}
           now={now}
-          compact={range === "week"}
           onSelectCall={onSelectCall}
           onDayHeaderClick={range === "week" ? goToDay : undefined}
         />

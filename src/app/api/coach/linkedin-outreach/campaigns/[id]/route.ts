@@ -7,6 +7,8 @@ import {
   deleteCampaignLead,
   duplicateCampaign,
   getCampaign,
+  getCampaignJobs,
+  campaignOwnedByCoach,
   replaceCampaignSteps,
   setCampaignStatus,
   updateCampaign,
@@ -24,16 +26,34 @@ export async function GET(request: Request, ctx: Ctx) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
   const { id } = await ctx.params;
+  const part = new URL(request.url).searchParams.get("part");
   try {
-    const detail = await getCampaign(auth.coachId, id);
+    if (part === "extras") {
+      const owned = await campaignOwnedByCoach(auth.coachId, id);
+      if (!owned) {
+        return NextResponse.json({ error: "Not found." }, { status: 404 });
+      }
+      const [jobs, ab, activity] = await Promise.all([
+        getCampaignJobs(id),
+        abStatsForCampaign(id),
+        loadCampaignActivity(auth.coachId, id, 30),
+      ]);
+      return NextResponse.json({ jobs, ab, activity });
+    }
+
+    const detail = await getCampaign(auth.coachId, id, { includeJobs: false });
     if (!detail) {
       return NextResponse.json({ error: "Not found." }, { status: 404 });
     }
-    const [ab, activity] = await Promise.all([
+    if (part === "core") {
+      return NextResponse.json(detail);
+    }
+    const [jobs, ab, activity] = await Promise.all([
+      getCampaignJobs(id),
       abStatsForCampaign(id),
       loadCampaignActivity(auth.coachId, id, 30),
     ]);
-    return NextResponse.json({ ...detail, ab, activity });
+    return NextResponse.json({ ...detail, jobs, ab, activity });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Load failed." },

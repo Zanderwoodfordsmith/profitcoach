@@ -15,6 +15,7 @@ type AppointmentRecord = {
   status_raw: string | null;
   start_time: string | null;
   end_time: string | null;
+  created_at: string | null;
   match_status: string;
   contacts?: {
     full_name?: string | null;
@@ -36,6 +37,7 @@ type NativeBookingRecord = {
   status: string;
   starts_at: string | null;
   ends_at: string | null;
+  created_at: string | null;
   meeting_join_url: string | null;
   zoom_recording_url: string | null;
   zoom_transcript_text: string | null;
@@ -115,6 +117,7 @@ function mapAppointmentRow(
     status_raw: row.status_raw ?? null,
     start_time: row.start_time ?? null,
     end_time: row.end_time ?? null,
+    created_at: row.created_at ?? null,
     match_status: row.match_status,
     source: "ghl",
     meeting_join_url: null,
@@ -165,6 +168,7 @@ function mapNativeBookingRow(
     status_raw: row.status,
     start_time: row.starts_at ?? null,
     end_time: row.ends_at ?? null,
+    created_at: row.created_at ?? null,
     match_status: row.contact_id ? "matched" : "unmatched_contact",
     source: "native",
     meeting_join_url: row.meeting_join_url ?? null,
@@ -175,7 +179,7 @@ function mapNativeBookingRow(
 
 async function loadGhlRows(
   supabase: SupabaseClient,
-  coachId?: string | null
+  coachId: string | null
 ): Promise<AppointmentRecord[]> {
   let query = supabase
     .from("ghl_appointments")
@@ -193,6 +197,7 @@ async function loadGhlRows(
         status_raw,
         start_time,
         end_time,
+        created_at,
         match_status,
         contacts ( full_name, email, business_name, phone )
       `
@@ -215,7 +220,7 @@ async function loadGhlRows(
 
 async function loadNativeBookingRows(
   supabase: SupabaseClient,
-  coachId?: string | null
+  coachId: string | null
 ): Promise<NativeBookingRecord[]> {
   let query = supabase
     .from("bookings")
@@ -232,6 +237,7 @@ async function loadNativeBookingRows(
         status,
         starts_at,
         ends_at,
+        created_at,
         meeting_join_url,
         zoom_recording_url,
         zoom_transcript_text,
@@ -263,6 +269,7 @@ async function loadNativeBookingRows(
             status,
             starts_at,
             ends_at,
+            created_at,
             contacts ( full_name, email, business_name, phone )
           `
         )
@@ -287,13 +294,25 @@ async function loadNativeBookingRows(
   return (data ?? []) as NativeBookingRecord[];
 }
 
+export type LoadCallTableRowsOptions =
+  | { allCoaches: true }
+  | { coachId: string };
+
 export async function loadCallTableRows(
   supabase: SupabaseClient,
-  options?: { coachId?: string | null }
+  options: LoadCallTableRowsOptions
 ): Promise<CallRow[]> {
+  const coachId =
+    "allCoaches" in options && options.allCoaches
+      ? null
+      : "coachId" in options
+        ? options.coachId.trim()
+        : "";
+  if (coachId !== null && !coachId) return [];
+
   const [ghlRows, nativeRows] = await Promise.all([
-    loadGhlRows(supabase, options?.coachId),
-    loadNativeBookingRows(supabase, options?.coachId),
+    loadGhlRows(supabase, coachId),
+    loadNativeBookingRows(supabase, coachId),
   ]);
 
   const coachIds = Array.from(

@@ -60,7 +60,7 @@ export function callStatusCalendarClass(
 }
 
 export const blockedSlotCalendarClass =
-  "border-slate-300 bg-slate-200 text-slate-600";
+  "border-slate-400 bg-slate-300 text-slate-800";
 
 export function getCallDisplayName(input: {
   title?: string | null;

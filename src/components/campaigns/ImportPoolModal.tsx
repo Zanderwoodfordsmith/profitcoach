@@ -32,7 +32,20 @@ import {
   SALES_NAV_BASE_SEARCH_1ST_URL,
   SALES_NAV_BASE_SEARCH_URL,
 } from "@/lib/salesNavigator/salesNavLinks";
-import { GOOGLE_MAPS_SIZE_OPTIONS, formatGoogleMapsApproxDuration } from "@/lib/googleMaps/cost";
+import {
+  GOOGLE_MAPS_COUNTRIES,
+  GOOGLE_MAPS_COUNTRY_OTHER,
+  GOOGLE_MAPS_DEFAULT_COUNTRY,
+  GOOGLE_MAPS_US_STATES,
+  formatGoogleMapsLocationHint,
+  googleMapsNeedsUsState,
+  isGoogleMapsCountryCode,
+  isGoogleMapsUsStateCode,
+  resolveGoogleMapsLocation,
+  type GoogleMapsCountryCode,
+  type GoogleMapsUsStateCode,
+} from "@/lib/googleMaps/location";
+import { GOOGLE_MAPS_SIZE_OPTIONS, formatGoogleMapsSizeOption } from "@/lib/googleMaps/cost";
 import {
   GOOGLE_MAPS_MAX_SEARCH_TERMS,
   formatGoogleMapsSplitHint,
@@ -90,7 +103,47 @@ type ImportProgress = {
   peopleFound?: number;
 };
 
-const UNIPILE_POLL_MS = 2_000;
+const MAPS_SELECT_CLASS =
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 [color-scheme:light]";
+const MAPS_US_STATE_STORAGE_KEY = "profit-coach.google-maps-us-state";
+
+function loadStoredMapsCountry(): GoogleMapsCountryCode {
+  if (typeof window === "undefined") return GOOGLE_MAPS_DEFAULT_COUNTRY;
+  try {
+    const raw = window.localStorage.getItem(MAPS_COUNTRY_STORAGE_KEY);
+    if (isGoogleMapsCountryCode(raw)) return raw;
+  } catch {
+    // ignore
+  }
+  return GOOGLE_MAPS_DEFAULT_COUNTRY;
+}
+
+function storeMapsCountry(code: GoogleMapsCountryCode) {
+  try {
+    window.localStorage.setItem(MAPS_COUNTRY_STORAGE_KEY, code);
+  } catch {
+    // ignore
+  }
+}
+
+function loadStoredMapsUsState(): GoogleMapsUsStateCode | "" {
+  if (typeof window === "undefined") return "";
+  try {
+    const raw = window.localStorage.getItem(MAPS_US_STATE_STORAGE_KEY);
+    if (isGoogleMapsUsStateCode(raw)) return raw;
+  } catch {
+    // ignore
+  }
+  return "";
+}
+
+function storeMapsUsState(code: GoogleMapsUsStateCode) {
+  try {
+    window.localStorage.setItem(MAPS_US_STATE_STORAGE_KEY, code);
+  } catch {
+    // ignore
+  }
+}
 
 type Props = {
   open: boolean;
@@ -126,7 +179,7 @@ const OPTIONS: Array<{
   {
     id: "maps",
     title: "Google Maps",
-    body: "Search a trade and city. We add the business and contacts.",
+    body: "Search a trade in a country or city. We add the business and contacts.",
     icon: MapPin,
   },
   {
@@ -168,8 +221,20 @@ export function ImportPoolModal({
 
   const [mapsTerms, setMapsTerms] = useState<string[]>([""]);
   const [mapsLocation, setMapsLocation] = useState("");
+  const [mapsCountry, setMapsCountry] = useState<GoogleMapsCountryCode>(
+    GOOGLE_MAPS_DEFAULT_COUNTRY
+  );
+  const [mapsCountryOther, setMapsCountryOther] = useState("");
+  const [mapsUsState, setMapsUsState] = useState<GoogleMapsUsStateCode | "">(
+    ""
+  );
   const [mapsMaxPlaces, setMapsMaxPlaces] = useState(100);
   const [mapsStartedAt, setMapsStartedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMapsCountry(loadStoredMapsCountry());
+    setMapsUsState(loadStoredMapsUsState());
+  }, []);
 
   const salesNavCapRef = useRef(0);
   const [pasteText, setPasteText] = useState("");
@@ -292,6 +357,13 @@ export function ImportPoolModal({
     mapsMaxPlaces,
     mapsParsedTerms.length
   );
+  const mapsResolvedLocation = resolveGoogleMapsLocation({
+    city: mapsLocation,
+    countryCode: mapsCountry,
+    countryName: mapsCountryOther,
+    stateCode: mapsUsState || null,
+  });
+  const mapsLocationReady = !("error" in mapsResolvedLocation);
 
   if (!open) return null;
 
@@ -309,6 +381,7 @@ export function ImportPoolModal({
     setImportProgress(null);
     setMapsTerms([""]);
     setMapsLocation("");
+    setMapsCountryOther("");
     setMapsMaxPlaces(100);
     setPasteText("");
     setShowPasteLinks(false);
@@ -397,9 +470,18 @@ export function ImportPoolModal({
 
   async function startMapsImport() {
     const searchTerms = parseGoogleMapsSearchTerms(mapsTerms);
-    const location = mapsLocation.trim();
-    if (!searchTerms.length || location.length < 2) {
-      setError("Enter a search and a city or area.");
+    const location = resolveGoogleMapsLocation({
+      city: mapsLocation,
+      countryCode: mapsCountry,
+      countryName: mapsCountryOther,
+      stateCode: mapsUsState || null,
+    });
+    if (!searchTerms.length) {
+      setError("Enter a search like plumbers or dental practices.");
+      return;
+    }
+    if ("error" in location) {
+      setError(location.error);
       return;
     }
     setBusy(true);
@@ -414,7 +496,10 @@ export function ImportPoolModal({
         headers,
         body: JSON.stringify({
           searchTerms,
-          location,
+          city: mapsLocation.trim(),
+          countryCode: mapsCountry,
+          countryName: mapsCountryOther.trim(),
+          stateCode: mapsUsState || undefined,
           maxPlaces: mapsMaxPlaces,
           findPeople: true,
         }),
@@ -855,7 +940,7 @@ export function ImportPoolModal({
           {mode === "maps" ? (
             <div className="space-y-3">
               <div>
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                   {mapsTerms.length > 1 ? "Searches" : "Search"}
                 </span>
                 <div className="space-y-2">
@@ -906,31 +991,116 @@ export function ImportPoolModal({
                 ) : null}
               </div>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  Country
+                </span>
+                <select
+                  value={mapsCountry}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    if (!isGoogleMapsCountryCode(next)) return;
+                    setMapsCountry(next);
+                    storeMapsCountry(next);
+                  }}
+                  disabled={Boolean(importJobId)}
+                  className={MAPS_SELECT_CLASS}
+                >
+                  {GOOGLE_MAPS_COUNTRIES.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.flag} {country.label}
+                    </option>
+                  ))}
+                  <option value={GOOGLE_MAPS_COUNTRY_OTHER}>🌍 Other</option>
+                </select>
+              </label>
+              {googleMapsNeedsUsState(mapsCountry) ? (
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                    State
+                  </span>
+                  <select
+                    value={mapsUsState}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      if (!next) {
+                        setMapsUsState("");
+                        return;
+                      }
+                      if (!isGoogleMapsUsStateCode(next)) return;
+                      setMapsUsState(next);
+                      storeMapsUsState(next);
+                    }}
+                    disabled={Boolean(importJobId)}
+                    className={MAPS_SELECT_CLASS}
+                  >
+                    <option value="">Select a state</option>
+                    {GOOGLE_MAPS_US_STATES.map((state) => (
+                      <option key={state.code} value={state.code}>
+                        {state.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {mapsCountry === GOOGLE_MAPS_COUNTRY_OTHER ? (
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                    Country name
+                  </span>
+                  <input
+                    value={mapsCountryOther}
+                    onChange={(e) => setMapsCountryOther(e.target.value)}
+                    placeholder="United Kingdom"
+                    disabled={Boolean(importJobId)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                  />
+                </label>
+              ) : null}
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                   City or area
+                  <span className="ml-1.5 font-normal normal-case tracking-normal text-slate-500">
+                    optional
+                  </span>
                 </span>
                 <input
                   value={mapsLocation}
                   onChange={(e) => setMapsLocation(e.target.value)}
-                  placeholder="Manchester, UK"
+                  placeholder={
+                    googleMapsNeedsUsState(mapsCountry) ? "Austin" : "Manchester"
+                  }
                   disabled={Boolean(importJobId)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
                 />
+                {"error" in mapsResolvedLocation ? (
+                  <p className="mt-1.5 text-xs leading-snug text-slate-500">
+                    {mapsCountry === GOOGLE_MAPS_COUNTRY_OTHER
+                      ? "Enter the country name in full, for example United Kingdom."
+                      : googleMapsNeedsUsState(mapsCountry)
+                        ? "Pick a state so we don’t search the whole United States."
+                        : "Leave blank to search the whole country."}
+                  </p>
+                ) : (
+                  <p className="mt-1.5 text-xs leading-snug text-slate-500">
+                    {formatGoogleMapsLocationHint(
+                      mapsResolvedLocation.locationQuery
+                    )}
+                  </p>
+                )}
               </label>
               <label className="block">
-                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
-                  Up to
+                <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
+                  Amount to import
                 </span>
                 <select
                   value={mapsMaxPlaces}
                   onChange={(e) => setMapsMaxPlaces(Number(e.target.value))}
                   disabled={Boolean(importJobId)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                  className={MAPS_SELECT_CLASS}
                 >
                   {GOOGLE_MAPS_SIZE_OPTIONS.map((size) => (
                     <option key={size} value={size}>
-                      {size.toLocaleString()} businesses ·{" "}
-                      {formatGoogleMapsApproxDuration(size)}
+                      {formatGoogleMapsSizeOption(size)}
                     </option>
                   ))}
                 </select>
@@ -956,7 +1126,7 @@ export function ImportPoolModal({
                     busy ||
                     Boolean(importJobId) ||
                     mapsParsedTerms.length < 1 ||
-                    mapsLocation.trim().length < 2
+                    !mapsLocationReady
                   }
                   onClick={() => void startMapsImport()}
                   className="inline-flex items-center gap-2 rounded-lg bg-[#0c5290] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
@@ -987,7 +1157,7 @@ export function ImportPoolModal({
             <div className="space-y-4">
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="block sm:col-span-2">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     Name
                   </span>
                   <input
@@ -998,7 +1168,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     Company
                   </span>
                   <input
@@ -1009,7 +1179,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     Title
                   </span>
                   <input
@@ -1020,7 +1190,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     Email
                   </span>
                   <input
@@ -1032,7 +1202,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     Phone
                   </span>
                   <input
@@ -1044,7 +1214,7 @@ export function ImportPoolModal({
                   />
                 </label>
                 <label className="block sm:col-span-2">
-                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400">
+                  <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-slate-600">
                     LinkedIn
                   </span>
                   <input

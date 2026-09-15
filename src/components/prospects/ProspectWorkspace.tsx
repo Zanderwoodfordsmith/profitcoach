@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import {
   DashboardPageSection,
@@ -11,23 +11,36 @@ import { CoachToolsHubTabs } from "@/components/layout/CoachToolsHubTabs";
 import { MessagingInbox } from "@/components/messaging/MessagingInbox";
 import { ProspectJourneyPane } from "@/components/prospects/ProspectJourneyPane";
 import type { ProspectRow } from "@/lib/prospectRow";
-import { getValidSupabaseAccessToken } from "@/lib/supabaseAccessToken";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import {
+  loadProspectContactPayload,
+  prospectContactQueryKey,
+  type ProspectContactPayload,
+} from "@/lib/getClients/hubFetchers";
 
 type Props = {
   contactId: string;
 };
 
 export function ProspectWorkspace({ contactId }: Props) {
-  const router = useRouter();
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   const isAdmin = pathname.startsWith("/admin");
   const { impersonatingCoachId, setImpersonatingCoachId } = useImpersonation();
+  const cacheKey = prospectContactQueryKey(
+    contactId,
+    isAdmin,
+    impersonatingCoachId
+  );
+  const cached = peekHubQuery<ProspectContactPayload>(cacheKey);
 
-  const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expectedCoachId, setExpectedCoachId] = useState<string | null>(null);
-  const [prospect, setProspect] = useState<ProspectRow | null>(null);
+  const [expectedCoachId, setExpectedCoachId] = useState<string | null>(() =>
+    isAdmin ? cached?.prospect.coach_id ?? null : null
+  );
+  const [prospect, setProspect] = useState<ProspectRow | null>(
+    () => cached?.prospect ?? null
+  );
 
   const fromConversations = searchParams.get("from") === "conversations";
   const fromPool = searchParams.get("from") === "pool";
@@ -46,56 +59,65 @@ export function ProspectWorkspace({ contactId }: Props) {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const token = await getValidSupabaseAccessToken();
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-      const headers: Record<string, string> = {
-        Authorization: `Bearer ${token}`,
-      };
-      if (!isAdmin && impersonatingCoachId) {
-        headers["x-impersonate-coach-id"] = impersonatingCoachId;
-      }
-      const contactUrl = isAdmin
-        ? `/api/admin/contacts/${encodeURIComponent(contactId)}`
-        : `/api/coach/contacts/${encodeURIComponent(contactId)}`;
-      const res = await fetch(contactUrl, { headers, cache: "no-store" });
-      const body = (await res.json().catch(() => ({}))) as {
-        prospect?: ProspectRow;
-        error?: string;
-      };
-      if (!res.ok || !body.prospect) {
-        setError(body.error ?? "Prospect not found.");
-        return;
-      }
-      setProspect(body.prospect);
-      if (isAdmin && body.prospect.coach_id) {
-        setImpersonatingCoachId(body.prospect.coach_id);
-        setExpectedCoachId(body.prospect.coach_id);
+      const payload = await fetchHubQuery(cacheKey, () =>
+        loadProspectContactPayload(contactId, isAdmin, impersonatingCoachId)
+      );
+      setProspect(payload.prospect);
+      if (isAdmin && payload.prospect.coach_id) {
+        setImpersonatingCoachId(payload.prospect.coach_id);
+        setExpectedCoachId(payload.prospect.coach_id);
       } else {
         setExpectedCoachId(null);
       }
-      setReady(true);
-    } catch {
-      setError("Unable to load prospect.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unable to load prospect.";
+      if (
+        message.includes("x-impersonate-coach-id") &&
+        !impersonatingCoachId
+      ) {
+        return;
+      }
+      setError(message);
     }
   }, [
+    cacheKey,
     contactId,
     impersonatingCoachId,
     isAdmin,
-    router,
     setImpersonatingCoachId,
   ]);
 
   useEffect(() => {
+    const hit = peekHubQuery<ProspectContactPayload>(cacheKey);
+    if (hit?.prospect) {
+      setProspect(hit.prospect);
+      if (isAdmin && hit.prospect.coach_id) {
+        setImpersonatingCoachId(hit.prospect.coach_id);
+        setExpectedCoachId(hit.prospect.coach_id);
+      }
+    }
     void load();
-  }, [load]);
+  }, [cacheKey, isAdmin, load, setImpersonatingCoachId]);
 
-  const canOpenInbox =
-    ready &&
-    Boolean(prospect) &&
-    (!expectedCoachId || impersonatingCoachId === expectedCoachId);
+  useEffect(() => {
+    if (!isAdmin || !prospect?.coach_id) return;
+    if (impersonatingCoachId !== prospect.coach_id) {
+      setImpersonatingCoachId(prospect.coach_id);
+      setExpectedCoachId(prospect.coach_id);
+    }
+  }, [
+    impersonatingCoachId,
+    isAdmin,
+    prospect?.coach_id,
+    setImpersonatingCoachId,
+  ]);
+
+  const waitingOnAdminScope =
+    isAdmin &&
+    Boolean(expectedCoachId) &&
+    impersonatingCoachId !== expectedCoachId;
+  const canOpenInbox = Boolean(contactId) && !waitingOnAdminScope;
 
   return (
     <DashboardPageSection
@@ -111,7 +133,7 @@ export function ProspectWorkspace({ contactId }: Props) {
         />
       }
     >
-      {error ? (
+      {error && !canOpenInbox ? (
         <p className="px-1 py-6 text-sm text-rose-600">{error}</p>
       ) : !canOpenInbox ? (
         <p className="px-1 py-6 text-sm text-slate-600">Loading…</p>

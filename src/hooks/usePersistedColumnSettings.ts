@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { completeColumnOrder } from "@/lib/table/completeColumnOrder";
 
 export type DataTableColumnOption<TKey extends string> = {
   key: TKey;
@@ -41,22 +42,22 @@ export function parsePersistedColumnSettings<TKey extends string>(
       }
     }
 
+    const fromSource: TKey[] = [];
     const seen = new Set<TKey>();
-    const columnOrder: TKey[] = [];
     for (const rawKey of parsed.columnOrder) {
       const key = validKeys.has(rawKey as TKey)
         ? (rawKey as TKey)
         : legacyKeyMap[rawKey];
       if (key && validKeys.has(key) && !seen.has(key)) {
-        columnOrder.push(key);
+        fromSource.push(key);
         seen.add(key);
       }
     }
-    for (const key of options.defaultOrder) {
-      if (!seen.has(key)) columnOrder.push(key);
-    }
 
-    return { columnVisibility, columnOrder };
+    return {
+      columnVisibility,
+      columnOrder: completeColumnOrder(fromSource, options.defaultOrder),
+    };
   } catch {
     return null;
   }

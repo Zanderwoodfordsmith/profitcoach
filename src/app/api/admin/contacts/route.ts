@@ -8,6 +8,10 @@ import {
   enrichProspectRows,
   toLiteProspectRows,
 } from "@/lib/loadProspectTableRows";
+import {
+  excludePoolOnlyContacts,
+  loadPoolLinkedContactIds,
+} from "@/lib/prospects/excludePoolPeople";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -151,7 +155,7 @@ export async function GET(request: Request) {
       }
     }
 
-    const contactRecords = contacts.map((c) => {
+    const contactRecordsRaw = contacts.map((c) => {
       const coachEntry = c.coach_id ? coachById[c.coach_id] : undefined;
       const coachMeta = coachEntry ?? {
         full_name: null,
@@ -180,6 +184,13 @@ export async function GET(request: Request) {
         prospect_tags: c.prospect_tags ?? [],
       };
     });
+    const contactRecords =
+      typeFilter === "prospect"
+        ? excludePoolOnlyContacts(
+            contactRecordsRaw,
+            await loadPoolLinkedContactIds(supabaseAdmin)
+          )
+        : contactRecordsRaw;
 
     const useLite =
       typeFilter === "prospect" && !(enrichIds && enrichIds.length > 0);

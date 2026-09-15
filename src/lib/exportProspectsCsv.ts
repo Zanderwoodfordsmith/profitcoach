@@ -182,7 +182,7 @@ function buildExportColumnKeys(input: ExportProspectsCsvInput): ProspectExportCo
         );
 
   for (const tableKey of tableKeys) {
-    if (tableKey === "actions" || tableKey === "crm") continue;
+    if (tableKey === "actions" || tableKey === "crm" || tableKey === "contact_info") continue;
     const mapped = TABLE_KEY_TO_EXPORT[tableKey];
     if (!mapped) continue;
     for (const exportKey of mapped) {

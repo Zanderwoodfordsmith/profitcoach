@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
@@ -15,11 +16,19 @@ import {
   CampaignFuelPanel,
 } from "@/components/campaigns/CampaignOverviewMetrics";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
-import { CampaignSequenceBuilder } from "@/components/campaigns/CampaignSequenceBuilder";
-import { CampaignProspectsActivityTable } from "@/components/campaigns/CampaignProspectsActivityTable";
-import { CampaignAddProspectsModal } from "@/components/campaigns/CampaignAddProspectsModal";
-import { CampaignSettingsForm } from "@/components/campaigns/CampaignSettingsForm";
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import {
+  campaignCoreQueryKey,
+  campaignExtrasQueryKey,
+  loadCampaignCorePayload,
+  loadCampaignExtrasPayload,
+  type CampaignDetailCorePayload,
+  type CampaignDetailExtrasPayload,
+  type CampaignsHubPayload,
+} from "@/lib/getClients/hubFetchers";
+import type { AbVariantStats } from "@/lib/unipile/abMetrics";
 import {
   campaignStepHasCopy,
   defaultStepConfig,
@@ -33,10 +42,28 @@ import {
   leadStatusLabel as activityLeadStatusLabel,
   type CampaignActivityJob,
 } from "@/lib/unipile/campaignLeadActivity";
-import type { AbVariantStats } from "@/lib/unipile/abMetrics";
-import {
-  magnetForPlaybookId,
-} from "@/lib/leadMagnets/catalog";
+import { magnetForPlaybookId } from "@/lib/leadMagnets/catalog";
+
+const CampaignSequenceBuilder = dynamic(() =>
+  import("@/components/campaigns/CampaignSequenceBuilder").then((m) => ({
+    default: m.CampaignSequenceBuilder,
+  }))
+);
+const CampaignProspectsActivityTable = dynamic(() =>
+  import("@/components/campaigns/CampaignProspectsActivityTable").then((m) => ({
+    default: m.CampaignProspectsActivityTable,
+  }))
+);
+const CampaignAddProspectsModal = dynamic(() =>
+  import("@/components/campaigns/CampaignAddProspectsModal").then((m) => ({
+    default: m.CampaignAddProspectsModal,
+  }))
+);
+const CampaignSettingsForm = dynamic(() =>
+  import("@/components/campaigns/CampaignSettingsForm").then((m) => ({
+    default: m.CampaignSettingsForm,
+  }))
+);
 
 type Account = {
   id: string;
@@ -125,6 +152,96 @@ const TAB_ITEMS: Array<{ id: TabId; label: string }> = [
   { id: "settings", label: "Settings" },
 ];
 
+function asCampaign(row: unknown): Campaign | null {
+  if (!row || typeof row !== "object") return null;
+  const c = row as Record<string, unknown>;
+  if (typeof c.id !== "string") return null;
+  return {
+    id: c.id,
+    name: typeof c.name === "string" ? c.name : "Untitled campaign",
+    status: typeof c.status === "string" ? c.status : "draft",
+    channel: typeof c.channel === "string" ? c.channel : undefined,
+    source_playbook_id:
+      typeof c.source_playbook_id === "string" ? c.source_playbook_id : null,
+    daily_invite_limit:
+      typeof c.daily_invite_limit === "number" ? c.daily_invite_limit : 20,
+    daily_message_limit:
+      typeof c.daily_message_limit === "number" ? c.daily_message_limit : null,
+    daily_react_limit:
+      typeof c.daily_react_limit === "number" ? c.daily_react_limit : null,
+    min_action_delay_seconds:
+      typeof c.min_action_delay_seconds === "number"
+        ? c.min_action_delay_seconds
+        : 0,
+    outreach_account_id:
+      typeof c.outreach_account_id === "string" ? c.outreach_account_id : null,
+    outreach_priority:
+      typeof c.outreach_priority === "number" ? c.outreach_priority : null,
+    outreach_weight:
+      typeof c.outreach_weight === "number" ? c.outreach_weight : null,
+    timezone: typeof c.timezone === "string" ? c.timezone : null,
+    send_rules: c.send_rules,
+    stop_on_reply: typeof c.stop_on_reply === "boolean" ? c.stop_on_reply : null,
+  };
+}
+
+function asSteps(value: unknown): Step[] {
+  return Array.isArray(value) ? (value as Step[]) : [];
+}
+
+function asLeads(value: unknown): Lead[] {
+  return Array.isArray(value) ? (value as Lead[]) : [];
+}
+
+function asJobs(value: unknown): CampaignActivityJob[] {
+  return Array.isArray(value) ? (value as CampaignActivityJob[]) : [];
+}
+
+function asActivityBuckets(value: unknown): CampaignActivityDay[] {
+  return Array.isArray(value) ? (value as CampaignActivityDay[]) : [];
+}
+
+function seedCampaignEditor(campaignId: string, impersonatingCoachId?: string | null) {
+  const core = peekHubQuery<CampaignDetailCorePayload>(
+    campaignCoreQueryKey(campaignId, impersonatingCoachId)
+  );
+  const extras = peekHubQuery<CampaignDetailExtrasPayload>(
+    campaignExtrasQueryKey(campaignId, impersonatingCoachId)
+  );
+  const hub = peekHubQuery<CampaignsHubPayload>(
+    hubQueryKey("campaigns", impersonatingCoachId)
+  );
+  const listed =
+    hub?.campaigns.find((row) => row.id === campaignId) ??
+    hub?.archivedCampaigns.find((row) => row.id === campaignId);
+  const campaign = asCampaign(core?.campaign) ?? asCampaign(listed);
+  return {
+    campaign,
+    steps: asSteps(core?.steps),
+    leads: asLeads(core?.leads),
+    coreReady: Boolean(core),
+    jobs: asJobs(extras?.jobs),
+    abStats: (extras?.ab?.stats as Record<
+      string,
+      Record<string, AbVariantStats>
+    > | null) ?? null,
+    activityBuckets: asActivityBuckets(extras?.activity?.buckets),
+    accounts: (hub?.accounts ?? []).map((account) => ({
+      id: account.id,
+      status: account.status,
+      display_name: account.display_name,
+      provider: account.provider,
+    })),
+    otherCampaigns: (hub?.campaigns ?? [])
+      .filter((row) => row.id !== campaignId)
+      .map((row) => ({
+        id: String(row.id ?? ""),
+        name: typeof row.name === "string" ? row.name : "Untitled campaign",
+      }))
+      .filter((row) => row.id),
+  };
+}
+
 export function LinkedInCampaignEditor() {
   const params = useParams();
   const pathname = usePathname() ?? "";
@@ -132,22 +249,24 @@ export function LinkedInCampaignEditor() {
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
   const campaignId = String(params.id || "");
   const { impersonatingCoachId } = useImpersonation();
+  const seeded = seedCampaignEditor(campaignId, impersonatingCoachId);
 
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [jobs, setJobs] = useState<CampaignActivityJob[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [accounts, setAccounts] = useState<Account[]>(() => seeded.accounts);
+  const [campaign, setCampaign] = useState<Campaign | null>(() => seeded.campaign);
+  const [steps, setSteps] = useState<Step[]>(() => seeded.steps);
+  const [leads, setLeads] = useState<Lead[]>(() => seeded.leads);
+  const [jobs, setJobs] = useState<CampaignActivityJob[]>(() => seeded.jobs);
+  const [loading, setLoading] = useState(() => !seeded.campaign);
+  const [coreReady, setCoreReady] = useState(() => seeded.coreReady);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("overview");
   const [abStats, setAbStats] = useState<Record<
     string,
     Record<string, AbVariantStats>
-  > | null>(null);
+  > | null>(() => seeded.abStats);
   const [activityBuckets, setActivityBuckets] = useState<CampaignActivityDay[]>(
-    []
+    () => seeded.activityBuckets
   );
   const [leadDrawer, setLeadDrawer] = useState<LeadDrawerFilter | null>(null);
   const [addLeadsOpen, setAddLeadsOpen] = useState(false);
@@ -159,7 +278,7 @@ export function LinkedInCampaignEditor() {
   );
   const [otherCampaigns, setOtherCampaigns] = useState<
     Array<{ id: string; name: string }>
-  >([]);
+  >(() => seeded.otherCampaigns);
 
   useEffect(() => {
     if (!editingName) return;
@@ -180,61 +299,102 @@ export function LinkedInCampaignEditor() {
   const stepsRef = useRef(steps);
   stepsRef.current = steps;
 
-  const load = useCallback(async () => {
-    const headers = await authHeaders(impersonatingCoachId);
-    if (!headers || !campaignId) return;
-    const [accRes, detailRes, listRes] = await Promise.all([
-      fetch("/api/coach/linkedin-outreach/accounts", { headers }),
-      fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        { headers }
-      ),
-      fetch("/api/coach/linkedin-outreach/campaigns", { headers }),
-    ]);
-    const accBody = await accRes.json().catch(() => ({}));
-    const detail = await detailRes.json().catch(() => ({}));
-    if (!accRes.ok) throw new Error(accBody.error || "Accounts failed.");
-    if (!detailRes.ok) throw new Error(detail.error || "Campaign not found.");
-    setAccounts(accBody.accounts ?? []);
-    setCampaign(detail.campaign);
-    setSteps(detail.steps ?? []);
-    setLeads(detail.leads ?? []);
-    setJobs(detail.jobs ?? []);
-    setAbStats(detail.ab?.stats ?? null);
-    setActivityBuckets(detail.activity?.buckets ?? []);
-    const listBody = await listRes.json().catch(() => ({}));
-    if (listRes.ok) {
-      const listed = (listBody.campaigns ?? []) as Array<{
-        id: string;
-        name: string;
-      }>;
-      setOtherCampaigns(
-        listed
-          .filter((row) => row.id !== campaignId)
-          .map((row) => ({ id: row.id, name: row.name }))
+  const applyCore = useCallback((payload: CampaignDetailCorePayload) => {
+    const next = asCampaign(payload.campaign);
+    if (next) setCampaign(next);
+    setSteps(asSteps(payload.steps));
+    setLeads(asLeads(payload.leads));
+    setCoreReady(true);
+  }, []);
+
+  const applyExtras = useCallback((payload: CampaignDetailExtrasPayload) => {
+    setJobs(asJobs(payload.jobs));
+    setAbStats(
+      (payload.ab?.stats as Record<
+        string,
+        Record<string, AbVariantStats>
+      > | null) ?? null
+    );
+    setActivityBuckets(asActivityBuckets(payload.activity?.buckets));
+  }, []);
+
+  const loadCore = useCallback(
+    async (opts?: { force?: boolean }) => {
+      if (!campaignId) return;
+      const payload = await fetchHubQuery(
+        campaignCoreQueryKey(campaignId, impersonatingCoachId),
+        () => loadCampaignCorePayload(campaignId),
+        opts
       );
-    }
-  }, [campaignId, impersonatingCoachId]);
+      applyCore(payload);
+    },
+    [applyCore, campaignId, impersonatingCoachId]
+  );
+
+  const loadExtras = useCallback(
+    async (opts?: { force?: boolean }) => {
+      if (!campaignId) return;
+      const payload = await fetchHubQuery(
+        campaignExtrasQueryKey(campaignId, impersonatingCoachId),
+        () => loadCampaignExtrasPayload(campaignId),
+        opts
+      );
+      applyExtras(payload);
+    },
+    [applyExtras, campaignId, impersonatingCoachId]
+  );
+
+  const load = useCallback(async () => {
+    await Promise.all([
+      loadCore({ force: true }),
+      loadExtras({ force: true }),
+    ]);
+  }, [loadCore, loadExtras]);
 
   useEffect(() => {
     let cancelled = false;
+    const nextSeed = seedCampaignEditor(campaignId, impersonatingCoachId);
+    setCampaign(nextSeed.campaign);
+    setSteps(nextSeed.steps);
+    setLeads(nextSeed.leads);
+    setJobs(nextSeed.jobs);
+    setAbStats(nextSeed.abStats);
+    setActivityBuckets(nextSeed.activityBuckets);
+    setAccounts(nextSeed.accounts);
+    setOtherCampaigns(nextSeed.otherCampaigns);
+    setCoreReady(nextSeed.coreReady);
+    if (!nextSeed.campaign) setLoading(true);
+    else setLoading(false);
+    setError(null);
+
     (async () => {
-      setLoading(true);
-      setError(null);
       try {
-        await load();
+        await loadCore();
+        if (!cancelled) setLoading(false);
+        void loadExtras();
+        if (!nextSeed.accounts.length) {
+          const headers = await authHeaders(impersonatingCoachId);
+          if (headers) {
+            const accRes = await fetch("/api/coach/linkedin-outreach/accounts", {
+              headers,
+            });
+            const accBody = await accRes.json().catch(() => ({}));
+            if (!cancelled && accRes.ok) {
+              setAccounts(accBody.accounts ?? []);
+            }
+          }
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "Load failed.");
+          setLoading(false);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [campaignId, impersonatingCoachId, loadCore, loadExtras]);
 
   useEffect(() => {
     if (!campaign?.source_playbook_id) return;
@@ -568,7 +728,11 @@ export function LinkedInCampaignEditor() {
       {/* ——— OVERVIEW ——— */}
       {tab === "overview" ? (
         <div className="mt-6 min-h-[60vh] space-y-6">
-          {leads.length === 0 ? (
+          {!coreReady ? (
+            <div className="rounded-2xl border border-slate-200 px-6 py-16 text-center text-sm text-slate-500">
+              Loading overview…
+            </div>
+          ) : leads.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 px-6 py-16 text-center">
               <p className="text-sm font-medium text-slate-800">
                 No prospects yet

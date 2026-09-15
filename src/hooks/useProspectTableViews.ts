@@ -10,13 +10,17 @@ import {
 } from "@/lib/prospects/prospectTableViewsClient";
 import {
   createDefaultProspectTableViewSettings,
+  createProspectSmartListSettings,
   createProspectTableView,
+  DEFAULT_PROSPECT_SMART_LISTS,
   DEFAULT_PROSPECT_TABLE_VIEW_NAME,
   isDefaultProspectTableViewName,
+  isProtectedProspectViewName,
   nonAllProspectViewOrder,
   orderProspectTableViews,
   prospectTableViewSettingsEqual,
   PROSPECT_TABLE_VIEWS_MIGRATED_KEY,
+  uniqueProspectViewCopyName,
   type ProspectTableView,
   type ProspectTableViewSettings,
   type ProspectTableViewSurface,
@@ -59,7 +63,7 @@ function payloadToStorage(
     version: 1,
     views,
     activeViewId,
-    autosave: payload.autosave,
+    autosave: true,
     viewOrder: nonAllProspectViewOrder(views),
   };
 }
@@ -182,12 +186,19 @@ export function useProspectTableViews({
         local,
         { canEdit: true }
       );
+      const smartViews = DEFAULT_PROSPECT_SMART_LISTS.map((list) =>
+        createProspectTableView(
+          list.name,
+          createProspectSmartListSettings(list.statusFilter),
+          { canEdit: true }
+        )
+      );
       setStorage({
         version: 1,
-        views: [allView],
+        views: [allView, ...smartViews],
         activeViewId: allView.id,
-        autosave: false,
-        viewOrder: [],
+        autosave: true,
+        viewOrder: smartViews.map((view) => view.id),
       });
       onApplySettingsRef.current(local);
     }
@@ -298,28 +309,25 @@ export function useProspectTableViews({
     [activeView, runMutation, storage, surface]
   );
 
-  useEffect(() => {
-    if (!hasLoaded || !storage?.autosave || !canEditActiveView || !isDirty) {
-      return;
-    }
-    if (applyingViewRef.current) return;
-    void updateActiveViewSettings(currentSettings);
-  }, [
-    canEditActiveView,
-    currentSettings,
-    hasLoaded,
-    isDirty,
-    storage?.autosave,
-    updateActiveViewSettings,
-  ]);
-
   const switchView = useCallback(
     async (viewId: string) => {
       if (!storage || viewId === storage.activeViewId) return;
       const view = storage.views.find((row) => row.id === viewId);
       if (!view) return;
+      if (isDirty && activeView?.canEdit) {
+        try {
+          await updateActiveViewSettings(currentSettings);
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Unable to autosave view."
+          );
+        }
+      }
       applyingViewRef.current = true;
       onApplySettingsRef.current(settingsForView(view));
+      setStorage((prev) =>
+        prev ? { ...prev, activeViewId: viewId } : prev
+      );
       try {
         await runMutation((headers) =>
           updateProspectTableViewPreferencesRemote(headers, surface, {
@@ -334,8 +342,35 @@ export function useProspectTableViews({
         });
       }
     },
-    [runMutation, storage, surface]
+    [
+      activeView?.canEdit,
+      currentSettings,
+      isDirty,
+      runMutation,
+      storage,
+      surface,
+      updateActiveViewSettings,
+    ]
   );
+
+  useEffect(() => {
+    if (!hasLoaded || !canEditActiveView || !isDirty) return;
+    if (applyingViewRef.current) return;
+    const handle = window.setTimeout(() => {
+      void updateActiveViewSettings(currentSettings).catch((err) => {
+        setError(
+          err instanceof Error ? err.message : "Unable to autosave view."
+        );
+      });
+    }, 600);
+    return () => window.clearTimeout(handle);
+  }, [
+    canEditActiveView,
+    currentSettings,
+    hasLoaded,
+    isDirty,
+    updateActiveViewSettings,
+  ]);
 
   const allView = useMemo(
     () =>
@@ -419,6 +454,40 @@ export function useProspectTableViews({
     [currentSettings, runMutation, surface]
   );
 
+  const duplicateView = useCallback(
+    async (viewId: string) => {
+      const view = storage?.views.find((row) => row.id === viewId);
+      if (!view) return;
+      const settings =
+        viewId === storage?.activeViewId ? currentSettings : view.settings;
+      const name = uniqueProspectViewCopyName(
+        view.name,
+        (storage?.views ?? []).map((row) => row.name)
+      );
+      applyingViewRef.current = true;
+      onApplySettingsRef.current(settings);
+      try {
+        setError(null);
+        await runMutation((headers) =>
+          createProspectTableViewRemote(headers, surface, {
+            name,
+            settings,
+            makeActive: true,
+          })
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Unable to duplicate view."
+        );
+      } finally {
+        queueMicrotask(() => {
+          applyingViewRef.current = false;
+        });
+      }
+    },
+    [currentSettings, runMutation, storage?.activeViewId, storage?.views, surface]
+  );
+
   const revertChanges = useCallback(() => {
     if (!activeView) return;
     applyingViewRef.current = true;
@@ -460,9 +529,9 @@ export function useProspectTableViews({
       const trimmed = name.trim();
       if (!trimmed) return;
       const view = storage?.views.find((row) => row.id === viewId);
-      if (!view?.canEdit || isDefaultProspectTableViewName(view.name)) return;
-      if (isDefaultProspectTableViewName(trimmed)) {
-        setError('Reserved view name "All". Choose another name.');
+      if (!view?.canEdit || isProtectedProspectViewName(view.name)) return;
+      if (isProtectedProspectViewName(trimmed)) {
+        setError(`Reserved view name "${trimmed}". Choose another name.`);
         return;
       }
       try {
@@ -482,7 +551,7 @@ export function useProspectTableViews({
     async (viewId: string) => {
       if (!storage || storage.views.length <= 1) return;
       const view = storage.views.find((row) => row.id === viewId);
-      if (!view?.canEdit || isDefaultProspectTableViewName(view.name)) return;
+      if (!view?.canEdit || isProtectedProspectViewName(view.name)) return;
       const deletingActive = storage.activeViewId === viewId;
       try {
         const payload = await runMutation((headers) =>
@@ -540,7 +609,7 @@ export function useProspectTableViews({
     activeViewId: storage?.activeViewId ?? null,
     activeView,
     allView,
-    autosave: storage?.autosave ?? false,
+    autosave: true,
     currentUserId,
     canEditActiveView,
     canUpdateAllView,
@@ -555,6 +624,7 @@ export function useProspectTableViews({
     revertChanges,
     toggleAutosave,
     addViewFromCurrent: saveAsNewView,
+    duplicateView,
     renameView,
     deleteView,
     reorderViews,

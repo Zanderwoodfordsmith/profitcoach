@@ -21,6 +21,7 @@ import { CoachRouteAccessGuard } from "@/components/coach/CoachRouteAccessGuard"
 import { isBossWorkshopPath } from "@/lib/isBossWorkshopPath";
 import { isPlaybooksReaderPath } from "@/lib/isPlaybooksReaderPath";
 import { useRequireSupabaseSession } from "@/hooks/useRequireSupabaseSession";
+import { GetClientsHubWarmup } from "@/components/layout/GetClientsHubWarmup";
 
 export default function CoachLayout({
   children,
@@ -264,6 +265,7 @@ export default function CoachLayout({
       }`}
     >
       <UsageTracker />
+      <GetClientsHubWarmup />
       <DashboardChromeProvider
         variant="coach"
         signingOut={signingOut}

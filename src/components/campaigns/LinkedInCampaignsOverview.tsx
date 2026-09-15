@@ -3,9 +3,18 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Archive, ChevronDown, Copy, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import {
+  loadCampaignsHubPayload,
+  prefetchCampaignDetail,
+  type CampaignsHubPayload,
+} from "@/lib/getClients/hubFetchers";
 import { isMailingProvider, normalizeUnipileProvider } from "@/lib/unipile/providers";
 import { CampaignChannelPills } from "@/components/campaigns/CampaignChannelPills";
 import { CampaignOverviewHero } from "@/components/campaigns/CampaignOverviewHero";
@@ -13,10 +22,23 @@ import { CampaignActivityPane } from "@/components/campaigns/CampaignActivityPan
 import { CampaignSsiCard } from "@/components/campaigns/CampaignSsiCard";
 import { AccountSendingModal } from "@/components/campaigns/AccountSendingModal";
 import { CampaignInvitesRailCard } from "@/components/campaigns/CampaignInvitesRailCard";
-import { CampaignPoolHub } from "@/components/campaigns/CampaignPoolHub";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
-import { LeadMagnetsList } from "@/components/leadMagnets/LeadMagnetsList";
+
+const CampaignPoolHub = dynamic(
+  () =>
+    import("@/components/campaigns/CampaignPoolHub").then((m) => ({
+      default: m.CampaignPoolHub,
+    })),
+  { ssr: false }
+);
+const LeadMagnetsList = dynamic(
+  () =>
+    import("@/components/leadMagnets/LeadMagnetsList").then((m) => ({
+      default: m.LeadMagnetsList,
+    })),
+  { ssr: false }
+);
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
 import {
   CampaignCompactDial,
@@ -300,6 +322,7 @@ function CampaignTableRow({
   canToggle,
   onToggle,
   onEdit,
+  onPrefetch,
   onDuplicate,
   onArchive,
   onUnarchive,
@@ -312,6 +335,7 @@ function CampaignTableRow({
   canToggle: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  onPrefetch?: () => void;
   onDuplicate: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
@@ -326,6 +350,10 @@ function CampaignTableRow({
   return (
     <tr
       onClick={onEdit}
+      onPointerEnter={() => {
+        if (isDemo) return;
+        onPrefetch?.();
+      }}
       onKeyDown={(e) => {
         if (isDemo) return;
         if (e.key === "Enter" || e.key === " ") {
@@ -417,35 +445,51 @@ export function LinkedInCampaignsOverview() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { impersonatingCoachId } = useImpersonation();
   const prefix = (pathname.startsWith("/admin") ? "/admin" : "/coach") as
     | "/admin"
     | "/coach";
+  const cacheKey = hubQueryKey("campaigns", impersonatingCoachId);
+  const cached = peekHubQuery<CampaignsHubPayload>(cacheKey);
 
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [archivedCampaigns, setArchivedCampaigns] = useState<Campaign[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>(
+    () => cached?.accounts ?? []
+  );
+  const [campaigns, setCampaigns] = useState<Campaign[]>(
+    () => (cached?.campaigns as unknown as Campaign[]) ?? []
+  );
+  const [archivedCampaigns, setArchivedCampaigns] = useState<Campaign[]>(
+    () => (cached?.archivedCampaigns as unknown as Campaign[]) ?? []
+  );
   const [archivedOpen, setArchivedOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cached);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showSending, setShowSending] = useState(false);
   const [newName, setNewName] = useState("");
   const [newChannel, setNewChannel] = useState<"linkedin" | "email">("linkedin");
-  const [configured, setConfigured] = useState(true);
+  const [configured, setConfigured] = useState(() => cached?.configured ?? true);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
-  const [coachSlug, setCoachSlug] = useState<string | null>(null);
+  const [coachSlug, setCoachSlug] = useState<string | null>(
+    () => cached?.coachSlug ?? null
+  );
   const [appOrigin, setAppOrigin] = useState("");
   const { enabled: preview, setEnabled: setPreview } = useCampaignDemoPreview();
   const tab = searchParams.get("tab");
   const magnetsTab = tab === "magnets";
   const poolTab = tab === "pool" || tab === "lists";
   const [poolHubMounted, setPoolHubMounted] = useState(poolTab);
+  const [magnetsHubMounted, setMagnetsHubMounted] = useState(magnetsTab);
   const linkedinConnected = searchParams.get("linkedin");
 
   useEffect(() => {
     if (poolTab) setPoolHubMounted(true);
   }, [poolTab]);
+
+  useEffect(() => {
+    if (magnetsTab) setMagnetsHubMounted(true);
+  }, [magnetsTab]);
 
   const { ordered, more } = useMemo(
     () =>
@@ -493,41 +537,33 @@ export function LinkedInCampaignsOverview() {
     setAppOrigin(window.location.origin);
   }, []);
 
-  const load = useCallback(async () => {
-    const headers = await authHeaders();
-    if (!headers) return;
-    const [accRes, campRes, archivedRes, profileRes] = await Promise.all([
-      fetch("/api/coach/linkedin-outreach/accounts", { headers }),
-      fetch("/api/coach/linkedin-outreach/campaigns", { headers }),
-      fetch("/api/coach/linkedin-outreach/campaigns?archived=1", { headers }),
-      fetch("/api/coach/profile", { headers }),
-    ]);
-    const accBody = await accRes.json().catch(() => ({}));
-    const campBody = await campRes.json().catch(() => ({}));
-    const archivedBody = await archivedRes.json().catch(() => ({}));
-    const profileBody = await profileRes.json().catch(() => ({}));
-    if (!accRes.ok) throw new Error(accBody.error || "Could not load accounts.");
-    if (!campRes.ok) throw new Error(campBody.error || "Could not load campaigns.");
-    setConfigured(accBody.configured !== false);
-    setAccounts(accBody.accounts ?? []);
-    setCampaigns(campBody.campaigns ?? []);
-    if (archivedRes.ok) {
-      setArchivedCampaigns(archivedBody.campaigns ?? []);
-    }
-    setCoachSlug(
-      typeof profileBody.coach_slug === "string"
-        ? profileBody.coach_slug.trim() || null
-        : null
-    );
+  const applyPayload = useCallback((payload: CampaignsHubPayload) => {
+    setConfigured(payload.configured);
+    setAccounts(payload.accounts);
+    setCampaigns(payload.campaigns as unknown as Campaign[]);
+    setArchivedCampaigns(payload.archivedCampaigns as unknown as Campaign[]);
+    setCoachSlug(payload.coachSlug);
   }, []);
+
+  const load = useCallback(
+    async (force = false) => {
+      const payload = await fetchHubQuery(cacheKey, loadCampaignsHubPayload, {
+        force,
+      });
+      applyPayload(payload);
+    },
+    [applyPayload, cacheKey]
+  );
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
+      const hit = peekHubQuery<CampaignsHubPayload>(cacheKey);
+      if (hit) applyPayload(hit);
+      else setLoading(true);
       setError(null);
       try {
-        await load();
+        await load(false);
         if (linkedinConnected === "connected") {
           const headers = await authHeaders();
           if (headers) {
@@ -536,13 +572,14 @@ export function LinkedInCampaignsOverview() {
               headers,
               body: JSON.stringify({ action: "sync" }),
             });
-            if (!cancelled) await load();
+            if (!cancelled) await load(true);
           }
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Load failed.";
         if (
           !cancelled &&
+          !hit &&
           !/aborted|AbortError/i.test(message)
         ) {
           setError(message);
@@ -554,7 +591,7 @@ export function LinkedInCampaignsOverview() {
     return () => {
       cancelled = true;
     };
-  }, [load, linkedinConnected]);
+  }, [applyPayload, cacheKey, load, linkedinConnected]);
 
   async function connectLinkedIn() {
     setBusy(true);
@@ -636,7 +673,7 @@ export function LinkedInCampaignsOverview() {
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Update failed.");
-      await load();
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Update failed.");
     } finally {
@@ -661,7 +698,7 @@ export function LinkedInCampaignsOverview() {
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Duplicate failed.");
-      await load();
+      await load(true);
       if (body.campaign?.id) {
         router.push(`${prefix}/campaigns/${body.campaign.id}`);
       }
@@ -694,7 +731,7 @@ export function LinkedInCampaignsOverview() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Archive failed.");
       setArchivedOpen(true);
-      await load();
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Archive failed.");
     } finally {
@@ -719,7 +756,7 @@ export function LinkedInCampaignsOverview() {
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Could not restore campaign.");
-      await load();
+      await load(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not restore campaign.");
     } finally {
@@ -956,6 +993,17 @@ export function LinkedInCampaignsOverview() {
                                     if (isDemo) return;
                                     router.push(`${prefix}/campaigns/${c.id}`);
                                   }}
+                                  onPrefetch={() => {
+                                    if (isDemo) return;
+                                    prefetchCampaignDetail(c.id);
+                                    try {
+                                      router.prefetch(
+                                        `${prefix}/campaigns/${c.id}`
+                                      );
+                                    } catch {
+                                      /* prefetch is best-effort */
+                                    }
+                                  }}
                                   onDuplicate={() => void duplicateCampaign(c)}
                                   onArchive={() => void archiveCampaign(c)}
                                 />
@@ -1012,6 +1060,16 @@ export function LinkedInCampaignsOverview() {
                                           `${prefix}/campaigns/${c.id}`
                                         )
                                       }
+                                      onPrefetch={() => {
+                                        prefetchCampaignDetail(c.id);
+                                        try {
+                                          router.prefetch(
+                                            `${prefix}/campaigns/${c.id}`
+                                          );
+                                        } catch {
+                                          /* prefetch is best-effort */
+                                        }
+                                      }}
                                       onDuplicate={() =>
                                         void duplicateCampaign(c)
                                       }
@@ -1079,9 +1137,15 @@ export function LinkedInCampaignsOverview() {
         </div>
       ) : null}
 
-      {magnetsTab ? (
-        <div className="min-h-0 flex-1 overflow-y-auto pb-28 pt-4">
-          {loading && !preview ? (
+      {magnetsHubMounted ? (
+        <div
+          className={
+            magnetsTab
+              ? "min-h-0 flex-1 overflow-y-auto pb-28 pt-4"
+              : "hidden"
+          }
+        >
+          {loading && !preview && !coachSlug ? (
             <div className="py-16 text-center text-sm text-slate-500">
               Loading lead magnets…
             </div>

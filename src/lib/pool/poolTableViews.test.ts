@@ -40,13 +40,11 @@ describe("pool table views", () => {
     assert.equal(settings.columnVisibility.tags, true);
   });
 
-  it("folds title company email phone website into the name cell", () => {
+  it("folds title company website into the name cell and keeps Contact Info", () => {
     const settings = normalizePoolTableViewSettings({
       columnVisibility: {
         title: true,
         company: true,
-        email: true,
-        phone: true,
         website: true,
         source: true,
         campaign: true,
@@ -57,8 +55,6 @@ describe("pool table views", () => {
       columnOrder: [
         "title",
         "company",
-        "email",
-        "phone",
         "website",
         "source",
         "campaign",
@@ -68,21 +64,21 @@ describe("pool table views", () => {
     });
     assert.equal(settings.columnVisibility.title, false);
     assert.equal(settings.columnVisibility.company, false);
-    assert.equal(settings.columnVisibility.email, false);
-    assert.equal(settings.columnVisibility.phone, false);
     assert.equal(settings.columnVisibility.website, false);
+    assert.equal(settings.columnVisibility.contact_info, true);
     assert.equal(settings.columnVisibility.address, false);
     assert.equal(settings.columnLayoutVersion, POOL_COLUMN_LAYOUT_VERSION);
+    assert.equal(settings.columnOrder[0], "contact_info");
   });
 
-  it("keeps an explicit email column after the lead layout version", () => {
+  it("drops legacy email and phone columns", () => {
     const settings = normalizePoolTableViewSettings({
-      columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
+      columnLayoutVersion: 2,
       columnVisibility: {
         title: false,
         company: false,
         email: true,
-        phone: false,
+        phone: true,
         website: false,
         source: true,
         campaign: true,
@@ -90,9 +86,36 @@ describe("pool table views", () => {
         linkedin: true,
         address: false,
       },
+      columnOrder: ["email", "phone", "source"],
+    } as never);
+    assert.equal(settings.columnVisibility.contact_info, true);
+    assert.equal(
+      settings.columnOrder.includes("email" as never),
+      false
+    );
+    assert.equal(
+      settings.columnOrder.includes("phone" as never),
+      false
+    );
+  });
+
+  it("keeps Contact Info hidden after the current layout version", () => {
+    const settings = normalizePoolTableViewSettings({
+      columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
+      columnVisibility: {
+        contact_info: false,
+        title: false,
+        company: false,
+        website: false,
+        source: true,
+        campaign: true,
+        created_at: true,
+        linkedin: true,
+        address: false,
+        tags: true,
+      },
     });
-    assert.equal(settings.columnVisibility.email, true);
-    assert.equal(settings.columnVisibility.company, false);
+    assert.equal(settings.columnVisibility.contact_info, false);
   });
 
   it("treats matching settings as equal", () => {

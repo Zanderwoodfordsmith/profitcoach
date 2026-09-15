@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
-import { CoachesSaveViewButton } from "@/components/admin/CoachesSaveViewButton";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { ImportProspectsModal } from "@/components/prospects/ImportProspectsModal";
 import { PipelineCustomizePanel } from "@/components/prospects/PipelineCustomizePanel";
@@ -21,6 +20,7 @@ import {
 import { useProspectsView } from "@/hooks/useProspectsView";
 import { useProspectTableViews } from "@/hooks/useProspectTableViews";
 import type { CsvExportScope } from "@/components/table/TableCsvExportButton";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { exportProspectsToCsv } from "@/lib/exportProspectsCsv";
 import {
@@ -49,7 +49,6 @@ import {
   type ProspectColumnVisibility,
 } from "@/lib/prospects/prospectTableColumns";
 import {
-  isDefaultProspectTableViewName,
   normalizeProspectTableViewSettings,
   type ProspectListSortField,
   type ProspectListSortOrder,
@@ -64,7 +63,7 @@ import {
 } from "@/lib/prospects/tagAppearance";
 import {
   humanizeProspectStatus,
-  PROSPECT_STATUS_OPTIONS,
+  PROSPECT_LIST_STATUS_OPTIONS,
 } from "@/lib/prospectStatus";
 import type { ProspectRow } from "@/lib/prospectRow";
 
@@ -173,6 +172,7 @@ export function ProspectsHub({
   onImportedProspects,
 }: Props) {
   const { view, setView } = useProspectsView();
+  const { impersonatingCoachId } = useImpersonation();
   const [query, setQuery] = useState("");
   const [coachFilter, setCoachFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -250,8 +250,8 @@ export function ProspectsHub({
         "Content-Type": "application/json",
       };
     }
-    return getCoachAuthHeaders();
-  }, [surface]);
+    return getCoachAuthHeaders(impersonatingCoachId);
+  }, [impersonatingCoachId, surface]);
 
   const applyViewSettings = useCallback((settings: ProspectTableViewSettings) => {
     const next = normalizeProspectTableViewSettings(settings);
@@ -327,16 +327,19 @@ export function ProspectsHub({
 
   const statusOptions = useMemo(() => {
     const seen = new Set<string>(
-      PROSPECT_STATUS_OPTIONS.map((option) => option.value)
+      PROSPECT_LIST_STATUS_OPTIONS.map((option) => option.value)
     );
     const extras = [
       ...new Set(
         prospects
           .map((row) => row.status.value)
-          .filter((value): value is string => Boolean(value) && !seen.has(value))
+          .filter(
+            (value): value is string =>
+              Boolean(value) && value !== "leads" && !seen.has(value)
+          )
       ),
     ].map((value) => ({ value, label: humanizeProspectStatus(value) }));
-    return [...PROSPECT_STATUS_OPTIONS, ...extras];
+    return [...PROSPECT_LIST_STATUS_OPTIONS, ...extras];
   }, [prospects]);
 
   const tagOptions = useMemo(
@@ -425,7 +428,9 @@ export function ProspectsHub({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error || tableViews.error ? (
+        <p className="text-sm text-rose-600">{error ?? tableViews.error}</p>
+      ) : null}
 
       <div
         ref={toolbarRef}
@@ -715,7 +720,7 @@ export function ProspectsHub({
         />
       ) : (
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex items-end justify-between gap-3 border-b border-slate-200 bg-white px-4 pt-3">
+          <div className="border-b border-slate-200">
             <ProspectsTableViewBar
               views={tableViews.views}
               activeViewId={tableViews.activeViewId}
@@ -734,34 +739,10 @@ export function ProspectsHub({
               onReorderViews={(orderedViewIds) => {
                 void tableViews.reorderViews(orderedViewIds);
               }}
+              onDuplicateView={(viewId) => {
+                void tableViews.duplicateView(viewId);
+              }}
             />
-            <div className="shrink-0 pb-2">
-              <CoachesSaveViewButton
-                isDirty={tableViews.isDirty}
-                autosave={tableViews.autosave}
-                canEditActiveView={tableViews.canEditActiveView}
-                activeViewIsAll={Boolean(
-                  tableViews.activeView &&
-                    isDefaultProspectTableViewName(tableViews.activeView.name)
-                )}
-                canUpdateAllView={tableViews.canUpdateAllView}
-                activeViewIsPrivate={false}
-                error={tableViews.error}
-                onSave={() => {
-                  void tableViews.saveView();
-                }}
-                onUpdateAll={() => {
-                  void tableViews.updateAllView();
-                }}
-                onToggleAutosave={() => {
-                  void tableViews.toggleAutosave();
-                }}
-                onSaveAsNew={(name) => {
-                  void tableViews.saveAsNewView(name);
-                }}
-                onRevert={tableViews.revertChanges}
-              />
-            </div>
           </div>
         <ProspectsTable
           prospects={filtered}

@@ -9,6 +9,10 @@ export const COMMUNITY_MENTION_LINK_CLASS =
 export const COMMUNITY_USER_MENTION_LINK_CLASS =
   "font-medium !text-blue-600 hover:!text-blue-500";
 
+/** @everyone / @Profit Coaches — same blue, with a chip so the broadcast is obvious. */
+export const COMMUNITY_BROADCAST_MENTION_CLASS =
+  "font-semibold !text-blue-700 rounded-md bg-blue-50 px-1 py-0.5";
+
 /** Academy areas a lesson/course mention can point at. */
 export type AcademyArea = "classroom" | "programs";
 
@@ -30,8 +34,9 @@ export const MENTION_MARKDOWN_REGEX =
 
 /**
  * Any mention token: [<@…>Label](mention:<target>).
- * `@` = member, `@@` = lesson, `@@@` = course. Target encodes the entity:
+ * `@` = member or broadcast, `@@` = lesson, `@@@` = course. Target encodes:
  *   - member: `uuid`
+ *   - broadcast: `group:everyone` | `group:coaches`
  *   - lesson: `lesson:courseId:lessonId`
  *   - course: `course:courseId`
  */
@@ -46,23 +51,57 @@ const MENTION_ANY_SOURCE =
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type MentionEntityType = "user" | "lesson" | "course";
+export type MentionEntityType = "user" | "lesson" | "course" | "group";
+
+export const BROADCAST_MENTION_GROUPS = ["everyone", "coaches"] as const;
+export type BroadcastMentionGroup = (typeof BROADCAST_MENTION_GROUPS)[number];
+
+export const BROADCAST_MENTION_LABEL: Record<BroadcastMentionGroup, string> = {
+  everyone: "everyone",
+  coaches: "Profit Coaches",
+};
+
+export function broadcastMentionTarget(group: BroadcastMentionGroup): string {
+  return `group:${group}`;
+}
 
 export type ParsedMentionTarget =
   | { type: "user"; userId: string }
+  | { type: "group"; group: BroadcastMentionGroup }
   | { type: "lesson"; area: AcademyArea; courseId: string; lessonId: string }
   | { type: "course"; area: AcademyArea; courseId: string }
   | null;
 
+function parseBroadcastMentionTarget(target: string): BroadcastMentionGroup | null {
+  const normalized = target.trim().toLowerCase();
+  if (normalized === "group:everyone" || normalized === "everyone") {
+    return "everyone";
+  }
+  if (
+    normalized === "group:coaches" ||
+    normalized === "group:profit-coaches" ||
+    normalized === "group:profit_coaches" ||
+    normalized === "profit-coaches"
+  ) {
+    return "coaches";
+  }
+  return null;
+}
+
 /**
  * Decodes a `mention:` target string into a typed entity reference. Formats:
  *   - `uuid`
+ *   - `group:everyone` | `group:coaches`
  *   - `lesson:<area>:<courseId>:<lessonId>` (legacy `lesson:<courseId>:<lessonId>` ⇒ classroom)
  *   - `course:<area>:<courseId>` (legacy `course:<courseId>` ⇒ classroom)
  */
 export function parseMentionTarget(target: string): ParsedMentionTarget {
   if (UUID_RE.test(target)) {
     return { type: "user", userId: target };
+  }
+  const broadcast = parseBroadcastMentionTarget(target);
+  if (broadcast) {
+    return { type: "group", group: broadcast };
   }
   if (target.startsWith("lesson:")) {
     const parts = target.slice("lesson:".length).split(":");
@@ -97,10 +136,12 @@ export function parseMentionTarget(target: string): ParsedMentionTarget {
 export function buildMentionTarget(
   ref:
     | { type: "user"; userId: string }
+    | { type: "group"; group: BroadcastMentionGroup }
     | { type: "lesson"; area: AcademyArea; courseId: string; lessonId: string }
     | { type: "course"; area: AcademyArea; courseId: string }
 ): string {
   if (ref.type === "user") return ref.userId;
+  if (ref.type === "group") return broadcastMentionTarget(ref.group);
   if (ref.type === "lesson") {
     return `lesson:${ref.area}:${ref.courseId}:${ref.lessonId}`;
   }
@@ -154,6 +195,64 @@ export function extractMentionUserIds(body: string): string[] {
   return [...ids];
 }
 
+/** Broadcast groups referenced by a body (`@everyone`, `@Profit Coaches`). */
+export function extractBroadcastMentionGroups(body: string): BroadcastMentionGroup[] {
+  const groups = new Set<BroadcastMentionGroup>();
+  const re = new RegExp(MENTION_TOKEN_REGEX.source, "gi");
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(body)) !== null) {
+    const parsed = parseMentionTarget(m[3] ?? "");
+    if (parsed?.type === "group") groups.add(parsed.group);
+  }
+  return [...groups];
+}
+
+export function bodyHasBroadcastMention(body: string): boolean {
+  return extractBroadcastMentionGroups(body).length > 0;
+}
+
+/**
+ * True when `@everyone` / `@Profit Coaches` should land in this viewer's
+ * mention inbox. New members only see broadcasts published after they joined
+ * so they are not flooded with historical pings.
+ */
+export function broadcastMentionNotifiesViewer(
+  body: string,
+  contentAt: string,
+  joinedAt: string | null | undefined
+): boolean {
+  if (!bodyHasBroadcastMention(body)) return false;
+  if (!joinedAt) return true;
+  const joinedMs = Date.parse(joinedAt);
+  const contentMs = Date.parse(contentAt);
+  if (!Number.isFinite(joinedMs) || !Number.isFinite(contentMs)) return true;
+  return contentMs >= joinedMs;
+}
+
+/** PostgREST `.or()` filter: viewer UUIDs plus broadcast mention tokens. */
+export function mentionNotificationBodyOrFilter(userSearchIds: string[]): string {
+  const parts = userSearchIds.map((id) => `body.ilike.%${id}%`);
+  for (const group of BROADCAST_MENTION_GROUPS) {
+    parts.push(`body.ilike.%mention:${broadcastMentionTarget(group)}%`);
+  }
+  return parts.join(",");
+}
+
+export function communityMentionNotificationTitle(
+  actor: string,
+  surface: "post" | "comment",
+  personallyMentioned: boolean,
+  groups: BroadcastMentionGroup[]
+): string {
+  const where = surface === "post" ? "in a post" : "in a comment";
+  if (personallyMentioned) return `${actor} mentioned you ${where}`;
+  if (groups.includes("everyone")) return `${actor} mentioned everyone ${where}`;
+  if (groups.includes("coaches")) {
+    return `${actor} mentioned Profit Coaches ${where}`;
+  }
+  return `${actor} mentioned you ${where}`;
+}
+
 export type MentionSegment =
   | { kind: "text"; text: string }
   | {
@@ -161,6 +260,8 @@ export type MentionSegment =
       mentionType: MentionEntityType;
       /** Member id (mentionType === "user"). */
       userId?: string;
+      /** Broadcast group (mentionType === "group"). */
+      group?: BroadcastMentionGroup;
       /** Academy area (lesson + course mentions). */
       area?: AcademyArea;
       /** Course id (lesson + course mentions). */
@@ -184,6 +285,13 @@ export function splitMentionSegments(body: string): MentionSegment[] {
       const label = m[2];
       if (parsed?.type === "user") {
         out.push({ kind: "mention", mentionType: "user", userId: parsed.userId, labelFromToken: label });
+      } else if (parsed?.type === "group") {
+        out.push({
+          kind: "mention",
+          mentionType: "group",
+          group: parsed.group,
+          labelFromToken: label || BROADCAST_MENTION_LABEL[parsed.group],
+        });
       } else if (parsed?.type === "lesson") {
         out.push({
           kind: "mention",

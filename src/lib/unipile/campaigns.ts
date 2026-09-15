@@ -199,7 +199,43 @@ export async function listArchivedCampaigns(coachId: string) {
   return withCampaignListCounts((data ?? []) as CampaignListRow[]);
 }
 
-export async function getCampaign(coachId: string, campaignId: string) {
+export async function campaignOwnedByCoach(
+  coachId: string,
+  campaignId: string
+) {
+  const { data, error } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("id")
+    .eq("id", campaignId)
+    .eq("coach_id", coachId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+}
+
+const CAMPAIGN_JOBS_SELECT =
+  "id, lead_id, step_id, status, scheduled_for, last_error, updated_at";
+
+export async function getCampaignJobs(campaignId: string) {
+  const jobsRes = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .select(CAMPAIGN_JOBS_SELECT)
+    .eq("campaign_id", campaignId)
+    .order("scheduled_for", { ascending: true })
+    .limit(8000);
+  if (jobsRes.error) {
+    console.error("linkedin_send_jobs:", jobsRes.error.message);
+    return [];
+  }
+  return jobsRes.data ?? [];
+}
+
+export async function getCampaign(
+  coachId: string,
+  campaignId: string,
+  options?: { includeJobs?: boolean }
+) {
+  const includeJobs = options?.includeJobs !== false;
   const { data: campaign, error } = await supabaseAdmin
     .from("linkedin_campaigns")
     .select("*")
@@ -209,7 +245,7 @@ export async function getCampaign(coachId: string, campaignId: string) {
   if (error) throw new Error(error.message);
   if (!campaign) return null;
 
-  const [{ data: steps, error: stepsError }, { data: leads, error: leadsError }, jobsRes] =
+  const [{ data: steps, error: stepsError }, { data: leads, error: leadsError }, jobs] =
     await Promise.all([
       supabaseAdmin
         .from("linkedin_campaign_steps")
@@ -224,27 +260,17 @@ export async function getCampaign(coachId: string, campaignId: string) {
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false })
         .limit(500),
-      supabaseAdmin
-        .from("linkedin_send_jobs")
-        .select(
-          "id, lead_id, step_id, status, scheduled_for, last_error, updated_at"
-        )
-        .eq("campaign_id", campaignId)
-        .order("scheduled_for", { ascending: true })
-        .limit(8000),
+      includeJobs ? getCampaignJobs(campaignId) : Promise.resolve([]),
     ]);
 
   if (stepsError) throw new Error(stepsError.message);
   if (leadsError) throw new Error(leadsError.message);
-  if (jobsRes.error) {
-    console.error("linkedin_send_jobs:", jobsRes.error.message);
-  }
 
   return {
     campaign,
     steps: steps ?? [],
     leads: leads ?? [],
-    jobs: jobsRes.error ? [] : (jobsRes.data ?? []),
+    jobs,
   };
 }
 
@@ -295,7 +321,7 @@ export async function createCampaign(
 
 /** Copy settings + steps into a new draft. Does not copy leads. */
 export async function duplicateCampaign(coachId: string, campaignId: string) {
-  const detail = await getCampaign(coachId, campaignId);
+  const detail = await getCampaign(coachId, campaignId, { includeJobs: false });
   if (!detail) throw new Error("Campaign not found.");
 
   const source = detail.campaign as {

@@ -74,5 +74,5 @@ export function formatGoogleMapsSplitHint(
   if (n < 2) return null;
   const places = clampGoogleMapsMaxPlaces(maxPlaces);
   const per = googleMapsPlacesPerSearch(places, n);
-  return `Up to ${places.toLocaleString()} businesses total, split across ${n} searches (about ${per} each). Same listing is only added once.`;
+  return `${places.toLocaleString()} businesses total, split across ${n} searches (about ${per} each). Same listing is only added once.`;
 }

@@ -12,6 +12,8 @@ import {
   prepareCommunityPostMarkdownSource,
 } from "@/lib/communityPostMarkdown";
 import {
+  BROADCAST_MENTION_LABEL,
+  COMMUNITY_BROADCAST_MENTION_CLASS,
   COMMUNITY_MENTION_LINK_CLASS,
   COMMUNITY_USER_MENTION_LINK_CLASS,
   mentionTargetHref,
@@ -66,6 +68,16 @@ function buildComponents(
         const target = href.slice("mention:".length);
         const parsed = parseMentionTarget(target);
         const fromLink = reactNodeToPlainText(children).replace(/^@+/, "");
+
+        if (parsed?.type === "group") {
+          const label =
+            fromLink || BROADCAST_MENTION_LABEL[parsed.group];
+          return (
+            <span className={COMMUNITY_BROADCAST_MENTION_CLASS}>
+              {`@${label}`}
+            </span>
+          );
+        }
 
         if (parsed && parsed.type !== "user") {
           const contentHref = mentionTargetHref(parsed);

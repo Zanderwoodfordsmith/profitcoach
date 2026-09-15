@@ -46,6 +46,7 @@ export type UnipileCalendarListItem = {
   summary: string;
   primary: boolean;
   accessRole: string;
+  owned: boolean;
 };
 
 const MAX_PAGES = 20;
@@ -142,26 +143,61 @@ export function mapUnipileCalendarsToListItems(
         : cal.is_read_only
           ? "reader"
           : "writer"),
+    owned: isOwnedUnipileCalendar(cal),
   }));
 }
 
+/** Calendars this Google/Outlook user owns — never a calendar shared by someone else. */
+export function isOwnedUnipileCalendar(cal: UnipileCalendar): boolean {
+  if (cal.is_owned_by_user === false) return false;
+  if (cal.access_role === "reader" || cal.access_role === "freeBusyReader") {
+    return false;
+  }
+  if (cal.is_owned_by_user === true) return true;
+  if (cal.access_role === "owner") return true;
+  return Boolean(cal.is_primary || cal.is_default);
+}
+
+export function isWritableUnipileCalendar(cal: UnipileCalendar): boolean {
+  if (cal.is_read_only) return false;
+  if (cal.access_role === "reader" || cal.access_role === "freeBusyReader") {
+    return false;
+  }
+  return isOwnedUnipileCalendar(cal);
+}
+
+/**
+ * Default booking calendar: owned + writable first. If Unipile omits ownership
+ * flags, fall back to the account primary/default only — never the first
+ * shared calendar in the list.
+ */
 export function pickDefaultUnipileCalendar(
   calendars: UnipileCalendar[]
 ): UnipileCalendar | null {
-  const writable = calendars.filter(
-    (cal) =>
-      !cal.is_read_only &&
-      cal.access_role !== "reader" &&
-      cal.access_role !== "freeBusyReader"
-  );
-  const pool = writable.length ? writable : calendars;
+  const pool = calendars.filter(isWritableUnipileCalendar);
+  if (pool.length > 0) {
+    return (
+      pool.find((cal) => cal.is_primary) ??
+      pool.find((cal) => cal.is_default) ??
+      pool[0] ??
+      null
+    );
+  }
   return (
-    pool.find((cal) => cal.is_primary) ??
-    pool.find((cal) => cal.is_default) ??
-    pool.find((cal) => cal.is_owned_by_user) ??
-    pool[0] ??
+    calendars.find((cal) => Boolean(cal.is_primary) && !cal.is_read_only) ??
+    calendars.find((cal) => Boolean(cal.is_default) && !cal.is_read_only) ??
     null
   );
+}
+
+/** Event titles from calendars this user does not own are always "Busy". */
+export function calendarBusyDisplayTitle(
+  eventTitle: string | null | undefined,
+  calendarOwned: boolean
+): string {
+  if (!calendarOwned) return "Busy";
+  const title = eventTitle?.trim();
+  return title || "Busy";
 }
 
 export async function listUnipileCalendarEvents(input: {

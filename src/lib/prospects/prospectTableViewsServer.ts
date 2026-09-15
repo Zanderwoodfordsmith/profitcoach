@@ -1,11 +1,16 @@
 import {
+  arrangeProspectTableViews,
   createDefaultProspectTableViewSettings,
+  createProspectSmartListSettings,
   createProspectTableView,
+  DEFAULT_PROSPECT_SMART_LISTS,
   DEFAULT_PROSPECT_TABLE_VIEW_NAME,
   isDefaultProspectTableViewName,
+  isProspectSmartListName,
   MAX_PROSPECT_TABLE_VIEW_NAME_LENGTH,
   MAX_PROSPECT_TABLE_VIEW_SETTINGS_BYTES,
   normalizeProspectTableViewSettings,
+  nonAllProspectViewOrder,
   orderProspectTableViews,
   type ProspectTableView,
   type ProspectTableViewSettings,
@@ -80,6 +85,9 @@ function assertViewName(name: string, { allowAll }: { allowAll: boolean }): stri
   }
   if (!allowAll && isDefaultProspectTableViewName(trimmed)) {
     throw new Error('Reserved view name "All". Choose another name.');
+  }
+  if (isProspectSmartListName(trimmed)) {
+    throw new Error(`Reserved view name "${trimmed}". Choose another name.`);
   }
   return trimmed;
 }
@@ -216,6 +224,38 @@ async function ensureOwnerAllView(
   return [...otherRows, preferred];
 }
 
+async function ensureOwnerSmartLists(
+  rows: ProspectTableViewRow[],
+  ownerId: string,
+  surface: ProspectTableViewSurface
+): Promise<ProspectTableViewRow[]> {
+  const existingNames = new Set(
+    rows.map((row) => row.name.trim().toLowerCase())
+  );
+  const created: ProspectTableViewRow[] = [];
+  for (const list of DEFAULT_PROSPECT_SMART_LISTS) {
+    if (existingNames.has(list.name.toLowerCase())) continue;
+    const { data, error } = await supabaseAdmin
+      .from("prospect_table_views")
+      .insert({
+        owner_id: ownerId,
+        surface,
+        name: list.name,
+        settings: createProspectSmartListSettings(list.statusFilter),
+      })
+      .select(
+        "id, owner_id, surface, name, settings, created_at, updated_at"
+      )
+      .single();
+    if (error || !data) {
+      throw new Error(error?.message ?? "Unable to create smart list.");
+    }
+    created.push(data as ProspectTableViewRow);
+    existingNames.add(list.name.toLowerCase());
+  }
+  return [...rows, ...created];
+}
+
 async function loadOwnerViewRows(
   ownerId: string,
   surface: ProspectTableViewSurface
@@ -237,10 +277,16 @@ export async function listProspectTableViewsForOwner(input: {
   ownerId: string;
   surface: ProspectTableViewSurface;
 }): Promise<ProspectTableViewsPayload> {
-  const ensured = await ensureOwnerAllView(
-    await loadOwnerViewRows(input.ownerId, input.surface),
-    input.ownerId,
-    input.surface
+  const ensured = arrangeProspectTableViews(
+    await ensureOwnerSmartLists(
+      await ensureOwnerAllView(
+        await loadOwnerViewRows(input.ownerId, input.surface),
+        input.ownerId,
+        input.surface
+      ),
+      input.ownerId,
+      input.surface
+    )
   );
   const mapped = ensured.map(mapViewRow);
   const prefs = await loadPreferences(input.ownerId, input.surface);
@@ -248,12 +294,11 @@ export async function listProspectTableViewsForOwner(input: {
     mapped.find((view) => isDefaultProspectTableViewName(view.name))?.id ??
     null;
   const visibleIds = new Set(mapped.map((view) => view.id));
-  const viewOrder = normalizeViewOrder(
-    prefs?.view_order,
-    visibleIds,
-    allViewId
+  const views = orderProspectTableViews(
+    mapped,
+    normalizeViewOrder(prefs?.view_order, visibleIds, allViewId)
   );
-  const views = orderProspectTableViews(mapped, viewOrder);
+  const viewOrder = nonAllProspectViewOrder(views);
 
   let activeViewId = prefs?.active_view_id ?? allViewId ?? views[0]?.id;
   if (!activeViewId || !visibleIds.has(activeViewId)) {
@@ -347,6 +392,7 @@ export async function updateProspectTableViewForOwner(input: {
   }
   const existingRow = existing as { name: string };
   const isAllView = isDefaultProspectTableViewName(existingRow.name);
+  const isSmartList = isProspectSmartListName(existingRow.name);
 
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -360,6 +406,16 @@ export async function updateProspectTableViewForOwner(input: {
       throw new Error("The All view cannot be renamed.");
     }
     patch.name = DEFAULT_PROSPECT_TABLE_VIEW_NAME;
+    if (input.settings) {
+      patch.settings = assertSettings(input.settings);
+    }
+  } else if (isSmartList) {
+    if (
+      typeof input.name === "string" &&
+      !isProspectSmartListName(input.name)
+    ) {
+      throw new Error("Built-in smart lists cannot be renamed.");
+    }
     if (input.settings) {
       patch.settings = assertSettings(input.settings);
     }
@@ -405,6 +461,9 @@ export async function deleteProspectTableViewForOwner(input: {
   const existingRow = existing as { name: string };
   if (isDefaultProspectTableViewName(existingRow.name)) {
     throw new Error("The All view cannot be deleted.");
+  }
+  if (isProspectSmartListName(existingRow.name)) {
+    throw new Error("Built-in smart lists cannot be deleted.");
   }
 
   const payload = await listProspectTableViewsForOwner(input);

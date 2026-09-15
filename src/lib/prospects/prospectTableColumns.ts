@@ -1,4 +1,5 @@
 export type ProspectColumnKey =
+  | "contact_info"
   | "business_stats"
   | "coach"
   | "actions"
@@ -14,12 +15,13 @@ export type ProspectColumnKey =
 
 export type ProspectColumnVisibility = Record<ProspectColumnKey, boolean>;
 
-export const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v14";
+export const PROSPECTS_TABLE_SETTINGS_STORAGE_KEY = "prospects-table-settings-v15";
 
 export const PROSPECTS_TABLE_COLUMN_OPTIONS: Array<{
   key: ProspectColumnKey;
   label: string;
 }> = [
+  { key: "contact_info", label: "Contact Info" },
   { key: "status", label: "Status" },
   { key: "linkedin", label: "LinkedIn" },
   { key: "source", label: "Source" },
@@ -35,6 +37,7 @@ export const PROSPECTS_TABLE_COLUMN_OPTIONS: Array<{
 ];
 
 export const DEFAULT_PROSPECT_COLUMN_VISIBILITY: ProspectColumnVisibility = {
+  contact_info: true,
   linkedin: true,
   crm: false,
   source: true,

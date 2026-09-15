@@ -60,6 +60,9 @@ import {
   readThreadCache,
   writeThreadCache,
 } from "@/lib/messaging/threadCache";
+import { peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import type { ConversationsHubPayload } from "@/lib/getClients/hubFetchers";
 import {
   mergeMessagesChronological,
   shouldAutoloadOlder,
@@ -136,6 +139,15 @@ type ConversationRow = {
   thread_count?: number;
   sibling_conversation_ids?: string[];
 };
+
+function conversationForContact(
+  conversations: Array<Record<string, unknown>> | undefined,
+  contactId: string | undefined
+): ConversationRow | null {
+  if (!contactId || !conversations?.length) return null;
+  const match = conversations.find((row) => row.contact_id === contactId);
+  return match ? (match as ConversationRow) : null;
+}
 
 type MessageAttachment = {
   path?: string;
@@ -978,8 +990,24 @@ export function MessagingInbox({
   const searchParams = useSearchParams();
   const campaignQuery = (searchParams.get("campaign") || "").trim() || null;
   const { impersonatingCoachId } = useImpersonation();
+  const conversationsCacheKey = hubQueryKey(
+    "conversations",
+    impersonatingCoachId
+  );
+  const cachedConversations = peekHubQuery<ConversationsHubPayload>(
+    conversationsCacheKey
+  );
+  const cachedProspectConversation = conversationForContact(
+    cachedConversations?.conversations,
+    contactId
+  );
   const prospectMode = Boolean(contactId) || hideConversationList;
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () =>
+      Boolean(contactId)
+        ? !cachedProspectConversation
+        : !cachedConversations
+  );
   const [campaignFilterLabel, setCampaignFilterLabel] = useState<string | null>(
     null
   );
@@ -1041,8 +1069,18 @@ export function MessagingInbox({
     };
   }, []);
   const [error, setError] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<ConversationRow[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<ConversationRow[]>(
+    () =>
+      cachedProspectConversation
+        ? [cachedProspectConversation]
+        : contactId
+          ? []
+          : (cachedConversations?.conversations as unknown as ConversationRow[]) ??
+            []
+  );
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => cachedProspectConversation?.id ?? null
+  );
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [prospectDetails, setProspectDetails] = useState<ProspectDetails | null>(
     () => initialProspect ?? null
@@ -1420,6 +1458,7 @@ export function MessagingInbox({
           return;
         }
         const list = Array.isArray(body.conversations) ? body.conversations : [];
+        writeHubQuery(conversationsCacheKey, { conversations: list });
         setConversations(list);
         setSelectedId((prev) => {
           const pending = peekMessagingComposeDraft();
@@ -1448,7 +1487,7 @@ export function MessagingInbox({
         if (!silent) setLoading(false);
       }
     },
-    [authHeaders, contactId]
+    [authHeaders, contactId, conversationsCacheKey]
   );
 
   const loadInboxAccounts = useCallback(async () => {
@@ -2447,7 +2486,11 @@ export function MessagingInbox({
     let cancelled = false;
     async function boot() {
       // Paint the first page of conversations; do not wait for Unipile import.
-      await loadList({ limit: THREAD_LIST_FAST_LIMIT });
+      const cached = peekHubQuery<ConversationsHubPayload>(conversationsCacheKey);
+      await loadList({
+        silent: Boolean(cached),
+        limit: THREAD_LIST_FAST_LIMIT,
+      });
       if (cancelled) return;
       void loadList({ silent: true });
     }
@@ -2465,10 +2508,28 @@ export function MessagingInbox({
   }, [contactId, loading, conversations.length, syncLinkedInInbox]);
 
   useEffect(() => {
+    if (initialProspect) {
+      setProspectDetails(initialProspect);
+      setBusinessDraft(initialProspect.business_name?.trim() || "");
+    }
+  }, [initialProspect]);
+
+  useEffect(() => {
     if (!contactId) return;
     let cancelled = false;
     async function bootProspect() {
-      setLoading(true);
+      const cachedMatch = conversationForContact(
+        peekHubQuery<ConversationsHubPayload>(conversationsCacheKey)
+          ?.conversations,
+        contactId
+      );
+      if (cachedMatch) {
+        setConversations([cachedMatch]);
+        setSelectedId(cachedMatch.id);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       const headers = await authHeaders();
       if (!headers) {
@@ -2490,15 +2551,17 @@ export function MessagingInbox({
         };
         if (cancelled) return;
         if (!res.ok || !body.conversation?.id) {
-          setError(body.error || "Could not open this conversation.");
-          setConversations([]);
-          setSelectedId(null);
+          if (!cachedMatch) {
+            setError(body.error || "Could not open this conversation.");
+            setConversations([]);
+            setSelectedId(null);
+          }
           return;
         }
         setConversations([body.conversation]);
         setSelectedId(body.conversation.id);
       } catch (err) {
-        if (!cancelled) {
+        if (!cancelled && !cachedMatch) {
           setError(err instanceof Error ? err.message : "Load failed.");
         }
       } finally {
@@ -2509,7 +2572,7 @@ export function MessagingInbox({
     return () => {
       cancelled = true;
     };
-  }, [authHeaders, contactId]);
+  }, [authHeaders, contactId, conversationsCacheKey]);
 
   useEffect(() => {
     if (!contactId) {
@@ -3911,6 +3974,25 @@ export function MessagingInbox({
                   </button>
                 </div>
               </>
+            ) : prospectMode && (prospectDetails || displayName) ? (
+              <div className="flex min-w-0 items-center gap-3">
+                <AvatarWithChannels
+                  name={displayName || "Prospect"}
+                  url={prospectAvatarUrl}
+                  size="md"
+                  channels={replyChannels}
+                />
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-slate-900">
+                    {displayName || "Opening…"}
+                  </div>
+                  {subtitle ? (
+                    <div className="truncate text-[13px] text-slate-700">
+                      {subtitle}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             ) : (
               <div className="text-sm text-slate-500">Select a conversation</div>
             )}
@@ -3925,7 +4007,11 @@ export function MessagingInbox({
             }`}
           >
             <div className="mt-auto space-y-5 px-3 py-4 sm:px-4">
-            {!selected ? null : loadingThread && feedByDay.length === 0 ? (
+            {!selected ? (
+              prospectMode ? (
+                <p className="text-sm text-slate-500">Loading thread…</p>
+              ) : null
+            ) : loadingThread && feedByDay.length === 0 ? (
               <p className="text-sm text-slate-500">Loading thread…</p>
             ) : feedByDay.length === 0 ? (
               <p className="text-sm text-slate-500">

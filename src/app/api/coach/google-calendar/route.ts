@@ -149,6 +149,30 @@ export async function PATCH(request: Request) {
     );
   }
 
+  const knownCalendarIds = new Set(
+    (status.calendars ?? []).map((cal) => cal.id)
+  );
+  if (!knownCalendarIds.has(eventId)) {
+    return NextResponse.json(
+      { error: "event_calendar_id is not a calendar on this account." },
+      { status: 400 }
+    );
+  }
+  if (busyIds.some((id) => !knownCalendarIds.has(id.trim()))) {
+    return NextResponse.json(
+      { error: "busy_calendar_ids must be calendars on this account." },
+      { status: 400 }
+    );
+  }
+
+  const eventCalendar = (status.calendars ?? []).find((cal) => cal.id === eventId);
+  if (eventCalendar && eventCalendar.owned === false) {
+    return NextResponse.json(
+      { error: "Bookings can only be written to a calendar you own." },
+      { status: 400 }
+    );
+  }
+
   try {
     await upsertUnipileCalendarPrefs({
       coachId: target.coach.id,

@@ -61,6 +61,11 @@ export const PROSPECT_STATUS_OPTIONS = PROSPECT_STATUS_VALUES.map((value) => ({
   label: PROSPECT_STATUS_LABELS[value],
 }));
 
+/** Statuses shown on the Prospects list — Pool (leads) stays on the Pool tab. */
+export const PROSPECT_LIST_STATUS_OPTIONS = PROSPECT_STATUS_OPTIONS.filter(
+  (option) => option.value !== "leads"
+);
+
 export function canonicalizeProspectStatus(
   value: string | null | undefined
 ): string | null {

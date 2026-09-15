@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { COMMUNITY_EXTERNAL_LINK_CLASS, splitTextWithHttpUrls } from "@/lib/communityAutolink";
 import {
+  BROADCAST_MENTION_LABEL,
+  COMMUNITY_BROADCAST_MENTION_CLASS,
   COMMUNITY_MENTION_LINK_CLASS,
   COMMUNITY_USER_MENTION_LINK_CLASS,
   courseMentionHref,
@@ -58,6 +60,16 @@ export function MentionBody({
                   </a>
                 )
               )}
+            </span>
+          );
+        }
+        if (seg.mentionType === "group") {
+          const label =
+            seg.labelFromToken ||
+            (seg.group ? BROADCAST_MENTION_LABEL[seg.group] : "everyone");
+          return (
+            <span key={i} className={COMMUNITY_BROADCAST_MENTION_CLASS}>
+              {`@${label}`}
             </span>
           );
         }

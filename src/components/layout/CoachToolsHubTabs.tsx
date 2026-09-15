@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock, Settings } from "lucide-react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import {
   coachClientsTabActive,
@@ -15,6 +15,10 @@ import {
 import { PageHeaderUnderlineTabs } from "@/components/layout/PageHeaderUnderlineTabs";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useOptimisticPathname } from "@/hooks/useOptimisticPathname";
+import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
+import { fetchCachedProfileRole } from "@/lib/getClients/cachedProfileRole";
+import { rememberGetClientsLastTab } from "@/lib/getClients/lastHubTab";
 
 export type CoachToolsHub = "get-clients" | "coach-clients";
 
@@ -42,16 +46,11 @@ function useShowAdminPreviewTabs(onAdminPath: boolean): boolean {
         data: { user },
       } = await supabaseClient.auth.getUser();
       if (!user || cancelled) return;
-      const roleRes = await fetch("/api/profile-role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
-      const roleBody = (await roleRes.json().catch(() => ({}))) as {
-        role?: string;
-      };
-      if (!cancelled) {
-        setIsAdminUser(roleBody.role === "admin");
+      try {
+        const roleBody = await fetchCachedProfileRole(user.id);
+        if (!cancelled) setIsAdminUser(roleBody.role === "admin");
+      } catch {
+        /* keep current guess */
       }
     })();
     return () => {
@@ -109,57 +108,80 @@ function CoachClientsTabsNav({
   );
 }
 
+function GetClientsTabsNav({
+  pathname,
+  showAdminPreview,
+  markPending,
+}: {
+  pathname: string;
+  showAdminPreview: boolean;
+  markPending: (href: string) => void;
+}) {
+  const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
+  const items = getClientsTabItems(prefix).filter((item: ToolsHubTabItem) => {
+    if (item.adminPreview && !showAdminPreview) return false;
+    return true;
+  });
+  const contentHref = `${prefix}/linkedin`;
+  return (
+    <PageHeaderUnderlineTabs
+      ariaLabel="Get Clients tools"
+      items={items.map((item) => {
+        const iconOnly = Boolean(item.iconOnly);
+        const preview = Boolean(item.adminPreview && showAdminPreview);
+        const label = iconOnly ? (
+          <span
+            className="inline-flex items-center gap-1"
+            title={item.label}
+            aria-label={item.label}
+          >
+            <Settings className="h-4 w-4" aria-hidden />
+            {preview ? (
+              <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+            ) : null}
+            <span className="sr-only">
+              {item.label}
+              {preview ? " (admin preview — not released to coaches)" : ""}
+            </span>
+          </span>
+        ) : (
+          previewTabLabel(item.label, preview)
+        );
+        const active =
+          item.href === contentHref
+            ? isGetClientsContentPath(pathname)
+            : navLinkActive(pathname, item.href);
+        return {
+          kind: "link" as const,
+          href: item.href,
+          label,
+          active,
+          scroll: false,
+          variant: preview ? ("subtle" as const) : ("default" as const),
+          onNavigate: () => {
+            markPending(item.href);
+            rememberGetClientsLastTab(item.href);
+          },
+          onPrefetch: () => prefetchGetClientsHref(item.href),
+        };
+      })}
+    />
+  );
+}
+
 function CoachToolsHubTabsInner({ hub }: Props) {
-  const pathname = usePathname() ?? "";
+  const { pathname, markPending } = useOptimisticPathname();
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const onAdminPath = pathname.startsWith("/admin");
   const showAdminPreview = useShowAdminPreviewTabs(onAdminPath);
 
   if (hub === "get-clients") {
-    const prefix = onAdminPath ? "/admin" : "/coach";
-    const items = getClientsTabItems(prefix).filter((item: ToolsHubTabItem) => {
-      if (item.adminPreview && !showAdminPreview) return false;
-      return true;
-    });
-    const contentHref = `${prefix}/linkedin`;
     return (
-      <PageHeaderUnderlineTabs
-        ariaLabel="Get Clients tools"
-        items={items.map((item) => {
-          const iconOnly = Boolean(item.iconOnly);
-          const preview = Boolean(item.adminPreview && showAdminPreview);
-          const label = iconOnly ? (
-            <span
-              className="inline-flex items-center gap-1"
-              title={item.label}
-              aria-label={item.label}
-            >
-              <Settings className="h-4 w-4" aria-hidden />
-              {preview ? (
-                <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-              ) : null}
-              <span className="sr-only">
-                {item.label}
-                {preview ? " (admin preview — not released to coaches)" : ""}
-              </span>
-            </span>
-          ) : (
-            previewTabLabel(item.label, preview)
-          );
-          const active =
-            item.href === contentHref
-              ? isGetClientsContentPath(pathname)
-              : navLinkActive(pathname, item.href);
-          return {
-            kind: "link" as const,
-            href: item.href,
-            label,
-            active,
-            scroll: false,
-            variant: preview ? ("subtle" as const) : ("default" as const),
-          };
-        })}
+      <GetClientsTabsNav
+        pathname={pathname}
+        showAdminPreview={showAdminPreview}
+        markPending={markPending}
       />
     );
   }
@@ -178,35 +200,29 @@ function CoachToolsHubTabsInner({ hub }: Props) {
  * Works for both /coach and /admin — former Marketing and Delivery links live here.
  */
 export function CoachToolsHubTabs(props: Props) {
-  const pathname = usePathname() ?? "";
+  const { pathname, markPending } = useOptimisticPathname();
   const { impersonatingCoachId } = useImpersonation();
-  // Prefer coach product surface while impersonating; avoid flashing locked tabs.
   const fallbackShowAdminPreview =
     pathname.startsWith("/admin") && !impersonatingCoachId;
 
-  // Coach Clients: never flash an empty nav — Suspense fallback still lists every tab.
-  if (props.hub === "coach-clients") {
+  if (props.hub === "get-clients") {
     return (
-      <Suspense
-        fallback={
-          <CoachClientsTabsNav
-            pathname={pathname}
-            search=""
-            showAdminPreview={fallbackShowAdminPreview}
-          />
-        }
-      >
-        <CoachToolsHubTabsInner {...props} />
-      </Suspense>
+      <GetClientsTabsNav
+        pathname={pathname}
+        showAdminPreview={fallbackShowAdminPreview}
+        markPending={markPending}
+      />
     );
   }
 
+  // Coach Clients: never flash an empty nav — Suspense fallback still lists every tab.
   return (
     <Suspense
       fallback={
-        <nav
-          className="flex flex-nowrap items-end justify-start gap-x-4"
-          aria-label="Get Clients tools"
+        <CoachClientsTabsNav
+          pathname={pathname}
+          search=""
+          showAdminPreview={fallbackShowAdminPreview}
         />
       }
     >

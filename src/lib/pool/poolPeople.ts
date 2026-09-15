@@ -40,10 +40,9 @@ export type PoolStats = {
 };
 
 export type PoolColumnKey =
+  | "contact_info"
   | "title"
   | "company"
-  | "email"
-  | "phone"
   | "website"
   | "source"
   | "campaign"
@@ -58,10 +57,9 @@ export const POOL_TABLE_COLUMN_OPTIONS: Array<{
   key: PoolColumnKey;
   label: string;
 }> = [
+  { key: "contact_info", label: "Contact Info" },
   { key: "title", label: "Title" },
   { key: "company", label: "Company" },
-  { key: "email", label: "Email" },
-  { key: "phone", label: "Phone" },
   { key: "website", label: "Website" },
   { key: "source", label: "Source" },
   { key: "campaign", label: "Campaign" },
@@ -72,10 +70,9 @@ export const POOL_TABLE_COLUMN_OPTIONS: Array<{
 ];
 
 export const DEFAULT_POOL_COLUMN_VISIBILITY: PoolColumnVisibility = {
+  contact_info: true,
   title: false,
   company: false,
-  email: false,
-  phone: false,
   website: false,
   source: true,
   campaign: true,
@@ -89,12 +86,10 @@ export const DEFAULT_POOL_COLUMN_VISIBILITY: PoolColumnVisibility = {
 export const POOL_LEAD_FOLDED_COLUMN_KEYS: PoolColumnKey[] = [
   "title",
   "company",
-  "email",
-  "phone",
   "website",
 ];
 
-export const POOL_COLUMN_LAYOUT_VERSION = 2;
+export const POOL_COLUMN_LAYOUT_VERSION = 3;
 
 export const DEFAULT_POOL_COLUMN_ORDER: PoolColumnKey[] =
   POOL_TABLE_COLUMN_OPTIONS.map((option) => option.key);

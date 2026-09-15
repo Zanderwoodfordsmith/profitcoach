@@ -11,6 +11,7 @@ type CalendarItem = {
   summary: string;
   primary: boolean;
   accessRole: string;
+  owned?: boolean;
 };
 
 type CalendarStatus = {
@@ -148,9 +149,10 @@ function CalendarPrefsPanel({
     () =>
       (status.calendars ?? []).filter(
         (c) =>
-          c.accessRole === "owner" ||
-          c.accessRole === "writer" ||
-          c.primary
+          c.owned !== false &&
+          (c.accessRole === "owner" ||
+            c.accessRole === "writer" ||
+            c.primary)
       ),
     [status.calendars]
   );
@@ -232,6 +234,11 @@ function CalendarPrefsPanel({
                     {cal.primary ? (
                       <span className="ml-1 text-xs text-slate-400">
                         (primary)
+                      </span>
+                    ) : null}
+                    {cal.owned === false ? (
+                      <span className="ml-1 text-xs text-slate-400">
+                        (shared)
                       </span>
                     ) : null}
                   </span>
@@ -391,14 +398,34 @@ export function GoogleCalendarBookingCard({
 
     if (googleFlag === "connected" || connectedFlag === "GOOGLE") {
       setBanner("Google connected for mail, busy times, and Meet links.");
-      void load();
+      void (async () => {
+        const headers = await authHeaders();
+        if (headers) {
+          await fetch("/api/coach/integrations/accounts", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ action: "sync" }),
+          });
+        }
+        await load();
+      })();
     } else if (googleFlag) {
       setBanner(`Google connect issue: ${googleFlag.replace(/_/g, " ")}`);
     }
 
     if (connectedFlag === "OUTLOOK") {
       setBanner("Outlook connected for mail, busy times, and Teams links.");
-      void load();
+      void (async () => {
+        const headers = await authHeaders();
+        if (headers) {
+          await fetch("/api/coach/integrations/accounts", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ action: "sync" }),
+          });
+        }
+        await load();
+      })();
     } else if (connectedFlag === "failed") {
       setBanner("Connect did not finish. Try again.");
     }
@@ -419,7 +446,7 @@ export function GoogleCalendarBookingCard({
     }
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
-  }, [searchParams, pathname, router, load]);
+  }, [searchParams, pathname, router, load, authHeaders]);
 
   function connectReturnTo(): "calls" | "support" | "settings" {
     const dest = returnToProp?.trim() || "";

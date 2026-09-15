@@ -44,24 +44,36 @@ export function estimateGoogleMapsFindPersonCostUsd(placeCount: number): number 
   );
 }
 
-/** Observed ~2 min for 20 places with contacts + find-people. */
-export const GOOGLE_MAPS_SECS_PER_PLACE = 6;
+/** One round number per size option: 100 → 10 min, 1,000 → 1 hr. */
+const GOOGLE_MAPS_DURATION_MINUTES: Record<number, number> = {
+  20: 2,
+  50: 5,
+  100: 10,
+  250: 25,
+  500: 50,
+  1000: 60,
+};
+
+export function googleMapsApproxMinutes(maxPlaces: number): number {
+  const places = clampGoogleMapsMaxPlaces(maxPlaces);
+  const exact = GOOGLE_MAPS_DURATION_MINUTES[places];
+  if (exact) return exact;
+  return Math.max(2, Math.round(places / 10));
+}
 
 export function estimateGoogleMapsDurationSeconds(maxPlaces: number): number {
-  const places = clampGoogleMapsMaxPlaces(maxPlaces);
-  // Small runs still pay startup overhead (geocode, first map pages).
-  return Math.max(45, Math.round(places * GOOGLE_MAPS_SECS_PER_PLACE));
+  return googleMapsApproxMinutes(maxPlaces) * 60;
 }
 
 export function formatGoogleMapsApproxDuration(maxPlaces: number): string {
-  const secs = estimateGoogleMapsDurationSeconds(maxPlaces);
-  if (secs < 90) return "About 1 min";
-  const mins = Math.round(secs / 60);
-  if (mins <= 2) return "About 2 min";
-  if (mins <= 5) return `About ${mins} min`;
-  const low = Math.max(2, mins - Math.ceil(mins * 0.25));
-  const high = mins + Math.ceil(mins * 0.35);
-  return `About ${low}–${high} min`;
+  const mins = googleMapsApproxMinutes(maxPlaces);
+  if (mins >= 60) return "1 hr";
+  return `${mins} min`;
+}
+
+export function formatGoogleMapsSizeOption(maxPlaces: number): string {
+  const places = clampGoogleMapsMaxPlaces(maxPlaces);
+  return `${places.toLocaleString()} businesses (${formatGoogleMapsApproxDuration(places)})`;
 }
 
 export function googleMapsImportProgressPercent(opts: {

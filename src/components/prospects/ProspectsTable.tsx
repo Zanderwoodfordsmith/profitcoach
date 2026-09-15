@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Contact,
   GripVertical,
   Link2,
@@ -24,6 +25,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
+import { ContactInfoCell } from "@/components/table/ContactInfoCell";
 import { DataTableColumnsMenu } from "@/components/table/DataTableColumnsMenu";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { TableToolbarAddButton } from "@/components/table/TableToolbarAddButton";
@@ -63,12 +65,14 @@ import {
 } from "@/lib/prospectDisplayFormat";
 import { ProspectTableAvatar } from "@/components/prospects/ProspectTableAvatar";
 import { resolveProspectSourceLabel } from "@/lib/prospectSourceKind";
-import { PROSPECT_STATUS_OPTIONS } from "@/lib/prospectStatus";
+import { PROSPECT_LIST_STATUS_OPTIONS } from "@/lib/prospectStatus";
 import type { ProspectFieldPatch } from "@/lib/prospects/updateProspectFields";
-import { formatPhoneDisplay, phoneToTelHref } from "@/lib/formatPhoneDisplay";
-import { WhatsAppGlyph } from "@/components/icons/WhatsAppGlyph";
 import { getProspectCrmContactUrl } from "@/lib/crmContactUrl";
 import { paginationItems } from "@/lib/communityPagination";
+import {
+  buildGroupedTableItems,
+  toggleCollapsedGroupKey,
+} from "@/lib/table/groupedTableItems";
 import { buildPersonalisedAssessmentLink, buildPersonalisedAssessmentProLink } from "@/lib/assessmentContactParams";
 import { copyTextToClipboard } from "@/lib/copyTextToClipboard";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
@@ -195,7 +199,7 @@ const TABLE_NEXT_ACTION_CELL = "whitespace-nowrap";
 const TABLE_STATUS_CELL = "whitespace-nowrap";
 
 const TABLE_CHECKBOX_COL_WIDTH = 36;
-const TABLE_LEAD_COL_WIDTH = 440;
+const TABLE_LEAD_COL_WIDTH = 280;
 const TABLE_KEBAB_COL_WIDTH = 44;
 const TABLE_BASE_LEFT_RAIL_WIDTH = TABLE_CHECKBOX_COL_WIDTH + TABLE_LEAD_COL_WIDTH;
 
@@ -210,6 +214,8 @@ function stickyProspectRowBg(isSelected: boolean) {
 
 function getProspectColumnWidth(key: ProspectColumnKey): number {
   switch (key) {
+    case "contact_info":
+      return 184;
     case "business_stats":
       return 176;
     case "status":
@@ -478,6 +484,9 @@ export function ProspectsTable({
   const [draggingColumnKey, setDraggingColumnKey] =
     useState<ProspectColumnKey | null>(null);
   const [draggingGroupKey, setDraggingGroupKey] = useState<string | null>(null);
+  const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(
+    () => new Set()
+  );
   const [filtersMenuOpen, setFiltersMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
@@ -783,33 +792,34 @@ export function ProspectsTable({
     return groupSections.flatMap((section) => section.prospects);
   }, [groupSections, sortedProspects]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(displayProspects.length / pageSize)
-  );
+  const groupedItems = useMemo(() => {
+    if (!groupSections?.length) return null;
+    return buildGroupedTableItems(
+      groupSections,
+      collapsedGroupKeys,
+      (section) => section.prospects
+    );
+  }, [collapsedGroupKeys, groupSections]);
+
+  const paginationLength = groupedItems?.length ?? displayProspects.length;
+
+  const totalPages = Math.max(1, Math.ceil(paginationLength / pageSize));
+
+  const paginatedGroupedItems = useMemo(() => {
+    if (!groupedItems) return null;
+    const start = (page - 1) * pageSize;
+    return groupedItems.slice(start, start + pageSize);
+  }, [groupedItems, page, pageSize]);
 
   const paginatedProspects = useMemo(() => {
+    if (paginatedGroupedItems) {
+      return paginatedGroupedItems
+        .filter((item) => item.type === "row")
+        .map((item) => item.row);
+    }
     const start = (page - 1) * pageSize;
     return displayProspects.slice(start, start + pageSize);
-  }, [displayProspects, page, pageSize]);
-
-  const groupHeaderByFirstRowId = useMemo(() => {
-    const map = new Map<string, ProspectGroupSection>();
-    if (!groupSections?.length) return map;
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    let seen = 0;
-    for (const section of groupSections) {
-      const sectionStart = seen;
-      const sectionEnd = seen + section.prospects.length;
-      seen = sectionEnd;
-      if (sectionEnd <= start || sectionStart >= end) continue;
-      const firstIndex = Math.max(0, start - sectionStart);
-      const first = section.prospects[firstIndex];
-      if (first) map.set(first.id, section);
-    }
-    return map;
-  }, [groupSections, page, pageSize]);
+  }, [displayProspects, page, pageSize, paginatedGroupedItems]);
 
   const pageNumbers = useMemo(
     () => paginationItems(page, totalPages),
@@ -817,12 +827,12 @@ export function ProspectsTable({
   );
 
   const paginationRangeLabel =
-    displayProspects.length === 0
+    paginationLength === 0
       ? "0 prospects"
       : `${(page - 1) * pageSize + 1}-${Math.min(
           page * pageSize,
-          displayProspects.length
-        )} of ${displayProspects.length}`;
+          paginationLength
+        )} of ${paginationLength}`;
 
   useEffect(() => {
     setPageSize(readStoredPageSize());
@@ -1186,6 +1196,7 @@ export function ProspectsTable({
   }
 
   const COLUMN_SORT_FIELD: Partial<Record<ProspectColumnKey, ProspectSortField>> = {
+    contact_info: "email",
     status: "status",
     created_at: "created_at",
     boss_score: "boss_score",
@@ -1415,75 +1426,14 @@ export function ProspectsTable({
     );
   }
 
-  function renderPhoneLine(prospect: ProspectRow) {
-    const raw = prospect.phone?.trim();
-    if (!raw) return null;
-
-    const formatted = formatPhoneDisplay(raw) ?? raw;
-    const telHref = phoneToTelHref(raw);
-    const waBadge = prospect.has_whatsapp ? (
-      <span title="WhatsApp available" className="inline-flex shrink-0">
-        <WhatsAppGlyph className="h-3.5 w-3.5" />
-        <span className="sr-only">WhatsApp available</span>
-      </span>
-    ) : null;
-    const number = telHref ? (
-      <a
-        href={telHref}
-        data-row-action
-        onClick={(e) => e.stopPropagation()}
-        className="min-w-0 truncate text-sm tabular-nums text-slate-800 hover:text-sky-700 hover:underline"
-        title={`Call ${formatted}`}
-      >
-        {formatted}
-      </a>
-    ) : (
-      <span className="min-w-0 truncate text-sm tabular-nums text-slate-800">
-        {formatted}
-      </span>
-    );
-
+  function renderContactInfoCell(prospect: ProspectRow) {
     return (
-      <span className="inline-flex min-w-0 items-center gap-1.5">
-        {number}
-        {waBadge}
-      </span>
-    );
-  }
-
-  function renderEmailLine(prospect: ProspectRow, { primary = false } = {}) {
-    const trimmed = prospect.email?.trim();
-    if (!trimmed) return null;
-    return (
-      <a
-        href={`mailto:${trimmed}`}
-        data-row-action
-        onClick={(e) => e.stopPropagation()}
-        className={`min-w-0 truncate hover:text-sky-700 hover:underline ${
-          primary
-            ? "text-sm text-slate-800"
-            : "text-xs leading-snug text-slate-500"
-        }`}
-        title={trimmed}
-      >
-        {trimmed}
-      </a>
-    );
-  }
-
-  function renderContactCell(prospect: ProspectRow) {
-    const phoneLine = renderPhoneLine(prospect);
-    const emailLine = renderEmailLine(prospect, {
-      primary: !prospect.phone?.trim(),
-    });
-    if (!phoneLine && !emailLine) {
-      return renderEditableContactValue(prospect, null);
-    }
-    return (
-      <div className="flex min-w-0 flex-col justify-center gap-0.5">
-        {phoneLine}
-        {emailLine}
-      </div>
+      <ContactInfoCell
+        phone={prospect.phone}
+        email={prospect.email}
+        hasWhatsApp={prospect.has_whatsapp}
+        empty={renderEditableContactValue(prospect, null)}
+      />
     );
   }
 
@@ -1543,6 +1493,8 @@ export function ProspectsTable({
 
   function renderColumnCell(key: ProspectColumnKey, p: ProspectRow) {
     switch (key) {
+      case "contact_info":
+        return renderContactInfoCell(p);
       case "business_stats":
         return renderBusinessStatsCell(p);
       case "linkedin":
@@ -1951,7 +1903,7 @@ export function ProspectsTable({
           </th>
           <th className={`${TABLE_HEAD_CELL} ${TABLE_LEAD_CELL} text-left`}>
             <div className="flex h-full items-center">
-              {renderSortableLabel("Prospect", "name")}
+              {renderSortableLabel("Name", "name")}
             </div>
           </th>
         </tr>
@@ -1980,10 +1932,11 @@ export function ProspectsTable({
   }
 
   return (
-    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
-      {hideToolbar && (rowDeleteError || (error && !loading)) ? (
-        <p className="text-sm text-rose-600">{rowDeleteError ?? error}</p>
-      ) : null}
+    <div
+      className={`flex min-h-0 w-full min-w-0 flex-1 flex-col ${
+        hideToolbar ? "" : "gap-4"
+      }`}
+    >
       {!hideToolbar ? (
       <div
         className="sticky z-20 bg-white"
@@ -2187,7 +2140,7 @@ export function ProspectsTable({
                       className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     >
                       <option value="all">All</option>
-                      {PROSPECT_STATUS_OPTIONS.map((option) => (
+                      {PROSPECT_LIST_STATUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
@@ -2329,7 +2282,18 @@ export function ProspectsTable({
       </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div
+        className={`flex min-h-0 flex-1 flex-col overflow-hidden border-slate-200 bg-white shadow-sm ${
+          hideToolbar
+            ? "rounded-b-xl border border-t-0"
+            : "rounded-xl border"
+        }`}
+      >
+      {hideToolbar && (rowDeleteError || (error && !loading)) ? (
+        <p className={`shrink-0 pt-3 text-sm text-rose-700 ${TABLE_SECTION_PADDING}`}>
+          {rowDeleteError ?? error}
+        </p>
+      ) : null}
       {selectedCount > 0 ? (
         <div className={`flex shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-sky-100 bg-sky-50 py-2 text-sm ${TABLE_SECTION_PADDING}`}>
           <span className="font-medium text-sky-900">
@@ -2497,15 +2461,23 @@ export function ProspectsTable({
             <table className={prospectsTableClassName} style={prospectsTableStyle}>
               {renderTableColGroup()}
               <tbody>
-              {paginatedProspects.map((p) => {
-                const isSelected = selectedIdSet.has(p.id);
-                const group = groupHeaderByFirstRowId.get(p.id);
-                return (
-                <Fragment key={p.id}>
-                {group ? (
+              {(
+                paginatedGroupedItems ??
+                paginatedProspects.map((row) => ({
+                  type: "row" as const,
+                  row,
+                }))
+              ).map((item) => {
+                if (item.type === "header") {
+                  const group = item.section;
+                  const collapsed = collapsedGroupKeys.has(group.key);
+                  return (
                   <tr
+                    key={`group:${group.key}`}
                     className={
-                      draggingGroupKey === group.key ? "bg-slate-100" : "bg-slate-50"
+                      draggingGroupKey === group.key
+                        ? "bg-slate-100"
+                        : "bg-slate-50"
                     }
                     draggable={groupDraggable}
                     onDragStart={(e) => {
@@ -2538,12 +2510,35 @@ export function ProspectsTable({
                             aria-hidden
                           />
                         ) : null}
-                        <span className="text-xs font-semibold text-slate-800">
-                          {group.label}
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          {group.prospects.length}
-                        </span>
+                        <button
+                          type="button"
+                          className="flex min-w-0 items-center gap-1.5 rounded-md text-left hover:text-slate-950"
+                          aria-expanded={!collapsed}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCollapsedGroupKeys((prev) =>
+                              toggleCollapsedGroupKey(prev, group.key)
+                            );
+                          }}
+                        >
+                          {collapsed ? (
+                            <ChevronRight
+                              className="h-3.5 w-3.5 shrink-0 text-slate-500"
+                              aria-hidden
+                            />
+                          ) : (
+                            <ChevronDown
+                              className="h-3.5 w-3.5 shrink-0 text-slate-500"
+                              aria-hidden
+                            />
+                          )}
+                          <span className="text-xs font-semibold text-slate-800">
+                            {group.label}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            {group.prospects.length}
+                          </span>
+                        </button>
                       </div>
                     </td>
                     <td
@@ -2551,7 +2546,12 @@ export function ProspectsTable({
                       className="bg-slate-50"
                     />
                   </tr>
-                ) : null}
+                  );
+                }
+                const p = item.row;
+                const isSelected = selectedIdSet.has(p.id);
+                return (
+                <Fragment key={p.id}>
                 <tr
                   className={
                     onRowClick
@@ -2624,9 +2624,6 @@ export function ProspectsTable({
                             companyWebsite={p.company_website}
                           />
                         ) : null}
-                      </div>
-                      <div className="w-[11.5rem] shrink-0">
-                        {renderContactCell(p)}
                       </div>
                     </div>
                   </td>
