@@ -78,10 +78,10 @@ export type GoogleMapsCountryCode =
 export type GoogleMapsUsStateCode =
   (typeof GOOGLE_MAPS_US_STATES)[number]["code"];
 
-const COUNTRY_BY_CODE = new Map(
+const COUNTRY_BY_CODE = new Map<string, string>(
   GOOGLE_MAPS_COUNTRIES.map((country) => [country.code, country.label])
 );
-const US_STATE_BY_CODE = new Map(
+const US_STATE_BY_CODE = new Map<string, string>(
   GOOGLE_MAPS_US_STATES.map((state) => [state.code, state.label])
 );
 

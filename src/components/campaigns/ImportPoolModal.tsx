@@ -105,7 +105,9 @@ type ImportProgress = {
 
 const MAPS_SELECT_CLASS =
   "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 [color-scheme:light]";
+const MAPS_COUNTRY_STORAGE_KEY = "profit-coach.google-maps-country";
 const MAPS_US_STATE_STORAGE_KEY = "profit-coach.google-maps-us-state";
+const UNIPILE_POLL_MS = 2_000;
 
 function loadStoredMapsCountry(): GoogleMapsCountryCode {
   if (typeof window === "undefined") return GOOGLE_MAPS_DEFAULT_COUNTRY;

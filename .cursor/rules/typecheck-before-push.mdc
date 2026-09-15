@@ -1,0 +1,16 @@
+---
+description: Run the production TypeScript check before pushing app code to GitHub.
+alwaysApply: true
+---
+
+# Typecheck before push
+
+`next dev` does not run the full compiler. Vercel’s first `next build` is often the first time the whole app is typechecked, which is why main deploys fail on missing names and unused vars.
+
+Before `git push` (and before treating a TypeScript/React change as done):
+
+```bash
+npm run typecheck
+```
+
+Fix every error. Do not push a red `tsc` and wait for Vercel to catch it.
