@@ -294,6 +294,8 @@ export function useProspectsPage({ scope }: UseProspectsPageOptions) {
               last_completed_at: p.last_assessed_at,
               next_call: nextCall,
               next_action: p.next_action,
+              prospect_source: p.prospect_source,
+              prospect_funnel: p.prospect_funnel,
             }),
           };
         })

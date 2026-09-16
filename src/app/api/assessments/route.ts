@@ -24,6 +24,8 @@ import {
   resolvePrimaryCoachSlug,
 } from "@/lib/primaryCoach";
 import { resolveLandingEventTestId } from "@/lib/landingEvergreenTest";
+import { prospectSourceForAssessmentType } from "@/lib/prospectSourceKind";
+import { canonicalizeProspectStatus } from "@/lib/prospectStatus";
 import { buildScorecardReportUrl } from "@/lib/scorecardReportLink";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -208,10 +210,17 @@ async function resolveCoachForAssessment(
 
 async function patchExistingContactFields(
   contactId: string,
-  existing: { full_name?: string | null; business_name?: string | null },
+  existing: {
+    full_name?: string | null;
+    business_name?: string | null;
+    prospect_source?: string | null;
+    prospect_funnel?: string | null;
+    prospect_status?: string | null;
+  },
   fullName: string,
   businessName: string | null,
-  phone: string | null
+  phone: string | null,
+  assessmentType: AssessmentType
 ): Promise<void> {
   const patch: Record<string, unknown> = {};
   if (
@@ -224,6 +233,18 @@ async function patchExistingContactFields(
   if (businessName && !existing.business_name) {
     patch.business_name = businessName;
   }
+  const inboundSource = prospectSourceForAssessmentType(assessmentType);
+  const existingSource = existing.prospect_source?.trim() || "";
+  if (!existingSource || existingSource === "lead_capture") {
+    patch.prospect_source = inboundSource;
+  }
+  if (!existing.prospect_funnel?.trim()) {
+    patch.prospect_funnel = assessmentType;
+  }
+  const status = canonicalizeProspectStatus(existing.prospect_status);
+  if (status == null || status === "leads") {
+    patch.prospect_status = "interested";
+  }
   if (Object.keys(patch).length > 0) {
     await tryUpdateContactStripping(contactId, patch);
   }
@@ -234,19 +255,25 @@ async function resolveOrCreateContact(
   fullName: string,
   email: string | null,
   businessName: string | null,
-  phone: string | null
+  phone: string | null,
+  assessmentType: AssessmentType
 ): Promise<{ contactId: string | null; error?: NextResponse }> {
   let contactId: string | null = null;
   let existingContact: {
     id: string;
     full_name?: string | null;
     business_name?: string | null;
+    prospect_source?: string | null;
+    prospect_funnel?: string | null;
+    prospect_status?: string | null;
   } | null = null;
 
   if (email) {
     const { data: existing, error: contactLookupError } = await supabaseAdmin
       .from("contacts")
-      .select("id, full_name, business_name")
+      .select(
+        "id, full_name, business_name, prospect_source, prospect_funnel, prospect_status"
+      )
       .eq("coach_id", coachId)
       .eq("email", email)
       .maybeSingle();
@@ -257,6 +284,9 @@ async function resolveOrCreateContact(
         id: string;
         full_name?: string | null;
         business_name?: string | null;
+        prospect_source?: string | null;
+        prospect_funnel?: string | null;
+        prospect_status?: string | null;
       };
     } else if (contactLookupError) {
       console.error("assessments contact lookup:", contactLookupError);
@@ -269,11 +299,13 @@ async function resolveOrCreateContact(
       existingContact,
       fullName,
       businessName,
-      phone
+      phone,
+      assessmentType
     );
     return { contactId };
   }
 
+  const inboundSource = prospectSourceForAssessmentType(assessmentType);
   const baseInsert: Record<string, unknown> = {
     coach_id: coachId,
     type: "prospect",
@@ -281,6 +313,9 @@ async function resolveOrCreateContact(
     email,
     business_name: businessName,
     phone,
+    prospect_source: inboundSource,
+    prospect_funnel: assessmentType,
+    prospect_status: "interested",
   };
   const { first_name, last_name } = splitFullName(fullName);
   if (first_name) baseInsert.first_name = first_name;
@@ -304,7 +339,8 @@ async function resolveOrCreateContact(
           {},
           fullName,
           businessName,
-          phone
+          phone,
+          assessmentType
         );
         return { contactId: racedId };
       }
@@ -374,7 +410,8 @@ export async function POST(request: Request) {
     fullName,
     email,
     businessName,
-    phone
+    phone,
+    assessmentType
   );
   if (contactResult.error) return contactResult.error;
   const contactId = contactResult.contactId;

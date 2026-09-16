@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
+import { isCronRequest } from "@/lib/cronAuth";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { processDueScheduledMessages } from "@/lib/messaging/scheduledMessages";
 
 export const maxDuration = 60;
-
-function isCronRequest(request: Request): boolean {
-  if (request.headers.get("x-vercel-cron") === "1") return true;
-  const auth = request.headers.get("authorization") || "";
-  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const secrets = [
-    process.env.CRON_SECRET?.trim(),
-    process.env.LINKEDIN_CRON_SECRET?.trim(),
-  ].filter(Boolean) as string[];
-  return !!bearer && secrets.includes(bearer);
-}
 
 /**
  * Cron: send due scheduled inbox messages.

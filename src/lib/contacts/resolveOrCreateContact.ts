@@ -122,6 +122,9 @@ export async function resolveOrCreateContact(
   if (input.prospectStatus) {
     typedFields.prospect_status = input.prospectStatus;
   }
+  if (input.prospectSource && (input.type ?? "prospect") === "prospect") {
+    typedFields.prospect_source = input.prospectSource;
+  }
   if (input.extra) {
     for (const [k, v] of Object.entries(input.extra)) {
       typedFields[k] = v;

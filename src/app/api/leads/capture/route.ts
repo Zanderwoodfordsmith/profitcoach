@@ -10,6 +10,7 @@ import {
   ensurePrimaryCoachRow,
   resolvePrimaryCoachSlug,
 } from "@/lib/primaryCoach";
+import { prospectSourceForAssessmentType } from "@/lib/prospectSourceKind";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type Body = {
@@ -127,7 +128,9 @@ export async function POST(request: Request) {
       lastName,
       businessName,
       type: "prospect",
-      prospectSource: "lead_capture",
+      prospectSource: prospectFunnel
+        ? prospectSourceForAssessmentType(prospectFunnel)
+        : "lead_capture",
       extra: prospectFunnel ? { prospect_funnel: prospectFunnel } : undefined,
     });
     contactId = result.contactId;

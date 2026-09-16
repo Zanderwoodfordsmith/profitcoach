@@ -289,7 +289,7 @@ export async function updateProspectFields(
     const withLinkedIn = await supabaseAdmin
       .from("contacts")
       .select(
-        "full_name, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id, prospect_tags"
+        "full_name, email, phone, job_title, business_name, linkedin_url, company_website, prospect_status, crm_contact_id, prospect_tags, prospect_source, prospect_funnel"
       )
       .eq("id", contactId)
       .maybeSingle();
@@ -340,6 +340,8 @@ export async function updateProspectFields(
       next_call: nextCallByContact[contactId] ?? null,
       last_past_call_status: pastCallByContact[contactId] ?? null,
       next_action: nextAction,
+      prospect_source: (refreshed.prospect_source as string | null) ?? null,
+      prospect_funnel: (refreshed.prospect_funnel as string | null) ?? null,
     }),
     next_action: nextAction,
     tags: normalizeProspectTags(refreshed.prospect_tags),

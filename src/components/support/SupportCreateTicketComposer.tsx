@@ -633,10 +633,10 @@ export function SupportCreateTicketComposer({
                   className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-500"
                   title={
                     isAdminCreate
-                      ? "Email the coach when support replies. Replies close together are sent in one email after a short pause."
+                      ? "Email the coach when support replies."
                       : accountEmail
-                        ? `Email ${accountEmail} when support replies. Replies close together are sent in one email after a short pause.`
-                        : "Email me when support replies. Replies close together are sent in one email after a short pause."
+                        ? `Email ${accountEmail} when support replies.`
+                        : "Email me when support replies."
                   }
                 >
                   <input

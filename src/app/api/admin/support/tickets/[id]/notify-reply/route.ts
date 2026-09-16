@@ -1,21 +1,21 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/requireAdmin";
 import {
+  processDueSupportReplyEmails,
   queueSupportReplyEmailNotify,
   resolveSupportNotifyRecipient,
 } from "@/lib/support/notifyCoachOfReply";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type Body = {
   replyBody?: string;
 };
 
 /**
- * Queue a debounced email notification for a support reply.
- * Actual send happens via /api/cron/support-reply-notify after a quiet period
- * so rapid admin messages collapse into one email.
+ * Send a staff-reply notification email immediately. Cron retries failures.
  */
 export async function POST(
   request: Request,
@@ -82,12 +82,29 @@ export async function POST(
     );
   }
 
+  const flushed = await processDueSupportReplyEmails(1, request, ticket.id);
+  const thisError = flushed.errors.find((e) =>
+    e.startsWith(`${ticket.id}:`)
+  );
+  if (thisError) {
+    return NextResponse.json({
+      ok: true,
+      queued: true,
+      sent: false,
+      emailed: recipient.email,
+      isMember: recipient.isMember,
+      sendAfter: queued.sendAfter,
+      memberPrefersEmail: ticket.member_notify_email !== false,
+      error: thisError.slice(ticket.id.length + 2),
+    });
+  }
+
   return NextResponse.json({
     ok: true,
-    queued: true,
+    queued: false,
+    sent: flushed.sent > 0,
     emailed: recipient.email,
     isMember: recipient.isMember,
-    sendAfter: queued.sendAfter,
     memberPrefersEmail: ticket.member_notify_email !== false,
   });
 }

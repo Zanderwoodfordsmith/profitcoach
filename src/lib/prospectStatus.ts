@@ -1,5 +1,6 @@
 import type { ProspectNextAction } from "./actionPlans/prospectFollowUp";
 import type { ProspectNextCall } from "./prospectNextCall";
+import { isInboundProspectSource } from "./prospectSourceKind";
 
 export const PROSPECT_STATUS_VALUES = [
   "leads",
@@ -115,6 +116,8 @@ type ResolveInput = {
   next_call?: ProspectNextCall | null;
   last_past_call_status?: string | null;
   next_action?: ProspectNextAction | null;
+  prospect_source?: string | null;
+  prospect_funnel?: string | null;
 };
 
 export function resolveAutoProspectStatus(input: ResolveInput): ProspectStatusValue {
@@ -144,6 +147,22 @@ function liftLegacyTopOfFunnel(
   return canonical;
 }
 
+/**
+ * Scorecard fills and people coaches added are stored as Pool, but they are
+ * not campaign-pool imports. Keep them in the working pipeline.
+ */
+function liftInboundLeadsToInterested(
+  canonical: ProspectStatusValue,
+  input: ResolveInput
+): ProspectStatusValue {
+  if (canonical !== "leads") return canonical;
+  if (input.last_completed_at) return "interested";
+  if (isInboundProspectSource(input.prospect_source, input.prospect_funnel)) {
+    return "interested";
+  }
+  return canonical;
+}
+
 /** Replied is a triage inbox — leave it once a call is on the calendar. */
 function liftRepliedWhenBooked(
   canonical: ProspectStatusValue,
@@ -169,7 +188,10 @@ export function resolveProspectStatus(input: ResolveInput): ProspectStatusDispla
   if (canonical) {
     if (isCanonicalProspectStatus(canonical)) {
       const value = liftRepliedWhenBooked(
-        liftLegacyTopOfFunnel(input.prospect_status, canonical, input),
+        liftInboundLeadsToInterested(
+          liftLegacyTopOfFunnel(input.prospect_status, canonical, input),
+          input
+        ),
         input
       );
       return {

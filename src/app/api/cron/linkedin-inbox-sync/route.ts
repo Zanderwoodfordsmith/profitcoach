@@ -1,21 +1,11 @@
 import { NextResponse } from "next/server";
+import { isCronRequest } from "@/lib/cronAuth";
 import { requireOutreachCoach } from "@/lib/unipile/requireOutreachCoach";
 import { syncLinkedInInboxForCoach } from "@/lib/unipile/inboxSync";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const maxDuration = 60;
-
-function isCronRequest(request: Request): boolean {
-  if (request.headers.get("x-vercel-cron") === "1") return true;
-  const auth = request.headers.get("authorization") || "";
-  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const secrets = [
-    process.env.CRON_SECRET?.trim(),
-    process.env.LINKEDIN_CRON_SECRET?.trim(),
-  ].filter(Boolean) as string[];
-  return !!bearer && secrets.includes(bearer);
-}
 
 /** Cron: force sync all OK accounts. Coach auth: soft sync (or force via body). */
 export async function POST(request: Request) {

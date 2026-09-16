@@ -132,13 +132,23 @@ export function pipelineColumnForProspect(
   layout?: PipelineLayout
 ): string {
   const status = row.status.value;
-  if (layout) {
-    for (const col of layout.columns) {
+  const visible = layout ? visiblePipelineColumns(layout) : null;
+  if (visible) {
+    for (const col of visible) {
       if (col.id === status) return col.id;
       if (col.sections.some((section) => section.id === status)) return col.id;
     }
   }
-  return STATUS_TO_COLUMN[status as ProspectStatusValue] ?? "leads";
+  const mapped = STATUS_TO_COLUMN[status as ProspectStatusValue] ?? "leads";
+  // Prospects hides the Pool column; inbound people at Pool still belong here.
+  if (
+    mapped === "leads" &&
+    visible &&
+    !visible.some((col) => col.id === "leads")
+  ) {
+    return "interested";
+  }
+  return mapped;
 }
 
 export function bookedSectionForProspect(row: ProspectRow): BookedSectionId {

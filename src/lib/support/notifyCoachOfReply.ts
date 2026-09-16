@@ -14,8 +14,12 @@ import {
   sendUnipileEmail,
 } from "@/lib/unipile/client";
 
-/** Quiet period after the last staff reply before sending one email. */
-export const SUPPORT_EMAIL_NOTIFY_DEBOUNCE_MS = 4 * 60 * 1000;
+/**
+ * Delay before a queued notify is due. Kept at 0 so the admin reply request
+ * (and the minute cron) can send immediately — the old 4-minute window left
+ * mail sitting in the queue when cron auth failed.
+ */
+export const SUPPORT_EMAIL_NOTIFY_DEBOUNCE_MS = 0;
 
 export type SupportNotifyRecipient = {
   email: string;
@@ -166,17 +170,21 @@ function formatStaffReplyBodies(replies: StaffReplyForEmail[]): string {
  */
 export async function processDueSupportReplyEmails(
   limit = 25,
-  request?: Request
+  request?: Request,
+  onlyTicketId?: string
 ): Promise<{ processed: number; sent: number; errors: string[] }> {
   const nowIso = new Date().toISOString();
-  const { data: due, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("community_feedback_reports")
     .select(
       "id, ticket_number, title, created_by, contact_email, submitter_name, assigned_to, member_notify_email, email_notify_after, email_notify_last_sent_at, unipile_email_id, unipile_thread_id, unipile_account_id"
     )
     .not("email_notify_after", "is", null)
-    .lte("email_notify_after", nowIso)
-    .limit(limit);
+    .lte("email_notify_after", nowIso);
+  if (onlyTicketId) {
+    query = query.eq("id", onlyTicketId);
+  }
+  const { data: due, error } = await query.limit(limit);
 
   if (error) {
     return { processed: 0, sent: 0, errors: [error.message] };
@@ -186,6 +194,8 @@ export async function processDueSupportReplyEmails(
   const errors: string[] = [];
 
   for (const ticket of due ?? []) {
+    let claimed = false;
+    try {
     // Clear queue first so a crash mid-send doesn't double-spam forever;
     // we re-queue on failure below if needed.
     const clear = await supabaseAdmin
@@ -198,6 +208,7 @@ export async function processDueSupportReplyEmails(
       errors.push(`${ticket.id}: ${clear.error.message}`);
       continue;
     }
+    claimed = true;
 
     const recipient = await resolveSupportNotifyRecipient(ticket);
     if (!recipient) {
@@ -300,6 +311,17 @@ export async function processDueSupportReplyEmails(
       .update({ email_notify_last_sent_at: new Date().toISOString() })
       .eq("id", ticket.id);
     sent += 1;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "send failed";
+      errors.push(`${ticket.id}: ${message}`);
+      console.error("support reply email:", ticket.id, err);
+      if (claimed) {
+        await supabaseAdmin
+          .from("community_feedback_reports")
+          .update({ email_notify_after: new Date().toISOString() })
+          .eq("id", ticket.id);
+      }
+    }
   }
 
   return { processed: (due ?? []).length, sent, errors };
@@ -410,26 +432,52 @@ ${callButton}
     : subjectTitle;
   const subject = `RE: ${subjectBase}`.slice(0, 200);
 
-  const res = await sendUnipileEmail({
-    account_id: mailbox.unipile_account_id,
-    to: [
-      {
-        identifier: input.recipient.email,
-        ...(input.recipient.name
-          ? { display_name: input.recipient.name }
-          : {}),
-      },
-    ],
-    from: {
-      identifier: BCA_SUPPORT_EMAIL,
-      display_name: "Profit Coach Support",
+  const to = [
+    {
+      identifier: input.recipient.email,
+      ...(input.recipient.name ? { display_name: input.recipient.name } : {}),
     },
+  ];
+  const from = {
+    identifier: BCA_SUPPORT_EMAIL,
+    display_name: "Profit Coach Support",
+  };
+  const replyTo = input.unipileEmailId?.trim() || undefined;
+
+  let res = await sendUnipileEmail({
+    account_id: mailbox.unipile_account_id,
+    to,
+    from,
     subject,
     body: html,
-    reply_to: input.unipileEmailId || undefined,
+    reply_to: replyTo,
   });
 
+  // Stale inbound ids fail with parent_mail_not_found; retry as a new thread.
+  if (!res.ok && replyTo) {
+    console.warn("support notify reply_to failed, retrying:", res.error);
+    res = await sendUnipileEmail({
+      account_id: mailbox.unipile_account_id,
+      to,
+      from,
+      subject,
+      body: html,
+    });
+  }
+
+  // Gmail sometimes rejects a custom From; the connected mailbox is already support@.
   if (!res.ok) {
+    console.warn("support notify from failed, retrying without from:", res.error);
+    res = await sendUnipileEmail({
+      account_id: mailbox.unipile_account_id,
+      to,
+      subject,
+      body: html,
+    });
+  }
+
+  if (!res.ok) {
+    console.error("support notify send failed:", res.error);
     return { ok: false, error: res.error || "Could not send email." };
   }
 

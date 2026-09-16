@@ -1,18 +1,8 @@
 import { NextResponse } from "next/server";
+import { isCronRequest } from "@/lib/cronAuth";
 import { syncAllRunningGoogleMapsImportJobs } from "@/lib/googleMaps/importJob";
 
 export const maxDuration = 300;
-
-function isCronRequest(request: Request): boolean {
-  if (request.headers.get("x-vercel-cron") === "1") return true;
-  const auth = request.headers.get("authorization") || "";
-  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const secrets = [
-    process.env.CRON_SECRET?.trim(),
-    process.env.LINKEDIN_CRON_SECRET?.trim(),
-  ].filter(Boolean) as string[];
-  return Boolean(bearer && secrets.includes(bearer));
-}
 
 export async function GET(request: Request) {
   if (!isCronRequest(request)) {

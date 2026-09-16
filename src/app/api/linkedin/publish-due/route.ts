@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isCronRequest } from "@/lib/cronAuth";
 import { requireContentPublisher } from "@/lib/linkedinAdminAuth";
 import {
   inferPostType,
@@ -24,17 +25,6 @@ type DueItem = {
   article_thumbnail_url: string | null;
   media: unknown;
 };
-
-function isCronRequest(request: Request): boolean {
-  if (request.headers.get("x-vercel-cron") === "1") return true;
-  const auth = request.headers.get("authorization") || "";
-  const bearer = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  const secrets = [
-    process.env.CRON_SECRET?.trim(),
-    process.env.LINKEDIN_CRON_SECRET?.trim(),
-  ].filter(Boolean) as string[];
-  return !!bearer && secrets.includes(bearer);
-}
 
 async function publishOne(
   item: DueItem

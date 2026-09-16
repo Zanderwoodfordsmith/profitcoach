@@ -755,17 +755,26 @@ export function AdminTicketReplies({
           const notifyBody = (await notifyRes.json().catch(() => ({}))) as {
             error?: string;
             emailed?: string;
+            sent?: boolean;
           };
           if (!notifyRes.ok) {
             setNotifyNote(
               notifyBody.error ||
                 "Reply saved, but the email notification failed."
             );
-          } else {
+          } else if (notifyBody.sent) {
             setNotifyNote(
               notifyBody.emailed
-                ? `Email to ${notifyBody.emailed} queued (sends after a short pause if you keep typing).`
-                : "Email notification queued."
+                ? `Email sent to ${notifyBody.emailed}.`
+                : "Email sent."
+            );
+          } else {
+            setNotifyNote(
+              notifyBody.error
+                ? `Reply saved, but the email could not be sent: ${notifyBody.error}`
+                : notifyBody.emailed
+                  ? `Email to ${notifyBody.emailed} will retry shortly.`
+                  : "Email notification queued."
             );
           }
         }
@@ -897,7 +906,6 @@ export function AdminTicketReplies({
         Email{" "}
         {emailNotifyLabel?.trim() ? emailNotifyLabel.trim() : "them"} about this
         reply
-        <span className="text-slate-400"> (waits ~4 min)</span>
       </span>
     </label>
   ) : null;

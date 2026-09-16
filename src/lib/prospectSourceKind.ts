@@ -9,6 +9,54 @@ export type ProspectSourceKind =
 /** Stored on `contacts.prospect_source`. */
 export type ProspectSourceValue = ProspectSourceKind | "ghl" | "linkedin_campaign";
 
+/** Campaign / list imports that belong on Pool, not the Prospects board. */
+export const POOL_IMPORT_SOURCES = new Set([
+  "google_maps",
+  "sales_nav",
+  "sales_nav_csv",
+  "sales_navigator",
+  "lead_finder",
+  "connections",
+  "search",
+  "campaign_import",
+  "linkedin_campaign",
+]);
+
+/** Inbound people who belong on Prospects even while still stored as Pool. */
+export const INBOUND_PROSPECT_SOURCES = new Set([
+  "manual",
+  "booking",
+  "boss_score",
+  "boss_pro",
+  "ghl",
+  "lead_capture",
+  "bca",
+  "linkedin",
+]);
+
+export function isPoolImportSource(
+  source: string | null | undefined
+): boolean {
+  const trimmed = source?.trim().toLowerCase() ?? "";
+  return trimmed.length > 0 && POOL_IMPORT_SOURCES.has(trimmed);
+}
+
+export function isInboundProspectSource(
+  source: string | null | undefined,
+  funnel?: string | null
+): boolean {
+  const trimmed = source?.trim().toLowerCase() ?? "";
+  if (trimmed && INBOUND_PROSPECT_SOURCES.has(trimmed)) return true;
+  const funnelValue = funnel?.trim();
+  return funnelValue === "boss_scorecard" || funnelValue === "diagnostic_50";
+}
+
+export function prospectSourceForAssessmentType(
+  type: "boss_scorecard" | "diagnostic_50"
+): "boss_score" | "boss_pro" {
+  return type === "boss_scorecard" ? "boss_score" : "boss_pro";
+}
+
 export const PROSPECT_SOURCE_CHART_STACK_ORDER: ProspectSourceKind[] = [
   "manual",
   "bca",

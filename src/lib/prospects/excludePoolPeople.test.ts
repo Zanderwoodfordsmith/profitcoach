@@ -33,7 +33,43 @@ describe("excludePoolOnlyContacts", () => {
     );
   });
 
-  it("drops campaign / unattributed leads that are still at Pool", () => {
+  it("keeps scorecard fills even when stored as lead_capture / funnel", () => {
+    assert.equal(
+      isStillInPool(
+        {
+          id: "capture",
+          prospect_status: "leads",
+          prospect_source: "lead_capture",
+        },
+        new Set()
+      ),
+      false
+    );
+    assert.equal(
+      isStillInPool(
+        {
+          id: "scorecard",
+          prospect_status: "leads",
+          prospect_source: null,
+          prospect_funnel: "boss_scorecard",
+        },
+        new Set()
+      ),
+      false
+    );
+  });
+
+  it("keeps legacy added prospects with no source", () => {
+    assert.equal(
+      isStillInPool(
+        { id: "legacy", prospect_status: "new", prospect_source: null },
+        new Set()
+      ),
+      false
+    );
+  });
+
+  it("drops campaign / list-import leads that are still at Pool", () => {
     assert.equal(
       isStillInPool(
         {
@@ -47,7 +83,11 @@ describe("excludePoolOnlyContacts", () => {
     );
     assert.equal(
       isStillInPool(
-        { id: "legacy", prospect_status: "new", prospect_source: null },
+        {
+          id: "sales-nav",
+          prospect_status: "leads",
+          prospect_source: "sales_nav",
+        },
         new Set()
       ),
       true
@@ -78,13 +118,15 @@ describe("excludePoolOnlyContacts", () => {
         { id: "manual", prospect_status: "leads", prospect_source: "manual" },
         { id: "pool-1", prospect_status: "leads" },
         { id: "campaign", prospect_status: null, prospect_source: "linkedin_campaign" },
+        { id: "scorecard", prospect_status: "leads", prospect_source: "lead_capture" },
+        { id: "legacy", prospect_status: "leads", prospect_source: null },
         { id: "progressed", prospect_status: "replied", prospect_source: "linkedin_campaign" },
       ],
       poolIds
     );
     assert.deepEqual(
       rows.map((row) => row.id),
-      ["manual", "progressed"]
+      ["manual", "scorecard", "legacy", "progressed"]
     );
   });
 });

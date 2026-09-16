@@ -73,14 +73,21 @@ export async function sendSupportEmailReceiptAck(input: {
     ? subjectRaw.slice(0, 200)
     : `Re: ${subjectRaw}`.slice(0, 200);
 
-  const res = await sendUnipileEmail({
+  const to = [
+    {
+      identifier: input.toEmail,
+      ...(input.toName ? { display_name: input.toName } : {}),
+    },
+  ];
+  const custom_headers = [
+    { name: "Auto-Submitted", value: "auto-replied" },
+    { name: "X-Auto-Response-Suppress", value: "All" },
+    { name: "Precedence", value: "auto_reply" },
+  ];
+
+  let res = await sendUnipileEmail({
     account_id: input.accountId,
-    to: [
-      {
-        identifier: input.toEmail,
-        ...(input.toName ? { display_name: input.toName } : {}),
-      },
-    ],
+    to,
     from: {
       identifier: BCA_SUPPORT_EMAIL,
       display_name: "Profit Coach Support",
@@ -88,12 +95,32 @@ export async function sendSupportEmailReceiptAck(input: {
     subject,
     body: html,
     reply_to: input.replyToEmailId,
-    custom_headers: [
-      { name: "Auto-Submitted", value: "auto-replied" },
-      { name: "X-Auto-Response-Suppress", value: "All" },
-      { name: "Precedence", value: "auto_reply" },
-    ],
+    custom_headers,
   });
+
+  if (!res.ok && input.replyToEmailId) {
+    res = await sendUnipileEmail({
+      account_id: input.accountId,
+      to,
+      from: {
+        identifier: BCA_SUPPORT_EMAIL,
+        display_name: "Profit Coach Support",
+      },
+      subject,
+      body: html,
+      custom_headers,
+    });
+  }
+
+  if (!res.ok) {
+    res = await sendUnipileEmail({
+      account_id: input.accountId,
+      to,
+      subject,
+      body: html,
+      custom_headers,
+    });
+  }
 
   if (!res.ok) {
     throw new Error(res.error || "Could not send support receipt ack.");
